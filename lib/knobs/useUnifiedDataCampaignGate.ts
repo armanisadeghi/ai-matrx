@@ -21,7 +21,7 @@
 // See `lib/knobs/__tests__/lib-knobs-is-server-safe.test.ts` for the guard
 // that keeps this split from silently reverting.
 
-import { useCallback, useEffect, useState } from "react";
+import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import {
     UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
@@ -68,6 +68,17 @@ function normalize(answer: boolean | StoreSwitchAnswer): StoreSwitchAnswer {
     return answer;
 }
 
+/** One kept answer per organization; a failed read is shown but never kept fresh. */
+const campaignAnswers = createKeptAnswers<StoreSwitchAnswer>({
+    freshMs: 30_000,
+    keep: (answer) => answer.state !== "unavailable",
+});
+
+/** Tests only: forget every kept switch answer. */
+export function forgetUnifiedDataCampaignAnswers(): void {
+    campaignAnswers.forget();
+}
+
 /**
  * THE gate a campaign route and the sidebar mount. The caller passes the
  * reader itself (`UNIFIED_DATA_CAMPAIGN.enabled`), which is how the release
@@ -85,29 +96,12 @@ export function useUnifiedDataCampaign(args: {
     storeSwitch: (organizationId: string | null | undefined) => Promise<boolean | StoreSwitchAnswer>;
 }): UnifiedDataCampaignGate {
     const { organizationId, organizationState, storeSwitch } = args;
-    const [answer, setAnswer] = useState<
-        { organizationId: string | null; result: StoreSwitchAnswer } | null
-    >(null);
-    const [attempt, setAttempt] = useState(0);
-
-    const retry = useCallback(() => setAttempt((n) => n + 1), []);
-
-    useEffect(() => {
-        if (organizationState && organizationState !== "ready") return;
-        let cancelled = false;
-        const asked = organizationId ?? null;
-        setAnswer(null);
-        void storeSwitch(asked).then((raw) => {
-            if (!cancelled) setAnswer({ organizationId: asked, result: normalize(raw) });
-        });
-        return () => {
-            cancelled = true;
-        };
-        // The reader is a module function passed by the caller; re-running on its
-        // identity would re-ask the door on every render for no new fact.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [organizationId, organizationState, attempt]);
-
+    // KEPT PER ORGANIZATION, NEVER BLANKED (lane REMOUNT-SAFETY, 2026-10-02): a remount or a wake
+    // from sleep reads the last answer at once and re-asks in the background; the gate moves only
+    // when the answer changed. It used to set its answer back to null on every effect run, so
+    // every wake dropped to "resolving" and unmounted the record-store screen behind it.
+    const asked = organizationState && organizationState !== "ready" ? null : (organizationId ?? null);
+    const { answer: result, retry } = campaignAnswers.useAnswer(asked, async () => normalize(await storeSwitch(asked)));
     if (organizationState && organizationState !== "ready") {
         return { state: "resolving", on: null, because: "Waiting for organization context.", cause: null, retry };
     }
@@ -122,21 +116,21 @@ export function useUnifiedDataCampaign(args: {
             retry,
         };
     }
-    // An answer about a DIFFERENT organization is not an answer about this one.
-    if (answer === null || answer.organizationId !== organizationId) {
+    // Kept per organization: an answer about a DIFFERENT organization is never this one's.
+    if (result === null) {
         return { state: "resolving", on: null, because: "Reading this organization's switch.", cause: null, retry };
     }
-    if (answer.result.state === "unavailable") {
+    if (result.state === "unavailable") {
         // 🚨 NOT `on: false`. Nobody looked, so nothing is claimed — see the type's header.
         return {
             state: "unavailable",
             on: null,
             because: UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE,
-            cause: answer.result.cause,
+            cause: result.cause,
             retry,
         };
     }
-    const on = answer.result.state === "on";
+    const on = result.state === "on";
     return {
         state: on ? "on" : "off",
         on,

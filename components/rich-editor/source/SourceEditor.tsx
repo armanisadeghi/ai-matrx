@@ -17,6 +17,8 @@ import {
   defaultKeymap,
   history,
   historyKeymap,
+  redoDepth,
+  undoDepth,
   indentWithTab,
   moveLineDown,
   moveLineUp,
@@ -333,6 +335,10 @@ export function SourceEditor({
       return true;
     },
     flush: () => view.current?.state.doc.toString() ?? initialText,
+    historyDepth: () => {
+      const v = view.current;
+      return v ? { undo: undoDepth(v.state), redo: redoDepth(v.state) } : { undo: 0, redo: 0 };
+    },
     scrollToHeading: (_slug, offset) => {
       const v = view.current;
       if (!v) return;

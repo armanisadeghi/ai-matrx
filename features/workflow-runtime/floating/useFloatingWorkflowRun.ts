@@ -28,6 +28,15 @@
  * page IS the thing being navigated away from, so nothing above it is left to
  * notice. The last act of the surface has to be handing the run on.
  *
+ * THE REMOUNT LAW (Arman, 2026-10-02): a remount is not leaving. The handoff
+ * waits a grace window after the last home of the run goes, and a home of the
+ * same run mounting inside it cancels it — so React's dev double mount, a
+ * re-render that remounts the stage, or two homes of one run never pop the
+ * window. A surface that is NOT the run's home on a page (a board tile, which
+ * keeps the run through its `Keep` while it sleeps) passes
+ * `floatOnLeave: false`: it never closes a float the person opened, and its
+ * sleeping, waking or removal never opens one.
+ *
  * A TERMINAL run is not handed off. A run that already finished has a durable
  * record and a permalink; floating it would put a finished ledger on top of
  * wherever the person just went, forever, for having once visited its page.
@@ -57,12 +66,39 @@ export interface FloatingWorkflowRunOptions {
    * go over with the run — the window has no way to get them itself.
    */
   stepLabels?: Record<string, string> | null;
+  /**
+   * This surface is the run's home on a page: close the float while it is on
+   * screen and hand the run to the float when it leaves. False for a view that
+   * is not the run's page (a board tile). Default true.
+   */
+  floatOnLeave?: boolean;
+}
+
+/** How long after the run's last home leaves the float takes over. */
+export const FLOAT_HANDOFF_GRACE_MS = 1_000;
+
+interface RunHomes {
+  count: number;
+  handoff: ReturnType<typeof setTimeout> | null;
+}
+
+/** Per store: runId → the homes of that run on screen now, and a pending handoff. */
+const homesByStore = new WeakMap<object, Map<string, RunHomes>>();
+
+function homesFor(dispatch: object): Map<string, RunHomes> {
+  let homes = homesByStore.get(dispatch);
+  if (!homes) {
+    homes = new Map();
+    homesByStore.set(dispatch, homes);
+  }
+  return homes;
 }
 
 export function useFloatingWorkflowRun({
   runId,
   workflowName = null,
   stepLabels = null,
+  floatOnLeave = true,
 }: FloatingWorkflowRunOptions): void {
   const dispatch = useAppDispatch();
   const status = useAppSelector(selectRunStatus(runId ?? ""));
@@ -76,23 +112,45 @@ export function useFloatingWorkflowRun({
   });
 
   useEffect(() => {
-    if (!runId) return;
-    // The page is on screen: it is the run's home, and the float steps aside.
-    dispatch(closeWorkflowRunWindowAction(runId));
+    if (!runId || !floatOnLeave) return;
+    const homesByRun = homesFor(dispatch);
+    let homes = homesByRun.get(runId);
+    if (homes) {
+      // Another home of this run is on screen, or one just left and its
+      // handoff is pending: this is a remount, the float was never opened.
+      homes.count += 1;
+      if (homes.handoff !== null) {
+        clearTimeout(homes.handoff);
+        homes.handoff = null;
+      }
+    } else {
+      homes = { count: 1, handoff: null };
+      homesByRun.set(runId, homes);
+      // The page is on screen: it is the run's home, and the float steps aside.
+      dispatch(closeWorkflowRunWindowAction(runId));
+    }
+    const held = homes;
     return () => {
-      const { status: finalStatus, workflowName: name, stepLabels: labels } =
-        latest.current;
-      // Never seen (no status yet) still counts as live — a run adopted
-      // moments ago is the most important one not to lose.
-      // A run that is over is never handed off — see the header.
-      if (runIsOver(finalStatus)) return;
-      dispatch(
-        openWorkflowRunWindowAction({
-          runId,
-          workflowName: name,
-          stepLabels: labels,
-        }),
-      );
+      held.count -= 1;
+      if (held.count > 0) return;
+      held.handoff = setTimeout(() => {
+        held.handoff = null;
+        if (held.count > 0 || homesByRun.get(runId) !== held) return;
+        homesByRun.delete(runId);
+        const { status: finalStatus, workflowName: name, stepLabels: labels } =
+          latest.current;
+        // Never seen (no status yet) still counts as live — a run adopted
+        // moments ago is the most important one not to lose.
+        // A run that is over is never handed off — see the header.
+        if (runIsOver(finalStatus)) return;
+        dispatch(
+          openWorkflowRunWindowAction({
+            runId,
+            workflowName: name,
+            stepLabels: labels,
+          }),
+        );
+      }, FLOAT_HANDOFF_GRACE_MS);
     };
-  }, [dispatch, runId]);
+  }, [dispatch, runId, floatOnLeave]);
 }

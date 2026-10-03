@@ -60,10 +60,9 @@ stale text. By construction a batched tile renders once per interval instead of 
   warm). A tile acts on it only with `sleeps` (React `<Activity mode="hidden">`) / `discardable`, set per
   item type (`BoardItemType.sleeps`) after a browser check — waking re-runs every effect, and content
   whose mount effect resets itself loses work. Sleeping (browser-checked 2026-10-02): label, image,
-  chat, note, task, research, project. Awake, with the reason: document (Univer is rebuilt from the
+  chat, note, task, research, project, war room, workflow run. Awake, with the reason: document (Univer is rebuilt from the
   server snapshot), file (`@monaco-editor/react` never re-creates its editor; previews re-download),
-  table and record (the organization gate re-resolves and unmounts the grid), war room (re-hydrate
-  swaps the stage for a skeleton), workflow run (a pause opens the floating run window). What must outlive a sleeping body (a chat's live run, holding the
+  table and record (the organization gate re-resolves and unmounts the grid). What must outlive a sleeping body (a chat's live run, holding the
   tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
 - **Nothing inside a tile takes over the board** (`engine/tile-navigation.tsx`). A tile body sees a
   board-provided app router; a page it opens (router push, link, `location.assign`, form) lands ON the
@@ -350,7 +349,8 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   mounts its surface through the SAME host the feature's page uses, so no feature item declares a
   `Host`: Task → `TaskEditor` (`TaskEditorBody` mounts `matrx-user/tasks`); War Room → the room's
   `StageView` under `RoomViewProvider` + `WarRoomSurfaceHost` (`matrx-user/war-room`; the tile
-  HYDRATES the room — `hydrateWarRoomSession` — and never changes the active room); Research →
+  holds a ref-counted view of the room — `useWarRoomView`, read and "opened" once per session — and
+  never changes the active room); Research →
   `DocumentViewer` under `TopicProvider` + `ResearchTopicSurfaceHost`; Project →
   `ProjectRecordWorkspace chrome="embedded"` (the whole project workspace + `matrx-user/projects`);
   Meeting → `MeetingDetail chrome="embedded"` (sections and actions in a strip; it mounts
@@ -383,6 +383,12 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-02 — War room and workflow run sleep. War room: the tile (body + a `Keep`) holds a
+  ref-counted room view (`features/war-room/redux/roomViewSession.ts`) — one read and one "opened"
+  per session, no skeleton on wake, remount or a second tile of the room. Workflow run: the run's
+  workflow + surface are read once into Redux (`loadRunSurface`), its `Keep` holds the one stream
+  adoption, and the tile's stage passes `floatOnLeave={false}` — waking, hiding or removing it never
+  opens the floating run window. Guard: `__tests__/feature-items-remount.test.tsx`.
 - 2026-10-02 — Sleep census: chat, note, task, research and project now sleep, each checked in the
   browser (sleep → wake → text/scroll/draft kept, nothing relaunched or re-created, edits still save).
   Effects that threw work away on a re-run were made idempotent at their source: the Visual rich

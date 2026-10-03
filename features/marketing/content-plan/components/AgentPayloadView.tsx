@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * AgentPayloadSheet — "See what the AI sees".
+ * AgentPayloadView — "See what the AI sees", the body of the
+ * `content-plan-payload` canvas tab (`../canvas/agentPayloadKind.ts`).
  *
  * THE DEFECT THIS EXISTS FOR (measured 2026-08-25). The family-comparison
  * agent on /blog/prp-research-updates was handed 1 of 295 plan pages and ZERO
@@ -27,16 +28,12 @@
  * mandate, agent or provision.
  */
 import { useMemo, useState } from "react";
+import { useToolToggle } from "@/features/canvas/host/toolCanvas";
+import { agentPayloadToggleInput } from "../canvas/agentPayloadKind";
 import { AlertTriangle, Info, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@ai-matrx/design-system";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
@@ -346,24 +343,18 @@ function BranchWalk({ view }: { view: PlanIndexView }) {
   );
 }
 
-// ── the sheet ──────────────────────────────────────────────────────────────
+// ── the view (the body of the `content-plan-payload` canvas tab) ───────────
 
-export function AgentPayloadSheet({
-  open,
-  onOpenChange,
+export function AgentPayloadView({
   siteId,
   nodeId,
-  nodeRoute,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   siteId: string | null;
   /** null → the whole-plan view: no neighbours, no branch walk. */
   nodeId: string | null;
-  nodeRoute?: string | null;
 }) {
   const [shape, setShape] = useState<PayloadShapeKey | null>(null);
-  const query = usePlanIndex(siteId, nodeId, open);
+  const query = usePlanIndex(siteId, nodeId, true);
   const view = query.data ?? null;
 
   const active: PayloadShapeKey =
@@ -372,10 +363,6 @@ export function AgentPayloadSheet({
     PAYLOAD_SHAPES.find((entry) => entry.key === active) ?? PAYLOAD_SHAPES[0];
   const rendered = view?.rendered ?? {};
   const text = rendered[active] ?? "";
-
-  const title = nodeId
-    ? `What the AI sees — ${nodeRoute ?? view?.node_route ?? "this page"}`
-    : "What the AI sees — the whole plan";
 
   const agentPayload = useMemo(
     () => ({
@@ -395,17 +382,10 @@ export function AgentPayloadSheet({
     [view, siteId, nodeId, active],
   );
 
+  // The pane header carries the title ("What the AI sees — <route>").
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 sm:w-[860px] sm:max-w-[860px]"
-      >
-        <SheetHeader>
-          <SheetTitle className="text-sm">{title}</SheetTitle>
-        </SheetHeader>
-
-        <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 pb-4">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+        <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
           {query.isLoading ? (
             <div className="flex items-center gap-2 py-6 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -546,14 +526,15 @@ export function AgentPayloadSheet({
             </div>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+    </div>
   );
 }
 
 /**
- * The button that opens it. Lives wherever a human is about to trust an
- * agent's answer — the Family tab of a node, and the plan toolbar.
+ * The button that opens it — toggles the page's (or the plan's)
+ * `content-plan-payload` canvas tab and shows pressed while it is in front.
+ * Lives wherever a human is about to trust an agent's answer — the Family tab
+ * of a node, and the plan toolbar.
  */
 export function AgentPayloadButton({
   siteId,
@@ -568,26 +549,18 @@ export function AgentPayloadButton({
   className?: string;
   label?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const tab = useToolToggle(agentPayloadToggleInput(siteId ?? "", nodeId, nodeRoute ?? null));
   return (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        className={cn("h-6 gap-1 px-2 text-xs", className)}
-        disabled={!siteId}
-        onClick={() => setOpen(true)}
-      >
-        <Info className="h-3 w-3" />
-        {label}
-      </Button>
-      <AgentPayloadSheet
-        open={open}
-        onOpenChange={setOpen}
-        siteId={siteId}
-        nodeId={nodeId}
-        nodeRoute={nodeRoute}
-      />
-    </>
+    <Button
+      variant="outline"
+      size="sm"
+      className={cn("h-6 gap-1 px-2 text-xs", tab.isVisible && "bg-accent text-foreground", className)}
+      disabled={!siteId}
+      onClick={tab.toggle}
+      aria-pressed={tab.isVisible}
+    >
+      <Info className="h-3 w-3" />
+      {label}
+    </Button>
   );
 }

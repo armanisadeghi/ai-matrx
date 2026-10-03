@@ -4,7 +4,7 @@
  * ContextPolicyItemsPopover
  *
  * Collapsed summary tile for multiple context entries on a user message.
- * Click → popover list; row click → detail sheet.
+ * Click → popover list; row click → the conversation's context-value canvas tab.
  */
 
 import { useState } from "react";
@@ -27,7 +27,7 @@ import {
 } from "./contextPolicyTile.theme";
 import { contextPolicyEntryPreview } from "./contextPolicyPreview";
 import { getKnownContextDefinition } from "./knownContextValues";
-import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
+import { useContextValueTab } from "./contextValueTab";
 import { ValueCountPill } from "./ValueCountPill";
 import { contextEntryLabel } from "./contextEntryLabel";
 
@@ -47,16 +47,23 @@ export function ContextPolicyItemsPopover({
   className,
 }: ContextPolicyItemsPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedEntry, setSelectedEntry] =
-    useState<InstanceContextEntry | null>(null);
+  const valueTab = useContextValueTab(conversationId);
 
   const count = entries.length;
 
   const openDetail = (entry: InstanceContextEntry) => {
-    setSelectedEntry(entry);
     setPopoverOpen(false);
-    setDetailOpen(true);
+    valueTab.open(
+      {
+        conversationId,
+        agentId,
+        contextKey: entry.key,
+        snapshotValue: entry.value,
+        snapshotLabel: entry.label,
+        snapshotType: entry.type,
+      },
+      contextEntryLabel(entry, policyByKey.get(entry.key)?.label),
+    );
   };
 
   return (
@@ -124,19 +131,6 @@ export function ContextPolicyItemsPopover({
           </div>
         </PopoverContent>
       </Popover>
-
-      {selectedEntry && (
-        <ContextPolicyDetailSheet
-          open={detailOpen}
-          onOpenChange={setDetailOpen}
-          conversationId={conversationId}
-          agentId={agentId}
-          contextKey={selectedEntry.key}
-          snapshotValue={selectedEntry.value}
-          snapshotLabel={selectedEntry.label}
-          snapshotType={selectedEntry.type}
-        />
-      )}
     </>
   );
 }

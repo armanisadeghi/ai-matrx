@@ -16,12 +16,21 @@
 //
 // Capture maps a DOM Range to a source range; paint maps a source range back
 // to DOM Ranges for the CSS Custom Highlight API. The DOM is only READ.
+//
+// A projection is a snapshot: the reader re-renders (a live note, a streamed
+// reply) and is re-projected only after a debounce. Every consumer therefore
+// uses only LIVE entries — the node is still in the same tree and still holds
+// the text it was mapped with — so a stale map can be wrong-by-omission but
+// never throws (Range.comparePoint/setEnd on a shortened or removed node).
+// Callers that need a complete map re-project when `projectionIsCurrent` fails.
 
 export interface MappedTextNode {
   node: Text;
   /** UTF-16 offset in the source where this node's text begins. */
   sourceStart: number;
   length: number;
+  /** The node's text when it was mapped; a node whose text changed since is stale. */
+  text: string;
 }
 
 export interface SourceProjection {
@@ -90,7 +99,7 @@ export function projectSource(root: Node, source: string): SourceProjection {
     if (!text.trim()) {
       // Whitespace-only nodes between blocks: map only if they sit at the cursor.
       if (source.startsWith(text, cursor)) {
-        nodes.push({ node, sourceStart: cursor, length: text.length });
+        nodes.push({ node, sourceStart: cursor, length: text.length, text });
         cursor += text.length;
       }
       continue;
@@ -98,7 +107,7 @@ export function projectSource(root: Node, source: string): SourceProjection {
     const at = source.indexOf(text, cursor);
     const limit = PUNCTUATION_ONLY.test(text) ? PUNCTUATION_WINDOW : windowFor(text.length);
     if (at >= 0 && at - cursor <= limit) {
-      nodes.push({ node, sourceStart: at, length: text.length });
+      nodes.push({ node, sourceStart: at, length: text.length, text });
       cursor = at + text.length;
     } else {
       unmappedChars += text.length;
@@ -107,8 +116,20 @@ export function projectSource(root: Node, source: string): SourceProjection {
   return { nodes, unmappedChars };
 }
 
+/** The entry still describes the live DOM: same text, same tree as `anchor`. */
+function isLive(m: MappedTextNode, anchor?: Node): boolean {
+  if (m.node.data !== m.text || !m.node.isConnected) return false;
+  return !anchor || m.node.getRootNode() === anchor.getRootNode();
+}
+
+/** True while every mapped node under `root` is still there with the text it was mapped with. */
+export function projectionIsCurrent(projection: SourceProjection, root: Node): boolean {
+  return projection.nodes.every((m) => m.node.data === m.text && root.contains(m.node));
+}
+
 function findMapped(projection: SourceProjection, node: Node): MappedTextNode | undefined {
-  return projection.nodes.find((m) => m.node === node);
+  const hit = projection.nodes.find((m) => m.node === node);
+  return hit && isLive(hit) ? hit : undefined;
 }
 
 /**
@@ -135,7 +156,7 @@ function boundaryToSource(
   } catch {
     return null;
   }
-  const list = projection.nodes;
+  const list = projection.nodes.filter((m) => isLive(m, container));
   if (direction === "forward") {
     for (const m of list) {
       if (probe.comparePoint(m.node, 0) >= 0) return m.sourceStart;
@@ -174,7 +195,7 @@ export function sourceToRanges(
   for (const m of projection.nodes) {
     const a = Math.max(start, m.sourceStart);
     const b = Math.min(end, m.sourceStart + m.length);
-    if (b <= a) continue;
+    if (b <= a || !isLive(m)) continue;
     const doc = m.node.ownerDocument;
     const r = doc.createRange();
     r.setStart(m.node, a - m.sourceStart);

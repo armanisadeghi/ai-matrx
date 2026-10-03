@@ -241,7 +241,8 @@ export async function PUT(
       const { error: preferenceError } = await tryWriteOne(
         supabase.schema("communication").from("dm_conversation_participants")
           .update(participantUpdate)
-          .eq("organization_id", destination.organization_id)
+          // Found by conversation + user only, never by organization: a row left in
+          // a stale organization is re-stamped by this write, not missed by it.
           .eq("conversation_id", conversationId).eq("user_id", userId)
           .is("deleted_at", null).select("id"),
         { action: "save", noun: "conversation preferences" },
@@ -407,7 +408,6 @@ export async function DELETE(
     const { error: preferenceError } = await tryWriteOne(
       supabase.schema("communication").from("dm_conversation_participants")
         .update({ is_archived: true, organization_id: conversation.organization_id })
-        .eq("organization_id", conversation.organization_id)
         .eq("conversation_id", conversationId).eq("user_id", userId)
         .is("deleted_at", null).select("id"),
       { action: "archive", noun: "conversation" },

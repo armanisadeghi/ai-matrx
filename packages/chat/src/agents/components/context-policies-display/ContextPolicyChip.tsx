@@ -4,10 +4,11 @@
  * ContextPolicyChip
  *
  * One context policy value on a user message — tile layout matching
- * ResourceAttachmentTile. Click → ContextPolicyDetailSheet.
+ * ResourceAttachmentTile. Click → the conversation's context-value canvas
+ * tab on this value (pressed while it is in front).
  */
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -16,7 +17,7 @@ import type { InstanceContextEntry } from "../../types/instance.types";
 import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextPolicyIcons";
 import { CONTEXT_TYPE_TILE_LABEL } from "./contextPolicyTile.theme";
 import { contextPolicyEntryPreview } from "./contextPolicyPreview";
-import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
+import { useContextValueTab, type ContextValueSnapshot } from "./contextValueTab";
 import { ContextPolicyTile } from "./ContextPolicyTile";
 import { contextEntryLabel } from "./contextEntryLabel";
 
@@ -36,7 +37,7 @@ export function ContextPolicyChip({
   policy,
   className,
 }: ContextPolicyChipProps) {
-  const [open, setOpen] = useState(false);
+  const valueTab = useContextValueTab(conversationId);
 
   const type: ContextObjectType = policy?.type ?? entry.type;
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
@@ -49,28 +50,25 @@ export function ContextPolicyChip({
     [entry, type],
   );
   const tooltip = preview ? `${label} — ${preview}` : label;
+  const snapshot: ContextValueSnapshot = {
+    conversationId,
+    agentId,
+    contextKey: entry.key,
+    snapshotValue: entry.value,
+    snapshotLabel: entry.label,
+    snapshotType: entry.type,
+  };
 
   return (
-    <>
-      <ContextPolicyTile
-        typeLabel={typeLabel}
-        title={label}
-        icon={Icon}
-        themeKey={type}
-        tooltip={tooltip}
-        onClick={() => setOpen(true)}
-        className={className}
-      />
-      <ContextPolicyDetailSheet
-        open={open}
-        onOpenChange={setOpen}
-        conversationId={conversationId}
-        agentId={agentId}
-        contextKey={entry.key}
-        snapshotValue={entry.value}
-        snapshotLabel={entry.label}
-        snapshotType={entry.type}
-      />
-    </>
+    <ContextPolicyTile
+      typeLabel={typeLabel}
+      title={label}
+      icon={Icon}
+      themeKey={type}
+      tooltip={tooltip}
+      aria-pressed={valueTab.isShowing(snapshot)}
+      onClick={() => valueTab.open(snapshot, label)}
+      className={className}
+    />
   );
 }

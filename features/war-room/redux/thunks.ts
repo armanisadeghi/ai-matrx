@@ -94,7 +94,6 @@ import {
   assignmentsLoadFailed,
   assignmentsLoadedForContainer,
   assignmentUpserted,
-  clearRoomThreads,
   orphanThreadsLoaded,
   pendingConversationCleared,
   pendingConversationSet,
@@ -425,10 +424,10 @@ export const deleteSession =
   };
 
 /**
- * OPEN a room: it becomes THE active room (the one the room route shows), then
- * its session, threads and assignments are read. Only the room's own page does
- * this — a surface that merely SHOWS a room (a board tile) hydrates it with
- * `hydrateWarRoomSession`, which never touches the active room.
+ * Make a room THE active room (the one the room route shows) and read it. The
+ * room route's retry uses this; the route's own open/close is `enterWarRoom`
+ * (`roomViewSession.ts`), and a surface that merely SHOWS a room (a board tile)
+ * holds a view with `openRoomView`, which never touches the active room.
  */
 export const loadWarRoomSession =
   (id: string) => async (dispatch: AppDispatch) => {
@@ -440,10 +439,36 @@ export const loadWarRoomSession =
  * Read one room's session, threads and assignments into the store WITHOUT
  * making it the active room. Several rooms may be hydrated at once (the tiles
  * of a board); `activeSessionId` stays whatever the room page set.
+ *
+ * Idempotent per room (THE REMOUNT LAW, 2026-10-02): a read already in flight
+ * for this room is shared, never repeated, and a room already on screen is
+ * refreshed IN PLACE — its status never drops back to "loading", so no view of
+ * it swaps its stage for a skeleton because another view asked. Reading never
+ * records "opened": that belongs to the room's view session
+ * (`roomViewSession.ts`), once per session.
  */
+const hydratesInFlight = new Map<string, Promise<WarRoomSession | null>>();
+
 export const hydrateWarRoomSession =
-  (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
-    dispatch(setThreadsStatus({ roomId: id, status: "loading" }));
+  (id: string) =>
+  (dispatch: AppDispatch, getState: () => RootState): Promise<WarRoomSession | null> => {
+    const inFlight = hydratesInFlight.get(id);
+    if (inFlight) return inFlight;
+    const read = readWarRoomSession(id, dispatch, getState).finally(() => {
+      hydratesInFlight.delete(id);
+    });
+    hydratesInFlight.set(id, read);
+    return read;
+  };
+
+async function readWarRoomSession(
+  id: string,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+): Promise<WarRoomSession | null> {
+    if (getState().warRoom.threadsStatusByRoom[id] !== "ready") {
+      dispatch(setThreadsStatus({ roomId: id, status: "loading" }));
+    }
     try {
       const existing = getState().warRoom.sessionsById[id];
       const [session, threads] = await Promise.all([
@@ -495,20 +520,14 @@ export const hydrateWarRoomSession =
       // cross-agent reads (war_room_read_thread). Fire-and-forget.
       void hydrateAgentConversations(dispatch, contentAssignments);
 
-      void service.touchSessionOpened(id);
       return session;
     } catch (err) {
-      console.error("[war-room] loadWarRoomSession failed:", err);
+      console.error("[war-room] hydrateWarRoomSession failed:", err);
       dispatch(setThreadsStatus({ roomId: id, status: "error" }));
       toast.error("Couldn't open the War Room");
       return null;
     }
-  };
-
-export const leaveWarRoomSession = (id: string) => (dispatch: AppDispatch) => {
-  dispatch(clearRoomThreads(id));
-  dispatch(setActiveSession(null));
-};
+}
 
 // ── Context (scopes via setEntityScopes — not row columns) ─────────────
 

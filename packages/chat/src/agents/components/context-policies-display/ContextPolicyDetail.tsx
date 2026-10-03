@@ -1,19 +1,20 @@
 "use client";
 
 /**
- * ContextPolicyDetailSheet
+ * ContextPolicyDetail
  *
- * Right-side sheet that shows the full detail of a single context value a
- * SENT message carried: key, type, label, description, inline policy, and
- * the value rendered by type (markdown / JSON / link / entity card).
+ * The full detail of a single context value a SENT message carried: key,
+ * type, label, description, inline policy, and the value rendered by type
+ * (markdown / JSON / link / entity card). A plain body: the host shows it in a
+ * canvas tab (kind `context-value`, `contextValueTab.ts`), whose pane header
+ * carries the label and the close.
  *
  * The value, label and type come from the message's snapshot ONLY — never
  * from live conversation context (a sent turn showing today's value is the
- * lie this sheet used to tell). The policy definition is read from the agent.
+ * lie this view used to tell). The policy definition is read from the agent.
  */
 
 import { useMemo } from "react";
-import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "../../../store/hooks";
 import type { ChatRootState } from "../../../store/root-state";
@@ -41,9 +42,7 @@ import {
 } from "../context-items/bodies/WorkingDocumentBody";
 import { cn } from "@ai-matrx/design-system";
 
-interface ContextPolicyDetailSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface ContextPolicyDetailProps {
   conversationId: string;
   agentId: string | null;
   contextKey: string;
@@ -55,16 +54,14 @@ interface ContextPolicyDetailSheetProps {
   snapshotType?: ContextObjectType;
 }
 
-export function ContextPolicyDetailSheet({
-  open,
-  onOpenChange,
+export function ContextPolicyDetail({
   conversationId,
   agentId,
   contextKey,
   snapshotValue,
   snapshotLabel,
   snapshotType,
-}: ContextPolicyDetailSheetProps) {
+}: ContextPolicyDetailProps) {
   const policy = useAppSelector((state: ChatRootState): ContextPolicy | undefined => {
     if (!agentId) return undefined;
     const policies = selectAgentContextPolicies(state, agentId);
@@ -110,34 +107,22 @@ export function ContextPolicyDetailSheet({
   }, [policy?.max_inline_chars]);
 
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      title={
-        <span className="inline-flex min-w-0 items-center gap-2.5">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+      {docKind !== null ? null : (
+        <div className="flex min-w-0 shrink-0 items-center gap-2.5 border-b border-border px-4 py-2">
           <span
             className={cn(
-              "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border",
+              "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
               chipClass,
             )}
           >
             <Icon className="h-3.5 w-3.5" />
           </span>
-          <span className="min-w-0 truncate">{label}</span>
-        </span>
-      }
-      description={
-        docKind !== null ? undefined : (
-          <span className="font-mono">
+          <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
             {contextKey} · {type}
           </span>
-        )
-      }
-      expandButtonLabel="Context policy"
-      position="right"
-      defaultSize={docKind !== null ? 44 : 34}
-      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
-    >
+        </div>
+      )}
       {docKind !== null ? (
         <div className="min-h-0 flex-1">
           <WorkingDocumentBody item={workingDocItem} initialKind={docKind} />
@@ -204,7 +189,7 @@ export function ContextPolicyDetailSheet({
           )}
         </div>
       )}
-    </MatrxDynamicPanelHost>
+    </div>
   );
 }
 

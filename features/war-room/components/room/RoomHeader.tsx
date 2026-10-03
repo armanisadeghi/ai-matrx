@@ -96,7 +96,9 @@ import type { ThreadTab } from "@/features/war-room/types";
 import { EditableTitle } from "../shared/EditableTitle";
 import { RoomIdentityEditor } from "./RoomIdentityButton";
 import { RoomProjectPickerBody } from "./RoomProjectButton";
-import { RoomResourcesSheet } from "./RoomResourcesButton";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openToolInCanvas } from "@/features/canvas/host/toolCanvas";
+import { roomResourcesOpenInput } from "@/features/war-room/canvas/warRoomResourcesKind";
 import { RoomProjectCopyForAiButton } from "./RoomProjectCopyForAiButton";
 import { RoomCopyControls } from "./RoomCopyControls";
 import { ThreadSearchBox } from "./ThreadSearchBox";
@@ -140,7 +142,9 @@ export function RoomHeader({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [identityOpen, setIdentityOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
+  // Room resources open as the room's canvas tab, beside the room.
+  const canvas = useOptionalCanvas();
+  const openRoomResources = () => void openToolInCanvas(canvas, roomResourcesOpenInput(sessionId));
 
   const roomProjectId = useAppSelector(selectSessionProjectId(sessionId));
   const projectMode = useAppSelector(selectSessionProjectMode(sessionId));
@@ -274,7 +278,7 @@ export function RoomHeader({
         }
         onPress={() => {
           setSheetOpen(false);
-          setResourcesOpen(true);
+          openRoomResources();
         }}
       />
       <SheetRow
@@ -459,7 +463,7 @@ export function RoomHeader({
                       Room details…
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onSelect={() => openAfterMenu(setResourcesOpen)}
+                      onSelect={openRoomResources}
                     >
                       <Paperclip className="size-3.5 mr-2 text-muted-foreground" />
                       Room resources…
@@ -548,15 +552,6 @@ export function RoomHeader({
           ) : null}
         </div>
       </PageHeader>
-
-      {/* Resources — Sheet on desktop, Drawer on mobile (self-selecting). */}
-      {session && resourcesOpen ? (
-        <RoomResourcesSheet
-          sessionId={sessionId}
-          open={resourcesOpen}
-          onOpenChange={setResourcesOpen}
-        />
-      ) : null}
 
       {/* Mobile bottom sheet — modes AND actions, per the mobile doctrine. */}
       {session && !inShellSheet ? (

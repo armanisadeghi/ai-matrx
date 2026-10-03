@@ -22,6 +22,7 @@ import type {
   CloudFileRecord,
   CloudFilesState,
   CloudFileVersion,
+  FileWorkingCopy,
   CloudFolder,
   CloudFolderFieldSnapshot,
   CloudFolderRecord,
@@ -211,6 +212,7 @@ function markFolderClean(record: CloudFolderRecord): void {
 
 const initialState: CloudFilesState = {
   filesById: {},
+  workingCopies: {},
   foldersById: {},
   versionsByFileId: {},
   permissionsByResourceId: {},
@@ -1047,6 +1049,93 @@ const slice = createSlice({
       state.ragStatus.lastFetchedAt = null;
     },
 
+    // ---- Working copies (one per text file being edited) -------------------
+    //
+    // Every editor view of a file reads and writes the one copy here, so a
+    // hidden / woken / remounted view, and a second view of the same file,
+    // show the same text. Saving goes through `saveFileWorkingCopy`
+    // (./working-copy.ts) — the only save path.
+
+    /**
+     * The file's stored bytes were read (first open, or new bytes for a new
+     * version). A clean copy follows the bytes; a dirty copy keeps the
+     * person's text and is now compared with the new bytes. `draft` is
+     * unsaved text kept from before a reload — it applies only when there is
+     * no copy yet and it differs from the bytes.
+     */
+    workingCopyLoaded(
+      state,
+      action: PayloadAction<{
+        fileId: string;
+        text: string;
+        version: number | null;
+        draft?: string | null;
+      }>,
+    ) {
+      const { fileId, text, version, draft } = action.payload;
+      const copy = state.workingCopies[fileId];
+      if (!copy) {
+        state.workingCopies[fileId] = {
+          text: draft != null ? draft : text,
+          baseText: text,
+          baseVersion: version,
+          saving: false,
+          savedAt: null,
+          saveError: null,
+        } satisfies FileWorkingCopy;
+        return;
+      }
+      if (copy.text === copy.baseText) copy.text = text;
+      copy.baseText = text;
+      copy.baseVersion = version;
+    },
+
+    workingCopyEdited(state, action: PayloadAction<{ fileId: string; text: string }>) {
+      const copy = state.workingCopies[action.payload.fileId];
+      if (!copy || copy.text === action.payload.text) return;
+      copy.text = action.payload.text;
+    },
+
+    workingCopyDiscarded(state, action: PayloadAction<{ fileId: string }>) {
+      const copy = state.workingCopies[action.payload.fileId];
+      if (!copy) return;
+      copy.text = copy.baseText;
+      copy.saveError = null;
+    },
+
+    workingCopySaveStarted(state, action: PayloadAction<{ fileId: string }>) {
+      const copy = state.workingCopies[action.payload.fileId];
+      if (!copy) return;
+      copy.saving = true;
+      copy.saveError = null;
+    },
+
+    /** `text` is what was saved; anything typed while saving stays unsaved. */
+    workingCopySaved(
+      state,
+      action: PayloadAction<{
+        fileId: string;
+        text: string;
+        version: number | null;
+        savedAt: number;
+      }>,
+    ) {
+      const copy = state.workingCopies[action.payload.fileId];
+      if (!copy) return;
+      copy.saving = false;
+      copy.baseText = action.payload.text;
+      copy.baseVersion = action.payload.version;
+      copy.savedAt = action.payload.savedAt;
+      copy.saveError = null;
+    },
+
+    workingCopySaveFailed(state, action: PayloadAction<{ fileId: string; error: string }>) {
+      const copy = state.workingCopies[action.payload.fileId];
+      if (!copy) return;
+      copy.saving = false;
+      copy.saveError = action.payload.error;
+    },
+
     resetCloudFilesState() {
       return initialState;
     },
@@ -1122,6 +1211,13 @@ export const {
   // realtime
   setRealtimeStatus,
   touchRealtime,
+  // working copies
+  workingCopyLoaded,
+  workingCopyEdited,
+  workingCopyDiscarded,
+  workingCopySaveStarted,
+  workingCopySaved,
+  workingCopySaveFailed,
   resetCloudFilesState,
 } = slice.actions;
 

@@ -10,6 +10,7 @@
 // AI action, dictation), so its baseline is always the text it was given.
 
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import { redoDepth, undoDepth } from "@tiptap/pm/history";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { getSchema, type Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
@@ -55,6 +56,11 @@ export interface EditorViewHandle {
   insertText: (text: string, where: "before" | "after") => boolean;
   /** Flush pending text now (before a save or a view switch). */
   flush: () => string;
+  /**
+   * Steps this view's own undo history holds. Zero after a (re)mount — a host
+   * that keeps a record-level history (notes) answers ⌘Z then.
+   */
+  historyDepth: () => { undo: number; redo: number };
   scrollToHeading: (slug: string, offset: number) => void;
   find: (query: string, options: FindOptions, step?: 1 | -1) => ViewFindState;
   replaceCurrent: (query: string, replacement: string, options: FindOptions) => string[];
@@ -250,6 +256,8 @@ export function VisualEditor({
       }
       return inserted;
     },
+    historyDepth: () =>
+      editor ? { undo: undoDepth(editor.state), redo: redoDepth(editor.state) } : { undo: 0, redo: 0 },
     flush: () => {
       if (!editor) return lastReported.current;
       if (timer.current !== null) {

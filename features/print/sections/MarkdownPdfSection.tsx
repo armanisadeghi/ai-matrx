@@ -25,6 +25,7 @@ import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { SectionShell } from "@/features/print/components/shared";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { resolvePlatformReferences } from "@/features/print/document/platformReferences";
+import { printDocumentPdfPages, renderDocumentPdfPages } from "@/features/print/document/pdfPages";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createMarkdownPdfScope,
@@ -171,7 +172,13 @@ export function MarkdownPdfSection() {
             className="flex min-h-[70vh] flex-col overflow-hidden rounded-md border border-border"
           >
             {markdown.trim() ? (
-              <DocumentPrintPreview markdown={markdown} title={title} resolveReferences={resolvePlatformReferences} />
+              <DocumentPrintPreview
+                markdown={markdown}
+                title={title}
+                resolveReferences={resolvePlatformReferences}
+                renderPages={renderDocumentPdfPages}
+                printPages={printDocumentPdfPages}
+              />
             ) : (
               <p className="p-8 text-center text-xs text-muted-foreground">
                 {noteId ? "Opening your note…" : "Nothing to print yet — write something on the left."}

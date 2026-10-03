@@ -26,7 +26,8 @@
  *      load swings (one call 1.5-13 s on 2026-10-03) cannot fake it either way.
  * The whole call's medians and their ratio are printed beside it, measured, not gated: on the loaded clone the
  * archive door's own per-type work (see the SCOPES-I report) swamps the walk this file shares.
- * Before the file is live B is A's body, so both fail: RED. Exit 0 GREEN, 1 RED, 2 could not run.
+ * Before the file is live B is A's body, so both fail: RED. `--as-before` makes B a second pg_temp copy of the
+ * inverse's body, which is that state on a clone where the file is already live. Exit 0 GREEN, 1 RED, 2 could not run.
  *
  * The pg_temp copy is a SECURITY DEFINER door; the definer-grant sweep (platform.enforce_definer_client_grants)
  * strips any undeclared client grant, a concurrent lane's DDL included. So the copy's grant to `authenticated`
@@ -49,7 +50,8 @@ const SEATS: Record<string, string> = {
   "admin@admin.com": "87a6e699-3622-4869-8843-d0867456c0dd",
 };
 const A = "pg_temp.archived_types_before";
-const B = "custom.context_archived_types";
+const AS_BEFORE = process.argv.includes("--as-before");
+const B = AS_BEFORE ? "pg_temp.archived_types_before_too" : "custom.context_archived_types";
 
 function bodyAs(name: string): string {
   const text = readFileSync(INVERSE, "utf8");
@@ -75,7 +77,7 @@ async function main() {
     console.log(`REFUSED: ${u} (${env.user}) is not the quarantined dev clone (cron ${jobs}, pg_net ${net}).`);
     process.exit(2);
   }
-  console.log(`# ${env.user} (${env.from}); A = ${A} (the inverse's body), B = ${B} (live); ${RUNS} rounds, walk ratio ${WALK_RATIO}`);
+  console.log(`# ${env.user} (${env.from}); A = ${A} (the inverse's body), B = ${B} (${AS_BEFORE ? "the inverse's body again, --as-before" : "live"}); ${RUNS} rounds, walk ratio ${WALK_RATIO}`);
 
   async function grant() {
     for (let k = 0; k < 6; k++) {
@@ -83,6 +85,7 @@ async function main() {
         await client.query("begin");
         await client.query("select set_config('platform.definer_sweep', '1', true)");
         await client.query(`grant execute on function ${A}(uuid) to authenticated`);
+        if (AS_BEFORE) await client.query(`grant execute on function ${B}(uuid) to authenticated`);
         await client.query("commit");
         return;
       } catch {
@@ -95,6 +98,7 @@ async function main() {
   await client.query("begin");
   await client.query("select set_config('platform.definer_sweep', '1', true)");
   await client.query(bodyAs(A));
+  if (AS_BEFORE) await client.query(bodyAs(B));
   await client.query("commit");
   await grant();
 

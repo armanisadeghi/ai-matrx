@@ -19,6 +19,7 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatYouTubeCount, formatYouTubeDuration } from "./formatters";
 import type { YouTubeVideoCandidate } from "./types";
 import { YouTubeResearchActions } from "./YouTubeResearchActions";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 
 export function YouTubeVideoPreviewContent({
   video,
@@ -127,7 +128,12 @@ export function YouTubeVideoPreviewContent({
   );
 }
 
-export function YouTubeVideoPreviewDialog({
+/**
+ * A discovered video's preview as the page's canvas tab (one per discovery
+ * page; picking another video renames the tab and brings it forward). The
+ * pane header carries the title, the close and "Open full page".
+ */
+export function YouTubeVideoPreviewPanel({
   video,
   onClose,
 }: {
@@ -135,37 +141,23 @@ export function YouTubeVideoPreviewDialog({
   onClose: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/85 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-label={video.title}
-      onMouseDown={(event) => {
-        if (event.currentTarget === event.target) onClose();
-      }}
+    <CanvasPagePanel
+      panelKey="youtube-video-preview"
+      title={video.title}
+      onClose={onClose}
+      headerActions={
+        <Link
+          href={marketingRoutes.youtubeVideo(video.video_id)}
+          className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground hover:text-foreground"
+        >
+          Open full page
+        </Link>
+      }
     >
-      <div className="max-h-[92dvh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-background text-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1015] dark:text-zinc-100">
-        <YouTubeVideoPreviewContent
-          video={video}
-          action={
-            <div className="flex shrink-0 flex-wrap justify-end gap-2">
-              <Button asChild variant="outline" className="rounded-xl">
-                <Link href={marketingRoutes.youtubeVideo(video.video_id)}>
-                  Open full page
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="rounded-xl border-border dark:border-white/10"
-              >
-                Close
-              </Button>
-            </div>
-          }
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <YouTubeVideoPreviewContent video={video} />
       </div>
-    </div>
+    </CanvasPagePanel>
   );
 }
 

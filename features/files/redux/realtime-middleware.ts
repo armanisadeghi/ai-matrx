@@ -87,7 +87,10 @@ import {
   isUserVisibleFileRow,
   isUserVisibleFolderPath,
 } from "@/features/files/utils/user-visible";
-import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
+import {
+  cachedVersion,
+  invalidate as invalidateBlobCache,
+} from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
   attachChildToFolder,
@@ -603,6 +606,10 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // the latest version. (We can't tell from the row alone whether
     // this version is the new "current" — but it's safer to drop on
     // any version-row insert than to keep showing old bytes.)
+    // The echo of this tab's own save is the exception: the save already
+    // cached exactly these bytes as this version, and dropping them would
+    // download what was just uploaded.
+    if (cachedVersion(fileId) === converted.versionNumber) return;
     void invalidateBlobCache(fileId);
     invalidateOfficeExtraction(fileId);
   }

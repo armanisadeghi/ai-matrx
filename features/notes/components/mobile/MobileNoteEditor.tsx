@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
 import dynamic from "next/dynamic";
 import { Eye } from "lucide-react";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
-import { setNoteLiveContent } from "../../utils/noteLiveContent";
+import { useNoteWorkingCopy, adoptNoteSource } from "../../hooks/useNoteWorkingCopy";
+import { noteWorkingCopy } from "../../utils/noteLiveContent";
 import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
@@ -26,9 +27,8 @@ import { useOptionalNotesInstanceId } from "../../context/NotesInstanceContext";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { isRichEditorMode, type EditorMode } from "../NoteEditorCore";
 import { useRememberNoteEditorMode } from "../../hooks/usePreferredDefaultEditorMode";
-import { updateNoteContent, updateNoteTags, updateNoteLabel } from "../../redux/slice";
+import { updateNoteTags, updateNoteLabel } from "../../redux/slice";
 import { saveNote } from "../../redux/thunks";
-import { getReduxSyncDelay } from "../../redux/notes.types";
 import {
   selectNoteById,
   selectNoteContent,
@@ -90,7 +90,6 @@ export default function MobileNoteEditor({
 }: MobileNoteEditorProps) {
   const noteId = note.id;
   const dispatch = useAppDispatch();
-  const store = useAppStore();
   const { copyNote, moveNote, moveNoteToNewFolder, setActiveNoteDirty } =
     useNotesRedux();
   const toast = useToastManager("notes");
@@ -127,10 +126,11 @@ export default function MobileNoteEditor({
   const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
   const editingActorId = useAppSelector((state) => state.userAuth.id);
 
-  const [localContent, setLocalContent] = useState(reduxContent);
+  // The body is the NOTE'S working copy, shared with every other view of
+  // this note and committed to Redux once per debounce (useNoteWorkingCopy).
+  const workingCopy = useNoteWorkingCopy(noteId, reduxContent);
+  const localContent = workingCopy.content;
   const localContentRef = useRef(localContent);
-  const lastReduxRef = useRef(reduxContent);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noteIdRef = useRef(noteId);
   const editorMountedRef = useRef(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -170,9 +170,9 @@ export default function MobileNoteEditor({
   // (begin lock → resolveNoteConflict → the reviewed-save coordinator), never
   // a resolve-then-`saveNote` shortcut of its own.
   const adoptResolvedContent = useCallback((content: string) => {
-    setLocalContent(content);
-    lastReduxRef.current = content;
-  }, []);
+    localContentRef.current = content;
+    workingCopy.reset(content);
+  }, [workingCopy]);
   const conflict = useNoteConflictChoreography({
     noteId,
     record,
@@ -202,60 +202,34 @@ export default function MobileNoteEditor({
   const [syncedNoteId, setSyncedNoteId] = useState(noteId);
   if (syncedNoteId !== noteId) {
     setSyncedNoteId(noteId);
-    setLocalContent(store.getState().notes?.notes?.[noteId]?.content ?? "");
     conflict.resetForNoteSwitch();
   }
 
-  // ── Redux -> local (realtime / remote edits) ────────────────────────
+  // ── Redux -> every view (realtime / remote edits / undo) ─────────────
+  // The working copy takes the record's new body unless words are still
+  // pending in some view of this note.
   useEffect(() => {
-    if (reduxContent === lastReduxRef.current) return;
-    // Don't clobber in-flight local keystrokes.
-    if (syncTimerRef.current) return;
-    lastReduxRef.current = reduxContent;
-    setLocalContent(reduxContent);
-    setNoteLiveContent(noteId, reduxContent);
+    adoptNoteSource(noteId, reduxContent);
   }, [reduxContent, noteId]);
-
-  // ── Debounced sync: local -> Redux (same delay table as desktop) ────
-  const syncToRedux = useCallback(
-    (content: string) => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      const delay = getReduxSyncDelay(content.length);
-      syncTimerRef.current = setTimeout(() => {
-        syncTimerRef.current = null;
-        lastReduxRef.current = content;
-        dispatch(updateNoteContent({ id: noteId, content }));
-      }, delay);
-    },
-    [dispatch, noteId],
-  );
 
   const handleChange = useCallback(
     (content: string) => {
       // The ref moves with the keystroke, not a render later: a mode switch's
       // flush (below) can run before the next render and must see this text.
       localContentRef.current = content;
-      setLocalContent(content);
-      setNoteLiveContent(noteId, content);
-      syncToRedux(content);
+      workingCopy.edit(content);
       // This note reopens in the mode the person typed in (plain stays plain).
       rememberEditedMode(noteId, effectiveMode);
     },
-    [noteId, syncToRedux, rememberEditedMode, effectiveMode],
+    [noteId, workingCopy, rememberEditedMode, effectiveMode],
   );
 
   const handleChangeFlush = useCallback(
     (content: string) => {
-      if (syncTimerRef.current) {
-        clearTimeout(syncTimerRef.current);
-        syncTimerRef.current = null;
-      }
-      setLocalContent(content);
-      setNoteLiveContent(noteId, content);
-      lastReduxRef.current = content;
-      dispatch(updateNoteContent({ id: noteId, content }));
+      localContentRef.current = content;
+      workingCopy.editNow(content);
     },
-    [dispatch, noteId],
+    [workingCopy],
   );
 
   /** The one editor's text now (pending keystrokes delivered), when it is the body. */
@@ -299,23 +273,20 @@ export default function MobileNoteEditor({
     [],
   );
 
+  // The words the one editor still held on unmount join the note's working
+  // copy; the copy commits them when its last view detaches (and keeps them
+  // for any other view of this note that is still open).
   useEffect(() => {
-    setNoteLiveContent(noteId, localContentRef.current);
     // A fresh note has not been edited in rich mode yet.
     richEditedRef.current = false;
     return () => {
-      setNoteLiveContent(noteId, null);
-      if (syncTimerRef.current) {
-        clearTimeout(syncTimerRef.current);
-        syncTimerRef.current = null;
-      }
-      const pending = unmountSnapshotRef.current ?? localContentRef.current;
-      if (pending !== lastReduxRef.current) {
-        lastReduxRef.current = pending;
-        dispatch(updateNoteContent({ id: noteId, content: pending }));
+      const snapshot = unmountSnapshotRef.current;
+      unmountSnapshotRef.current = null;
+      if (snapshot !== null && snapshot !== localContentRef.current) {
+        noteWorkingCopy.edit(noteId, snapshot, { commit: "now" });
       }
     };
-  }, [dispatch, noteId]);
+  }, [noteId]);
 
   // Leaving the one editor commits whatever it holds (it delivers its last
   // keystrokes as it unmounts; this pushes them to Redux at once).
@@ -324,9 +295,8 @@ export default function MobileNoteEditor({
     const previous = previousModeRef.current;
     previousModeRef.current = effectiveMode;
     if (previous === effectiveMode || !isRichEditorMode(previous)) return;
-    const pending = localContentRef.current;
-    if (pending !== lastReduxRef.current) handleChangeFlush(pending);
-  }, [effectiveMode, handleChangeFlush]);
+    workingCopy.flush();
+  }, [effectiveMode, workingCopy]);
 
   // Auto-grow plain textarea
   const growTextarea = useCallback(() => {

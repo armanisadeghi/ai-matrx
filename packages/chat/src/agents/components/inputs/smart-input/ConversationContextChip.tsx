@@ -62,9 +62,6 @@ import { useChatCanvasTab } from "../../../../host/canvas";
 import { CONVERSATION_CONTEXT_KIND } from "../../../../host/canvas-tabs";
 import type { ChatCanvasTab } from "../../../../host/contract";
 
-/** The pressed face — the same tokens as the rail's active pills. */
-const PRESSED_FACE = "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30 hover:bg-primary/20";
-
 /**
  * The conversation's context tab in the host canvas: pressed state plus the
  * press (whole view, or one value with `selected`). One hook for the chip and
@@ -316,7 +313,8 @@ export function ConversationContextChip({
             onOpenChange: (next: boolean) => {
               if (next) tab.toggle();
             },
-            className: tab.isVisible ? PRESSED_FACE : undefined,
+            // A real toggle: aria-pressed and the package's pressed face.
+            pressed: tab.isVisible,
           }
         : {})}
     />

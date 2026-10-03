@@ -71,12 +71,22 @@ describe("lib/knobs/ is server-safe: no file here imports react without opting i
         expect(offenders).toEqual([]);
     });
 
-    it("the client-only gate hook DOES import react, and DOES declare 'use client'", () => {
+    it("the client-only gate hook DOES reach react, and DOES declare 'use client'", () => {
         const file = path.join(KNOBS_DIR, "useUnifiedDataCampaignGate.ts");
         expect(fs.existsSync(file)).toBe(true);
         const source = fs.readFileSync(file, "utf8");
         expect(isUseClient(source)).toBe(true);
-        expect(importsReact(source)).toBe(true);
+        // Since lane REMOUNT-SAFETY (2026-10-02) the hook keeps its answer in the kept-answer
+        // store, which is where React is imported — itself a 'use client' module.
+        const keptAnswer = path.join(KNOBS_DIR, "..", "kept-answer", "keptAnswer.ts");
+        const viaKeptAnswer = /from\s+["']@\/lib\/kept-answer\/keptAnswer["']/.test(source);
+        if (viaKeptAnswer) {
+            const store = fs.readFileSync(keptAnswer, "utf8");
+            expect(isUseClient(store)).toBe(true);
+            expect(importsReact(store)).toBe(true);
+        } else {
+            expect(importsReact(source)).toBe(true);
+        }
     });
 
     it("RED: the guard catches a react import planted in a non-'use client' knob file", () => {

@@ -120,10 +120,10 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "ThreadResourcesButton / ThreadResourcesSheet + RoomResourcesSheet",
-      filePath: "features/war-room/components/thread/ThreadResourcesSheet.tsx",
+      name: "ThreadResourcesButton + the war-room-resources canvas tab",
+      filePath: "features/war-room/components/thread/ThreadResourcesButton.tsx",
       description:
-        "The 1-click resources surfaces: a paperclip+count button on EVERY thread header (grid tile + stage) opening the full resources view in a Sheet/Drawer, and the room-scope sibling RoomResourcesSheet launched from RoomHeader's '…' menu (room-wide attachments every thread's agent sees). Both render the canonical AssociationList (@ai-matrx/associations/react).",
+        "The 1-click resources surfaces: a paperclip+count button on EVERY thread header (grid tile + stage) toggling the thread's war-room-resources canvas tab, and the room-scope tab opened from RoomHeader's '…' menu (room-wide attachments every thread's agent sees). Both render the canonical AssociationList (@ai-matrx/associations/react).",
       tier: "internal",
     },
     {

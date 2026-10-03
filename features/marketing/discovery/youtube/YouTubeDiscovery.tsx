@@ -44,7 +44,7 @@ import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { YouTubeVideoPreviewDialog } from "./YouTubeVideoPreview";
+import { YouTubeVideoPreviewPanel } from "./YouTubeVideoPreview";
 import {
   formatYouTubeCount,
   formatYouTubeDate,
@@ -635,7 +635,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
       </div>
 
       {selected && (
-        <YouTubeVideoPreviewDialog
+        <YouTubeVideoPreviewPanel
           video={selected}
           onClose={() => setSelected(null)}
         />

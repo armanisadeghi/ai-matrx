@@ -41,6 +41,8 @@ import {
   HELD_WRITE_MARKER,
 } from "@/features/record-change-approvals/recordChangeApproval";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import type { RunSurfaceConfig } from "../surface/config";
+import type { WorkflowDefinitionLike } from "../trigger-points";
 
 export type NodeRunPhase =
   "running" | "settled" | "failed" | "skipped" | "retrying";
@@ -368,8 +370,23 @@ export interface WorkflowRunState {
   input: Record<string, unknown> | null;
 }
 
+/**
+ * What a surface needs to show one run: the run's workflow (id, name,
+ * definition) and its authored surface config (null = derive one). Read once
+ * per run and kept here, so every view of the run — a remounted or woken board
+ * tile, a second tile — paints at once instead of re-reading behind a skeleton.
+ */
+export interface RunSurfaceRecord {
+  definitionId: string;
+  name: string;
+  definition: WorkflowDefinitionLike;
+  config: RunSurfaceConfig | null;
+}
+
 export interface WorkflowRunsState {
   byRunId: Record<string, WorkflowRunState>;
+  /** runId → the workflow + surface its views render (`loadRunSurface`). */
+  surfaceByRunId: Record<string, RunSurfaceRecord>;
 }
 
 /** END-keeping tail cap — mirrors the backend heartbeat tail
@@ -386,7 +403,7 @@ export const SIGNALS_MAX = 50;
 /** Activity ring cap — beyond this the oldest entries are dropped. */
 export const ACTIVITY_MAX = 250;
 
-const initialState: WorkflowRunsState = { byRunId: {} };
+const initialState: WorkflowRunsState = { byRunId: {}, surfaceByRunId: {} };
 
 // ---------------------------------------------------------------------------
 // Pure helpers
@@ -1499,6 +1516,14 @@ const workflowRunsSlice = createSlice({
       }
     },
 
+    /** The workflow + surface a run's views render (read once per run). */
+    runSurfaceLoaded(
+      state,
+      action: PayloadAction<{ runId: string; surface: RunSurfaceRecord }>,
+    ) {
+      state.surfaceByRunId[action.payload.runId] = action.payload.surface;
+    },
+
     /** Monotonic — a lower/equal seq never rolls the cursor back. */
     setLastEventSeq(
       state,
@@ -1526,6 +1551,7 @@ export const {
   setTransportMode,
   refreshHeartbeatTails,
   setLastEventSeq,
+  runSurfaceLoaded,
 } = workflowRunsSlice.actions;
 
 export default workflowRunsSlice.reducer;

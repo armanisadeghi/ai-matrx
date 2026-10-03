@@ -93,6 +93,7 @@ jest.mock("@/components/ui/button", () => ({
 }));
 
 import { EntityCustomFields } from "../EntityCustomFields";
+import { forgetAllKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 
 describe("a record page's custom fields say why, and offer her own table", () => {
   let host: HTMLDivElement;
@@ -101,6 +102,8 @@ describe("a record page's custom fields say why, and offer her own table", () =>
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   });
   beforeEach(() => {
+    // The switch's answer is kept per organization for the session; each case is a new session.
+    forgetAllKeptAnswers();
     switchAnswer = { state: "on" };
     activeOrganization = ELM_STREET;
     dispatched.length = 0;

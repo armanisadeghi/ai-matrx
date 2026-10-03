@@ -37,7 +37,7 @@ import type {
 } from "../hooks/useContentPlanAi";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { CmsLink } from "../setup/readiness";
-import { AgentPayloadButton } from "./AgentPayloadSheet";
+import { AgentPayloadButton } from "./AgentPayloadView";
 import { ResearchTopicSelect } from "./ResearchTopicSelect";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

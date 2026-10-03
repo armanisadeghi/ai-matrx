@@ -17,14 +17,12 @@ import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
-  updateNoteContent,
   removeInstanceTab,
   markTabInteraction,
   setInstanceOutlineOpen,
   setNoteEditorMode,
   closeFindReplace,
 } from "../redux/slice";
-import { getReduxSyncDelay } from "../redux/notes.types";
 import {
   selectInstanceOutlineOpen,
   selectNoteById,
@@ -55,7 +53,7 @@ import {
 import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorCore";
 import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { getNoteLiveContent, setNoteLiveContent } from "../utils/noteLiveContent";
+import { useNoteWorkingCopy, adoptNoteSource } from "../hooks/useNoteWorkingCopy";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
@@ -219,10 +217,15 @@ export function NoteContentEditor({
     };
   }, []);
 
-  // ── Local content state — initialized from Redux, synced back on debounce
-  const [localContent, setLocalContent] = useState(reduxContent);
+  // ── The body this editor shows is the NOTE'S working copy — one per note,
+  // shared by every view of it (a board tile, the side panel, a split pane),
+  // committed to Redux once per debounce. Never component state: a second
+  // view would be a second buffer and a remount would drop what it held.
+  const workingCopy = useNoteWorkingCopy(noteId, reduxContent);
+  const localContent = workingCopy.content;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The record's last value this view saw — only to tell an outside change
+  // (realtime, undo) from this note's own commit, for the recent-change flash.
   const lastReduxRef = useRef(reduxContent);
   const noteIdRef = useRef(noteId);
   const localContentRef = useRef(localContent);
@@ -239,9 +242,10 @@ export function NoteContentEditor({
 
   // THE ONE conflict choreography — the same hook the phone editor consumes.
   const adoptResolvedContent = useCallback((content: string) => {
-    setLocalContent(content);
+    workingCopy.reset(content);
+    localContentRef.current = content;
     lastReduxRef.current = content;
-  }, []);
+  }, [workingCopy]);
   const conflict = useNoteConflictChoreography({
     noteId,
     record: noteExists,
@@ -289,7 +293,6 @@ export function NoteContentEditor({
   const [renderedNoteId, setRenderedNoteId] = useState(noteId);
   if (noteId !== renderedNoteId) {
     setRenderedNoteId(noteId);
-    setLocalContent(reduxContent);
     conflict.resetForNoteSwitch();
     setResetGen((n) => n + 1);
     // The recent-change flash is per-note — its range is meaningless once
@@ -300,8 +303,8 @@ export function NoteContentEditor({
     if (noteIdRef.current === noteId) return;
     noteIdRef.current = noteId;
     lastReduxRef.current = reduxContent;
-    setNoteLiveContent(noteId, reduxContent);
-  }, [noteId, reduxContent]);
+    localContentRef.current = localContent;
+  }, [noteId, reduxContent, localContent]);
 
   // ── External Redux updates (realtime, undo, fetch completion).
   // Runs in an effect, not during render, to avoid cascading set-state during
@@ -316,20 +319,20 @@ export function NoteContentEditor({
   useEffect(() => {
     if (reduxContent === lastReduxRef.current) return;
 
-    // Self-echo: our own dispatch came back through the selector. Just
-    // update the high-water mark; no state changes, no remount.
+    // Self-echo: this note's own commit came back through the selector (from
+    // this view or another view of the same note). Just update the
+    // high-water mark; no state changes, no remount.
     if (reduxContent === localContentRef.current) {
       lastReduxRef.current = reduxContent;
       return;
     }
 
-    // Don't clobber in-flight local edits.
-    if (syncTimerRef.current) return;
+    // Don't clobber words still pending in ANY view of this note.
+    if (!adoptNoteSource(noteId, reduxContent) && workingCopy.hasPending()) return;
 
     const previous = localContentRef.current;
     lastReduxRef.current = reduxContent;
-    setLocalContent(reduxContent);
-    setNoteLiveContent(noteId, reduxContent);
+    localContentRef.current = reduxContent;
 
     // Skip the flash for trivial / massive changes:
     // - Initial load (previous was empty) would highlight the entire doc.
@@ -365,31 +368,17 @@ export function NoteContentEditor({
     };
   }, []);
 
-  // ── Debounced sync: local -> Redux ─────────────────────────────────
-  const syncToRedux = useCallback(
-    (content: string) => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-
-      const delay = getReduxSyncDelay(content.length);
-      syncTimerRef.current = setTimeout(() => {
-        syncTimerRef.current = null;
-        lastReduxRef.current = content;
-        dispatch(updateNoteContent({ id: noteId, content }));
-      }, delay);
-    },
-    [dispatch, noteId],
-  );
-
+  // ── A keystroke: the note's working copy (every view updates now); its ONE
+  // debounced commit to Redux uses the same adaptive delay table as before.
   const handleChange = useCallback(
     (content: string) => {
-      setLocalContent(content);
-      setNoteLiveContent(noteId, content);
-      syncToRedux(content);
+      localContentRef.current = content;
+      workingCopy.edit(content);
       // The person typed here: this note reopens in this mode (plain notes stay
       // plain). Writes only when the remembered mode changes.
       rememberEditedMode(noteId, effectiveEditorMode);
     },
-    [noteId, syncToRedux, rememberEditedMode, effectiveEditorMode],
+    [noteId, workingCopy, rememberEditedMode, effectiveEditorMode],
   );
 
   // ── Flush sync: local -> Redux immediately (no debounce) ───────────
@@ -399,37 +388,16 @@ export function NoteContentEditor({
   // user just committed.
   const handleChangeFlush = useCallback(
     (content: string) => {
-      if (syncTimerRef.current) {
-        clearTimeout(syncTimerRef.current);
-        syncTimerRef.current = null;
-      }
-      setLocalContent(content);
-      setNoteLiveContent(noteId, content);
+      localContentRef.current = content;
       lastReduxRef.current = content;
-      dispatch(updateNoteContent({ id: noteId, content }));
+      workingCopy.editNow(content);
     },
-    [dispatch, noteId],
+    [workingCopy],
   );
 
-  // ── Cleanup timer on unmount ──────────────────────────────────────
-  // If a debounced sync is still pending when the component unmounts
-  // (tab close, navigation, instance unregister), flush it synchronously
-  // so the user's in-flight keystrokes aren't silently dropped.
-  useEffect(() => {
-    setNoteLiveContent(noteId, localContentRef.current);
-    return () => {
-      setNoteLiveContent(noteId, null);
-      if (syncTimerRef.current) {
-        clearTimeout(syncTimerRef.current);
-        syncTimerRef.current = null;
-        const pending = localContentRef.current;
-        if (pending !== lastReduxRef.current) {
-          lastReduxRef.current = pending;
-          dispatch(updateNoteContent({ id: noteId, content: pending }));
-        }
-      }
-    };
-  }, [dispatch, noteId]);
+  // Unmount needs nothing here: the working copy commits whatever this view
+  // held when its LAST view detaches (tab close, navigation, a board tile
+  // falling asleep), and keeps it for any other view still showing the note.
 
   // ── The `matrx-user/notes` surface runtime — read AND write half ──────
   // ONE hook shared with the phone editor (MobileNoteEditor), so a run from
@@ -462,16 +430,16 @@ export function NoteContentEditor({
   const { canUndo, canRedo, undo, redo, undoHint, redoHint } = useNoteUndoRedo({
     noteId,
     scope: () => editorRootRef.current,
+    editorHistoryDepth: () =>
+      richMode ? (richEditorRef.current?.historyDepth() ?? null) : null,
   });
 
   // ── Context menu handlers ─────────────────────────────────────────
   const handleSave = useCallback(() => {
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = null;
-    lastReduxRef.current = localContent;
-    dispatch(updateNoteContent({ id: noteId, content: localContent }));
+    workingCopy.flush();
+    lastReduxRef.current = localContentRef.current;
     dispatch(saveNote(noteId));
-  }, [dispatch, noteId, localContent]);
+  }, [dispatch, noteId, workingCopy]);
 
   const handleDuplicate = useCallback(() => {
     dispatch(copyNote({ noteId, instanceId }));

@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { AnchorBuildError, buildTextAnchor } from "./anchor";
-import { projectSource, rangeToSource, sourceOffsetAtPoint, type SourceProjection } from "./projection";
+import { projectSource, projectionIsCurrent, rangeToSource, sourceOffsetAtPoint, type SourceProjection } from "./projection";
 import { paintCss, paintScopeClass, useSidecarPaint } from "./useSidecarPaint";
 import { useAnnotationSidecar, type AnnotationSidecarApi } from "./useAnnotationSidecar";
 import { MentionComposer } from "./MentionComposer";
@@ -179,6 +179,14 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
   useSidecarPaint(root, source.body, api.state.items, instance, activeKey, (p) => {
     projection.current = p;
   });
+  /** The map of the DOM as it is now (the observer re-projects only after a debounce). */
+  const liveProjection = (): SourceProjection | null => {
+    if (!root) return null;
+    if (!projection.current || !projectionIsCurrent(projection.current, root)) {
+      projection.current = projectSource(root, source.body);
+    }
+    return projection.current;
+  };
   // The instance's highlight rules apply only inside this root (paintScopeClass).
   useEffect(() => {
     if (!root) return;
@@ -192,8 +200,9 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
     ctx.registerReveal((key) => {
       const item = api.state.items.find((i) => i.key === key);
       const res = item?.resolution;
-      if (!root || !projection.current || !res || res.start16 == null) return;
-      const node = projection.current.nodes.find(
+      const current = liveProjection();
+      if (!current || !res || res.start16 == null) return;
+      const node = current.nodes.find(
         (m) => m.sourceStart + m.length > res.start16! && m.sourceStart < (res.end16 ?? res.start16! + 1),
       );
       node?.node.parentElement?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -208,8 +217,9 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
     const range = sel.getRangeAt(0);
     if (!root.contains(range.commonAncestorContainer)) return null;
-    if (!projection.current) projection.current = projectSource(root, source.body);
-    const mapped = rangeToSource(projection.current, range);
+    const current = liveProjection();
+    if (!current) return null;
+    const mapped = rangeToSource(current, range);
     // A selection that cannot be pinned is said through the app's ONE toast
     // (which carries the error menu itself) — never a private floating notice.
     const refuse = (message: string) => {
@@ -291,8 +301,9 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
     onClick.current = (e: MouseEvent) => {
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed) return;
-      if (!projection.current) return;
-      const at = sourceOffsetAtPoint(projection.current, document, e.clientX, e.clientY);
+      const current = liveProjection();
+      if (!current) return;
+      const at = sourceOffsetAtPoint(current, document, e.clientX, e.clientY);
       if (at == null) return;
       const hit = api.state.items.find(
         (i) => i.resolution?.start16 != null && i.resolution.start16 <= at && at < (i.resolution.end16 ?? 0),

@@ -32,7 +32,7 @@ import { ThreadTabSelect } from "./ThreadTabSelect";
 import { ThreadTabContent } from "./ThreadTabContent";
 import { ThreadMetricChips } from "./ThreadMetricChips";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
-import { ThreadResourcesButton } from "./ThreadResourcesSheet";
+import { ThreadResourcesButton } from "./ThreadResourcesButton";
 import { ThreadCopyButtons } from "../shared/ThreadCopyButtons";
 import { useThreadActions } from "@/features/war-room/hooks/useThreadActions";
 import { useThreadMetrics } from "@/features/war-room/hooks/useThreadMetrics";

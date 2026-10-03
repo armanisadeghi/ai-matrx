@@ -29,6 +29,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DiffEditor } from "@monaco-editor/react";
+import { useEffectsAttached } from "@/hooks/use-is-mounted";
 import { AlertTriangle, FileText, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
@@ -48,6 +49,8 @@ interface TripleDiffViewProps {
 
 export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
   const isDark = useMonacoTheme();
+  // DiffEditor never re-creates itself after <Activity> hides it (blank pane) — mount it only while attached.
+  const attached = useEffectsAttached();
   const { filesystem } = useCodeWorkspace();
 
   const parsed = useMemo(() => parseHistoryTripleTabId(tab.id), [tab.id]);
@@ -190,26 +193,28 @@ export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
           tone="emerald"
         />
         <div className="min-h-0 flex-1">
-          <DiffEditor
-            height="100%"
-            language={tab.language}
-            theme={isDark ? "vs-dark" : "vs"}
-            original={snapshot.beforeContent}
-            modified={snapshot.afterContent}
-            options={{
-              renderSideBySide: false,
-              readOnly: true,
-              originalEditable: false,
-              renderValidationDecorations: "off",
-              minimap: { enabled: false },
-              fontSize: 13,
-              lineNumbers: "on",
-              renderWhitespace: "selection",
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              diffWordWrap: "off",
-            }}
-          />
+          {attached ? (
+            <DiffEditor
+              height="100%"
+              language={tab.language}
+              theme={isDark ? "vs-dark" : "vs"}
+              original={snapshot.beforeContent}
+              modified={snapshot.afterContent}
+              options={{
+                renderSideBySide: false,
+                readOnly: true,
+                originalEditable: false,
+                renderValidationDecorations: "off",
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineNumbers: "on",
+                renderWhitespace: "selection",
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                diffWordWrap: "off",
+              }}
+            />
+          ) : null}
         </div>
 
         {/* With updates ↔ Modifications since */}
@@ -219,26 +224,28 @@ export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
           tone="blue"
         />
         <div className="min-h-0 flex-1">
-          <DiffEditor
-            height="100%"
-            language={tab.language}
-            theme={isDark ? "vs-dark" : "vs"}
-            original={snapshot.afterContent}
-            modified={currentContent}
-            options={{
-              renderSideBySide: false,
-              readOnly: true,
-              originalEditable: false,
-              renderValidationDecorations: "off",
-              minimap: { enabled: false },
-              fontSize: 13,
-              lineNumbers: "on",
-              renderWhitespace: "selection",
-              scrollBeyondLastLine: false,
-              automaticLayout: true,
-              diffWordWrap: "off",
-            }}
-          />
+          {attached ? (
+            <DiffEditor
+              height="100%"
+              language={tab.language}
+              theme={isDark ? "vs-dark" : "vs"}
+              original={snapshot.afterContent}
+              modified={currentContent}
+              options={{
+                renderSideBySide: false,
+                readOnly: true,
+                originalEditable: false,
+                renderValidationDecorations: "off",
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineNumbers: "on",
+                renderWhitespace: "selection",
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                diffWordWrap: "off",
+              }}
+            />
+          ) : null}
         </div>
       </div>
     </div>

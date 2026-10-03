@@ -15,7 +15,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Copy, ExternalLink, X } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,6 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface KgGraphSidePanelProps {
   node: GraphNode;
-  onClose: () => void;
 }
 
 // ── Evidence model ──────────────────────────────────────────────────────────
@@ -213,7 +212,7 @@ function sourceLabel(kind: string | null): string {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
+export function KgGraphSidePanel({ node }: KgGraphSidePanelProps) {
   const [mentions, setMentions] = useState<MentionRow[]>([]);
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -288,41 +287,26 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
       .catch(() => toast.error("Couldn't copy passage"));
   };
 
+  // The pane header (the page's canvas tab) carries the node's name and the close.
   return (
-    <div className="flex h-full w-full flex-col border-l border-border bg-card">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 border-b border-border p-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ backgroundColor: colorForKind(node.kind) }}
-            />
-            <span className="truncate text-sm font-semibold text-foreground">
-              {node.name}
-            </span>
-          </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" className="text-[10px]">
-              {humanizeIdentifier(node.kind)}
-            </Badge>
-            <span className="text-[11px] text-muted-foreground">
-              {status === "ready"
-                ? `${occurrenceCount} occurrence${occurrenceCount === 1 ? "" : "s"} · ${groups.length} source${groups.length === 1 ? "" : "s"}`
-                : `${node.mention_count} mention${node.mention_count === 1 ? "" : "s"}`}
-              {node.confidence_avg !== null
-                ? ` · ${(node.confidence_avg * 100).toFixed(0)}% avg conf`
-                : ""}
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label="Close panel"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <div className="flex h-full w-full flex-col bg-card">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-border p-3">
+        <span
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ backgroundColor: colorForKind(node.kind) }}
+          aria-hidden
+        />
+        <Badge variant="secondary" className="text-[10px]">
+          {humanizeIdentifier(node.kind)}
+        </Badge>
+        <span className="text-[11px] text-muted-foreground">
+          {status === "ready"
+            ? `${occurrenceCount} occurrence${occurrenceCount === 1 ? "" : "s"} · ${groups.length} source${groups.length === 1 ? "" : "s"}`
+            : `${node.mention_count} mention${node.mention_count === 1 ? "" : "s"}`}
+          {node.confidence_avg !== null
+            ? ` · ${(node.confidence_avg * 100).toFixed(0)}% avg conf`
+            : ""}
+        </span>
       </div>
 
       <div className="border-b border-border px-3 py-2 text-xs font-medium text-muted-foreground">

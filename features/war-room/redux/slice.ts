@@ -351,21 +351,6 @@ const warRoomSlice = createSlice({
     roomRecordingCleared(state) {
       state.audioRecording = null;
     },
-
-    clearRoomThreads(state, action: PayloadAction<string>) {
-      const roomId = action.payload;
-      const ids = state.threadIdsByRoom[roomId] ?? [];
-      for (const id of ids) {
-        delete state.assignmentsByContainer[containerKey("thread", id)];
-        delete state.assignmentsLoadedKeys[containerKey("thread", id)];
-        delete state.assignmentsErrorByKey[containerKey("thread", id)];
-      }
-      delete state.assignmentsByContainer[containerKey("room", roomId)];
-      delete state.assignmentsLoadedKeys[containerKey("room", roomId)];
-      delete state.assignmentsErrorByKey[containerKey("room", roomId)];
-      delete state.threadIdsByRoom[roomId];
-      delete state.threadsStatusByRoom[roomId];
-    },
   },
 });
 
@@ -401,7 +386,6 @@ export const {
   roomRecordingStarted,
   roomRecordingFinalizing,
   roomRecordingCleared,
-  clearRoomThreads,
 } = warRoomSlice.actions;
 
 export default warRoomSlice.reducer;

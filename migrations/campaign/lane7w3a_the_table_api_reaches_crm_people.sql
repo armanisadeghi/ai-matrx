@@ -1,12 +1,19 @@
--- chair-step: this file GRANTS EXECUTE to authenticated on five NEW functions
--- (custom.entity_row_write, platform.api_tables, platform.api_facts, platform.api_field_orgs,
--- platform.api_sample_rows), each declared in platform.client_callable_door first. It replaces
--- four live bodies (platform._drill_resolve, platform._drill_compile, platform.drill_rows,
--- platform.drill_describe), creates platform.api_reach_census, and seeds
--- three knobs (table_api/standard_tables — the per-token API facts, party reached —,
--- table_api/exact_count_max, table_api/statement_timeout_ms). NO table DDL: no ALTER, no strong
--- lock on any table (chair ruling 2026-10-02: the facts are a knob, not registry columns). It
--- revokes nothing that existed. Its inverse puts the four bodies back byte for byte.
+-- chair-step: this file creates five functions and replaces four live bodies
+-- (platform._drill_resolve, platform._drill_compile, platform.drill_rows, platform.drill_describe),
+-- seeds three knobs (table_api/standard_tables — the per-token API facts, party reached —,
+-- table_api/exact_count_max, table_api/statement_timeout_ms) and four door rows. NO table DDL:
+-- no ALTER, no strong lock on any table. It revokes nothing that existed.
+-- GRANTS IT CAUSES (EXECUTE; measured on the clone after apply — PUBLIC and anon hold none):
+--   custom.entity_row_write(uuid,text,uuid,jsonb,jsonb,integer,boolean)  authenticated (explicit)
+--   platform.api_tables()          SECURITY DEFINER  authenticated (explicit)
+--   platform.api_facts(text)       SECURITY DEFINER  authenticated (explicit)
+--   platform.api_sample_rows(text) INVOKER           authenticated (explicit); dashboard_user,
+--                                                    service_role, svc_seo (platform's default
+--                                                    function grants, applied at creation)
+--   platform.api_reach_census()    INVOKER           dashboard_user, authenticated, service_role,
+--                                                    svc_seo (the same defaults; PUBLIC revoked)
+-- The four replaced bodies keep their grants. Each client-reached function is declared in
+-- platform.client_callable_door before its grant. Its inverse puts the four bodies back byte for byte.
 -- lock: platform
 -- based-on: platform._drill_resolve(uuid, text) 5a9327b2ba6e7011f76429fbe0b7fefb8e9de301ed894e23b20d9eb39385ff02
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 4dae04a05458dc3ec08a714ae1c3f8462b132467f93669d1438313edcae8173e
@@ -185,40 +192,14 @@ GRANT EXECUTE ON FUNCTION platform.api_tables() TO authenticated;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
--- A ROW'S OWN ORGANIZATION'S FIELDS. Two halves, so no access rule is ever copied:
---   platform.api_field_orgs (DEFINER)   the OTHER organizations that keep fields on a token
---                                       (ids only — custom is closed to clients), and its table
---   platform.api_sample_rows (INVOKER)  one row per such organization that her OWN SELECT
---                                       returns: the table's row rules decide, as her.
--- platform.drill_describe / drill_rows hand the ids to platform._drill_resolve, which trusts an
--- id only after iam.has_access says she may view it.
+-- A ROW'S OWN ORGANIZATION'S FIELDS, without a second copy of the access rules and without
+-- naming an organization she cannot reach. platform.api_sample_rows (INVOKER) walks the
+-- table's organization index as HER — the row rules decide — and returns one row she can read
+-- per organization other than her own. platform.drill_describe / drill_rows hand those ids to
+-- platform._drill_resolve, which trusts an id only after iam.has_access says she may view it,
+-- and reads the field definitions of those rows' organizations. Nothing here names an
+-- organization she has no row in.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION platform.api_field_orgs(p_token text)
- RETURNS TABLE(schema_name text, table_name text, organization_ids uuid[])
- LANGUAGE sql
- STABLE SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-  select e.schema_name, e.table_name,
-         coalesce((select array_agg(distinct f.organization_id)
-                     from custom.record f
-                    where f.table_id = custom.field_kernel_id() and f.deleted_at is null
-                      and f.data ->> 'table_token' = e.token
-                      and not (f.organization_id in (select iam.my_orgs()))), '{}'::uuid[])
-    from platform.entity_types e
-   where e.token = p_token and e.is_active and e.custom_fields_enabled;
-$function$;
-
-INSERT INTO platform.client_callable_door
-  (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
-SELECT 'platform', 'api_field_orgs', 'p_token text',
-       'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
-       'SECURITY DEFINER over custom.record field definitions: the ids of the organizations other than the caller''s own that keep custom fields on one standard table, and that table''s name. Organization ids only — no field, label or row data. Read by platform.api_sample_rows.',
-       true, array['text'::regtype]::oid[]
-WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'platform' AND function_name = 'api_field_orgs');
-
-GRANT EXECUTE ON FUNCTION platform.api_field_orgs(text) TO authenticated;
-
 CREATE OR REPLACE FUNCTION platform.api_sample_rows(p_token text)
  RETURNS uuid[]
  LANGUAGE plpgsql
@@ -226,17 +207,28 @@ CREATE OR REPLACE FUNCTION platform.api_sample_rows(p_token text)
  SET search_path TO 'pg_catalog'
 AS $function$
 declare
-  v record;
+  t     record;
   v_ids uuid[];
 begin
-  select * into v from platform.api_field_orgs(p_token);
-  if v.schema_name is null or cardinality(v.organization_ids) = 0 then
+  select * into t from custom.entity_table(p_token);
+  if not t.has_organization then
     return '{}'::uuid[];
   end if;
-  -- AS THE SEAT: the table's own row rules decide which row, if any, she sees per organization
-  execute format('select coalesce(array_agg(x) filter (where x is not null), ''{}'') from unnest($1) o(org) cross join lateral (select t.id from %I.%I t where t.organization_id = o.org limit 1) s(x)',
-                 v.schema_name, v.table_name)
-    into v_ids using v.organization_ids;
+  -- AS THE SEAT, one step per organization along the organization index (a loose index scan):
+  -- each step reads the next organization after the last that has a row she can read.
+  execute format($q$
+    with recursive o(org, id) as (
+      (select t.organization_id, t.id from %1$I.%2$I t
+        where t.organization_id is not null and not (t.organization_id in (select iam.my_orgs()))
+        order by t.organization_id limit 1)
+      union all
+      select n.organization_id, n.id from o
+       cross join lateral (select t.organization_id, t.id from %1$I.%2$I t
+                            where t.organization_id > o.org and not (t.organization_id in (select iam.my_orgs()))
+                            order by t.organization_id limit 1) n
+    )
+    select coalesce(array_agg(id), '{}') from (select id from o limit 200) s$q$, t.schema_name, t.table_name)
+    into v_ids;
   return v_ids;
 end
 $function$;
@@ -245,7 +237,7 @@ INSERT INTO platform.client_callable_door
   (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
 SELECT 'platform', 'api_sample_rows', 'p_token text',
        'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
-       'SECURITY INVOKER: one row id per other organization keeping fields on a standard table, read as the caller under the table''s own row rules. Returns ids of rows the caller can already read.',
+       'SECURITY INVOKER: one row id per organization other than the caller''s own, read as the caller under the table''s own row rules (a loose index scan). Returns ids of rows the caller can already read.',
        true, array['text'::regtype]::oid[]
 WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'platform' AND function_name = 'api_sample_rows');
 
@@ -312,6 +304,7 @@ declare
   v_rows   uuid[];
   v_vis    uuid[];
   v_hidden text[];
+  v_api_fast boolean := coalesce(current_setting('mx.api_fast', true), '') = '1';
 begin
   if p_token is null or p_token !~ '^[a-z][a-z0-9_.]{0,62}$' then
     raise exception 'There is no table or definition called "%".', coalesce(p_token, '')
@@ -386,6 +379,9 @@ begin
                             else initcap(regexp_replace(regexp_replace(a.col, '_id$', ''), '_', ' ', 'g')) end;
       v_labels := v_labels || jsonb_build_object(a.col, v_label);
       v_cols := v_cols || jsonb_build_object(a.col, v_col || jsonb_build_object('alias', 't'));
+      -- LANE7-W3A: the Table API asks for columns, not for Dimensions and Measures — the
+      -- per-column statistics, CHECK-list and foreign-key reads below are the drill page's
+      continue when v_api_fast;
 
       if v_col ->> 'cat' = 'uuid' then
         v_fk := platform._drill_fk(v_et.schema_name, v_et.table_name, a.col, null);
@@ -689,8 +685,9 @@ begin
                             where i.indrelid = format('%I.%I', v_et.schema_name, v_et.table_name)::regclass
                               and i.indkey[0] = (select att.attnum from pg_attribute att
                                                   where att.attrelid = i.indrelid and att.attname = a.col)),
-        'choices', (select jsonb_agg(x ->> 'value') from jsonb_array_elements(
-                      (select y -> 'choices' from jsonb_array_elements(v_dims) y where y ->> 'key' = a.col)) x))));
+        'choices', case when v_col ->> 'cat' = 'enum'
+                        then (select jsonb_agg(en.enumlabel order by en.enumsortorder) from pg_enum en
+                               where en.enumtypid = (v_col ->> 'type')::regtype) end)));
     end loop;
     if coalesce(v_reg.custom_fields_enabled, false) and coalesce((v_has ->> 'custom_fields')::boolean, false)
        and coalesce((v_has ->> 'organization_id')::boolean, false) then
@@ -2006,7 +2003,10 @@ begin
   perform custom.assert_entity_door(p_organization_id, 'platform.drill_rows');
   -- LANE7-W3A: rows she can read in other organizations that keep fields on this table, found
   -- by her own SELECT, so their organizations' fields describe them (platform._drill_resolve)
-  if p_source ->> 'kind' = 'entity' then
+  -- (the Table API names itself with "api": true; a drill page's question is untouched)
+  perform set_config('mx.api_fast', case when p_source ->> 'api' = 'true' then '1' else '' end, true);
+  perform set_config('mx.api_rows', '', true);
+  if p_source ->> 'kind' = 'entity' and p_source ->> 'api' = 'true' then
     perform set_config('mx.api_rows', coalesce(platform.api_sample_rows(p_source ->> 'token'), '{}')::text, true);
   end if;
   v_plan := platform._drill_plan(p_organization_id, p_source, p_question, 'rows');
@@ -2080,7 +2080,10 @@ declare
 begin
   perform custom.assert_entity_door(p_organization_id, 'platform.drill_describe');
   -- LANE7-W3A: as in platform.drill_rows — the rows she reads elsewhere name their fields
-  if p_source ->> 'kind' = 'entity' then
+  -- (the Table API names itself with "api": true; a drill page's question is untouched)
+  perform set_config('mx.api_fast', case when p_source ->> 'api' = 'true' then '1' else '' end, true);
+  perform set_config('mx.api_rows', '', true);
+  if p_source ->> 'kind' = 'entity' and p_source ->> 'api' = 'true' then
     perform set_config('mx.api_rows', coalesce(platform.api_sample_rows(p_source ->> 'token'), '{}')::text, true);
   end if;
   v := platform._drill_plan(p_organization_id, p_source, null, 'describe');

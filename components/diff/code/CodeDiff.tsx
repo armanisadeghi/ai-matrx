@@ -16,6 +16,7 @@
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import dynamic from "next/dynamic";
 import type { DiffOnMount } from "@monaco-editor/react";
+import { useEffectsAttached } from "@/hooks/use-is-mounted";
 import { Skeleton } from "@ai-matrx/design-system";
 import { MONACO_DIFF_EDITOR_OPTIONS } from "@ai-matrx/diff/react";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,8 @@ export function CodeDiff({
 }: CodeDiffProps) {
   const docDark = useDocumentDarkMode();
   const isDark = theme ? theme === "dark" : docDark;
+  // DiffEditor never re-creates itself after <Activity> hides it (blank pane) — mount it only while attached.
+  const attached = useEffectsAttached();
 
   return (
     // NOTE: Monaco uses height="100%", so a callsite must give this a definite
@@ -87,21 +90,23 @@ export function CodeDiff({
         </div>
       )}
       <div className="flex-1 min-h-0">
-        <MonacoDiffEditor
-          original={original}
-          modified={modified}
-          language={language}
-          theme={isDark ? "vs-dark" : "vs"}
-          onMount={onMount}
-          height="100%"
-          options={{
-            // Tuning is package-owned; only the per-render choices are here.
-            ...MONACO_DIFF_EDITOR_OPTIONS,
-            renderSideBySide: view === "split",
-            readOnly,
-            wordWrap: wordWrap ? "on" : "off",
-          }}
-        />
+        {attached ? (
+          <MonacoDiffEditor
+            original={original}
+            modified={modified}
+            language={language}
+            theme={isDark ? "vs-dark" : "vs"}
+            onMount={onMount}
+            height="100%"
+            options={{
+              // Tuning is package-owned; only the per-render choices are here.
+              ...MONACO_DIFF_EDITOR_OPTIONS,
+              renderSideBySide: view === "split",
+              readOnly,
+              wordWrap: wordWrap ? "on" : "off",
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

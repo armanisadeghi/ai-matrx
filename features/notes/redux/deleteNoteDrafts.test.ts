@@ -7,7 +7,14 @@
 import { deleteNote, noteHasUnsavedEdits } from "./thunks";
 import { supabase } from "@/utils/supabase/client";
 import { NOTE_DELETED_DRAFT_REASON, captureNoteDraftFor } from "../utils/notesDrafts";
-import { setNoteLiveContent } from "../utils/noteLiveContent";
+import { holdNoteWorkingCopy, noteWorkingCopy } from "../utils/noteLiveContent";
+
+let releaseView: (() => void) | null = null;
+/** An editor view typing `content` into the note's working copy (not yet committed). */
+function typeIntoView(noteId: string, content: string) {
+  releaseView = holdNoteWorkingCopy(noteId, jest.fn());
+  noteWorkingCopy.edit(noteId, content);
+}
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { auth: { getSession: jest.fn() }, schema: jest.fn() },
@@ -54,7 +61,10 @@ async function runDelete(record: Record_) {
 describe("deleteNote and unsaved edits", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setNoteLiveContent("note-1", null);
+  });
+  afterEach(() => {
+    releaseView?.();
+    releaseView = null;
   });
 
   it("captures the draft BEFORE the record is removed", async () => {
@@ -78,7 +88,7 @@ describe("deleteNote and unsaved edits", () => {
   });
 
   it("captures text that exists ONLY in the editor's pre-debounce buffer", async () => {
-    setNoteLiveContent("note-1", "typed half a second ago");
+    typeIntoView("note-1", "typed half a second ago");
 
     await runDelete({ id: "note-1", content: "saved text", _dirty: false });
 
@@ -105,7 +115,7 @@ describe("deleteNote and unsaved edits", () => {
   it("noteHasUnsavedEdits reads Redux AND the live buffer", () => {
     expect(noteHasUnsavedEdits({ id: "note-1", _dirty: true, content: "x" })).toBe(true);
     expect(noteHasUnsavedEdits({ id: "note-1", _dirty: false, content: "x" })).toBe(false);
-    setNoteLiveContent("note-1", "x plus one more word");
+    typeIntoView("note-1", "x plus one more word");
     expect(noteHasUnsavedEdits({ id: "note-1", _dirty: false, content: "x" })).toBe(true);
     expect(noteHasUnsavedEdits(undefined)).toBe(false);
   });

@@ -6,32 +6,45 @@
  * canvas tab (a preview's Edit action) — no Sheet/Dialog wrapper; sized to
  * its parent.
  *
- * Lifecycle:
- *   - Loads bytes via `useFileBlob` → `text()` → Monaco model.
- *   - Edits track `isDirty`. Save re-uploads under the same name + parent,
- *     producing a new version row server-side. Cmd/Ctrl+S triggers save without leaving Monaco.
- *   - Flush on unmount, on switching to another file, and on `pagehide`
- *     (only when dirty + no in-flight error) so closing a tile, switching
- *     tabs or leaving the page never drops the last typed text. The flush
- *     reads the LATEST text through a ref — an effect closure keyed on
- *     `fileId` holds the text of the render that created it (null, before
- *     the bytes loaded), which silently skipped every unmount save.
+ * It is a VIEW of the file's one working copy in the store
+ * (`CloudFilesState.workingCopies`, `useFileWorkingCopy`): the text, the
+ * dirty state, the saving/saved/error state all live there, keyed by file
+ * id. So any number of views of one file (two board tiles, a tile and the
+ * Files page) edit one copy, and a view that is hidden and shown (a sleeping
+ * board tile — React `<Activity>`), remounted, or reopened shows exactly
+ * what was typed. Monaco's undo history survives too: the editor keeps its
+ * model (`keepModel`), keyed by the file's path, and every view shares it.
+ *
+ * Saving: the Save button and Cmd/Ctrl+S save the copy as the file's next
+ * version (`saveFileWorkingCopy`, the one save path). Leaving — hide,
+ * unmount, switching file, `pagehide` — saves an unsaved copy once (two
+ * views flushing at once still make one save), and `pagehide` also keeps the
+ * unsaved text for a reload of this tab.
  */
 
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { CheckCircle2, Loader2, RotateCcw, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { useFileBlob } from "@/features/files/hooks/useFileBlob";
-import { saveFileNewVersion } from "@/features/files/redux/thunks";
-import { extractErrorMessage } from "@/utils/errors";
-import { toast } from "@/lib/toast";
+import { useFileWorkingCopy } from "@/features/files/hooks/useFileWorkingCopy";
+import {
+  workingCopyDiscarded,
+  workingCopyEdited,
+} from "@/features/files/redux/slice";
+import {
+  clearFileDraft,
+  saveFileWorkingCopy,
+  storeFileDraft,
+} from "@/features/files/redux/working-copy";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
+import {
+  useFileViewerControls,
+  type FileViewerControlsApi,
+} from "@/features/files/components/surfaces/FileViewerControlsContext";
 import type { StandaloneCodeEditor } from "@/features/code/editor/MonacoEditor";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -82,50 +95,24 @@ const LANGUAGE_BY_EXT: Record<string, string> = {
   svg: "xml",
 };
 
-type FileRecord = NonNullable<ReturnType<typeof selectFileById>>;
-
-/** What an unmount / pagehide flush needs: the latest committed editor state. */
-interface PendingEdit {
-  file: FileRecord | null | undefined;
-  text: string | null;
-  original: string | null;
-  saveError: string | null;
-}
-
-/**
- * Saves `pending` as the file's next version when it holds unsaved text.
- * Returns the flushed state (original = text) so a second flush — pagehide
- * then unmount — never saves the same text twice.
- */
-function flushPendingEdit(
-  pending: PendingEdit,
-  dispatch: ReturnType<typeof useAppDispatch>,
-): PendingEdit {
-  const { file, text, original, saveError } = pending;
-  if (text === null || original === null || text === original || !file || saveError) {
-    return pending;
-  }
-  void dispatch(
-    saveFileNewVersion({
-      fileId: file.id,
-      content: text,
-      changeSummary: "Edited in place (auto-flush on unmount)",
-    }),
-  )
-    .unwrap()
-    .catch((err: unknown) => {
-      // The editor is gone, so no inline error can show — say it.
-      toast.error(`Couldn't save your last edits to ${file.fileName}`, {
-        description: extractErrorMessage(err),
-      });
-    });
-  return { ...pending, original: text };
-}
-
 function languageFor(fileName: string): string {
   const dot = fileName.lastIndexOf(".");
   if (dot < 0) return "plaintext";
   return LANGUAGE_BY_EXT[fileName.slice(dot + 1).toLowerCase()] ?? "plaintext";
+}
+
+/** The control rail's editor options (font size, wrap, minimap, tab size). */
+function applyRailOptions(
+  editor: StandaloneCodeEditor | null,
+  controls: FileViewerControlsApi | null,
+): void {
+  if (!editor || !controls) return;
+  editor.updateOptions({
+    fontSize: controls.editorFontSize,
+    wordWrap: controls.editorWordWrap ? "on" : "off",
+    minimap: { enabled: controls.editorMinimap, renderCharacters: false },
+    tabSize: controls.editorTabSize,
+  });
 }
 
 export interface CloudFileInlineEditorProps {
@@ -138,27 +125,15 @@ export function CloudFileInlineEditor({
   className,
 }: CloudFileInlineEditorProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const file = useAppSelector((s) => selectFileById(s, fileId));
-  const { blob, loading, error: loadError } = useFileBlob(fileId);
+  const { copy, loading, error: loadError } = useFileWorkingCopy(fileId);
   const controls = useFileViewerControls();
-  // Hold onto the Monaco instance so the rail-driven controls effect can
-  // forward `updateOptions` calls without bouncing through a remount.
+  // The live Monaco instance (a new one after every show), so rail changes
+  // reach it without re-creating it.
   const editorRef = useRef<StandaloneCodeEditor | null>(null);
-  const handleEditorMount = useCallback((editor: StandaloneCodeEditor) => {
-    editorRef.current = editor;
-  }, []);
-  // Push rail-driven options into Monaco whenever they change. Effect (not
-  // render) because `updateOptions` is an imperative API and the editor
-  // owns the source of truth — re-creating Monaco on prop change would
-  // wipe undo history, scroll position, and selection.
   useEffect(() => {
-    if (!controls || !editorRef.current) return;
-    editorRef.current.updateOptions({
-      fontSize: controls.editorFontSize,
-      wordWrap: controls.editorWordWrap ? "on" : "off",
-      minimap: { enabled: controls.editorMinimap, renderCharacters: false },
-      tabSize: controls.editorTabSize,
-    });
+    applyRailOptions(editorRef.current, controls);
   }, [
     controls,
     controls?.editorFontSize,
@@ -167,114 +142,27 @@ export function CloudFileInlineEditor({
     controls?.editorTabSize,
   ]);
 
-  const [text, setText] = useState<string | null>(null);
-  const [original, setOriginal] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const isDirty = text !== null && original !== null && text !== original;
-
-  // The latest committed editor state, for the load effect below and the
-  // unmount / pagehide flush. Written after every commit.
-  const pendingRef = useRef<PendingEdit>({
-    file: null,
-    text: null,
-    original: null,
-    saveError: null,
-  });
-  useEffect(() => {
-    pendingRef.current = { file, text, original, saveError };
-  });
-
-  // Read the blob → text when the file changes or new bytes arrive. Effects
-  // re-run without a remount (a board tile waking from sleep re-runs every
-  // effect), so a re-run for the bytes already loaded does nothing, and new
-  // bytes for the same file never discard unsaved text — resetting here put
-  // the old bytes back over the person's edits, and the next save wrote them.
-  const loadedRef = useRef<{ fileId: string; blob: Blob } | null>(null);
-  useEffect(() => {
-    const loaded = loadedRef.current;
-    const sameFile = loaded?.fileId === fileId;
-    if (sameFile && loaded.blob === blob) return undefined;
-    if (!sameFile) {
-      loadedRef.current = null;
-      setText(null);
-      setOriginal(null);
-      setSaveError(null);
-    }
-    if (!blob) return undefined;
-    let cancelled = false;
-    blob.text().then((value) => {
-      if (cancelled) return;
-      loadedRef.current = { fileId, blob };
-      const current = pendingRef.current;
-      if (sameFile && current.text !== null && current.text !== current.original) {
-        // Unsaved text stays; it is now compared with the newest bytes.
-        setOriginal(value);
-        return;
-      }
-      setText(value);
-      setOriginal(value);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [blob, fileId]);
-
-  const language = useMemo(
-    () => (file ? languageFor(file.fileName) : "plaintext"),
-    [file],
-  );
-
-  const handleSave = useCallback(async () => {
-    if (!file || text === null) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      // A save is the NEXT VERSION of this same file — never an upload
-      // (an upload of a taken name becomes "name (1).ext", a second file).
-      await dispatch(
-        saveFileNewVersion({
-          fileId: file.id,
-          content: text,
-          changeSummary: "Edited in place",
-        }),
-      ).unwrap();
-      setOriginal(text);
-      setSavedAt(Date.now());
-    } catch (err) {
-      setSaveError(extractErrorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  }, [dispatch, file, text]);
-
-  // Flush the LATEST text on unmount, on a switch to another file, on
-  // pagehide, and when the editor's effects pause (a sleeping board tile).
-  // `pendingRef` is written after every commit; a cleanup runs before the
-  // next commit's effects, so it still holds the outgoing file's text.
+  // Leaving saves an unsaved copy once: unmount, a switch to another file,
+  // and an `<Activity>` hide all run this cleanup; `pagehide` also keeps the
+  // text for a reload. The copy is read from the store at that moment, so
+  // the save always has the LAST text typed in any view.
   useEffect(() => {
     const flush = () => {
-      const before = pendingRef.current;
-      pendingRef.current = flushPendingEdit(before, dispatch);
-      // A paused (not unmounted) editor stays on screen: the flushed text is
-      // no longer unsaved, and must not be saved again on the next pause.
-      if (pendingRef.current !== before) setOriginal(pendingRef.current.original);
+      void dispatch(saveFileWorkingCopy({ fileId, auto: true }));
     };
-    window.addEventListener("pagehide", flush);
-    return () => {
-      window.removeEventListener("pagehide", flush);
+    const onPageHide = () => {
+      const current = store.getState().cloudFiles.workingCopies[fileId];
+      if (current && current.text !== current.baseText) {
+        storeFileDraft(fileId, { text: current.text, baseVersion: current.baseVersion });
+      }
       flush();
     };
-  }, [fileId, dispatch]);
-
-  const handleDiscard = useCallback(() => {
-    if (original !== null) setText(original);
-    setSaveError(null);
-  }, [original]);
-
-  const recentlySaved =
-    savedAt !== null && Date.now() - savedAt < 2000 && !isDirty;
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      flush();
+    };
+  }, [fileId, dispatch, store]);
 
   if (!file) {
     return <AccessGate token="file" id={fileId} />;
@@ -293,6 +181,20 @@ export function CloudFileInlineEditor({
       </div>
     );
   }
+
+  const language = languageFor(file.fileName);
+  const isDirty = copy !== undefined && copy.text !== copy.baseText;
+  const saving = copy?.saving ?? false;
+  const saveError = copy?.saveError ?? null;
+  const recentlySaved =
+    copy?.savedAt != null && Date.now() - copy.savedAt < 2000 && !isDirty;
+  const save = () => {
+    void dispatch(saveFileWorkingCopy({ fileId }));
+  };
+  const discard = () => {
+    dispatch(workingCopyDiscarded({ fileId }));
+    clearFileDraft(fileId);
+  };
 
   return (
     <div className={cn("flex h-full w-full min-h-0 flex-col", className)}>
@@ -322,7 +224,7 @@ export function CloudFileInlineEditor({
           ) : null}
           <button
             type="button"
-            onClick={handleDiscard}
+            onClick={discard}
             disabled={!isDirty || saving}
             title="Discard changes"
             className={cn(
@@ -337,7 +239,7 @@ export function CloudFileInlineEditor({
           </button>
           <button
             type="button"
-            onClick={() => void handleSave()}
+            onClick={save}
             disabled={!isDirty || saving}
             title="Save (⌘S / Ctrl+S)"
             className={cn(
@@ -359,18 +261,22 @@ export function CloudFileInlineEditor({
         </div>
       ) : null}
       <div className="min-h-0 flex-1">
-        {loading || text === null ? (
+        {loading || !copy ? (
           <div className="flex h-full w-full items-center justify-center bg-muted/20">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
           <MonacoEditor
-            value={text}
+            value={copy.text}
             language={language}
             path={`cloud-file:/${fileId}`}
-            onChange={(next) => setText(next)}
-            onSave={() => void handleSave()}
-            onEditorMount={handleEditorMount}
+            keepModel
+            onChange={(next) => dispatch(workingCopyEdited({ fileId, text: next }))}
+            onSave={save}
+            onEditorMount={(editor) => {
+              editorRef.current = editor;
+              applyRailOptions(editor, controls);
+            }}
           />
         )}
       </div>

@@ -44,7 +44,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/utils/cn";
 import {
   OrganizationRequiredNotice,
@@ -64,6 +63,7 @@ import type { GraphEdge, GraphNode, GraphPayload, KgGraphMode } from "../types";
 import type { KgColorBy, KgSizeBy } from "../cytoscape/analysis";
 import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { KgGraphLegend } from "./KgGraphLegend";
 import { KgScopeFilter } from "./KgScopeFilter";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
@@ -119,7 +119,6 @@ export function KgGraphCanvas({
   initialScopeId = null,
   initialScopeTypeId = null,
 }: KgGraphCanvasProps) {
-  const isMobile = useIsMobile();
   const [payload, setPayload] = useState<GraphPayload | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -685,19 +684,15 @@ export function KgGraphCanvas({
           </div>
 
           {selected ? (
-            <div
-              className={cn(
-                "z-10 shrink-0",
-                isMobile
-                  ? "absolute inset-y-0 right-0 w-[88%] max-w-sm shadow-xl"
-                  : "w-80",
-              )}
+            // The selected entity's evidence is the page's canvas tab; a click
+            // on another node renames the tab and brings it forward.
+            <CanvasPagePanel
+              panelKey="kg-graph-entity"
+              title={selected.name}
+              onClose={() => setSelected(null)}
             >
-              <KgGraphSidePanel
-                node={selected}
-                onClose={() => setSelected(null)}
-              />
-            </div>
+              <KgGraphSidePanel node={selected} />
+            </CanvasPagePanel>
           ) : null}
         </div>
       </div>

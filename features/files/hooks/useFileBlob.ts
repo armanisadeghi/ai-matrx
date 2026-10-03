@@ -22,7 +22,10 @@
  * of re-downloading 10 MB of PDF for every open.
  *
  * The cache:
- *   - is keyed by `fileId`
+ *   - is keyed by `fileId` and holds ONE version per file: the hook reads
+ *     the file's `currentVersion` from the store, a cached copy of another
+ *     version is a miss, and the bytes are refetched only when the version
+ *     changes (a save seeds the new version's bytes — no download at all)
  *   - is capped at 250 MB total via LRU eviction
  *   - owns each blob's object URL (revokes on eviction or explicit
  *     `invalidate(fileId)`)
@@ -35,6 +38,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as Files from "@/features/files/api/files";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectFileCurrentVersion } from "@/features/files/redux/selectors";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCached, hydrateFromIdb, setCached } from "./blob-cache";
 
@@ -42,12 +47,53 @@ import { getCached, hydrateFromIdb, setCached } from "./blob-cache";
  * In-flight dedup. When two components mount with the SAME fileId before
  * either download finishes (e.g. the same PDF rendered in two panes on one
  * page — the exact bug a user hit), they must share ONE network download,
- * not race two. Keyed by fileId; cleared when the download settles.
+ * not race two. Keyed by fileId and carrying the version it fetches: a
+ * caller for the same version, or one that does not know the version yet
+ * (the row is still loading), joins it. Cleared when the download settles.
  */
-const inflightDownloads = new Map<
-  string,
-  Promise<{ blob: Blob; filename: string | null }>
->();
+interface InflightDownload {
+  version: number | null;
+  promise: Promise<{ blob: Blob; filename: string | null }>;
+}
+const inflightDownloads = new Map<string, InflightDownload>();
+
+function joinableDownload(
+  fileId: string,
+  version: number | null,
+): InflightDownload | undefined {
+  const running = inflightDownloads.get(fileId);
+  if (!running) return undefined;
+  if (running.version == null || version == null || running.version === version) {
+    return running;
+  }
+  return undefined;
+}
+
+function startDownload(
+  fileId: string,
+  version: number | null,
+  onProgress: Parameters<typeof Files.downloadFileWithProgress>[1],
+): InflightDownload {
+  const promise = Files.downloadFileWithProgress(fileId, onProgress).then(
+    ({ blob, filename }) => ({ blob, filename }),
+  );
+  const entry: InflightDownload = { version, promise };
+  inflightDownloads.set(fileId, entry);
+  void promise
+    .finally(() => {
+      // Only clear if it's still the same download (a later version or a
+      // retry may have replaced it).
+      if (inflightDownloads.get(fileId) === entry) {
+        inflightDownloads.delete(fileId);
+      }
+    })
+    .catch(() => {
+      // Every awaiting subscriber handles the rejection (sets its own error
+      // state); this catch only stops the void'd cleanup chain from
+      // re-surfacing it as an unhandled promise rejection.
+    });
+  return entry;
+}
 
 /**
  * Imperative sibling of `useFileBlob` for non-hook call sites (e.g. the
@@ -62,23 +108,9 @@ async function fetchFileBlobEntry(
   if (cached) return cached;
   const idbHit = await hydrateFromIdb(fileId);
   if (idbHit) return idbHit;
-  let download = inflightDownloads.get(fileId);
-  if (!download) {
-    download = Files.downloadFileWithProgress(fileId, () => {}).then(
-      ({ blob, filename }) => ({ blob, filename }),
-    );
-    inflightDownloads.set(fileId, download);
-    void download
-      .finally(() => {
-        if (inflightDownloads.get(fileId) === download) {
-          inflightDownloads.delete(fileId);
-        }
-      })
-      .catch(() => {
-        // Awaiters surface the rejection; this only silences the void chain.
-      });
-  }
-  const { blob } = await download;
+  const download =
+    joinableDownload(fileId, null) ?? startDownload(fileId, null, () => {});
+  const { blob } = await download.promise;
   const already = getCached(fileId);
   if (already) return already;
   const url = URL.createObjectURL(blob);
@@ -107,14 +139,22 @@ export interface UseFileBlobResult {
   /** Total bytes when the server advertised Content-Length; null otherwise. */
   bytesTotal: number | null;
   error: string | null;
+  /** The file version `blob` belongs to (null when the row is not loaded). */
+  version: number | null;
   /** Force a re-fetch (e.g. after auth refresh). Drops the cached entry. */
   retry: () => void;
 }
 
 export function useFileBlob(fileId: string | null): UseFileBlobResult {
+  // The bytes are cached per file id + version: a new version (a save here,
+  // or one from another device) is the only thing that refetches.
+  const version =
+    useAppSelector((s) =>
+      fileId ? selectFileCurrentVersion(s, fileId) : undefined,
+    ) ?? null;
   // Initialize from cache synchronously so the first render of a
   // re-opened file is already showing the blob — no `loading` flicker.
-  const initialCached = fileId ? getCached(fileId) : null;
+  const initialCached = fileId ? getCached(fileId, version) : null;
   const [url, setUrl] = useState<string | null>(initialCached?.url ?? null);
   const [blob, setBlob] = useState<Blob | null>(initialCached?.blob ?? null);
   const [loading, setLoading] = useState<boolean>(!!fileId && !initialCached);
@@ -162,7 +202,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
     }
 
     // 1. In-memory cache hit — show the cached blob immediately, no fetch.
-    const cached = getCached(fileId);
+    const cached = getCached(fileId, version);
     if (cached) {
       setUrl(cached.url);
       setBlob(cached.blob);
@@ -184,7 +224,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
     setBlob(null);
 
     (async () => {
-      const idbHit = await hydrateFromIdb(fileId);
+      const idbHit = await hydrateFromIdb(fileId, version);
       if (cancelled) return;
       if (idbHit) {
         setUrl(idbHit.url);
@@ -198,38 +238,24 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       // 3. IDB miss — fetch with progress, deduplicated across simultaneous
       //    mounts of the same fileId so two panes never double-download.
       try {
-        let download = inflightDownloads.get(fileId);
-        if (!download) {
-          download = Files.downloadFileWithProgress(fileId, (ev) => {
+        const download =
+          joinableDownload(fileId, version) ??
+          startDownload(fileId, version, (ev) => {
             if (cancelled) return;
             setBytesLoaded(ev.loaded);
             if (ev.total !== null) setBytesTotal(ev.total);
-          }).then(({ blob, filename }) => ({ blob, filename }));
-          inflightDownloads.set(fileId, download);
-          void download
-            .finally(() => {
-              // Only clear if it's still the same promise (a later retry may
-              // have replaced it).
-              if (inflightDownloads.get(fileId) === download) {
-                inflightDownloads.delete(fileId);
-              }
-            })
-            .catch(() => {
-              // Every awaiting subscriber handles the rejection (sets its own
-              // error state); this catch only stops the void'd cleanup chain
-              // from re-surfacing it as an unhandled promise rejection.
-            });
-        }
-        const { blob: b } = await download;
+          });
+        const { blob: fetched } = await download.promise;
         if (cancelled) return;
         // Another mount of this fileId may have already cached the bytes
-        // while we awaited the shared download — reuse its URL if so.
-        const already = getCached(fileId);
+        // while we awaited the shared download — reuse them if so.
+        const already = getCached(fileId, version);
+        const b = already?.blob ?? fetched;
         const objectUrl = already?.url ?? URL.createObjectURL(b);
         if (!already) {
           // Insert into both cache tiers. From now on the cache owns the URL —
           // do NOT revoke it on unmount; the cache will do it on eviction.
-          setCached(fileId, b, objectUrl, { mimeType: b.type });
+          setCached(fileId, b, objectUrl, { mimeType: b.type, version });
         }
         setBlob(b);
         setUrl(objectUrl);
@@ -249,7 +275,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       // remount with the same fileId we'll read directly from the
       // cache and skip the network entirely.
     };
-  }, [fileId, retryToken]);
+  }, [fileId, version, retryToken]);
 
   return {
     url,
@@ -258,6 +284,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
     bytesLoaded,
     bytesTotal,
     error,
+    version,
     retry: () => {
       // A retry implies the cached bytes are bad / stale — drop them so
       // the next fetch goes to the network. (Inline import to avoid a

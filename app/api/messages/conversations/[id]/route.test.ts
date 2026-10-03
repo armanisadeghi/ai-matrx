@@ -66,7 +66,11 @@ describe.each(handlers)("%s participant write", (_name, handler) => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ success: true });
     expect(builder.is).toHaveBeenCalledWith("deleted_at", null);
-    expect(builder.eq).toHaveBeenCalledWith("organization_id", "org-b");
+    // The row is FOUND by conversation + user only: a participant left in a stale
+    // organization must match (and be re-stamped), never become a zero-row write.
+    expect(builder.eq).toHaveBeenCalledWith("conversation_id", conversationId);
+    expect(builder.eq).toHaveBeenCalledWith("user_id", userId);
+    expect(builder.eq).not.toHaveBeenCalledWith("organization_id", expect.anything());
     expect(builder.select).toHaveBeenCalledWith("id");
     expect(builder.update).toHaveBeenCalledWith(expect.objectContaining({ organization_id: "org-b" }));
   });

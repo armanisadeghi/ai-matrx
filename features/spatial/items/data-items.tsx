@@ -289,6 +289,9 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
     defaultSize: { w: 960, h: 620 },
     matches: (s) => s.kind === "entity" && s.entity === TABLE_ENTITY,
     Body: TableItemBody,
+    // Wakes with its grid, scroll, selection and open cell intact: the gates keep their answers
+    // (lib/kept-answer), so a wake never drops to "Opening the table…" (lane REMOUNT-SAFETY).
+    sleeps: true,
     startNew: { label: "New table", create: () => ({ title: "New table", source: tableSource(null) }) },
     bringIn: { label: "Table", Picker: TablePicker },
     href: (s) => {
@@ -306,6 +309,7 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
     defaultSize: { w: 560, h: 640 },
     matches: (s) => s.kind === "record",
     Body: RecordBody,
+    sleeps: true,
     bringIn: { label: "Record", Picker: RecordPicker },
     href: (s) => {
       const ids = recordIdsOf(s);

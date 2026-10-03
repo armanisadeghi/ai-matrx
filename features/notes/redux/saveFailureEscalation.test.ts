@@ -16,7 +16,14 @@ import notesReducer, {
 } from "./slice";
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "./notes.types";
 import { collectNoteDrafts } from "../utils/notesDrafts";
-import { setNoteLiveContent } from "../utils/noteLiveContent";
+import { holdNoteWorkingCopy, noteWorkingCopy } from "../utils/noteLiveContent";
+
+/** An editor view typing `content` into the note's working copy (not yet committed). */
+function typeIntoView(noteId: string, content: string): () => void {
+  const release = holdNoteWorkingCopy(noteId, jest.fn());
+  noteWorkingCopy.edit(noteId, content);
+  return release;
+}
 
 enableMapSet();
 
@@ -125,8 +132,8 @@ describe("notes draft collection", () => {
   it("captures the PRE-DEBOUNCE editor buffer, not the stale Redux copy", () => {
     const state = seedDirty();
     // Keystrokes reach Redux 200–1000ms late; at the instant a tab is stopped
-    // the newest words live only in noteLiveContent.
-    setNoteLiveContent(NOTE_ID, "saved text + unsaved edit + just typed");
+    // the newest words live only in the note's working copy.
+    const release = typeIntoView(NOTE_ID, "saved text + unsaved edit + just typed");
     try {
       const drafts = collectNoteDrafts({
         notes: state,
@@ -134,7 +141,7 @@ describe("notes draft collection", () => {
       });
       expect(drafts[0].content).toBe("saved text + unsaved edit + just typed");
     } finally {
-      setNoteLiveContent(NOTE_ID, null);
+      release();
     }
   });
 
@@ -155,7 +162,7 @@ describe("notes draft collection", () => {
         fetchStatus: "full",
       }),
     );
-    setNoteLiveContent(NOTE_ID, "the very first sentence");
+    const release = typeIntoView(NOTE_ID, "the very first sentence");
     try {
       const drafts = collectNoteDrafts({
         notes: state,
@@ -164,7 +171,7 @@ describe("notes draft collection", () => {
       expect(drafts).toHaveLength(1);
       expect(drafts[0].content).toBe("the very first sentence");
     } finally {
-      setNoteLiveContent(NOTE_ID, null);
+      release();
     }
     expect(state.notes[NOTE_ID]._dirty).toBe(false);
   });

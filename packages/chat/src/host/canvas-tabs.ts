@@ -40,12 +40,20 @@ export const AGENT_UNSAVED_CHANGES_KIND = "agent-unsaved-changes";
  */
 export const CONTEXT_ITEMS_KIND = "context-items";
 
+/**
+ * One context value a sent message carried, in full (key, type, policy, the
+ * frozen value): ONE tab per conversation, keyed by its id. `selected` names
+ * the value on screen (its key plus a hash of the snapshot).
+ */
+export const CONTEXT_VALUE_KIND = "context-value";
+
 /** Every tab kind the package opens by name through `canvas.useTab`. */
 export type ChatCanvasTabKind =
   | typeof CONVERSATION_CONTEXT_KIND
   | typeof CONVERSATION_LISTS_KIND
   | typeof AGENT_UNSAVED_CHANGES_KIND
-  | typeof CONTEXT_ITEMS_KIND;
+  | typeof CONTEXT_ITEMS_KIND
+  | typeof CONTEXT_VALUE_KIND;
 /** The scratchpad tab follows the ACTIVE scratchpad, so there is exactly one. */
 export const SCRATCHPAD_TAB_KEY = "default";
 

@@ -36,7 +36,7 @@
 // remedy) and the page holds. The active organization is never read in this file
 // (`pnpm check:object-pages-read-the-objects-organization`).
 
-import { useEffect, useState } from "react";
+import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
 /**
@@ -131,29 +131,33 @@ export async function resolveObjectOrganization(
 /**
  * An object's organization, for a page that opens that object. Re-asked when the id changes and
  * NEVER when the person switches organization: switching must not re-decide whether this opens.
+ *
+ * 🚨 KEPT PER OBJECT FOR THE SESSION, NEVER BLANKED (lane REMOUNT-SAFETY, 2026-10-02). The answer
+ * lives in one module store keyed by the object's id (`lib/kept-answer`), not in this component.
+ * A page or Board tile that remounts — or wakes from sleep, which re-runs every effect — reads
+ * the last answer synchronously and keeps drawing what it drew; the door is re-asked in the
+ * background only once the answer is stale, and the screen moves only when the answer CHANGED.
+ * Until 2026-10-02 the answer was `useState` set back to null at the top of the effect, so every
+ * remount and wake showed "Opening the table…" and UNMOUNTED the grid behind it (scroll,
+ * selection, a half-typed cell, column state — gone), then re-read every row. `retry()` re-asks
+ * without blanking. "Could not ask" is shown but never kept fresh. Forgotten on sign-out.
  */
 export type ObjectOrganizationView = { state: "resolving" } | ObjectOrganizationAnswer;
+
+const objectOrganizations = createKeptAnswers<ObjectOrganizationAnswer>({
+  keep: (answer) => answer.state !== "unavailable",
+});
+
+/** Tests only: forget every kept answer. */
+export function forgetObjectOrganizations(): void {
+  objectOrganizations.forget();
+}
 
 export function useObjectOrganization(
   dataSource: Pick<RecordsDataSource, "rpc">,
   id: string | null,
 ): ObjectOrganizationView & { retry: () => void } {
-  const [answer, setAnswer] = useState<ObjectOrganizationAnswer | null>(null);
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    if (!id) return;
-    let alive = true;
-    setAnswer(null);
-    void resolveObjectOrganization(dataSource, id).then((next) => {
-      if (alive) setAnswer(next);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [dataSource, id, attempt]);
-
-  const retry = () => setAttempt((n) => n + 1);
+  const { answer, retry } = objectOrganizations.useAnswer(id, () => resolveObjectOrganization(dataSource, id ?? ""));
   if (!id || answer === null) return { state: "resolving", retry };
   return { ...answer, retry };
 }

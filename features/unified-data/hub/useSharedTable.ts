@@ -43,7 +43,7 @@
 // organizations the person is NOT a member of, so a member's own `?org=` link
 // finds nothing here and the page behaves exactly as it always did.
 
-import { useEffect, useState } from "react";
+import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
@@ -64,80 +64,77 @@ export type SharedTableContext =
   /** A real share that cannot open right now. The sentence says why. */
   | { state: "not-shared"; why: string };
 
+/** What the share door says about `tableId` in `askedOrganizationId` (never throws). */
+export async function askSharedTable(
+  dataSource: RecordsDataSource,
+  tableId: string,
+  askedOrganizationId: string,
+): Promise<SharedTableContext> {
+  // FIRST, IS IT A SHARE AT ALL. The door answers only about the person
+  // signed in and names no organization, so asking it first costs every
+  // ordinary `?org=` link (a member's own notification) one small read and
+  // never a sentence about an organization they may well belong to.
+  const answered = await doors.tablesSharedWithMe(dataSource);
+  if (!answered.ok) {
+    // We could not look. The table page's own mount still answers for the
+    // organization the person is working in; claiming anything about a
+    // share here would be a claim nobody measured.
+    return { state: "none" };
+  }
+  const share = answered.data.find(
+    (row) => row.table_id === tableId && row.organization_id === askedOrganizationId,
+  );
+  if (!share) {
+    // NOT A SHARE OF THEIRS. The door lists only organizations the person is
+    // not a member of, so this is either their own organization (the link
+    // judge moves them there, and the page is theirs) or an address naming a
+    // table nobody shared with them — for which the table page's own
+    // sentence ("This table is not here") is already the honest answer.
+    return { state: "none" };
+  }
+  if (!share.opens) return { state: "not-shared", why: share.say };
+  // 🚨 THE SWITCH, ASKED OF THE ORGANIZATION WHOSE STORE WE ARE ABOUT TO
+  // READ, and asked here rather than only by the route above — this hook is
+  // the only thing that can open another organization's store on this page,
+  // so the gate belongs inside it and cannot be walked past by a host that
+  // forgot its own. `off` and `could not check` are different sentences.
+  const gate = await UNIFIED_DATA_CAMPAIGN.check(askedOrganizationId);
+  if (gate.state !== "on") {
+    return {
+      state: "not-shared",
+      why:
+        gate.state === "unavailable"
+          ? `${share.organization} shared ${share.table_name} with you, and whether its record store is on could not be read, so nothing was read — this is not an answer about your access. ${gate.cause}`
+          : `${share.organization} shared ${share.table_name} with you, and does not keep its data in the record store right now, so there is nothing to show yet.`,
+    };
+  }
+  return {
+    state: "shared",
+    organizationId: share.organization_id,
+    organizationName: share.organization,
+    levelLabel: share.level_label,
+  };
+}
+
+/**
+ * KEPT PER (TABLE, ORGANIZATION), NEVER BLANKED (lane REMOUNT-SAFETY, 2026-10-02). A remount or
+ * a wake reads the last answer at once — the table page's ports and rights hang on it, so a
+ * "checking" blink re-bound them on every wake — and re-asks in the background.
+ */
+const sharedTables = createKeptAnswers<SharedTableContext>();
+
+/** Tests only: forget every kept share answer. */
+export function forgetSharedTables(): void {
+  sharedTables.forget();
+}
+
 export function useSharedTable(
   dataSource: RecordsDataSource,
   tableId: string,
   askedOrganizationId: string | null,
 ): SharedTableContext {
-  const [answer, setAnswer] = useState<SharedTableContext>(
-    askedOrganizationId ? { state: "checking" } : { state: "none" },
-  );
-
-  useEffect(() => {
-    if (!askedOrganizationId) {
-      setAnswer({ state: "none" });
-      return;
-    }
-    let alive = true;
-    setAnswer({ state: "checking" });
-    void (async () => {
-      // FIRST, IS IT A SHARE AT ALL. The door answers only about the person
-      // signed in and names no organization, so asking it first costs every
-      // ordinary `?org=` link (a member's own notification) one small read and
-      // never a sentence about an organization they may well belong to.
-      const answered = await doors.tablesSharedWithMe(dataSource);
-      if (!alive) return;
-      if (!answered.ok) {
-        // We could not look. The table page's own mount still answers for the
-        // organization the person is working in; claiming anything about a
-        // share here would be a claim nobody measured.
-        setAnswer({ state: "none" });
-        return;
-      }
-      const share = answered.data.find(
-        (row) => row.table_id === tableId && row.organization_id === askedOrganizationId,
-      );
-      if (!share) {
-        // NOT A SHARE OF THEIRS. The door lists only organizations the person is
-        // not a member of, so this is either their own organization (the link
-        // judge moves them there, and the page is theirs) or an address naming a
-        // table nobody shared with them — for which the table page's own
-        // sentence ("This table is not here") is already the honest answer.
-        setAnswer({ state: "none" });
-        return;
-      }
-      if (!share.opens) {
-        setAnswer({ state: "not-shared", why: share.say });
-        return;
-      }
-      // 🚨 THE SWITCH, ASKED OF THE ORGANIZATION WHOSE STORE WE ARE ABOUT TO
-      // READ, and asked here rather than only by the route above — this hook is
-      // the only thing that can open another organization's store on this page,
-      // so the gate belongs inside it and cannot be walked past by a host that
-      // forgot its own. `off` and `could not check` are different sentences.
-      const gate = await UNIFIED_DATA_CAMPAIGN.check(askedOrganizationId);
-      if (!alive) return;
-      if (gate.state !== "on") {
-        setAnswer({
-          state: "not-shared",
-          why:
-            gate.state === "unavailable"
-              ? `${share.organization} shared ${share.table_name} with you, and whether its record store is on could not be read, so nothing was read — this is not an answer about your access. ${gate.cause}`
-              : `${share.organization} shared ${share.table_name} with you, and does not keep its data in the record store right now, so there is nothing to show yet.`,
-        });
-        return;
-      }
-      setAnswer({
-        state: "shared",
-        organizationId: share.organization_id,
-        organizationName: share.organization,
-        levelLabel: share.level_label,
-      });
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [dataSource, tableId, askedOrganizationId]);
-
-  return answer;
+  const key = askedOrganizationId ? `${tableId}:${askedOrganizationId}` : null;
+  const { answer } = sharedTables.useAnswer(key, () => askSharedTable(dataSource, tableId, askedOrganizationId ?? ""));
+  if (!askedOrganizationId) return { state: "none" };
+  return answer ?? { state: "checking" };
 }

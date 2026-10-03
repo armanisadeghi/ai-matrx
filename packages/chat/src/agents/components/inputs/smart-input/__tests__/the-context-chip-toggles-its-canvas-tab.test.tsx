@@ -3,7 +3,7 @@
  *
  * With a canvas on screen, a press on the chip never opens its popover: it
  * toggles the conversation's `conversation-context` tab through the chat
- * host's canvas port, and the chip wears the pressed face while that tab is in
+ * host's canvas port, and the chip is pressed (`pressed`) while that tab is in
  * front. A row opens the tab on that value. With no canvas the chip keeps its
  * own popover (its full-view button then refuses aloud through the port).
  *
@@ -121,13 +121,14 @@ it("a row opens the tab on that value", () => {
   unmount();
 });
 
-it("shows pressed only while the tab is in front", () => {
+it("is pressed (a real toggle, not a colour) only while the tab is in front", () => {
   let unmount = render();
+  expect(chip.props?.pressed).toBe(false);
   expect(chip.props?.className).toBeUndefined();
   unmount();
   canvas.tab = { ...canvas.tab, isVisible: true };
   unmount = render();
-  expect(chip.props?.className).toContain("bg-primary/15");
+  expect(chip.props?.pressed).toBe(true);
   unmount();
 });
 

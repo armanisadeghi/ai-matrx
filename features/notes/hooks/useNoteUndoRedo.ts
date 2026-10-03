@@ -7,11 +7,20 @@
 // this note's editor (`scope`). A board or a side panel mounts many notes
 // at once; an unscoped listener undid every one of them on a single ⌘Z and
 // stole ⌘Z from the board (@ai-matrx/kit/keyboard-scope).
+//
+// THE HISTORY BELONGS TO THE NOTE, NOT THE VIEW. The record's undo stack lives
+// in Redux keyed by note id, so it survives a remount (a board tile waking, a
+// tab reopened) and is shared by every view of the note. Before stepping it,
+// the note's working copy is committed, so words still inside the debounce are
+// part of what undo reverses. Inside the one rich editor, the editor's own
+// history answers first (it restores the caret and approves island steps); when
+// it has nothing to give — right after a (re)mount — the note's history answers.
 
 import { useEffect, useCallback } from "react";
 import { keyEventInside } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { undoNoteEdit, redoNoteEdit } from "../redux/slice";
+import { noteWorkingCopy } from "../utils/noteLiveContent";
 import {
   getPlatform,
   isMacLike,
@@ -24,6 +33,11 @@ interface UseNoteUndoRedoOptions {
   noteId: string | null;
   /** The editor's root — the shortcut answers only keys pressed inside it. */
   scope: () => Element | null;
+  /**
+   * The rich editor's own history depth when it is the body (null otherwise).
+   * Zero steps there → the note's record history answers ⌘Z.
+   */
+  editorHistoryDepth?: () => { undo: number; redo: number } | null;
   enabled?: boolean;
 }
 
@@ -40,6 +54,7 @@ interface UseNoteUndoRedoReturn {
 export function useNoteUndoRedo({
   noteId,
   scope,
+  editorHistoryDepth,
   enabled = true,
 }: UseNoteUndoRedoOptions): UseNoteUndoRedoReturn {
   const dispatch = useAppDispatch();
@@ -56,13 +71,24 @@ export function useNoteUndoRedo({
     return record ? record._undoFuture.length > 0 : false;
   });
 
+  // Commit pending words first, so the step reverses what is on screen. The
+  // reducers refuse an empty stack themselves, so the gate is the record.
+  const stepRecord = useCallback(
+    (direction: "undo" | "redo") => {
+      if (!noteId) return;
+      void noteWorkingCopy.flush(noteId);
+      dispatch(direction === "undo" ? undoNoteEdit({ id: noteId }) : redoNoteEdit({ id: noteId }));
+    },
+    [dispatch, noteId],
+  );
+
   const undo = useCallback(() => {
-    if (noteId && canUndo) dispatch(undoNoteEdit({ id: noteId }));
-  }, [dispatch, noteId, canUndo]);
+    if (noteId && (canUndo || noteWorkingCopy.hasPending(noteId))) stepRecord("undo");
+  }, [noteId, canUndo, stepRecord]);
 
   const redo = useCallback(() => {
-    if (noteId && canRedo) dispatch(redoNoteEdit({ id: noteId }));
-  }, [dispatch, noteId, canRedo]);
+    if (noteId && canRedo) stepRecord("redo");
+  }, [noteId, canRedo, stepRecord]);
 
   // Keyboard shortcuts — Cmd+Z / Shift+Cmd+Z (Mac), Ctrl+Z / Ctrl+Y (Win/Linux)
   // Intercept at capture phase to suppress native textarea undo
@@ -74,37 +100,35 @@ export function useNoteUndoRedo({
       if (!mod) return;
       // Another surface's key (another note, the board, a chat) — not ours.
       if (!keyEventInside(e, scope())) return;
-      // Write / Source: THE ONE EDITOR owns undo (it restores the caret and
-      // treats protected blocks as the person's own act). Its result reaches
-      // the note through onChange, like typing — never undo twice.
+      const isUndo = (e.key === "z" || e.key === "Z") && !e.shiftKey;
+      const isRedo =
+        ((e.key === "z" || e.key === "Z") && e.shiftKey) ||
+        ((e.key === "y" || e.key === "Y") && !isMacLike());
+      if (!isUndo && !isRedo) return;
+
+      // Write / Source: THE ONE EDITOR owns undo while it has steps (it
+      // restores the caret and treats protected blocks as the person's own
+      // act). Its result reaches the note through onChange, like typing —
+      // never undo twice. With no steps of its own (just mounted) the note's
+      // history answers, so ⌘Z survives a remount.
       if (
         e.target instanceof Element &&
         e.target.closest("[data-rich-editor]")
       ) {
-        return;
+        const depth = editorHistoryDepth?.() ?? null;
+        if (!depth) return;
+        if (isUndo ? depth.undo > 0 : depth.redo > 0) return;
+        // The editor would have done nothing; keep it from trying.
+        e.stopPropagation();
       }
 
-      if (e.key === "z" || e.key === "Z") {
-        if (e.shiftKey) {
-          e.preventDefault();
-          if (canRedo) dispatch(redoNoteEdit({ id: noteId! }));
-        } else {
-          e.preventDefault();
-          if (canUndo) dispatch(undoNoteEdit({ id: noteId! }));
-        }
-        return;
-      }
-
-      // Windows/Linux: Ctrl+Y for redo
-      if ((e.key === "y" || e.key === "Y") && !isMacLike()) {
-        e.preventDefault();
-        if (canRedo) dispatch(redoNoteEdit({ id: noteId! }));
-      }
+      e.preventDefault();
+      stepRecord(isUndo ? "undo" : "redo");
     }
 
     document.addEventListener("keydown", handleKeyDown, true);
     return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [enabled, noteId, canUndo, canRedo, dispatch, scope]);
+  }, [enabled, noteId, stepRecord, scope, editorHistoryDepth]);
 
   return {
     canUndo,

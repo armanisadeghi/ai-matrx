@@ -26,6 +26,8 @@ import { SYSTEM_CONTEXT_PREVIEW_CANVAS_KIND } from "@/features/admin/system-cont
 import { AGENT_EDIT_HISTORY_CANVAS_KIND } from "./agent/agentEditHistoryKind";
 import { NOTE_HISTORY_CANVAS_KIND } from "@/features/notes/canvas/noteHistoryKind";
 import { CLOUD_FILE_EDITOR_CANVAS_KIND } from "@/features/files/canvas/cloudFileEditorKind";
+import { AGENT_PAYLOAD_CANVAS_KIND } from "@/features/marketing/content-plan/canvas/agentPayloadKind";
+import { WAR_ROOM_RESOURCES_CANVAS_KIND } from "@/features/war-room/canvas/warRoomResourcesKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -49,6 +51,10 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   NOTE_HISTORY_CANVAS_KIND,
   // A cloud file's text editor beside its preview.
   CLOUD_FILE_EDITOR_CANVAS_KIND,
+  // What a content plan's agents are handed ("See what the AI sees").
+  AGENT_PAYLOAD_CANVAS_KIND,
+  // A war room's / a thread's resources beside the room.
+  WAR_ROOM_RESOURCES_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];

@@ -50,6 +50,7 @@ import { RoomViewProvider } from "@/features/war-room/components/room/roomViewCo
 import { WarRoomSurfaceHost } from "@/features/war-room/components/room/WarRoomSurfaceHost";
 import { roomColorOf, roomIconOf } from "@/features/war-room/components/room/roomIdentity";
 import type { WarRoomSession } from "@/features/war-room/types";
+import { useWarRoomView } from "@/features/war-room/hooks/useWarRoomView";
 // Meeting
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
 import { MeetingHomeAndRoom } from "@/features/meet/components/MeetingHomeAndRoom";
@@ -61,13 +62,9 @@ import { ensureOrganizationContext } from "@/lib/organization/organization-gate"
 import { useRunsList } from "@/features/workflow-runtime/discovery/useRunsList";
 import { useWorkflowFacts } from "@/features/workflow-runtime/discovery/useWorkflowFacts";
 import { RunStatusChip } from "@/features/workflow-runtime/run-status";
-import {
-  fetchRunDefinitionId,
-  fetchWorkflowDefinition,
-  getDefaultSurface,
-} from "@/features/workflow-runtime/surface/service";
-import type { RunSurfaceConfig } from "@/features/workflow-runtime/surface/config";
-import type { WorkflowDefinitionLike } from "@/features/workflow-runtime/trigger-points";
+import { loadRunSurface, RunRecordUnreadable } from "@/features/workflow-runtime/surface/run-surface.thunk";
+import { selectRunSurface } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
+import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun";
 import { RunStage } from "@/features/workflow-runtime/components/run/RunStage";
 import { RunStartForm } from "@/features/workflow-runtime/components/RunStartForm";
 import { WorkflowListDropdown } from "@/features/workflow-runtime/listings/WorkflowListDropdown";
@@ -411,18 +408,19 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
  * A room on the board: the room's own Stage (its thread watchlist, add / import
  * / quick-task, drag to reorder, parked threads, and each thread's full surface
  * on select) under the room's own agent surface (`WarRoomSurfaceHost`, the
- * same host the room route mounts). The room is HYDRATED, never opened: a
- * tile must not change which room is the active one.
+ * same host the room route mounts). The tile holds a VIEW of the room
+ * (`useWarRoomView`): the room is read and "opened" once per session and
+ * shared with every other view of it, so waking, remounting or a second tile
+ * of the same room re-reads nothing and never flashes a skeleton. A view never
+ * changes which room is the active one.
  */
 function WarRoomRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: string }) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(id));
   const status = useAppSelector(selectThreadsStatusForRoom(id));
   const threadCount = useAppSelector(selectOrderedGalleryThreadIds(id)).length;
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    void dispatch(hydrateWarRoomSession(id));
-  }, [dispatch, id, attempt]);
+  useWarRoomView(id);
+  const retry = () => void dispatch(hydrateWarRoomSession(id));
   useAdoptTitle(source, title, session?.title, onSource);
 
   const roomHref = `/war-room/${id}`;
@@ -431,7 +429,7 @@ function WarRoomRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
       <AccessGate
         token="war_room"
         id={id}
-        onRetry={() => setAttempt((n) => n + 1)}
+        onRetry={retry}
         fallbackHref="/war-room/all"
         fallbackLabel="Your War Rooms"
       />
@@ -442,7 +440,7 @@ function WarRoomRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
   let stage: ReactNode;
   if (status === "error") {
     stage = (
-      <ReadFailure error={true} what="this room's threads" onRetry={() => setAttempt((n) => n + 1)} className="m-2" />
+      <ReadFailure error={true} what="this room's threads" onRetry={retry} className="m-2" />
     );
   } else if (status !== "ready") {
     stage = (
@@ -487,6 +485,16 @@ function WarRoomRecordBody({ id, source, title, onSource }: ItemBodyProps & { id
 function WarRoomBody(props: ItemBodyProps) {
   const id = entityIdOf(props.source);
   return id ? <WarRoomRecordBody key={id} id={id} {...props} /> : <WarRoomDraftBody {...props} />;
+}
+
+/**
+ * Mounted for as long as the tile is on the board, outside the part that
+ * sleeps: holds the tile's view of the room, so a sleeping body keeps the
+ * room's session open and waking re-opens nothing.
+ */
+function WarRoomKeep({ source }: { tileId: string; source: NodeSource }) {
+  useWarRoomView(entityIdOf(source));
+  return null;
 }
 
 // ─── Meeting ─────────────────────────────────────────────────────────────────
@@ -670,72 +678,32 @@ function WorkflowRunStartPicker({ onPick, onCancel }: PickerProps) {
   );
 }
 
-/** Which record of a run could not be read — the access gate asks about that one. */
-class RunRecordUnreadable extends Error {
-  constructor(
-    readonly token: "workflow" | "workflow_run",
-    readonly recordId: string,
-    readonly readError?: unknown,
-  ) {
-    super(`The ${token === "workflow" ? "workflow" : "run"} could not be read.`);
-    this.name = "RunRecordUnreadable";
-  }
-}
-
-interface LoadedRun {
-  definitionId: string;
-  name: string;
-  definition: WorkflowDefinitionLike;
-  config: RunSurfaceConfig | null;
-}
-
-/** The same two reads the run's own page makes: run → workflow → its surface. */
+/**
+ * The run's own stage under its own agent surface. The workflow + surface are
+ * read once per run into the workflowRuns slice (`loadRunSurface`) and the
+ * run's stream is held by the tile's `Keep`, so a tile that wakes, remounts or
+ * sits beside another tile of the same run reattaches at once: no re-read, no
+ * re-adoption, no skeleton, and never the floating window (`floatOnLeave`).
+ */
 function WorkflowRunBody({ source, title, onSource }: ItemBodyProps) {
+  const dispatch = useAppDispatch();
   const runId = entityIdOf(source);
-  const [loaded, setLoaded] = useState<LoadedRun | null>(null);
+  const loaded = useAppSelector((state) => (runId ? selectRunSurface(runId)(state) : undefined));
   const [failure, setFailure] = useState<RunRecordUnreadable | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (!runId) return undefined;
+    if (!runId || loaded) return undefined;
     let live = true;
-
-    const load = async () => {
-      const definitionId = await fetchRunDefinitionId(runId).catch((error: unknown) => {
-        throw new RunRecordUnreadable("workflow_run", runId, error);
-      });
-      if (!definitionId) throw new RunRecordUnreadable("workflow_run", runId);
-      const [workflow, surface] = await Promise.all([
-        fetchWorkflowDefinition(definitionId).catch((error: unknown) => {
-          throw new RunRecordUnreadable("workflow", definitionId, error);
-        }),
-        // No authored surface is not a broken workflow: the stage derives one.
-        getDefaultSurface(definitionId, {
-          audience: "consumer",
-          profile: "full",
-        }).catch(() => null),
-      ]);
-      if (!workflow) throw new RunRecordUnreadable("workflow", definitionId);
-      return {
-        definitionId: workflow.id,
-        name: workflow.name,
-        definition: workflow.definition,
-        config: surface?.config ?? null,
-      };
-    };
-    load()
-      .then((next) => {
-        if (live) setLoaded(next);
-      })
-      .catch((thrown: unknown) => {
-        if (!live) return;
-        setFailure(
-          thrown instanceof RunRecordUnreadable ? thrown : new RunRecordUnreadable("workflow_run", runId, thrown),
-        );
-      });
+    dispatch(loadRunSurface(runId)).catch((thrown: unknown) => {
+      if (!live) return;
+      setFailure(
+        thrown instanceof RunRecordUnreadable ? thrown : new RunRecordUnreadable("workflow_run", runId, thrown),
+      );
+    });
     return () => {
       live = false;
     };
-  }, [runId, attempt]);
+  }, [dispatch, runId, loaded, attempt]);
   useAdoptTitle(source, title, loaded?.name, onSource);
 
   if (!runId) return <NoRecordBody what="workflow run" href="/workflows/runs" label="Your runs" />;
@@ -783,12 +751,23 @@ function WorkflowRunBody({ source, title, onSource }: ItemBodyProps) {
               definition={loaded.definition}
               workflowName={loaded.name}
               config={loaded.config}
+              floatOnLeave={false}
             />
           </WorkflowRunSurfaceHost>
         </div>
       </div>
     </MasterworkRulesProvider>
   );
+}
+
+/**
+ * Mounted for as long as the tile is on the board, outside the part that
+ * sleeps: holds the run's stream adoption (one per run, shared), so a sleeping
+ * body keeps the run live in the store and waking reattaches to it.
+ */
+function WorkflowRunKeep({ source }: { tileId: string; source: NodeSource }) {
+  useWorkflowRun(entityIdOf(source));
+  return null;
 }
 
 // ─── Research ────────────────────────────────────────────────────────────────
@@ -1010,6 +989,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 560, h: 620 },
     matches: matchesEntity(FEATURE_ENTITY.warRoom),
     Body: WarRoomBody,
+    Keep: WarRoomKeep,
     startNew: {
       label: "War Room",
       create: () => newDraft(FEATURE_ENTITY.warRoom, "New War Room"),
@@ -1017,6 +997,9 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     bringIn: { label: "War Room", Picker: WarRoomPicker },
     href: hrefFor(FEATURE_ENTITY.warRoom, registryHref("war_room")),
     kindLabel: "war room",
+    // Checked 2026-10-02: hide/show, remove+undo and a second tile of the room re-read nothing,
+    // never flash a skeleton, and record "opened" once per session.
+    sleeps: true,
   },
   {
     key: FEATURE_ENTITY.meeting,
@@ -1042,10 +1025,14 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     defaultSize: { w: 960, h: 760 },
     matches: matchesEntity(FEATURE_ENTITY.workflowRun),
     Body: WorkflowRunBody,
+    Keep: WorkflowRunKeep,
     startNew: { label: "Run a workflow", Picker: WorkflowRunStartPicker },
     bringIn: { label: "Workflow run", Picker: WorkflowRunPicker },
     href: hrefFor(FEATURE_ENTITY.workflowRun, runHref),
     kindLabel: "workflow run",
+    // Checked 2026-10-02: hide/show and remove+undo reattach the same adoption, never re-read the
+    // run's workflow, never flash a skeleton and never open the floating run window.
+    sleeps: true,
   },
   {
     key: FEATURE_ENTITY.research,

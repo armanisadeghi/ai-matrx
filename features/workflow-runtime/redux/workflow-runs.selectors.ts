@@ -19,6 +19,7 @@ import type {
   RunActivityEntry,
   WorkflowRunEmission,
   WorkflowRunState,
+  RunSurfaceRecord,
   WorkflowRunsState,
   WorkflowRunWorkSet,
 } from "@/features/workflow-runtime/redux/workflow-runs.slice";
@@ -465,3 +466,9 @@ export const selectAllAttachedRunIds = createSelector(
     return ids.length === 0 ? EMPTY_NODE_ORDER : ids;
   },
 );
+
+/** The workflow + surface a run's views render; undefined until read. */
+export const selectRunSurface =
+  (runId: string) =>
+  (state: StateWithWorkflowRuns): RunSurfaceRecord | undefined =>
+    state.workflowRuns.surfaceByRunId[runId];

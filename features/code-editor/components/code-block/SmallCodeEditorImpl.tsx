@@ -3,6 +3,7 @@ import React from "react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useMonaco } from "@monaco-editor/react";
 import Editor from "@monaco-editor/react";
+import { useEffectsAttached } from "@/hooks/use-is-mounted";
 import { useMeasure } from "@ai-matrx/kit/hooks";
 import { Button } from "@/components/ui/button";
 import {
@@ -89,6 +90,8 @@ const SmallCodeEditor = ({
   const [internalMinimapEnabled, setInternalMinimapEnabled] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [isConfigured, setIsConfigured] = useState(false);
+  // <Editor> never re-creates itself after <Activity> hides it (blank pane) — mount it only while attached.
+  const attached = useEffectsAttached();
 
   // Use controlled props if provided, otherwise use internal state
   const wordWrap =
@@ -510,7 +513,7 @@ const SmallCodeEditor = ({
 
         {/* Main editor area */}
         <div className="flex-grow relative min-h-0">
-          {!isConfigured ? (
+          {!isConfigured || !attached ? (
             <CodeEditorLoading />
           ) : (
             <Editor

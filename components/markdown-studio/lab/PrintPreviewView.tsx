@@ -13,6 +13,8 @@
 import dynamic from "next/dynamic";
 import { PAGE_BREAK_MARKDOWN } from "@ai-matrx/print/directives";
 
+import { printDocumentPdfPages, renderDocumentPdfPages } from "@/features/print/document/pdfPages";
+
 const DocumentPrintPreview = dynamic(
   () => import("@ai-matrx/print/react").then((m) => m.DocumentPrintPreview),
   {
@@ -37,7 +39,12 @@ export function PrintPreviewView({ content, title }: PrintPreviewViewProps) {
   }
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <DocumentPrintPreview markdown={content} title={title} />
+      <DocumentPrintPreview
+        markdown={content}
+        title={title}
+        renderPages={renderDocumentPdfPages}
+        printPages={printDocumentPdfPages}
+      />
     </div>
   );
 }

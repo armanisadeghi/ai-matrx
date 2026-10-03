@@ -93,9 +93,12 @@ export function createDiagnosticsPort(): DiagnosticsPort {
   return {
     capture(error, context) {
       const message = error instanceof Error ? error.message : String(error);
+      // Name the action and stage that threw (e.g. "selection:comment eligible") so the row says where.
+      const detail = (context.detail ?? {}) as { actionId?: unknown; stage?: unknown };
+      const where = [detail.actionId, detail.stage].filter((v): v is string => typeof v === "string").join(" ");
       captureError({
         source: "alchemy",
-        message: `[alchemy:${context.area}] ${message}`,
+        message: `[alchemy:${context.area}${where ? ` ${where}` : ""}] ${message}`,
         ...(error instanceof Error
           ? { name: error.name, ...(error.stack ? { stack: error.stack } : {}) }
           : {}),

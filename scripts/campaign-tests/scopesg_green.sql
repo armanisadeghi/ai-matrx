@@ -62,7 +62,7 @@ begin
   perform set_config('app.actor_system', 'campaign-test/scopesg', true);
   insert into iam.organizations (id, name, slug, abbreviation, created_by) values
     (v_org, 'Cedar Ridge Physical Therapy ' || substr(v_org::text, 1, 8),
-            'cedar-ridge-pt-sg-' || substr(v_org::text, 1, 8), 'CRPT', c_admin);
+            'cedar-ridge-pt-sg-' || substr(v_org::text, 1, 8), 'CRP', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
     (v_org, 'organization', v_org, c_admin,  'owner',  'active'),
     (v_org, 'organization', v_org, c_member, 'member', 'active');

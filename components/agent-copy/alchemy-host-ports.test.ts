@@ -164,6 +164,16 @@ describe("diagnostics port (DiagnosticsPort)", () => {
     );
   });
 
+  it("names the action and stage that threw", () => {
+    ports().diagnostics.capture(new Error("offset out of range"), {
+      area: "actions",
+      detail: { actionId: "selection:comment", stage: "eligible" },
+    });
+    expect(mockCaptureError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "[alchemy:actions selection:comment eligible] offset out of range" }),
+    );
+  });
+
   it("captures a non-Error value too, never dropping it", () => {
     ports().diagnostics.capture("menu layout missing", { area: "menu", detail: null });
     expect(mockCaptureError).toHaveBeenCalledWith(

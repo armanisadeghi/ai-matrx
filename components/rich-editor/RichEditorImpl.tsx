@@ -105,6 +105,12 @@ export interface RichEditorController {
   setText: (text: string) => void;
   /** The text now, with any pending keystrokes delivered through onChange first. */
   flush: () => string;
+  /**
+   * Steps the showing view's own undo history holds (zero in Preview and right
+   * after a mount). A host with a record-level history (notes) answers ⌘Z
+   * itself when this is zero, so undo survives a remount.
+   */
+  historyDepth: () => { undo: number; redo: number };
   /** Open the editor's own find (and replace) bar — it skips protected content. */
   openFind: (withReplace?: boolean) => void;
   /** Scroll to the heading that starts at (or nearest before) this source offset. */
@@ -506,6 +512,7 @@ export default function RichEditorImpl({
       insertText: (text, where) => handle.current?.insertText(text, where) ?? false,
       setText,
       flush,
+      historyDepth: () => handle.current?.historyDepth() ?? { undo: 0, redo: 0 },
       openFind: (withReplace = false) => setFindMode(withReplace ? "replace" : "find"),
       jumpToOffset: (offset) => {
         const entries = outlineOf(flush());

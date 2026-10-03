@@ -43,6 +43,7 @@ import React, {
 import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Rocket, X } from "lucide-react";
 import { DiffEditor, type DiffOnMount } from "@monaco-editor/react";
+import { useEffectsAttached } from "@/hooks/use-is-mounted";
 import type { editor as MonacoEditorNS } from "monaco-editor";
 import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -77,6 +78,8 @@ interface PatchAnchor {
 export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
   const dispatch = useAppDispatch();
   const isDark = useMonacoTheme();
+  // DiffEditor never re-creates itself after <Activity> hides it (blank pane) — mount it only while attached.
+  const attached = useEffectsAttached();
 
   // Memoize the factory selector per tabId — see redux-selector-rules
   // Rule 7. Reuses the same memoized selector instance across renders.
@@ -551,29 +554,31 @@ export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
 
       {/* ── Monaco DiffEditor — same engine VSCode uses ─────────────── */}
       <div className="relative min-h-0 flex-1">
-        <DiffEditor
-          key={tab.id}
-          height="100%"
-          language={tab.language}
-          theme={isDark ? "vs-dark" : "vs"}
-          original={tab.content}
-          modified={proposedContent}
-          onMount={handleDiffMount}
-          options={{
-            renderSideBySide: false,
-            readOnly: true,
-            originalEditable: false,
-            renderValidationDecorations: "off",
-            minimap: { enabled: false },
-            fontSize: 13,
-            lineNumbers: "on",
-            renderWhitespace: "selection",
-            scrollBeyondLastLine: false,
-            automaticLayout: true,
-            diffWordWrap: "off",
-            guides: { indentation: true },
-          }}
-        />
+        {attached ? (
+          <DiffEditor
+            key={tab.id}
+            height="100%"
+            language={tab.language}
+            theme={isDark ? "vs-dark" : "vs"}
+            original={tab.content}
+            modified={proposedContent}
+            onMount={handleDiffMount}
+            options={{
+              renderSideBySide: false,
+              readOnly: true,
+              originalEditable: false,
+              renderValidationDecorations: "off",
+              minimap: { enabled: false },
+              fontSize: 13,
+              lineNumbers: "on",
+              renderWhitespace: "selection",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              diffWordWrap: "off",
+              guides: { indentation: true },
+            }}
+          />
+        ) : null}
       </div>
 
       {/* ── Per-hunk inline action portals ──────────────────────────── */}

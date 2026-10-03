@@ -43,7 +43,7 @@ import {
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
-import { AgentPayloadButton } from "./AgentPayloadSheet";
+import { AgentPayloadButton } from "./AgentPayloadView";
 import {
   confirmPublishPage,
   confirmRewritePage,

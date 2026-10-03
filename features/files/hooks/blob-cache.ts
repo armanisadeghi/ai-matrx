@@ -70,6 +70,13 @@ interface CacheEntry {
   url: string;
   /** `blob.size` cached so eviction math doesn't need to re-read. */
   bytes: number;
+  /**
+   * The file version these bytes belong to; null when it was not known at
+   * fetch time (stamped by the first read that knows it). A read for a
+   * different version is a miss — the bytes are refetched only when the
+   * version changes.
+   */
+  version: number | null;
   /** Last-access timestamp (ms). Updated on cache hits. */
   lastAccessed: number;
 }
@@ -80,11 +87,19 @@ let budgetBytes = DEFAULT_BUDGET_BYTES;
 
 /**
  * Read a cached entry. Touches the LRU position so re-accesses keep
- * the entry alive. Returns `null` on miss.
+ * the entry alive. Returns `null` on miss — and when `version` is given and
+ * the entry holds a different version's bytes.
  */
-export function getCached(fileId: string): CacheEntry | null {
+export function getCached(
+  fileId: string,
+  version?: number | null,
+): CacheEntry | null {
   const entry = cache.get(fileId);
   if (!entry) return null;
+  if (version != null) {
+    if (entry.version != null && entry.version !== version) return null;
+    entry.version = version;
+  }
   // Bump LRU position by re-inserting at the end of the iteration order.
   cache.delete(fileId);
   entry.lastAccessed = Date.now();
@@ -100,7 +115,10 @@ export function getCached(fileId: string): CacheEntry | null {
  * we want to avoid a network round-trip if the bytes persisted from a
  * previous session.
  */
-export async function hydrateFromIdb(fileId: string): Promise<CacheEntry | null> {
+export async function hydrateFromIdb(
+  fileId: string,
+  version?: number | null,
+): Promise<CacheEntry | null> {
   if (!identityUserId) return null;
   try {
     // Read the most recent version's entry. Cache keys embed the version
@@ -119,7 +137,10 @@ export async function hydrateFromIdb(fileId: string): Promise<CacheEntry | null>
     const matches = await db.blobs
       .where("userId")
       .equals(identityUserId)
-      .and((e: IdbBlobCacheEntry) => e.fileId === fileId)
+      .and(
+        (e: IdbBlobCacheEntry) =>
+          e.fileId === fileId && (version == null || e.version === version),
+      )
       .toArray();
     if (matches.length === 0) return null;
     // Prefer the entry with the most recent `lastAccessedAt`.
@@ -130,7 +151,7 @@ export async function hydrateFromIdb(fileId: string): Promise<CacheEntry | null>
     );
     // Promote into the in-memory tier so the next read is synchronous.
     const objectUrl = URL.createObjectURL(winner.blob);
-    setCachedMemoryOnly(fileId, winner.blob, objectUrl);
+    setCachedMemoryOnly(fileId, winner.blob, objectUrl, winner.version ?? null);
     return cache.get(fileId) ?? null;
   } catch {
     return null;
@@ -155,7 +176,7 @@ export function setCached(
   url: string,
   meta?: { mimeType?: string; version?: number | null; checksum?: string | null },
 ): void {
-  setCachedMemoryOnly(fileId, blob, url);
+  setCachedMemoryOnly(fileId, blob, url, meta?.version ?? null);
   // Best-effort write to IDB. The promise is intentionally not awaited —
   // the caller's render path is already complete; IDB persistence is a
   // background side-effect that's safe to fail (the in-memory tier is
@@ -183,7 +204,12 @@ export function setCached(
   }
 }
 
-function setCachedMemoryOnly(fileId: string, blob: Blob, url: string): void {
+function setCachedMemoryOnly(
+  fileId: string,
+  blob: Blob,
+  url: string,
+  version: number | null,
+): void {
   // Replace any existing entry — must revoke the old URL.
   const existing = cache.get(fileId);
   if (existing) {
@@ -197,6 +223,7 @@ function setCachedMemoryOnly(fileId: string, blob: Blob, url: string): void {
     url,
     bytes: blob.size,
     lastAccessed: Date.now(),
+    version,
   };
   cache.set(fileId, entry);
   totalBytes += entry.bytes;
@@ -235,6 +262,35 @@ export function invalidate(fileId: string): void {
     void deleteEntriesForFile(identityUserId, fileId);
   }
   void postBlobCacheInvalidate(fileId);
+}
+
+/** The version the cached bytes belong to (null: unknown or not cached). No LRU touch. */
+export function cachedVersion(fileId: string): number | null {
+  return cache.get(fileId)?.version ?? null;
+}
+
+/**
+ * A save wrote `blob` as version `version` of this file: drop every older
+ * copy (all tiers) and cache the saved bytes as that version, so every
+ * viewer shows the new version without downloading what this tab just
+ * uploaded.
+ */
+export function replaceWithSavedBytes(
+  fileId: string,
+  blob: Blob,
+  version: number,
+): void {
+  invalidate(fileId);
+  try {
+    setCached(fileId, blob, URL.createObjectURL(blob), {
+      mimeType: blob.type,
+      version,
+    });
+  } catch (err) {
+    // The save itself landed; only the local copy could not be kept, so the
+    // next viewer downloads the new version instead. Say so.
+    console.warn("[blob-cache] saved bytes not cached; the next view downloads them", err);
+  }
 }
 
 /**

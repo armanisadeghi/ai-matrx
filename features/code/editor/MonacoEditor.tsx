@@ -10,6 +10,7 @@ import Editor, {
 // where possible; the handful of shapes we need are narrowed locally.
 import { configureMonaco } from "./monaco-config";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { useEffectsAttached } from "@/hooks/use-is-mounted";
 import { useMonacoTheme } from "./useMonacoTheme";
 
 /** Minimal shape of the Monaco editor instance we need. Keeping this loose
@@ -86,6 +87,13 @@ export type MonacoModel = {
   getLineCount: () => number;
   getLineContent: (lineNumber: number) => string;
   getLanguageId: () => string;
+  /** The whole buffer as a range (for a full-text replace). */
+  getFullModelRange: () => {
+    startLineNumber: number;
+    startColumn: number;
+    endLineNumber: number;
+    endColumn: number;
+  };
   /** Character offset (0-based) of a 1-based line/column position. */
   getOffsetAt: (position: { lineNumber: number; column: number }) => number;
   uri: { path: string };
@@ -107,6 +115,14 @@ export interface MonacoEditorProps
   /** Optional Monaco path / uri — used for per-file model state. */
   path?: string;
   readOnly?: boolean;
+  /**
+   * Keep the Monaco model (its text AND undo history) alive when this editor
+   * is disposed — on hide (a sleeping board tile) or unmount — so the next
+   * editor for the same `path` reattaches it, and two editors of one `path`
+   * share one buffer. Requires `path`. Without it each dispose drops the
+   * model, so a shared path would blank the other editor.
+   */
+  keepModel?: boolean;
   onChange?: (next: string) => void;
   /** Called when the editor is mounted. Gives the host access to imperative
    *  APIs (e.g. focus, format, scroll). */
@@ -129,6 +145,7 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
   language,
   path,
   readOnly = false,
+  keepModel = false,
   onChange,
   onEditorMount,
   onSave,
@@ -139,7 +156,19 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
   const [isConfigured, setIsConfigured] = useState(false);
   const isDark = useMonacoTheme();
   const isMobile = useIsMobile();
+  // `<Editor>` disposes its instance when its effects detach (React
+  // `<Activity>` hidden) and never creates another when they re-attach, so a
+  // hidden-then-shown editor was blank. It renders only while attached: every
+  // show is a fresh `<Editor>` mount, which builds a new instance (and, with
+  // `keepModel`, reattaches the same model and undo history).
+  const attached = useEffectsAttached();
   const editorRef = useRef<StandaloneCodeEditor | null>(null);
+  // The value a (re)created editor must show: a kept model may hold older
+  // text than the host's value if the host changed while it was hidden.
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
   const monacoRef = useRef<MonacoNamespace | null>(null);
   // Keep latest onSave in a ref so the keybinding always sees the fresh
   // callback without needing to re-register the command (addCommand has no
@@ -173,6 +202,13 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
     (editor) => {
       const ed = editor as unknown as StandaloneCodeEditor;
       editorRef.current = ed;
+      const model = ed.getModel();
+      if (model && ed.getValue() !== valueRef.current) {
+        // As an edit (not setValue) so the kept undo history stays usable.
+        ed.executeEdits("host-value", [
+          { range: model.getFullModelRange(), text: valueRef.current, forceMoveMarkers: true },
+        ]);
+      }
       const monaco = monacoRef.current;
       if (monaco) {
         ed.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -199,7 +235,7 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
 
   const theme = isDark ? "vs-dark" : "vs";
 
-  if (!isConfigured) {
+  if (!isConfigured || !attached) {
     return (
       <div
         ref={forwardedRef}
@@ -228,6 +264,7 @@ export const MonacoEditor = React.forwardRef<HTMLDivElement, MonacoEditorProps>(
         onChange={handleChange}
         beforeMount={handleBeforeMount}
         onMount={handleMount}
+        keepCurrentModel={keepModel && Boolean(path)}
         options={{
           readOnly,
           automaticLayout: true,

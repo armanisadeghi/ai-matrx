@@ -86,7 +86,10 @@ import {
   isFileTreeLoadDeferred,
   runWithFileTreeLoadTimeout,
 } from "./file-tree-timeout";
-import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
+import {
+  invalidate as invalidateBlobCache,
+  replaceWithSavedBytes,
+} from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
   addFilePendingRequest,
@@ -1917,9 +1920,9 @@ export const saveFileNewVersion = createAsyncThunk<
           updatedAt: new Date().toISOString(),
         }),
       );
-      // The current bytes changed — drop cached copies so every viewer
-      // reads the new version.
-      invalidateBlobCache(fileId);
+      // The current bytes are the ones just uploaded — cache them as the new
+      // version so every viewer shows it without downloading them back.
+      replaceWithSavedBytes(fileId, body, data.version_number);
       invalidateOfficeExtraction(fileId);
       // Refresh the history without holding the save on it — the save has
       // landed, and "Saving…" must not wait on a list read.

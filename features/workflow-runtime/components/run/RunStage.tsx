@@ -193,6 +193,7 @@ export function RunStage({
   config,
   /** Wired to the surface's own Run verb when it has one. */
   onRetry,
+  floatOnLeave = true,
 }: {
   runId: string;
   /** The workflow this run belongs to — the declared result contract's key. */
@@ -203,6 +204,11 @@ export function RunStage({
   /** The authored surface. Absent → derived from the definition. */
   config?: RunSurfaceConfig | null;
   onRetry?: () => void;
+  /**
+   * This stage is the run's home on a page (THE FLOATING LAW applies). False
+   * where it is not — a board tile never closes or opens the floating window.
+   */
+  floatOnLeave?: boolean;
 }) {
   const steps = useMemo(() => describeWorkflowSteps(definition), [definition]);
   const deliverables = useMemo(() => deliverableSteps(steps), [steps]);
@@ -256,7 +262,7 @@ export function RunStage({
    * person got a spinner somewhere else and no way back. See
    * `floating/useFloatingWorkflowRun.ts` for the handoff itself.
    */
-  useFloatingWorkflowRun({ runId, workflowName, stepLabels });
+  useFloatingWorkflowRun({ runId, workflowName, stepLabels, floatOnLeave });
 
   const schemaState = useResultSchema(definitionId);
   const schemaPending = schemaState.status === "loading";

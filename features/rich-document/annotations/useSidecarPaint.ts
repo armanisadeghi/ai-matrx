@@ -13,7 +13,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { projectSource, sourceToRanges, type SourceProjection } from "./projection";
+import { projectSource, projectionIsCurrent, sourceToRanges, type SourceProjection } from "./projection";
 import { HIGHLIGHT_COLORS } from "./constants";
 import type { ResolvedItem } from "./types";
 
@@ -118,10 +118,15 @@ export function useSidecarPaint(
     };
   }, [root, body, instance]);
 
-  // Re-paint when items or the active item change.
+  // Re-paint when items or the active item change — on the DOM as it is now,
+  // not a map the debounced observer has not refreshed yet.
   useEffect(() => {
+    if (root && projectionRef.current && !projectionIsCurrent(projectionRef.current, root)) {
+      projectionRef.current = projectSource(root, body);
+      onProjectionRef.current?.(projectionRef.current);
+    }
     paintAll(projectionRef.current, items, instance, activeKey);
-  }, [items, instance, activeKey]);
+  }, [root, body, items, instance, activeKey]);
 
   return projectionRef;
 }

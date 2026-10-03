@@ -17,7 +17,7 @@
 // instrument projector + live metric chips (dense), the Comfortable/Compact
 // density dial + live active/parked meter (refine), and the parked-chip
 // treatment in the rail/tray (sharp). Hydrates the REAL session
-// (loadWarRoomSession) with real loading / empty / not-found states; all data
+// (enterWarRoom → roomViewSession) with real loading / empty / not-found states; all data
 // flows through the warRoom thunks + selectors.
 
 import { useEffect, useState } from "react";
@@ -30,10 +30,8 @@ import {
   selectSessionById,
   selectThreadsStatusForRoom,
 } from "@/features/war-room/redux/selectors";
-import {
-  leaveWarRoomSession,
-  loadWarRoomSession,
-} from "@/features/war-room/redux/thunks";
+import { loadWarRoomSession } from "@/features/war-room/redux/thunks";
+import { enterWarRoom } from "@/features/war-room/redux/roomViewSession";
 import { RoomHeader } from "./RoomHeader";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
@@ -105,12 +103,9 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   // The header toggle lives in RoomHeader; the window renders here.
   const [roomAgentOpen, setRoomAgentOpen] = useState(false);
 
-  useEffect(() => {
-    dispatch(loadWarRoomSession(sessionId));
-    return () => {
-      dispatch(leaveWarRoomSession(sessionId));
-    };
-  }, [sessionId, dispatch]);
+  // The route holds a view of the room (a session, ref-counted with every
+  // board tile showing it): read and "opened" once per session, never per mount.
+  useEffect(() => dispatch(enterWarRoom(sessionId)), [sessionId, dispatch]);
 
   // Live-watch windows are ephemeral "this is happening right now" UI tied to
   // this room. Leaving the room unmounts MasterWatchLayer (windows vanish);
