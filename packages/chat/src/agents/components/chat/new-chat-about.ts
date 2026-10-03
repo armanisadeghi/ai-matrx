@@ -14,6 +14,7 @@ import type { StoredRemark } from "../../redux/execution-system/instance-resourc
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "./chat-quick-actions.config";
+import { ensureOrgId } from "../../../host/org";
 
 export interface NewChatPassage {
   quote: string;
@@ -49,13 +50,17 @@ export async function openNewChatAbout({
   dispatch: ChatDispatch;
   navigate: (href: string) => void;
 }): Promise<void> {
+  // The person just acted: with no workspace selected, the host asks for one
+  // (the default new-chat job depends on it) instead of failing.
+  const organizationId = await ensureOrgId(identity.organizationId);
   const { resolveMandate } = await import("../../../mandates/service");
   const mandate = await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   stashChatDraftTransfer({
     targetAgentId: mandate.agentId,
     text: "",
     remarks: [passageRemark(passage)],
-    ...identity,
+    userId: identity.userId,
+    organizationId,
   });
   dispatch(clearFocus(chatRouteSurfaceKey(mandate.agentId)));
   dispatch(bumpFreshSession());
