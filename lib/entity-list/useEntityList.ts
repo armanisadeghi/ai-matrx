@@ -384,6 +384,8 @@ export function useEntityList<TRow>({
   // typing, so it neither waits for the debounce nor keeps showing the rows
   // of a different question (see THE ROWS ANSWER THIS QUESTION, below).
   const lastTypedAt = useRef(0);
+  // The text the person last typed into the box (null = nothing typed on this mount).
+  const [typedSearch, setTypedSearch] = useState<string | null>(null);
   const typingRecently = () =>
     Date.now() - lastTypedAt.current < Math.max(searchDebounceMs, SEARCH_DEBOUNCE_MS) * 4;
 
@@ -457,10 +459,18 @@ export function useEntityList<TRow>({
   const peekRef = useRef<{ page: typeof peekedPage; key: string; shown: boolean }>({ page: undefined, key: "", shown: false });
   peekRef.current = { page: peekedPage, key: queryKey, shown: showPeek };
   const liveQuestion = questionOf(query, query.search);
+  // 🚨 TYPED TEXT KEEPS THE ROWS UNTIL ITS ANSWER LANDS (2026-10-03). The typing exception used to
+  // last only `typingRecently()` — one second — while a server list answers in 0.5–3 s, so at any
+  // normal typing pace the table dropped to its skeleton between characters ("the agent search box
+  // is non-functional and loading on each character", /agents/all?q=an). The exception now holds
+  // for as long as the box still says what the person typed, however slow the read: the previous
+  // rows stay under the box's spinner until the newer answer replaces them. A search that arrives
+  // any other way (Back, a link) was never typed here, so it still holds the skeleton.
+  const searchWasTyped = typedSearch !== null && typedSearch === query.search;
   const rowsAnswerThisQuestion =
     rowsAnswer === null ||
     rowsAnswer === liveQuestion ||
-    (typingRecently() &&
+    ((searchWasTyped || typingRecently()) &&
       rowsAnswer === questionOf(query, JSON.parse(rowsAnswer).search));
 
   useEffect(() => {
@@ -755,6 +765,7 @@ export function useEntityList<TRow>({
   const setFilters = (filters: EntityFilters) => patchQuery({ filters });
   const setSearch = (search: string) => {
     lastTypedAt.current = Date.now();
+    setTypedSearch(search);
     patchQuery({ search });
   };
   const setDeep = (deep: boolean) => patchQuery({ deep });
