@@ -14,7 +14,7 @@ import { InfoHint } from "@/components/official/InfoHint";
 import type { IncompleteValue } from "@/features/scopes/utils/incompleteValue";
 
 /** The tooltip (≤ 140 chars, one sentence): what the person sees and what saving needs. */
-export const PARTIAL_VALUE_HINT = "Only the start loaded. Saving needs the whole text pasted in.";
+export const PARTIAL_VALUE_HINT = "Only the start loaded; saving needs the whole text pasted in.";
 
 export function PartialValueBadge({ incomplete }: { incomplete: IncompleteValue | null | undefined }) {
   if (!incomplete) return null;
