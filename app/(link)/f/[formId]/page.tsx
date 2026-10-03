@@ -33,8 +33,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PublicLinkNotice } from "@/components/public-link/PublicLinkNotice";
-import { PortalAccentBand, PortalBrandHeading, PortalCover, PortalFooter } from "@/features/portals/PortalBrand";
-import { portalLook } from "@/features/portals/look";
+import { FormLookFrame } from "@ai-matrx/records-ui";
 import { prefillFromLink, publicForm } from "@/features/forms/service";
 
 import { PublicFormRunner } from "./PublicFormRunner";
@@ -87,33 +86,21 @@ export default async function PublicFormPage({
     return <PublicLinkNotice title={form.title} message={form.message} />;
   }
 
-  // THE ORGANIZATION'S LOOK (MAKE-HOME W5): the store resolved it (`presentation.look`), and the
-  // portal's own primitives draw it — cover, logo, name, colour, footer — so a clinic's form and
-  // its client portal can never look like two businesses. Its colour becomes the page's primary,
-  // so the buttons, the progress line and the focus ring wear it too.
-  const look = portalLook(form.presentation?.look ?? null, form.title);
-
+  // THE ORGANIZATION'S LOOK (MAKE-HOME W5, W5b): the store resolved it (`presentation.look`), and the
+  // ONE frame draws it — cover, logo, name, title, colour, footer — the same component the builder's
+  // preview uses, so an owner sees exactly what a stranger will. Its colour becomes the primary of
+  // everything inside it: the buttons, the progress line, the focus ring and the choice rows.
   return (
     // NOTHING ON THIS PAGE BUT THE FORM. It is somebody's clinic asking their patient four
     // questions: one column, the title and every answer box on one left edge, full width of the
     // column at any screen size (the live walk measured a 166 px box at 390 px).
-    <main
-      className="matrx-touch-targets mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-4 px-4 pb-safe pt-6 sm:px-5 sm:pt-10"
-      style={(look.primaryVars ?? undefined) as React.CSSProperties | undefined}
-    >
-      <PortalAccentBand look={look} />
-      <PortalCover look={look} />
-      <PortalBrandHeading look={look} withWelcome={false} />
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">{form.title}</h1>
-      {/* PREFILL BY LINK (lane S7-PRIME): `?<question key>=<answer>` starts the form with
-          that answer in its question. Resolved HERE, against the form's own questions and
-          Field kinds, so the first paint is already filled in. */}
-      {/* A BLOCK, NOT A FLEX ITEM: the runner's own column is `mx-auto max-w-xl`, and an auto
-          margin on a flex item shrinks it to its content (the 166 px box). Inside a block it fills. */}
-      <div className="w-full">
+    <main className="matrx-touch-targets mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-4 px-4 pb-safe pt-6 sm:px-5 sm:pt-10">
+      <FormLookFrame look={form.presentation?.look ?? null} title={form.title}>
+        {/* PREFILL BY LINK (lane S7-PRIME): `?<question key>=<answer>` starts the form with
+            that answer in its question. Resolved HERE, against the form's own questions and
+            Field kinds, so the first paint is already filled in. */}
         <PublicFormRunner form={form} prefill={prefillFromLink(form, query).answers} />
-      </div>
-      <PortalFooter look={look} />
+      </FormLookFrame>
     </main>
   );
 }
