@@ -81,8 +81,13 @@ export function ensureConversationScopesOrAsk(
     // A signed-out visitor (a guest on a public app) has no scopes and no
     // saved tags to read — nothing to compare, nothing to ask.
     if (!(await hasBrowserSession())) return { blocked: false };
-    // Fetch (cached after first load) the chat's durable tags. A brand-new
-    // conversation id simply has no assignment rows → C = ∅.
+    // A chat the server has not stored yet has no durable tags → C = ∅ (case
+    // 1) — the same reading ActiveContextLensChip makes. Never hold its first
+    // send on an association read (2026-10-02 latency regression: ~470ms on
+    // every new chat's first message); the post-send union sync stamps A.
+    const conversation = getState().conversations?.byConversationId[conversationId];
+    if (conversation?.cacheOnly !== false) return { blocked: false };
+    // Fetch (cached after first load) the chat's durable tags.
     await dispatch(ensureEntityScopes("conversation", conversationId));
 
     // Read BOTH sets from fresh store state after the await so the equality

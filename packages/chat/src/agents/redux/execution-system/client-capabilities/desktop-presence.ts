@@ -64,9 +64,10 @@ function readEngineVersion(metadata: unknown): string {
   return typeof candidate === "string" ? candidate : "";
 }
 
-async function fetchPresence(): Promise<DesktopPresence | null> {
+/** `undefined` = no session yet: an answer about nobody, never cached. */
+async function fetchPresence(): Promise<DesktopPresence | null | undefined> {
   // A signed-out visitor has no desktop app of their own to find.
-  if (!(await hasBrowserSession())) return null;
+  if (!(await hasBrowserSession())) return undefined;
   const cutoff = new Date(Date.now() - LIVE_WINDOW_MS).toISOString();
   // VIEW LAW: container-scoped via RLS — app_instances rows are keyed (user_id, instance_id), see docblock above
   const { data, error } = await supabase
@@ -125,7 +126,9 @@ export function getLiveDesktopInstance(): Promise<DesktopPresence | null> {
 function refreshPresence(): Promise<DesktopPresence | null> {
   if (inFlight) return inFlight;
   inFlight = fetchPresence()
-    .then((fresh) => {
+    .then((answer) => {
+      if (answer === undefined) return cache?.value ?? null;
+      const fresh = answer;
       // Preserve object identity when nothing consumer-visible changed so
       // useSyncExternalStore snapshots stay referentially stable (lastSeen
       // alone advancing is not a presence transition).

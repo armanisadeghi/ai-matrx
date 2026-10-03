@@ -48,6 +48,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
+import { ensureSurfaceFeatureLoaded } from "../../../../surfaces/redux/userStateSlice";
+import { CONTEXT_RULES_FEATURE } from "@ai-matrx/agents/context";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import {
@@ -225,6 +227,11 @@ export function ConversationContextRail({
   // is that page's own conversation.
   useConversationFollowsPage(conversationId);
   const contextChipShown = useConversationContextChipShown(conversationId);
+  // The person's saved context rules load as the composer mounts — chip shown
+  // or not — so a page's first send never waits on them.
+  useEffect(() => {
+    void dispatch(ensureSurfaceFeatureLoaded(CONTEXT_RULES_FEATURE));
+  }, [dispatch]);
 
   // ── Document pills read the EDITOR slice (the SSOT), never instanceContext
   // (which is the agent-facing publication). Working: shown iff enabled.

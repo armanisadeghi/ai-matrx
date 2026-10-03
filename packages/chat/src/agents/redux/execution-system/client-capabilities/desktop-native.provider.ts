@@ -34,10 +34,26 @@ function toSysPlatform(platform: string): string {
   return platform === "windows" ? "win32" : platform;
 }
 
+/** The longest a send waits on a desktop-presence check that has never answered. */
+const PRESENCE_BUDGET_MS = 150;
+
+// Warm the presence answer as soon as the chat code loads, so a page's first
+// send reads a cached answer instead of waiting on the app_instances read
+// (2026-10-02 latency regression: ~290ms on every first send after a load).
+if (typeof window !== "undefined") {
+  setTimeout(() => void getLiveDesktopInstance(), 0);
+}
+
 registerClientCapability({
   name: "desktop-native",
   selectPayload: async () => {
-    const desktop = await getLiveDesktopInstance();
+    // A send waits at most PRESENCE_BUDGET_MS for a first-ever check; past
+    // that it goes without the desktop capability this turn and the answer
+    // lands in the cache for the next (2026-10-02 latency regression).
+    const desktop = await Promise.race([
+      getLiveDesktopInstance(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), PRESENCE_BUDGET_MS)),
+    ]);
     if (!desktop) return null;
     return {
       platform: toSysPlatform(desktop.platform),

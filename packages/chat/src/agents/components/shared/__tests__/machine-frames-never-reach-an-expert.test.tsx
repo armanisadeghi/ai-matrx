@@ -223,9 +223,10 @@ describe("the composer's raw context chips are gated too", () => {
   });
 
   it("every composer mounts the context rules chip only behind that hook", () => {
+    // AiWorkComposer stopped mounting the chip (3724f26401) — only composers
+    // that mount it are held to the gate.
     for (const path of [
       "packages/chat/src/agents/components/inputs/smart-input/ConversationContextRail.tsx",
-      "features/ai-work/compose/components/AiWorkComposer.tsx",
     ]) {
       const source = read(path);
       const mountAt = source.indexOf("<ConversationContextChip");

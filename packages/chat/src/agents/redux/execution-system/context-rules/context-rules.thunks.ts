@@ -16,8 +16,9 @@
  *      (`mergeState` → `mergeJsonColumn`), never a whole-row upsert of this
  *      tab's copy, so tab B setting one value never erases tab A's rule.
  *   4. A table built from a stale copy — every send re-reads the saved rows
- *      before its request is built, so the table and the request reflect what
- *      the server will read; a tab coming back into focus re-reads them too.
+ *      beside its request (never ahead of it: the server applies the saved
+ *      rules itself on every turn), and a tab coming back into focus re-reads
+ *      them too.
  *   5. A failed write leaving the screen showing a rule the server never got —
  *      the rows are reloaded from the database and the failure is announced.
  *   6. No organization chosen — creating the row goes through the same
@@ -26,6 +27,7 @@
 
 import type { ChatDispatch, ChatThunk, ChatRootState } from "../../../../store/root-state";
 import { fetchAgentExecutionMinimal } from "../../agent-definition/thunks";
+import { selectAgentReadyForExecution } from "../../agent-definition/selectors";
 import {
   CONTEXT_RULES_FEATURE,
   type SavedContextRule,
@@ -99,8 +101,8 @@ export function reloadContextRules(): ChatThunk<Promise<void>> {
 
 /**
  * Every send path awaits this before building its request: no write is still
- * on its way, and the rows are what the database holds NOW (another tab or
- * device may have changed them since this screen loaded).
+ * on its way, and the saved rows and agent context layer are loaded. Loaded
+ * copies are refreshed beside the send, never ahead of it.
  */
 export function ensureContextRulesReady(conversationId: string): ChatThunk<Promise<void>> {
   return async (dispatch, getState) => {
@@ -108,14 +110,19 @@ export function ensureContextRulesReady(conversationId: string): ChatThunk<Promi
     await awaitContextRuleWrites();
     // THE SEND IS NEVER HELD BY A RE-READ (2026-10-02 latency regression: an
     // uncached database read on every send). The server reads the saved rules
-    // and the agent's context layer itself on every turn, so these copies only
-    // keep the table honest. Once loaded, the refresh runs beside the send;
-    // focus and every later send keep it current. Only a never-loaded copy waits.
-    const refresh = Promise.all([
-      dispatch(reloadContextRules()),
-      dispatch(ensureAgentContextLayer(conversationId)),
+    // and the agent's context layer itself on every turn, so a LOADED copy is
+    // refreshed beside the send; focus and every later send keep it current.
+    // A copy never loaded is waited for — sending without it puts values on
+    // the wire the server then withholds (R2-1) — and the composer loads both
+    // as it mounts, so a page's first send normally finds them ready.
+    const rules = dispatch(reloadContextRules());
+    const layer = dispatch(ensureAgentContextLayer(conversationId));
+    const state = getState();
+    const agentId = state.conversations?.byConversationId[conversationId]?.agentId;
+    await Promise.all([
+      selectContextRulesLoaded(state) ? null : rules,
+      !agentId || selectAgentReadyForExecution(state, agentId) ? null : layer,
     ]);
-    if (!selectContextRulesLoaded(getState())) await refresh;
   };
 }
 
