@@ -221,7 +221,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
       className="m-1.5"
       onRetry={() => void dispatch(fetchAgentExecutionFull(agentId))}
     />
-  ) : agentLoading ? (
+  ) : agentLoading || (catalogLoading && builtInIds.length > 0) ? (
+    // Names come from the catalog: hold the skeleton until it lands, never
+    // flash raw tool ids at the person.
     <PicksSkeletons />
   ) : agentToolCount === 0 ? (
     <PicksNote>No tools of its own</PicksNote>
@@ -233,9 +235,9 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
           <PicksLine
             key={id}
             icon={Wrench}
-            label={t ? getToolDisplayName(t.name) : id}
+            label={t ? getToolDisplayName(t.name) : "Unknown tool"}
             detail={t ? toolCategoryLabel(t.category) : undefined}
-            title={t?.description ?? undefined}
+            title={t?.description ?? (t ? undefined : id)}
           />
         );
       })}
@@ -285,7 +287,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
         const t = toolMap.get(id);
         return {
           id,
-          label: t ? getToolDisplayName(t.name) : id,
+          label: t ? getToolDisplayName(t.name) : catalogLoading ? "Loading…" : "Unknown tool",
           secondary: t ? toolCategoryLabel(t.category) : undefined,
         };
       })}
