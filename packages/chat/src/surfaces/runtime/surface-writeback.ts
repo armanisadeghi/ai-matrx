@@ -142,6 +142,29 @@ function splitHandler(entry: SurfaceWriteHandler | undefined): {
 }
 
 /**
+ * A patchable target's value that is a JSON-ENCODED patch envelope, parsed; null
+ * for anything else (plain text stays text). Only an object whose `command` is
+ * a string AND that carries a patch field counts, so ordinary text that happens
+ * to be JSON is never mistaken for an edit.
+ */
+function patchFromJsonString(
+  target: SurfaceWriteTarget,
+  value: unknown,
+): SurfaceWritePatch | null {
+  if (!target.patchable || typeof value !== "string") return null;
+  const text = value.trim();
+  if (!text.startsWith("{") || !text.endsWith("}")) return null;
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (!isSurfaceWritePatch(parsed)) return null;
+    const fields = parsed as unknown as Record<string, unknown>;
+    return "old_str" in fields || "new_str" in fields ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The handler's own live reader of the text a target replaces, when it has
  * one (`SurfaceWriteHandlerEntry.readCurrent`) — a target whose read twin is a
  * reference rather than text. Null means "read the scope value as usual".
@@ -1211,20 +1234,25 @@ async function applySurfaceWriteNow(
     // is. A patch that cannot be placed is REFUSED with the reason (never
     // silently applied as "no change" — an edit that quietly did nothing is
     // the one outcome a caller cannot detect).
-    let value: unknown = rawValue;
+    // A patch sent JSON-ENCODED (`value: "{\"command\": \"str_replace\", …}"`)
+    // is still a patch on a patchable target — models routinely string-encode
+    // the envelope, and treating it as the literal new text wrote the JSON
+    // into the record (or, on the canvas, was refused as "not a document").
+    const patchInput = patchFromJsonString(target, rawValue) ?? rawValue;
+    let value: unknown = patchInput;
     let patchExcerpt: SurfaceWriteApprovalProposal["patch"];
-    if (isSurfaceWritePatch(rawValue)) {
-      const resolved = await resolveTargetPatch(target, runtime, rawValue, registry);
+    if (isSurfaceWritePatch(patchInput)) {
+      const resolved = await resolveTargetPatch(target, runtime, patchInput, registry);
       if (!resolved.ok) {
         return failPatch(resolved.error, {
           targetName: target.name,
           surfaceName: runtime.surfaceName,
-          command: rawValue.command,
+          command: patchInput.command,
         });
       }
       value = resolved.value;
       if (resolved.excerpt) {
-        patchExcerpt = { command: rawValue.command, ...resolved.excerpt };
+        patchExcerpt = { command: patchInput.command, ...resolved.excerpt };
       }
     }
 
@@ -1276,8 +1304,8 @@ async function applySurfaceWriteNow(
       // An anchored edit is re-resolved against the live text after approval
       // (rebased onto whatever a sibling write left there).
       const atApply: ApprovedWriteAtApply = {};
-      if (isSurfaceWritePatch(rawValue)) {
-        const patchValue = rawValue;
+      if (isSurfaceWritePatch(patchInput)) {
+        const patchValue = patchInput;
         atApply.resolvePatch = (live) =>
           resolveTargetPatch(target, live, patchValue, registry);
       }

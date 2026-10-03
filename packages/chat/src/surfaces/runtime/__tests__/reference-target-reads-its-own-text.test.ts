@@ -87,6 +87,24 @@ describe("canvas_item_content: an anchored edit resolves against the handler's l
     }
   });
 
+  it("a JSON-ENCODED patch (as models often send it) is still a patch", async () => {
+    // Live 2026-10-03: value was the string '{"command": "str_replace", …}' and the
+    // seam treated it as the new page text.
+    const apply = jest.fn();
+    const unregister = mountCanvas(apply, async () => PAGE);
+    try {
+      const result = await applySurfaceWrite(
+        "canvas_item_content",
+        JSON.stringify({ command: "str_replace", old_str: "<h1>Mix two liquids</h1>", new_str: "<h1>Mix three liquids</h1>" }),
+        { origin: "agent", requestApproval: async () => ({ kind: "approved" }) },
+      );
+      expect(result.ok).toBe(true);
+      expect(apply).toHaveBeenCalledWith(PAGE.replace("Mix two liquids", "Mix three liquids"));
+    } finally {
+      unregister();
+    }
+  });
+
   it("an anchor that is not in the live text is refused and nothing is applied", async () => {
     const apply = jest.fn();
     const unregister = mountCanvas(apply, async () => PAGE);
