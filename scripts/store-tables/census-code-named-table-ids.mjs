@@ -29,7 +29,8 @@ const read = psqlRead(
   target,
   `select t.id || '|' || o.name || '|' || coalesce(t.data ->> 'name', '')
      from custom.record t join iam.organizations o on o.id = t.organization_id
-    where t.table_id = custom.table_kernel_id() and t.deleted_at is null`,
+    where t.table_id = '11111111-0000-4000-8000-000000000001'::uuid -- the Table kernel; the read-only role may not call custom.table_kernel_id()
+      and t.deleted_at is null`,
   { app: "store-tables-census" },
 );
 if (!read.ok) {
