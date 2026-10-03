@@ -167,6 +167,10 @@ async function call<T>(
       ...(config.queryParams ? { queryParams: config.queryParams } : {}),
       ...(config.body ? { body: config.body as never } : {}),
       scopeOverrides: { organization_id: organizationId },
+      // The builder's reads compose several store reads per Workflow; a test fire waits for
+      // the run to be accepted. Both outlast the 15 s default on a busy server.
+      connectTimeoutMs: 60_000,
+      totalTimeoutMs: 90_000,
       expectedErrorStatuses: EXPECTED,
     }),
   );
