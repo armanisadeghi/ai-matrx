@@ -28,7 +28,7 @@ const CREATION_OPTIONS = [
     iconClass: "text-primary",
     title: "Create Manually",
     description:
-      "Start blank — an empty agent carrying your organization's tools, ready for your instructions",
+      "Start blank — an empty agent, ready for your instructions",
     gradient: "from-primary/5 to-primary/10",
   },
   {
