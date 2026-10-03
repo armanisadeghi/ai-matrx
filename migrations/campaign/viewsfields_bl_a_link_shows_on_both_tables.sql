@@ -619,9 +619,10 @@ begin
                  else custom.visible_predicate_sql(v_me, p_organization_id, v_source, 'viewer'::public.permission_level, 'r') end;
 
   -- THE PLAN IS FORCED BY SHAPE, NOT LEFT TO ESTIMATES. Measured on the clone: joining the edges to
-  -- custom.record directly let the planner scan the whole organization once per edge (2,000 links
-  -- to one record: 6.4 s). So the edges are read first (one index range per record id), then the
-  -- linking records by primary key (organization_id, id = any), then ranked per record.
+  -- custom.record (or one CTE to another) let the planner pick a nested loop over every pair — 2,000
+  -- links to one record took 6.4 s. So the edges are read first (one index range per record id), the
+  -- linking records the caller may see are folded into ONE id -> title map, and each edge looks its
+  -- title up in that map: linear in the links, whatever the estimates say.
   return query execute format($q$
     with ids as materialized (
       select distinct b.id as rid
@@ -638,7 +639,9 @@ begin
          and a.organization_id = $1
          and a.relation_field_id = $3
     ), src as materialized (
-      select r.id, r.data ->> $8 as words
+      -- ONE ROW: {linking record id: its title}, only for the records the caller may see. A map,
+      -- never a join back to the edges, so a record with thousands of links stays one pass.
+      select coalesce(jsonb_object_agg(r.id::text, r.data -> $8), '{}'::jsonb) as m
         from custom.record r
        where r.organization_id = $1
          and r.id = any (array(select distinct e.sid from edges e))
@@ -647,19 +650,24 @@ begin
          and r.deleted_at is null
          and (%s)
     ), ranked as (
-      select e.rid, e.sid, s.words,
+      -- The map is read once (a scalar subquery) and never carried in the rows being sorted.
+      select e.rid, e.sid,
              row_number() over (partition by e.rid order by e.position nulls last, e.created_at, e.sid) as rn
         from edges e
-        join src s on s.id = e.sid
+       where (select src.m from src) ? e.sid::text
+    ), per_record as (
+      select k.rid,
+             count(*)::integer as total,
+             coalesce(jsonb_agg(jsonb_build_object('id', k.sid,
+                                                   'words', custom._card_words($1, (select src.m from src) ->> k.sid::text, $7))
+                                order by k.rn)
+                        filter (where k.rn > $5 and k.rn <= $5 + $6), '[]'::jsonb) as links
+        from ranked k
+       group by k.rid
     )
-    select ids.rid,
-           count(k.sid)::integer,
-           coalesce(jsonb_agg(jsonb_build_object('id', k.sid, 'words', custom._card_words($1, k.words, $7))
-                              order by k.rn)
-                      filter (where k.rn > $5 and k.rn <= $5 + $6), '[]'::jsonb)
+    select ids.rid, coalesce(p.total, 0), coalesce(p.links, '[]'::jsonb)
       from ids
-      left join ranked k on k.rid = ids.rid
-     group by ids.rid
+      left join per_record p on p.rid = ids.rid
   $q$, v_pred)
   using p_organization_id, v_source, p_field_id, p_record_ids, v_offset, v_limit, v_noun, coalesce(v_title, ''), p_table_id;
 end
