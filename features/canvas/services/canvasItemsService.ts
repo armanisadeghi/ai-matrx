@@ -9,6 +9,7 @@ import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
+import { readAllRows } from "@ai-matrx/data/db";
 
 type CanvasItemDbRow = Database["canvas"]["Tables"]["canvas_items"]["Row"];
 
@@ -38,6 +39,48 @@ function mapDbRowToCanvasItemRow(row: CanvasItemDbRow): CanvasItemRow {
     user_id: row.user_id,
     type: row.type,
     content: parseCanvasContent(row.content),
+    title: row.title,
+    description: row.description,
+    is_favorited: row.is_favorited ?? false,
+    is_archived: row.is_archived ?? false,
+    tags: row.tags ?? [],
+    session_id: row.session_id,
+    source_message_id: row.source_message_id,
+    task_id: row.task_id,
+    published_to_web: row.published_to_web === true,
+    content_hash: row.content_hash,
+    created_at: row.created_at ?? "",
+    updated_at: row.updated_at ?? "",
+    last_accessed_at: row.last_accessed_at ?? "",
+  };
+}
+
+/**
+ * Every column a LIST of canvas items needs — everything but `content`.
+ *
+ * `content` is the whole artifact (an html app, a deck, a quiz): 735 rows of it
+ * was 2.9 MB that the Saved items list parsed and held only to read `type`,
+ * which has its own column. A list never needs the body; opening an item reads
+ * it by id.
+ */
+const CANVAS_ITEM_SUMMARY_COLUMNS =
+  "id, user_id, type, title, description, is_favorited, is_archived, tags, session_id, source_message_id, task_id, published_to_web, content_hash, created_at, updated_at, last_accessed_at" as const;
+
+/** A canvas item as a LIST shows it: every field but the artifact body. */
+export type CanvasItemSummary = Omit<CanvasItemRow, "content">;
+
+type CanvasItemSummaryDbRow = Pick<
+  CanvasItemDbRow,
+  | "id" | "user_id" | "type" | "title" | "description" | "is_favorited" | "is_archived" | "tags"
+  | "session_id" | "source_message_id" | "task_id" | "published_to_web" | "content_hash"
+  | "created_at" | "updated_at" | "last_accessed_at"
+>;
+
+function mapDbRowToCanvasItemSummary(row: CanvasItemSummaryDbRow): CanvasItemSummary {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    type: row.type,
     title: row.title,
     description: row.description,
     is_favorited: row.is_favorited ?? false,
@@ -265,51 +308,54 @@ export const canvasItemsService = {
   },
 
   /**
-   * Get all canvas items for current user with optional filters
+   * Every canvas item the person can see, as SUMMARIES (no artifact body),
+   * with optional filters. Read whole through `readAllRows`: the list states
+   * a count, so a silent 1000-row cap would be a lie on screen.
    */
   async list(
     filters?: CanvasItemFilters,
     scope?: ListScopeWord,
-  ): Promise<{ data: CanvasItemRow[] | null; error: any }> {
+  ): Promise<{ data: CanvasItemSummary[] | null; error: any }> {
     try {
       const userId = requireUserId();
       // DD-137c / §3.3: `canvas_item` is registered `organization`, so this opens on the
       // organization's canvases unless the caller asks for its own.
       const listScope = await defaultListFilter("canvas_item", { userId, requested: scope, ownerColumn: "user_id" });
-      let query = supabase
-        .schema("canvas").from("canvas_items")
-        .select("*")
-        .is("deleted_at", null);
-      query = listScope.apply(query);
+      const page = ({ from, to }: { from: number; to: number }) => {
+        let query = supabase
+          .schema("canvas").from("canvas_items")
+          .select(CANVAS_ITEM_SUMMARY_COLUMNS, { count: "exact" })
+          .is("deleted_at", null);
+        query = listScope.apply(query);
 
-      // Apply filters
-      if (filters?.type) {
-        query = query.eq("type", filters.type);
-      }
-      if (filters?.is_favorited !== undefined) {
-        query = query.eq("is_favorited", filters.is_favorited);
-      }
-      if (filters?.is_archived !== undefined) {
-        query = query.eq("is_archived", filters.is_archived);
-      }
-      if (filters?.session_id) {
-        query = query.eq("session_id", filters.session_id);
-      }
-      if (filters?.task_id) {
-        query = query.eq("task_id", filters.task_id);
-      }
-      if (filters?.search) {
-        query = query.or(buildSearchOr(filters.search, ["title"]));
-      }
+        if (filters?.type) {
+          query = query.eq("type", filters.type);
+        }
+        if (filters?.is_favorited !== undefined) {
+          query = query.eq("is_favorited", filters.is_favorited);
+        }
+        if (filters?.is_archived !== undefined) {
+          query = query.eq("is_archived", filters.is_archived);
+        }
+        if (filters?.session_id) {
+          query = query.eq("session_id", filters.session_id);
+        }
+        if (filters?.task_id) {
+          query = query.eq("task_id", filters.task_id);
+        }
+        if (filters?.search) {
+          query = query.or(buildSearchOr(filters.search, ["title"]));
+        }
 
-      // Default order: recent first
-      query = query.order("last_accessed_at", { ascending: false });
-
-      const { data, error } = await query;
-      return {
-        data: data?.map(mapDbRowToCanvasItemRow) ?? null,
-        error,
+        // Recent first; `id` makes the order total so pages never repeat or skip.
+        return query
+          .order("last_accessed_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(from, to);
       };
+
+      const rows = await readAllRows(page, { label: "canvas.canvas_items" });
+      return { data: rows.map(mapDbRowToCanvasItemSummary), error: null };
     } catch (error) {
       return { data: null, error };
     }

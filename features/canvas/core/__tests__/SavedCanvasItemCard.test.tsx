@@ -35,8 +35,8 @@ const byText = (text: string) =>
     (el) => el.children.length === 0 && el.textContent === text,
   );
 import { SavedCanvasItemCard, SAVED_CARD_LAYOUT } from "../SavedCanvasItemCard";
-import { SAVED_GRID_CLASS } from "../SavedCanvasItems";
-import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsService";
+import { savedGridColumns } from "../SavedCanvasItemsGrid";
+import type { CanvasItemSummary } from "@/features/canvas/services/canvasItemsService";
 
 jest.mock("@/features/canvas/hooks/useCanvasItems", () => ({ useCanvasItems: jest.fn() }));
 jest.mock("@/features/canvas/hooks/useOpenCanvasItem", () => ({ useOpenCanvasItem: jest.fn() }));
@@ -51,7 +51,7 @@ const item = {
   is_archived: false,
   published_to_web: true,
   description: null,
-} as unknown as CanvasItemRow;
+} as unknown as CanvasItemSummary;
 
 const noop = () => {};
 
@@ -112,8 +112,10 @@ describe("SavedCanvasItemCard", () => {
 
 describe("Saved items grid", () => {
   it("chooses columns from the pane width, not the viewport", () => {
-    expect(SAVED_GRID_CLASS).toContain("grid-cols-1");
-    expect(SAVED_GRID_CLASS).toContain("/saved-grid:grid-cols-2");
-    expect(SAVED_GRID_CLASS).not.toMatch(/(^|\s)(sm|md|lg|xl):grid-cols/);
+    expect(savedGridColumns(300)).toBe(1);
+    expect(savedGridColumns(447)).toBe(1);
+    expect(savedGridColumns(448)).toBe(2);
+    expect(savedGridColumns(863)).toBe(2);
+    expect(savedGridColumns(864)).toBe(3);
   });
 });

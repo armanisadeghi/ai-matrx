@@ -9,7 +9,7 @@ import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { Archive, Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArchivedDisclosure, Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -21,7 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getCanvasTypeLabel } from "@/features/canvas/canvasContent";
 import { SavedCanvasItemCard } from "@/features/canvas/core/SavedCanvasItemCard";
-import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsService";
+import { SavedCanvasItemsGrid } from "@/features/canvas/core/SavedCanvasItemsGrid";
+import type { CanvasItemSummary } from "@/features/canvas/services/canvasItemsService";
 
 /**
  * SavedCanvasItems - Management UI for saved canvas items
@@ -38,13 +39,10 @@ import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsServic
  * (`CanvasRenderer`) hard-coded to `false`, so archived items were impossible
  * to reach from here. The prop is gone. The query now loads both and the
  * "Archived (N)" disclosure below the grid reveals them in one click.
+ *
+ * The grid is virtualized (`SavedCanvasItemsGrid`) and the list reads card
+ * SUMMARIES, never artifact bodies — see that file for the measured cost.
  */
-/**
- * Columns follow the PANE, not the viewport (a container query on the list):
- * one column up to ~480px of pane, two up to ~900px, three past that.
- */
-export const SAVED_GRID_CLASS =
-  "grid grid-cols-1 gap-4 @[28rem]/saved-grid:grid-cols-2 @[54rem]/saved-grid:grid-cols-3";
 
 export function SavedCanvasItems() {
   const { openItem } = useOpenCanvasItem();
@@ -92,15 +90,15 @@ export function SavedCanvasItems() {
   // never a reason to push a copy of its content into the slice — that copy
   // could not be deduped against an item already showing the same artifact,
   // and it drifted the moment the row changed.
-  const handleOpenInCanvas = (item: CanvasItemRow) => {
+  const handleOpenInCanvas = (item: CanvasItemSummary) => {
     void openItem({
       artifactId: item.id,
-      type: item.content?.type,
+      type: item.type,
       title: item.title,
     });
   };
 
-  const handleStartEdit = (item: CanvasItemRow) => {
+  const handleStartEdit = (item: CanvasItemSummary) => {
     setEditingId(item.id);
     setEditingTitle(item.title || "");
   };
@@ -134,7 +132,7 @@ export function SavedCanvasItems() {
     if (ok) remove(id);
   };
 
-  const renderItem = (item: CanvasItemRow) => (
+  const renderItem = (item: CanvasItemSummary) => (
     <SavedCanvasItemCard
       key={item.id}
       item={item}
@@ -218,36 +216,30 @@ export function SavedCanvasItems() {
       </div>
 
       {/* Items List */}
-      <div className="@container/saved-grid flex-1 overflow-y-auto scrollbar-thin p-4">
-        {loadError != null && items.length === 0 ? (
+      {loadError != null && items.length === 0 ? (
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">
           <ReadFailure error={loadError} what="your saved canvas items" onRetry={() => load()} />
-        ) : activeItems.length === 0 && archivedItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Archive className="w-12 h-12 text-muted-foreground/50 mb-3" />
-            <p className="text-muted-foreground">
-              No saved canvas items yet
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create and save canvas items to see them here
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className={SAVED_GRID_CLASS}>
-              {activeItems.map(renderItem)}
-            </div>
-            <ArchivedDisclosure
-              count={archivedItems.length}
-              open={showArchived}
-              onOpenChange={setShowArchived}
-              className="mt-4"
-              contentClassName={SAVED_GRID_CLASS}
-            >
-              {archivedItems.map(renderItem)}
-            </ArchivedDisclosure>
-          </>
-        )}
-      </div>
+        </div>
+      ) : activeItems.length === 0 && archivedItems.length === 0 ? (
+        <div className="flex flex-1 min-h-0 flex-col items-center justify-center p-4 text-center">
+          <Archive className="w-12 h-12 text-muted-foreground/50 mb-3" />
+          <p className="text-muted-foreground">
+            No saved canvas items yet
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create and save canvas items to see them here
+          </p>
+        </div>
+      ) : (
+        <SavedCanvasItemsGrid
+          className="flex-1"
+          activeItems={activeItems}
+          archivedItems={archivedItems}
+          showArchived={showArchived}
+          onShowArchivedChange={setShowArchived}
+          renderItem={renderItem}
+        />
+      )}
     </div>
   );
 }

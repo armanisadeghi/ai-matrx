@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { getCanvasTypeLabel } from "@/features/canvas/canvasContent";
-import type { CanvasItemRow } from "@/features/canvas/services/canvasItemsService";
+import type { CanvasItemSummary } from "@/features/canvas/services/canvasItemsService";
 
 /** Container-query classes — exported so the layout contract is testable. */
 export const SAVED_CARD_LAYOUT = {
@@ -63,7 +63,7 @@ export function typeBadgeColor(type: string): string {
 }
 
 export interface SavedCanvasItemCardProps {
-  item: CanvasItemRow;
+  item: CanvasItemSummary;
   isEditing: boolean;
   editingTitle: string;
   onEditingTitleChange: (title: string) => void;

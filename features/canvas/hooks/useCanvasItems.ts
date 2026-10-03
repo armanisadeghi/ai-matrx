@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   canvasItemsService,
-  type CanvasItemRow,
+  type CanvasItemSummary,
   type CreateCanvasItemInput,
   type UpdateCanvasItemInput,
   type CanvasItemFilters,
@@ -28,7 +28,7 @@ import { isOrganizationRequiredError } from "@/lib/organizations/organizationReq
  * ```
  */
 export function useCanvasItems(initialFilters?: CanvasItemFilters) {
-  const [items, setItems] = useState<CanvasItemRow[]>([]);
+  const [items, setItems] = useState<CanvasItemSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   /** The latest LIST read's failure only (mutations report through `error`). */
@@ -38,12 +38,17 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
   /**
    * Load items from database
    */
+  // Latest read wins: a search fires one read per keystroke, and an older,
+  // slower answer must never overwrite a newer one.
+  const loadSeq = useRef(0);
   const load = useCallback(async (customFilters?: CanvasItemFilters) => {
+    const seq = ++loadSeq.current;
     setIsLoading(true);
     setError(null);
 
     const activeFilters = customFilters || filters;
     const { data, error: loadError } = await canvasItemsService.list(activeFilters);
+    if (seq !== loadSeq.current) return { data, error: loadError };
 
     if (loadError) {
       setError(loadError);
