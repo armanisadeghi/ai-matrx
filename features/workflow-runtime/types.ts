@@ -177,6 +177,20 @@ export interface RunRow {
    * `@ai-matrx/content-ir` (`wire/runtime-wrapper`).
    */
   result?: Record<string, unknown> | null;
+  /**
+   * A pending run that should have started by now, and why it has not
+   * (`GET /runs/{id}` → `start_wait`). Additive: absent on a server that
+   * predates it, so it is read through `readStartWait`, never trusted.
+   */
+  start_wait?: { reason?: string; says?: string; waiting_seconds?: number } | null;
+}
+
+/** The `start_wait` sentence of a run row, or null — tolerant of absence. */
+export function readStartWait(row: RunRow): string | null {
+  const wait = (row as { start_wait?: unknown }).start_wait;
+  if (typeof wait !== "object" || wait === null) return null;
+  const says = (wait as Record<string, unknown>).says;
+  return typeof says === "string" && says.trim() ? says : null;
 }
 
 export interface HeartbeatStreamTail {

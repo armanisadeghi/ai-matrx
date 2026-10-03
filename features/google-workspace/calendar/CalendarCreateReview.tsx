@@ -1,0 +1,345 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { ExternalLink } from "lucide-react";
+import { Input } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { BackendApiError, getUserMessage } from "@/lib/api/errors";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  confirmCalendarCreate,
+  previewCalendarCreate,
+  type CalendarCreateIntent,
+  type CalendarCreateRequest,
+  type CalendarCreateResult,
+} from "./calendarCreateService";
+import {
+  calendarCreateResultMatches,
+  calendarCreateIntentMatchesRequest,
+  clearCalendarCreateRecovery,
+  readCalendarCreateRecovery,
+  sameCalendarCreateScope,
+  writeCalendarCreateRecovery,
+  type CalendarCreateRecoveryRecord,
+  type StorageDoor,
+} from "./calendarCreateRecovery";
+import type { SelectedCalendar } from "./selectedCalendarService";
+
+export interface CalendarCreateTransport {
+  preview(request: CalendarCreateRequest): Promise<CalendarCreateIntent>;
+  confirm(input: { intentId: string; organizationId: string }): Promise<CalendarCreateResult>;
+}
+
+const defaultTransport: CalendarCreateTransport = {
+  preview: previewCalendarCreate,
+  confirm: confirmCalendarCreate,
+};
+
+const browserSessionStorageDoor: StorageDoor = {
+  getItem(key) { return window.sessionStorage.getItem(key); },
+  setItem(key, value) { window.sessionStorage.setItem(key, value); },
+  removeItem(key) { window.sessionStorage.removeItem(key); },
+};
+
+function createEventId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let bits = 0;
+  let value = 0;
+  let result = "";
+  for (const byte of bytes) {
+    value = (value << 8) | byte;
+    bits += 8;
+    while (bits >= 5) {
+      result += "0123456789abcdefghijklmnopqrstuv"[(value >>> (bits - 5)) & 31];
+      bits -= 5;
+    }
+  }
+  if (bits > 0) result += "0123456789abcdefghijklmnopqrstuv"[(value << (5 - bits)) & 31];
+  return result;
+}
+
+function parseAttendees(value: string): { email: string }[] {
+  return value.split(",").map((email) => email.trim()).filter(Boolean).map((email) => ({ email }));
+}
+
+function validTimeZone(value: string): boolean {
+  try { new Intl.DateTimeFormat("en-US", { timeZone: value }).format(); return true; }
+  catch { return false; }
+}
+
+function expired(intent: CalendarCreateIntent | null): boolean {
+  return !intent || Date.parse(intent.expires_at) <= Date.now();
+}
+
+function sourceUrl(saved: CalendarCreateRecoveryRecord): string {
+  void saved;
+  return "https://calendar.google.com/calendar/";
+}
+
+function unavailable(error: unknown): boolean {
+  return error instanceof BackendApiError && error.code === "calendar_create_unavailable";
+}
+
+export function CalendarCreateReview({
+  actorId,
+  organizationId,
+  connectionId,
+  accountLabel,
+  calendar,
+  transport = defaultTransport,
+  storage,
+  confirmAction = confirm,
+}: {
+  actorId: string;
+  organizationId: string;
+  connectionId: string;
+  accountLabel: string;
+  calendar: SelectedCalendar;
+  transport?: CalendarCreateTransport;
+  storage?: StorageDoor;
+  confirmAction?: typeof confirm;
+}) {
+  const storageDoor = storage ?? browserSessionStorageDoor;
+  const [saved, setSaved] = useState<CalendarCreateRecoveryRecord | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [summary, setSummary] = useState("");
+  const [description, setDescription] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [timeZone, setTimeZone] = useState("");
+  const [attendees, setAttendees] = useState("");
+  const [sendUpdates, setSendUpdates] = useState<"" | CalendarCreateRequest["send_updates"]>("");
+  const [busy, setBusy] = useState<"preview" | "confirm" | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const epoch = useRef(0);
+  const busyRef = useRef(false);
+
+  useEffect(() => () => { epoch.current += 1; busyRef.current = false; }, []);
+  useEffect(() => {
+    const restored = readCalendarCreateRecovery(storageDoor, actorId);
+    // Session storage is an external browser system and cannot be read during SSR.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSaved(restored.record);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWarning(restored.warning);
+  }, [actorId, storageDoor]);
+  useEffect(() => {
+    epoch.current += 1;
+    busyRef.current = false;
+  }, [actorId, organizationId, connectionId, calendar.id]);
+
+  const scopeMatches = saved ? sameCalendarCreateScope(saved, {
+    actorId, organizationId, connectionId, calendarId: calendar.id,
+  }) : false;
+  const canCreateHere = ["owner", "writer", "writerWithoutPrivateAccess"].includes(calendar.access_role);
+
+  async function review(requestOverride?: CalendarCreateRequest) {
+    if (busyRef.current || !canCreateHere) return;
+    if (!requestOverride && (!summary.trim() || !startsAt || !endsAt || !timeZone || !sendUpdates)) {
+      setError("Add a title, start, end, time zone, and guest notification choice.");
+      return;
+    }
+    if (!requestOverride && (!validTimeZone(timeZone) || Date.parse(endsAt) <= Date.parse(startsAt))) {
+      setError("Use a valid time zone and an end after the start.");
+      return;
+    }
+    const request: CalendarCreateRequest = requestOverride ?? {
+      organization_id: organizationId,
+      connection_id: connectionId,
+      calendar_id: calendar.id,
+      event_id: createEventId(),
+      summary: summary.trim(),
+      description: description.trim() || null,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      attendees: parseAttendees(attendees),
+      send_updates: sendUpdates || "none",
+    };
+    const pending: CalendarCreateRecoveryRecord = {
+      version: 1, actor_id: actorId, account_label: accountLabel,
+      calendar_summary: calendar.summary, time_zone: requestOverride ? saved?.time_zone ?? timeZone : timeZone,
+      request, intent: null, result: null, phase: "preview_unavailable",
+    };
+    if (!writeCalendarCreateRecovery(storageDoor, pending)) {
+      setError("This tab could not save recovery. Nothing was sent.");
+      return;
+    }
+    setSaved(pending);
+    setBusy("preview"); busyRef.current = true; setError(null); setWarning(null);
+    const callEpoch = ++epoch.current;
+    try {
+      const intent = await transport.preview(request);
+      if (callEpoch !== epoch.current) return;
+      if (!calendarCreateIntentMatchesRequest(intent, request, {
+        accountLabel: pending.account_label,
+        calendarSummary: pending.calendar_summary,
+      })) {
+        const held = { ...pending, phase: "reconciliation_required" as const };
+        writeCalendarCreateRecovery(storageDoor, held);
+        setSaved(held);
+        setError("Google returned a different event review. Check the original source before continuing.");
+        return;
+      }
+      const reviewed = { ...pending, intent, phase: "reviewed_unattempted" as const };
+      if (!writeCalendarCreateRecovery(storageDoor, reviewed)) {
+        setSaved(pending);
+        setError("The review could not be saved. The event cannot be confirmed.");
+        return;
+      }
+      setSaved(reviewed);
+    } catch (cause) {
+      if (callEpoch !== epoch.current) return;
+      setSaved(pending);
+      setError(getUserMessage(cause));
+    } finally {
+      if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
+    }
+  }
+
+  async function send() {
+    if (!saved?.intent || !scopeMatches || busyRef.current || expired(saved.intent)) return;
+    if (!["reviewed_unattempted", "retryable_same_intent"].includes(saved.phase)) return;
+    const approvalEpoch = epoch.current;
+    const serverPreview = saved.intent.preview;
+    const approved = await confirmAction({
+      title: "Create this Google Calendar event?",
+      description: `${serverPreview.account_email} · ${serverPreview.calendar_summary} · ${serverPreview.starts_at} · ${serverPreview.attendees.length} guests · ${serverPreview.send_updates}`,
+      confirmText: "Create event",
+    });
+    if (!approved || busyRef.current || approvalEpoch !== epoch.current) return;
+    const attempting = { ...saved, phase: "attempting" as const };
+    if (!writeCalendarCreateRecovery(storageDoor, attempting)) {
+      setError("This tab could not save the attempt. Nothing was sent.");
+      return;
+    }
+    setSaved(attempting); setBusy("confirm"); busyRef.current = true; setError(null);
+    const callEpoch = ++epoch.current;
+    try {
+      const result = await transport.confirm({ intentId: saved.intent.intent_id, organizationId: saved.request.organization_id });
+      if (callEpoch !== epoch.current) return;
+      const settled = {
+        ...attempting,
+        result,
+        phase: calendarCreateResultMatches(attempting, result) ? "consumed" as const : "reconciliation_required" as const,
+      };
+      if (!writeCalendarCreateRecovery(storageDoor, settled)) {
+        setWarning("The result could not be saved in this tab. Do not create the event again.");
+        setSaved({ ...settled, phase: "reconciliation_required" });
+        return;
+      }
+      setSaved(settled);
+      if (settled.phase === "reconciliation_required") setError("Google returned a different event. Check the original source before doing anything else.");
+    } catch (cause) {
+      if (callEpoch !== epoch.current) return;
+      const failed = { ...attempting, phase: unavailable(cause) ? "retryable_same_intent" as const : "uncertain" as const };
+      writeCalendarCreateRecovery(storageDoor, failed);
+      setSaved(failed);
+      setError(getUserMessage(cause));
+    } finally {
+      if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
+    }
+  }
+
+  async function foundEvent() {
+    if (!saved || !["uncertain", "reconciliation_required", "attempting"].includes(saved.phase)) return;
+    const approvalEpoch = epoch.current;
+    const approved = await confirmAction({
+      title: "Did you find this exact event in Google?",
+      description: `${saved.account_label} · ${saved.calendar_summary} · ${saved.request.event_id}`,
+      confirmText: "I found this event",
+    });
+    if (!approved || approvalEpoch !== epoch.current) return;
+    const settled = { ...saved, phase: "consumed" as const };
+    if (!writeCalendarCreateRecovery(storageDoor, settled)) {
+      setError("This tab could not save the source check.");
+      return;
+    }
+    setSaved(settled); setError(null);
+  }
+
+  function startAnother() {
+    if (!saved || saved.phase !== "consumed") return;
+    if (!clearCalendarCreateRecovery(storageDoor)) {
+      setError("This tab could not clear the completed event.");
+      return;
+    }
+    setSaved(null); setError(null); setWarning(null);
+    setSummary(""); setDescription(""); setStartsAt(""); setEndsAt(""); setTimeZone(""); setAttendees(""); setSendUpdates("");
+  }
+
+  return (
+    <section className="space-y-3 rounded-md border border-border p-3" aria-label="Create Google Calendar event">
+      <div>
+        <p className="text-sm font-medium">Create an event</p>
+        <p className="text-xs text-muted-foreground">{accountLabel} · {calendar.summary}</p>
+      </div>
+      {warning ? <p className="text-xs text-amber-700 dark:text-amber-300">{warning}</p> : null}
+      {error ? <p role="alert" className="text-xs text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
+      {!canCreateHere ? <p className="text-xs text-muted-foreground">Choose a calendar that allows event changes.</p> : null}
+      {saved ? (
+        <div className="space-y-2 text-xs" data-calendar-create-recovery>
+          <p className="font-medium text-foreground">{saved.request.summary}</p>
+          <p>{saved.request.starts_at} – {saved.request.ends_at}</p>
+          <p>{saved.time_zone} · Notifications: {saved.request.send_updates}</p>
+          <p>Account: {saved.account_label}</p>
+          <p>Calendar: {saved.calendar_summary}</p>
+          <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+            Event ID
+            <Input readOnly value={saved.request.event_id} className="font-mono" />
+          </label>
+          {!scopeMatches ? <p className="text-amber-700 dark:text-amber-300">This saved action belongs to its original account, organization, and calendar.</p> : null}
+          {saved.intent ? <p>Review expires: {saved.intent.expires_at}</p> : null}
+          {saved.intent ? (
+            <div className="space-y-1 rounded-md border border-border bg-muted/20 p-2">
+              <p>Google account: {saved.intent.preview.account_email}</p>
+              <p>Calendar access: {saved.intent.preview.access_role}</p>
+              <p>Guests: {saved.intent.preview.attendees.map((guest) => guest.email).join(", ") || "None"}</p>
+              <p>{saved.intent.preview.guest_notification_behavior}</p>
+              <p>{saved.intent.preview.undo_notice}</p>
+            </div>
+          ) : null}
+          {saved.phase === "reviewed_unattempted" && expired(saved.intent) ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>Review again</Button>
+          ) : null}
+          {saved.phase === "preview_unavailable" ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>{busy === "preview" ? "Reviewing…" : "Retry review"}</Button>
+          ) : null}
+          {(saved.phase === "reviewed_unattempted" && !expired(saved.intent)) || saved.phase === "retryable_same_intent" ? (
+            <Button type="button" size="sm" onClick={() => void send()} disabled={!scopeMatches || busy !== null}>{busy === "confirm" ? "Creating…" : saved.phase === "retryable_same_intent" ? "Retry same confirmation" : "Confirm create"}</Button>
+          ) : null}
+          {["attempting", "uncertain", "reconciliation_required"].includes(saved.phase) ? (
+            <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+              <p>This event may already exist. Check the original Google source before continuing.</p>
+              <p>Use account {saved.account_label} and calendar {saved.calendar_summary}. Match the event ID shown above.</p>
+              <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={sourceUrl(saved)} target="_blank" rel="noreferrer">Open Google Calendar for manual check <ExternalLink className="h-3.5 w-3.5" /></a>
+              <Button type="button" size="sm" variant="outline" onClick={() => void foundEvent()}>I found this event</Button>
+            </div>
+          ) : null}
+          {saved.phase === "consumed" ? (
+            <div className="space-y-2"><p className="font-medium text-foreground">This event is settled.</p><Button type="button" size="sm" variant="outline" onClick={startAnother}>Create another event</Button></div>
+          ) : null}
+        </div>
+      ) : canCreateHere ? (
+        <div className="grid gap-2">
+          <Input aria-label="Event title" placeholder="Event title" value={summary} onChange={(event) => setSummary(event.target.value)} />
+          <Input aria-label="Description" placeholder="Description (optional)" value={description} onChange={(event) => setDescription(event.target.value)} />
+          <Input aria-label="Start time" placeholder="2026-10-05T09:00:00-07:00" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} />
+          <Input aria-label="End time" placeholder="2026-10-05T10:00:00-07:00" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} />
+          <Input aria-label="Time zone" placeholder="America/Los_Angeles" value={timeZone} onChange={(event) => setTimeZone(event.target.value)} />
+          <Input aria-label="Guests" placeholder="Guest emails, separated by commas" value={attendees} onChange={(event) => setAttendees(event.target.value)} />
+          <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+            Guest notifications
+            <select className="min-h-11 rounded-md border border-input bg-background px-3 text-sm text-foreground" value={sendUpdates} onChange={(event) => setSendUpdates(event.target.value as typeof sendUpdates)}>
+              <option value="">Choose notification behavior</option>
+              <option value="all">Notify all guests</option>
+              <option value="externalOnly">Notify external guests</option>
+              <option value="none">Send no updates</option>
+            </select>
+          </label>
+          <Button type="button" onClick={() => void review()} disabled={busy !== null}>{busy === "preview" ? "Reviewing…" : "Review event"}</Button>
+        </div>
+      ) : null}
+    </section>
+  );
+}

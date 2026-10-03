@@ -13,7 +13,7 @@ import {
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import { useGoogleCapabilities, useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { extractErrorMessage } from "@/utils/errors";
@@ -29,6 +29,10 @@ import {
   type SelectedEventWindow,
 } from "./selectedCalendarService";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { CalendarCreateReview } from "./CalendarCreateReview";
 
 export interface SelectedCalendarProblem {
   message: string;
@@ -200,6 +204,8 @@ export function SelectedCalendarReview() {
 
 function SelectedCalendarReviewContent({ organizationId }: { organizationId: string | null }) {
   const inventory = useGoogleConnectionInventory();
+  const capabilities = useGoogleCapabilities();
+  const actorId = useAppSelector(selectUserId);
   const openGoogleConnect = useOpenGoogleConnectWindow();
   const [connectionId, setConnectionId] = useState("");
   const [calendars, setCalendars] = useState<SelectedCalendar[]>([]);
@@ -222,6 +228,13 @@ function SelectedCalendarReviewContent({ organizationId }: { organizationId: str
   const connections = inventory.data?.connections ?? [];
   const selectedConnection =
     connections.find((connection) => connection.id === connectionId) ?? null;
+  const selectedCalendar = calendars.find((calendar) => calendar.id === calendarId) ?? null;
+  const writeCapability = capabilities.data?.find((capability) => capability.key === "calendar_write");
+  const writeConnection = selectedConnection?.owner_type === "user" &&
+    selectedConnection.owner_user_id === actorId && selectedConnection.health === "connected" &&
+    selectedConnection.scopes.includes(GOOGLE_SCOPE.calendarListReadonly) &&
+    selectedConnection.scopes.includes(GOOGLE_SCOPE.calendarEventsWrite)
+    ? selectedConnection : null;
   const currentRead = readResult?.organizationId === organizationId &&
     readResult.connectionId === connectionId &&
     readResult.calendarId === calendarId &&
@@ -417,6 +430,20 @@ function SelectedCalendarReviewContent({ organizationId }: { organizationId: str
             ? "Reading selected calendar…"
             : "Read selected events"}
         </Button>
+      ) : null}
+      {actorId && organizationId && selectedCalendar && writeCapability?.eligible && writeConnection ? (
+        <CalendarCreateReview
+          key={`${actorId}:${organizationId}:${writeConnection.id}:${selectedCalendar.id}`}
+          actorId={actorId}
+          organizationId={organizationId}
+          connectionId={writeConnection.id}
+          accountLabel={writeConnection.account_email ?? googleConnectionLabel(writeConnection)}
+          calendar={selectedCalendar}
+        />
+      ) : selectedCalendar && writeCapability && !writeCapability.eligible ? (
+        <p className="text-xs text-muted-foreground">{writeCapability.limitation || writeCapability.remedy}</p>
+      ) : selectedCalendar && writeCapability?.eligible && !writeConnection ? (
+        <p className="text-xs text-muted-foreground">This account cannot create Google Calendar events.</p>
       ) : null}
       {problem ? (
         <div

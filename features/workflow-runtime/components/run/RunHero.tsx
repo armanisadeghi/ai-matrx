@@ -31,6 +31,7 @@ import {
   selectRunStatusTs,
   selectRunReadFailure,
   selectRunStatusKnown,
+  selectRunStartWait,
 } from "../../redux/workflow-runs.selectors";
 import { runIsOver } from "../../types";
 import {
@@ -148,6 +149,8 @@ export function RunHero({
   // and the reader is told which it is.
   const readFailure = useAppSelector(selectRunReadFailure(runId));
   const statusKnown = useAppSelector(selectRunStatusKnown(runId));
+  // Why a queued run has not started (the server's sentence), while it waits.
+  const startWait = useAppSelector(selectRunStartWait(runId));
   /** Nothing read yet — the page knows nothing about this run, and says so. */
   const unread = !readFailure && !statusKnown;
   const copy = readFailure
@@ -244,7 +247,9 @@ export function RunHero({
       >
         {readFailure
           ? readFailure
-          : unread
+          : startWait && status === "pending"
+            ? startWait
+            : unread
             ? (workflowDescription ?? "")
             : live && current
               ? headline

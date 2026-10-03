@@ -540,6 +540,46 @@ describe("workflow-runs slice", () => {
     expect(state.byRunId[RUN_ID]?.statusTs).toBe("2026-08-16T00:00:00Z");
   });
 
+  test("a queued run's re-read says why it waits, then leaves 'pending' when the row moves on", () => {
+    // The page reads a run born queued: no event has moved it. Its re-read
+    // carries the server's start_wait sentence, and the next one finds it
+    // running — the page must leave "Getting ready" even with a status stamp.
+    let state = attached();
+    const pendingRow: RunRow = {
+      id: RUN_ID,
+      definition_id: "def-1",
+      status: "pending",
+      input: null,
+      output: null,
+      error: null,
+      created_at: "2026-10-03T00:00:00Z",
+      completed_at: null,
+      metadata: null,
+      conversation_id: null,
+      start_wait: { reason: "no_worker", says: "No worker has picked this run up yet.", waiting_seconds: 40 },
+    };
+    state = reducer(state, seedRunRow({ runId: RUN_ID, row: pendingRow }));
+    expect(state.byRunId[RUN_ID]?.status).toBe("pending");
+    expect(state.byRunId[RUN_ID]?.startWait).toBe("No worker has picked this run up yet.");
+
+    const pendingRun = state.byRunId[RUN_ID];
+    if (pendingRun) pendingRun.statusTs = "2026-10-03T00:00:01Z";
+    state = reducer(state, seedRunRow({ runId: RUN_ID, row: { ...pendingRow, status: "running", start_wait: null } }));
+    expect(state.byRunId[RUN_ID]?.status).toBe("running");
+    expect(state.byRunId[RUN_ID]?.startWait).toBeNull();
+  });
+
+  test("a run row from a server without start_wait reads as nothing to say", () => {
+    let state = attached();
+    const row = {
+      id: RUN_ID, definition_id: "def-1", status: "pending", input: null, output: null,
+      error: null, created_at: "2026-10-03T00:00:00Z", completed_at: null, metadata: null,
+      conversation_id: null,
+    } as RunRow;
+    state = reducer(state, seedRunRow({ runId: RUN_ID, row }));
+    expect(state.byRunId[RUN_ID]?.startWait).toBeNull();
+  });
+
   test("seedRunRow adopts a terminal 'cancelled' row and takes completed_at as the end", () => {
     let state = attached();
     state = apply(state, runStartedEvent());

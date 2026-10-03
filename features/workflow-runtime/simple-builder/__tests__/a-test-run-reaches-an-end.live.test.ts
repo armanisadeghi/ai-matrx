@@ -165,11 +165,15 @@ describeLive("Test with a record: the run reaches an end, and its step writes th
 
       const spec = {
         version: 1,
-        // "When a Referral's Status changes, only if it is Scheduled". (The "becomes Scheduled"
-        // verb asks what the record held BEFORE, which a hand test has no answer for — it stops
-        // "Condition undecided"; tracked separately, so this proof uses the plain condition.)
-        trigger: { event: "record.updated", table_id: referrals.id, field_ids: [referrals.fields.status], operations: [] },
-        condition: { op: "eq", args: [{ field: referrals.fields.status }, { const: "Scheduled" }] },
+        // "When a Referral's Status BECOMES Scheduled". A hand test has no "before": the chosen
+        // record counts as just arrived, so it did not match before and the run goes on
+        // (chair ruling 2026-10-03, the way Airtable/Zapier/Make fire on arriving matches).
+        trigger: {
+          event: "record.matches",
+          table_id: referrals.id,
+          operations: [],
+          to: { op: "eq", args: [{ field: referrals.fields.status }, { const: "Scheduled" }] },
+        },
         actions: [
           { type: "create_record", table_id: visits.id, values: { title: "Visit for {{trigger.record.title}}" } },
           { type: "notify_person", user_id: userId, title: "Referral scheduled", message: "A visit was created for {{trigger.record.title}}" },

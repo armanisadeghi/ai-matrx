@@ -342,6 +342,13 @@ export const selectRunInput = (runId: string) =>
  * this is false a surface says what IT is doing ("Opening this run"), never
  * what the run is doing.
  */
+/** Why a pending run has not started yet — the server's `start_wait` sentence. */
+export const selectRunStartWait = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): string | null => byRunId[runId]?.startWait ?? null,
+  );
+
 export const selectRunStatusKnown = (runId: string) =>
   createSelector(
     [selectByRunId],

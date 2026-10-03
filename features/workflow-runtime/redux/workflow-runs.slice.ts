@@ -20,6 +20,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   invocationKeyOf,
   readHeartbeatTails,
+  readStartWait,
   type NodeEmittedEvent,
   type NodeStreamEvent,
   type RunRecordSignal,
@@ -314,6 +315,9 @@ export interface WorkflowRunState {
    * ago. A screen is absent or honest, never fake progress (law 4).
    */
   readFailure: string | null;
+  /** Why a pending run has not started yet (`start_wait.says` on the run
+   * read), re-read while it waits. Null once it starts, or when nothing is said. */
+  startWait: string | null;
   attachedAt: number | null;
   /** Max step seen across node events. */
   stepsExecuted: number;
@@ -480,6 +484,7 @@ function makeRunState(
     lastEventSeq: null,
     transportMode: "idle",
     readFailure: null,
+    startWait: null,
     attachedAt: null,
     stepsExecuted: 0,
     sticky: {
@@ -1277,7 +1282,13 @@ const workflowRunsSlice = createSlice({
       const rowTerminal = TERMINAL_RUN_STATUSES.has(row.status);
       const adoptTerminalRow =
         rowTerminal && !TERMINAL_RUN_STATUSES.has(run.status);
-      if (run.statusTs === null || adoptTerminalRow) {
+      // A run still "pending" here has nothing newer to lose: pending is the
+      // first status, so a re-read row that has moved on (running, done) is
+      // always newer truth — this is how a queued run's page leaves
+      // "Getting ready" when no event reached it.
+      const leftPending = run.status === "pending" && row.status !== "pending";
+      run.startWait = row.status === "pending" ? readStartWait(row) : null;
+      if (run.statusTs === null || adoptTerminalRow || leftPending) {
         run.status = row.status;
         run.statusKnown = true;
         // Give the elapsed clock an honest end. The sweeper writes no

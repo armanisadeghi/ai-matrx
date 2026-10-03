@@ -19,11 +19,13 @@ jest.mock("@/features/organizations/useOrganizationRequired", () => ({
   useOrganizationRequired: () => ({ organizationId: "org-1", organizationState: "ready" }),
 }));
 jest.mock("@/features/marketing/google/hooks", () => ({
+  useGoogleCapabilities: () => ({ data: [] }),
   useGoogleConnectionInventory: () => ({
     data: { connections: [{ id: "account-1", health: "connected", account_name: "Test", account_email: "test@example.com" }] },
     isLoading: false, isError: false,
   }),
 }));
+jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "admin-user" }));
 jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
   useOpenGoogleConnectWindow: () => jest.fn(),
 }));

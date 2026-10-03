@@ -78,6 +78,9 @@ const MAX_CHILD_RUNS = 10;
  * above the server's 1.5s `_heartbeat._streaming` write so each refresh has
  * new text, without one extra request per durable-event poll. */
 const HEARTBEAT_TAIL_REFRESH_MS = 3_000;
+/** Re-read cadence for a run that was still waiting to start at attach — the
+ * same 5 s the builder's Runs tab uses. Stops at a terminal status. */
+const PENDING_RUN_REREAD_MS = 5_000;
 
 export interface AdoptWorkflowRunOptions {
   runId: string;
@@ -514,9 +517,21 @@ export function adoptWorkflowRun(
           tailTimer = null;
         }
       };
+      // A run born queued may sit "pending" with no event to move it (nobody
+      // picked it up yet), so the one attach read would narrate "Getting
+      // ready" forever. Re-read the row until it reaches an end; each read
+      // also carries the server's `start_wait` sentence while it waits.
+      let pendingTimer: ReturnType<typeof setInterval> | null = null;
+      const stopPendingReread = (): void => {
+        if (pendingTimer !== null) {
+          clearInterval(pendingTimer);
+          pendingTimer = null;
+        }
+      };
       tree.stops.set(runId, () => {
         stopped = true;
         stopTailRefresh();
+        stopPendingReread();
         stopTransport?.();
       });
 
@@ -536,6 +551,23 @@ export function adoptWorkflowRun(
             // Nothing live to follow — the replay already rebuilt the state.
             dispatch(setTransportMode({ runId, mode: "idle" }));
             return;
+          }
+
+          if (row.status === "pending") {
+            pendingTimer = setInterval(() => {
+              if (stopped) return;
+              void (async () => {
+                try {
+                  const fresh = await fetchJson<RunRow>(adminDoorPath(`/runs/${runId}`));
+                  if (stopped) return;
+                  dispatch(seedRunRow({ runId, row: fresh }));
+                  if (TERMINAL_RUN_STATUSES.has(fresh.status)) stopPendingReread();
+                } catch {
+                  // A missed re-read is retried on the next tick; the event
+                  // transport below still owns the live state.
+                }
+              })();
+            }, PENDING_RUN_REREAD_MS);
           }
 
           const source = startRunEventSource({
