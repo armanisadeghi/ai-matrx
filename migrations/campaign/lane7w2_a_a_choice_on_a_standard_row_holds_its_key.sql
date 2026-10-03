@@ -24,6 +24,8 @@
 -- Clone proof (2026-10-02, rolled back): as admin@admin.com — label "Harbor" -> "harbor";
 -- option id -> "westside"; "Uptown" refused naming Home clinic; a direct update with "Downtown"
 -- -> "downtown"; RED without this file: "Harbor", the id and "Downtown" stored as sent.
+-- Round 2: the options table id is read from the Field's own column first, its config only for a
+-- Field written before that column (the client reads it the same way).
 -- Coordination: lane 7 SEC owns this trigger's field-rule half; this file inserts one call above
 -- validate_values and changes nothing else in the body.
 
@@ -65,7 +67,9 @@ begin
     v_val := p_doc -> v_key;
     continue when v_val is null or jsonb_typeof(v_val) = 'null';
     continue when coalesce(p_old, '{}'::jsonb) -> v_key is not distinct from v_val;
-    v_otid := nullif(f.data -> 'config' ->> 'options_table_id', '')::uuid;
+    -- The Field's own options column, its config only for a Field written before that column.
+    v_otid := coalesce(nullif(f.data ->> 'options_table_id', ''),
+                       nullif(f.data -> 'config' ->> 'options_table_id', ''))::uuid;
     continue when v_otid is null;
     v_label := coalesce(nullif(f.data ->> 'label', ''), v_key);
     v_field := jsonb_build_object('label', v_label, 'field_id', f.id::text,

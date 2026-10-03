@@ -1,7 +1,7 @@
 -- chair-step: the inverse of lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql. It puts
 -- custom._entity_custom_fields_guard back byte for byte as it was before that file ran and drops
 -- the one function that file created. Values already resolved to keys stay keys (a key is valid).
--- based-on: custom._entity_custom_fields_guard() 48e8b10fdf5605896397442bade7886d77ecfbe5e5235910251d7b81b27423b1
+-- based-on: custom._entity_custom_fields_guard() 0464f27ce28beb795be17172ae76e1197149928f3ef2e44a6b3df03e71280e9c
 
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
  RETURNS trigger
