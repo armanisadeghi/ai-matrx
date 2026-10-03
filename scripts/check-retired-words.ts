@@ -5,7 +5,7 @@
  * Data Doctrine R16: one name, renamed completely in one pass. ONE-HOME renamed the schema
  * `graveyard` -> `deprecated` (DD-063), the schema `workspace` -> `projects` (DD-067) and the
  * actor tiers code/ai/human -> system/agent/user (DD-064). This scans every tracked text file
- * for the retired words in `common-docs/systems/platform/vocabulary/retired-words.json` (the ONE
+ * for the retired words in `common-docs/meta/scripts/retired-words.json` (the ONE
  * list every leg reads) and compares per-file counts with `scripts/retired-words-baseline.json`:
  *   - a count above its baseline = a NEW use -> fail (fix it with the replacement word);
  *   - a baseline above the current count = STALE -> fail until the shrink is recorded.
@@ -50,7 +50,7 @@ function repoRoot(): string {
 }
 
 function findWords(root: string): string | null {
-  const rel = join("systems", "platform", "vocabulary", "retired-words.json");
+  const rel = join("meta", "scripts", "retired-words.json");
   const candidates = [arg("--words"), process.env.RETIRED_WORDS_FILE, join(root, rel), join(dirname(root), "common-docs", rel)];
   for (const c of candidates) if (c && existsSync(c)) return c;
   return null;
@@ -182,7 +182,7 @@ function main(): number {
     const doc = {
       $comment:
         "Shrink-only baseline of the retired-words guard (check-retired-words.ts / check_retired_words.py). Every entry is an EXISTING use of a retired word; it only ever gets smaller. A new use is fixed, never added here.",
-      words_file: "common-docs/systems/platform/vocabulary/retired-words.json",
+      words_file: "common-docs/meta/scripts/retired-words.json",
       static: sortHits(current),
     };
     writeFileSync(baselinePath, JSON.stringify(doc, null, 2) + "\n");
