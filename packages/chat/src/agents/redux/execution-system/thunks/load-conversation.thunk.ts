@@ -708,6 +708,7 @@ export const loadConversation = createAsyncThunk<
             totalDurationMs: r.totalDurationMs,
             apiDurationMs: r.apiDurationMs,
             toolDurationMs: r.toolDurationMs,
+            ttftMs: storedTtftMs(r.metadata),
             createdAt: r.createdAt,
             completedAt: r.completedAt,
           })),
@@ -746,3 +747,10 @@ export const loadConversation = createAsyncThunk<
     return { conversationId };
   },
 );
+
+/** The server-measured time to first token a turn stored in its metadata, if any. */
+function storedTtftMs(metadata: unknown): number | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
+  const value = (metadata as Record<string, unknown>).ttft_ms;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}

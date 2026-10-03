@@ -27,6 +27,7 @@ import {
   fmtServerSeconds,
   fmtTokens,
   getUserRequestResult,
+  requestTtftMs,
   type MutableTotals,
 } from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
 import {
@@ -78,6 +79,8 @@ export interface ColumnStats {
   llmCalls: number | null;
   toolCalls: number | null;
 
+  /** Time to first token of the last run — the browser's, else the server's (survives reload). */
+  ttftMs: number | null;
   // Client metrics (last request)
   clientTtftMs: number | null;
   clientStreamDurationMs: number | null;
@@ -141,6 +144,7 @@ const NULL_STATS = (): Omit<
   iterations: null,
   llmCalls: null,
   toolCalls: null,
+  ttftMs: null,
   clientTtftMs: null,
   clientStreamDurationMs: null,
   clientRenderDelayMs: null,
@@ -269,6 +273,7 @@ function buildStatsForColumn(
   // Client metrics — pull from the LAST request (most recent run is the
   // most informative single-shot perf number; aggregating multi-turn TTFT
   // would mislead).
+  base.ttftMs = requestTtftMs(last);
   const m = last.clientMetrics;
   if (m) {
     base.clientTtftMs = m.ttftMs ?? null;
@@ -478,9 +483,9 @@ export const SECTIONS: MetricSection[] = [
         emphasized: true,
       },
       {
-        label: "Client TTFT",
+        label: "Time to first token",
         scored: true,
-        pick: (s) => s.clientTtftMs,
+        pick: (s) => s.ttftMs,
         format: fmtMs,
         unit: "ms",
         direction: "lower",

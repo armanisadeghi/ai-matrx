@@ -15,9 +15,7 @@
 import { EyeOff, Trophy } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { csvExportItem } from "@/components/agent-copy/export";
-import { TableSaveToMenu } from "@/components/mardown-display/tables/TableSaveToMenu";
+import { BattleTableTools as TableTools } from "../shared/BattleTableTools";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { selectBlindActive } from "../redux/selectors";
@@ -29,13 +27,10 @@ import {
 } from "./runsComparisonData";
 import { computeRanking, ordinal, rankRow, type RunsRanking } from "./runsRanking";
 import {
-  gridMarkdown,
-  gridObjects,
   sectionDataGrid,
   sectionGrid,
   standingsDataGrid,
   standingsGrid,
-  type Grid,
 } from "./runsComparisonReport";
 
 export function RunsComparisonTable() {
@@ -77,47 +72,6 @@ function ColumnHeaderStrip({ stats }: { stats: ColumnStats[] }) {
   );
 }
 
-/** Copy / AI / Export and Save to, for one table — the platform's own primitives. */
-function TableTools({
-  name,
-  grid,
-  data,
-  description,
-}: {
-  name: string;
-  /** The table as people read it (copy for a person, the AI summary). */
-  grid: Grid;
-  /** The same numbers as data (save, CSV, JSON, Sheets, the AI's data). */
-  data: Grid;
-  description: string;
-}) {
-  if (grid.rows.length === 0) return null;
-  return (
-    <div className="flex items-center gap-1">
-      <CopyButtons
-        label={name}
-        size="xs"
-        primarySource="table"
-        human={() => gridMarkdown(grid)}
-        json={() => gridObjects(data)}
-        agent={() => ({
-          kind: "agent-battle-runs-table",
-          location: `AI Matrx — Agent Battle runs comparison, "${name}"`,
-          description,
-          summary: gridMarkdown(grid),
-          data: gridObjects(data),
-          attributes: { columns: grid.headers.length - 1, rows: grid.rows.length },
-        })}
-        export={{
-          items: [csvExportItem(() => gridObjects(data), "CSV")],
-          sheetRows: () => gridObjects(data),
-        }}
-      />
-      <TableSaveToMenu headers={data.headers} rows={data.rows} title={name} />
-    </div>
-  );
-}
-
 function PlaceBadge({ place }: { place: number | null }) {
   if (place == null) return null;
   return (
@@ -150,7 +104,7 @@ function StandingsCard({ ranking }: { ranking: RunsRanking }) {
           name="Standings"
           grid={grid}
           data={standingsDataGrid(ranking)}
-          description="Each column's overall place, first places and average place across your scores, tokens, cost and speed."
+          aiContext="Each column's overall place, first places and average place across your scores, tokens, cost and speed."
         />
       </div>
       <table className="w-full text-[11px]">
@@ -232,7 +186,7 @@ function SectionTable({
           name={section.title}
           grid={grid}
           data={sectionDataGrid(section, stats)}
-          description={`The "${section.title}" metrics for each column of an Agent Battle, side by side.`}
+          aiContext={`The "${section.title}" metrics for each column of an Agent Battle, side by side.`}
         />
       </div>
       <div className="overflow-x-auto">

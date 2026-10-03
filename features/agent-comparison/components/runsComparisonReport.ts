@@ -27,11 +27,8 @@ import {
   type MetricSection,
 } from "./runsComparisonData";
 import { computeRanking, ordinal, rankRow, type RunsRanking } from "./runsRanking";
+import { gridMarkdown, mdCell, type Grid } from "../shared/tableGrid";
 
-export interface Grid {
-  headers: string[];
-  rows: string[][];
-}
 
 /** One metric section as plain rows (values as shown, no decoration). */
 export function sectionGrid(
@@ -102,26 +99,6 @@ export function standingsDataGrid(ranking: RunsRanking): Grid {
       String(s.ranked),
     ]),
   };
-}
-
-/** Rows as objects keyed by header — for JSON copy and CSV. */
-export function gridObjects(grid: Grid): Array<Record<string, string>> {
-  return grid.rows.map((row) =>
-    Object.fromEntries(grid.headers.map((h, i) => [h, row[i] ?? ""])),
-  );
-}
-
-const mdCell = (text: string) => text.replace(/\|/g, "\\|").replace(/\n/g, " ");
-
-export function gridMarkdown(grid: Grid, align: "left" | "right" = "right"): string {
-  const rule = grid.headers
-    .map((_, i) => (i === 0 || align === "left" ? "---" : "---:"))
-    .join("|");
-  return [
-    `| ${grid.headers.map(mdCell).join(" | ")} |`,
-    `|${rule}|`,
-    ...grid.rows.map((r) => `| ${r.map(mdCell).join(" | ")} |`),
-  ].join("\n");
 }
 
 /** One metric section as Markdown: the best value bold, every place named. */

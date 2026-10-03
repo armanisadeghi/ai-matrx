@@ -297,6 +297,8 @@ export interface HydratedRequestRow {
   totalDurationMs: number | null;
   apiDurationMs: number | null;
   toolDurationMs: number | null;
+  /** Server-measured time to first token (`user_request.metadata.ttft_ms`); null on older turns. */
+  ttftMs: number | null;
   createdAt: string;
   completedAt: string | null;
 }
@@ -348,6 +350,8 @@ function buildHydratedResult(row: HydratedRequestRow): Record<string, unknown> {
       total_duration: (row.totalDurationMs ?? 0) / 1000,
       api_duration: (row.apiDurationMs ?? 0) / 1000,
       tool_duration: (row.toolDurationMs ?? 0) / 1000,
+      // Same key a live run's completion carries, so one reader serves both.
+      ...(row.ttftMs != null ? { first_token_seconds: row.ttftMs / 1000 } : {}),
     },
     tool_call_stats: {
       total_tool_calls: row.totalToolCalls,
@@ -1481,9 +1485,10 @@ const activeRequestsSlice = createSlice({
      *     pulls out of a live stream's completion event
      *   - top-level `status` / `startedAt` / `completedAt`
      *
-     * `clientMetrics` (TTFT / total client duration) stays null because
-     * those numbers aren't persisted server-side — the UI shows "—" for
-     * those tiles after a reload, which is the correct affordance.
+     * `clientMetrics` (browser-measured timings) stays null — those are never
+     * persisted. Time to first token IS: the server stamps it on every turn
+     * (`user_request.metadata.ttft_ms`, 2026-10-02) and it rides
+     * `timing_stats.first_token_seconds`; read it with `requestTtftMs`.
      *
      * Defensive: if a requestId already exists in `byRequestId` (live
      * stream just completed and stayed mounted), we DO NOT overwrite —

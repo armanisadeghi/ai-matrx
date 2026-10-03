@@ -234,6 +234,20 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-10-02 — **The runs comparison is a comparison.** Every comparable metric ranks the columns
+  (`components/runsRanking.ts`: ties share a place, all-equal rows are unranked) and a Standings card
+  rolls the decision metrics (your scores, tokens, cost, speed, time to first token) into wins, average
+  place and an overall place. Every battle table carries the platform's tools through
+  `shared/BattleTableTools.tsx` — Copy / Copy for AI / Export (Alchemy) and Save to (custom data table,
+  workbook, Google Sheet); saved/exported rows are DATA (one row per column, raw numbers, unit in the
+  header) from `runsComparisonReport.sectionDataGrid`, so a saved table sorts and charts. Print and
+  Download HTML render the comparison itself (`runsReportHtml`: standings, best/worst colors, place
+  badges) before the request and answers. Decisions and each answer card got the same Copy tools.
+  Data model split: `components/runsComparisonData.ts` (stats, sections, masking selector). **Time to
+  first token now survives a reload:** aidream stamps it on every turn (`user_request.metadata.ttft_ms`,
+  aidream 7ca8499c14); a reloaded request carries it as `timing_stats.first_token_seconds` and
+  `requestTtftMs` (chat package `run-controls/panels/shared.tsx`) reads the browser's number first,
+  else the server's.
 - 2026-10-02 — **The page's work is on the page.** `BattleHeader` now draws two pieces: the route
   header (name, mode switcher, copy/export) and an in-page action bar with every action as a small
   labelled or icon-only button (short word from `ICON_DEFAULTS`, full name as the tooltip), Blind test

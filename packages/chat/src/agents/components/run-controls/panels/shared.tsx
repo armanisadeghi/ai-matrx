@@ -120,6 +120,25 @@ export function getUserRequestResult(
   return result as UserRequestResult;
 }
 
+/**
+ * Time to first token for one request, in ms. The browser's own measurement
+ * when this tab watched the run; otherwise the server's
+ * (`timing_stats.first_token_seconds`), which a live completion carries and a
+ * reloaded run restores from `user_request.metadata.ttft_ms` — so the number
+ * survives a reload. The server's runs slightly lower (no network hop).
+ */
+export function requestTtftMs(request: ActiveRequest | undefined): number | null {
+  if (!request) return null;
+  if (request.clientMetrics?.ttftMs != null) return request.clientMetrics.ttftMs;
+  const timing = getUserRequestResult(request)?.timing_stats as
+    | { first_token_seconds?: unknown }
+    | undefined;
+  const seconds = timing?.first_token_seconds;
+  return typeof seconds === "number" && Number.isFinite(seconds)
+    ? Math.round(seconds * 1000)
+    : null;
+}
+
 export interface MutableTotals {
   input: number;
   output: number;

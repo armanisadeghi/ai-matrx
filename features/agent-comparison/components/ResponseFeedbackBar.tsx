@@ -39,7 +39,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -48,6 +48,7 @@ import {
   fmtMs,
   fmtTokens,
   getUserRequestResult,
+  requestTtftMs,
   makeSelectConversationRequests,
   type MutableTotals,
 } from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
@@ -72,6 +73,10 @@ import {
   type FeedbackMetricDefinition,
 } from "../shared/feedbackMetrics";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { csvExportItem } from "@/components/agent-copy/export";
+import { currentCostUnit } from "@/components/cost/costUnit";
+import { gridMarkdown, gridObjects, type Grid } from "../shared/tableGrid";
 
 interface Props {
   conversationId: string;
@@ -85,6 +90,10 @@ const THUMBS_UP_DEFAULT_SCORE = 4;
 const THUMBS_DOWN_DEFAULT_SCORE = 2;
 
 type Scores = Record<string, number>;
+
+/** Sent with "Copy for AI" on an answer card — never shown on screen. */
+const ANSWER_AI_CONTEXT =
+  "One column's run numbers (tokens, cost, timing) and the person's scores for its answer.";
 
 // =============================================================================
 // Helpers — read other columns' ranks for the rank picker
@@ -154,6 +163,7 @@ function ResponseFeedbackBarInner({
   runRequestId,
 }: InnerProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const userId = useAppSelector(selectUserId);
   const setId = useAppSelector(selectMountedBattleSetId);
   const columns = useAppSelector(selectActiveBattleColumns);
@@ -400,6 +410,36 @@ function ResponseFeedbackBarInner({
 
   const configuredColumnCount = columns.filter((c) => c.agentId).length;
 
+  // Read at the click, so it is what the person sees right then. A blind run
+  // copies only the scores: run numbers would say which model answered.
+  const answerGrid = (): Grid => {
+    const rows: string[][] = [];
+    const usage = blindActive ? null : readRunUsage(store.getState(), runRequestId);
+    if (usage) {
+      const unit = currentCostUnit();
+      rows.push(
+        ["Total tokens", fmtTokens(usage.tokensTotal)],
+        ["Input tokens", fmtTokens(usage.tokensInput)],
+        ["Cached tokens", fmtTokens(usage.tokensCached)],
+        ["Output tokens", fmtTokens(usage.tokensOutput)],
+        ["Cost", fmtCost(usage.cost, unit)],
+        ["Time to first token", fmtMs(usage.ttftMs)],
+        ["Server duration", fmtMs(usage.serverDurationMs)],
+      );
+    }
+    rows.push(
+      ["Overall", overall != null ? `${overall} / 5` : "—"],
+      ["Rank", rank != null ? `#${rank}` : "—"],
+      ...RESPONSE_FEEDBACK_METRICS.map((m) => [
+        m.label,
+        scores[m.id] != null ? `${scores[m.id]} / 5` : "—",
+      ]),
+      ["Thumbs", rating ?? "—"],
+      ["Note", comment || "—"],
+    );
+    return { headers: ["Metric", "Value"], rows };
+  };
+
   return (
     <div
       className="border border-border rounded-md bg-card/50 mx-2 my-3 shadow-sm"
@@ -419,6 +459,22 @@ function ResponseFeedbackBarInner({
         <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
           Rate this response
         </span>
+        {/* This answer's numbers and your scores — Copy, Copy for AI, Export. */}
+        <CopyButtons
+          label="This answer"
+          size="xs"
+          primarySource="table"
+          human={() => gridMarkdown(answerGrid())}
+          json={() => gridObjects(answerGrid())}
+          agent={() => ({
+            kind: "agent-battle-answer-scores",
+            location: "AI Matrx — Agent Battle, one column's answer",
+            description: ANSWER_AI_CONTEXT,
+            summary: gridMarkdown(answerGrid()),
+            data: gridObjects(answerGrid()),
+          })}
+          export={{ items: [csvExportItem(() => gridObjects(answerGrid()), "CSV")] }}
+        />
         <div className="flex-1" />
         <button
           type="button"
@@ -678,38 +734,44 @@ function BlindUsageNotice() {
  * Reads from `activeRequests.byRequestId[requestId]` — works regardless
  * of comparison mode since the request slice is global.
  */
+/** One answer's run numbers, as the usage tiles show them. */
+function readRunUsage(state: RootState, requestId: string) {
+  const req = state.activeRequests.byRequestId[requestId];
+  if (!req) return null;
+  const totals: MutableTotals = {
+    input: 0,
+    output: 0,
+    cached: 0,
+    total: 0,
+    cost: 0,
+    requests: 0,
+  };
+  const result = getUserRequestResult(req);
+  if (result) {
+    addUsageTotals(totals, result.total_usage?.total);
+  }
+  return {
+    tokensInput: totals.input || null,
+    tokensCached: totals.cached || null,
+    tokensOutput: totals.output || null,
+    tokensTotal: totals.total || null,
+    cost: totals.cost || null,
+    // timing_stats durations are SECONDS on the wire.
+    serverDurationMs:
+      result?.timing_stats?.total_duration != null
+        ? result.timing_stats.total_duration * 1000
+        : null,
+    // Survives a reload: the server's measurement when this tab did not watch.
+    ttftMs: requestTtftMs(req),
+    totalClientMs: req.clientMetrics?.totalClientDurationMs ?? null,
+  };
+}
+
 function ResponseUsageStrip({ requestId }: { requestId: string }) {
   const { unit: costUnit } = useCostDisplay();
-  const stats = useAppSelector((state: RootState) => {
-    const req = state.activeRequests.byRequestId[requestId];
-    if (!req) return null;
-    const totals: MutableTotals = {
-      input: 0,
-      output: 0,
-      cached: 0,
-      total: 0,
-      cost: 0,
-      requests: 0,
-    };
-    const result = getUserRequestResult(req);
-    if (result) {
-      addUsageTotals(totals, result.total_usage?.total);
-    }
-    return {
-      tokensInput: totals.input || null,
-      tokensCached: totals.cached || null,
-      tokensOutput: totals.output || null,
-      tokensTotal: totals.total || null,
-      cost: totals.cost || null,
-      // timing_stats durations are SECONDS on the wire.
-      serverDurationMs:
-        result?.timing_stats?.total_duration != null
-          ? result.timing_stats.total_duration * 1000
-          : null,
-      ttftMs: req.clientMetrics?.ttftMs ?? null,
-      totalClientMs: req.clientMetrics?.totalClientDurationMs ?? null,
-    };
-  });
+  const stats = useAppSelector((state: RootState) =>
+    readRunUsage(state, requestId),
+  );
 
   // Render nothing if no completion event was received yet — the bar's
   // outer guard already gated on `status === "complete"`, but a complete

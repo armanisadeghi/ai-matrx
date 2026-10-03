@@ -42,6 +42,7 @@ import {
 } from "@ai-matrx/agents/presentation/decision-answers";
 import type { RootState } from "@/lib/redux/store";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { BattleTableTools } from "../shared/BattleTableTools";
 
 function percent(value: number | null): string {
   return value == null ? "—" : `${Math.round(value * 100)}%`;
@@ -240,13 +241,37 @@ export function DecisionComparisonTable() {
 
   const reviewAgentId = columns.find((c) => c.agentId)?.agentId ?? null;
 
+  // The table as rows — for Copy / Copy for AI / Export / Save to.
+  const decisionsGrid = {
+    headers: ["Question", ...answering.map((c) => c.label), "Delta", "Verdict"],
+    rows: questionNames.map((name) => {
+      const answers = answering.map((c) => c.view?.answers.find((a) => a.name === name));
+      const shown = answers.map((a) => (a ? formatAnswerHeadline(a) : ""));
+      const probabilities = answers
+        .map((a) => (a ? answerProbability(a) : null))
+        .filter((p): p is number => p != null);
+      const nonEmpty = shown.filter(Boolean);
+      const delta =
+        nonEmpty.length >= 2 && new Set(nonEmpty).size > 1
+          ? "different answers"
+          : probabilities.length >= 2
+            ? percent(Math.max(...probabilities) - Math.min(...probabilities))
+            : "";
+      const asked = answers.find((a) => a?.instruction)?.instruction;
+      return [asked ?? name, ...shown, delta, verdicts[name]?.answer ?? ""];
+    }),
+  };
+
   return (
     <div className="flex flex-col gap-2 p-2">
-      {reviewAgentId && (
-        <div className="flex justify-end">
-          <ReviewAnswersLink agentId={reviewAgentId} force />
-        </div>
-      )}
+      <div className="flex items-center justify-end gap-2">
+        <BattleTableTools
+          name="Decisions"
+          grid={decisionsGrid}
+          aiContext="Each column's answer to every decision question, how far apart they are, and the verdict recorded as true."
+        />
+        {reviewAgentId && <ReviewAnswersLink agentId={reviewAgentId} force />}
+      </div>
       {answering.length < 2 && (
         <p className="text-[11px] text-muted-foreground">
           The delta appears once a second column answers.

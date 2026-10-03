@@ -28,6 +28,7 @@ import {
 import {
   addUsageTotals,
   getUserRequestResult,
+  requestTtftMs,
   type MutableTotals,
 } from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
 import type { ActiveRequest } from "@ai-matrx/chat/agents/types/request.types";
@@ -298,7 +299,7 @@ function columnMetrics(
     total_tokens: totals.total || null,
     cost_usd: totals.cost || null,
     server_seconds: seconds || null,
-    ttft_ms: last?.clientMetrics?.ttftMs ?? null,
+    ttft_ms: requestTtftMs(last),
   };
 }
 
