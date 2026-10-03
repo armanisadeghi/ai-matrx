@@ -43,6 +43,9 @@ jest.mock("./FindingEffectivenessPanel", () => ({
   FindingEffectivenessPanel: () => null,
 }));
 jest.mock("./EnrollDialog", () => ({ EnrollDialog: () => null }));
+jest.mock("@/features/assists/components/AssistStrip", () => ({
+  AssistStrip: () => null,
+}));
 
 import { HindsightPage } from "./HindsightPage";
 import { selectEnrollmentId } from "./select-enrollment";

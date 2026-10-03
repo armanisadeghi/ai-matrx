@@ -29,6 +29,12 @@ import { KIND_COLOR, KIND_ICON } from "./tokens";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Cost } from "@/components/cost/Cost";
+import { AssistStrip } from "@/features/assists/components/AssistStrip";
+
+/** The surface name aidream stamps on Hindsight's chips (proposed login
+ *  recipes carry their review page, /administration/agents/hindsight/recipes/<id>,
+ *  as the chip's evidence link — grow_loop.py `_proposal_chip_payload`). */
+const HINDSIGHT_ASSIST_SURFACE = "administration/agents/hindsight";
 
 export function HindsightPage() {
   // Assist chips deep-link here: `?enrollment=<id>` (a finding to decide) and
@@ -114,6 +120,7 @@ export function HindsightPage() {
         ) : (
           <span />
         )}
+        <AssistStrip surfaceName={HINDSIGHT_ASSIST_SURFACE} className="flex-1" />
         <Button onClick={() => setEnrollOpen(true)} data-testid="hindsight-enroll-open">
           <Plus className="mr-1 h-4 w-4" />
           Enroll

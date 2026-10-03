@@ -769,6 +769,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           ]),
         ],
       },
+      {
+        name: "Feature Maps",
+        iconName: "Map",
+        destinations: [destination("/administration/documentation/feature-maps")],
+      },
     ],
   },
   {

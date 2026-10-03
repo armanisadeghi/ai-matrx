@@ -27,8 +27,11 @@
 import { DEFAULT_HOLDER_RUNG } from "@/features/bindings/default-holder-rung";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { adminMandateSupportRecordHref } from "@/features/mandates/admin-routes";
-import { ArrowLeft, Copy, TriangleAlert } from "lucide-react";
+import {
+  adminMandateOverridesHref,
+  adminMandateSupportRecordHref,
+} from "@/features/mandates/admin-routes";
+import { ArrowLeft, Copy, ExternalLink, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -586,6 +589,19 @@ function OneMandateRecordBody({
         hidden={activeTab !== "overrides-simple"}
         className={activeTab === "overrides-simple" ? "space-y-3" : "hidden"}
       >
+        {/* The same panel also stands alone as a page at the system level
+            (/administration/intelligence/mandates/[key]/overrides) — its door. */}
+        {activeTab === "overrides-simple" && perspective === "system" ? (
+          <div className="flex justify-end">
+            <Link
+              href={adminMandateOverridesHref(storedMandateKey(data.mandate.mandate_key))}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Open as page
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        ) : null}
         {activeTab === "overrides-simple" && !readOnly ? (
           <MandateOverridesSimple
             data={data}

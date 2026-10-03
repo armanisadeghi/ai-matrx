@@ -32,6 +32,7 @@ import {
   Target,
   User,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import type { HrCapability, HrPersona } from "../constants";
@@ -45,7 +46,9 @@ import {
   hrHref,
   hrLeaveHref,
   hrMeDocumentsHref,
+  hrMeClockHref,
   hrMeHref,
+  hrMePayHref,
   hrMeScheduleHref,
   hrMeTimeOffHref,
   hrMeTimesheetHref,
@@ -71,6 +74,12 @@ type HrNavDef = {
   exact?: boolean;
   /** ANY of these is enough. Omitted → every persona with an employer sees it. */
   requires?: HrCapability[];
+  /**
+   * A self-service surface with no org-wide twin (`/hr/me/pay`, `/hr/me/clock`).
+   * Offered only through the employee face — `self` must be set — and ABSENT for
+   * every other persona, whose nav is the org-wide pillars.
+   */
+  selfOnly?: true;
   /**
    * The employee-persona face of this item: a different label pointing at the
    * person's own `/hr/me/*` surface. Present → this item counts toward the
@@ -165,6 +174,21 @@ const NAV: HrNavDef[] = [
     },
   },
   {
+    key: "clock",
+    label: "Clock in/out",
+    icon: Clock,
+    description: "Punch in and out",
+    href: hrMeClockHref,
+    selfOnly: true,
+    self: {
+      label: "Clock in/out",
+      href: hrMeClockHref,
+      needsEmployment: true,
+      // `hr.clock_state` blocks a contractor outright — same verdict as Time.
+      hiddenForWorkerClass: NOT_CLOCKED,
+    },
+  },
+  {
     key: "schedule",
     label: "Schedule",
     icon: CalendarDays,
@@ -195,6 +219,15 @@ const NAV: HrNavDef[] = [
       // us about it. Enrolment decides; class is only the default.
       hiddenForWorkerClassUnlessEnrolled: NO_LEAVE_ACCRUAL,
     },
+  },
+  {
+    key: "pay",
+    label: "My pay",
+    icon: Wallet,
+    description: "Your own compensation",
+    href: hrMePayHref,
+    selfOnly: true,
+    self: { label: "My pay", href: hrMePayHref, needsEmployment: true },
   },
   {
     key: "onboarding",
@@ -410,6 +443,7 @@ export function resolveHrNav(args: {
       continue;
     }
 
+    if (def.selfOnly) continue;
     if (isEmployee && def.requires) continue;
     if (def.requires && !def.requires.some((c) => held.has(c))) continue;
 

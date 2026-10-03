@@ -37,6 +37,20 @@ describe("self-service nav is honest about worker class", () => {
     expect(keys).toContain("time");
     expect(keys).toContain("schedule");
     expect(keys).toContain("leave");
+    // Pay and the web clock have no org-wide twin; they are self-service only.
+    expect(keys).toContain("pay");
+    expect(keys).toContain("clock");
+  });
+
+  it("keeps the self-only pay and clock entries out of an HR admin's nav", () => {
+    const keys = resolveHrNav({
+      ...base,
+      persona: "hr_admin",
+      capabilities: ["time.read", "working_record.read"],
+      active: { worker_class: "employee" } as never,
+    }).items.map((i) => i.key);
+    expect(keys).not.toContain("pay");
+    expect(keys).not.toContain("clock");
   });
 
   it("does not offer a contractor a surface whose door refuses her", () => {
@@ -44,6 +58,7 @@ describe("self-service nav is honest about worker class", () => {
     // `hr.clock_state` blocks a contractor from the clock, by name.
     expect(keys).not.toContain("time");
     expect(keys).not.toContain("schedule");
+    expect(keys).not.toContain("clock");
     // No leave accrual, so there is no balance to show.
     expect(keys).not.toContain("leave");
     // ...and she still has her own record and documents. Absence is targeted,

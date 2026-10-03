@@ -808,6 +808,13 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Feature maps",
+        description: "Every per-feature admin map, one click each.",
+        iconName: "Map",
+        link: "/administration/documentation/feature-maps",
+        isNew: true,
+      },
+      {
         title: "CMS Agent Activity",
         description:
           "Fleet-wide CMS oversight — agent/human write activity, per-site page tree with preview/live links, agent write-policy editor, and validation-exception approvals.",

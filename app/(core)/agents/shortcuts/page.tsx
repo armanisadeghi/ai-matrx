@@ -6,7 +6,6 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { PlusTapButton, ListTapButton } from "@ai-matrx/tap-target/buttons";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { PromoteToGlobalModal } from "@/features/agent-shortcuts/components/PromoteToGlobalModal";
-import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { ShortcutList } from "@/features/agent-shortcuts/components/ShortcutList";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import type {
@@ -18,6 +17,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { pushAppHref } from "@/lib/deployment/navigate";
 
 const SCOPE = "user" as const;
+const NEW_SHORTCUT_HREF = "/agents/shortcuts/new";
 
 export default function UserShortcutsPage() {
   const router = useRouter();
@@ -26,7 +26,6 @@ export default function UserShortcutsPage() {
 
   const { categories } = useAgentShortcuts({ scope: SCOPE });
 
-  const [createOpen, setCreateOpen] = useState(false);
   const [duplicateTarget, setDuplicateTarget] =
     useState<AgentShortcutRecord | null>(null);
   const [promoteTarget, setPromoteTarget] =
@@ -43,20 +42,17 @@ export default function UserShortcutsPage() {
     });
   };
 
-  const handleCreate = () => setCreateOpen(true);
+  // ONE create path: the dedicated /agents/shortcuts/new page (a real door —
+  // new-tab-able, bookmarkable), shared by the header button and the empty state.
+  const handleCreate = () => {
+    startTransition(() => {
+      router.push(NEW_SHORTCUT_HREF);
+    });
+  };
   const handleDuplicate = (shortcut: AgentShortcutRecord) =>
     setDuplicateTarget(shortcut);
   const handlePromoteToGlobal = (shortcut: AgentShortcutRecord) =>
     setPromoteTarget(shortcut);
-
-  const handleCreateSuccess = (id: string | null) => {
-    setCreateOpen(false);
-    if (id) {
-      startTransition(() => {
-        router.push(`/agents/shortcuts/edit/${id}`);
-      });
-    }
-  };
 
   const handleDuplicateSuccess = (newId: string) => {
     setDuplicateTarget(null);
@@ -91,8 +87,8 @@ export default function UserShortcutsPage() {
             />
             <PlusTapButton
               variant="solid"
-              label="New"
-              onClick={handleCreate}
+              label="New shortcut"
+              href={NEW_SHORTCUT_HREF}
               ariaLabel="New shortcut"
             />
           </>
@@ -110,15 +106,6 @@ export default function UserShortcutsPage() {
           hideTitleBar
         />
       </div>
-
-      <ShortcutForm
-        scope={SCOPE}
-        isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onSuccess={handleCreateSuccess}
-        shortcut={null}
-        categories={categories}
-      />
 
       {duplicateTarget && (
         <DuplicateShortcutModal

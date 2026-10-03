@@ -38,6 +38,7 @@ import {
   PlugZap,
   Plug,
   Database,
+  BadgeDollarSign,
   Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -188,6 +189,12 @@ export function OrgManage({
       label: "Change policy",
       icon: ShieldCheck,
       show: true,
+    },
+    {
+      id: "keyword-value",
+      label: "Keyword value",
+      icon: BadgeDollarSign,
+      show: canManageSettings,
     },
     {
       id: "dictionary",
@@ -632,6 +639,25 @@ export function OrgManage({
               </Button>
             </div>
           </SectionCard>
+
+          {/* Keyword value — the org rung of platform → org → brand → site (KI-046) */}
+          {canManageSettings && (
+            <SectionCard
+              id="keyword-value"
+              icon={BadgeDollarSign}
+              title="Keyword value"
+              description="How keywords are valued for every brand and site here."
+            >
+              <div className="flex justify-end">
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/organizations/${slug}/settings/keyword-value`}>
+                    Open keyword value
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            </SectionCard>
+          )}
 
           {/* Custom Dictionary — org-wide terminology + pronunciation */}
           {canManageSettings && (
