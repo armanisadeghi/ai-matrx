@@ -121,7 +121,7 @@ import {
   selectUserTodoCounts,
 } from "../../../ui-first-tools/redux/agent-lists.selectors";
 import {
-  hydrateAgentLists,
+  ensureAgentLists,
   subscribeAgentLists,
   unsubscribeAgentLists,
 } from "../../../ui-first-tools/redux/agent-lists.thunks";
@@ -283,7 +283,8 @@ export function ConversationContextRail({
 
   useEffect(() => {
     if (!conversationId) return undefined;
-    void dispatch(hydrateAgentLists(conversationId));
+    // Read once while the live mirror is open — a remount or a wake reads nothing.
+    void dispatch(ensureAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {
       dispatch(unsubscribeAgentLists(conversationId));

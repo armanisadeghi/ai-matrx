@@ -50,7 +50,7 @@ import { ProjectReferencesPanel } from "@/features/projects/components/ProjectRe
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import type { Project } from "@/features/projects/types";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
 import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
 import {
   InlineProjectName,
@@ -212,10 +212,8 @@ export function ProjectRecordWorkspace({
   const project = projectRead.data ?? initialProject;
   const applyPatch = (patch: Partial<Project>) =>
     projectRead.setData((prev) => ({ ...(prev ?? initialProject), ...patch }));
-  const [org, setOrg] = React.useState<{
-    name: string;
-    slug: string;
-  } | null>(null);
+  // Label enrichment only: the organization chip is absent without it.
+  const org = useOrganizationLabel(project.organizationId);
   const [taskCounts, setTaskCounts] = React.useState<{
     open: number;
     done: number;
@@ -223,25 +221,6 @@ export function ProjectRecordWorkspace({
     open: 0,
     done: 0,
   });
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!project.organizationId) {
-        setOrg(null);
-        return;
-      }
-      // Label enrichment only: the organization chip is absent without it.
-      const o = await getOrganizationBySlugOrId(project.organizationId).catch((err: unknown) => {
-        console.error("[ProjectWorkspace] organization label unavailable:", err);
-        return null;
-      });
-      if (!cancelled && o)
-        setOrg({ name: o.name, slug: o.slug });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [project.organizationId]);
 
   const { members } = useProjectMembers(project.id);
   const { role, canManageSettings } = useProjectUserRole(project.id);

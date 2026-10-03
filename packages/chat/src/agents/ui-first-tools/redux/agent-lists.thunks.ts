@@ -1,7 +1,8 @@
 /**
  * Hydration and live-mirror thunks for the agentLists slice.
  *
- *   hydrateAgentLists(conversationId)    — initial fetch on conversation mount
+ *   ensureAgentLists(conversationId)     — mount: read once while the mirror is open
+ *   hydrateAgentLists(conversationId)    — the read itself (recovery, Retry)
  *   subscribeAgentLists(conversationId)  — opens Supabase Realtime channels
  *   unsubscribeAgentLists(conversationId)— tears them down
  *
@@ -91,6 +92,22 @@ export const hydrateAgentLists =
     }
   };
 
+/**
+ * Read a conversation's lists ONCE while their live mirror is open: a remount
+ * or a wake of the panel renders the slice and reads nothing. When the mirror
+ * has closed (no panel for longer than `CHANNEL_LINGER_MS`) the rows may have
+ * moved, so the next panel reads them again. Mount sites call this; recovery
+ * paths and Retry call `hydrateAgentLists`.
+ */
+export const ensureAgentLists =
+  (conversationId: string): AgentListsThunk =>
+  async (dispatch, getState) => {
+    const bucket = getState().agentLists.byConversationId[conversationId];
+    const live = activeChannels.has(conversationId);
+    if (live && (bucket?.status === "ready" || bucket?.status === "loading")) return;
+    await dispatch(hydrateAgentLists(conversationId));
+  };
+
 // ── Realtime subscription tracking ──────────────────────────────────────────
 
 /** One place names this channel. A second, different declaration throws. */
@@ -101,14 +118,33 @@ const agentListsChannel = defineChannelNamespace({
     "chat.agent_plan + chat.agent_task + chat.user_todo rows for one conversation",
 });
 
-/** Per-conversation stop functions — one open channel each. */
-const activeChannels = new Map<string, () => void>();
+/**
+ * Per-conversation channels — one open channel each, shared by every panel
+ * that shows the conversation (`refs`). The last panel to leave does not close
+ * it at once: a panel hidden and shown again, or remounted, finds it still open
+ * and reads nothing (`ensureAgentLists`).
+ */
+interface ActiveChannel {
+  stop: () => void;
+  refs: number;
+  closeTimer: ReturnType<typeof setTimeout> | null;
+}
+const activeChannels = new Map<string, ActiveChannel>();
+
+/** How long a conversation's mirror outlives its last panel. */
+const CHANNEL_LINGER_MS = 60_000;
 
 export function subscribeAgentLists(
   conversationId: string,
 ): ThunkAction<void, ChatRootState, unknown, UnknownAction> {
   return (dispatch) => {
-    if (activeChannels.has(conversationId)) return;
+    const open = activeChannels.get(conversationId);
+    if (open) {
+      open.refs += 1;
+      if (open.closeTimer) clearTimeout(open.closeTimer);
+      open.closeTimer = null;
+      return;
+    }
 
     const scoped = `conversation_id=eq.${conversationId}`;
     const rowId = (row: Record<string, unknown>): string | undefined =>
@@ -192,7 +228,7 @@ export function subscribeAgentLists(
       },
     }));
 
-    activeChannels.set(conversationId, stop);
+    activeChannels.set(conversationId, { stop, refs: 1, closeTimer: null });
   };
 }
 
@@ -200,9 +236,15 @@ export function unsubscribeAgentLists(
   conversationId: string,
 ): ThunkAction<void, ChatRootState, unknown, UnknownAction> {
   return () => {
-    const stop = activeChannels.get(conversationId);
-    if (!stop) return;
-    stop();
-    activeChannels.delete(conversationId);
+    const open = activeChannels.get(conversationId);
+    if (!open) return;
+    open.refs = Math.max(0, open.refs - 1);
+    if (open.refs > 0 || open.closeTimer) return;
+    open.closeTimer = setTimeout(() => {
+      const current = activeChannels.get(conversationId);
+      if (!current || current.refs > 0) return;
+      current.stop();
+      activeChannels.delete(conversationId);
+    }, CHANNEL_LINGER_MS);
   };
 }

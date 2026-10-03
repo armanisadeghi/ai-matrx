@@ -54,6 +54,7 @@ import {
   setWorkingDocEnabled,
   setWorkingDocTitle,
   setWorkingDocVersion,
+  markWorkingDocsRestored,
   type WorkingDocumentKind,
 } from "./instance-working-document.slice";
 import {
@@ -411,6 +412,9 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
     // Guests on `/chat/new` mount RunControlsMenu with a provisional
     // conversation id but have no persisted documents — skip quietly.
     if (!selectUserId(getState())) return;
+    // Restored ONCE per conversation: a remount or a wake of the composer
+    // renders the slice and reads nothing (every write updates the slice).
+    if (getState().instanceWorkingDocument.restoredByConversation[conversationId]?.documents) return;
 
     let links;
     try {
@@ -436,6 +440,7 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
         setWorkingDocEnabled({ conversationId, kind: "scratch", enabled: true }),
       );
     }
+    let restoreFailed = false;
     await Promise.all(
       DOC_KINDS.map(async (kind) => {
         // Prefer the conversation's OWN (born-here, deterministic-id) document as
@@ -484,6 +489,7 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
             }),
           );
         } catch (err) {
+          restoreFailed = true;
           console.error("[working-document] hydrate: restore failed", {
             conversationId,
             kind,
@@ -492,6 +498,8 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
         }
       }),
     );
+    // A restore with a failed document is asked again next time.
+    if (!restoreFailed) dispatch(markWorkingDocsRestored({ conversationId, part: "documents" }));
   },
 );
 

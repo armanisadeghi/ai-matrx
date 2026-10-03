@@ -22,7 +22,7 @@ import {
   selectUserTodoCounts,
 } from "../../redux/agent-lists.selectors";
 import {
-  hydrateAgentLists,
+  ensureAgentLists,
   subscribeAgentLists,
   unsubscribeAgentLists,
 } from "../../redux/agent-lists.thunks";
@@ -50,7 +50,7 @@ export function TaskPanelChip({
   // wire-up in each page.
   useEffect(() => {
     if (!conversationId) return undefined;
-    void dispatch(hydrateAgentLists(conversationId));
+    void dispatch(ensureAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {
       dispatch(unsubscribeAgentLists(conversationId));

@@ -148,11 +148,12 @@ function messageOf(err: unknown): string {
  * caller gets the request in flight or the stored answer. `force` reads again
  * (a refresh): when a read is already running it may predate the change the
  * refresh is for, so ONE more read is queued behind it and every refresh asked
- * meanwhile shares that one. Resolves to the answer; never rejects (the failure
- * is in the store).
+ * meanwhile shares that one. `joinRunning` (a refresh that is not about a known
+ * change — a window focus) shares a running read instead of queueing another.
+ * Resolves to the answer; never rejects (the failure is in the store).
  */
 export const ensureStoreRead =
-  <T>(key: string, read: () => Promise<T>, options: { force?: boolean } = {}) =>
+  <T>(key: string, read: () => Promise<T>, options: { force?: boolean; joinRunning?: boolean } = {}) =>
   (dispatch: Dispatch, getState: GetState): Promise<T | undefined> => {
     const { running, queued } = inFlightFor(getState);
     const run = (): Promise<T | undefined> => {
@@ -175,7 +176,7 @@ export const ensureStoreRead =
 
     const pending = running.get(key) as Promise<T | undefined> | undefined;
     if (pending) {
-      if (!options.force) return pending;
+      if (!options.force || options.joinRunning) return pending;
       const waiting = queued.get(key) as Promise<T | undefined> | undefined;
       if (waiting) return waiting;
       const next = pending.then(() => {

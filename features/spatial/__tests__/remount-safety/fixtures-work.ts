@@ -129,6 +129,53 @@ function message(position: number, role: "user" | "assistant", text: string) {
   } satisfies Database["chat"]["Tables"]["message"]["Row"];
 }
 
+/** The job the composer runs for a new chat — `chat.default_new_chat`, held by the chat agent. */
+const defaultChatMandate = {
+  accepts_user_input: true,
+  auto_context_disabled: false,
+  code_path: null,
+  created_at: "2026-08-02T10:00:00.000Z",
+  created_by: null,
+  default_auto_run: null,
+  default_config_overrides: null,
+  default_consumption_map: null,
+  default_holder_id: CHAT_AGENT_ID,
+  default_holder_type: "agent",
+  default_holder_version_id: null,
+  deleted_at: null,
+  description: null,
+  draft_inputs: {},
+  fallback_mandate_key: null,
+  goal: "Answer the person in a new chat.",
+  goal_grounding: "",
+  id: "e5f6a7b8-c9d0-4e1f-a2b3-c4d5e6f7a8b9",
+  input_source: null,
+  input_waiver: null,
+  is_enabled: true,
+  label: "New chat",
+  mandate_key: "chat.default_new_chat",
+  metadata: {},
+  organization_id: "00000000-0000-4000-8000-0000000000a1",
+  origin: "system",
+  output_kind: null,
+  output_waiver: null,
+  pinned_context: [],
+  pins: {},
+  provision_key: null,
+  published_to_web: false,
+  published_to_web_at: null,
+  published_to_web_by: null,
+  renamed_from_key: null,
+  required_context_policies: [],
+  required_output_keys: [],
+  shown_to: null,
+  source_mandate_id: null,
+  updated_at: "2026-09-20T10:00:00.000Z",
+  updated_by: null,
+  version: 3,
+  visibility: "public",
+} satisfies Database["mandate"]["Tables"]["definition"]["Row"];
+
 export const CHAT_REPLY = "Here is a 60-day notice raising the rent for Unit 4B from $1,850 to $1,925, effective December 1.";
 
 export function seedChat(): void {
@@ -149,8 +196,26 @@ export function seedChat(): void {
     user_requests: [],
   });
   seedRpc("assoc_for_targets", []);
+  seed("mandate.definition", [defaultChatMandate]);
   seedRpc("agx_get_list_full", []);
-  seedRpc("agx_get_execution_full", null);
+  // packages/chat/src/agents/types/agent-definition.types.ts `AgentExecutionFull` —
+  // the person's chat agent, readable by them (it answered the transcript).
+  seedRpc("agx_get_execution_full", [
+    {
+      id: CHAT_AGENT_ID,
+      variable_definitions: [],
+      model_id: "claude-sonnet-4-6",
+      settings: {},
+      tools: [],
+      custom_tools: [],
+      context_policies: [],
+      auto_context_disabled: false,
+      ui_gates: {},
+      default_rag_boost: 0,
+      rag_awareness_mode: "off",
+      input_kind: null,
+    },
+  ]);
   seedFetch(new RegExp(`^${SERVER}/runtime/operations/by-link/conversation/`), () => ({
     link_kind: "conversation",
     link_id: CONVERSATION_ID,

@@ -222,37 +222,21 @@ export function useProjectOperations() {
 // Member Management Hooks
 // ============================================================================
 
+/** A project's members, read ONCE into Redux by project (`useStoreRead`). */
 export function useProjectMembers(projectId: string | undefined) {
-  const [members, setMembers] = useState<ProjectMemberWithUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchMembers = useCallback(async () => {
-    if (!projectId) {
-      setMembers([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getProjectMembers(projectId);
-      setMembers(data);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to fetch members";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
-
-  return { members, loading, error, refresh: fetchMembers };
+  const read = useStoreRead<ProjectMemberWithUser[]>(
+    projectId ? `projects.members:${projectId}` : null,
+    () => getProjectMembers(projectId as string),
+  );
+  return {
+    members: read.data ?? NO_MEMBERS,
+    loading: projectId ? !read.hasData && read.status === "loading" : false,
+    error: read.error,
+    refresh: read.refresh,
+  };
 }
+
+const NO_MEMBERS: ProjectMemberWithUser[] = [];
 
 export function useProjectMemberOperations(projectId: string) {
   const [loading, setLoading] = useState(false);
@@ -327,48 +311,22 @@ export function useProjectMemberOperations(projectId: string) {
   return { updateRole, remove, leave, loading, error };
 }
 
+/**
+ * The signed-in person's role on a project, read ONCE into Redux by project
+ * (`useStoreRead`). A failed role read is NOT "no role" (RC-B12 r13).
+ */
 export function useProjectUserRole(projectId: string | undefined) {
-  const [role, setRole] = useState<ProjectRole | null>(null);
-  const [loading, setLoading] = useState(true);
-  // A failed role read is NOT "no role" (RC-B12 r13).
-  const [error, setError] = useState<unknown>(null);
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchRole = async () => {
-      if (!projectId) {
-        setRole(null);
-        setError(null);
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const userRole = await getProjectUserRole(projectId);
-        if (!cancelled) setRole(userRole);
-      } catch (err) {
-        if (!cancelled) {
-          setRole(null);
-          setError(err ?? new Error("The project role read failed"));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    void fetchRole();
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId, attempt]);
-
+  const read = useStoreRead<ProjectRole | null>(
+    projectId ? `projects.my-role:${projectId}` : null,
+    () => getProjectUserRole(projectId as string),
+  );
+  const role = read.data ?? null;
   return {
     role,
-    loading,
+    loading: projectId ? !read.hasData && read.status === "loading" : false,
     /** The role read FAILED — `role: null` is then unknown, not "no access". */
-    error,
-    retry: () => setAttempt((n) => n + 1),
+    error: read.error,
+    retry: () => void read.refresh(),
     isOwner: role === "owner",
     isAdmin: role === "admin" || role === "owner",
     canManageMembers: role === "admin" || role === "owner",
@@ -381,37 +339,21 @@ export function useProjectUserRole(projectId: string | undefined) {
 // Invitation Hooks
 // ============================================================================
 
+/** A project's open invitations, read ONCE into Redux by project (`useStoreRead`). */
 export function useProjectInvitations(projectId: string | undefined) {
-  const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchInvitations = useCallback(async () => {
-    if (!projectId) {
-      setInvitations([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getProjectInvitations(projectId);
-      setInvitations(data);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to fetch invitations";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    fetchInvitations();
-  }, [fetchInvitations]);
-
-  return { invitations, loading, error, refresh: fetchInvitations };
+  const read = useStoreRead<ProjectInvitation[]>(
+    projectId ? `projects.invitations:${projectId}` : null,
+    () => getProjectInvitations(projectId as string),
+  );
+  return {
+    invitations: read.data ?? NO_INVITATIONS,
+    loading: projectId ? !read.hasData && read.status === "loading" : false,
+    error: read.error,
+    refresh: read.refresh,
+  };
 }
+
+const NO_INVITATIONS: ProjectInvitation[] = [];
 
 export function useProjectInvitationOperations(projectId: string) {
   const [loading, setLoading] = useState(false);
@@ -542,38 +484,21 @@ export function useUserProjectInvitations() {
 // Project References Hook
 // ============================================================================
 
+/** What points at a project, read ONCE into Redux by project (`useStoreRead`). */
 export function useProjectReferences(projectId: string | undefined) {
-  const [references, setReferences] = useState<ProjectReference[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchReferences = useCallback(async () => {
-    if (!projectId) {
-      setReferences([]);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getProjectReferences(projectId);
-      setReferences(data);
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch project references";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    fetchReferences();
-  }, [fetchReferences]);
-
-  return { references, loading, error, refresh: fetchReferences };
+  const read = useStoreRead<ProjectReference[]>(
+    projectId ? `projects.references:${projectId}` : null,
+    () => getProjectReferences(projectId as string),
+  );
+  return {
+    references: read.data ?? NO_REFERENCES,
+    loading: read.isLoading && !read.hasData,
+    error: read.error,
+    refresh: read.refresh,
+  };
 }
+
+const NO_REFERENCES: ProjectReference[] = [];
 
 // ============================================================================
 // Utility Hooks

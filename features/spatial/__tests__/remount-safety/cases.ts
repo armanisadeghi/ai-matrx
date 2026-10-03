@@ -31,8 +31,8 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "chat": { status: "passing" },
   "chat:quiet": {
     status: "failing",
-    owner: "chat lane",
-    why: "wake/remount re-read compute targets, action ledger, plans/tasks/todos, working documents, mandate resolution, conversation files",
+    owner: "associations package",
+    why: "wake/remount re-read the conversation's files (conversation_files x2) — @ai-matrx/associations useContainerLinks keeps them in component state",
   },
   "note": { status: "passing" },
   "note:quiet": { status: "passing" },
@@ -61,8 +61,8 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "task": { status: "passing" },
   "task:quiet": {
     status: "failing",
-    owner: "tasks lane",
-    why: "wake/remount re-read subtasks and member counts",
+    owner: "unified-data lane",
+    why: "wake/remount re-read the task's custom-fields section (EntityCustomFields: custom.entity_record_home, entity_record_read, entity_field_rights)",
   },
   "war-room": { status: "passing" },
   "war-room:quiet": { status: "passing" },
@@ -79,8 +79,8 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "project": { status: "passing" },
   "project:quiet": {
     status: "failing",
-    owner: "projects lane",
-    why: "remount re-reads the project's tasks and membership",
+    owner: "unified-data lane",
+    why: "wake/remount re-read the project's custom-fields section (EntityCustomFields: custom.entity_record_home, entity_record_read, entity_field_rights)",
   },
   "meeting_part": { status: "passing" },
   "meeting_part:quiet": { status: "passing" },

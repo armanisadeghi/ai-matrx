@@ -16,7 +16,7 @@ import {
   FolderOpen,
   Upload,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchTaskAssociations,
   dissociateFromTask,
@@ -101,9 +101,14 @@ export default function TaskAttachmentsPanel({
     return attached;
   };
 
+  // Read ONCE per task: the bundle lives in the taskAssociations slice, so a
+  // remount or a wake renders it and reads nothing (an attach/detach re-reads).
+  const store = useAppStore();
   useEffect(() => {
+    const slice = store.getState().taskAssociations;
+    if (slice.byTaskId[taskId] || slice.loadingByTaskId[taskId]) return;
     dispatch(fetchTaskAssociations(taskId));
-  }, [dispatch, taskId]);
+  }, [dispatch, store, taskId]);
 
   const handleRemove = (entityType: string, entityId: string) => {
     dispatch(dissociateFromTask({ taskId, entityType, entityId }));

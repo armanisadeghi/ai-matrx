@@ -24,6 +24,7 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import apiConfigReducer from "@/lib/redux/slices/apiConfigSlice";
 import proposedDirectivesReducer from "@ai-matrx/chat/agents/redux/proposed-directives/proposedDirectivesSlice";
+import storeReadsReducer from "@/lib/redux/slices/storeReadsSlice";
 
 const rows: Record<string, unknown>[] = [];
 let readError: { message: string } | null = null;
@@ -91,6 +92,7 @@ function mountZone() {
     reducer: {
       proposedDirectives: proposedDirectivesReducer,
       apiConfig: apiConfigReducer,
+      storeReads: storeReadsReducer,
     },
   });
   const host = document.createElement("div");
