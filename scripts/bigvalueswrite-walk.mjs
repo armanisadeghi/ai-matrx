@@ -19,7 +19,7 @@ import { policyText } from "./bigvalueswrite-policy.mjs";
 const ORIGIN = process.env.ORIGIN ?? "http://big-values-write.localhost:3001";
 const TABLE = process.env.TABLE;
 const ROW = process.env.ROW ?? "Records retention and destruction";
-const OUT = process.env.OUT ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-25/big-values";
+const OUT = process.env.OUT ?? "/tmp/matrx-evidence/2026-09-25/big-values";
 if (!TABLE) throw new Error("TABLE is required");
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(readFileSync(new URL("../.env.local", import.meta.url), "utf8").split("\n").map((l) => l.match(/^([A-Z_]+)=(.*)$/)).filter(Boolean).map((m) => [m[1], m[2].replace(/^"|"$/g, "")]));

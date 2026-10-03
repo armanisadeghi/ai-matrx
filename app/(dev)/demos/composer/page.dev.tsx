@@ -1,6 +1,6 @@
 // /demos/composer — the AI Matrx Composer (Chat · Work · Advanced ×
 // splash · page · compact) on a real conversation.
-// Map: common-docs/projects/ai-matrx-composer/MAP.md.
+// Map: common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md.
 
 import type { Metadata } from "next";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";

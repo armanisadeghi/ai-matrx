@@ -24,7 +24,7 @@ import { setOrganization, signIn, sleep } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://agent-builds.localhost:3001";
 const OUT =
-  process.env.WALK_OUT ?? resolve(process.cwd(), "../common-docs/operations/for-arman/2026-09-21");
+  process.env.WALK_OUT ?? resolve("/tmp/matrx-evidence/2026-09-21");
 const SUBJECT = "Monday donor summary";
 const DEEP_LINK =
   process.env.WALK_DEEP_LINK ??

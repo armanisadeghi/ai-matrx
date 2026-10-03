@@ -9,7 +9,7 @@ import type { ApplicationScope } from "../../../../types/scope.types";
  * 🚨 ABSENT = TODAY. A host that passes no `composer` renders the classic
  * stacked composer byte-for-byte; every existing host keeps working untouched.
  * A host that passes it gets the three-mode, three-size composer from Arman's
- * design (common-docs/projects/ai-matrx-composer/MAP.md). The engine — send,
+ * design (common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md). The engine — send,
  * drafts, drop, paste, variables, resources, streaming state — is the SAME
  * code in both; only the chrome is arranged differently.
  */

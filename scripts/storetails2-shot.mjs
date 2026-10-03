@@ -13,7 +13,7 @@ import { signIn, setOrganization, until, sleep } from "./lib/seat-browser.mjs";
 const ORIGIN = "http://storetails2.localhost:3001";
 const ORG = "Greenline Landscaping Crew";
 const JOBS = "182fef5a-4ead-42a0-966b-e4e88fcd87a9";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 mkdirSync(OUT, { recursive: true });
 
 const EMAIL = process.env.AI_ADMIN_USERNAME;

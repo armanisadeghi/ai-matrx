@@ -3,7 +3,7 @@
  *
  * SUT: `announceUploadFailures`, the announcement every `uploadFiles` dispatch runs.
  *
- * 🚨 The 2026-09-19 silent failure (`common-docs/projects/acquisition-frontier/
+ * 🚨 The 2026-09-19 silent failure (`common-docs/systems/knowledge/ingestion/projects/acquisition-frontier/
  * own-files/VERIFICATION.md` §15/§16): 21 files dropped on a fresh Rulebook, 21
  * uploads, 21 × `400 matrx-files: this write carries no organization` — and a card
  * that still read "Nothing attached yet", with the reason shown nowhere. The

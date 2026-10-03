@@ -11,7 +11,7 @@ summary. Do not read the builder's report; read the sources below and the code.
    lists every proposal — pending, accepted, rejected — with who, when, why. Accept all / reject
    all / one by one, switchable (`proposal_review_mode`; default one by one)") and §0.4
    (every out-link opens a window where one exists).
-2. `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md` §6 "G — Proposals, history,
+2. `common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md` §6 "G — Proposals, history,
    chat and canvas, the map window" and rulings R11, R12, R13 in §3.
 3. `features/marketing/seo/topical-map/CONTRACTS.md` §1 (body contract), §4 (TopicTree, ReviewDeck),
    §5 (the RESERVED window id `topicalMapWindow`), §6 (mandate keys amendment).

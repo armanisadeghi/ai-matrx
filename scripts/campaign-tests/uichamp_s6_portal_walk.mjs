@@ -26,7 +26,7 @@ const KEY = process.env.S6_SERVICE_KEY;
 const EXPECT = JSON.parse(process.env.S6_EXPECT ?? "[]");
 const FORBID = JSON.parse(process.env.S6_FORBID ?? "[]");
 const TAG = process.env.S6_TAG ?? "portal";
-const OUT = process.env.S6_OUT ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-23/s6";
+const OUT = process.env.S6_OUT ?? "/tmp/matrx-evidence/2026-09-23/s6";
 if (!SLUG || !SUPA || !KEY) {
   console.error("S6_SLUG, S6_SUPABASE_URL and S6_SERVICE_KEY are required (the key is never printed).");
   process.exit(2);

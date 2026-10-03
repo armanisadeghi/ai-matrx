@@ -29,7 +29,7 @@ old `?view=classification` link lands here now, never a crash. See
 **Cross-repo SoR:** `common-docs/systems/marketing/seo/seo-keywords/value-system.md`
 § THE KEYWORD WORKBENCH · principles **P23–P28** in `keyword-system-decisions.md`
 · Arman's words in `VISION.md` § "Assignment, tables, and panels" · the campaign
-plan in `common-docs/projects/keyword-intelligence-convergence/PLAN.md` (C13/C14).
+plan in `common-docs/systems/marketing/seo/seo-keywords/value-system.md` (C13/C14).
 
 ## The four laws this surface exists to satisfy
 
@@ -127,7 +127,7 @@ Two deliberate choices worth knowing:
   (`useKeywordAssignSurfaces` + `useKeywordMenuSection`). This page used to
   define the whole set inline, which is precisely why nothing else in the
   family could reach any of it — the finding that opened
-  `common-docs/projects/keyword-intelligence-convergence/ADOPTION-SWEEP.md`.
+  `common-docs/systems/marketing/seo/seo-keywords/value-system.md`.
   It now consumes the same section the Value Workbench and the Keyword
   Intelligence window consume, so an item added once appears on all three.
   What stays this page's own is the MOUNTING and one local item:

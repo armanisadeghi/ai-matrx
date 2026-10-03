@@ -18,7 +18,7 @@ import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drilladopt.localhost:3001";
 const LABEL = process.env.LABEL ?? "live";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-adopt";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-30/drill-adopt";
 mkdirSync(SHOTS, { recursive: true });
 const out = { label: LABEL, origin: ORIGIN, started: new Date().toISOString(), steps: [], console_errors: [], frictions: [] };
 const friction = (what) => {

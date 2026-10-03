@@ -73,7 +73,7 @@ interface SmartAgentInputProps {
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
   /**
    * The three-mode, three-size composer (Chat · Work · Advanced; splash · page
-   * · compact) — common-docs/projects/ai-matrx-composer/MAP.md. ABSENT = this
+   * · compact) — common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md. ABSENT = this
    * component renders exactly as it always has; every existing host is
    * untouched. Present = the same engine in the composer's arrangement.
    */

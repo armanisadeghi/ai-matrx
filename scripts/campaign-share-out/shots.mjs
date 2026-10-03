@@ -21,7 +21,7 @@ const argv = process.argv.slice(2);
 const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const ROOT = "/Users/armanisadeghi/code/matrx-frontend";
 const PORT = arg("--port", "3001");
-const OUT = arg("--out", "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-21");
+const OUT = arg("--out", "/tmp/matrx-evidence/2026-09-21");
 const ORG_ID = arg("--org-id");
 const TABLE = arg("--table");
 const ADMIN_ID = "87a6e699-3622-4869-8843-d0867456c0dd";

@@ -2,13 +2,13 @@
 
 > **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-19
 
-> Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
+> Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/systems/account/vault-secrets/FEATURE.md` — read it before expanding this feature in ANY repository.
 >
-> **Follow-on, in progress:** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/PLAN.md` (ratified 2026-07-26) — destination-login items, one-to-one sharing/transfer/assignment, and agent-safe browser login. Read it before touching scopes, sharing, transfer, or item metadata.
+> **Follow-on, in progress:** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/REGISTER.md` (ratified 2026-07-26) — destination-login items, one-to-one sharing/transfer/assignment, and agent-safe browser login. Read it before touching scopes, sharing, transfer, or item metadata.
 >
-> **Cloud Browser follow-on:** `/Users/armanisadeghi/code/common-docs/projects/persistent-cloud-browser/PLAN.md` — read it before adding server-side profile login, unattended credential use, MFA delegation, session-health automation, or Cloud Browser controls.
+> **Cloud Browser follow-on:** `/Users/armanisadeghi/code/common-docs/systems/architecture/persistent-cloud-browser/FEATURE.md` — read it before adding server-side profile login, unattended credential use, MFA delegation, session-health automation, or Cloud Browser controls.
 >
-> **Picking this up cold?** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/HANDOFF.md` — vision, gap analysis, cross-repo architecture, next steps, and landmines. Start there.
+> **Picking this up cold?** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/REGISTER.md` — vision, gap analysis, cross-repo architecture, next steps, and landmines. Start there.
 
 The backup dialog displays per-record alias conflicts with a rename/remove-alias
 remedy and confirms that existing credentials were unchanged. Retry retains the
@@ -509,7 +509,7 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 - **2026-08-21** — The website-login create flow is now the ONE recipe (Arman's
   ruling: username + password + 2FA captured together; SoR
-  `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/DECISIONS.md`):
+  `/Users/armanisadeghi/code/common-docs/systems/account/vault-secrets/FEATURE.md`):
   `VaultCreateDialog` adds a two-factor section (off / authenticator app —
   seed enrolls on the SAME item right after create / SMS / push-other — the
   non-app choice is written as the `mfa_method` non-secret field so agents

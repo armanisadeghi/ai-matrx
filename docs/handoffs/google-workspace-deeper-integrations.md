@@ -93,7 +93,7 @@ surface. Decide whether the directory replaces it or feeds it.
 - **Google Slides.** Blocked on Google, not on us: the scope is unapproved and
   needs its own campaign. Tracked as D214 in `FOUND_DEFECTS.md`.
 - **Gmail reading.** A separate, restricted-scope campaign
-  (`common-docs/projects/google-oauth-verification/PLAN.md`).
+  (`common-docs/systems/integrations/google/FEATURE.md`).
 - **Anything that weakens the reviewed-send boundary.** The send tool has no
   server executor on purpose. Bulk, scheduled, or background sending is outside
   the approval and outside this handoff.

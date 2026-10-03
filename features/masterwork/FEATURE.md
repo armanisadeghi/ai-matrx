@@ -575,7 +575,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 - 2026-09-17 — **Removed a double `decodeURIComponent` on `sourceKey`** in `masterwork/[id]/sources/kept/[sourceKey]/page.tsx` — the App Router already decodes the value React's `use(params)` returns, so a source key carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - 2026-09-18 (a pile launches whole, or not at all) — **THE FIFTEEN FILES THAT
-  WERE NEVER SUBMITTED.** `common-docs/projects/acquisition-frontier/own-files/
+  WERE NEVER SUBMITTED.** `common-docs/systems/knowledge/ingestion/projects/acquisition-frontier
   VERIFICATION.md` §9.1/§9.6: an Expert dropped seventeen files on a Rulebook
   and pressed "Turn this into rules"; two became rules. The edges were written
   ~0.3 s apart by the shared capture toolbar's serial `for … await attach(...)`
@@ -1000,7 +1000,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   because it waits for the instance row, since the three `instanceUIState` display setters discard
   a write aimed at a conversation whose row has not been created yet (`FOUND_DEFECTS.md` D326,
   which also disables the Conductor lane's identical fix). Evidence, before and after:
-  `common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/lanes-a/`.
+  `common-docs/systems/masterwork/STATE.md`.
 
 - `2026-09-15` — **THE PREDICTION LEDGER — calling it before you know.** A new Approach and a new
   door (`features/masterwork/prediction/`): the Expert records predictions on real open cases in
@@ -1322,7 +1322,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   generation and require the intended deliverable.
 
 - 2026-09-10 — **THE ARCHIVED-ITEMS LAW landed on Masterworks** (row F10 of
-  `../../../common-docs/projects/archived-items-law/STATUS.md`; law at
+  `../../../common-docs/policies/archived-items.md`; law at
   `../../../common-docs/policies/archived-items.md`). All three `workflow.definition` Masterwork
   reads were archive-blind — no predicate, no column — so an archived Masterwork rendered as a
   live one everywhere. Now `MASTERWORK_SELECT_COLUMNS` carries `is_archived`, each read takes

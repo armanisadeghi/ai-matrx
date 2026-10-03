@@ -11,7 +11,7 @@
 The admin board for the checks store: every static check's last run, and each check's findings,
 so every finding is seen and acted on. A false alarm is marked OK once, with a reason, so it
 never raises again. Product truth and the store's design live in
-`common-docs/projects/checks-run-in-the-app/` (PLAN.md v3, P2-STORAGE-DESIGN.md §3 + §7,
+`common-docs/systems/architecture/observability/projects/checks-run-in-the-app/` (PLAN.md v3, P2-STORAGE-DESIGN.md §3 + §7,
 P2-COMMANDS.md); this file is the page's mechanics.
 
 ---

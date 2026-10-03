@@ -138,7 +138,7 @@ reader falls back to that row's own `default_value`.
   start screen's tile copy updated). Migration 0891 (the bundle row) still to be applied from a
   credentialed machine.
 - **2026-09-18 (evening)** — Functionality pass after the first browser walk (report:
-  `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-WALK-REPORT.md`): the four run
+  `common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md`): the four run
   controls' 422 (`body.organization_id: Extra inputs are not permitted`) fixed on the server —
   the four request models now inherit `AcceptsInjectedScope`; the 2,272-page root's timeout fixed
   on the server (round 29: a topic's pages are measured in ONE performance aggregate); the Text
@@ -152,7 +152,7 @@ reader falls back to that row's own `default_value`.
   zero-authorship verifiers reported PASS-WITH-FINDINGS; the coordinator-owned slice defect
   (`snapshot()` cloned an Immer draft, so every rename and drag failed) fixed with Lane A's witness.
 
-- **2026-09-18** — Phase 0 of the UI build (register: `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-REGISTER.md`): round-22 work re-landed after `7d65a1c41d` removed it; 53-knob cached reader; the three run clients + four ledger readers; the body made host-agnostic behind `TopicalMapRouteBody` and `MapLinkProvider`; the topic panel overlay + peek; `TopicTree`, `ReviewDeck`, the UI kit, the store additions for every view; `CONTRACTS.md` frozen. Owed: `api-types.ts` regeneration (contract pin `62fa56114` is not on aidream `main`).
+- **2026-09-18** — Phase 0 of the UI build (register: `common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md`): round-22 work re-landed after `7d65a1c41d` removed it; 53-knob cached reader; the three run clients + four ledger readers; the body made host-agnostic behind `TopicalMapRouteBody` and `MapLinkProvider`; the topic panel overlay + peek; `TopicTree`, `ReviewDeck`, the UI kit, the store additions for every view; `CONTRACTS.md` frozen. Owed: `api-types.ts` regeneration (contract pin `62fa56114` is not on aidream `main`).
 
 - **2026-09-17** — Round 22 reflected in the data layer: `intent.topic` optional,
   `pageTopicState` / `selectPagesOnNoTopic` added with a recorded-payload test, and the `/pages`

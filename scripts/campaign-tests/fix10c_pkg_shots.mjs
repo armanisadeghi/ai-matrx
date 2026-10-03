@@ -3,7 +3,7 @@
 // which is the sanctioned route when the app's node_modules still carries the
 // last published version.
 import { chromium } from "playwright";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const ORIGIN = "http://127.0.0.1:3001";
 const shots = [
   ["import", "fix10c-import-panel.png", 1600, 1000],

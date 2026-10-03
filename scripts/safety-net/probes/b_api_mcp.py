@@ -47,7 +47,7 @@ from zoneinfo import ZoneInfo
 
 CODE = Path(__file__).resolve().parents[4]
 TARGET = os.environ.get("SN_TARGET", "clone")
-OUT = Path(os.environ.get("SN_OUT", str(CODE / "common-docs/operations/for-arman/2026-10-01/safety-net/adhoc")))
+OUT = Path(os.environ.get("SN_OUT", str("/tmp/matrx-evidence/2026-10-01/safety-net/adhoc")))
 OUT.mkdir(parents=True, exist_ok=True)
 STAMP = os.environ.get("SN_STAMP") or datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%b %-d %H%M")
 COMPARE = sys.argv[sys.argv.index("--compare") + 1] if "--compare" in sys.argv else (os.environ.get("SN_B_BEFORE_API") or None)

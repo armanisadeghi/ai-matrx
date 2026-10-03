@@ -5,7 +5,7 @@
  * lives with the check, so CI, hand runs and finalize-and-ship all agree).
  *
  * aidream's twin: scripts/findings.py (same interface, same rules).
- * Protocol: common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md · keys: P2-ITEMS.md.
+ * Protocol: common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md · keys: P2-ITEMS.md.
  *
  * An entry:
  *   id       — the runner's row id (scripts/checks/run.mjs --list)

@@ -207,7 +207,7 @@ function isAllowlisted(finding: DeadEndFinding): boolean {
 }
 
 /**
- * The item key (common-docs/projects/checks-run-in-the-app/ITEM-PROTOCOL.md) EQUALS the allowlist
+ * The item key (common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md) EQUALS the allowlist
  * entry key `<file>|<rule or *>`: a known item names the entry that covers it, a new one names the
  * narrowest entry an accept would add (`file|rule`).
  */

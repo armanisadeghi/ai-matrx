@@ -11,7 +11,7 @@
 > table that has to move again. They are the SAME work as the map's collapse steps 3 and 4, aimed
 > at the wrong destination.
 > **Your move:** stop here. Take the next step from
-> `common-docs/projects/table-provisioning/REGISTER.md` rows COLLAPSE-1…COLLAPSE-12, not from §5
+> `common-docs/systems/architecture/database/projects/table-provisioning/PLAN.md` rows COLLAPSE-1…COLLAPSE-12, not from §5
 > or §7a below. Sections 1–4 and 7 (decisions D1–D10) remain accurate history and their reasoning
 > — brand ownership, explicit availability, copy-on-adopt, worth in points, no hardcoded org
 > defaults — carries over to the map unchanged. Bug fixes that protect live screens continue.

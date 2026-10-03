@@ -810,5 +810,5 @@ rm -f "$ROLLOUT_JSON"
 # The old dispatcher (aidream scripts/checks/dispatch_fixer.py) launched CLI
 # agents with approvals bypassed — the 2026-09-21 incident-2 cause — and only
 # aidream's scripts/checks/PAUSED held it back here. Findings reach agents
-# through the in-app path in common-docs/projects/checks-run-in-the-app/PLAN.md.
+# through the in-app path in common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md.
 exit 0

@@ -1110,7 +1110,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # settings-guards — all five Unified Settings Platform guards
-  # (common-docs/projects/unified-settings-platform/EXECUTION.md § LANE C).
+  # (common-docs/systems/account/settings/FEATURE.md § LANE C).
   # `check:settings-env-toggles` is static: a behavioural env var read in a
   # boolean shape (Arman 2026-09-10: "Never an env var. Env values are only for
   # secrets, not for controlling behavior."), baseline-ratcheted, anything NEW

@@ -20,7 +20,7 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { signIn, until } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://trash-2.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-25/trash-coverage";
+const OUT = "/tmp/matrx-evidence/2026-09-25/trash-coverage";
 const ORG_SLUG = "harbor-dental-group";
 mkdirSync(OUT, { recursive: true });
 const env = Object.fromEntries(

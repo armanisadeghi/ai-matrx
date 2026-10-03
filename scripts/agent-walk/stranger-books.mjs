@@ -33,7 +33,7 @@ const HOST = process.env.WALK_HOST ?? "agent-builds.localhost";
 const PORT = process.env.WALK_PORT ?? "3001";
 const ORIGIN = `http://${HOST}:${PORT}`;
 const OUT =
-  process.env.WALK_OUT ?? resolve(process.cwd(), "../common-docs/operations/for-arman/2026-09-21");
+  process.env.WALK_OUT ?? resolve("/tmp/matrx-evidence/2026-09-21");
 
 /**
  * A REAL CUSTOMER OF A MOBILE MECHANIC, synthesized, never copied. Ironclad

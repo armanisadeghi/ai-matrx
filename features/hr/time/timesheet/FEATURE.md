@@ -3,9 +3,9 @@
 **What this covers:** the employee's own timesheet, the manager approval grid, one person's period
 in full, the raw punch register, and the attendance-exception queue. Lane L3 / HRB-015.
 
-**Cross-repo source of truth:** [`SPEC-TIME`](../../../../../common-docs/projects/hr-domain/specs/SPEC-TIME.md)
+**Cross-repo source of truth:** [`SPEC-TIME`](../../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-TIME.md)
 (§0, §2.2–§2.6, §4.1, §4.3, §5, §6, §9, §10, §11, §14 D7–D9) and
-[`SPEC-UI-IA`](../../../../../common-docs/projects/hr-domain/specs/SPEC-UI-IA.md) §3.4, §4.5, §5.5, §7.
+[`SPEC-UI-IA`](../../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-UI-IA.md) §3.4, §4.5, §5.5, §7.
 This file is the local mechanics only. Where they disagree, the spec wins.
 
 ---

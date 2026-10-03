@@ -6,7 +6,7 @@
 //
 // ## The defect
 //
-// Cold walk 13 (2026-09-20, `common-docs/projects/masterwork-methods-census/
+// Cold walk 13 (2026-09-20, `common-docs/systems/masterwork/STATE.md/
 // jobs-bar-2026-09-16/cold-walk-13/README.md`, N8 + Friction): three waits on
 // the main path said nothing at all about duration.
 //

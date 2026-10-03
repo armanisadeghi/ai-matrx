@@ -10,7 +10,7 @@ remote sessions. Supabase MCP reads are allowed; write NOTHING to the database a
 
 1. The owner's vision, only these parts: `/Users/armanisadeghi/code/common-docs/inbox/topical-map-app-requirements.md`
    §2.3 (the panel), §2.4 (agents live in the map), §0.4 if present (out-links), U3 under §4.
-2. The plan's brief for this lane: `/Users/armanisadeghi/code/common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md`
+2. The plan's brief for this lane: `/Users/armanisadeghi/code/common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md`
    §6 "D — Topic panel body" and rulings R13, R17, R18 in §3.
 3. The frozen contracts: `features/marketing/seo/topical-map/CONTRACTS.md` §0, §2, §4.3, §5, §6.
 4. The browser walk: `features/marketing/seo/topical-map/panel/VERIFY-D.md`.

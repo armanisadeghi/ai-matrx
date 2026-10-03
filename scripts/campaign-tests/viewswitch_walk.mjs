@@ -20,7 +20,7 @@ import { signedInClient } from "./use-cases/_client.mjs";
 
 const ORIGIN = process.env.VS_ORIGIN ?? "http://view-switch.localhost:3001";
 const HOST = new URL(ORIGIN).hostname;
-const OUT = process.env.VS_SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-25/view-switch";
+const OUT = process.env.VS_SHOTS ?? "/tmp/matrx-evidence/2026-09-25/view-switch";
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace
 const HOME = "19b5970f-b3e5-5d34-b505-d8c44450d42f"; // its home
 const TEST_ID = "4060701e-706a-4c76-b3ca-0bbc69fa5a14"; // test@test.com

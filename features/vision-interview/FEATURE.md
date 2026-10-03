@@ -337,7 +337,7 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
   The follower therefore also POLLS the row every `RECONCILE_POLL_MS` (20s),
   and a poll that settles the run aborts the read; a seventeenth guard case
   covers exactly that feed. Live proof, before and after, in
-  `common-docs/projects/masterwork-methods-census/fix-evidence/`.
+  `common-docs/systems/masterwork/STATE.md`.
 
 - **2026-09-16** — **A Finish click finishes. It never runs another
   conversation round** (third cold walk, finding 3 — the identical defect the

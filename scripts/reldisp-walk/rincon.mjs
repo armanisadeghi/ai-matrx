@@ -21,7 +21,7 @@ import { resolve } from "node:path";
 import { signIn, setOrganization, sleep } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.WALK_ORIGIN ?? "http://reldisp2.localhost:3001";
-const OUT = process.env.WALK_OUT ?? resolve(process.cwd(), "../common-docs/operations/for-arman/2026-09-21");
+const OUT = process.env.WALK_OUT ?? resolve("/tmp/matrx-evidence/2026-09-21");
 mkdirSync(OUT, { recursive: true });
 const JOBS = "af3bfff6-a255-41e5-9ac2-879d53816163";
 const results = { ranAt: new Date().toISOString(), origin: ORIGIN, steps: {} };

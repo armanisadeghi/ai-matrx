@@ -1,6 +1,6 @@
 // features/masterwork/components/detail/__tests__/n12-masterworks-freshness-wraps.test.ts
 //
-// N12 (cold-walk-13, common-docs/projects/masterwork-methods-census/
+// N12 (cold-walk-13, common-docs/systems/masterwork/STATE.md/
 // jobs-bar-2026-09-16/cold-walk-13/README.md): at 390x844 the Rulebook home's
 // Masterworks block read "Every Masterwork is usi…" with no way to read the
 // rest of the sentence — `masterworkFreshnessLine` was rendered inside a

@@ -5,7 +5,7 @@ repos: [matrx-frontend, aidream, my-matrx]
 scope: program
 feature: Content Planning
 vision:
-  - /Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md
+  - /Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md
 ---
 
 # Website Factory — from content plan to agent-built professional sites
@@ -15,15 +15,15 @@ fact-check → HTML build — that takes a `web.site` content plan and produces 
 multi-page website through many specialized agent steps.
 **Scope:** Program (spans Content Planning, SEO, CMS, Workflows)
 **Feature:** Content Planning
-**Vision:** [Content Engine STATE §2.3](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md) — Arman's 2026-07-30 pipeline vision, verbatim.
+**Vision:** [Content Engine STATE §2.3](/Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md) — Arman's 2026-07-30 pipeline vision, verbatim.
 
 **Sister program: Growth Loop** ([growth-loop.md](./growth-loop.md)). Factory is idea → a website;
 Growth Loop is that site, then measure → improve. Staff or groom one, read the other.
 
-🚨 **START AT [`common-docs/projects/content-engine/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/HANDOFF.md)**
+🚨 **START AT [`common-docs/projects/content-engine/REGISTER.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md)**
 — the cluster's take-over handoff (orientation, real vs not, traps, ordered next steps).
 Then the cluster STATE:
-[`common-docs/projects/content-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md)** — merged
+[`common-docs/projects/content-engine/REGISTER.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md)** — merged
 vision, verified state, question ledger, and this program's pending list in context.
 
 ## Where this stands

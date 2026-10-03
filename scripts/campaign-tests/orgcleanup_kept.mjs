@@ -16,7 +16,7 @@ for (const f of [".env.local", ".env"]) {
   }
 }
 const ORIGIN = process.env.ORG_CLEANUP_ORIGIN ?? "http://org-cleanup.localhost:3001";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 fs.mkdirSync(OUT, { recursive: true });
 
 // The five the owner guide's table names, with the address that disambiguates the repeats.

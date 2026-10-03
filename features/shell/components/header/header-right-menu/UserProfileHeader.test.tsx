@@ -1,7 +1,7 @@
 /**
  * 🚨 THE ACCOUNT MENU NEVER PRINTS THE SAME IDENTITY TWICE.
  *
- * cold-walk-13 friction (common-docs/projects/masterwork-methods-census/
+ * cold-walk-13 friction (common-docs/systems/masterwork/STATE.md/
  * jobs-bar-2026-09-16/cold-walk-13/README.md): signed in as `admin@admin.com`
  * (no display name set), the account menu header printed `admin@admin.com`
  * as BOTH the name line and the email line beneath it — the same value shown

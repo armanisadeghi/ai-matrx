@@ -2,7 +2,7 @@
  * features/surfaces/runtime/surface-chain.ts
  *
  * THE SURFACE CHAIN — an agent sees every registered screen that is open, not
- * only the one on top (register `common-docs/projects/ai-reachable-everywhere`,
+ * only the one on top (register `common-docs/systems/platform/ui-shell/projects/ai-reachable-everywhere`,
  * ARE-010 / ARE-012; Arman, 2026-09-23: "any model, window, sidebar, etc. …
  * automatically get the page's surface data and then extend it to add its own
  * data so that the context fully remains").

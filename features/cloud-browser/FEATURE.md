@@ -8,7 +8,7 @@
 > lives on our servers, stays signed in to a user's accounts, and lets an agent do
 > real work — with a person able to step in when a site needs one.
 >
-> Cross-repo authority: `common-docs/projects/persistent-cloud-browser/` (PLAN.md,
+> Cross-repo authority: `common-docs/systems/architecture/persistent-cloud-browser/` (PLAN.md,
 > EXECUTION.md §WS-8, DECISIONS.md, contracts S1/S4/S6, NOTIFICATIONS.md). This repo
 > owns only the panel/share/timeline UI. Do not restate program truth here — link it.
 

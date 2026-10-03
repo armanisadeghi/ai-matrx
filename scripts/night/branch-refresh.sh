@@ -80,7 +80,8 @@ exit 78
 LABEL="com.aimatrx.night-sweep.branch-refresh"
 LANE=BRANCH-REFRESH
 LOCK=branch-refresh
-HANDOFF=/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/handoff-2026-09-20
+HANDOFF="${NIGHT_LOG_DIR:-$HOME/.matrx/night-logs}"  # job logs live outside common-docs (plans only)
+mkdir -p "$HANDOFF"
 LOG="$HANDOFF/night-branch-refresh.log"
 OPEN=0100 CLOSE=0330
 DUMP_CAP=600               # seconds: the clone schema dump aborts at TEN MINUTES.

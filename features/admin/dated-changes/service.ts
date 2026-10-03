@@ -4,7 +4,7 @@
  * Everything is decided in the database (`platform.dated_change` + its doors, aidream migrations
  * 20260928170000/171000): these are direct React → Supabase calls to super-admin SECURITY DEFINER
  * doors. Drift is computed by the read itself, live, every time (never stamped).
- * Design: common-docs/projects/checks-run-in-the-app/DATED-CHANGES-DESIGN.md (+ -ATTACK.md).
+ * Design: common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md (+ -ATTACK.md).
  */
 
 import { pgErrorToError } from "@ai-matrx/data";

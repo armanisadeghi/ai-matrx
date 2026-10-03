@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 /**
  * check:blocking-dialogs — THE NO-BLOCKING-LAYERS GUARD (register
- * common-docs/projects/ai-reachable-everywhere/REGISTER.md, ARE-008).
+ * common-docs/systems/platform/ui-shell/projects/ai-reachable-everywhere/REGISTER.md, ARE-008).
  *
  * Arman, 2026-09-23: a blocking settings dialog hid every AI door on the page
  * — "We should never have this happen." Since `@ai-matrx/design-system`

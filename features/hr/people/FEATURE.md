@@ -1,9 +1,9 @@
 # FEATURE.md — HR People (routes 10–14)
 
 **Status:** `active` · **Tier:** 1 · **Last updated:** `2026-08-28`
-**Spec:** [SPEC-EMPLOYEES](../../../../common-docs/projects/hr-domain/specs/SPEC-EMPLOYEES.md) §2.2,
+**Spec:** [SPEC-EMPLOYEES](../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-EMPLOYEES.md) §2.2,
 §2.3, §4.1–§4.3, §5, §6, §7.4 ·
-[SPEC-UI-IA](../../../../common-docs/projects/hr-domain/specs/SPEC-UI-IA.md) §3.2, §4, §5.1, §5.2.
+[SPEC-UI-IA](../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-UI-IA.md) §3.2, §4, §5.1, §5.2.
 
 The employee directory, the org chart, the create/link/convert form, and the twelve-tab employee
 profile — the most-opened screen set in the HR module.

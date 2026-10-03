@@ -1,6 +1,6 @@
 # capture-ladder — the frontend's half of the four-rung capture ladder
 
-**Canonical contract:** `common-docs/projects/acquisition-frontier/extension-ladder/CONTRACT.md`
+**Canonical contract:** `common-docs/systems/knowledge/ingestion/STATE.md`
 (§8 is this repo's scope). That file is the shape; this file is what is actually
 here, and where it stops.
 
@@ -36,7 +36,7 @@ asked LAST.
 thing in the corner the assists dock already owns, and it had none of the dock's controls — no
 instant close, no snooze, no dismiss-for-good, no action button. The notice is an assist; the
 dock shows it. Do not add another one. Owner ruling and the full reasoning:
-`common-docs/projects/acquisition-frontier/extension-ladder/STATE.md` §8.
+`common-docs/systems/knowledge/ingestion/STATE.md` §8.
 | `ladderOutcome.ts` | Reading the ladder off a scrape result, wording it, and THE selection rule for "send the rest to my browser". |
 | `sendToOwnBrowser.ts` | The ONE write: `POST /capture/handoffs` through `lib/python-client.ts`. |
 

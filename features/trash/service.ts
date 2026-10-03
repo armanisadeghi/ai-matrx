@@ -7,7 +7,7 @@
  *
  * Restore goes through the generic `entity_undelete(token, id)` from db-rules §8.
  * There is no purge: permanent destruction belongs to the retention engine
- * (common-docs/projects/data-lifecycle-platform), not to a button.
+ * (common-docs/systems/architecture/database/data-lifecycle/projects/data-lifecycle-platform/PLAN.md), not to a button.
  */
 import { supabase } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";

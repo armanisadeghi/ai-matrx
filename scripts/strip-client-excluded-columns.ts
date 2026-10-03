@@ -26,7 +26,7 @@
  * them is a repo-wide breaking change that belongs to the owners of those features, not to the HR
  * contract-freeze lane. Widening this list is that owner's call, done with the typecheck fallout
  * in the same change. The debt is recorded in `FOUND_DEFECTS.md` and in
- * `common-docs/projects/hr-domain/specs/FREEZE.md`.
+ * `common-docs/systems/human-resources/projects/hr-domain/PLAN.md`.
  *
  * Required env (same as gen:entity-types, loaded from .env.local / .env):
  *   NEXT_PUBLIC_SUPABASE_URL

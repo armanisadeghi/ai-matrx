@@ -10,7 +10,7 @@ believe: what is missing, wrong, or dishonest in the Table view against the owne
    (standing rules) — the owner's own words. Verbatim: *"the platform's reusable table, rows
    indented for hierarchy, drag-and-drop to move, inline edit, sort/filter on counts, status,
    facets, intent states. Scrolls; never squeezes everything onto one screen."*
-2. `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md` §6 "B — Table" (the brief the
+2. `common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md` §6 "B — Table" (the brief the
    builder was held to) and §3 ruling R10 (hierarchy vs flat).
 3. `features/marketing/seo/topical-map/CONTRACTS.md` §0 (the laws), §3 (the store's `table`
    state and `siblingSort`), §4.3 (the UI kit).

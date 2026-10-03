@@ -1,6 +1,6 @@
 # FEATURE — The ONE HR task inbox (`/hr/tasks`)
 
-**Register item:** [HRB-022](../../../../common-docs/projects/hr-domain/REGISTER.md) (lane L10).
+**Register item:** [HRB-022](../../../../common-docs/systems/human-resources/projects/hr-domain/PLAN.md) (lane L10).
 **Specs:** SPEC-UI-IA §5.9 (the surface + route 64) · SPEC-WORKFLOW-ENGINE §5.1 (the projection)
 and §5.2 (the sections, grouping and bulk rules) · §6.2 (deep links) · SPEC-NOTIFICATIONS §5.3
 (the notice view) and §8 D11 (notice-vs-task).

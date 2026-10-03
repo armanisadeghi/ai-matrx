@@ -3,7 +3,7 @@
  * guards (Unified Settings Platform, LANE C).
  *
  * These guards exist to kill ONE defect class, documented with live cases in
- * common-docs/projects/unified-settings-platform/REGISTER.md § "THE DEFECT
+ * common-docs/systems/account/settings/projects/unified-settings-platform/PLAN.md § "THE DEFECT
  * CLASS THIS CAMPAIGN EXISTS TO KILL": a settings screen that accepts a value
  * the system does not honor. An org auto-RAG daily budget that is displayed,
  * editable, and not enforced. Photo-editing preferences with a full DB-synced

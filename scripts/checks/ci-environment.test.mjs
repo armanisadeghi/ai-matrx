@@ -2,7 +2,7 @@
 //
 // On the first production ingest (2026-09-30) nine rows reported failure without measuring
 // anything, because the job did not hold what they read — not because the code was wrong
-// (common-docs/projects/checks-run-in-the-app/COORDINATOR.md § Broken checks):
+// (common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md § Broken checks):
 //
 //   * a depth-1 checkout → `check:self-tests-stay-out-of-tree --self-test` cannot read a guard's
 //     pre-fix copy at `<sha>^` ("fatal: invalid object name"), and `patrol:delivery:check` finds

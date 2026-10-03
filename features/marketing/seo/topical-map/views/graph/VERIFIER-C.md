@@ -20,7 +20,7 @@ Vision §2.7: the graph shows pages *"in place / leaving / arriving / to delete 
 exist, doesn't) / planned (exists on paper, not live)"* in colours.
 Arman 2026-08-20 (content plan): *"every page a real rectangular card whose TITLE IS READABLE"*
 — wraps, never truncated.
-PLAN §6 C (`common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md`): bands by VISIBLE
+PLAN §6 C (`common-docs/systems/marketing/seo/topical-map/projects/topic-tree-collapse/PLAN.md`): bands by VISIBLE
 TOPIC count; facet values a separate clustered axis capped with "+N more" (255 region values on
 All Green); the synthetic `all` node handled; facet positions computed never persisted; topic
 positions saved on drag via `useSetMapTopicLayout`; zoom also hides labels; legend from

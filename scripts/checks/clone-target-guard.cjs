@@ -32,7 +32,7 @@ function refuse(what) {
   const message =
     `${MARKER} check ${check}: ${what}. This run reads ONLY the nightly copy ` +
     `(${process.env.MATRX_CLONE_REF_NAME || "?"}); production (${PRODUCTION_REF}) is never a check's target ` +
-    "(common-docs/projects/checks-run-in-the-app/PLAN.md decision 1). Remedy: read the database through " +
+    "(common-docs/systems/architecture/observability/projects/checks-run-in-the-app/PLAN.md decision 1). Remedy: read the database through " +
     "SUPABASE_MATRIX_* / CLONE_DATABASE_URL, which this run points at the copy.";
   process.stderr.write(`${message}\n`);
   return new Error(message);

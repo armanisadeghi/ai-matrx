@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { signIn, until, sleep } from "./lib/seat-browser.mjs";
 
 const ORIGIN = process.env.ORIGIN ?? "http://drilllivefix.localhost:3001";
-const SHOTS = process.env.SHOTS ?? "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-30/drill-live-fixes";
+const SHOTS = process.env.SHOTS ?? "/tmp/matrx-evidence/2026-09-30/drill-live-fixes";
 mkdirSync(SHOTS, { recursive: true });
 const ADMIN = "87a6e699-3622-4869-8843-d0867456c0dd";
 const VERIFICATION_DESK = "aa3e6306-dc2a-485b-b656-3fff9b790b26";

@@ -20,7 +20,7 @@
  * `getCanvasContext()` that reaches the agent as ONE named context entry.
  *
  * Every piece is an existing platform piece with a facelift
- * (common-docs/projects/ai-matrx-composer/MAP.md): the chat is
+ * (common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md): the chat is
  * `AgentConversationColumn`, history is the shell sidebar's `ChatSidebarMenu`,
  * the account rail is the shell's own, the floating window is
  * `MatrxFloatingFrame` (container-bounded), Agents / Inbox / Share / comments

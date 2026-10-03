@@ -1,7 +1,7 @@
 /**
  * The Media Source Catalog client — every call the screen makes to the server.
  *
- * Contract: ../../../common-docs/projects/media-source-catalog/API-CONTRACT.md (0.1.0).
+ * Contract: ../../../common-docs/systems/media/media-source-catalog/API-CONTRACT.md (0.1.0).
  * Everything goes through `callApi`, the ONE door to the Python server, so auth,
  * base-URL resolution, organization scope, error capture and the NDJSON reader
  * are the platform's and not this feature's. Paths and bodies are typed by the

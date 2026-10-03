@@ -3,7 +3,7 @@
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/platform/assists/FEATURE.md` — read it before touching this feature in ANY repo. This doc covers only this repo's wiring.
 
 Chip Rescue rubric, producer dispositions, live controls, and migration state:
-`/Users/armanisadeghi/code/common-docs/projects/chip-rescue/HANDOFF.md`.
+`/Users/armanisadeghi/code/common-docs/systems/platform/assists/projects/chip-rescue/HANDOFF.md`.
 
 **What it is:** the platform-wide one-click-AI-help primitive. Deterministic code, background agents, sweeps, and stream events notice things and produce **assists**; the user sees chips; accepting one dispatches the typed `action` binding through ONE registry. The standing design gate: every friction point gets asked _"could an AI button/chip do this for the user?"_ BEFORE a manual affordance is designed.
 

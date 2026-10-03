@@ -361,7 +361,7 @@ per request (`React.cache`), so one view is one use against `max_uses`.
 `seo_collection_run` → `AiVisibilityReport` (one component serving owner tool, anonymous tool,
 and token landing, `acquisition` flag for conversion chrome). Charter + plan:
 `common-docs/systems/account/sharing/VISION.md` and
-`common-docs/projects/sharing-experience/PLAN.md`.
+`common-docs/systems/account/sharing/projects/sharing-experience/PLAN.md`.
 
 ## Invariants & gotchas
 
@@ -679,13 +679,13 @@ id,title,data,created_at`; label "Kind Instance" → "Saved Result" — jargon i
   sync. Also: canonical ShareButton added to the NESTED snapshot detail (`SnapshotDetail` header,
   `web_snapshot`) and the capture observations dialog (`CaptureObservationsDialog` header,
   `web_screenshot`) — the surfaces users actually navigate, whose standalone twins already had it.
-- 2026-08-12 — **Canvas fork converged.** The bespoke `canvas.shared_canvas_items.share_token` lane (the last parallel share-link system after files, §7-G3's disease) now runs entirely on `platform.share_links`: `shared_canvas_item` registered link-shareable (public_columns projection), 24 existing tokens migrated verbatim, both canvas `share_token` columns dropped, canvas lenses (`canvas_item`, `shared_canvas_item`) added to the lens registry. Details: `features/artifacts/FEATURE.md` change log + `common-docs/projects/sharing-experience/canvas-share-convergence.md`.
+- 2026-08-12 — **Canvas fork converged.** The bespoke `canvas.shared_canvas_items.share_token` lane (the last parallel share-link system after files, §7-G3's disease) now runs entirely on `platform.share_links`: `shared_canvas_item` registered link-shareable (public_columns projection), 24 existing tokens migrated verbatim, both canvas `share_token` columns dropped, canvas lenses (`canvas_item`, `shared_canvas_item`) added to the lens registry. Details: `features/artifacts/FEATURE.md` change log + `common-docs/systems/account/sharing/STATE.md`.
 - 2026-08-13 — **THE SHARE-LENS REGISTRY lands** (`features/sharing/lenses/`): `SharedResourceView`'s
   per-type `renderBody` switch and the page's hard-coded AI-visibility metadata sniff are
   replaced by `resolveShareLens` / `resolveShareLensMeta` (token-keyed, generic floor
   fallback). `SharedResourceView` is now a pure landing shell. Verified live on an AI
   visibility report link and a PDF file link. Primitive #1 of
-  `common-docs/projects/sharing-experience/PLAN.md`.
+  `common-docs/systems/account/sharing/projects/sharing-experience/PLAN.md`.
 
 - 2026-08-12 — **Public-state capability is explicit.** Rendering
   `ShareButton` for link-only `seo_collection_run` exposed the generic

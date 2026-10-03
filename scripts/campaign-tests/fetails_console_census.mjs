@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { signIn, sleep } from "../lib/seat-browser.mjs";
 
 const ORIGIN = process.env.FET_ORIGIN ?? "http://fe-tails.localhost:3001";
-const OUT = process.env.FET_SHOTS ?? "/Users/armanisadeghi/code/common-docs/projects/data-doctrine-adoption/v5/shots/fe-tails";
+const OUT = process.env.FET_SHOTS ?? "/tmp/matrx-evidence/projects/data-doctrine-adoption/v5/shots/fe-tails";
 const EMAIL = process.env.FET_EMAIL ?? "";
 const PASSWORD = process.env.FET_PASSWORD ?? "";
 if (!EMAIL || !PASSWORD) {

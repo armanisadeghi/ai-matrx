@@ -4,7 +4,7 @@
 **Tier:** `1`
 **Last updated:** `2026-09-27`
 
-> Build map: `/Users/armanisadeghi/code/common-docs/projects/ai-matrx-composer/MAP.md`. Ruling: Amendment 1, A5
+> Build map: `/Users/armanisadeghi/code/common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md`. Ruling: Amendment 1, A5
 > (`composer-spec-amendment-1.md`). The composer inside it: [`../../agents/components/inputs/smart-input/composer/FEATURE.md`](../../agents/components/inputs/smart-input/composer/FEATURE.md).
 
 ---

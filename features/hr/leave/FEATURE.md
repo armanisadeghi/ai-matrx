@@ -5,7 +5,7 @@
 **Last updated:** `2026-09-12`
 
 **Register item:** HRB-017 — HR domain program, L5 Leave & PTO lane (matrx-frontend).
-**Spec (SoR):** [`SPEC-LEAVE.md`](../../../../common-docs/projects/hr-domain/specs/SPEC-LEAVE.md) —
+**Spec (SoR):** [`SPEC-LEAVE.md`](../../../../common-docs/systems/human-resources/projects/hr-domain/specs/SPEC-LEAVE.md) —
 §4.1 the request form · §5 balance-display honesty · §12 the ledger audit view · §16 role variation.
 
 ---

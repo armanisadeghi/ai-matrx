@@ -27,7 +27,7 @@
 // active organization); with none chosen it HOLDS and asks (`ensureOrgId`).
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Cross-repo truth: common-docs/projects/notification-system/HANDOFF.md.
+// Cross-repo truth: common-docs/systems/communications/notifications/projects/notification-system/HANDOFF.md.
 
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";

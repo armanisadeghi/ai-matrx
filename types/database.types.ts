@@ -32532,6 +32532,17 @@ export type Database = {
         Args: { p_conversation_id: string; p_organization_id: string }
         Returns: Json
       }
+      count_records_archived: {
+        Args: {
+          p_lane?: string
+          p_organization_id: string
+          p_table_ids: string[]
+        }
+        Returns: {
+          n: number
+          table_id: string
+        }[]
+      }
       cross_organization_links_open: {
         Args: {
           p_source_organization_id: string

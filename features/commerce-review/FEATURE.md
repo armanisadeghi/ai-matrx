@@ -3,7 +3,7 @@
 **Routes:** `/commerce/triage` · `/commerce/drafts` · `/commerce/attention` ·
 `/commerce/stores/connect` (admin map `/commerce/review/admin`)
 **Owner workstream:** W11 of the ebay-store-management build
-(`common-docs/projects/ebay-store-management/BUILD.md`, UX.md §5.2/§5.5/§6).
+(`common-docs/systems/commerce/ebay/projects/ebay-store-management/PLAN.md`, UX.md §5.2/§5.5/§6).
 
 ## What it is
 

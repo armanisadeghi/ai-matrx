@@ -6,7 +6,7 @@ scope: program
 feature: Growth Loop
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/marketing/growth-loop/VISION.md
-  - /Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md
+  - /Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md
 ---
 
 # Growth Loop — unstall the loop, then reach write-back
@@ -22,7 +22,7 @@ realize → fill → publish → serve → crawl → measure → analyze → sug
 Factory is idea → a website; this loop is that site, then measure → improve.
 
 🚨 **READ THE CLUSTER DOC:
-[`common-docs/projects/content-engine/STATE.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/STATE.md)** — the merged
+[`common-docs/projects/content-engine/REGISTER.md`](/Users/armanisadeghi/code/common-docs/projects/content-engine/REGISTER.md)** — the merged
 cluster vision, verified state, and the single question ledger.
 
 ## The situation, verified live 2026-08-20

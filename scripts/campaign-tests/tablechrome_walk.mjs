@@ -27,7 +27,7 @@ if (!EMAIL || !PASSWORD) {
 }
 const ARMANS = "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7";
 const ADMINS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-25/table-chrome";
+const OUT = "/tmp/matrx-evidence/2026-09-25/table-chrome";
 mkdirSync(OUT, { recursive: true });
 
 const results = [];

@@ -4,7 +4,7 @@
 // backlog — job number, customer, Ventura-county service address, service type,
 // scheduled date, status, crew, notes — out of the old scheduling spreadsheet.
 import { chromium } from "playwright";
-const OUT = "/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-22";
+const OUT = "/tmp/matrx-evidence/2026-09-22";
 const CSV =
   "/private/tmp/claude-501/-Users-armanisadeghi-code/4aca9d01-f3c0-4271-be17-2f948446dfb3/scratchpad/rincon-truck1-dispatch-backlog.csv";
 const b = await chromium.launch({ headless: true });

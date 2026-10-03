@@ -12,7 +12,7 @@ A mandate's candidate runs beside the live holder on the next N real runs; this 
 person reads the results: ONE pair (live vs candidate on one real run) and the candidate's N-pair
 summary with Promote / Put back / Discard. Both are Detail records, so a notification opens them as
 a window in place, a docked panel, or a page in a new tab. Plan and frozen contract:
-`../common-docs/projects/mandate-candidates/PLAN.md` §2.6 (+ A2, A3).
+`../common-docs/systems/intelligence/mandates/projects/mandate-candidates/REGISTER.md` §2.6 (+ A2, A3).
 
 ---
 

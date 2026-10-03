@@ -1,6 +1,6 @@
 # Scheduling
 
-Cross-repo work order: `/Users/armanisadeghi/code/common-docs/projects/production-reliability-closeout/SCHEDULED_WORK_WORK_ORDER.md` — read it before changing production schedule enablement, cadence, failure visibility, or auto-suspension controls.
+Cross-repo work order: `/Users/armanisadeghi/code/common-docs/systems/workflows/automations/projects/scheduled-work-governance/PLAN.md` — read it before changing production schedule enablement, cadence, failure visibility, or auto-suspension controls.
 
 > **Status:** Active (v1)
 > **Tier:** 1

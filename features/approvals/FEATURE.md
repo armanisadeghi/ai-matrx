@@ -1,6 +1,6 @@
 # THE platform approval queue
 
-**Status:** built; the store is live (`platform.assists.auto_apply_at` + its index and the four `hitl.google` knobs verified in the database 2026-09-17), the surface itself is unverified in a browser · **Policy:** `common-docs/policies/limits-are-knobs-agents-set-them.md` (rule 5 "approval surfaces are one place, not many", rule 6 "whoever may act may approve") · **Plan:** `common-docs/projects/google-native/PLAN.md` §5.5 (build unit U-P4), §4.4 (Gmail), §4.2 (Sheets), §7 (the knobs) · **Store SoR:** `common-docs/systems/platform/assists/FEATURE.md`
+**Status:** built; the store is live (`platform.assists.auto_apply_at` + its index and the four `hitl.google` knobs verified in the database 2026-09-17), the surface itself is unverified in a browser · **Policy:** `common-docs/policies/limits-are-knobs-agents-set-them.md` (rule 5 "approval surfaces are one place, not many", rule 6 "whoever may act may approve") · **Plan:** `common-docs/systems/integrations/google/FEATURE.md` §5.5 (build unit U-P4), §4.4 (Gmail), §4.2 (Sheets), §7 (the knobs) · **Store SoR:** `common-docs/systems/platform/assists/FEATURE.md`
 
 One surface where a person with review rights sees every pending AI proposal in their scope — accept all, reject all, or one by one (the system has no opinion which). Every item shows what will change, who or what proposed it, the mode it is running in, and, in mode 3, when it applies itself. Every record a row names opens.
 
