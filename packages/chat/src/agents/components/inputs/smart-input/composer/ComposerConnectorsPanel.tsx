@@ -22,7 +22,8 @@ import { indexRunMcpAttachments, readRunMcpAttachments, mcpChipPresentation } fr
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { AttachedResourcesSection } from "@host/features/connectors/AttachedResourcesSection";
 import { useEffect, useState } from "react";
-import { Loader2, Paperclip, Search } from "lucide-react";
+import { Loader2, Paperclip } from "lucide-react";
+import { PickerSearchField } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { Switch } from "@host/components/ui/switch";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
@@ -100,19 +101,19 @@ export function ComposerConnectorsPanel({
     const chosen =
       attachments.status === "succeeded" ? attachments.items.filter((i) => i.provider === s.entry.slug).length : 0;
     return (
-      <div key={s.entry.slug} className="flex min-h-9 min-w-0 items-center gap-2.5 rounded-lg px-2.5 text-sm hover:bg-accent">
+      <div key={s.entry.slug} className="flex min-h-9 min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-sm hover:bg-accent pointer-coarse:min-h-11">
         <ConnectorMark name={s.entry.name} iconUrl={s.entry.iconUrl} />
         <span className="min-w-0 flex-1 truncate text-foreground">{s.entry.name}</span>
         {broken ? (
           <>
-          <span title={presentation.reason ?? undefined} className="shrink-0 text-[11px] text-destructive">{presentation.status}</span>
+          <span title={presentation.reason ?? undefined} className="shrink-0 text-xs text-destructive">{presentation.status}</span>
           <button
             type="button"
             onClick={() => void connect(s.entry)}
             disabled={connectingSlug === s.entry.slug}
             className="shrink-0 text-xs font-medium text-primary hover:underline disabled:opacity-60"
           >
-            {connectingSlug === s.entry.slug ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reconnect"}
+            {connectingSlug === s.entry.slug ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reconnect"}
           </button>
           <ErrorAlchemyMenu error={presentation.reason ?? presentation.status} />
           </>
@@ -129,9 +130,9 @@ export function ComposerConnectorsPanel({
               });
             }}
             title={chooser}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
           >
-            <Paperclip className="h-3 w-3" aria-hidden="true" />
+            <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
             {chosen > 0 ? `${chosen} chosen ›` : "Choose ›"}
           </button>
         ) : on && toolCount != null ? (
@@ -151,18 +152,16 @@ export function ComposerConnectorsPanel({
 
   return (
     <>
-      <div className="flex h-9 shrink-0 items-center gap-2 px-2.5">
-        <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        <input
+      <div className="shrink-0 border-b border-border p-1.5">
+        <PickerSearchField
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
           placeholder={`Search ${catalog.length || ""} connectors`.replace("  ", " ")}
-          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
         {availabilityStatus === "failed" && (
-          <p className="px-2.5 py-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <p className="px-2 py-2 text-xs text-amber-600 dark:text-amber-400">
             Live connection health unavailable. <button type="button" onClick={() => void refreshAvailability()} className="underline">Retry</button> <ErrorAlchemyMenu />
           </p>
         )}
@@ -171,16 +170,16 @@ export function ComposerConnectorsPanel({
         {connectedOff.length > 0 ? <ComposerMenuLabel>Connections · off in this chat</ComposerMenuLabel> : null}
         {connectedOff.map((s) => row(s, false))}
         {catalogStatus === "failed" ? (
-          <p className="px-2.5 py-2 text-xs text-muted-foreground">
+          <p className="px-2 py-3 text-sm text-muted-foreground">
             Your connectors did not load.{" "}
             <button type="button" onClick={() => { void dispatch(fetchCatalog()); refreshAvailability(); }} className="font-medium text-primary hover:underline">
               Try again
             </button>
           </p>
         ) : catalogStatus === "loading" && serverStates.length === 0 ? (
-          <p className="px-2.5 py-2 text-xs text-muted-foreground">Loading your connectors…</p>
+          <p className="px-2 py-3 text-sm text-muted-foreground">Loading your connectors…</p>
         ) : active.length === 0 && connectedOff.length === 0 ? (
-          <p className="px-2.5 py-2 text-xs text-muted-foreground">
+          <p className="px-2 py-3 text-sm text-muted-foreground">
             {query.trim() ? "No connector by that name is connected yet." : "Nothing is connected yet."}
           </p>
         ) : null}
@@ -207,7 +206,11 @@ export function ComposerConnectorsPanel({
 /** The connector's own mark, else its initials — never a generic icon standing in for a brand. */
 function ConnectorMark({ name, iconUrl }: { name: string; iconUrl: string | null }) {
   if (iconUrl) {
-    return <img src={iconUrl} alt="" className="h-5 w-5 shrink-0 rounded" />;
+    return (
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+        <img src={iconUrl} alt="" className="h-5 w-5 rounded" />
+      </span>
+    );
   }
   const initials = name
     .split(/\s+/)
@@ -217,7 +220,7 @@ function ConnectorMark({ name, iconUrl }: { name: string; iconUrl: string | null
   return (
     <span
       aria-hidden="true"
-      className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-semibold text-muted-foreground")}
+      className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground")}
     >
       {initials}
     </span>

@@ -25,6 +25,7 @@ import {
   X,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Lightbulb,
   CheckCircle2,
@@ -77,8 +78,11 @@ const TIER_META: Record<
 
 export function RunSkillPicker({
   conversationId,
+  onBack,
 }: {
   conversationId: string;
+  /** Inside the attach menu: Back sits beside the search box (no title row). */
+  onBack?: () => void;
 }) {
   const dispatch = useAppDispatch();
   const { skills, loading, error: skillsError, reload: reloadSkills } = useSkills();
@@ -154,27 +158,73 @@ export function RunSkillPicker({
   const agentLoading = !!agentId && !agentReady;
   const skillsDisabled = config.disabled;
 
+  // One-row header: (Back +) search + added-count chip with inline clear.
+  const searchRow = (
+    <div
+      className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5"
+      title="Add skills to this run — merged into included on top of the agent's tiers."
+    >
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="Back"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:h-11 pointer-coarse:w-11"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      ) : null}
+      <ProInput
+        enableCleanup={false}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search skills to add…"
+        startIcon={<Search className="h-4 w-4" />}
+        clearable
+        onClear={() => setSearch("")}
+        enableVoice={false}
+        wrapperClassName="min-w-0 flex-1"
+        className="h-9 text-sm pointer-coarse:h-11"
+      />
+      {added.size > 0 && (
+        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-2.5 pr-1 text-xs font-medium text-primary">
+          {added.size} added
+          <button
+            type="button"
+            onClick={() => setAdded([])}
+            title="Clear all added skills"
+            aria-label="Clear all added skills"
+            className="flex h-5 w-5 items-center justify-center rounded-full transition-colors hover:bg-primary/20"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </span>
+      )}
+    </div>
+  );
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
+      {onBack && searchRow}
       {/* ── Section 1: the agent's REAL configured skills (collapsible) ── */}
       <div className="shrink-0 border-b border-border">
         <button
           type="button"
           onClick={() => setAgentSectionOpen((o) => !o)}
           aria-expanded={agentSectionOpen}
-          className="flex h-7 w-full items-center gap-1.5 px-2.5 text-left transition-colors hover:bg-accent/50"
+          className="flex h-9 w-full items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/50 pointer-coarse:h-11"
         >
           <ChevronRight
             className={cn(
-              "h-3 w-3 shrink-0 text-muted-foreground/70 transition-transform",
+              "h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform",
               agentSectionOpen && "rotate-90",
             )}
           />
-          <Lightbulb className="h-3.5 w-3.5 shrink-0 text-primary" />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             This agent&apos;s skills
           </span>
-          <span className="text-[11px] tabular-nums text-muted-foreground/80">
+          <span className="text-xs tabular-nums text-muted-foreground/80">
             <UntrustedCount
               read={readOf({ isLoading: agentLoading, error: agentReadError })}
               value={agentSkillCount}
@@ -184,32 +234,32 @@ export function RunSkillPicker({
           {skillsDisabled && (
             <span
               title="Skills are disabled for this agent — nothing is injected at run time unless you add skills below."
-              className="ml-auto flex shrink-0 items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400"
+              className="ml-auto flex shrink-0 items-center gap-1 text-xs text-amber-600 dark:text-amber-400"
             >
-              <EyeOff className="h-3 w-3" />
+              <EyeOff className="h-3.5 w-3.5" />
               disabled
             </span>
           )}
         </button>
 
         {agentSectionOpen && (
-          <div className="max-h-36 overflow-y-auto px-2.5 pb-1.5">
+          <div className="max-h-48 overflow-y-auto px-2.5 pb-2">
             {agentReadError ? (
-              <p className="py-1 text-[11px] text-destructive">
+              <p className="py-1 text-xs text-destructive">
                 Couldn&apos;t read this agent&apos;s skills: {agentReadError}
                 <ErrorAlchemyMenu error={agentReadError} />
               </p>
             ) : agentLoading ? (
-              <p className="py-1 text-[11px] text-muted-foreground">
+              <p className="py-1 text-xs text-muted-foreground">
                 Loading the agent&apos;s skills…
               </p>
             ) : skillsDisabled ? (
-              <p className="py-1 text-[11px] text-amber-600 dark:text-amber-400">
+              <p className="py-1 text-xs text-amber-600 dark:text-amber-400">
                 Skills are disabled for this agent — nothing is injected at run
                 time unless you add skills below.
               </p>
             ) : agentSkillCount === 0 ? (
-              <p className="py-1 text-[11px] text-muted-foreground">
+              <p className="py-1 text-xs text-muted-foreground">
                 No preset skills; others are searchable at run time
               </p>
             ) : (
@@ -222,10 +272,10 @@ export function RunSkillPicker({
                   return (
                     <div
                       key={id}
-                      className="flex items-baseline gap-1.5 rounded bg-muted/40 px-1.5 py-0.5 text-[11px]"
+                      className="flex items-baseline gap-2 rounded-md bg-muted/40 px-2 py-1 text-sm"
                     >
                       <span className="self-center text-muted-foreground">
-                        <TierIcon className="h-3 w-3" />
+                        <TierIcon className="h-3.5 w-3.5" />
                       </span>
                       <EntityRef
                         token="skill"
@@ -236,7 +286,7 @@ export function RunSkillPicker({
                         className="min-w-0 flex-1 font-medium text-foreground"
                       />
                       {meta && (
-                        <span className="shrink-0 text-[11px] text-muted-foreground/60">
+                        <span className="shrink-0 text-xs text-muted-foreground/60">
                           {meta.label}
                         </span>
                       )}
@@ -250,45 +300,14 @@ export function RunSkillPicker({
       </div>
 
       {/* ── Section 2: add skills to THIS run ─────────────────────────── */}
-      {/* One-row header: search + added-count chip with inline clear. */}
-      <div
-        className="flex shrink-0 items-center gap-1.5 border-b border-border px-2 py-1.5"
-        title="Add skills to this run — merged into included on top of the agent's tiers."
-      >
-        <ProInput
-          enableCleanup={false}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search skills to add…"
-          startIcon={<Search className="h-3.5 w-3.5" />}
-          clearable
-          onClear={() => setSearch("")}
-          enableVoice={false}
-          wrapperClassName="min-w-0 flex-1"
-          className="h-7"
-        />
-        {added.size > 0 && (
-          <span className="flex h-6 shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-2 pr-1 text-[11px] font-medium text-primary">
-            {added.size} added
-            <button
-              type="button"
-              onClick={() => setAdded([])}
-              title="Clear all added skills"
-              aria-label="Clear all added skills"
-              className="flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-primary/20"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </span>
-        )}
-      </div>
+      {!onBack && searchRow}
 
       {/* min-h-0: a flex child's default min-height:auto floors it at content
           height, so without it this list grows past the panel and never
           scrolls (the whole surface just gets clipped). */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-0.5">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
         {loading && skills.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-muted-foreground">
+          <p className="px-3 py-3 text-sm text-muted-foreground">
             Loading skills…
           </p>
         ) : skillsError && skills.length === 0 ? (
@@ -299,7 +318,7 @@ export function RunSkillPicker({
             onRetry={() => void reloadSkills()}
           />
         ) : visible.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-muted-foreground">
+          <p className="px-3 py-3 text-sm text-muted-foreground">
             {search ? `No skills match "${search}"` : "No skills available."}
           </p>
         ) : (
@@ -340,7 +359,7 @@ function SkillRowItem({
   onToggleExpand: () => void;
 }) {
   return (
-    <div className={cn(selected && "bg-primary/5")}>
+    <div className={cn("rounded-lg", selected && "bg-primary/5")}>
       <div
         role="button"
         tabIndex={0}
@@ -353,17 +372,17 @@ function SkillRowItem({
             onToggle();
           }
         }}
-        className="flex h-7 w-full cursor-pointer items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/60"
+        className="flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-accent pointer-coarse:h-11"
       >
         <span
           className={cn(
-            "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border",
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
             selected
               ? "border-primary bg-primary text-primary-foreground"
               : "border-muted-foreground/40",
           )}
         >
-          {selected && <Check className="h-2.5 w-2.5" />}
+          {selected && <Check className="h-3 w-3" />}
         </span>
         <EntityRef
           token="skill"
@@ -371,10 +390,10 @@ function SkillRowItem({
           name={skill.label}
           showIcon={false}
           fill
-          className="min-w-0 flex-1 text-xs font-medium text-foreground"
+          className="min-w-0 flex-1 text-sm text-foreground"
         />
         {agentTier && !selected && (
-          <span className="shrink-0 text-[11px] text-muted-foreground/60">
+          <span className="shrink-0 text-xs text-muted-foreground/60">
             agent:{agentTier}
           </span>
         )}
@@ -387,11 +406,11 @@ function SkillRowItem({
             }}
             aria-expanded={expanded}
             aria-label={expanded ? "Hide description" : "Show description"}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
           >
             <ChevronDown
               className={cn(
-                "h-3.5 w-3.5 transition-transform",
+                "h-4 w-4 transition-transform",
                 expanded && "rotate-180",
               )}
             />
@@ -399,7 +418,7 @@ function SkillRowItem({
         )}
       </div>
       {expanded && skill.description && (
-        <p className="px-2.5 pb-1.5 pl-8 text-xs leading-snug text-muted-foreground">
+        <p className="px-2 pb-2 pl-[2.125rem] text-xs leading-snug text-muted-foreground">
           {skill.description}
         </p>
       )}

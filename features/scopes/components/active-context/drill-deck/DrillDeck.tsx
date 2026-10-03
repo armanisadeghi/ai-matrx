@@ -346,7 +346,7 @@ export function DrillDeckCore({
         className,
       )}
     >
-      <div className="flex h-9 shrink-0 items-center gap-1 border-b border-border px-1.5">
+      <div className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5">
         <button
           type="button"
           disabled={!canGoBack}
@@ -359,15 +359,15 @@ export function DrillDeckCore({
             setCreating(false);
           }}
           aria-label={stack.length === 1 ? "Back to resource types" : "Back"}
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30 pointer-coarse:h-11 pointer-coarse:w-11"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" />
         </button>
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
           {title}
         </span>
         {deck.t !== "root" && deck.t !== "projects" && deck.t !== "tasks" && (
-          <span className="max-w-[45%] shrink-0 truncate pr-1 text-[10px] text-muted-foreground">
+          <span className="max-w-[45%] shrink-0 truncate pr-1 text-xs text-muted-foreground">
             {deck.node.path.join(" › ")}
           </span>
         )}
@@ -381,7 +381,7 @@ export function DrillDeckCore({
         />
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1 scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5 scrollbar-thin">
         {loading && <SkeletonRows count={6} />}
         {u.treeStatus === "error" && (
           <ErrorPane message={u.treeError} onRetry={u.retryTree} />
@@ -421,7 +421,7 @@ export function DrillDeckCore({
                     type="button"
                     onClick={() => engine.toggle(node)}
                     aria-label={`${on ? "Deselect" : "Select"} ${node.label}`}
-                    className="flex w-8 shrink-0 items-center justify-center rounded-l-md hover:bg-muted"
+                    className="flex w-9 shrink-0 items-center justify-center rounded-l-lg hover:bg-muted"
                   >
                     <CheckGlyph on={on} />
                   </button>
@@ -439,29 +439,29 @@ export function DrillDeckCore({
                   disabled={!drill && !selectable}
                   title={node ? nodeTitle(node) : row.railLabel}
                   className={cn(
-                    "flex min-w-0 flex-1 items-center gap-2 py-2 pr-1.5 text-left text-sm hover:bg-muted disabled:cursor-default disabled:hover:bg-transparent",
+                    "flex min-h-9 min-w-0 flex-1 items-center gap-2.5 py-1.5 pr-1.5 text-left text-sm hover:bg-muted disabled:cursor-default disabled:hover:bg-transparent pointer-coarse:min-h-11",
                     node && selectable
-                      ? "rounded-r-md pl-0.5"
-                      : "rounded-md pl-2",
+                      ? "rounded-r-lg pl-0.5"
+                      : "rounded-lg pl-2",
                   )}
                 >
                   {node ? (
                     <KindGlyph node={node} />
                   ) : row.railLabel === "Projects" ? (
-                    <FolderOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <FolderOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
                   ) : (
-                    <Briefcase className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
                   )}
                   <span className="min-w-0 flex-1 truncate text-foreground">
                     {node ? <NodeLabel node={node} /> : row.railLabel}
                   </span>
                   {row.railCount !== undefined && (
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                       {u.engagementStatus === "loading" ? "…" : row.railCount}
                     </span>
                   )}
                   {drill && (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   )}
                 </button>
               </div>
@@ -484,9 +484,9 @@ export function DrillDeckCore({
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex h-9 w-full items-center gap-2 px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground pointer-coarse:h-11"
             >
-              <Plus className="h-3 w-3" /> {createConfig.label}
+              <Plus className="h-4 w-4" /> {createConfig.label}
             </button>
           )}
         </div>

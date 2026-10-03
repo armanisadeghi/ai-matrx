@@ -34,7 +34,7 @@ export function ContextValuesResourcePicker({
         // a second click can never re-send them (it used to stack duplicates).
         engine.clear();
       }}
-      className="h-[min(420px,68dvh)] w-full rounded-none border-0"
+      className="h-full max-h-[min(600px,80dvh)] min-h-[min(420px,68dvh)] w-full rounded-none border-0"
     />
   );
 }

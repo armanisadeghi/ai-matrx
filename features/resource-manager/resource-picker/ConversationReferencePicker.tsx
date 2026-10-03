@@ -17,9 +17,8 @@
  * person means by "my chat"), not deleted, not ephemeral, recency-first.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, MessagesSquare, Search } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { useEffect, useState } from "react";
+import { Loader2, MessagesSquare } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -27,7 +26,14 @@ import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/se
 import type { RootState } from "@/lib/redux/store";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { usePickerInputFocus } from "./usePickerInputFocus";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+  PickerEmpty,
+  PickerRow,
+  PickerSearchField,
+  PickerView,
+  PickerViewBody,
+  ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -67,20 +73,19 @@ function ConversationRow({
   );
 
   return (
-    <div className="group flex items-center gap-1 rounded px-1 hover:bg-muted/60">
-      <button
-        type="button"
-        onClick={() => onSelect(row)}
-        className="min-w-0 flex-1 rounded px-1 py-1.5 text-left"
-      >
-        <div className="truncate text-xs font-medium text-foreground">
-          {row.title?.trim() || "Untitled chat"}
-        </div>
-        <div className="truncate text-[10px] text-muted-foreground">
-          {formatRelativeTime(row.updatedAt, { fallback: "" })}
-          {agentName ? ` · ${agentName}` : ""}
-        </div>
-      </button>
+    <div className="flex items-center gap-1">
+      <div className="min-w-0 flex-1">
+        <PickerRow
+          icon={MessagesSquare}
+          iconClassName="text-emerald-600 dark:text-emerald-400"
+          label={row.title?.trim() || "Untitled chat"}
+          secondary={
+            `${formatRelativeTime(row.updatedAt, { fallback: "" })}${agentName ? ` · ${agentName}` : ""}` ||
+            undefined
+          }
+          onClick={() => onSelect(row)}
+        />
+      </div>
       {/* Door Law: the chat this row names stays reachable without losing the
           draft the user is composing — new tab / peek only. */}
       <EntityDoorControls
@@ -106,8 +111,9 @@ export function ConversationReferencePicker({
 
   const trimmedSearch = search.trim();
 
-  const load = useCallback(
-    async (query: string, signal: { cancelled: boolean }) => {
+  useEffect(() => {
+    const signal = { cancelled: false };
+    const load = async (query: string) => {
       if (!userId) return;
       setError(null);
       let request = supabase
@@ -139,30 +145,21 @@ export function ConversationReferencePicker({
             agentId: (row.initial_agent_id ?? null) as string | null,
           })),
       );
-    },
-    [userId, currentConversationId],
-  );
-
-  useEffect(() => {
-    const signal = { cancelled: false };
-    const timer = setTimeout(() => void load(trimmedSearch, signal), 200);
+    };
+    const timer = setTimeout(() => void load(trimmedSearch), 200);
     return () => {
       signal.cancelled = true;
       clearTimeout(timer);
     };
-  }, [load, trimmedSearch]);
+  }, [userId, currentConversationId, trimmedSearch]);
 
-  const body = useMemo(() => {
+  const renderBody = () => {
     if (!userId) {
-      return (
-        <div className="px-3 py-8 text-center text-xs text-muted-foreground">
-          Sign in to reference your own chats.
-        </div>
-      );
+      return <PickerEmpty>Sign in to reference your own chats.</PickerEmpty>;
     }
     if (error) {
       return (
-        <div className="px-3 py-8 text-center text-xs text-destructive">
+        <div className="px-3 py-10 text-center text-sm text-destructive">
           Couldn&apos;t load your chats: {error}
           <ErrorAlchemyMenu error={error} />
         </div>
@@ -170,54 +167,39 @@ export function ConversationReferencePicker({
     }
     if (rows === null) {
       return (
-        <div className="flex items-center justify-center py-8">
+        <div className="flex items-center justify-center py-10">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       );
     }
     if (rows.length === 0) {
       return (
-        <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+        <PickerEmpty>
           {trimmedSearch
             ? `No chats of yours match “${trimmedSearch}”.`
             : "You don't have any other chats yet — start one from Chat and it will show up here."}
-        </div>
+        </PickerEmpty>
       );
     }
-    return (
-      <div className="space-y-0.5 p-1">
-        {rows.map((row) => (
-          <ConversationRow key={row.id} row={row} onSelect={onSelect} />
-        ))}
-      </div>
-    );
-  }, [userId, error, rows, trimmedSearch, onSelect]);
+    return rows.map((row) => (
+      <ConversationRow key={row.id} row={row} onSelect={onSelect} />
+    ));
+  };
 
   return (
-    <div className="flex max-h-[460px] flex-col">
+    <PickerView>
       <ResourcePickerSubViewHeader
-        title="Reference a chat"
-        icon={
-          <MessagesSquare className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-        }
         onBack={onBack}
-      />
-      <div className="border-b border-border px-2 py-1.5">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
+        search={
+          <PickerSearchField
             ref={searchInputRef}
-            type="text"
-            placeholder="Search your chats by title…"
+            placeholder="Search your chats"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-7 border-border bg-background pl-7 pr-2 text-xs"
+            onChange={setSearch}
           />
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
-        {body}
-      </div>
-    </div>
+        }
+      />
+      <PickerViewBody>{renderBody()}</PickerViewBody>
+    </PickerView>
   );
 }

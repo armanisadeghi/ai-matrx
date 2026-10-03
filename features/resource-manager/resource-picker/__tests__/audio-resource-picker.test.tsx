@@ -20,7 +20,7 @@ jest.mock("@/components/official-candidate/voice-pad/components/VoicePadEmbed", 
 }));
 
 jest.mock("../ResourcePickerSubViewHeader", () => ({
-  RESOURCE_PICKER_RUN_CONTROL_HEIGHT_CLASS: "test-height",
+  PickerView: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ResourcePickerSubViewHeader: ({ title }: { title: string }) => <h2>{title}</h2>,
 }));
 

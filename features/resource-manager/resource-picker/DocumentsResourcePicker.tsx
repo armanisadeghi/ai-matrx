@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Search, Loader2, FileText } from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { useEffect, useState } from "react";
+import { Loader2, FileText } from "lucide-react";
 import { listAccessibleDocuments } from "@/features/data-tables/document-service";
 import {
   isServiceFailure,
@@ -10,7 +9,14 @@ import {
 } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+  PickerEmpty,
+  PickerRow,
+  PickerSearchField,
+  PickerView,
+  PickerViewBody,
+  ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface DocumentsResourcePickerProps {
@@ -56,63 +62,52 @@ export function DocumentsResourcePicker({
     : documents;
 
   return (
-    <div className="flex flex-col max-h-[min(460px,70dvh)]">
-      {/* Header */}
-      <ResourcePickerSubViewHeader title="Documents" onBack={onBack} />
-
-      {/* Search */}
-      <div className="px-2 py-1.5 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
+    <PickerView>
+      <ResourcePickerSubViewHeader
+        onBack={onBack}
+        search={
+          <PickerSearchField
             ref={searchInputRef}
-            type="text"
-            placeholder="Search..."
+            placeholder="Search documents"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 text-xs pl-7 pr-2 bg-background border-border"
+            onChange={setSearchQuery}
           />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+        }
+      />
+      <PickerViewBody>
         {loading ? (
-          <div className="flex items-center justify-center h-full py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="text-xs text-destructive text-center py-8 px-3">
+          <div className="px-3 py-10 text-center text-sm text-destructive">
             {error}
             <ErrorAlchemyMenu error={error} />
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="text-xs text-muted-foreground text-center py-8">
+          <PickerEmpty>
             {searchQuery ? "No documents found" : "No documents yet"}
-          </div>
+          </PickerEmpty>
         ) : (
-          <div className="p-1 space-y-0.5">
-            {filteredDocuments.map((document) => (
-              <button
-                key={document.id}
-                onClick={() => onSelect(document)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent transition-colors group"
-              >
-                <FileText className="w-4 h-4 flex-shrink-0 text-primary" />
-                <span className="flex-1 text-left text-xs font-medium text-foreground truncate">
-                  {document.document_name}
-                </span>
-                <span className="text-[10px] text-muted-foreground flex-shrink-0">
+          filteredDocuments.map((document) => (
+            <PickerRow
+              key={document.id}
+              icon={FileText}
+              iconClassName="text-primary"
+              label={document.document_name}
+              trailing={
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {new Date(document.updated_at).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                   })}
                 </span>
-              </button>
-            ))}
-          </div>
+              }
+              onClick={() => onSelect(document)}
+            />
+          ))
         )}
-      </div>
-    </div>
+      </PickerViewBody>
+    </PickerView>
   );
 }

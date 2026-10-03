@@ -3,7 +3,7 @@
 import type { Resource } from "@ai-matrx/chat/agents/resources/types";
 import { VoicePadEmbed } from "@/components/official-candidate/voice-pad/components/VoicePadEmbed";
 import {
-  RESOURCE_PICKER_RUN_CONTROL_HEIGHT_CLASS,
+  PickerView,
   ResourcePickerSubViewHeader,
 } from "./ResourcePickerSubViewHeader";
 
@@ -24,9 +24,7 @@ export function AudioResourcePicker({
   onSelect,
 }: AudioResourcePickerProps) {
   return (
-    <div
-      className={`flex ${RESOURCE_PICKER_RUN_CONTROL_HEIGHT_CLASS} flex-col`}
-    >
+    <PickerView>
       <ResourcePickerSubViewHeader title="Voice Pad" onBack={onBack} />
       <VoicePadEmbed
         instanceId={attachMenuVoicePadInstanceId(conversationId)}
@@ -42,6 +40,6 @@ export function AudioResourcePicker({
           });
         }}
       />
-    </div>
+    </PickerView>
   );
 }

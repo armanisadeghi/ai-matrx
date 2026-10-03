@@ -19,7 +19,7 @@
  * can actually open what the user attached.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { ExternalLink, Loader2, Plus } from "lucide-react";
 import {
   googleWorkspaceFileType,
@@ -28,7 +28,6 @@ import {
 } from "@/features/google-workspace/resource-types";
 import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
@@ -37,7 +36,12 @@ import {
   preferredGoogleConnectionId,
   rememberGoogleConnection,
 } from "@/features/google-workspace/connection";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+  PickerRow,
+  PickerView,
+  PickerViewBody,
+  ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 export interface GoogleResourcePickerProps {
@@ -69,97 +73,81 @@ export function GoogleResourcePicker({
     string | null
   >(() => preferredGoogleConnectionId("workspace"));
 
-  const connections = useMemo(
-    () =>
-      eligibleGoogleConnections(
-        inventory.data?.connections ?? [],
-        "workspace",
-        selectedConnectionId,
-      ),
-    [inventory.data?.connections, selectedConnectionId],
+  const connections = eligibleGoogleConnections(
+    inventory.data?.connections ?? [],
+    "workspace",
+    selectedConnectionId,
   );
   const selectedConnection =
     connections.find((row) => row.id === selectedConnectionId) ??
     connections[0] ??
     null;
 
-  const files = useMemo(
-    () =>
-      (inventory.data?.resources ?? [])
-        .filter((row) => row.connection_id === selectedConnection?.id)
-        .filter(isGoogleWorkspaceFileRow),
-    [inventory.data?.resources, selectedConnection?.id],
-  );
+  const files = (inventory.data?.resources ?? [])
+    .filter((row) => row.connection_id === selectedConnection?.id)
+    .filter(isGoogleWorkspaceFileRow);
 
-  const attached = useMemo(
-    () => new Set([...attachedFileIds, ...justAttached]),
-    [attachedFileIds, justAttached],
-  );
+  const attached = new Set([...attachedFileIds, ...justAttached]);
 
-  const connect = useCallback(() => {
+  const connect = () => {
     openConnect({
       reason: "to attach a Google file to this message",
       initialConnectionId: selectedConnection?.id,
     });
     onBack();
-  }, [openConnect, onBack, selectedConnection?.id]);
+  };
 
-  const selectConnection = useCallback((connectionId: string) => {
+  const selectConnection = (connectionId: string) => {
     setSelectedConnectionId(connectionId);
     rememberGoogleConnection("workspace", connectionId);
-  }, []);
+  };
 
   return (
-    <div className="flex flex-col">
+    <PickerView>
       <ResourcePickerSubViewHeader title="Google" onBack={onBack} />
-
-      {inventory.isLoading ? (
-        <div className="flex items-center gap-2 px-3 py-6 text-xs text-muted-foreground">
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          Checking your Google account…
-        </div>
-      ) : inventory.isError && !inventory.data ? (
-        <ReadFailure
-          error={inventory.error}
-          what="your Google connections and files"
-          onRetry={() => void inventory.refetch()}
-        />
-      ) : !selectedConnection ? (
-        // The pitch, not an error. This is the whole reason the row is offered
-        // to people who have not connected anything.
-        <div className="flex flex-col gap-2 px-3 py-4">
-          <p className="text-xs text-muted-foreground">
-            Connect Google and you can hand a doc or sheet straight to an agent
-            — it reads and updates only the files you choose.
-          </p>
-          <Button size="sm" onClick={connect}>
-            Connect Google
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-col">
-          <GoogleAccountSelect
-            connections={connections}
-            connectionId={selectedConnection.id}
-            onConnectionChange={selectConnection}
-            className="border-b border-border px-3 py-3"
+      <PickerViewBody>
+        {inventory.isLoading ? (
+          <div className="flex items-center gap-2 px-2 py-10 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Checking your Google account…
+          </div>
+        ) : inventory.isError && !inventory.data ? (
+          <ReadFailure
+            error={inventory.error}
+            what="your Google connections and files"
+            onRetry={() => void inventory.refetch()}
           />
-          {files.length === 0 ? (
-            <div className="flex flex-col gap-2 px-3 py-4">
-              <p className="text-xs text-muted-foreground">
-                No Google files chosen yet.
-              </p>
-              <Button size="sm" variant="outline" onClick={connect}>
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                {googleWorkspacePickLabel()}
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="max-h-64 overflow-y-auto">
+        ) : !selectedConnection ? (
+          // The pitch, not an error. This is the whole reason the row is offered
+          // to people who have not connected anything.
+          <div className="flex flex-col gap-3 px-2 py-4">
+            <p className="text-sm text-muted-foreground">
+              Connect Google to hand a doc or sheet to an agent.
+            </p>
+            <Button onClick={connect}>Connect Google</Button>
+          </div>
+        ) : (
+          <>
+            <GoogleAccountSelect
+              connections={connections}
+              connectionId={selectedConnection.id}
+              onConnectionChange={selectConnection}
+              className="px-1.5 pb-2"
+            />
+            {files.length === 0 ? (
+              <div className="flex flex-col gap-3 px-2 py-4">
+                <p className="text-sm text-muted-foreground">
+                  No Google files chosen yet.
+                </p>
+                <Button variant="outline" onClick={connect}>
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  {googleWorkspacePickLabel()}
+                </Button>
+              </div>
+            ) : (
+              <>
                 {files.map((file) => {
                   const fileType = googleWorkspaceFileType(file.resource_type);
-                  const Icon = fileType.icon;
                   const link =
                     typeof file.metadata?.web_view_link === "string" &&
                     file.metadata.web_view_link
@@ -167,69 +155,58 @@ export function GoogleResourcePicker({
                       : fileType.hrefFor(file.resource_ref);
                   const isAttached = attached.has(file.resource_ref);
                   return (
-                    <div
-                      key={file.id}
-                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent"
-                    >
-                      <button
-                        type="button"
-                        disabled={isAttached}
-                        onClick={() => {
-                          setJustAttached((ids) => [...ids, file.resource_ref]);
-                          onSelect({
-                            fileId: file.resource_ref,
-                            name: file.display_name,
-                            resourceType: file.resource_type,
-                          });
-                        }}
-                        className={cn(
-                          "flex min-w-0 flex-1 items-center gap-2 text-left",
-                          isAttached && "opacity-60",
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            "h-4 w-4 shrink-0",
-                            fileType.iconClassName,
-                          )}
+                    <div key={file.id} className="flex items-center gap-1">
+                      <div className="min-w-0 flex-1">
+                        <PickerRow
+                          icon={fileType.icon}
+                          iconClassName={fileType.iconClassName}
+                          label={file.display_name}
+                          trailing={
+                            isAttached ? (
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                Attached
+                              </span>
+                            ) : null
+                          }
+                          selected={isAttached}
+                          disabled={isAttached}
+                          onClick={() => {
+                            setJustAttached((ids) => [...ids, file.resource_ref]);
+                            onSelect({
+                              fileId: file.resource_ref,
+                              name: file.display_name,
+                              resourceType: file.resource_type,
+                            });
+                          }}
                         />
-                        <span className="truncate text-sm text-foreground">
-                          {file.display_name}
-                        </span>
-                        {isAttached ? (
-                          <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
-                            Attached
-                          </span>
-                        ) : null}
-                      </button>
+                      </div>
                       {typeof link === "string" && link ? (
                         <a
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(event) => event.stopPropagation()}
-                          className="shrink-0 text-muted-foreground hover:text-foreground"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:h-11 pointer-coarse:w-11"
                           aria-label={`Open ${file.display_name} in Google`}
                         >
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <ExternalLink className="h-4 w-4" />
                         </a>
                       ) : null}
                     </div>
                   );
                 })}
-              </div>
-              <button
-                type="button"
-                onClick={connect}
-                className="flex items-center gap-2 border-t border-border px-3 py-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Choose another file from Google
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
+                <div className="mt-1 border-t border-border pt-1">
+                  <PickerRow
+                    icon={Plus}
+                    label="Choose another file from Google"
+                    onClick={connect}
+                  />
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </PickerViewBody>
+    </PickerView>
   );
 }
