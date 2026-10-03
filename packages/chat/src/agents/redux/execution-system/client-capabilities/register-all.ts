@@ -11,3 +11,4 @@ import "./sandbox-fs.provider";
 import "./editor-state.provider";
 import "./agent-fs.provider";
 import "./desktop-native.provider";
+import "./widget-handle.provider";

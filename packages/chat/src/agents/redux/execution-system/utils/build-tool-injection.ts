@@ -249,6 +249,10 @@ export async function buildToolInjection(
     : null;
   const widgetClientTools = deriveClientToolsFromHandle(widgetHandle);
 
+  // `delegate: true` is NOT what routes these: the server delegates by executor
+  // binding only. Widget tools reach the client because the `widget-handle`
+  // capability (./client-capabilities/widget-handle.provider) declares the
+  // handle on this same request.
   const clientToolNames = [...registeredClientTools, ...widgetClientTools];
   const clientToolSpecs: ToolSpec[] = clientToolNames.map((name) => ({
     kind: "registered",

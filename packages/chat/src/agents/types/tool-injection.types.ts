@@ -80,7 +80,8 @@ export type ClientCapabilityName =
   | "editor-state"
   | "sandbox-fs"
   | "agent-fs"
-  | "desktop-native";
+  | "desktop-native"
+  | "widget-handle";
 
 /**
  * Wire payload for `client.state["desktop-native"]`. Mirrors aidream's
@@ -121,6 +122,8 @@ export interface ClientCapabilityPayloads {
   // declares it in `capabilities[]` without writing a `state` entry.
   "agent-fs": Record<string, never>;
   "desktop-native": DesktopNativeState;
+  /** The widget tools the conversation's live handle can apply (client-executed). */
+  "widget-handle": { tools: string[] };
 }
 
 /**
