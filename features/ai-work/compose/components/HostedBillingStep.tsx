@@ -17,7 +17,7 @@
  * so while it waits instead of a bare spinner.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   CheckCircle2,
   CircleAlert,
@@ -64,17 +64,24 @@ export function HostedBillingStep({
   const [busy, setBusy] = useState<Busy>(null);
   const [code, setCode] = useState("");
 
+  // Only the newest request may change what the person sees: a status read
+  // that answers after Connect must not drop "Starting your sandbox" or
+  // overwrite the sign-in link the later answer carries.
+  const latest = useRef(0);
+
   const run = async (
     kind: Exclude<Busy, null>,
     call: () => Promise<OwnPlanStatus>,
   ) => {
+    const id = ++latest.current;
     setBusy(kind);
     try {
-      onStatusChange(await call());
+      const next = await call();
+      if (id === latest.current) onStatusChange(next);
     } catch (error) {
-      toast.error(getUserMessage(error));
+      if (id === latest.current) toast.error(getUserMessage(error));
     } finally {
-      setBusy(null);
+      if (id === latest.current) setBusy(null);
     }
   };
 
@@ -103,7 +110,8 @@ export function HostedBillingStep({
           onBillingChange(value as HostedBilling);
           // Read the sign-in the moment the person picks their own plan. The
           // status door never starts a sandbox, so this costs nothing.
-          if (value === "own_plan") {
+          // Never while a sign-in step is in flight: that answer is newer.
+          if (value === "own_plan" && busy === null) {
             void run("reading", () => readOwnPlanStatus(PROVIDER));
           }
         }}
