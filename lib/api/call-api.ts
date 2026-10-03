@@ -83,6 +83,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import type { resilientFetch } from "@ai-matrx/data/net";
+import { cancelledByCaller } from "@/lib/diagnostics/cancelledByCaller";
 import { captureApiError } from "@/lib/diagnostics/captureApiError";
 import { adminLaneOrganizationId } from "@/lib/api/admin-lane";
 import { wasStreamErrorCaptured } from "@/lib/diagnostics/captureStreamError";
@@ -1031,6 +1032,7 @@ export function callApi<
       // `{ error }` body (non-2xx). Feeds the systemwide Error Inspector.
       if (
         result.error &&
+        !cancelledByCaller(config.signal) &&
         shouldCaptureApiError(result.error.status, config.expectedErrorStatuses)
       ) {
         captureApiError(result.error, {
@@ -1063,7 +1065,7 @@ export function callApi<
       // `agent-stream-transport` (with requestId + conversationId) and
       // re-throws; capturing it again here produced a second, poorer red row
       // for one failure.
-      if (!wasStreamErrorCaptured(err)) {
+      if (!wasStreamErrorCaptured(err) && !cancelledByCaller(config.signal)) {
         captureApiError(error, {
           url,
           method: config.method,

@@ -112,4 +112,26 @@ describe("Error Inspector entries survive a reload", () => {
       spy.mockRestore();
     }
   });
+
+  it("a row last seen on an earlier deployment is not restored on a newer one", () => {
+    const saved = process.env.NEXT_PUBLIC_DEPLOYMENT_ID;
+    try {
+      process.env.NEXT_PUBLIC_DEPLOYMENT_ID = "dpl_old";
+      const oldBuild = loadPage();
+      oldBuild.captureError({ source: "supabase-postgrest", code: "PGRST202", message: "fixed since" });
+      leavePage();
+
+      process.env.NEXT_PUBLIC_DEPLOYMENT_ID = "dpl_new";
+      const newBuild = loadPage();
+      expect(newBuild.getSnapshot()).toHaveLength(0);
+      newBuild.captureError({ source: "supabase-postgrest", message: "still broken" });
+      leavePage();
+
+      const sameBuild = loadPage();
+      expect(sameBuild.getSnapshot().map((e) => e.message)).toEqual(["still broken"]);
+    } finally {
+      if (saved === undefined) delete process.env.NEXT_PUBLIC_DEPLOYMENT_ID;
+      else process.env.NEXT_PUBLIC_DEPLOYMENT_ID = saved;
+    }
+  });
 });

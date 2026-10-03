@@ -674,6 +674,22 @@ function isStoredRow(value: unknown): value is StoredCapturedError {
   );
 }
 
+/**
+ * A held row last seen on an EARLIER deployment is evidence about code that no
+ * longer runs in this tab (live 2026-10-03: rows from builds before the
+ * absent-door and caller-abort fixes rode sessionStorage for two days and were
+ * copied into a repair brief as current). The page that captured it already
+ * filed it to the server, so the inspector drops it on restore; a recurrence on
+ * this build captures it again, fresh. A recurrence refreshes
+ * `browserProvenance`, so the stamp is the LAST occurrence's build. Locally (no
+ * deployment id) every row is kept.
+ */
+function lastSeenOnThisDeployment(row: StoredCapturedError): boolean {
+  const current = process.env.NEXT_PUBLIC_DEPLOYMENT_ID || null;
+  if (!current) return true;
+  return row.browserProvenance?.configuredDeploymentId === current;
+}
+
 function restoreSession(): void {
   try {
     if (typeof window === "undefined") return;
@@ -681,7 +697,10 @@ function restoreSession(): void {
     if (!text) return;
     const parsed = JSON.parse(text) as { v?: unknown; entries?: unknown };
     if (parsed?.v !== 1 || !Array.isArray(parsed.entries)) return;
-    const rows = parsed.entries.filter(isStoredRow).slice(0, SESSION_MAX_ENTRIES);
+    const rows = parsed.entries
+      .filter(isStoredRow)
+      .filter(lastSeenOnThisDeployment)
+      .slice(0, SESSION_MAX_ENTRIES);
     entries = rows.map(({ unseen: rowUnseen, ...row }) => {
       const restored: CapturedError = { ...row, restoredFromPreviousPage: true };
       const n = typeof rowUnseen === "number" && rowUnseen > 0 ? rowUnseen : 0;

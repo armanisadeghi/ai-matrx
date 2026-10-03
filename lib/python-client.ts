@@ -54,6 +54,7 @@ import {
   relationPathFromUrl,
 } from "@/lib/diagnostics/capturePythonClientError";
 import { captureStreamEvent } from "@/lib/diagnostics/captureStreamError";
+import { cancelledByCaller } from "@/lib/diagnostics/cancelledByCaller";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import {
   buildMatrxRequestUrl,
@@ -522,15 +523,21 @@ function meta(response: Response, requestId: string): ResponseMeta {
   };
 }
 
-/** Capture then rethrow — single failure chokepoint for the Error Inspector. */
+/**
+ * Capture then rethrow — single failure chokepoint for the Error Inspector.
+ * A request the caller cancelled itself (its `signal` aborted, not by a
+ * timeout) is rethrown without a capture: the caller's own control flow, never
+ * an incident — the rule callApi and the Supabase capture apply too.
+ */
 function failClient(
   err: unknown,
   method: string,
   path: string,
   url: string,
-  requestId?: string,
+  requestId: string | undefined,
+  signal: AbortSignal | null | undefined,
 ): never {
-  captureClientError(err, method, path, url, requestId);
+  if (!cancelledByCaller(signal)) captureClientError(err, method, path, url, requestId);
   throw err;
 }
 
@@ -605,7 +612,7 @@ export async function requestRaw(
     ) {
       throw err;
     }
-    failClient(err, method, path, url, requestId);
+    failClient(err, method, path, url, requestId, opts.signal ?? init.signal);
   }
 }
 
@@ -640,7 +647,7 @@ export async function getJson<T>(
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     if (opts.captureErrors === false) throw err;
-    failClient(err, "GET", path, url);
+    failClient(err, "GET", path, url, undefined, opts.signal);
   }
 }
 
@@ -668,7 +675,7 @@ export async function postJson<T, B = unknown>(
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     if (opts.captureErrors === false) throw err;
-    failClient(err, "POST", path, url);
+    failClient(err, "POST", path, url, undefined, opts.signal);
   }
 }
 
@@ -716,7 +723,7 @@ export async function* postNdjson<B = unknown>(
     if (!response.ok || !response.body) throw await parseHttpError(response);
     requestId = response.headers.get("x-request-id") ?? requestId;
   } catch (err) {
-    failClient(err, "POST", path, url, requestId);
+    failClient(err, "POST", path, url, requestId, opts.signal);
   }
   // THE shared NDJSON parser (`@ai-matrx/agents/matrx`): compact lines are
   // expanded, torn lines skipped, a body that breaks mid-run is a classified
@@ -729,7 +736,7 @@ export async function* postNdjson<B = unknown>(
       yield evt;
     }
   } catch (err) {
-    failClient(err, "POST", path, url, requestId);
+    failClient(err, "POST", path, url, requestId, opts.signal);
   }
 }
 
@@ -756,7 +763,7 @@ export async function patchJson<T, B = unknown>(
     const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
-    failClient(err, "PATCH", path, url);
+    failClient(err, "PATCH", path, url, undefined, opts.signal);
   }
 }
 
@@ -784,7 +791,7 @@ export async function putJson<T, B = unknown>(
     const data = await readMatrxJsonResponse<T>(response);
     return { data, meta: meta(response, requestId) };
   } catch (err) {
-    failClient(err, "PUT", path, url);
+    failClient(err, "PUT", path, url, undefined, opts.signal);
   }
 }
 
@@ -806,7 +813,7 @@ export async function del<T = null>(
     const data = text ? (JSON.parse(text) as T) : null;
     return { data, meta: meta(response, requestId) };
   } catch (err) {
-    failClient(err, "DELETE", path, url);
+    failClient(err, "DELETE", path, url, undefined, opts.signal);
   }
 }
 
@@ -839,7 +846,7 @@ export async function delJson<T = null, B = unknown>(
     const data = text ? (JSON.parse(text) as T) : null;
     return { data, meta: meta(response, requestId) };
   } catch (err) {
-    failClient(err, "DELETE", path, url);
+    failClient(err, "DELETE", path, url, undefined, opts.signal);
   }
 }
 
@@ -876,7 +883,7 @@ export async function postMultipart<T>(
     return { data, meta: meta(response, requestId) };
   } catch (err) {
     if (opts.captureErrors === false) throw err;
-    failClient(err, "POST", path, url, requestId);
+    failClient(err, "POST", path, url, requestId, opts.signal);
   }
 }
 
