@@ -163,16 +163,13 @@ function JobRow({
             {job.meeting}
           </Pill>
         </span>
-        <span className="mt-0.5 block truncate font-mono text-[10px] text-muted-foreground">
-          {job.key}
-        </span>
         <span className="mt-0.5 flex flex-wrap items-center gap-1">
           {job.consumes.map((c) => (
             <span
               key={c.key}
-              className="rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground"
+              className="rounded bg-muted px-1 py-px text-[10px] text-muted-foreground"
             >
-              {c.key}
+              {c.label}
               {c.required && <span className="text-rose-500">*</span>}
             </span>
           ))}
@@ -226,9 +223,9 @@ function PlaceRow({
             <span
               key={v.id}
               title={`${v.label} · ${v.owner} · ${v.id}`}
-              className="rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground"
+              className="rounded bg-muted px-1 py-px text-[10px] text-muted-foreground"
             >
-              {v.key}
+              {v.label}
             </span>
           ))}
         </span>

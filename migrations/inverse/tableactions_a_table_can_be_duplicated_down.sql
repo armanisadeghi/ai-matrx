@@ -13,8 +13,18 @@ update platform.client_callable_door
        non_client_lane = 'Closed by tableactions_a_table_can_be_duplicated_down.sql: duplicating a table is switched off; re-apply tableactions_a_table_can_be_duplicated.sql to reopen it.'
  where schema_name = 'custom' and function_name in ('table_duplicate', 'table_duplicate_continue');
 
-revoke execute on function custom.table_duplicate(uuid, boolean, text, uuid) from authenticated;
-revoke execute on function custom.table_duplicate_continue(uuid) from authenticated;
+-- Each revoke only where the function exists, so the inverse also runs over an earlier shape of
+-- this file (a clone that holds the first, unpaged door).
+do $do$
+begin
+  if to_regprocedure('custom.table_duplicate(uuid, boolean, text, uuid)') is not null then
+    revoke execute on function custom.table_duplicate(uuid, boolean, text, uuid) from authenticated;
+  end if;
+  if to_regprocedure('custom.table_duplicate_continue(uuid)') is not null then
+    revoke execute on function custom.table_duplicate_continue(uuid) from authenticated;
+  end if;
+end
+$do$;
 
 drop function if exists custom.table_duplicate(uuid, boolean, text, uuid);
 drop function if exists custom.table_duplicate_continue(uuid);

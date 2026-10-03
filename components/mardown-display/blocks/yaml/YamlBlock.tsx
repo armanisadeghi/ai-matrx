@@ -241,9 +241,9 @@ const YamlBlock: React.FC<YamlBlockProps> = ({ content, className }) => {
                 )}
                 {line.key && (
                   <>
-                    <span className="text-blue-600 dark:text-blue-400 font-medium">
+                    <code className="text-blue-600 dark:text-blue-400 font-medium">
                       {line.key}
-                    </span>
+                    </code>
                     <span className="text-muted-foreground">:</span>
                   </>
                 )}

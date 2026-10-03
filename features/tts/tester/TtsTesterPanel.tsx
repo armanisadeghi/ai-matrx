@@ -315,7 +315,7 @@ export function TtsTesterPanel({
         </div>
         <div className="col-span-2">
           <Field
-            label="Server buffering (max_buffer_delay_ms)"
+            label="Server buffering"
             hint={
               config.maxBufferDelayMs === 0
                 ? "custom / immediate"

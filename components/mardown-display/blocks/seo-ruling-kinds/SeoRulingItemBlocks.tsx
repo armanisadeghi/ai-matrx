@@ -10,6 +10,7 @@
  * missing one says so rather than rendering blank. Contract: `seo-ruling-shared.tsx`.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React from "react";
 import { ArrowRight, Check, ListFilter } from "lucide-react";
 
@@ -144,13 +145,8 @@ export const SeoRulingDimensionRow: React.FC<RowProps<SeoRulingDimension>> = ({
       <div className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <span className="text-sm font-semibold text-foreground">
-            {readText(value.label) ?? slug ?? "(no dimension)"}
+            {readText(value.label) ?? (slug ? humanizeIdentifier(slug) : "(no dimension)")}
           </span>
-          {slug ? (
-            <span className="font-mono text-[11px] text-muted-foreground">
-              {slug}
-            </span>
-          ) : null}
           <span className="text-xs text-muted-foreground">
             {values.length} {values.length === 1 ? "value" : "values"} allowed
           </span>

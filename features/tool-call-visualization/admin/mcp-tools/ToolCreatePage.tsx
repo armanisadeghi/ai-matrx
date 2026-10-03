@@ -222,8 +222,9 @@ export function ToolCreatePage() {
           <Input
             value={tool.name}
             onChange={(e) => setField("name", e.target.value)}
-            placeholder="e.g., core_web_search"
             className="font-mono"
+            data-identifier
+            placeholder="e.g., core_web_search"
             style={{ fontSize: "16px" }}
           />
         </div>

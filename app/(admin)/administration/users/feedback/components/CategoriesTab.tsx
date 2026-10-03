@@ -636,7 +636,6 @@ export default function CategoriesTab() {
                                             <span className="text-xs text-muted-foreground flex-1 truncate">{cat.description}</span>
                                         )}
                                         {!cat.description && <div className="flex-1" />}
-                                        <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">{cat.slug}</span>
                                         <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{itemCount}</span>
                                         <div className="flex items-center gap-1 flex-shrink-0">
                                             <CopyButtons

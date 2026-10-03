@@ -1,6 +1,18 @@
--- chair-step: this puts the thirteen bodies visionreach_only_me_is_listed_for_nobody_else.sql replaced back exactly as they were (every list, count, export, drill and history door again lists and counts a row its owner set to "Only me" for every member — the leak that file closed) and DROPs custom.listed_predicate_sql, which nothing else calls.
+-- chair-step: this puts the twelve bodies visionreach_only_me_is_listed_for_nobody_else.sql replaced back exactly as they were (every list, count, export, drill and history door again lists and counts a row its owner set to "Only me" for every member — the leak that file closed) and DROPs custom.listed_predicate_sql, which nothing else calls.
 -- lane: VISION-REACH
 -- guard: custom/system_enabled
+-- based-on: custom._relation_names_resolve(uuid, uuid, text[]) c06ce67a9fe0a123909342dd2200947cd760e33cb1e0081bbc316228eabaeadf
+-- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 5e8b41d823bb1e7991419f371b3ec1e2a4a8c60f9b8bd25e451a2f983c842c1b
+-- based-on: custom.dashboard_stuck(uuid, uuid, text, integer, jsonb, integer, text) 2d0bf25c3f53df8ab83a09a6526c8c2a0af734250552183b44ce018e84acdd30
+-- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) 834768dc39dff847d9a4269e3aafff1ea5941f2bb09b15b07c1317f868938ba6
+-- based-on: custom.query_across_homes(uuid, uuid, integer, integer, text) 95b8b59d84b9112a80253b6ce8eb104061811ba96991a42ab1ac8480e672800a
+-- based-on: custom.query_by_coordinates(uuid, uuid, jsonb, integer, integer, text) bc9bd7b93c68c797ef25f346c85afc0c6a8ea2e29de14d363e26cf51cc72d4b4
+-- based-on: custom.read_records_archived(uuid, uuid, text, boolean, integer, integer) 00c71de963b6e0263a3c7322b42505e013158785f3e10e31b8493b8693f721a5
+-- based-on: custom.read_records_matching(uuid, uuid, jsonb, boolean, integer, integer) 8200a5721076343c68ace1311f62f94192acfc486e6d2f7a3cc346673f4301d2
+-- based-on: custom.read_records_page(uuid, uuid, jsonb, text, jsonb, uuid, boolean, integer, integer) f28315df29fa4e1334837b9d6632fe01d456f3c29e293e27f75661ae65d9f4f4
+-- based-on: custom.read_records(uuid, uuid, boolean, integer, integer) 446dd009888229fb5f84993919230b9911f5439a406711c9719d22d41cae2d0b
+-- based-on: custom.record_filter_sql(uuid, uuid, jsonb) 2bc5f49887896557c8a51bd30a3de1ece945598a376a682728e4c485d3a13ace
+-- based-on: custom.work_whose_turn(uuid, uuid, boolean) d43991677bd47fd548302f2e187f9ad14676ea7acd0bcc02194911417f90df60
 
 -- ── custom._relation_names_resolve(uuid,uuid,text[]) ─────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION custom._relation_names_resolve(p_organization_id uuid, p_target uuid, p_names text[])
@@ -314,97 +326,6 @@ begin
     custom.page_size(p_organization_id, 'custom.record_aggregate', p_limit, 200));
 
   return v_sql;
-end;
-$function$;
-
--- ── custom.context_archived_types(uuid) ─────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION custom.context_archived_types(p_organization_id uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  v_me       uuid := custom.query_principal();
-  v_uid      uuid := auth.uid();
-  v_tables   uuid := custom.table_kernel_id();
-  v_cand     uuid[];
-  v_level    public.permission_level;
-  v_mask     jsonb;
-  v_shown    text[];
-  v_declared text[];
-  v_rows     jsonb;
-begin
-  perform custom.assert_client_may_reach(p_organization_id, 'custom.context_archived_types');
-  if v_me is null then
-    return '[]'::jsonb;
-  end if;
-  -- STORE-READ-PERF-5 (2026-09-30). ONLY THE ARCHIVED TABLES THE CONTEXT SYSTEM KEPT ARE READ.
-  -- This door used to page custom.read_records_archived over EVERY archived Table of the organization
-  -- (200 a page, each row rendered: its derived values, the mask, the choice labels) and keep the
-  -- ones whose document said kept_for = context. test@test.com's own workspace holds 1,313 archived
-  -- Tables and no archived scope type: 7-30 s to answer []. The candidates are the archived,
-  -- unquarantined kernel rows whose stored kept_for is context (a superset of what the old filter
-  -- kept, which read the same key from the rendered document); none, and the answer is [].
-  -- The Table decision is asked first, as the archive door asked it (the wall was asked above, in
-  -- this door's own name).
-  perform custom.assert_may_know_table(p_organization_id, v_tables, 'custom.context_archived_types');
-  select coalesce(array_agg(r.id), '{}'::uuid[]) into v_cand
-    from custom.record r
-   where r.organization_id = p_organization_id
-     and r.table_id = v_tables
-     and r.deleted_at is not null
-     and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
-     and r.data ->> 'kept_for' = 'context';
-  if cardinality(v_cand) = 0 then
-    return '[]'::jsonb;
-  end if;
-  -- Of the candidates, exactly what the archive door answers about them: its rows through the one
-  -- ladder's own predicate for this Table at viewer (custom.visible_predicate_sql, the sentence the
-  -- archive door writes into its WHERE), each document through the one read mask
-  -- (custom.read_mask_for at the caller's level on the Table), custom.mask_document,
-  -- custom.choice_render and custom.with_whole_value_pointers, in that order, as the door renders it.
-  v_level := custom.effective_level(v_uid, p_organization_id, v_tables);
-  v_mask := custom.read_mask_for(v_uid, p_organization_id, v_tables, v_level, 'read');
-  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_shown
-    from jsonb_array_elements(v_mask -> 'visible') x;
-  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_declared
-    from jsonb_array_elements(v_mask -> 'declared') x;
-  execute format($q$
-    select coalesce(jsonb_agg(jsonb_build_object(
-             'id', r.id, 'doc', custom.record_values_of(r), 'wv', r.data -> '_values',
-             'ws', r.data -> '_sources', 'at', r.deleted_at)), '[]'::jsonb)
-      from custom.record r
-     where r.organization_id = %1$L::uuid
-       and r.table_id = %2$L::uuid
-       and r.id = any (%3$L::uuid[])
-       and r.deleted_at is not null
-       and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
-       and %4$s
-  $q$,
-    p_organization_id, v_tables, v_cand,
-    custom.visible_predicate_sql(v_uid, p_organization_id, v_tables, 'viewer'::public.permission_level, 'r'))
-  into v_rows;
-  -- Each carries how many of its scopes were archived, which is what a restore brings back.
-  return (
-    select coalesce(jsonb_agg(z.x order by z.x ->> 'deleted_at' desc, z.x ->> 'id'), '[]'::jsonb)
-      from (
-        select jsonb_build_object(
-                 'id', (p ->> 'id')::uuid, 'organization_id', p_organization_id,
-                 'label_singular', d.doc -> 'label_singular', 'label_plural', d.doc -> 'label_plural',
-                 'icon', d.doc -> 'icon', 'color', d.doc -> 'color',
-                 'deleted_at', p -> 'at',
-                 'archived_scope_count', (select count(*) from custom.record r
-                                           where r.organization_id = p_organization_id
-                                             and r.table_id = (p ->> 'id')::uuid and r.deleted_at is not null)) as x
-          from jsonb_array_elements(v_rows) p
-          cross join lateral (
-            select custom.with_whole_value_pointers(
-                     custom.choice_render(p_organization_id, v_tables,
-                       custom.mask_document(p -> 'doc', v_shown, v_mask -> 'notices', false,
-                                            v_mask -> 'all_key_ids', v_declared)),
-                     p -> 'wv', p -> 'ws', v_shown, false, v_mask -> 'all_key_ids') as doc) d
-         where d.doc ->> 'kept_for' = 'context') z);
 end;
 $function$;
 

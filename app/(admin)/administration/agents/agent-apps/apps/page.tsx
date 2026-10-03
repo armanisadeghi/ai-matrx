@@ -144,7 +144,7 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     mobileHidden: true,
     cell: (app) => (
       <code
-        className="block truncate rounded bg-muted px-2 py-1 text-xs"
+        className="block truncate rounded bg-muted px-2 py-1 font-mono text-xs" data-identifier
         title={app.slug}
       >
         {app.slug}

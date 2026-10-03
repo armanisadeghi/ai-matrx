@@ -505,9 +505,7 @@ export default function AdminSystemAppsListPage() {
               Move system app to Trash
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Move &ldquo;{deleteTarget?.name}&rdquo; (slug:{" "}
-              <span className="font-mono text-xs">{deleteTarget?.slug}</span>)
-              to Trash. It stops being available to every user on the
+              Move &ldquo;{deleteTarget?.name}&rdquo; to Trash. It stops being available to every user on the
               platform; you can restore it from Trash at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>

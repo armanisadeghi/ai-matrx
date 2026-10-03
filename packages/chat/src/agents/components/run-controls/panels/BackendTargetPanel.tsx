@@ -267,7 +267,7 @@ export function BackendTargetPanel({
             <span className="text-muted-foreground/60">(none)</span>
           )}
         </Row>
-        <Row label="Sandbox proxy_url">
+        <Row label="Sandbox proxy URL">
           {activeSandboxProxyUrl ? (
             <CopyableValue value={activeSandboxProxyUrl} />
           ) : (

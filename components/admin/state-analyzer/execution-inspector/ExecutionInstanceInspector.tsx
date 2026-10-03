@@ -860,7 +860,7 @@ function ContextTab({
       {Object.entries(data).map(([k, e]) => (
         <div key={k} className="border border-border rounded-md p-2.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-sm text-primary font-medium">
+            <span className="font-mono text-sm text-primary font-medium" data-identifier>
               {e.key}
             </span>
             <span className="text-xs text-muted-foreground">{e.label}</span>

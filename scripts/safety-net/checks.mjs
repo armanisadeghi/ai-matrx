@@ -164,6 +164,7 @@ export const ITEMS = {
   Q13: "Query — the roll-up door refuses rather than answer 0 from a walk that missed the field",
   Q14: "Query — REST v1 answers the questions exactly with a personal key",
   Q15: "Query — the AI Matrx MCP answers the questions exactly",
+  Q16: "Query — an \"Only me\" row is listed and counted for nobody else, every door (plain / confidential / restricted table)",
   // Public form (lane MAKE-HOME W5, guard G4): a stranger's form fits a phone and its answer boxes fill the column
   F01: "Public form at 390 — no sideways scroll, every answer box ≥ 80% of the column, title and box on one edge",
   F02: "Public form at 1280 — every answer box ≥ 80% of the column, title and box on one edge",

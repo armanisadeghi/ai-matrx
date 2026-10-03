@@ -45,6 +45,7 @@ import {
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
 import { TYPE_COLORS } from "./ContextPoliciesTab";
 import { cn } from "@ai-matrx/design-system";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // =============================================================================
 // Selectors
@@ -511,17 +512,17 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
       {/* ── Scope ────────────────────────────────────────────────────────── */}
       <StatSection title="Scope">
         <StatRow
-          label="organization_id"
+          label="Organization ID"
           value={request.organization_id ?? "—"}
         />
-        <StatRow label="project_id" value={request.project_id ?? "—"} />
-        <StatRow label="task_id" value={request.task_id ?? "—"} />
+        <StatRow label="Project ID" value={request.project_id ?? "—"} />
+        <StatRow label="Task ID" value={request.task_id ?? "—"} />
       </StatSection>
 
       {/* ── Source ───────────────────────────────────────────────────────── */}
       <StatSection title="Source">
-        <StatRow label="source_app" value={request.source_app ?? "—"} />
-        <StatRow label="source_feature" value={request.source_feature ?? "—"} />
+        <StatRow label="Source app" value={request.source_app ?? "—"} />
+        <StatRow label="Source feature" value={request.source_feature ?? "—"} />
       </StatSection>
 
       {/* ── Tool injection ───────────────────────────────────────────────── */}
@@ -538,7 +539,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
                     title={JSON.stringify(spec)}
                   >
                     <span className="text-muted-foreground/70">
-                      {spec.kind}
+                      {humanizeIdentifier(spec.kind)}
                     </span>
                     <span>{"name" in spec ? spec.name : spec.agent_id}</span>
                     {"delegate" in spec && spec.delegate ? (
@@ -565,7 +566,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
                       title={JSON.stringify(spec)}
                     >
                       <span className="text-muted-foreground/70">
-                        {spec.kind}
+                        {humanizeIdentifier(spec.kind)}
                       </span>
                       <span>{"name" in spec ? spec.name : spec.agent_id}</span>
                     </span>
@@ -618,16 +619,16 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
         request.memory_model ||
         request.memory_scope) && (
         <StatSection title="Admin flags">
-          {request.block_mode && <StatRow label="block_mode" value="true" />}
+          {request.block_mode && <StatRow label="Block mode" value="true" />}
           {request.snapshot && <StatRow label="snapshot" value="true" />}
           {request.memory !== undefined && (
             <StatRow label="memory" value={String(request.memory)} />
           )}
           {request.memory_model && (
-            <StatRow label="memory_model" value={request.memory_model} />
+            <StatRow label="Memory model" value={request.memory_model} />
           )}
           {request.memory_scope && (
-            <StatRow label="memory_scope" value={request.memory_scope} />
+            <StatRow label="Memory scope" value={request.memory_scope} />
           )}
         </StatSection>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -473,8 +474,8 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
               {tool_calls.map((tc) => (
                 <div key={tc.id} data-row-id={tc.id} className="p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-xs font-medium">
-                      {tc.tool_name}
+                    <span className="text-xs font-medium">
+                      {humanizeIdentifier(tc.tool_name)}
                     </span>
                     <Badge variant="outline" className="text-[10px]">
                       {tc.tool_type}

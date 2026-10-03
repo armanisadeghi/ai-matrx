@@ -57,6 +57,7 @@ import type {
 } from "@ai-matrx/agents/generated/stream-events";
 import type { InstanceStatus } from "../../types/instance.types";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const DEBUG_PANEL_SHELL =
   "flex flex-col flex-1 min-h-0 h-full w-full bg-background text-foreground";
@@ -684,7 +685,7 @@ function TimelineRow({
           )}
         >
           {icon}
-          {entry.kind}
+          {humanizeIdentifier(entry.kind)}
         </Badge>
         {entry.kind === "tool_event" && (
           <Badge
@@ -756,7 +757,7 @@ function ToolLifecycleRow({ tool }: { tool: ToolLifecycleEntry }) {
           {tool.status}
         </Badge>
         <span className="text-[10px] font-medium text-foreground/80">
-          {tool.toolName}
+          {humanizeIdentifier(tool.toolName)}
         </span>
         <span className="text-[8px] font-mono text-muted-foreground/60">
           {tool.callId.slice(0, 12)}
@@ -1164,7 +1165,7 @@ function ToolsTab({ request }: { request: ActiveRequest }) {
               <span className="font-mono text-muted-foreground/60">
                 {tc.callId.slice(0, 12)}
               </span>
-              <span className="text-foreground/80">{tc.toolName}</span>
+              <span className="text-foreground/80">{humanizeIdentifier(tc.toolName)}</span>
               <CopyBtn
                 text={JSON.stringify(tc, null, 2)}
                 id={`ptc-${tc.callId}`}

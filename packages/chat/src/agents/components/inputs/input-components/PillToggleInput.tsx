@@ -1,4 +1,5 @@
 import React from "react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface PillToggleInputProps {
   value: string;
@@ -31,7 +32,7 @@ export function PillToggleInput({
     <div
       className="inline-flex w-full rounded-md border border-border bg-muted p-0.5 gap-0.5"
       role="radiogroup"
-      aria-label={variableName}
+      aria-label={humanizeIdentifier(variableName)}
     >
       {options.map((option) => {
         const isSelected = value === option;

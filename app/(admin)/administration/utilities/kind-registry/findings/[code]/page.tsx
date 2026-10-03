@@ -16,6 +16,7 @@
  * in beside it.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import AppLink from "@/components/navigation/AppLink";
@@ -97,9 +98,9 @@ async function FindingBody({
             {f.kind && (
               <AppLink
                 href={`/administration/utilities/kind-registry/${encodeURIComponent(f.kind)}`}
-                className="mr-2 font-mono text-xs font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
+                className="mr-2 text-xs font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
               >
-                {f.kind}
+                {humanizeIdentifier(f.kind)}
               </AppLink>
             )}
             <span className="text-muted-foreground">{f.message}</span>

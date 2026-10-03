@@ -733,7 +733,7 @@ function OverrideRow({
           "w-28 shrink-0 text-[11px]",
           isOverridden ? "text-foreground" : "text-muted-foreground",
         )}
-        title={row.key}
+        title={humanizeIdentifier(row.key)}
       >
         {row.label}
         {isRemoved && (

@@ -226,6 +226,7 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
     );
   }
 
+  const workflowTitle = def.name;
   const steps = describeWorkflowSteps(def.definition);
   const stepsById = stepsByNodeId(steps);
   const stepLabels: Record<string, string> = {};
@@ -272,7 +273,7 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   const showDeadRunNotice = Boolean(runId) && runProbe === "unreachable";
 
   return (
-    <Frame title={def.name}>
+    <Frame title={workflowTitle}>
       <Marquee
         sentence={sentence}
         status={runId && !showDeadRunNotice ? status : null}

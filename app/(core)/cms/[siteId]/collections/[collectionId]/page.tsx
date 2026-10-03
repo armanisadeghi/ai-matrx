@@ -506,9 +506,6 @@ export default function CollectionItemsPage() {
             </Link>
           </Button>
           <p className="text-sm font-medium">{collection.name}</p>
-          <Badge variant="outline" className="text-[10px] font-mono">
-            {collection.slug}
-          </Badge>
           <div className="ml-auto flex items-center gap-2">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />

@@ -158,11 +158,11 @@ export default function SqlFunctionForm({
               Name <span className="text-red-500">*</span>
             </label>
             <Input
+              className="font-mono h-7 text-sm flex-1 border-slate-300 dark:border-slate-700"
+              placeholder="my_function"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="my_function"
               required
-              className="h-7 text-sm flex-1 border-slate-300 dark:border-slate-700"
             />
           </div>
 

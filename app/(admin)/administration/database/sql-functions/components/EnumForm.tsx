@@ -194,13 +194,13 @@ export default function EnumForm(props: EnumFormProps) {
               Enum Name *
             </Label>
             <Input
+              className="font-mono bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
+              placeholder="my_enum"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="my_enum"
               required
               disabled={isEdit} // Can't change name in edit mode
-              className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
             />
           </div>
 

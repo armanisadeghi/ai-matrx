@@ -595,7 +595,7 @@ const client = await reg.json();
             <NoteCard
               icon={RefreshCw}
               title="Refresh tokens may rotate"
-              description="Always store the new refresh_token from every token response — the previous one may be invalidated."
+              description="Always store the new refresh token from every token response — the previous one may be invalidated."
             />
             <NoteCard
               icon={Code2}

@@ -4,6 +4,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -187,7 +188,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         accessorKey: "tool_name",
         header: "Tool",
         width: 180,
-        cell: (r) => <span className="font-mono text-xs">{r.tool_name}</span>,
+        cell: (r) => <span className="text-xs">{humanizeIdentifier(r.tool_name)}</span>,
       },
       {
         id: "tool_type",

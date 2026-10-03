@@ -718,8 +718,9 @@ function AddAdHocRow({
           onKeyDown={(e) => {
             if (e.key === "Enter") handleAdd();
           }}
-          placeholder="new_context_key"
           className="flex-1 min-w-0 text-[11px] font-mono bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
+          data-identifier
+          placeholder="new_context_key"
         />
         <select
           value={typeDraft}

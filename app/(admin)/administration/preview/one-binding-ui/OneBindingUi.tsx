@@ -22,6 +22,7 @@
  *  17  The same middle transposed into a places × inputs grid
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import {
   AlertTriangle,
@@ -294,8 +295,8 @@ function OfferedSide() {
               <span className="text-[12px] font-medium text-foreground">
                 {v.label}
               </span>
-              <span className="rounded border border-border px-1 font-mono text-[9px] text-muted-foreground">
-                {v.kind}
+              <span className="rounded border border-border px-1 text-[9px] text-muted-foreground">
+                {humanizeIdentifier(v.kind)}
               </span>
               {!v.guaranteed && (
                 <span className="text-[10px] text-amber-600 dark:text-amber-400">

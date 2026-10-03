@@ -15,6 +15,7 @@
  * which is why the two live on the same row.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import {
   ChevronDown,
@@ -219,8 +220,8 @@ function BindingRow({
                   key={input.key}
                   className="flex flex-wrap items-center gap-x-2 gap-y-1 px-2 py-1.5"
                 >
-                  <span className="font-mono text-[11px] text-foreground">
-                    {input.key}
+                  <span className="text-[11px] text-foreground">
+                    {humanizeIdentifier(input.key)}
                   </span>
                   <span className="text-[10px] text-muted-foreground">←</span>
                   <Badge

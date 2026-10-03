@@ -7,6 +7,7 @@
 // unless the person edits it here: a variable is re-picked or renamed, an
 // equation is edited with a live preview through the shared renderer.
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
@@ -98,7 +99,7 @@ export function InlineIslandView({ node, updateAttributes, selected, editor }: N
                       setRenaming(false);
                     }}
                   >
-                    <span>{variable.name}</span>
+                    <span>{humanizeIdentifier(variable.name)}</span>
                     {variable.type && <span className="text-xs text-muted-foreground">{variable.type}</span>}
                   </button>
                 ))}

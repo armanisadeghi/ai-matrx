@@ -96,7 +96,7 @@ function AlignmentBadge({ value }: { value: PlaceValue }) {
       title={`Known value · ${meta.label}\nidentity ${kv.id}\nkey "${kv.key}" is a label, not the resolver`}
     >
       <Link2 className="h-3 w-3" />
-      {kv.key}
+      {kv.label}
     </Badge>
   );
 }
@@ -204,8 +204,8 @@ export function ManifestPanel({ readOnly }: { readOnly: boolean }) {
           >
             <div className="mb-0.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="truncate font-mono text-xs text-foreground">
-                  {v.name}
+                <span className="truncate text-xs text-foreground">
+                  {v.label}
                 </span>
                 <Badge variant="outline" className="text-[10px] font-mono">
                   {v.valueType}

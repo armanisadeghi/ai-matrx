@@ -252,7 +252,7 @@ def database_doors(member: Seat, case: str, fx: dict) -> None:
     s, b, raw = M("query_table_as_of", {"p_table_id": T, "p_limit": 50})
     judge(case, "query_table_as_of", s, b, raw, ids, lambda x: len(x))
     s, b, raw = M("table_row_counts", {"p_table_ids": [T]})
-    judge(case, "table_row_counts", s, b, raw, [], lambda x: next(iter(x)).get("count") if isinstance(x, list) else x.get(T))
+    judge(case, "table_row_counts", s, b, raw, [], lambda x: x[0]["visible_rows"])
     s, b, raw = M("record_aggregate", {"p_table_id": T, "p_group_by": [], "p_measures": [{"op": "count"}]})
     judge(case, "record_aggregate count", s, b, raw, [], lambda x: x[0]["measures"]["count"])
     s, b, raw = M("record_aggregate", {"p_table_id": T, "p_group_by": ["name"], "p_measures": [{"op": "count"}]})
@@ -274,7 +274,9 @@ def database_doors(member: Seat, case: str, fx: dict) -> None:
     s, b, raw = M("drill_ask", {"p_source": src, "p_question": {"by": ["name"], "show": ["count"]}}, "platform")
     judge(case, "drill_ask by name", s, b, raw, ids, by="name")
     # CONTROL: "Only me" hides, never locks — the member may still open it by id.
-    if PLANT != "skip_hide":
+    # (Not on the restricted table: there the store LOCKS a personal row — read_record refuses it, measured on
+    # the clone 2026-10-02 — which is a separate question from listing and is not graded here.)
+    if PLANT != "skip_hide" and case != "restricted":
         s, b, raw = M("read_record", {"p_record_id": ids[HIDDEN]})
         step(["Q16"], f"{case}: control — the member can still open the hidden row by id", s == 200 and PRACTICES[HIDDEN] in raw, f"status {s}")
 

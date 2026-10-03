@@ -247,7 +247,7 @@ export function BindingCell({
 
         {binding.kind === "unresolved" && (
           <span className="block truncate px-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
-            No <span className="font-mono">{consumed.key}</span> here
+            No {consumed.label} here
           </span>
         )}
       </div>

@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToolUiIncidentViewer } from "@/features/tool-call-visualization/admin/ToolUiIncidentViewer";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface Props {
     toolId: string;
@@ -28,7 +29,7 @@ export function ToolIncidentsPage({ toolId, toolName }: Props) {
                     className="gap-1.5 h-8"
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    {toolName}
+                    {humanizeIdentifier(toolName)}
                 </Button>
                 <span className="text-sm font-medium text-muted-foreground">/</span>
                 <span className="text-sm font-medium">Incidents</span>

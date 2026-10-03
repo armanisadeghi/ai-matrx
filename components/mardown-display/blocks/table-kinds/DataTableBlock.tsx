@@ -79,6 +79,7 @@
  *    data" that hides what was asked for.
  */
 
+import { displayLabel } from "@ai-matrx/kit/text-case";
 import React from "react";
 import {
   AlertTriangle,
@@ -656,7 +657,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
                       ) : (
                         <ArrowUpDown className="h-3 w-3 shrink-0 opacity-40" />
                       )}
-                      <span className="break-words">{column.name}</span>
+                      <span className="break-words">{displayLabel(column.name, column.name)}</span>
                     </button>
                     <div
                       className={cn(
@@ -736,7 +737,7 @@ export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
                         value={row[column.index]}
                         type={column.type}
                         missing={column.index >= row.length}
-                        label={column.name}
+                        label={displayLabel(column.name, column.name)}
                         origin={
                           sourceLine
                             ? `Row ${rowIndex + 1} · ${sourceLine}`

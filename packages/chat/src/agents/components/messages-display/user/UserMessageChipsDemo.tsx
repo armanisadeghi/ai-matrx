@@ -304,8 +304,8 @@ export function UserMessageChipsDemo() {
           </h2>
 
           <DemoBubble
-            title="FileResourceChip (with file_id)"
-            description="Media blocks that carry a cld_files UUID use the rich chip — thumbnail, hover peek, click → FilePreview."
+            title="File chip with a stored file"
+            description="Stored files get the rich chip: thumbnail, hover peek, preview on click."
           >
             <div className="flex flex-wrap gap-1">
               <FileResourceChip

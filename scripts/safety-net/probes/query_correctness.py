@@ -197,6 +197,9 @@ VISITS = [
     ("Tomás Vega — ankle sprain grade II, visit 4", "tomas", "2026-10-02", "Insurance check", 30, 6, None),
 ]
 HIDDEN_VISIT = 9
+# The patient a member may not see: no visits, no restricted or confidential field on Patients (Q08b).
+HIDDEN_PATIENT = ("Lucía Navarro", "Dr. Alicia Moreno")
+TRUTH_Q8B = len(PATIENTS)  # 6 patients for a member; the owner sees 7
 EDITED_VISIT, EDIT_FROM, EDIT_TO = 3, 30, 32
 
 # THE TEN QUESTIONS, as the member (test@test.com) sees the table — nine visits, Tomás's visit 3 at $32.
@@ -297,6 +300,15 @@ def make_tables(admin: Seat, fx: dict) -> dict:
                                             "p_data": {"name": name, "referring_physician": doc}})
         assert s == 200, ("patient", name, s, rid)
         fx["patient_ids"][key] = str(rid)
+    # Q08b (2026-10-02, only-me-listing): a PLAIN table — Patients has no restricted or confidential field —
+    # carries one "Only me" row too. Before that fix a plain table listed and counted it for every member
+    # (the restricted Visit Copays table hid it only by another path), so Q08 now asks both tables.
+    s, rid = admin.rpc("record_write", {"p_organization_id": ORG, "p_table_id": fx["patients"],
+                                        "p_data": {"name": HIDDEN_PATIENT[0], "referring_physician": HIDDEN_PATIENT[1]}})
+    assert s == 200, ("hidden patient", s, rid)
+    fx["hidden_patient"] = str(rid)
+    s, body = admin.rpc("share_lane_set", {"p_organization_id": ORG, "p_subject_id": fx["hidden_patient"], "p_choice": "mine"})
+    assert s == 200, ("share_lane_set mine (patient)", s, body)
     fx["visit_ids"] = []
     for title, pkey, day, status, copay, sessions, write_off in VISITS:
         data = {"visit": title, "patient": fx["patient_ids"][pkey], "visit_date": day, "status": status,
@@ -627,6 +639,16 @@ def main() -> int:
             step([item_id(q)], f"{q} {QUESTIONS[q]}", ok_door and ok_ask,
                  f"truth {json.dumps(want, ensure_ascii=False)} | door {json.dumps(got_door, ensure_ascii=False, default=str)} "
                  f"{'OK' if ok_door else 'WRONG'} | ask {json.dumps(got_ask, ensure_ascii=False, default=str)} {'OK' if ok_ask else 'WRONG'}")
+        # Q08b — the plain Patients table: a member counts and lists 6, never the owner's "Only me" patient.
+        n8b = _num(_one(_agg(member, fx["patients"], [{"op": "count"}]), "count"))
+        s, page = member.rpc("read_records_page", {"p_organization_id": ORG, "p_table_id": fx["patients"]})
+        listed = page.get("total") if isinstance(page, dict) else None
+        leaked = HIDDEN_PATIENT[0] in json.dumps(page, ensure_ascii=False)
+        so, opage = admin.rpc("read_records_page", {"p_organization_id": ORG, "p_table_id": fx["patients"]})
+        owner = opage.get("total") if isinstance(opage, dict) else None
+        step(["Q08"], "Q8b how many patients (a plain table with one 'Only me' row)",
+             n8b == TRUTH_Q8B and listed == TRUTH_Q8B and not leaked and owner == TRUTH_Q8B + 1,
+             f"truth {TRUTH_Q8B} | door count {n8b} | page total {listed} | hidden name listed {leaked} | owner {owner}")
         # Q11 — related_to, tool and door (the door half is the Rule filter on the visits' Patient field).
         F = fx["field_ids"]
         rule = {"op": "or", "args": [{"op": "eq", "args": [{"field": F["patient"]}, {"const": fx["patient_ids"][k]}]} for k in ("daniel", "hannah")]}

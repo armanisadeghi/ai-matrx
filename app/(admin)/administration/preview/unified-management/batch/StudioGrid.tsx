@@ -150,9 +150,6 @@ function JobBlock({
         <span className="text-sm font-semibold text-foreground">
           {job.label}
         </span>
-        <span className="font-mono text-[10px] text-muted-foreground">
-          {job.key}
-        </span>
         <span
           className={cn(
             "inline-flex h-4 items-center rounded px-1 text-[9px] font-semibold uppercase tracking-wide",
@@ -220,7 +217,7 @@ function JobBlock({
                   className="min-w-[230px] border-b border-border px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground"
                 >
                   <div className="flex items-center gap-1.5">
-                    <span className="truncate" title={c.key}>
+                    <span className="truncate">
                       {c.label}
                     </span>
                     {c.required && (
@@ -300,7 +297,7 @@ function JobBlock({
                     >
                       {/* Categories curate; exclusions are the only thing that removes a pair. */}
                       Excluded here:{" "}
-                      <span className="font-mono not-italic">{job.key}</span>
+                      <span className="not-italic">{job.label}</span>
                     </td>
                   ) : (
                     <>

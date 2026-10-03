@@ -37,6 +37,7 @@ import { toolApiErrorMessage } from "./tool-definition.service";
 import { parseSemver } from "@/features/admin/applications/version";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { extractErrorMessage } from "@/utils/errors";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -454,7 +455,7 @@ export function ToolEditPage({ tool }: Props) {
           className="gap-1.5 h-8"
         >
           <ArrowLeft className="h-4 w-4" />
-          {tool.name}
+          {humanizeIdentifier(tool.name)}
         </Button>
         <span className="text-sm font-medium text-muted-foreground">/</span>
         <span className="text-sm font-medium">Edit</span>

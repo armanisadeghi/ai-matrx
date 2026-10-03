@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from "react";
 import {
   X,
@@ -837,7 +838,7 @@ export const AgentExecutionDebugPanel: React.FC<
                       className="border border-border rounded p-2 text-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{def.name}</span>
+                        <span className="font-medium">{humanizeIdentifier(def.name)}</span>
                         {def.required && (
                           <span className="text-red-500 text-[10px]">
                             required
@@ -979,7 +980,7 @@ export const AgentExecutionDebugPanel: React.FC<
               {settingsOverridesForApi && (
                 <CodeBlock
                   content={JSON.stringify(settingsOverridesForApi, null, 2)}
-                  label="API Overrides (sent as config_overrides)"
+                  label="API Overrides"
                   {...codeBlockProps}
                 />
               )}

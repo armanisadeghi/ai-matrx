@@ -226,9 +226,9 @@ const TomlBlock: React.FC<TomlBlockProps> = ({ content, className }) => {
             >
               {line.key && (
                 <>
-                  <span className="text-amber-600 dark:text-amber-400">
+                  <code className="text-amber-600 dark:text-amber-400">
                     {line.key}
-                  </span>
+                  </code>
                   <span className="text-muted-foreground"> = </span>
                 </>
               )}

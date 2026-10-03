@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -78,7 +79,7 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
     accessorKey: "tool_name",
     header: "Tool",
     width: 240,
-    cell: (r) => <span className="font-mono text-xs">{r.tool_name}</span>,
+    cell: (r) => <span className="text-xs">{humanizeIdentifier(r.tool_name)}</span>,
   },
   {
     id: "count",

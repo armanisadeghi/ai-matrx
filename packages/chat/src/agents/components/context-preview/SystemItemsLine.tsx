@@ -9,6 +9,7 @@
  */
 
 import type { components } from "@ai-matrx/agents/generated/api-types";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type SystemItems = components["schemas"]["ContextSystemItems"];
 
@@ -29,7 +30,7 @@ export function SystemItemsLine({ items }: { items?: SystemItems | null }) {
               className="text-muted-foreground"
               data-system-item={n.key ?? ""}
             >
-              <span className="font-mono text-foreground">{n.key}</span>
+              <span className="text-foreground">{humanizeIdentifier(n.key)}</span>
               {" — named by "}
               {(n.named_by ?? []).join(", ")}
               {" · "}

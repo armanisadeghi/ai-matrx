@@ -8,7 +8,7 @@
  *   ?tab=diagnostics   per-user content inventory & ACL routes
  *
  * Deep-link params:
- *   ?q=<query>&store_id=<uuid>&tab=<tab>
+ *   ?q=QUERY, ?store_id=UUID, ?tab=TAB
  */
 
 import { RagSearchExperience } from "@/features/rag/components/search/RagSearchExperience";

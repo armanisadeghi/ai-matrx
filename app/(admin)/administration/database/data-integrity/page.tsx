@@ -9,6 +9,7 @@
 // with the findings sample. Read-only — checks never mutate data. The
 // /administration layout already gates the whole tree to super admins.
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -240,7 +241,7 @@ function FindingsTable({
 function checkRowContent(r: IntegrityRow): string {
   return [
     `Check: ${r.title} (${r.id})`,
-    `Category: ${r.category} · Severity: ${r.severity} · Kind: ${r.kind}`,
+    `Category: ${r.category} · Severity: ${r.severity} · Kind: ${humanizeIdentifier(r.kind)}`,
     `Status: ${rowStatus(r)}`,
     r.result
       ? `Findings: ${r.result.count} · Duration: ${r.result.durationMs}ms`
@@ -264,7 +265,7 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
           {row.category}
         </Badge>
         <Badge variant="outline" className="text-muted-foreground">
-          {row.kind}
+          {humanizeIdentifier(row.kind)}
         </Badge>
         <StatusBadge row={row} />
         {r && (
@@ -465,7 +466,7 @@ export default function DataIntegrityPage() {
         header: "Kind",
         filter: "select",
         width: 90,
-        cell: (r) => <span className="text-xs">{r.kind}</span>,
+        cell: (r) => <span className="text-xs">{humanizeIdentifier(r.kind)}</span>,
       },
       {
         id: "status",

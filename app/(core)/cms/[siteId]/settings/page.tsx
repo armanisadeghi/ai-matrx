@@ -547,6 +547,7 @@ export default function SiteSettingsPage() {
           onOpenChange={(open) => !isDeleting && setDeleteDialogOpen(open)}
           title={`Move "${site.name}" to Trash?`}
           description={`Type the site slug "${site.slug}" to confirm. The site and all its pages and components move to Trash and go offline; you can restore them later.`}
+          /* font-mono data-identifier: the slug the person types to confirm */
           placeholder={site.slug}
           confirmLabel="Move to Trash"
           busy={isDeleting}

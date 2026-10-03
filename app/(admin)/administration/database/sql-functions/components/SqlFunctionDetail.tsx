@@ -241,7 +241,7 @@ export default function SqlFunctionDetail({
                         <td className="px-2 py-1 text-slate-400 dark:text-slate-500 tabular-nums">
                           {i + 1}
                         </td>
-                        <td className="px-2 py-1 font-mono">
+                        <td className="px-2 py-1 font-mono" data-identifier>
                           {arg.name ? (
                             <span className="text-slate-800 dark:text-slate-200">
                               {arg.name}

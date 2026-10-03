@@ -17,4 +17,18 @@ export default [
     stepsJson: "query-correctness.json",
     timeoutMs: 10 * 60 * 1000,
   },
+  // Q16 (lane 5 VISION-REACH, 2026-10-02): `only-me-listing` — a row its owner set to "Only me" is listed and counted
+  // for nobody else, through every list / count / export / drill / history door, REST v1 and the MCP, on a plain, a
+  // confidential-only and a restricted table. Self-test: only_me_listing_selftest.py (in-memory plant, RED).
+  {
+    id: "query.only-me-listing",
+    area: "query",
+    kind: "cmd",
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/only_me_listing.py"],
+    items: ["Q16"],
+    targets: ["live", "clone"],
+    stepsJson: "only-me-listing.json",
+    timeoutMs: 10 * 60 * 1000,
+  },
 ];

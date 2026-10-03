@@ -61,6 +61,7 @@ import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";
 import { formatCount } from "@ai-matrx/kit/format";
 import { getUserId } from "../../../host/identity";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type ContextCompare = components["schemas"]["ContextCompare"];
 type CompareSide = components["schemas"]["ContextCompareSide"];
@@ -535,7 +536,7 @@ function Differences({ differences }: { differences: Difference[] }) {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="min-w-0 truncate font-mono text-xs font-semibold text-foreground">
-                  {d.key}
+                  {humanizeIdentifier(d.key)}
                 </span>
                 {d.scope_name && (
                   <span className="text-[11px] text-muted-foreground">on {d.scope_name}</span>

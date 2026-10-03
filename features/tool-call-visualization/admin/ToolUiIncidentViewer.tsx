@@ -26,6 +26,7 @@ import type { ToolUiIncidentRow } from "@/features/tool-call-visualization/admin
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -284,7 +285,7 @@ function IncidentCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-mono font-medium text-slate-700 dark:text-slate-300">
-                {incident.tool_name}
+                {humanizeIdentifier(incident.tool_name)}
               </span>
               <Badge
                 className={`text-[10px] px-1.5 py-0 ${errorTypeColors[incident.error_type] || ""}`}

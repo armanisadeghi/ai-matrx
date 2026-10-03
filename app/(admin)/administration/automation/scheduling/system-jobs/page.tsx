@@ -24,6 +24,7 @@
 
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { adminPageCapture } from "@/components/agent-copy/page-capture/pageCapture";
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
@@ -1169,7 +1170,7 @@ function SystemJobEditDialog({
         <DialogHeader>
           <DialogTitle>Edit {task.title}</DialogTitle>
           <DialogDescription>
-            <span className="font-mono text-xs">{task.tool_name}</span> — change
+            <span className="text-xs">{humanizeIdentifier(task.tool_name)}</span> — change
             when it runs and what it runs with. Enable/disable lives on the row.
           </DialogDescription>
         </DialogHeader>

@@ -220,7 +220,7 @@ export function SeoPackageMeta({
           <button
             type="button"
             onClick={() => copyText(slug, "Slug")}
-            className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] transition-colors hover:bg-muted" data-identifier
           >
             <Link2 className="h-3 w-3" />
             {slug}

@@ -279,7 +279,7 @@ export default function AgentDefinitionSliceViewerShadcn({
                     {varRowData.map((v) => (
                       <TableRow key={v.name} className="hover:bg-muted/30">
                         <TableCell className={tableCellClass}>
-                          {v.name}
+                          <span className="font-mono" data-identifier>{v.name}</span>
                         </TableCell>
                         <TableCell className={tableCellClass}>
                           <CompactPre>{v.defaultFormatted}</CompactPre>

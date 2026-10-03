@@ -15,9 +15,9 @@
 --
 -- PAGED, LIKE custom.table_archive. One call never holds more than a few seconds of work: the
 -- first call (custom.table_duplicate) checks the rights, records the job, makes the copy's Table
--- record and spends a short time budget (1 s) of work; it answers "copying" with progress, and the
--- client calls custom.table_duplicate_continue(<the copy>) — 2 s of work a pass — until "done". Every unit of work is
--- small (one choice list, 200 options, 5 fields, one view, 25 records, 50 links) and the budget
+-- record and stops starting new work 1.5 s into the call; it answers "copying" with progress, and the
+-- client calls custom.table_duplicate_continue(<the copy>) — each stops starting new work 2.5 s into the call — until "done". Every unit of work is
+-- small (a choice list's Table, its Fields, 200 options, 5 fields, one view, 25 records, 50 links) and the budget
 -- is checked between units, so a call ends within the budget plus one unit even when the
 -- database is busy. Nothing is stored about how far it got: each copied row's id is worked out
 -- from the copy and the source row (custom._duplicate_id), so what remains is read off the copy
@@ -288,7 +288,9 @@ declare
   c_records_per_unit constant integer := 25;
   c_options_per_unit constant integer := 200;
   c_links_per_unit   constant integer := 50;
-  v_start      timestamptz := clock_timestamp();
+  -- The budget is counted from the start of THIS CALL (statement_timestamp), so the rights,
+  -- the mask and the map a call works out first are inside it, not on top of it.
+  v_start      timestamptz := statement_timestamp();
   v_me         uuid := custom.query_principal();
   v_job        record;
   v_inv        jsonb;
@@ -419,6 +421,15 @@ begin
                                                    '_[0-9a-f]{16,}$', '')
                                     || '_' || left(replace(v_new_opts::text, '-', ''), 20), 48)),
                 custom._copied_metadata(v_opt.opts_meta), v_opt.opts_shown_to);
+      end if;
+      -- its Fields (a list may carry more than a title — "name" and "color" are common), as their own unit.
+      if exists (select 1 from custom.record x
+                  where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
+                    and x.data_class <> 'kernel' and x.deleted_at is null
+                    and x.data ->> 'entity_definition_id' = v_opt.opts_id::text
+                    and not exists (select 1 from custom.record c where c.organization_id = v_to
+                                       and c.id = custom._duplicate_id(p_copy, x.id))) then
+        if clock_timestamp() - v_start > p_budget then v_step := 'choices'; exit work; end if;
         insert into custom.record (id, organization_id, table_id, data_class, data, metadata, shown_to)
         select custom._duplicate_id(p_copy, x.id), v_to, x.table_id, x.data_class,
                custom._uuid_remap(x.data, v_map), custom._copied_metadata(x.metadata), x.shown_to
@@ -426,6 +437,8 @@ begin
          where x.organization_id = v_from and x.table_id = custom.field_kernel_id()
            and x.data_class <> 'kernel' and x.deleted_at is null
            and x.data ->> 'entity_definition_id' = v_opt.opts_id::text
+           and not exists (select 1 from custom.record c where c.organization_id = v_to
+                              and c.id = custom._duplicate_id(p_copy, x.id))
          order by coalesce((x.data ->> 'sort')::integer, 0), x.created_at;
       end if;
       -- the options, in pages; a value kept under an ARCHIVED column of the list stays behind.
@@ -775,7 +788,7 @@ declare
   -- records, 200 options, one view), so a call ends within budget + one unit. The first call
   -- also checks the rights, records the job and makes the Table record, so it spends less.
   -- Measured on the loaded nightly copy 2026-10-02 (1,002 records, 11 columns): see the lane report.
-  c_budget     constant interval := interval '1 second';
+  c_budget     constant interval := interval '1.5 seconds';
   v_me         uuid := custom.query_principal();
   v_with       boolean := coalesce(p_with_records, false);
   v_opens      jsonb;
@@ -970,8 +983,8 @@ security definer
 set search_path to 'pg_catalog'
 as $function$
 declare
-  -- ONE PASS'S TIME BUDGET (see custom.table_duplicate): stop starting new work after 2 s.
-  c_budget  constant interval := interval '2 seconds';
+  -- ONE PASS'S TIME BUDGET (see custom.table_duplicate): stop starting new work 2.5 s into the call.
+  c_budget  constant interval := interval '2.5 seconds';
   v_me      uuid := custom.query_principal();
   v_to      uuid;
   v_name    text;
@@ -1013,10 +1026,10 @@ end;
 $function$;
 
 comment on function custom.table_duplicate_continue(uuid) is
-  'TABLE-ACTIONS. Carries on a copy custom.table_duplicate started: one bounded pass (2 s of work, small units), answering copying|done with progress, then what stayed behind. Only the person who started the copy; the source is re-checked every pass.';
+  'TABLE-ACTIONS. Carries on a copy custom.table_duplicate started: one bounded pass (new work stops 2.5 s into the call; small units), answering copying|done with progress, then what stayed behind. Only the person who started the copy; the source is re-checked every pass.';
 
 comment on function custom.table_duplicate(uuid, boolean, text, uuid) is
-  'TABLE-ACTIONS. Duplicates a Table the caller may open into an organization the caller is a member of (default: the same one): its settings and look, every live Field (new ids), every choice list as a new list (same words, keys, order), every live saved view (filters, sorts, layouts and every id inside them remapped to the copy), and with p_with_records every live record the caller may open, its values through the read doors'' own field mask (custom.read_mask_for + custom.mask_document: a column the caller may not read is copied empty and named in left_behind.hidden_columns); links within the Table follow to the copy, links to other Tables stay, and a reference to a row that was not copied is taken out. Name: p_name, else "<name> (copy)", "(copy 2)", …. Writes one history.migration_log row on the new Table (verb duplicate); the source is never written. Paged: it makes the copy''s Table record, spends a 1 s budget of work and answers status copying|done with progress; custom.table_duplicate_continue carries it on. Refuses with one sentence: not given / archived / still being copied / not a member of the destination / a column linking across organizations.';
+  'TABLE-ACTIONS. Duplicates a Table the caller may open into an organization the caller is a member of (default: the same one): its settings and look, every live Field (new ids), every choice list as a new list (same words, keys, order), every live saved view (filters, sorts, layouts and every id inside them remapped to the copy), and with p_with_records every live record the caller may open, its values through the read doors'' own field mask (custom.read_mask_for + custom.mask_document: a column the caller may not read is copied empty and named in left_behind.hidden_columns); links within the Table follow to the copy, links to other Tables stay, and a reference to a row that was not copied is taken out. Name: p_name, else "<name> (copy)", "(copy 2)", …. Writes one history.migration_log row on the new Table (verb duplicate); the source is never written. Paged: it makes the copy''s Table record, stops starting new work 1.5 s into the call and answers status copying|done with progress; custom.table_duplicate_continue carries it on. Refuses with one sentence: not given / archived / still being copied / not a member of the destination / a column linking across organizations.';
 
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by,

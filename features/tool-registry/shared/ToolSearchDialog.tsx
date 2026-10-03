@@ -18,6 +18,7 @@ import { SourceKindBadge } from "@/features/tool-call-visualization/admin/mcp-to
 import type { Database } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * One searchable row. `name` is the only required field — everything else
@@ -233,7 +234,7 @@ export function ToolSearchDialog({
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs font-medium text-foreground hover:text-primary hover:underline inline-flex items-center gap-1 min-w-0 max-w-full"
-                                    title={tool.name}
+                                    title={humanizeIdentifier(tool.name)}
                                   >
                                     <span className="truncate">{label}</span>
                                     <ExternalLink className="h-3 w-3 shrink-0 opacity-60" />
@@ -241,7 +242,7 @@ export function ToolSearchDialog({
                                 ) : (
                                   <span
                                     className="text-xs font-medium text-foreground truncate"
-                                    title={tool.name}
+                                    title={humanizeIdentifier(tool.name)}
                                   >
                                     {label}
                                   </span>

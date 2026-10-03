@@ -685,7 +685,7 @@ function GatingSection({
         icon={<ShieldCheck className="h-4 w-4" />}
         title="Gating"
         count={gates.length}
-        description="Named gate functions that must pass at dispatch time. ALL must pass (AND). Gates live in matrx-ai code (matrx_ai.tools.gates.*)."
+        description="Checks that must all pass before the tool runs."
         action={
           <Button size="sm" onClick={() => void onSave()} disabled={busy}>
             {busy ? (
@@ -783,8 +783,9 @@ function GatingSection({
             <Input
               value={customGate}
               onChange={(e) => setCustomGate(e.target.value)}
-              placeholder="my_custom_gate"
               className="h-8 text-xs font-mono"
+              data-identifier
+              placeholder="my_custom_gate"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();

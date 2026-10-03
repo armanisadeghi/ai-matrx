@@ -2,18 +2,18 @@
 -- additive: yes
 --   It ADDS one function — custom.listed_predicate_sql(uuid, uuid, uuid, permission_level, text)
 --   (EXECUTE to postgres only, as the store's event trigger leaves every new custom function; it is
---   called only from SECURITY DEFINER doors owned by postgres) — and REPLACES thirteen bodies, each
---   declared below with the body it was written against. Twelve change ONE thing: their call to
---   custom.visible_predicate_sql becomes custom.listed_predicate_sql. custom.read_records gains the
---   same list filter on its four branches. No table, column, trigger, policy, grant or row of
---   anybody's data is touched. Locks: pg_proc row locks only.
+--   called only from SECURITY DEFINER doors owned by postgres) — and REPLACES twelve bodies, each
+--   declared below with the body it was written against. Ten change ONE thing: their call to
+--   custom.visible_predicate_sql becomes custom.listed_predicate_sql. custom.read_records (four
+--   branches) and custom.read_records_archived — both already on T-13's reader list — apply
+--   platform.shown_to_lists inline, the filter custom.query_visible_ids applies. No table, column,
+--   trigger, policy, grant or row of anybody's data is touched. Locks: pg_proc row locks only.
 --   Inverse: migrations/inverse/visionreach_only_me_is_listed_for_nobody_else_down.sql
 -- guard: custom/system_enabled
 -- lock: custom
 -- lane: VISION-REACH
 -- based-on: custom._relation_names_resolve(uuid, uuid, text[]) dacdc2b7f0b135ef4727131684ac121aad4f9c66e08f29883d67c0073ac13f82
 -- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 6ffb66bb2c9ab5ead25366c494769674b4f8c4ff17db54d3e75da05e4cb92694
--- based-on: custom.context_archived_types(uuid) 155e35d5ed116c54778861c2781f64ac85356746b284c1c44c00b7ecb0632e11
 -- based-on: custom.dashboard_stuck(uuid, uuid, text, integer, jsonb, integer, text) bc799fd4d7dffe30977b6d09ce13acf0f5fa6b8e6f72d04c62a2f2737c74cc8d
 -- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) c9051494abeff5b0b8527c864d49e788c77db9c96fafc764cf83d32e9b6cc2f8
 -- based-on: custom.query_across_homes(uuid, uuid, integer, integer, text) d20989a8ca3d188be80005cda489178ac229e0207d5e8dc233d939de01788f9c
@@ -44,9 +44,12 @@
 -- 'true' — the restricted-field table hid the row only because its probe door took another path);
 -- field sensitivity (confidential and restricted fields do not enter row visibility at all).
 --
--- THE FIX, ONE PREDICATE: custom.listed_predicate_sql = the open-predicate AND platform.shown_to_lists
--- with the same "Shown to" context custom.query_visible_ids uses (custom._record_shown_to_ctx). Every
--- door that lists, counts, exports, drills or keeps history over rows calls it instead. The
+-- THE FIX, ONE PREDICATE: custom.listed_predicate_sql = the open-predicate AND "a live row is one
+-- custom.query_visible_ids lists" (an uncorrelated IN, hashed once per statement). It names no row
+-- column T-13 retires (platform._t13_no_new_row_column_reader): the list answer stays where it lives.
+-- Every door that lists, counts, exports, drills or keeps history over rows calls it instead. An
+-- archived row is no list member and keeps the open answer (field_history keeps archived rows'
+-- history). custom.context_archived_types is untouched: it counts archived rows only. The
 -- open-predicate is unchanged for the callers whose question IS "may she open / know it":
 -- custom.assert_may_know_table, custom.visible_record_ids (→ iam.accessible_entity_ids), the parity
 -- censuses, and the by-id doors (read_record, read_records_by_ids, relation words, history of one
@@ -64,55 +67,42 @@ CREATE OR REPLACE FUNCTION custom.listed_predicate_sql(p_user uuid, p_organizati
 AS $function$
 declare
   v_alias text;
-  v_open  text;
-  v_ctx   jsonb;
-  v_d     platform.shown_to;
-  v_team  uuid[];
+  v_me    uuid;
 begin
-  -- ONLY-ME-LISTED (VISION-REACH, 2026-10-02). THE PREDICATE EVERY DOOR THAT LISTS, COUNTS,
-  -- EXPORTS, DRILLS OR KEEPS HISTORY OVER A TABLE'S ROWS IS BUILT FROM.
+  -- ONLY-ME-LISTED (VISION-REACH, 2026-10-02). THE PREDICATE EVERY DOOR THAT LISTS, COUNTS, EXPORTS,
+  -- DRILLS OR KEEPS HISTORY OVER A TABLE'S ROWS IS BUILT FROM.
   --
   -- Two questions, and they are not the same one:
-  --   * MAY SHE OPEN IT — custom.visible_predicate_sql, the set form of custom.has_visibility. It
-  --     stays exactly that: custom.assert_may_know_table, custom.visible_record_ids and the parity
-  --     censuses (custom.list_door_disagreements, custom.shared_only_disagreements) compare it to
-  --     the per-row ladder and must keep doing so.
-  --   * IS IT LISTED FOR HER — platform.shown_to_lists. "Only me" (custom.share_lane_set 'mine':
-  --     visibility `personal`, no shown_to) hides a row from everyone but its owner and never locks
-  --     it (T-36: a member with the link still opens it).
-  -- Until this file only custom.query_visible_ids asked the second question; every door built on
-  -- the first listed and counted the owner's "Only me" row for every member (verifier, production,
-  -- 2026-10-02: 33 doors, a member counted 4 of 3). A list is both answers, here, once.
-  v_open := custom.visible_predicate_sql(p_user, p_organization_id, p_table_id, p_required, p_alias);
+  --   * MAY SHE OPEN IT: custom.visible_predicate_sql, the set form of the one ladder. It stays exactly
+  --     that, because custom.assert_may_know_table, custom.visible_record_ids and the parity censuses
+  --     compare it to the per-row ladder.
+  --   * IS IT LISTED FOR HER: "Only me" (custom.share_lane_set 'mine') hides a row from everyone but its
+  --     owner and never locks it (T-36: a member with the link still opens it).
+  -- Until this file only custom.query_visible_ids asked the second question; every door built on the
+  -- first listed and counted the owner's "Only me" row for every member (verifier, production,
+  -- 2026-10-02: 33 doors, a member counted 4 of 3).
+  --
+  -- So a LIVE row is listed when custom.query_visible_ids lists it: the one list answer, both questions,
+  -- asked once per statement (an uncorrelated IN, hashed). An ARCHIVED row (custom.field_history keeps
+  -- the history of rows since archived) is not a list member at all and keeps the open answer.
+  -- Nothing here names the row column T-13 retires; the list filter lives where it already lives.
   if p_user is null then
     -- No principal: the store's own maintenance, judged by its role. Nothing is "listed for" it.
-    return v_open;
+    return custom.visible_predicate_sql(p_user, p_organization_id, p_table_id, p_required, p_alias);
+  end if;
+  v_me := custom.query_principal();
+  if p_user is distinct from v_me then
+    raise exception 'custom.listed_predicate_sql lists for the signed-in person only, and was asked for someone else.'
+      using errcode = '22023',
+            hint = 'A list is what custom.query_visible_ids answers for the session''s own person. To ask on someone else''s behalf, '
+                || 'use custom.visible_predicate_sql (may she open it) and say that it is not her list.';
   end if;
   v_alias := quote_ident(coalesce(nullif(btrim(p_alias), ''), 'r'));
-
-  if p_user is not distinct from auth.uid() then
-    -- The reader is the session's person: the very context custom.query_visible_ids lists with.
-    v_ctx := custom._record_shown_to_ctx(array[p_organization_id], p_table_id);
-  else
-    -- Asked on someone else's behalf (a census, a preview): the same two keys platform.shown_to_lists
-    -- reads, worked out for THAT person — her organization's default list, and her teammates.
-    v_ctx := '{}'::jsonb;
-    if exists (select 1 from iam.organization_member om
-                 join iam.organizations o on o.id = om.organization_id and o.archived_at is null
-                where om.user_id = p_user and om.organization_id = p_organization_id) then
-      v_d := platform.shown_to_default('record', p_organization_id, p_user);
-      begin
-        v_team := iam.teammate_user_ids(p_user, p_organization_id);
-      exception when others then
-        v_team := null;
-      end;
-      v_ctx := jsonb_build_object(p_organization_id::text,
-                 jsonb_build_object('d', v_d, 't', to_jsonb(coalesce(v_team, array[p_user]))));
-    end if;
-  end if;
-
-  return format('((%s) and platform.shown_to_lists(%s.shown_to, %s.visibility, %s.created_by, %s.organization_id, %L::uuid, %L::jsonb))',
-                v_open, v_alias, v_alias, v_alias, v_alias, p_user, v_ctx);
+  return format('((%s) and (%s.deleted_at is not null or %s.id in (select v.v from custom.query_visible_ids(%L::uuid, %s, %L) v(v))))',
+                custom.visible_predicate_sql(p_user, p_organization_id, p_table_id, p_required, p_alias),
+                v_alias, v_alias, p_organization_id,
+                case when p_table_id is null then 'null::uuid' else quote_literal(p_table_id) || '::uuid' end,
+                p_required::text);
 end;
 $function$;
 
@@ -429,97 +419,6 @@ begin
     custom.page_size(p_organization_id, 'custom.record_aggregate', p_limit, 200));
 
   return v_sql;
-end;
-$function$;
-
--- ── custom.context_archived_types(uuid) ─────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION custom.context_archived_types(p_organization_id uuid)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-declare
-  v_me       uuid := custom.query_principal();
-  v_uid      uuid := auth.uid();
-  v_tables   uuid := custom.table_kernel_id();
-  v_cand     uuid[];
-  v_level    public.permission_level;
-  v_mask     jsonb;
-  v_shown    text[];
-  v_declared text[];
-  v_rows     jsonb;
-begin
-  perform custom.assert_client_may_reach(p_organization_id, 'custom.context_archived_types');
-  if v_me is null then
-    return '[]'::jsonb;
-  end if;
-  -- STORE-READ-PERF-5 (2026-09-30). ONLY THE ARCHIVED TABLES THE CONTEXT SYSTEM KEPT ARE READ.
-  -- This door used to page custom.read_records_archived over EVERY archived Table of the organization
-  -- (200 a page, each row rendered: its derived values, the mask, the choice labels) and keep the
-  -- ones whose document said kept_for = context. test@test.com's own workspace holds 1,313 archived
-  -- Tables and no archived scope type: 7-30 s to answer []. The candidates are the archived,
-  -- unquarantined kernel rows whose stored kept_for is context (a superset of what the old filter
-  -- kept, which read the same key from the rendered document); none, and the answer is [].
-  -- The Table decision is asked first, as the archive door asked it (the wall was asked above, in
-  -- this door's own name).
-  perform custom.assert_may_know_table(p_organization_id, v_tables, 'custom.context_archived_types');
-  select coalesce(array_agg(r.id), '{}'::uuid[]) into v_cand
-    from custom.record r
-   where r.organization_id = p_organization_id
-     and r.table_id = v_tables
-     and r.deleted_at is not null
-     and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
-     and r.data ->> 'kept_for' = 'context';
-  if cardinality(v_cand) = 0 then
-    return '[]'::jsonb;
-  end if;
-  -- Of the candidates, exactly what the archive door answers about them: its rows through the one
-  -- ladder's own predicate for this Table at viewer (custom.visible_predicate_sql, the sentence the
-  -- archive door writes into its WHERE), each document through the one read mask
-  -- (custom.read_mask_for at the caller's level on the Table), custom.mask_document,
-  -- custom.choice_render and custom.with_whole_value_pointers, in that order, as the door renders it.
-  v_level := custom.effective_level(v_uid, p_organization_id, v_tables);
-  v_mask := custom.read_mask_for(v_uid, p_organization_id, v_tables, v_level, 'read');
-  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_shown
-    from jsonb_array_elements(v_mask -> 'visible') x;
-  select coalesce(array_agg(x #>> '{}'), '{}'::text[]) into v_declared
-    from jsonb_array_elements(v_mask -> 'declared') x;
-  execute format($q$
-    select coalesce(jsonb_agg(jsonb_build_object(
-             'id', r.id, 'doc', custom.record_values_of(r), 'wv', r.data -> '_values',
-             'ws', r.data -> '_sources', 'at', r.deleted_at)), '[]'::jsonb)
-      from custom.record r
-     where r.organization_id = %1$L::uuid
-       and r.table_id = %2$L::uuid
-       and r.id = any (%3$L::uuid[])
-       and r.deleted_at is not null
-       and coalesce(r.metadata ->> 'quarantine', 'false') <> 'true'
-       and %4$s
-  $q$,
-    p_organization_id, v_tables, v_cand,
-    custom.listed_predicate_sql(v_uid, p_organization_id, v_tables, 'viewer'::public.permission_level, 'r'))
-  into v_rows;
-  -- Each carries how many of its scopes were archived, which is what a restore brings back.
-  return (
-    select coalesce(jsonb_agg(z.x order by z.x ->> 'deleted_at' desc, z.x ->> 'id'), '[]'::jsonb)
-      from (
-        select jsonb_build_object(
-                 'id', (p ->> 'id')::uuid, 'organization_id', p_organization_id,
-                 'label_singular', d.doc -> 'label_singular', 'label_plural', d.doc -> 'label_plural',
-                 'icon', d.doc -> 'icon', 'color', d.doc -> 'color',
-                 'deleted_at', p -> 'at',
-                 'archived_scope_count', (select count(*) from custom.record r
-                                           where r.organization_id = p_organization_id
-                                             and r.table_id = (p ->> 'id')::uuid and r.deleted_at is not null)) as x
-          from jsonb_array_elements(v_rows) p
-          cross join lateral (
-            select custom.with_whole_value_pointers(
-                     custom.choice_render(p_organization_id, v_tables,
-                       custom.mask_document(p -> 'doc', v_shown, v_mask -> 'notices', false,
-                                            v_mask -> 'all_key_ids', v_declared)),
-                     p -> 'wv', p -> 'ws', v_shown, false, v_mask -> 'all_key_ids') as doc) d
-         where d.doc ->> 'kept_for' = 'context') z);
 end;
 $function$;
 
@@ -943,8 +842,11 @@ begin
      limit %5$s offset %6$s
   $q$,
     p_organization_id, p_table_id,
-    custom.listed_predicate_sql(v_me, p_organization_id, p_table_id,
-                                 'viewer'::public.permission_level, 'r'),
+    custom.visible_predicate_sql(v_me, p_organization_id, p_table_id,
+                                 'viewer'::public.permission_level, 'r')
+    -- ONLY-ME-LISTED (2026-10-02): the archive is a LIST too; an "Only me" row stays its owner's alone here.
+    || format(' and platform.shown_to_lists(r.shown_to, r.visibility, r.created_by, r.organization_id, %L::uuid, %L::jsonb)',
+              v_me, custom._record_shown_to_ctx(array[p_organization_id], p_table_id)),
     v_lane_sql,
     v_limit, greatest(coalesce(p_offset, 0), 0));
 

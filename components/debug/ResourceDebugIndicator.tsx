@@ -252,7 +252,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
           >
             <div className="flex items-center gap-2">
               <Eye className="h-5 w-5 text-green-600" />
-              <h3 className="font-semibold">Assembled user_input Preview</h3>
+              <h3 className="font-semibold">Assembled Input Preview</h3>
             </div>
             <div className="flex items-center gap-1">
               <button

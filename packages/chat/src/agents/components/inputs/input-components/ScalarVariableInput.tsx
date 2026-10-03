@@ -17,6 +17,7 @@ import { datetimeLocalValue } from "@ai-matrx/kit/dates";
 import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { cn } from "@ai-matrx/design-system";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export type ScalarInputKind =
   | "datetime"
@@ -78,7 +79,7 @@ export function ScalarVariableInput({
         autoGrow
         disabled={disabled}
         enableTextStats={false}
-        aria-label={variableName}
+        aria-label={humanizeIdentifier(variableName)}
       />
     );
   }
@@ -94,7 +95,7 @@ export function ScalarVariableInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={PLACEHOLDER.percent}
           disabled={disabled}
-          aria-label={variableName}
+          aria-label={humanizeIdentifier(variableName)}
           style={{ fontSize: "16px" }}
           className="pr-7"
         />
@@ -122,7 +123,7 @@ export function ScalarVariableInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={PLACEHOLDER.color}
           disabled={disabled}
-          aria-label={variableName}
+          aria-label={humanizeIdentifier(variableName)}
           style={{ fontSize: "16px" }}
           className={cn("flex-1 font-mono")}
         />
@@ -140,7 +141,7 @@ export function ScalarVariableInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={PLACEHOLDER[kind]}
       disabled={disabled}
-      aria-label={variableName}
+      aria-label={humanizeIdentifier(variableName)}
       style={{ fontSize: "16px" }}
     />
   );

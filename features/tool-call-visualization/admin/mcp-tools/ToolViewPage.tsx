@@ -443,8 +443,8 @@ export function ToolViewPage({ tool }: Props) {
             </Button>
 
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-mono font-semibold truncate">
-                {tool.name}
+              <span className="font-semibold truncate">
+                {humanizeIdentifier(tool.name)}
               </span>
               <Badge
                 variant={isActive ? "default" : "secondary"}
@@ -617,7 +617,7 @@ export function ToolViewPage({ tool }: Props) {
               <TabsContent value="output-schema" className="p-6 m-0 h-full">
                 <JsonDisplay
                   data={tool.output_schema}
-                  label="output_schema (JSON Schema)"
+                  label="Output schema (JSON Schema)"
                 />
               </TabsContent>
 

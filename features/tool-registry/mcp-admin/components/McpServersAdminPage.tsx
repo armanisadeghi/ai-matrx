@@ -100,6 +100,7 @@ import { supabase } from "@/utils/supabase/client";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const PAGE_LOCATION =
   "AI Matrx Admin — Tool Registry · MCP Servers (/administration/agents/mcp-servers)";
@@ -469,7 +470,7 @@ export function McpServersAdminPage() {
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-mono text-xs truncate flex-1">
-                            {s.slug}
+                            {humanizeIdentifier(s.slug)}
                           </span>
                           <FreshnessBadge fresh={fresh} compact />
                         </div>
@@ -684,7 +685,7 @@ function ServerDetail({
                 className="font-mono text-base font-semibold"
                 data-surface-value="selected_server_slug"
               >
-                {server.slug}
+                {humanizeIdentifier(server.slug)}
               </h2>
               <Badge variant="outline" className="text-[10px]">
                 {server.status}

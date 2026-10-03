@@ -127,7 +127,7 @@ const DemoContent = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="relative flex items-center p-3 bg-gray-100 dark:bg-gray-800 rounded">
-                                    <div className="font-mono">sk_test_12345...67890</div>
+                                    <code className="font-mono">sk_test_12345...67890</code>
                                     <InlineCopyButton
                                         content="sk_test_123456789012345678901234567890"
                                         position="top-right"

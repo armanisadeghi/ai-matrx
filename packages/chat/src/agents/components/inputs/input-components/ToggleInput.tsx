@@ -1,6 +1,7 @@
 import React from "react";
 import { Switch } from "@host/components/ui/switch";
 import LightSwitchToggle from "@host/components/matrx/LightSwitchToggle";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface ToggleInputProps {
   value: string;
@@ -58,7 +59,7 @@ export function ToggleInput({
       <Switch
         checked={isOn}
         onCheckedChange={handleToggle}
-        aria-label={variableName}
+        aria-label={humanizeIdentifier(variableName)}
       />
       <span
         className={

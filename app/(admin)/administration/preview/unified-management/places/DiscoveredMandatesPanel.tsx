@@ -16,6 +16,7 @@
  * read backwards: one key short, and the missing key is named.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import {
   CheckCircle2,
@@ -88,7 +89,7 @@ function MatchedKeys({
             ) : (
               <XCircle className="h-2.5 w-2.5" />
             )}
-            {c.key}
+            {humanizeIdentifier(c.key)}
             {matched && (
               <>
                 <span className="opacity-60">→</span>
@@ -281,10 +282,7 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
               <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
                 One key short; declare{" "}
                 {missing.map((c) => (
-                  <code
-                    key={c.key}
-                    className="mx-0.5 rounded bg-muted px-1 font-mono text-foreground"
-                  >
+                  <code key={c.key} className="mx-0.5 rounded bg-muted px-1 font-mono text-foreground">
                     {c.key}
                   </code>
                 ))}

@@ -128,11 +128,11 @@ export function ToolUiPage({ tool }: Props) {
           className="h-11 w-11 shrink-0 gap-1.5 p-0 sm:h-8 sm:w-auto sm:px-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">{tool.name}</span>
+          <span className="hidden sm:inline">{humanizeIdentifier(tool.name)}</span>
         </Button>
         <span className="hidden text-sm font-medium text-muted-foreground sm:inline">/</span>
         <h1 className="min-w-0 text-base font-semibold leading-tight text-foreground sm:text-sm">
-          <span className="font-mono">{tool.name}</span> UI Component
+          <span>{humanizeIdentifier(tool.name)}</span> UI Component
         </h1>
         {tool.category && (
           <Badge variant="outline" className="ml-auto shrink-0 text-[10px]">
