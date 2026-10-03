@@ -1,5 +1,6 @@
 "use client";
 
+import { failureLine } from "@/lib/failure/transport";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -139,7 +140,7 @@ export function useLiveConnectors() {
       }
     } catch (cause) {
       toast.error(`Could not connect to ${server.name}`, {
-        description: cause instanceof Error ? cause.message : String(cause),
+        description: failureLine(cause, { action: `connecting ${server.name}`, retrySafe: true }),
       });
     } finally {
       setConnectingId(null);

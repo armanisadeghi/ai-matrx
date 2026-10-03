@@ -15,6 +15,7 @@
  * editor.
  */
 
+import { failureLine } from "@/lib/failure/transport";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -114,7 +115,7 @@ export function useConnectMcpServer() {
       }
     } catch (cause) {
       recordToast.error(record, `Could not connect to ${server.name}`, {
-        description: cause instanceof Error ? cause.message : String(cause),
+        description: failureLine(cause, { action: `connecting ${server.name}`, retrySafe: true }),
       });
     } finally {
       pending.current = false;

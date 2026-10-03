@@ -1,6 +1,7 @@
 "use client";
 
-import React, { Suspense, useEffect, useState } from "react";
+import { failureLine } from "@/lib/failure/transport";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -654,7 +655,7 @@ export function IntegrationsWorkspace({
       toast.success(`Connected to ${entry.name}`);
     } catch (error) {
       toast.error(`Could not connect to ${entry.name}`, {
-        description: error instanceof Error ? error.message : String(error),
+        description: failureLine(error, { action: `connecting ${entry.name}`, retrySafe: true }),
       });
     }
   };
@@ -675,7 +676,7 @@ export function IntegrationsWorkspace({
       toast.success(`Disconnected ${entry.name}`);
     } catch (error) {
       toast.error(`Could not disconnect ${entry.name}`, {
-        description: error instanceof Error ? error.message : String(error),
+        description: failureLine(error, { action: `disconnecting ${entry.name}`, retrySafe: true }),
       });
     }
   };
@@ -902,9 +903,15 @@ function ServerCard({
   const iconUrl = providerArtworkUrls(entry).find((url) => !failedIconUrls.includes(url));
 
   const isSupabase = entry.slug === "supabase";
+  const supabaseRefInputRef = useRef<HTMLInputElement>(null);
 
   const handleSupabaseOAuth = () => {
     if (!entry.endpointUrl) return;
+    if (!supabaseProjectRef.trim()) {
+      setSupabaseError("Enter the Supabase project reference first");
+      supabaseRefInputRef.current?.focus();
+      return;
+    }
     try {
       const endpoint = buildSupabaseScopedMcpEndpoint(
         entry.endpointUrl,
@@ -1138,8 +1145,8 @@ function ServerCard({
               size="sm"
               className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
               onClick={handleSupabaseOAuth}
-              disabled={isConnecting || !supabaseProjectRef.trim()}
-              aria-label="Connect read-only project"
+              disabled={isConnecting}
+              aria-label={needsRecovery ? "Reconnect project" : "Connect read-only project"}
             >
               {isConnecting ? (
                 <Loader2 className="h-3 w-3 animate-spin mr-1" />
@@ -1251,6 +1258,7 @@ function ServerCard({
               Supabase project reference
             </label>
             <Input
+              ref={supabaseRefInputRef}
               value={supabaseProjectRef}
               onChange={(event) => {
                 setSupabaseProjectRef(event.target.value);
