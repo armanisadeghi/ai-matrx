@@ -242,20 +242,19 @@ export default function MobileNoteEditor({
     }
   }, [richMode]);
 
-  // TYPE, TAP BACK, GONE — closed at the class. A pending debounce is flushed
-  // to Redux on unmount AND on a note switch (this effect is keyed by noteId,
-  // so the cleanup runs with the OUTGOING note's id and buffer), exactly as
-  // `NoteContentEditor` does. `autoSaveMiddleware` then persists it.
-  // On a TRUE unmount in Write / Source, the one editor may hold words
-  // its onChange has not delivered yet. A layout-effect cleanup runs before the
-  // child editor detaches its imperative handle (and before the passive cleanup
-  // below), so the live markdown is snapshotted here and flushed below. Never
-  // on a note switch: by then the rich editor may already show the NEXT note.
+  // TYPE, TAP BACK, GONE — closed at the class. The note's working copy
+  // commits pending words when its last view detaches (an unmount, a note
+  // switch releases the OUTGOING note), exactly as for `NoteContentEditor`;
+  // `autoSaveMiddleware` then persists it. On a TRUE unmount in Write / Source,
+  // the one editor may hold words its onChange has not delivered yet. A
+  // layout-effect cleanup runs before the child editor detaches its imperative
+  // handle (and before the passive release), so the live markdown joins the
+  // working copy here. Never on a note switch: by then the rich editor may
+  // already show the NEXT note.
   const effectiveModeRef = useRef(effectiveMode);
   useEffect(() => {
     effectiveModeRef.current = effectiveMode;
   }, [effectiveMode]);
-  const unmountSnapshotRef = useRef<string | null>(null);
   /** Set by the one editor's own onChange. It reports only real edits (its
    *  no-edit text is the stored bytes), and the unmount snapshot is still
    *  taken ONLY when the person typed there — opening a note never writes it. */
@@ -265,7 +264,12 @@ export default function MobileNoteEditor({
       if (!isRichEditorMode(effectiveModeRef.current) || !richEditedRef.current) return;
       try {
         const markdown = richRef.current?.flush();
-        if (typeof markdown === "string") unmountSnapshotRef.current = markdown;
+        // Into the note's working copy while this view still holds it (layout
+        // cleanups run before the passive release, which commits it).
+        if (typeof markdown === "string" && markdown !== localContentRef.current) {
+          localContentRef.current = markdown;
+          noteWorkingCopy.edit(noteIdRef.current, markdown);
+        }
       } catch {
         // A torn-down rich editor falls back to the last delivered buffer.
       }
@@ -273,19 +277,9 @@ export default function MobileNoteEditor({
     [],
   );
 
-  // The words the one editor still held on unmount join the note's working
-  // copy; the copy commits them when its last view detaches (and keeps them
-  // for any other view of this note that is still open).
   useEffect(() => {
     // A fresh note has not been edited in rich mode yet.
     richEditedRef.current = false;
-    return () => {
-      const snapshot = unmountSnapshotRef.current;
-      unmountSnapshotRef.current = null;
-      if (snapshot !== null && snapshot !== localContentRef.current) {
-        noteWorkingCopy.edit(noteId, snapshot, { commit: "now" });
-      }
-    };
   }, [noteId]);
 
   // Leaving the one editor commits whatever it holds (it delivers its last
