@@ -26,41 +26,110 @@ type NavMenuNode = Pick<ShellNavItem, "href" | "ownedRoutePrefixes"> & {
   children?: readonly ShellNavChild[];
 };
 
+function firstSegment(href: string): string | undefined {
+  return normalizeRoutePath(href).split("/").filter(Boolean)[0];
+}
+
+/**
+ * The route namespaces (first path segments) each sub-area of `node` holds,
+ * keyed by the sub-area. A namespace that a sub-area holds is that sub-area's
+ * own — never an alias of the node's href (Industries lists /legal as a route
+ * it owns, not as another spelling of /education).
+ */
+function subAreaNamespaces(node: NavMenuNode): Map<ShellNavChild, Set<string>> {
+  const out = new Map<ShellNavChild, Set<string>>();
+  for (const child of node.children ?? []) {
+    if ((child.children?.length ?? 0) === 0) continue;
+    const segments = new Set<string>();
+    for (const row of [child, ...expandNavChildren(child.children)]) {
+      if (!row.href.startsWith("/")) continue;
+      const segment = firstSegment(row.href);
+      if (segment) segments.add(segment);
+    }
+    out.set(child, segments);
+  }
+  return out;
+}
+
+interface RouteMatch {
+  /** Length of the route the child matched (its href, or its alias spelling). */
+  length: number;
+  /** True when the child's own href matched; false for an alias spelling. */
+  direct: boolean;
+}
+
+/**
+ * How `child` owns the current route, if it does. A child matches by its own
+ * href, or — for a node with `ownedRoutePrefixes` aliases — by the same path
+ * under an alias prefix. A prefix that is a sub-area's own namespace is never
+ * treated as an alias.
+ */
+function childRouteMatch(
+  pathname: string,
+  node: NavMenuNode,
+  child: ShellNavChild,
+): RouteMatch | null {
+  if (child.external || child.openInNewTab) return null;
+  let best: RouteMatch | null = null;
+  if (isOnRoute(pathname, child.href, child.exact)) {
+    best = { length: normalizeRoutePath(child.href).length, direct: true };
+  }
+  if (!child.href.startsWith(node.href)) return best;
+  const childSuffix = child.href.slice(node.href.length);
+  const ownedNamespaces = new Set<string>();
+  for (const segments of subAreaNamespaces(node).values()) {
+    for (const segment of segments) ownedNamespaces.add(segment);
+  }
+  for (const prefix of node.ownedRoutePrefixes ?? []) {
+    const segment = firstSegment(prefix);
+    if (segment && ownedNamespaces.has(segment)) continue;
+    const target = `${prefix}${childSuffix}`;
+    if (!isOnRoute(pathname, target, child.exact)) continue;
+    const length = normalizeRoutePath(target).length;
+    if (!best || length > best.length) best = { length, direct: false };
+  }
+  return best;
+}
+
 function childMatchesRoute(
   pathname: string,
   node: NavMenuNode,
   child: ShellNavChild,
 ): boolean {
-  if (child.external) return false;
-  if (isOnRoute(pathname, child.href, child.exact)) return true;
-  if (!child.href.startsWith(node.href)) return false;
-  const childSuffix = child.href.slice(node.href.length);
-  return (node.ownedRoutePrefixes ?? []).some((prefix) =>
-    isOnRoute(pathname, `${prefix}${childSuffix}`, child.exact),
-  );
+  return childRouteMatch(pathname, node, child) != null;
 }
 
 /**
  * The one most-specific LEAF that owns the current route, searched through
- * every level (a sub-area's own menu included).
+ * every level (a sub-area's own menu included). The longest matched route
+ * wins; on a tie a child's own href beats an alias spelling.
  */
 export function findActiveNavChild(
   pathname: string,
   item: NavMenuNode,
 ): ShellNavChild | undefined {
-  return expandNavChildren(item.children, { leavesOnly: true })
-    .filter((child) => childMatchesRoute(pathname, item, child))
-    .sort(
-      (a, b) =>
-        normalizeRoutePath(b.href).length - normalizeRoutePath(a.href).length,
-    )[0];
+  let best: { child: ShellNavChild; match: RouteMatch } | undefined;
+  for (const child of expandNavChildren(item.children, { leavesOnly: true })) {
+    const match = childRouteMatch(pathname, item, child);
+    if (!match) continue;
+    if (
+      !best ||
+      match.length > best.match.length ||
+      (match.length === best.match.length && match.direct && !best.match.direct)
+    ) {
+      best = { child, match };
+    }
+  }
+  return best?.child;
 }
 
 /**
  * The DIRECT child of `item` on the way to the active route: the active leaf
  * itself, or the sub-area that contains it (so "Education" lights up in the
  * Industries flyout while a learner is on /education/flashcards). Falls back
- * to a sub-area whose own landing matches, for a landing with no leaf yet.
+ * to a sub-area whose own landing matches, then to the one sub-area whose
+ * route namespace holds the path (/commerce/review → Commerce), for a route
+ * with no listed row.
  */
 export function findActiveNavBranch(
   pathname: string,
@@ -76,7 +145,7 @@ export function findActiveNavBranch(
     );
     if (branch) return branch;
   }
-  return children
+  const byLanding = children
     .filter(
       (child) =>
         (child.children?.length ?? 0) > 0 &&
@@ -86,6 +155,13 @@ export function findActiveNavBranch(
       (a, b) =>
         normalizeRoutePath(b.href).length - normalizeRoutePath(a.href).length,
     )[0];
+  if (byLanding) return byLanding;
+  const segment = firstSegment(pathname);
+  if (!segment) return undefined;
+  const holders = [...subAreaNamespaces(item).entries()]
+    .filter(([, segments]) => segments.has(segment))
+    .map(([child]) => child);
+  return holders.length === 1 ? holders[0] : undefined;
 }
 
 type NavChild = ShellNavChild;
@@ -97,6 +173,7 @@ type NavChild = ShellNavChild;
 function isOwnedDestination(child: NavChild): boolean {
   return (
     !child.external &&
+    !child.openInNewTab &&
     child.panelAction == null &&
     child.action == null &&
     child.actionItem !== true &&

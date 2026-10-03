@@ -1,4 +1,4 @@
-import { shellChatFamily, shellChatHostedElsewhere, shellChatWorkspaceId } from "../shell-chat-route";
+import { shellChatDomainPanelAction, shellChatFamily, shellChatHostedElsewhere, shellChatWorkspaceId } from "../shell-chat-route";
 
 describe("the shell chat's routes", () => {
   it("remembers open or closed per page family", () => {
@@ -15,5 +15,15 @@ describe("the shell chat's routes", () => {
     expect(shellChatHostedElsewhere("/code", true)).toBe(true);
     expect(shellChatHostedElsewhere("/marketing", true)).toBe(false);
     expect(shellChatHostedElsewhere("/notes", true)).toBe(false);
+  });
+
+  // Between 1440 and 1599px the chat opens by default; folding the domain
+  // panel for that default landed /user-settings with no menu.
+  it("folds a domain panel only beside a chat the person opened", () => {
+    expect(shellChatDomainPanelAction({ open: true, choice: null, narrow: true })).toBe("leave");
+    expect(shellChatDomainPanelAction({ open: true, choice: true, narrow: true })).toBe("fold");
+    expect(shellChatDomainPanelAction({ open: true, choice: true, narrow: false })).toBe("leave");
+    expect(shellChatDomainPanelAction({ open: false, choice: false, narrow: true })).toBe("restore");
+    expect(shellChatDomainPanelAction({ open: false, choice: null, narrow: true })).toBe("restore");
   });
 });

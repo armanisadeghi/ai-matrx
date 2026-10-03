@@ -323,6 +323,284 @@ function isDestination(node: Node): boolean {
   return !isNavActionChild(node as ShellNavChild) && !isNavPanelChild(node as ShellNavChild);
 }
 
+
+// ---------------------------------------------------------------------------
+// THE GUEST VIEW. What a signed-out visitor sees must not change by accident.
+// Frozen from the menu at 5003eea278^ (before the domain reorganization), with
+// the guest rule of that day (navItemsForViewer). Keys are a row's panel /
+// action id or its own href (before any guestHref swap).
+// ---------------------------------------------------------------------------
+
+/** Every row a guest could see before. Each must still be visible to a guest. */
+const GUEST_VISIBLE_BEFORE_DOMAIN_TREE: readonly string[] = [
+  "/agent-apps",
+  "/agent-connections",
+  "/agent-connections/plugins",
+  "/agent-connections/render-blocks",
+  "/agent-connections/skills",
+  "/agents/all",
+  "/agents/battle",
+  "/agents/categories",
+  "/agents/new",
+  "/agents/shortcuts",
+  "/agents/templates",
+  "/artifacts",
+  "/chat/new",
+  "/cms",
+  "/code",
+  "/dashboard",
+  "/data",
+  "/data-v2",
+  "/data/create",
+  "/decisions",
+  "/devices",
+  "/documents",
+  "/education",
+  "/education/audio-study",
+  "/education/classes",
+  "/education/creator",
+  "/education/exam-prep",
+  "/education/family",
+  "/education/fastfire",
+  "/education/flashcards",
+  "/education/game",
+  "/education/grade-work",
+  "/education/kits",
+  "/education/levels",
+  "/education/memory",
+  "/education/mind-maps",
+  "/education/notes",
+  "/education/planner",
+  "/education/practice-oral",
+  "/education/practice-tests",
+  "/education/quizzes",
+  "/education/study-aids",
+  "/education/study-guides",
+  "/education/subjects",
+  "/education/subjects/quick-math",
+  "/education/summaries",
+  "/education/tutor",
+  "/files/all",
+  "/free/character-counter",
+  "/free/data-truncator",
+  "/free/games/matrx-jump",
+  "/free/games/tic-tac-toe",
+  "/free/uuid/generator",
+  "/free/zip-code-heatmap",
+  "/images",
+  "/import/ai-chats",
+  "/intelligence",
+  "/kits",
+  "/knowledge",
+  "/knowledge/data-stores",
+  "/knowledge/extractions",
+  "/knowledge/graph",
+  "/knowledge/hub",
+  "/knowledge/library",
+  "/knowledge/library-catalog",
+  "/knowledge/repositories",
+  "/knowledge/search",
+  "/legal",
+  "/libraries",
+  "/lists",
+  "/make",
+  "/mandates/list-preview",
+  "/maps",
+  "/markdown-studio",
+  "/marketing",
+  "/marketing/brands",
+  "/marketing/operations/approvals",
+  "/marketing/operations/automations",
+  "/marketing/operations/capabilities",
+  "/marketing/operations/connections",
+  "/marketing/operations/data-quality",
+  "/marketing/reports",
+  "/marketing/reports/cost",
+  "/marketing/reports/ranks",
+  "/marketing/reports/search-console",
+  "/marketing/tools",
+  "/marketing/tools/youtube",
+  "/masterwork",
+  "/masterwork/all",
+  "/masterwork/approaches",
+  "/masterwork/encore",
+  "/news",
+  "/notes",
+  "/podcast",
+  "/podcast/studio",
+  "/podcast/studio/create",
+  "/print",
+  "/print/barcodes",
+  "/print/booklet",
+  "/print/certificates",
+  "/print/documents",
+  "/print/education",
+  "/print/exams",
+  "/print/flashcards",
+  "/print/labels",
+  "/print/order",
+  "/print/qr",
+  "/projects",
+  "/reports",
+  "/reports/agent-drift",
+  "/research",
+  "/research/topics/new",
+  "/sandbox",
+  "/sandbox?create=1",
+  "/schedules",
+  "/schedules/new",
+  "/scraper",
+  "/shapes/all",
+  "/suggestions",
+  "/tasks",
+  "/tools/pdf-extractor",
+  "/tools/product-capture",
+  "/tools/product-capture/instant",
+  "/tools/product-capture/manage",
+  "/tools/scanner",
+  "/transcripts",
+  "/transcripts/cleanup",
+  "/transcripts/new",
+  "/transcripts/processor",
+  "/transcripts/scribe",
+  "/transcripts/studio",
+  "/war-room",
+  "/work",
+  "/work/conversations",
+  "/workbooks",
+  "/workflows/all",
+  "create-document",
+  "create-note",
+  "create-picklist",
+  "create-project",
+  "create-task",
+  "create-war-room",
+  "create-workbook",
+  "https://workflows.aimatrx.com",
+  "open-advanced-voice-pad-panel",
+  "open-agent-advanced-editor-panel",
+  "open-agent-connections-panel",
+  "open-agent-settings-panel",
+  "open-ai-voice-panel",
+  "open-character-counter-panel",
+  "open-chat-history-panel",
+  "open-chat-panel",
+  "open-code-editor-panel",
+  "open-code-files-panel",
+  "open-crop-studio-panel",
+  "open-data-tables-panel",
+  "open-file-upload-panel",
+  "open-files-panel",
+  "open-gallery-panel",
+  "open-import-agent-panel",
+  "open-json-truncator-panel",
+  "open-news-panel",
+  "open-notes-panel",
+  "open-pdf-extractor-panel",
+  "open-pick-lists-panel",
+  "open-run-history-panel",
+  "open-site-workbench-panel",
+  "open-smart-code-editor-panel",
+  "open-tasks-panel",
+  "open-transcript-studio-panel",
+  "open-transcription-cleanup-panel",
+  "open-voice-pad-panel",
+  "open-web-scraper-panel",
+];
+
+/** Every row hidden from guests before. None may become visible to a guest. */
+const MEMBERS_ONLY_BEFORE_DOMAIN_TREE: readonly string[] = [
+  "/board",
+  "/board/all",
+  "/crm",
+  "/crm/deals",
+  "/crm/outreach-lists",
+  "/crm/sending-identities",
+  "/hr",
+  "/hr/assets",
+  "/hr/compliance",
+  "/hr/documents",
+  "/hr/engagement",
+  "/hr/hiring",
+  "/hr/leave",
+  "/hr/me",
+  "/hr/onboarding",
+  "/hr/people",
+  "/hr/performance",
+  "/hr/reports",
+  "/hr/schedule",
+  "/hr/settings",
+  "/hr/tasks",
+  "/hr/time",
+  "/hr/training",
+  "/launchpad",
+  "/meetings",
+  "/messages",
+  "/organizations",
+  "/organizations?create=1",
+  "/scopes",
+  "/vault",
+  "/workflows/runs",
+  "create-crm-company",
+  "create-crm-person",
+  "open-context-switcher-panel",
+  "open-crm-manager-panel",
+  "open-email-panel",
+  "open-messages-panel",
+  "open-vault-panel",
+];
+
+/**
+ * Rows new to the menu since the reorganization whose page genuinely works
+ * signed out (a guest landing, a public tool, a marketing page). Every other
+ * new row must carry `guestHidden`. Adding a guest-visible row means adding it
+ * here — a decision, never an accident.
+ */
+const GUEST_OK_SINCE_DOMAIN_TREE: readonly string[] = [
+  "/chat/talk",
+  "/chat/voice",
+  "/education/features",
+  "/education/game/join",
+  "/education/game/solo",
+  "/education/learn",
+  "/education/library/community",
+  "/education/start",
+  "/features",
+  "/knowledge/about",
+  "/legal/ca-wc",
+  "/legal/ca-wc/pd-ratings-calculator",
+  "/legal/ca-wc/utilities",
+  "/medical",
+  "/print/branded-qr",
+  "/print/zpl",
+  "/search",
+];
+
+type GuestNode = Pick<ShellNavChild, "href" | "panelAction" | "action" | "guestHidden"> & {
+  children?: readonly GuestNode[];
+};
+
+const guestKey = (row: GuestNode) => row.panelAction ?? row.action ?? row.href;
+
+/** Every row key in the menu, at every level. */
+function allKeys(rows: readonly GuestNode[], out = new Set<string>()): Set<string> {
+  for (const row of rows) {
+    out.add(guestKey(row));
+    allKeys(row.children ?? [], out);
+  }
+  return out;
+}
+
+/** What a guest sees: a guestHidden row hides itself and everything under it. */
+function guestKeys(rows: readonly GuestNode[], out = new Set<string>()): Set<string> {
+  for (const row of rows) {
+    if (row.guestHidden) continue;
+    out.add(guestKey(row));
+    guestKeys(row.children ?? [], out);
+  }
+  return out;
+}
+
 describe("main menu — nothing is lost", () => {
   it("still reaches every href the menu reached before the domain reorganization", () => {
     const hrefs = reachable((node) => node.href);
@@ -432,5 +710,31 @@ describe("main menu — nothing is lost", () => {
       if (depth >= 3 && "children" in node && node.children?.length) tooDeep.push(node.label);
     });
     expect(tooDeep).toEqual([]);
+  });
+
+  it("still shows a guest every row a guest saw before", () => {
+    const visible = guestKeys(primaryNavItems);
+    const all = allKeys(primaryNavItems);
+    const hidden = GUEST_VISIBLE_BEFORE_DOMAIN_TREE.filter(
+      (key) => all.has(key) && !visible.has(key),
+    );
+    expect(hidden).toEqual([]);
+  });
+
+  it("never shows a guest a row that was members-only before", () => {
+    const visible = guestKeys(primaryNavItems);
+    expect(MEMBERS_ONLY_BEFORE_DOMAIN_TREE.filter((key) => visible.has(key))).toEqual([]);
+  });
+
+  it("shows a guest a NEW row only where its page works signed out", () => {
+    const before = new Set([
+      ...GUEST_VISIBLE_BEFORE_DOMAIN_TREE,
+      ...MEMBERS_ONLY_BEFORE_DOMAIN_TREE,
+    ]);
+    const reviewed = new Set(GUEST_OK_SINCE_DOMAIN_TREE);
+    const unreviewed = [...guestKeys(primaryNavItems)].filter(
+      (key) => !before.has(key) && !reviewed.has(key),
+    );
+    expect(unreviewed).toEqual([]);
   });
 });

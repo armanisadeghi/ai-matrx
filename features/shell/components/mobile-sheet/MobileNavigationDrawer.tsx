@@ -30,6 +30,7 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { ShellSettingsMenu } from "../account-rail/ShellSettingsMenu";
 import { ShellOrgSwitcher } from "../account-rail/ShellOrgSwitcher";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
+import { searchNavDestinations } from "@/features/shell/utils/search-nav";
 import {
   findActiveNavBranch,
   findActiveNavChild,
@@ -40,11 +41,6 @@ import {
 interface MobileNavigationDrawerProps {
   items: ShellNavItem[];
   settingsItem: ShellNavItem;
-}
-
-interface SearchResult {
-  item: ShellNavItem | ShellNavChild;
-  groupLabel?: string;
 }
 
 function mobileMenuControl(): HTMLInputElement | null {
@@ -59,37 +55,6 @@ function navItemIdentity(item: ShellNavItem): string {
 
 function navChildIdentity(child: ShellNavChild): string {
   return `${child.panelAction ?? child.action ?? child.href}::${child.label}`;
-}
-
-function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
-  const needle = query.trim().toLocaleLowerCase();
-  if (!needle) return [];
-
-  const results: SearchResult[] = [];
-  // Walks every level: a third-level row reads "Industries · Education".
-  const visit = (children: readonly ShellNavChild[], path: string) => {
-    for (const child of children) {
-      const childHaystack = [child.label, child.description, path]
-        .filter((part): part is string => typeof part === "string")
-        .join(" ")
-        .toLocaleLowerCase();
-      if (childHaystack.includes(needle)) {
-        results.push({ item: child, groupLabel: path });
-      }
-      if (child.children?.length) {
-        visit(child.children, `${path} · ${child.label}`);
-      }
-    }
-  };
-  for (const item of items) {
-    const parentHaystack = [item.label, item.description]
-      .filter((part): part is string => typeof part === "string")
-      .join(" ")
-      .toLocaleLowerCase();
-    if (parentHaystack.includes(needle)) results.push({ item });
-    visit(item.children ?? [], item.label);
-  }
-  return results;
 }
 
 /** A menu row that both navigates (its name) and drills in (its chevron). */
@@ -190,7 +155,7 @@ export default function MobileNavigationDrawer({
       (child.children?.length ?? 0) > 0 &&
       navChildIdentity(child) === activeSubId,
   );
-  const results = searchResults(allItems, query);
+  const results = searchNavDestinations(allItems, query, gates);
 
   useEffect(() => {
     const control = mobileMenuControl();
@@ -276,6 +241,7 @@ export default function MobileNavigationDrawer({
         iconName={child.iconName}
         label={child.label}
         external={child.external}
+        openInNewTab={child.openInNewTab}
         exact={child.exact}
         active={active}
       />
@@ -487,7 +453,7 @@ export default function MobileNavigationDrawer({
       <BottomSheetBody className="shell-mobile-drawer-body">
         <nav aria-label="Mobile navigation">
           {!activeGroup && !activeQuery.trim() ? renderAccountRail() : null}
-          <MobileRouteMenuSlot />
+          <MobileRouteMenuSlot showFullMenu={Boolean(activeQuery.trim())} />
           <div
             className="shell-mobile-view"
             key={

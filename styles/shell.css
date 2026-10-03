@@ -1180,10 +1180,6 @@ button.shell-nav-flyout-item {
 }
 
 
-.shell-sidebar-brand-toggle-static {
-  cursor: default;
-}
-
 .settings-route-menu {
   display: flex;
   min-height: 0;

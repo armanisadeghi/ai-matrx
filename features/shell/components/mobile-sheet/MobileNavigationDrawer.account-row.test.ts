@@ -30,7 +30,7 @@ describe("mobile navigation drawer — account rail placement", () => {
     );
     const nav = text.indexOf('<nav aria-label="Mobile navigation">');
     const rail = text.indexOf("renderAccountRail()", nav);
-    const routeMenu = text.indexOf("<MobileRouteMenuSlot />", nav);
+    const routeMenu = text.indexOf("<MobileRouteMenuSlot", nav);
     expect(nav).toBeGreaterThan(-1);
     expect(rail).toBeGreaterThan(nav);
     expect(rail).toBeLessThan(routeMenu);

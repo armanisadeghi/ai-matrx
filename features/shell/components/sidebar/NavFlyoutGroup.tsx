@@ -167,6 +167,7 @@ export default function NavFlyoutGroup({
 
   const closeSub = useCallback(() => {
     clearSubTimers();
+    focusSubOnOpen.current = false;
     setSubKey(null);
     setSubPinned(false);
   }, [clearSubTimers]);
@@ -196,6 +197,14 @@ export default function NavFlyoutGroup({
   const openSub = useCallback(
     (key: string, { focus = false }: { focus?: boolean } = {}) => {
       clearSubTimers();
+      // Already open (hover got there first): the panel is mounted, so move
+      // focus in now. Setting the pending flag here would never be consumed —
+      // subKey does not change — and would steal focus on a later open.
+      if (subKey === key) {
+        focusSubOnOpen.current = false;
+        if (focus) focusFirstItem(subPanelRef.current);
+        return;
+      }
       const row = subRowRefs.current.get(key);
       const panel = panelRef.current;
       if (!row || !panel) return;
@@ -205,7 +214,7 @@ export default function NavFlyoutGroup({
       setSubCoords({ top: rowRect.top - 4, left: panelRect.right + 4 });
       setSubKey(key);
     },
-    [clearSubTimers],
+    [clearSubTimers, subKey],
   );
 
   const scheduleSubOpen = useCallback(
@@ -506,6 +515,33 @@ export default function NavFlyoutGroup({
           </span>
           <span>{child.label}</span>
         </button>
+      );
+    }
+    if (child.external || child.openInNewTab) {
+      // A separately hosted app, or a launcher that stays open while what it
+      // launches opens beside it: a real new tab, never an in-app transition.
+      return (
+        <a
+          key={childKey(child)}
+          href={child.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          role="menuitem"
+          className="shell-nav-flyout-item"
+          onMouseEnter={subKey ? scheduleSubClose : undefined}
+          onClick={closeAll}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
+          </span>
+          <span className="min-w-0 flex-1 truncate">{child.label}</span>
+          <ShellIcon
+            name="ArrowUpRight"
+            size={12}
+            strokeWidth={1.75}
+            className="shrink-0 text-muted-foreground"
+          />
+        </a>
       );
     }
     return (

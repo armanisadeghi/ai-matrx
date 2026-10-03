@@ -22,4 +22,14 @@ describe("nav gates are wired into every menu", () => {
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) expect(call).toMatch(/,\s*gates\s*,?\s*\)$/);
   });
+
+  // The phone drawer's search once walked the raw tree, so gated rows showed
+  // up in search for everyone. It must pass the same gates.
+  it("the phone drawer's search passes the resolved gates", () => {
+    const src = read("components/mobile-sheet/MobileNavigationDrawer.tsx");
+    const calls = src.match(/searchNavDestinations\([^)]*\)/g) ?? [];
+    expect(calls.length).toBe(1);
+    for (const call of calls) expect(call).toMatch(/,\s*gates\s*,?\s*\)$/);
+    expect(src).not.toMatch(/function searchResults\(/);
+  });
 });

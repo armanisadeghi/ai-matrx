@@ -45,6 +45,7 @@ import {
   SHELL_CHAT_FOLD_QUERY,
   SHELL_CHAT_TOGGLE_EVENT,
   SHELL_CHAT_WIDE_QUERY,
+  shellChatDomainPanelAction,
   shellChatFamily,
   shellChatHostedElsewhere,
   shellChatWorkspaceId,
@@ -133,22 +134,28 @@ export function ShellChatDock({ initialOpen, initialWidth, initialMode = null, s
     };
   }, [open, wideKnown, hostedElsewhere, signedIn]);
 
-  // Beside an open chat on a narrower desktop a domain panel steps back to its
-  // strip so the page keeps its room (the person can still open it: the toggle
+  // Beside a chat the PERSON opened, on a narrower desktop, a domain panel
+  // steps back to its strip so the page keeps its room (the default-open chat
+  // never folds it) (the person can still open it: the toggle
   // works and its choice is remembered); closing the chat brings it back.
   useEffect(() => {
     if (!signedIn || !wideKnown || hostedElsewhere) return;
     const root = document.querySelector<HTMLElement>(".shell-root");
     const toggle = document.getElementById("shell-sidebar-toggle") as HTMLInputElement | null;
     if (!root?.hasAttribute("data-domain-panel") || !toggle) return;
-    if (open && window.matchMedia(SHELL_CHAT_FOLD_QUERY).matches) {
+    const action = shellChatDomainPanelAction({
+      open,
+      choice: choice.open,
+      narrow: window.matchMedia(SHELL_CHAT_FOLD_QUERY).matches,
+    });
+    if (action === "fold") {
       if (toggle.checked) toggle.checked = false;
-    } else if (!open) {
+    } else if (action === "restore") {
       const saved = document.cookie.split("; ").find((p) => p.startsWith(`${SHELL_DOMAIN_PANEL_COOKIE}=`));
       const want = saved?.split("=")[1] !== "0";
       if (toggle.checked !== want) toggle.checked = want;
     }
-  }, [open, wideKnown, hostedElsewhere, signedIn, family]);
+  }, [open, choice.open, wideKnown, hostedElsewhere, signedIn, family]);
 
   const onToggle = useEffectEvent(() => {
     if (!hostedElsewhere) toggle();

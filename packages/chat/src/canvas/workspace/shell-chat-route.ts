@@ -15,6 +15,28 @@ export const SHELL_CHAT_WIDE_QUERY = "(min-width: 1440px)";
 /** Below this, an open chat folds a domain panel to the strip. */
 export const SHELL_CHAT_FOLD_QUERY = "(max-width: 1599px)";
 
+/**
+ * What the chat does to a domain panel (Settings, an area's menu) beside it.
+ * Only a person's OWN open — a remembered choice of `true` — folds the panel
+ * on a narrow desktop. The no-choice default (open at ≥ 1440px) never folds:
+ * between 1440 and 1599px it would land /user-settings with no menu at all.
+ * Closing the chat restores the panel to its saved state.
+ */
+export function shellChatDomainPanelAction({
+  open,
+  choice,
+  narrow,
+}: {
+  open: boolean;
+  /** The remembered choice for this page family; null = never chosen. */
+  choice: boolean | null;
+  /** True below SHELL_CHAT_FOLD_QUERY's width. */
+  narrow: boolean;
+}): "fold" | "restore" | "leave" {
+  if (!open) return "restore";
+  return choice === true && narrow ? "fold" : "leave";
+}
+
 /** /chat is the chat itself; the code workspace docks its own coding agent. */
 const OWN_CHAT_PATHS = [/^\/chat(?:\/|$)/, /^\/code(?:\/|$)/, /^\/agent-apps\/[^/]+\/code(?:\/|$)/];
 

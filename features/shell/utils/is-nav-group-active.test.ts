@@ -1,5 +1,6 @@
-import { primaryNavItems, type ShellNavItem } from "../constants/nav-data";
+import { primaryNavItems, settingsItem, type ShellNavItem } from "../constants/nav-data";
 import {
+  findActiveNavBranch,
   findActiveNavChild,
   findOwningNavItem,
   isExclusiveNavGroupActive,
@@ -131,5 +132,39 @@ describe("shell navigation route ownership", () => {
 
     expect(collisions).toEqual([]);
     expect(unexpected).toEqual([]);
+  });
+  // The Industries node's href is /education, so its /legal, /commerce and
+  // /medical prefixes used to read as aliases of /education: "Browse the Hub"
+  // (/education) matched /legal and lit Education on every other industry.
+  it("lights the industry that owns the route, never Education by alias", () => {
+    const industries = primaryNavItems.find((item) => item.label === "Industries")!;
+    const branch = (path: string) => findActiveNavBranch(path, industries)?.label;
+    expect(branch("/legal")).toBe("Legal");
+    expect(branch("/legal/ca-wc/cases")).toBe("Legal");
+    expect(branch("/medical")).toBe("Medical");
+    expect(branch("/commerce")).toBe("Commerce");
+    expect(branch("/commerce/review")).toBe("Commerce");
+    expect(branch("/commerce/intake/instant")).toBe("Commerce");
+    expect(branch("/education")).toBe("Education");
+    expect(branch("/education/subjects")).toBe("Education");
+    expect(findActiveNavChild("/legal", industries)?.label).toBe("Legal Hub");
+    expect(findActiveNavChild("/medical", industries)?.label).toBe("Medical Hub");
+    expect(findActiveNavChild("/commerce/review", industries)).toBeUndefined();
+  });
+
+  it("never lights a new-tab launcher as the current route", () => {
+    const workspace = primaryNavItems.find((item) => item.label === "Workspace")!;
+    expect(findActiveNavChild("/launchpad", workspace)?.label).not.toBe("Launchpad");
+  });
+
+  // /user-settings lit Account, /user-settings/appearance lit nothing: the
+  // Settings row was exact-only.
+  it("lights Account on every settings page, not only the landing", () => {
+    const account = primaryNavItems.find((item) => item.label === "Account")!;
+    const candidates = [...primaryNavItems, settingsItem];
+    for (const path of ["/user-settings", "/user-settings/appearance", "/user-settings/ai/models"]) {
+      expect([path, isExclusiveNavGroupActive(path, account, candidates)]).toEqual([path, true]);
+      expect([path, findActiveNavChild(path, account)?.label]).toEqual([path, "Settings"]);
+    }
   });
 });
