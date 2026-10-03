@@ -44,6 +44,9 @@
  */
 export const PUBLIC_LANE_COLUMNS: Readonly<Record<string, readonly string[]>> = {
   fc_set: [],
+  // One row of a table (access ladder T-40) — like `fc_set`, its whole read is a SECURITY DEFINER
+  // door (`public.record_public_view`) that projects its own fields server-side.
+  record: [],
   note: ["id", "label", "content", "tags", "created_at", "updated_at", "visibility"],
   message_template: [
     "id", "label", "content", "role", "tags", "created_at", "updated_at", "visibility",

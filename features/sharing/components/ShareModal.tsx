@@ -450,6 +450,10 @@ export function ShareModal({
                     shownTo,
                     isPublic: resourceIsPublic,
                     childRecord,
+                    // A whole Table is a `record` too, and has no page of its own; a row does.
+                    ...(resourceType === "record" && resourceNoun === "Table"
+                      ? { publicAddress: null }
+                      : {}),
                     onSetShownTo: setShownTo,
                     onPublish: () => makePublic(),
                     onStopPublishing: () => revokeAccess({ isPublic: true }),

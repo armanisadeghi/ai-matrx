@@ -26,7 +26,8 @@ export type SearchEngineIndexedType =
   | "fc_set"
   | "learn_doc"
   | "note"
-  | "message_template";
+  | "message_template"
+  | "record";
 
 export const SEARCH_ENGINE_INDEXED_TYPES: ReadonlySet<string> = new Set<SearchEngineIndexedType>([
   "pc_episode",
@@ -39,6 +40,7 @@ export const SEARCH_ENGINE_INDEXED_TYPES: ReadonlySet<string> = new Set<SearchEn
   "learn_doc",
   "note",
   "message_template",
+  "record",
 ]);
 
 /** Next.js `metadata.robots` for a page search engines must not list. */

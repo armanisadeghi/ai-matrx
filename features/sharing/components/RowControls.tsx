@@ -48,6 +48,12 @@ export interface RowControlsProps {
   isPublic: boolean;
   /** `useSharing().childRecord` — a child follows its parent: nothing is drawn. */
   childRecord?: boolean;
+  /**
+   * The thing's own public address when the host knows better than the type: `null` says it has
+   * none (a whole Table is a `record` too, and only a ROW has a page at /p/e/record/<id>).
+   * Omitted → the public lane's address for the type, if it has one.
+   */
+  publicAddress?: string | null;
   onSetShownTo: (next: ShownTo | null) => Promise<ShareActionResult>;
   onPublish: () => Promise<ShareActionResult>;
   onStopPublishing: () => Promise<ShareActionResult>;
@@ -60,6 +66,7 @@ export function RowControls({
   shownTo,
   isPublic,
   childRecord = false,
+  publicAddress,
   onSetShownTo,
   onPublish,
   onStopPublishing,
@@ -81,7 +88,8 @@ export function RowControls({
     };
   }, [resourceType]);
 
-  const publicUrl = publicResourceUrl(resourceType, resourceId);
+  const publicUrl =
+    publicAddress !== undefined ? publicAddress : publicResourceUrl(resourceType, resourceId);
 
   const copyAddress = useCallback(async () => {
     if (!publicUrl) return;
