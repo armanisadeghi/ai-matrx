@@ -10,7 +10,10 @@ state, and the SAME expectations are read in every mode, so red and green are on
   r0       the store after the first SEC file only (round 1's inverse applied in the txn):
            the round-1 regressions (form profile, `_` keys, the client's agent/system header)
            show as FAIL.
-  current  the database as it is (after the round-1 file is applied): all PASS.
+  current  the database as it is: all PASS once r2 is there.
+  prod     production's bodies before r2 (r2's inverse applied in the txn): the archive and
+           worked-out cases show as FAIL.
+  r2       lane7sec_r2 applied in the txn: all PASS.
   r1       the round-1 file applied inside the txn on top of whatever is there: all PASS.
 
   --plant <case>  (with r1/current) breaks exactly what a legitimate case depends on, and exactly
@@ -46,6 +49,8 @@ SEC = CAMPAIGN / 'lane7sec_a_standard_rows_fields_follow_the_field_rule.sql'
 R1 = CAMPAIGN / 'lane7sec_r1_every_writer_follows_the_field_rule.sql'
 SEC_DOWN = INVERSE / 'lane7sec_a_standard_rows_fields_follow_the_field_rule_down.sql'
 R1_DOWN = INVERSE / 'lane7sec_r1_every_writer_follows_the_field_rule_down.sql'
+R2 = CAMPAIGN / 'lane7sec_r2_an_archived_field_never_blocks_a_row.sql'
+R2_DOWN = INVERSE / 'lane7sec_r2_an_archived_field_never_blocks_a_row_down.sql'
 
 ORG = '0a54df90-eab8-4d07-ab29-81a45fb41e04'      # Cedar Ridge Physical Therapy
 ADMIN = '87a6e699-3622-4869-8843-d0867456c0dd'    # admin@admin.com (owner)
@@ -135,6 +140,10 @@ with conn() as c:
         if r1_live: ddl(R1_DOWN.read_text())
     elif MODE == 'r1':
         ddl(R1.read_text())
+    elif MODE == 'prod':
+        ddl(R2_DOWN.read_text())      # the three bodies exactly as production held them before r2
+    elif MODE == 'r2':
+        ddl(R2.read_text())           # r2 applied in the txn (production's bodies + the archive fix)
     elif MODE != 'current':
         sys.exit(f'unknown mode {MODE}')
 
@@ -204,6 +213,39 @@ with conn() as c:
     seat(cur, TEST)
     o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"made_up_key\":\"x\"}'::jsonb where id=%s returning id", (PID,))
     record('DEFECT', 'undeclared', 'member adds an undeclared key on party (a closed table)', o, refused)
+
+    # ── ARCHIVE: an archived field's value is carried, never a block (lane7sec_r2) ─────────────
+    seat(cur, ADMIN)
+    arow = first(step(cur, "insert into crm.party (organization_id, created_by, display_name, visibility, party_kind) values (%s,%s,'Marisol Vega','internal','person') returning id", (ORG, ADMIN)))
+    step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Insurance verified\",\"type\":\"boolean\",\"key\":\"insurance_verified\"}'::jsonb)", (ORG,))
+    print('archive fixture', step(cur, "select custom.entity_value_write(%s,'party',%s,'{\"insurance_verified\":true,\"intake_notes\":\"Referred by Dr. Patel\"}'::jsonb) is not null", (ORG, arow)))
+    owner(cur)
+    cur.execute("select id from custom.record where table_id=custom.field_kernel_id() and organization_id=%s and data->>'table_token'='party' and data->>'key'='insurance_verified' and deleted_at is null", (ORG,))
+    fid = cur.fetchone()[0]
+    cur.execute("select custom_fields->'_values'->'insurance_verified' from crm.party where id=%s", (arow,)); env_before = cur.fetchone()[0]
+    seat(cur, ADMIN)
+    print('archive "Insurance verified"', step(cur, "select custom.entity_field_retire(%s,%s)", (ORG, fid)))
+    seat(cur, TEST)
+    o = step(cur, "select custom.entity_value_write(%s,'party',%s,'{\"intake_notes\":\"Week 2: full extension\"}'::jsonb)->'custom'->>'intake_notes'", (ORG, arow))
+    record('LEGIT', 'archive', 'member writes another field on a row holding an ARCHIVED field\'s value (door)', o, lambda o: first(o) == 'Week 2: full extension')
+    o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"intake_notes\":\"Week 3\"}'::jsonb where id=%s returning custom_fields->'insurance_verified', custom_fields->'_values'->'insurance_verified'", (arow,))
+    record('LEGIT', 'archive', 'member direct UPDATE on that row: archived value and envelope carried untouched', (o, env_before),
+           lambda x: x[0][0] == 'OK' and x[0][1][0][0] is True and x[0][1][0][1] == x[1])
+    server(cur)
+    o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"intake_notes\":\"Imported week 4\"}'::jsonb where id=%s returning id", (arow,))
+    record('LEGIT', 'archive', 'a server job writes a declared field on that row', o, accepted)
+    seat(cur, TEST)
+    o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"insurance_verified\":false}'::jsonb where id=%s returning id", (arow,))
+    record('DEFECT', 'archive', 'member writes a NEW value to the archived field: refused, saying it is archived', o,
+           lambda o: o[0] == 'REFUSED' and 'archived' in o[1])
+    server(cur)
+    o = step(cur, "update crm.party set custom_fields = custom_fields - 'insurance_verified' where id=%s returning id", (arow,))
+    record('DEFECT', 'archive', 'a server job clears the archived field\'s value: refused (archived means restorable)', o,
+           lambda o: o[0] == 'REFUSED' and 'archived' in o[1])
+    seat(cur, ADMIN)
+    o = step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Patient number\",\"type\":\"formula\",\"key\":\"patient_number_x\",\"source\":\"formula\",\"config\":{\"expr\":{\"op\":\"fx.autonumber\"},\"system\":\"autonumber\"}}'::jsonb)", (ORG,))
+    record('DEFECT', 'worked', 'admin declares a worked-out field (record number) on a standard table: refused in "field" words', o,
+           lambda o: o[0] == 'REFUSED' and 'field' in o[1].lower() and 'column' not in o[1].lower())
 
     # ── LEGIT: what must keep working ──────────────────────────────────────────────────────
     seat(cur, ADMIN)
