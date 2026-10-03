@@ -31,7 +31,8 @@ import {
   isServerAuthoritativeKey,
   CONTEXT_ROW_BLOCKS,
 } from "@ai-matrx/agents/context";
-import { getManifest } from "../../../../surfaces/runtime/registry";
+import { getDeclaringSurface, getManifest } from "../../../../surfaces/runtime/registry";
+import type { InstanceContextEntry } from "../../../types/instance.types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import {
   BASELINE_VALUES,
@@ -39,6 +40,7 @@ import {
   PAGE_OFF_WITHHELD,
   PAGELESS_CONTENT_INLINE_CEILING,
   PERSON_CONTEXT_VALUES,
+  PLATFORM_RESERVED_NAMES,
   POINTER_INLINE_CEILINGS,
 } from "../../../../surfaces/manifests/_baseline.manifest";
 import { pageOwningConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
@@ -140,6 +142,11 @@ export interface RequestContext {
   context_withheld: string[];
   /** The request body's `page_context`; null = omit (the conversation follows its page). */
   page_context: PageContextDirective | null;
+  /**
+   * The request body's `context_surfaces` (`contextSurfacesFor`): the surface
+   * each mounted screen's value sits under. Null = omit.
+   */
+  context_surfaces: Record<string, string> | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -202,6 +209,64 @@ export function agentContextLayerKnown(state: ChatRootState, conversationId: str
   return !agentId || agentContextLayerKnownFor(state, agentId);
 }
 
+type DeclaredSurfaceValue = NonNullable<ReturnType<typeof getManifest>>["values"][number];
+
+/**
+ * Where one context value sits: the surface that PUBLISHED it and that
+ * surface's declaration. The publishing runtime's surface (stamped on the
+ * entry) when its manifest declares the value — it wins over the primary's
+ * own declaration of the same name; else the primary page when it declares
+ * it; else the one surface the registry says authored it (an entry written
+ * before its surface was stamped). A value a page published without declaring
+ * it still sits under that page, with no page layer. Nothing else is the
+ * page's: attachments and host-written values stay `_default` ("Attached").
+ * The platform's own keys (`surface_chain`, `window_forms`, `surface_closed`)
+ * are never a page's value.
+ */
+export function publishingPlace(
+  entry: Pick<InstanceContextEntry, "key" | "surfaceName">,
+  primarySurface: string | null,
+  primaryDeclared: (key: string) => DeclaredSurfaceValue | undefined = (key) =>
+    primarySurface ? getManifest(primarySurface)?.values.find((v) => v.name === key) : undefined,
+): { surface: string | null; declared: DeclaredSurfaceValue | undefined } {
+  const own = entry.surfaceName && !PLATFORM_RESERVED_NAMES.values.includes(entry.key)
+    ? entry.surfaceName
+    : null;
+  const ownDeclared = own
+    ? getManifest(own)?.values.find((v) => v.name === entry.key)
+    : undefined;
+  if (own && ownDeclared) return { surface: own, declared: ownDeclared };
+  const onPrimary = primaryDeclared(entry.key);
+  if (onPrimary && primarySurface) return { surface: primarySurface, declared: onPrimary };
+  if (own) return { surface: own, declared: undefined };
+  if (entry.surfaceName) return { surface: null, declared: undefined };
+  const author = getDeclaringSurface(entry.key);
+  if (author) {
+    return { surface: author, declared: getManifest(author)?.values.find((v) => v.name === entry.key) };
+  }
+  return { surface: null, declared: undefined };
+}
+
+/**
+ * The request body's `context_surfaces`: every page value (sent or withheld)
+ * that sits under a surface the request does not name as its primary, or
+ * that the primary page published without declaring — so the server files it
+ * exactly where this row sits. Null = nothing to name.
+ */
+export function contextSurfacesFor(
+  rows: readonly ResolvedContextRow[],
+  primarySurface: string | null,
+): Record<string, string> | null {
+  const out: Record<string, string> = {};
+  for (const row of rows) {
+    if (row.origin !== "page" || row.fromReceipt) continue;
+    if (!row.surfaceKey || row.surfaceKey === DEFAULT_SURFACE_KEY) continue;
+    if (row.surfaceKey === primarySurface && row.layers?.surface?.declared !== false) continue;
+    out[row.key] = row.surfaceKey;
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
 /** Every value this conversation's next turn would carry, before any rule. */
 export function collectContextRowSources(
   state: ChatRootState,
@@ -259,7 +324,11 @@ export function collectContextRowSources(
   // 1. Everything in the conversation's context (page values + attached).
   const entries = Object.values(state.instanceContext?.byConversationId[conversationId] ?? {});
   for (const entry of entries) {
-    const declared = declaredValue(entry.key);
+    // A VALUE SITS UNDER THE PAGE THAT PRODUCED IT (owner ruling 2026-10-03):
+    // a transcript open on the Knowledge page publishes its values as
+    // `matrx-user/transcripts`, never as the Knowledge page's attachments.
+    const place = publishingPlace(entry, surfaceName, declaredValue);
+    const declared = place.declared;
     const pointer = POINTER_INLINE_CEILINGS[entry.key];
     const ownLimit = isRecord(entry.value) && "content" in entry.value
       ? validLimit(entry.value.max_inline_chars)
@@ -267,16 +336,16 @@ export function collectContextRowSources(
     const pageLimit = pointer
       ? Math.max(pointer, declared?.inlineUpTo ?? 0)
       : (validLimit(declared?.inlineUpTo) ??
-        (!surfaceName && entry.key === "content" ? PAGELESS_CONTENT_INLINE_CEILING : ownLimit));
+        (!surfaceName && !place.surface && entry.key === "content" ? PAGELESS_CONTENT_INLINE_CEILING : ownLimit));
     const baseline = (BASELINE_VALUES as Record<string, { description?: string }>)[entry.key];
     const policy = policyFor(entry.key);
     byKey.set(entry.key, {
       key: entry.key,
       label: rowLabel(entry.key, policy?.label, declared?.label, entry.label),
-      // The server keys a value to the surface whose manifest declares it,
-      // and everything else to the person's "_default" row (RULES.md §3).
-      surfaceKey: declared && surfaceName ? surfaceName : DEFAULT_SURFACE_KEY,
-      origin: declared ? "page" : "attached",
+      // The server files the value under the same surface: the primary's own,
+      // or the one `context_surfaces` names (RULES.md §3).
+      surfaceKey: place.surface ?? DEFAULT_SURFACE_KEY,
+      origin: place.surface ? "page" : "attached",
       value: entry.value,
       type: entry.type,
       // The person's pointer says they are pointing at this text; a page value
@@ -401,6 +470,7 @@ export function buildRequestContext(
     context: Object.keys(wire).length > 0 ? wire : undefined,
     context_withheld: withheldKeys(rows),
     page_context: pageContextFor(state, conversationId),
+    context_surfaces: contextSurfacesFor(rows, primarySurface),
   };
 }
 
@@ -415,6 +485,7 @@ export interface PreviewRequestContext {
   context?: Record<string, unknown>;
   context_withheld: string[];
   page_context?: PageContextDirective;
+  context_surfaces?: Record<string, string>;
   surface?: string;
 }
 
@@ -428,6 +499,7 @@ export function buildPreviewRequestContext(
     ...(door.context ? { context: door.context } : {}),
     context_withheld: door.context_withheld,
     ...(door.page_context ? { page_context: door.page_context } : {}),
+    ...(door.context_surfaces ? { context_surfaces: door.context_surfaces } : {}),
     ...(surface ? { surface } : {}),
   };
 }

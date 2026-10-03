@@ -18,7 +18,9 @@ describe("the Surface Context window's value list", () => {
   it("renders through ContextRulesTable over surfaceContextRows", () => {
     expect(source).toMatch(/<ContextRulesTable\b/);
     expect(source).toMatch(/surfaceContextRows\(/);
-    expect(source).toMatch(/surfaceInspectorPlacer\(/);
+    // The one placement the chip and the full view use — never an inspector-only placer.
+    expect(source).toMatch(/contextRowPlacer\(/);
+    expect(source).not.toMatch(/surfaceInspectorPlacer/);
   });
 
   it("has no list of its own", () => {

@@ -587,6 +587,15 @@ export interface InstanceContextEntry {
 
   /** Display label (from mandate or auto-generated) */
   label: string;
+
+  /**
+   * The surface whose live runtime PUBLISHED this value (a transcript open on
+   * the Knowledge page publishes `transcript_title` as `matrx-user/transcripts`).
+   * A value sits under the page that produced it — its row, its page layer and
+   * the person's rule for it are that surface's (`collectContextRowSources`).
+   * Absent for values no page published (attachments, host-written context).
+   */
+  surfaceName?: string;
 }
 
 // =============================================================================

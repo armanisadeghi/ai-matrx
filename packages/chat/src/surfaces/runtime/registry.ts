@@ -129,3 +129,37 @@ export function getSurfaceSectionLabel(surfaceName: string): string | null {
 export function surfaceAcceptsAgentBindings(surfaceName: string): boolean {
   return getManifest(surfaceName)?.agentRosterMode !== "universal";
 }
+
+const declarerMemo = new WeakMap<SurfaceManifestSource, Map<string, string | null>>();
+
+/**
+ * THE ONE SURFACE THAT AUTHORED a value name, or null — the fallback for a
+ * context value whose publishing runtime was not recorded (an entry written
+ * before its surface was stamped). Reads each manifest AS AUTHORED, so the
+ * shared baselines every page inherits (`content`, `text_before`…) never
+ * claim a page; a name two pages both author is ambiguous and answers null.
+ */
+export function getDeclaringSurface(valueName: string): string | null {
+  const current = source();
+  let memo = declarerMemo.get(current);
+  if (!memo) {
+    memo = new Map();
+    declarerMemo.set(current, memo);
+  }
+  const hit = memo.get(valueName);
+  if (hit !== undefined) return hit;
+  let found: string | null = null;
+  let ambiguous = false;
+  for (const manifest of current.getAllManifests()) {
+    const authored = current.getRawManifest(manifest.surfaceName);
+    if (!authored?.values?.some((v) => v.name === valueName)) continue;
+    if (found && found !== manifest.surfaceName) {
+      ambiguous = true;
+      break;
+    }
+    found = manifest.surfaceName;
+  }
+  const answer = ambiguous ? null : found;
+  memo.set(valueName, answer);
+  return answer;
+}

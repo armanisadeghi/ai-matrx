@@ -264,6 +264,7 @@ export const refreshSurfaceScope = createAsyncThunk<
     dispatch(
       replaceSurfaceContextEntries({
         conversationId,
+        surfaceName,
         entries: result.contextEntries.map((e) =>
           e.label === e.key && valueLabels.has(e.key)
             ? { ...e, label: valueLabels.get(e.key) ?? e.key }
@@ -276,6 +277,7 @@ export const refreshSurfaceScope = createAsyncThunk<
         setContextEntries({
           conversationId,
           entries: preparation.contextEntries,
+          surfaceName,
         }),
       );
     }

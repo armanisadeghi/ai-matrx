@@ -12,14 +12,12 @@
 
 import {
   DEFAULT_INLINE_CAP,
-  DEFAULT_SURFACE_KEY,
   resolveContextRow,
   type ResolvedContextRow,
   type SavedContextRuleRows,
 } from "@ai-matrx/agents/context";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { getManifest } from "../../../../surfaces/runtime/registry";
-import { placeContextRow, type ContextRowPlacement } from "./context-hierarchy";
 
 /** What the inspector marks beside a row. */
 export interface SurfaceValueStatus {
@@ -90,10 +88,21 @@ export function surfaceContextRows(
   }
   for (const key of Object.keys(scope)) {
     if (names.has(key)) continue;
-    // The server files an undeclared value under the person's "_default" row.
+    // A value the page publishes without declaring it still sits under the
+    // page that produced it, with no page layer — exactly the row the
+    // composer shows (`publishingPlace`) and the server files
+    // (`context_surfaces`). Its rule is the page's merged row (`_default`
+    // under the page), the same lookup the server runs.
     rows.push(
       resolveContextRow(
-        { key, label: humanizeIdentifier(key), surfaceKey: DEFAULT_SURFACE_KEY, origin: "attached", value: scope[key] },
+        {
+          key,
+          label: humanizeIdentifier(key),
+          surfaceKey: surfaceName,
+          origin: "page",
+          value: scope[key],
+          layers: { surface: { declared: false, auto_context: null, max_inline_chars: null } },
+        },
         saved,
         cap,
         surfaceName,
@@ -104,9 +113,3 @@ export function surfaceContextRows(
   return { rows, status };
 }
 
-/** Every row of one page's inspector sits under that page, in its declared group. */
-export function surfaceInspectorPlacer(
-  surfaceName: string,
-): (row: Pick<ResolvedContextRow, "key" | "surfaceKey" | "origin">) => ContextRowPlacement {
-  return (row) => placeContextRow({ key: row.key, surfaceKey: surfaceName, origin: "page" }, surfaceName);
-}

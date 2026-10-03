@@ -287,6 +287,7 @@ export const resumeInstance = createAsyncThunk<
         context,
         context_withheld,
         page_context,
+        context_surfaces,
       } = buildResumeRequestContext(
         freshState,
         conversationId,
@@ -328,6 +329,7 @@ export const resumeInstance = createAsyncThunk<
         ...(context && { context }),
         context_withheld,
         ...(page_context && { page_context }),
+        ...(context_surfaces && { context_surfaces }),
         ...(injection.tools && { tools: injection.tools }),
         ...(injection.tools_replace !== undefined && {
           tools_replace: injection.tools_replace,

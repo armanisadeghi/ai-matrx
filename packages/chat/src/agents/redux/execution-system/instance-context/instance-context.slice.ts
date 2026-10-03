@@ -164,6 +164,7 @@ function writeEntry(
     existing.label === next.label &&
     existing.type === next.type &&
     existing.slotMatched === next.slotMatched &&
+    existing.surfaceName === next.surfaceName &&
     isEqual(existing.value, next.value)
   ) {
     return;
@@ -269,22 +270,27 @@ const instanceContextSlice = createSlice({
           slotMatched?: boolean;
           type?: ContextObjectType;
           label?: string;
+          surfaceName?: string;
         }>;
+        /** The surface whose runtime published these values (stamped on each entry). */
+        surfaceName?: string | null;
       }>,
     ) {
-      const { conversationId, entries } = action.payload;
+      const { conversationId, entries, surfaceName } = action.payload;
       if (!state.byConversationId[conversationId]) {
         state.byConversationId[conversationId] = {};
       }
       const context = state.byConversationId[conversationId];
       for (const entry of entries) {
         const envelope = envelopeFacts(entry.value);
+        const publisher = entry.surfaceName ?? surfaceName ?? undefined;
         writeEntry(context, {
           key: entry.key,
           value: entry.value,
           slotMatched: entry.slotMatched ?? false,
           type: entry.type ?? envelope.type ?? inferType(entry.value),
           label: entry.label ?? envelope.label ?? keyWords(entry.key),
+          ...(publisher ? { surfaceName: publisher } : {}),
         });
       }
     },
@@ -300,9 +306,19 @@ const instanceContextSlice = createSlice({
       action: PayloadAction<{
         conversationId: string;
         entries: InstanceContextEntry[];
+        /**
+         * The surface whose live runtime published these values — stamped on
+         * each entry (a value sits under the page that produced it).
+         */
+        surfaceName?: string | null;
       }>,
     ) {
-      const { conversationId, entries } = action.payload;
+      const { conversationId, surfaceName } = action.payload;
+      const entries = surfaceName
+        ? action.payload.entries.map((entry) =>
+            entry.surfaceName ? entry : { ...entry, surfaceName },
+          )
+        : action.payload.entries;
       if (!state.byConversationId[conversationId]) {
         state.byConversationId[conversationId] = {};
       }

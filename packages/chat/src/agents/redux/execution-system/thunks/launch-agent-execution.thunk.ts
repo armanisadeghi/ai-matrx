@@ -735,6 +735,7 @@ export const launchAgentExecution = createAsyncThunk<
         jsonExtraction: resolvedJsonExtraction,
         originalText,
         surfaceValueMappings: shortcutSurfaceMappings,
+        surfaceName,
       }),
     ).unwrap();
 
@@ -986,6 +987,7 @@ export const launchAgentExecution = createAsyncThunk<
           dispatch(
             replaceSurfaceContextEntries({
               conversationId,
+              surfaceName,
               entries: result.contextEntries,
             }),
           );

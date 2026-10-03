@@ -397,6 +397,7 @@ export async function assembleManualRequest(
     context,
     context_withheld,
     page_context,
+    context_surfaces,
   } = buildRequestContext(state, conversationId);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
@@ -497,6 +498,8 @@ export async function assembleManualRequest(
   request.context_withheld = context_withheld;
   // The page rule (RULES.md §0) — additive aidream field, not yet in the generated ChatRequest.
   if (page_context) (request as Record<string, unknown>).page_context = page_context;
+  // Where each mounted screen's value sits — additive aidream field, not yet in the generated ChatRequest.
+  if (context_surfaces) (request as Record<string, unknown>).context_surfaces = context_surfaces;
   if (injection.tools_replace)
     request.tools_replace =
       injection.tools_replace as ChatRequestPayload["tools_replace"];

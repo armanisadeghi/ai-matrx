@@ -8,13 +8,13 @@
  * their real rule for this page.
  *
  * Breaks this catches: a declared-but-unsupplied value dropped from the list,
- * an undeclared runtime key hidden, an undeclared key's rule written under the
- * page's row (the server reads it from "_default"), an inspector heading or
- * group that differs from the chip's.
+ * an undeclared runtime key hidden or filed as an attachment (a value sits
+ * under the page that produced it), an inspector heading or group that
+ * differs from the chip's.
  */
 
-import { surfaceContextRows, surfaceInspectorPlacer } from "../surface-context-rows";
-import { placeContextRow } from "../context-hierarchy";
+import { surfaceContextRows } from "../surface-context-rows";
+import { contextRowPlacer, placeContextRow } from "../context-hierarchy";
 
 const BRAND = "matrx-user/marketing-brand";
 
@@ -35,15 +35,16 @@ describe("a page's inspector rows", () => {
     expect(row("debug_flag").label).toBe("Debug Flag");
   });
 
-  it("carries the person's real rule for this page; an undeclared key's rule lives under _default", () => {
+  it("carries the person's real rule for this page; an undeclared key sits under the page too", () => {
     expect(row("brand_name").include).toBe(false);
     expect(row("brand_name").surfaceKey).toBe(BRAND);
-    expect(row("debug_flag").surfaceKey).toBe("_default");
+    expect(row("debug_flag").surfaceKey).toBe(BRAND);
+    expect(row("debug_flag").origin).toBe("page");
     expect(row("brand_profile").chars).toBeNull();
   });
 
   it("sits under the same page heading and groups as the composer's chip", () => {
-    const place = surfaceInspectorPlacer(BRAND);
+    const place = contextRowPlacer(BRAND);
     expect(place(row("brand_name"))).toEqual(placeContextRow({ key: "brand_name", surfaceKey: BRAND, origin: "page" }, BRAND));
     expect(place(row("brand_name")).level.path).toEqual(["Marketing", "Marketing Brand Cockpit"]);
     expect(place(row("debug_flag")).level.id).toBe(BRAND);

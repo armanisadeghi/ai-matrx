@@ -24,6 +24,10 @@
 //      own conversation and a switched-off page) — the chip would say "off" while the server,
 //      never told, delivered the route, the page's introduction and the screens around it
 //      (Model Battle, 2026-10-01); and a door that stops deciding the page rule for its rows.
+//  10. a request builder (or the preview's door fields) that does not send the door's
+//      `context_surfaces` — the server would file a mounted screen's values (a transcript open on
+//      the Knowledge page) as the person's attachments while the chip showed them under their
+//      own page, and read the person's rule from the wrong row (2026-10-03).
 //   9. the context preview (`POST /ai/context/preview`, "what the agent will receive") that does
 //      not send the door's preview fields (`buildPreviewRequestContext`: context, withheld keys,
 //      page_context, surface) — its receipt would disagree with the real turn on the page's own
@@ -77,6 +81,9 @@ export function previewFindings(relPath, text, doorText) {
   if (!doorPreview) {
     out.push({ file: DOOR_PATH, line: 1, rule: "preview-page-rule", text: "the door's preview fields no longer carry the send's page_context" });
   }
+  if (!/export function buildPreviewRequestContext[\s\S]{0,1200}?context_surfaces:\s*door\.context_surfaces/.test(doorText)) {
+    out.push({ file: DOOR_PATH, line: 1, rule: "preview-surfaces", text: "the door's preview fields no longer carry the send's context_surfaces" });
+  }
   return out;
 }
 const DOOR_PATH = "packages/chat/src/agents/redux/execution-system/context-rules/request-context.ts";
@@ -96,6 +103,12 @@ export function builderFindings(relPath, text) {
   const pageSent = /(\.\s*page_context\s*=|\.\.\.\(\s*page_context\s*&&\s*\{\s*page_context\s*\}\s*\))/.test(text);
   if (!(pageFromDoor && pageSent)) {
     out.push({ file: relPath, line: 1, rule: "page-rule-missing", text: "sends the door's context without its page_context (the page switch / own conversation)" });
+  }
+  // Rule 10: where each mounted screen's value sits rides every builder's body, from the same call.
+  const surfacesFromDoor = /\bcontext_surfaces\b[\s\S]{0,200}?\}\s*=\s*build(Resume)?RequestContext\s*\(/.test(text);
+  const surfacesSent = /(\.\s*context_surfaces\s*=|\.\.\.\(\s*context_surfaces\s*&&\s*\{\s*context_surfaces\s*\}\s*\))/.test(text);
+  if (!(surfacesFromDoor && surfacesSent)) {
+    out.push({ file: relPath, line: 1, rule: "surfaces-missing", text: "sends the door's context without its context_surfaces (where a mounted screen's values sit)" });
   }
   return out;
 }
@@ -229,7 +242,7 @@ function selfTest() {
     console.error("✗ self-test: a builder that drops context_withheld was NOT caught");
     ok = false;
   }
-  const kept = "const {\n  rows,\n  context,\n  context_withheld,\n  page_context,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;\nif (page_context) request.page_context = page_context;";
+  const kept = "const {\n  rows,\n  context,\n  context_withheld,\n  page_context,\n  context_surfaces,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;\nif (page_context) request.page_context = page_context;\nif (context_surfaces) request.context_surfaces = context_surfaces;";
   if (builderFindings("features/x/builder.ts", kept).length) {
     console.error("✗ self-test: a builder that sends context_withheld and page_context was flagged");
     ok = false;
@@ -240,9 +253,15 @@ function selfTest() {
     console.error("✗ self-test: a builder that drops page_context was NOT caught");
     ok = false;
   }
-  const resumeKept = "const {\n  context,\n  context_withheld,\n  page_context,\n} = buildResumeRequestContext(s, id, k);\nconst body = {\n  ...(context && { context }),\n  context_withheld,\n  ...(page_context && { page_context }),\n};";
+  const resumeKept = "const {\n  context,\n  context_withheld,\n  page_context,\n  context_surfaces,\n} = buildResumeRequestContext(s, id, k);\nconst body = {\n  ...(context && { context }),\n  context_withheld,\n  ...(page_context && { page_context }),\n  ...(context_surfaces && { context_surfaces }),\n};";
   if (builderFindings("features/x/resume.ts", resumeKept).length) {
     console.error("✗ self-test: a resume body that spreads page_context was flagged", builderFindings("features/x/resume.ts", resumeKept));
+    ok = false;
+  }
+  // Rule 10: a builder that drops where a mounted screen's values sit (the Knowledge page, 2026-10-03).
+  const noSurfaces = "const {\n  rows,\n  context,\n  context_withheld,\n  page_context,\n} = buildRequestContext(state, id);\nrequest.context_withheld = context_withheld;\nif (page_context) request.page_context = page_context;";
+  if (!builderFindings("features/x/builder.ts", noSurfaces).some((f) => f.rule === "surfaces-missing")) {
+    console.error("✗ self-test: a builder that drops context_surfaces was NOT caught");
     ok = false;
   }
   const doorOk = "  const page = pageContextFor(state, conversationId);\n  return x.map((s) => pageWithholds(page, s.key, s.surfaceKey));\n  page_context: pageContextFor(state, conversationId),";
@@ -256,7 +275,7 @@ function selfTest() {
   }
   // Rule 9: the preview sends the door's fields, and those carry the page rule.
   const previewOk = 'const doorFields = dispatch((_d, g) => buildPreviewRequestContext(g(), id));\n  callApi({ path: "/ai/context/preview", body: { a, ...doorFields } });';
-  const doorPreviewOk = "export function buildPreviewRequestContext(state, conversationId) {\n  const door = buildRequestContext(state, conversationId);\n  return { ...(door.page_context ? { page_context: door.page_context } : {}) };\n}";
+  const doorPreviewOk = "export function buildPreviewRequestContext(state, conversationId) {\n  const door = buildRequestContext(state, conversationId);\n  return { ...(door.page_context ? { page_context: door.page_context } : {}), ...(door.context_surfaces ? { context_surfaces: door.context_surfaces } : {}) };\n}";
   if (previewFindings(PREVIEW, previewOk, doorPreviewOk).length) {
     console.error("✗ self-test: a preview that sends the door's fields was flagged", previewFindings(PREVIEW, previewOk, doorPreviewOk));
     ok = false;
@@ -264,6 +283,11 @@ function selfTest() {
   const previewBare = 'callApi({ path: "/ai/context/preview", body: { conversation_id, scope_ids } });';
   if (!previewFindings(PREVIEW, previewBare, doorPreviewOk).some((f) => f.rule === "preview-no-door")) {
     console.error("✗ self-test: a preview that skips the door was NOT caught");
+    ok = false;
+  }
+  const doorPreviewNoSurfaces = "export function buildPreviewRequestContext(state, conversationId) {\n  const door = buildRequestContext(state, conversationId);\n  return { ...(door.page_context ? { page_context: door.page_context } : {}) };\n}";
+  if (!previewFindings(PREVIEW, previewOk, doorPreviewNoSurfaces).some((f) => f.rule === "preview-surfaces")) {
+    console.error("✗ self-test: door preview fields without context_surfaces were NOT caught");
     ok = false;
   }
   const doorPreviewNoPage = "export function buildPreviewRequestContext(state, conversationId) {\n  const door = buildRequestContext(state, conversationId);\n  return { context: door.context };\n}";

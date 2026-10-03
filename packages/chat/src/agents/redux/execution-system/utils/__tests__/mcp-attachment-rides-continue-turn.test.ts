@@ -20,6 +20,8 @@
  */
 
 jest.mock("../../../../../surfaces/runtime/registry", () => ({
+  // No surface authored the value (the registry fallback of `publishingPlace`).
+  getDeclaringSurface: () => null,
   getManifest: () => undefined,
 }));
 

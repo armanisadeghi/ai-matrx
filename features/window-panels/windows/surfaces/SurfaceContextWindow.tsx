@@ -42,10 +42,8 @@ import {
   saveContextRules,
   selectSavedContextRuleRows,
 } from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-rules.thunks";
-import {
-  surfaceContextRows,
-  surfaceInspectorPlacer,
-} from "@ai-matrx/chat/agents/redux/execution-system/context-rules/surface-context-rows";
+import { surfaceContextRows } from "@ai-matrx/chat/agents/redux/execution-system/context-rules/surface-context-rows";
+import { contextRowPlacer } from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-hierarchy";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 
 export interface SurfaceContextWindowProps {
@@ -168,7 +166,8 @@ export default function SurfaceContextWindow({
   }, [dispatch, isOpen]);
   const savedRules = useAppSelector(selectSavedContextRuleRows);
   const contextRows = surfaceContextRows(surfaceName, live.scope, savedRules);
-  const hierarchy: ContextHierarchy = { place: surfaceInspectorPlacer(surfaceName) };
+  // The ONE placement the chip, the full view and a sent message use.
+  const hierarchy: ContextHierarchy = { place: contextRowPlacer(surfaceName) };
   const [query, setQuery] = useState("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);

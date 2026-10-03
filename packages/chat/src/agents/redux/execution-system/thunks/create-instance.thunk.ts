@@ -360,6 +360,8 @@ interface CreateShortcutInstanceArgs {
    * surface path and uses the shortcut's own scopeMappings.
    */
   surfaceValueMappings?: ValueMappingMap | null;
+  /** The surface whose runtime published the caller scope — stamped on its context entries. */
+  surfaceName?: string | null;
   /**
    * The launching surface's always-on values — the only page values this
    * shortcut receives beyond what it maps (`alwaysOnSurfaceKeys`, W-31).
@@ -651,6 +653,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
     dispatch(
       replaceSurfaceContextEntries({
         conversationId,
+        surfaceName: args.surfaceName ?? null,
         entries: result.contextEntries,
       }),
     );
