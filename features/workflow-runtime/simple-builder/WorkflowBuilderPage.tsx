@@ -51,6 +51,7 @@ import { EntityModeHeader } from "@/features/shell/components/header/templates/E
 import { StatusBadge } from "@/components/official/status-badge/StatusBadge";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
@@ -209,6 +210,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [testOpen, setTestOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const isMobile = useIsMobile();
   // Picking a Workflow from the phone's sheet closes it.
   useEffect(() => setListOpen(false), [selectedId, workflowParam]);
 
@@ -616,13 +618,16 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
       <div className="h-full pt-[var(--shell-header-h)]">
         {/* Desktop: the list beside the builder. Phone: the builder alone; the list opens from
             the header's sheet ("Workflows on this table") as a bottom sheet. */}
-        <div className="hidden h-full min-h-0 md:flex">
-          <aside className="w-72 shrink-0 overflow-y-auto border-r border-border p-3">
-            {list}
-          </aside>
-          <main className="min-w-0 flex-1 overflow-y-auto">{body}</main>
-        </div>
-        <div className="h-full overflow-y-auto md:hidden">{body}</div>
+        {isMobile ? (
+          <div className="h-full overflow-y-auto">{body}</div>
+        ) : (
+          <div className="flex h-full min-h-0">
+            <aside className="w-72 shrink-0 overflow-y-auto border-r border-border p-3">
+              {list}
+            </aside>
+            <main className="min-w-0 flex-1 overflow-y-auto">{body}</main>
+          </div>
+        )}
         <Dialog open={listOpen} onOpenChange={setListOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
