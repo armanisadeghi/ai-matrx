@@ -54,3 +54,36 @@ export function tableMenuExtensions(extras: TableMenuExtras): ObjectAction[] {
         },
   ];
 }
+
+/** A host's extra entries as the page used to take them (`{key, label, onSelect}`). */
+export interface TableMenuExtra {
+  key: string;
+  label: string;
+  onSelect: () => void;
+}
+
+const EXTRA_LOOK: Record<string, Pick<ObjectAction, "icon" | "group">> = {
+  workflows: { icon: "blocks", group: "built-on" },
+  "row-change-agent": { icon: "bell", group: "built-on" },
+  "test-copy": { icon: "copy", group: "manage" },
+  "copy-again": { icon: "copy", group: "manage" },
+};
+
+/**
+ * THE PAGE'S EXTRAS INTO THE ONE ACTION LIST. records-ui's `TablePage` no longer takes
+ * `menuExtras`; its menu is `tableActions()` and a host adds through `actionHost.extend`. Every
+ * extra the host offers rides that door, so nothing the page offered is silently dropped.
+ */
+export function extrasAsActionHost(extras: readonly TableMenuExtra[] | undefined): {
+  extend: () => ObjectAction[];
+} {
+  return {
+    extend: () =>
+      (extras ?? []).map((e) => ({
+        id: e.key,
+        label: e.label,
+        ...(EXTRA_LOOK[e.key] ?? { icon: "blocks" as const, group: "built-on" as const }),
+        run: e.onSelect,
+      })),
+  };
+}

@@ -7,12 +7,18 @@ interface VariableSelectorProps {
     variables: string[];
     onVariableSelected: (variable: string) => void;
     onBeforeOpen?: () => void;
+    /** What a person reads for a variable (the inserted value stays `variable`). */
+    labelFor?: (variable: string) => string;
+    /** The trigger's accessible name. */
+    ariaLabel?: string;
 }
 
 export function VariableSelector({
     variables,
     onVariableSelected,
     onBeforeOpen,
+    labelFor,
+    ariaLabel = "Insert a variable",
 }: VariableSelectorProps) {
     const [popoverOpen, setPopoverOpen] = React.useState(false);
 
@@ -30,6 +36,8 @@ export function VariableSelector({
                 <Button
                     variant="ghost"
                     size="sm"
+                    aria-label={ariaLabel}
+                    title={ariaLabel}
                     className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                     onMouseDown={(e) => {
                         // Prevent textarea from losing focus
@@ -64,7 +72,11 @@ export function VariableSelector({
                                     setPopoverOpen(false);
                                 }}
                             >
-                                <span className="font-mono">{variable}</span>
+                                {labelFor ? (
+                                    <span className="truncate">{labelFor(variable)}</span>
+                                ) : (
+                                    <span className="font-mono">{variable}</span>
+                                )}
                             </Button>
                         ))
                     )}

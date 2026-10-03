@@ -55,6 +55,7 @@ import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import type { ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { extrasAsActionHost } from "@/features/unified-data/actions/tableMenuExtensions";
 
 /**
  * WHAT THE PAGE IS ASKED TO OPEN ON — the route reads it from its address (`?view=`, `?record=`,
@@ -241,7 +242,12 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
             },
           ]
         : [];
-  const menuExtras = [...testCopyExtras, ...rowChangeExtras];
+  // WORKFLOWS ON THIS TABLE (lane 11 wave 2): the simple builder, with every existing feature
+  // that acts on this table listed beside it.
+  const workflowExtras = [
+    { key: "workflows", label: "Workflows", onSelect: () => router.push(`/workflows/builder/${tableId}`) },
+  ];
+  const menuExtras = [...workflowExtras, ...testCopyExtras, ...rowChangeExtras];
 
   /** Why the table did not open, in one sentence (for a capture), or null when it did. */
   const says: string | null =
@@ -384,7 +390,7 @@ export function UnifiedTableBody({
           onViewChanged={onViewChanged}
           activeRail={address.rail}
           activeItemId={address.item}
-          menuExtras={mount.menuExtras}
+          actionHost={extrasAsActionHost(mount.menuExtras)}
           {...pageHeader}
         />
       </RecordStoreTableSurface>

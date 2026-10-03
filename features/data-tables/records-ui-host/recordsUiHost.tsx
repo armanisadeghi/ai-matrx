@@ -36,6 +36,8 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
+import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
+import { extrasAsActionHost } from "@/features/unified-data/actions/tableMenuExtensions";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -87,6 +89,17 @@ export interface RecordsUiHostArgs {
 /**
  * THE HOST, WRITTEN ONCE. Pure: the same inputs give the same port list on every surface.
  */
+function recordSectionsPort(organizationId: string | null): {
+  recordSections?: (target: { tableId: string; recordId: string }) => ReactNode;
+} {
+  if (!organizationId) return {};
+  return {
+    recordSections: ({ recordId }) => (
+      <RecordRunsSection key={recordId} organizationId={organizationId} recordId={recordId} />
+    ),
+  };
+}
+
 export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }: RecordsUiHostArgs): RecordsUiHost {
   return {
     Link,
@@ -114,6 +127,9 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     share: recordStoreShare,
     // The platform's ONE chat column bound to the record (AGT-N-9) — never a second chat.
     chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={ports.organizationId} />,
+    // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).
+    // Spread as its own object: a records-ui build before the port ignores the key.
+    ...recordSectionsPort(ports.organizationId),
     ...(layouts && layouts.length > 0 ? { layouts } : {}),
     ...(rights ? { rights } : {}),
   };
@@ -315,7 +331,7 @@ export function RecordStoreTableHost({
         host={host}
       >
         <RecordStoreTableSurface channel={gridContext} enabled={merged}>
-          <TablePage tableId={tableId} menuExtras={menuExtras} />
+          <TablePage tableId={tableId} actionHost={extrasAsActionHost(menuExtras)} />
         </RecordStoreTableSurface>
       </RecordsMount>
     </div>
