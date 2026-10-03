@@ -1369,7 +1369,10 @@ export const createAgent = createAsyncThunk<
     matrxDirectives: partial.matrxDirectives ?? {},
     mcpServers: partial.mcpServers ?? [],
     createdBy: userId,
-    organizationId: partial.organizationId ?? null,
+    // A new agent is saved where the person works: the org the caller names, else the active
+    // one through the ONE hold-and-set gate (as duplicate does) — never a refusal while one is set.
+    organizationId:
+      partial.organizationId ?? (await ensureOrgId(selectOrganizationId(getState()))),
     taskId: partial.taskId ?? null,
     sourceAgentId: null,
     sourceSnapshotAt: null,
