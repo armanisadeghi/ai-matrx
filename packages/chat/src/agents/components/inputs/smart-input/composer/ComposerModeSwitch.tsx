@@ -8,11 +8,18 @@
  * page, or the header of a docked chat panel (`size="panel"`). Every instance
  * reads and writes the same tab-wide mode.
  *
- * On a phone the top bar has no room for three segments beside its icons, so
- * below `sm` the bar size is ONE button naming the mode that opens the three.
+ * When the header row has no room for three segments beside its actions, the
+ * bar size is ONE button naming the mode that opens the three. "No room" is
+ * MEASURED on the header's own row (`useCenterControlFit`), never read from the
+ * viewport: with the canvas open a 1440px window leaves the main column ~800px,
+ * and a viewport breakpoint drew the full switch over the page's actions
+ * (2026-10-03). Before the first measurement (server HTML) the `sm:` classes
+ * pick the form, so a phone's first paint is already compact.
  */
 
+import { useRef, useSyncExternalStore } from "react";
 import { ChevronDown } from "lucide-react";
+import { useCenterControlFit } from "@host/features/shell/components/header/useCenterControlFit";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,15 +49,25 @@ export function ComposerModeSwitch({
 }: ComposerModeSwitchProps) {
   const { mode, setMode } = useComposerMode(initialMode);
   const panel = size === "panel";
-  const segments = (
+  const cellRef = useRef<HTMLDivElement>(null);
+  const fullRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const fit = useCenterControlFit(cellRef, [fullRef, triggerRef], mode);
+  // False in the server HTML and during hydration; the layout effect has
+  // measured before the first client paint after that.
+  const measured = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const renderSegments = (interactive: boolean) => (
     <div
-      role="tablist"
-      aria-label="Composer mode"
+      role={interactive ? "tablist" : undefined}
+      aria-label={interactive ? "Composer mode" : undefined}
       className={cn(
         "shrink-0 items-center gap-0.5 rounded-lg bg-muted p-0.5",
-        panel
+        panel || !interactive
           ? "inline-flex rounded-lg"
-          : "hidden rounded-[10px] sm:inline-flex",
+          : measured
+            ? "inline-flex rounded-[10px]"
+            : "hidden rounded-[10px] sm:inline-flex",
+        !interactive && "w-max max-w-none",
         className,
       )}
     >
@@ -60,9 +77,10 @@ export function ComposerModeSwitch({
           <button
             key={value}
             type="button"
-            role="tab"
-            aria-selected={on}
-            onClick={() => setMode(value)}
+            role={interactive ? "tab" : undefined}
+            aria-selected={interactive ? on : undefined}
+            tabIndex={interactive ? undefined : -1}
+            onClick={interactive ? () => setMode(value) : undefined}
             className={cn(
               "whitespace-nowrap font-medium transition-colors",
               panel
@@ -79,25 +97,43 @@ export function ComposerModeSwitch({
       })}
     </div>
   );
-  if (panel) return segments;
-  return (
+  if (panel) return renderSegments(true);
+  const triggerClass =
+    "inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-muted px-2.5 text-sm font-medium text-foreground";
+  const triggerFace = (
     <>
-      {segments}
+      {COMPOSER_MODE_LABELS[mode]}
+      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+    </>
+  );
+  const showFull = measured ? fit.index === 0 : null;
+  const showTrigger = measured ? fit.index === 1 : null;
+  return (
+    <div
+      ref={cellRef}
+      className="relative flex w-full min-w-0 justify-center"
+      data-route-nav-inflow={fit.inflow ? "" : undefined}
+    >
+      {/* Hidden measurers at natural width (`w-max max-w-none`: the global
+          `* { max-width: 100% }` would cap them at this cell). */}
+      <div aria-hidden className="pointer-events-none invisible absolute left-0 top-0">
+        <div ref={fullRef} className="w-max max-w-none">
+          {renderSegments(false)}
+        </div>
+        <span ref={triggerRef} data-route-nav-min className={cn(triggerClass, "w-max max-w-none")}>
+          {triggerFace}
+        </span>
+      </div>
+      {showFull !== false ? renderSegments(true) : null}
+      {showTrigger !== false ? (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             aria-label={`Composer mode: ${COMPOSER_MODE_LABELS[mode]}`}
-            className={cn(
-              "inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-muted px-2.5 text-sm font-medium text-foreground sm:hidden",
-              className,
-            )}
+            className={cn(triggerClass, showTrigger == null && "sm:hidden", className)}
           >
-            {COMPOSER_MODE_LABELS[mode]}
-            <ChevronDown
-              className="h-3.5 w-3.5 text-muted-foreground"
-              aria-hidden="true"
-            />
+            {triggerFace}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center">
@@ -116,6 +152,9 @@ export function ComposerModeSwitch({
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-    </>
+      ) : null}
+    </div>
   );
 }
+
+const noopSubscribe = () => () => {};

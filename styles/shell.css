@@ -1579,6 +1579,26 @@ body[style*="pointer-events: none"] {
   align-items: center;
   justify-content: center;
   min-width: 0;
+  /* THE ROUTE'S ROW IS A CONTAINER (2026-10-03). With the canvas open the
+     header spans only the main column, so a viewport breakpoint (`lg:`, `sm:`)
+     says "desktop" while the route has 300px. A route header that splits
+     layouts by width uses `@min-[…]/shell-header:` — the width it really has —
+     never the window's. Inline-size only: the row's height is untouched. */
+  container: shell-header / inline-size;
+}
+
+/* LAST RESORT: SCROLL, NEVER OVERDRAW (2026-10-03). When the guard has folded
+   the shell's words and controls and the route's own row still does not fit
+   (`data-header-overdrawn`), the row scrolls sideways under its own clip
+   instead of painting under the right set — every control stays reachable and
+   none sits on top of another. The guard still names the route in the console. */
+.shell-header[data-header-overdrawn] .shell-header-center {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.shell-header[data-header-overdrawn] .shell-header-center::-webkit-scrollbar {
+  display: none;
 }
 
 /* A broad route layout may provide a fallback while a leaf page owns specific
@@ -2875,6 +2895,17 @@ html[data-board-embed] .shell-main {
     display: flex;
     align-items: center;
   }
+}
+/* THE SAME FOLD, MEASURED ON THE MAIN COLUMN (2026-10-03). With the canvas
+   open the header spans only the main column; when it leaves the route too
+   little room, `HeaderCrowdingGuard` sets `data-header-folded` and the right
+   set folds into the one ⋮ exactly as on a phone (header-crowding.ts). */
+.shell-header[data-header-folded] .shell-header-secondary {
+  display: none;
+}
+.shell-header[data-header-folded] .shell-header-overflow {
+  display: flex;
+  align-items: center;
 }
 
 /* Chat incognito — visually mute identity chrome (sidebar + avatar). */

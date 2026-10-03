@@ -27,7 +27,11 @@ interface AgentHeaderProps {
  *
  * Desktop: text-based selector + labelled mode buttons + save/options.
  * Mobile: tap-target icons only — Webhook (agent picker) | 5-icon group | menu.
- * Breakpoint split via CSS hidden classes — no client hook needed.
+ * The split is a CONTAINER query on the shell header's own row
+ * (`@container/shell-header`, styles/shell.css), never the viewport: with the
+ * canvas open a 1440px window leaves this header ~300–600px, and the `lg:`
+ * split drew the desktop row 190–630px wider than its slot (2026-10-03).
+ * CSS only — no client hook, nothing shifts on hydrate.
  */
 export function AgentHeader({
   agentId,
@@ -38,8 +42,8 @@ export function AgentHeader({
 }: AgentHeaderProps) {
   return (
     <>
-      {/* ── Mobile layout (< lg) ─────────────────────────────────────────── */}
-      <div className="lg:hidden w-full">
+      {/* ── Compact layout (header row < 44rem) ─────────────────────────── */}
+      <div className="w-full @min-[44rem]/shell-header:hidden">
         <AgentHeaderMobile
           agentId={agentId}
           agentName={agentName}
@@ -47,8 +51,8 @@ export function AgentHeader({
         />
       </div>
 
-      {/* ── Desktop layout (>= lg) ───────────────────────────────────────── */}
-      <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-0 px-0">
+      {/* ── Full layout (header row >= 44rem) ──────────────────────────── */}
+      <div className="@container/agent-header hidden @min-[44rem]/shell-header:flex items-center justify-between w-full gap-0 px-0">
         <div className="flex items-center">
           <ChevronLeftTapButton href={backHref} aria-label="Back to Agents" />
           <AgentSelectorIsland
