@@ -1,6 +1,7 @@
 import { QUICK_ACTIONS } from "@/features/dashboard/dashboard.config";
 import {
   isNavActionChild,
+  expandNavChildren,
   isNavPanelChild,
   primaryNavItems,
   settingsItem,
@@ -68,7 +69,7 @@ const LAUNCHPAD_CARD_DESCRIPTIONS: Record<string, string> = {
   CRM: "People, companies, and contacts",
   Libraries: "Catalogue and transcribe YouTube",
   "Legal Hub": "Legal tools and case utilities",
-  "Medical Hub (Soon)": "Clinical tools — coming soon",
+  "Medical Hub": "Medical calculators and clinical tools",
   "Education Hub": "Flashcards, quizzes, and a tutor",
   Print: "Decks, tests, labels, and documents",
   Marketing: "Brands, search, and measurement",
@@ -116,7 +117,7 @@ export function buildUserLaunchpadCatalog(
     const destinations: LaunchpadDestination[] = [destinationFromItem(item)];
     const seen = new Set([item.href]);
 
-    for (const child of item.children ?? []) {
+    for (const child of expandNavChildren(item.children)) {
       if (
         !child.dashboard ||
         isNavActionChild(child) ||

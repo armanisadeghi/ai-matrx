@@ -273,19 +273,41 @@ const DOMAIN_ORDER = [
   "Other",
 ] as const;
 
-/**
- * Placeholders that knowingly borrow another destination's href until their
- * own page exists. Each is listed in common-docs/operations/conflicts.md.
- */
-const PLACEHOLDER_HREF_TWINS = new Set(["Medical Hub (Soon)"]);
+/** The industries, in menu order. Adding one is ONE entry in nav-data. */
+const INDUSTRIES = ["Education", "Legal", "Commerce", "Medical"] as const;
+
+/** Top-level menus that open sub-areas instead of one long list. */
+const THREE_LEVEL_MENUS = ["Industries", "Media", "Workspace"] as const;
+
+/** A flyout longer than this is the "hundreds of items all in one" Arman ruled out. */
+const MAX_FLYOUT_ROWS = 20;
 
 type Node = ShellNavItem | ShellNavChild;
 
-function walk(nodes: readonly Node[], visit: (node: Node) => void): void {
+/** Walks EVERY level — top items, their rows, and a sub-area's own rows. */
+function walk(nodes: readonly Node[], visit: (node: Node, depth: number) => void, depth = 1): void {
   for (const node of nodes) {
-    visit(node);
-    if ("children" in node && node.children) walk(node.children, visit);
+    visit(node, depth);
+    if ("children" in node && node.children) walk(node.children, visit, depth + 1);
   }
+}
+
+/** Every menu a person can open: each top-level flyout and each sub-area's submenu. */
+function everyMenu(): { where: string; rows: readonly ShellNavChild[] }[] {
+  const menus: { where: string; rows: readonly ShellNavChild[] }[] = [];
+  for (const item of primaryNavItems) {
+    menus.push({ where: item.label, rows: item.children ?? [] });
+    for (const child of item.children ?? []) {
+      if (child.children?.length) menus.push({ where: `${item.label} › ${child.label}`, rows: child.children });
+    }
+  }
+  return menus;
+}
+
+function topItem(label: string): ShellNavItem {
+  const item = primaryNavItems.find((candidate) => candidate.label === label);
+  if (!item) throw new Error(`No top-level menu named ${label}`);
+  return item;
 }
 
 function reachable<T>(pick: (node: Node) => T | undefined): Set<T> {
@@ -334,24 +356,26 @@ describe("main menu — nothing is lost", () => {
     const check = (nodes: readonly Node[], where: string) => {
       const seen = new Map<string, string>();
       for (const node of nodes.filter(isDestination)) {
-        if (PLACEHOLDER_HREF_TWINS.has(node.label)) continue;
         const prior = seen.get(node.href);
         if (prior) twins.push(`${where}: ${prior} + ${node.label} → ${node.href}`);
         seen.set(node.href, node.label);
       }
     };
     check(primaryNavItems, "top level");
-    for (const item of primaryNavItems) check(item.children ?? [], item.label);
+    for (const menu of everyMenu()) check(menu.rows, menu.where);
     expect(twins).toEqual([]);
   });
 
   it("keeps each destination in exactly one domain (duplicates become one entry)", () => {
     const owners = new Map<string, string[]>();
     for (const item of primaryNavItems) {
-      for (const child of (item.children ?? []).filter(isDestination)) {
-        if (child.external || PLACEHOLDER_HREF_TWINS.has(child.label)) continue;
-        owners.set(child.href, [...(owners.get(child.href) ?? []), item.label]);
-      }
+      // Every level counts: a sub-area's landing is usually also one of its
+      // own rows, which is the SAME domain, so each domain is counted once.
+      const hrefs = new Set<string>();
+      walk(item.children ?? [], (node) => {
+        if (isDestination(node) && !node.external) hrefs.add(node.href);
+      });
+      for (const href of hrefs) owners.set(href, [...(owners.get(href) ?? []), item.label]);
     }
     const shared = [...owners].filter(([, labels]) => labels.length > 1);
     expect(shared.map(([href, labels]) => `${href} → ${labels.join(", ")}`)).toEqual([]);
@@ -363,5 +387,50 @@ describe("main menu — nothing is lost", () => {
     expect(hrefs).toContain("/workflows/all");
     expect(hrefs).toContain("https://workflows.aimatrx.com");
     expect(primaryNavItems.filter((item) => /workflow/i.test(item.label))).toHaveLength(1);
+  });
+
+  it("walks the third level — a sub-area's own rows are reached", () => {
+    const depths = new Set<number>();
+    walk(primaryNavItems, (_node, depth) => depths.add(depth));
+    expect([...depths].sort()).toEqual([1, 2, 3]);
+    // A row that exists ONLY inside a sub-area (Industries › Education).
+    expect(reachable((node) => node.href).has("/education/flashcards")).toBe(true);
+  });
+
+  it("lists ONLY industries under Industries, each opening its own menu", () => {
+    const industries = topItem("Industries").children ?? [];
+    expect(industries.map((child) => child.label)).toEqual([...INDUSTRIES]);
+    for (const industry of industries) {
+      expect(industry.children?.length ?? 0).toBeGreaterThan(0);
+      expect(industry.panelAction ?? industry.action ?? industry.actionItem).toBeUndefined();
+    }
+  });
+
+  it("gives Medical its own landing, not a borrowed one", () => {
+    const medical = topItem("Industries").children?.find((child) => child.label === "Medical");
+    expect(medical?.href).toBe("/medical");
+  });
+
+  it("opens Media and Workspace as sub-areas, not one long list", () => {
+    for (const label of THREE_LEVEL_MENUS) {
+      const rows = topItem(label).children ?? [];
+      const flat = rows.filter((row) => !row.children?.length);
+      expect(`${label}: ${flat.map((row) => row.label).join(", ")}`).toBe(`${label}: `);
+    }
+  });
+
+  it("keeps every top-level flyout short enough to scan", () => {
+    const long = primaryNavItems
+      .filter((item) => (item.children?.length ?? 0) > MAX_FLYOUT_ROWS)
+      .map((item) => `${item.label} (${item.children?.length})`);
+    expect(long).toEqual([]);
+  });
+
+  it("never nests deeper than three levels", () => {
+    const tooDeep: string[] = [];
+    walk(primaryNavItems, (node, depth) => {
+      if (depth >= 3 && "children" in node && node.children?.length) tooDeep.push(node.label);
+    });
+    expect(tooDeep).toEqual([]);
   });
 });

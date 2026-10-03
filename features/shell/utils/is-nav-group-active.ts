@@ -1,4 +1,8 @@
-import type { ShellNavItem } from "../constants/nav-data";
+import {
+  expandNavChildren,
+  type ShellNavChild,
+  type ShellNavItem,
+} from "../constants/nav-data";
 
 function normalizeRoutePath(path: string): string {
   const pathname = path.split(/[?#]/, 1)[0] || "/";
@@ -17,28 +21,74 @@ export function isOnRoute(
   return current === target || current.startsWith(`${target}/`);
 }
 
-/** The one most-specific child that owns the current route. */
+/** Anything that holds a menu: a top-level item or a sub-area child. */
+type NavMenuNode = Pick<ShellNavItem, "href" | "ownedRoutePrefixes"> & {
+  children?: readonly ShellNavChild[];
+};
+
+function childMatchesRoute(
+  pathname: string,
+  node: NavMenuNode,
+  child: ShellNavChild,
+): boolean {
+  if (child.external) return false;
+  if (isOnRoute(pathname, child.href, child.exact)) return true;
+  if (!child.href.startsWith(node.href)) return false;
+  const childSuffix = child.href.slice(node.href.length);
+  return (node.ownedRoutePrefixes ?? []).some((prefix) =>
+    isOnRoute(pathname, `${prefix}${childSuffix}`, child.exact),
+  );
+}
+
+/**
+ * The one most-specific LEAF that owns the current route, searched through
+ * every level (a sub-area's own menu included).
+ */
 export function findActiveNavChild(
   pathname: string,
-  item: ShellNavItem,
-): NonNullable<ShellNavItem["children"]>[number] | undefined {
-  return (item.children ?? [])
-    .filter((child) => {
-      if (child.external) return false;
-      if (isOnRoute(pathname, child.href, child.exact)) return true;
-      if (!child.href.startsWith(item.href)) return false;
-      const childSuffix = child.href.slice(item.href.length);
-      return (item.ownedRoutePrefixes ?? []).some((prefix) =>
-        isOnRoute(pathname, `${prefix}${childSuffix}`, child.exact),
-      );
-    })
+  item: NavMenuNode,
+): ShellNavChild | undefined {
+  return expandNavChildren(item.children, { leavesOnly: true })
+    .filter((child) => childMatchesRoute(pathname, item, child))
     .sort(
       (a, b) =>
         normalizeRoutePath(b.href).length - normalizeRoutePath(a.href).length,
     )[0];
 }
 
-type NavChild = NonNullable<ShellNavItem["children"]>[number];
+/**
+ * The DIRECT child of `item` on the way to the active route: the active leaf
+ * itself, or the sub-area that contains it (so "Education" lights up in the
+ * Industries flyout while a learner is on /education/flashcards). Falls back
+ * to a sub-area whose own landing matches, for a landing with no leaf yet.
+ */
+export function findActiveNavBranch(
+  pathname: string,
+  item: NavMenuNode,
+): ShellNavChild | undefined {
+  const leaf = findActiveNavChild(pathname, item);
+  const children = item.children ?? [];
+  if (leaf) {
+    const branch = children.find(
+      (child) =>
+        child === leaf ||
+        expandNavChildren(child.children).includes(leaf),
+    );
+    if (branch) return branch;
+  }
+  return children
+    .filter(
+      (child) =>
+        (child.children?.length ?? 0) > 0 &&
+        childMatchesRoute(pathname, item, child),
+    )
+    .sort(
+      (a, b) =>
+        normalizeRoutePath(b.href).length - normalizeRoutePath(a.href).length,
+    )[0];
+}
+
+type NavChild = ShellNavChild;
 
 /**
  * A child that is a real destination of this group (not a window-panel or
@@ -57,7 +107,8 @@ function isOwnedDestination(child: NavChild): boolean {
 /** Length of the longest destination child that owns this route (0 = none). */
 function childOwnershipLength(pathname: string, item: ShellNavItem): number {
   let best = 0;
-  for (const child of item.children ?? []) {
+  // Every level: a sub-area's own rows belong to the top-level group too.
+  for (const child of expandNavChildren(item.children)) {
     if (!isOwnedDestination(child)) continue;
     if (isOnRoute(pathname, child.href, child.exact)) {
       best = Math.max(best, normalizeRoutePath(child.href).length);

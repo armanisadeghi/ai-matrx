@@ -6,18 +6,28 @@
 // opens the submenu flyout, so the same route is reachable at either rail
 // width without stealing native link behavior (new tab, keyboard activation).
 //
-// The submenu is a glass panel portaled to <body> and positioned to the right
-// of the trigger (clamped to the viewport). Because it lives outside
-// .shell-root, active state is computed in JS (usePathname) rather than the
-// CSS data-pathname matching the rest of the shell uses.
+// The flyout is a panel portaled to <body> and positioned to the right of the
+// trigger (clamped to the viewport). Because it lives outside .shell-root,
+// active state is computed in JS (usePathname) rather than the CSS
+// data-pathname matching the rest of the shell uses.
+//
+// THE THIRD LEVEL (Arman, 2026-10-02). A child that carries its own `children`
+// is a sub-area (an industry, a part of Media). Its row navigates to its
+// landing when its NAME is clicked; hovering the row, clicking its chevron, or
+// pressing ArrowRight opens its menu as a second panel beside the flyout.
+// Hover intent: the submenu opens after a short delay and closes after a
+// longer one, so a diagonal move from the row into the submenu (crossing other
+// rows) never closes it. Escape / ArrowLeft step back one level.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import {
   NAV_WINDOW_PANEL_ICON,
+  navChildHasSubmenu,
   navToneIconClass,
   partitionNavChildren,
   type ShellNavChild,
@@ -26,6 +36,7 @@ import {
 import { useNavActions } from "../../navigation/navActions";
 import { useNavPanelActions } from "../../navigation/navPanelActions";
 import {
+  findActiveNavBranch,
   findActiveNavChild,
   isExclusiveNavGroupActive,
 } from "../../utils/is-nav-group-active";
@@ -48,6 +59,36 @@ interface NavFlyoutGroupProps {
 
 const OPEN_DELAY = 90;
 const CLOSE_DELAY = 240;
+/** A submenu waits a beat before opening so a diagonal pass doesn't switch it. */
+const SUB_OPEN_DELAY = 140;
+/** …and lingers long enough for the pointer to cross into it. */
+const SUB_CLOSE_DELAY = 320;
+const VIEWPORT_MARGIN = 8;
+
+function childKey(child: ShellNavChild): string {
+  return `${child.panelAction ?? child.action ?? child.href}::${child.label}`;
+}
+
+/** Arrow-key focus movement among a panel's menu items. */
+function moveFocus(panel: HTMLElement | null, direction: 1 | -1): void {
+  if (!panel) return;
+  const items = Array.from(
+    panel.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  );
+  if (items.length === 0) return;
+  const index = items.indexOf(document.activeElement as HTMLElement);
+  const next =
+    index === -1
+      ? direction === 1
+        ? 0
+        : items.length - 1
+      : (index + direction + items.length) % items.length;
+  items[next]?.focus();
+}
+
+function focusFirstItem(panel: HTMLElement | null): void {
+  panel?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+}
 
 export default function NavFlyoutGroup({
   item,
@@ -63,91 +104,52 @@ export default function NavFlyoutGroup({
   const [pinned, setPinned] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
 
+  // The open sub-area (third level), where its panel sits, and whether a click
+  // pinned it (a pinned submenu ignores pointer-leave).
+  const [subKey, setSubKey] = useState<string | null>(null);
+  const [subPinned, setSubPinned] = useState(false);
+  const [subCoords, setSubCoords] = useState({ top: 0, left: 0 });
+
   const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerLinkRef = useRef<HTMLAnchorElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const subPanelRef = useRef<HTMLDivElement>(null);
+  const subRowRefs = useRef(new Map<string, HTMLDivElement>());
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const subCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusPanelOnOpen = useRef(false);
+  const focusSubOnOpen = useRef(false);
+  /** Focus handed BACK to the rail row (Escape) must not reopen the flyout. */
+  const skipFocusOpen = useRef(false);
 
   const showPanel = open || pinned;
+  const subArea = showPanel
+    ? children.find(
+        (child) => navChildHasSubmenu(child) && childKey(child) === subKey,
+      )
+    : undefined;
 
-  // Active child = most specific matching href among siblings (so e.g. on
-  // /transcripts/studio only "Studio" lights up, not "All Transcripts").
-  const activeHref = findActiveNavChild(pathname, item)?.href;
+  // The row on the way to the active route at this level (a sub-area lights
+  // up while one of its own rows is the current page).
+  const activeBranch = findActiveNavBranch(pathname, item);
+  const activeSubLeaf = subArea
+    ? findActiveNavChild(pathname, subArea)
+    : undefined;
   const isGroupActive =
     !suppressActive && isExclusiveNavGroupActive(pathname, item, candidates);
 
-  // Destinations up top (grouped), create actions collected at the bottom.
-  const { sections, panels, actions } = partitionNavChildren(children);
-
-  // One renderer for both destinations and actions so they're pixel-identical.
-  // Action entries trigger an overlay/window in place instead of navigating —
-  // render a button, run the handler, and close the flyout. (Falls back to a
-  // plain Link for navigation entries and action entries without a handler.)
-  const renderChild = (child: ShellNavChild) => {
-    const panelHandler = child.panelAction
-      ? navPanelActions[child.panelAction]
-      : undefined;
-    if (panelHandler) {
-      return (
-        <button
-          key={child.panelAction}
-          type="button"
-          role="menuitem"
-          className="shell-nav-flyout-item"
-          onClick={() => {
-            panelHandler();
-            setPinned(false);
-            setOpen(false);
-          }}
-        >
-          <span className="shell-nav-icon">
-            <ShellIcon
-              name={NAV_WINDOW_PANEL_ICON}
-              size={16}
-              strokeWidth={1.75}
-            />
-          </span>
-          <span>{child.label}</span>
-        </button>
-      );
+  const clearSubTimers = useCallback(() => {
+    if (subOpenTimer.current) {
+      clearTimeout(subOpenTimer.current);
+      subOpenTimer.current = null;
     }
-
-    const actionHandler = child.action ? navActions[child.action] : undefined;
-    if (actionHandler) {
-      return (
-        <button
-          key={child.action}
-          type="button"
-          role="menuitem"
-          className="shell-nav-flyout-item"
-          onClick={() => {
-            actionHandler();
-            setPinned(false);
-            setOpen(false);
-          }}
-        >
-          <span className="shell-nav-icon">
-            <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
-          </span>
-          <span>{child.label}</span>
-        </button>
-      );
+    if (subCloseTimer.current) {
+      clearTimeout(subCloseTimer.current);
+      subCloseTimer.current = null;
     }
-    return (
-      <AppLink
-        key={child.href}
-        href={child.href}
-        role="menuitem"
-        className="shell-nav-flyout-item"
-        data-active={child.href === activeHref ? "true" : undefined}
-      >
-        <span className="shell-nav-icon">
-          <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
-        </span>
-        <span>{child.label}</span>
-      </AppLink>
-    );
-  };
+  }, []);
 
   const clearTimers = useCallback(() => {
     if (openTimer.current) {
@@ -160,19 +162,83 @@ export default function NavFlyoutGroup({
     }
   }, []);
 
+  const closeSub = useCallback(() => {
+    clearSubTimers();
+    setSubKey(null);
+    setSubPinned(false);
+  }, [clearSubTimers]);
+
+  const closeAll = useCallback(() => {
+    clearTimers();
+    closeSub();
+    setPinned(false);
+    setOpen(false);
+  }, [clearTimers, closeSub]);
+
   const position = useCallback(() => {
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const panelHeight = panelRef.current?.getBoundingClientRect().height;
-    const margin = 8;
     const top = panelHeight
       ? Math.max(
-          margin,
-          Math.min(rect.top, window.innerHeight - panelHeight - margin),
+          VIEWPORT_MARGIN,
+          Math.min(rect.top, window.innerHeight - panelHeight - VIEWPORT_MARGIN),
         )
       : rect.top;
     setCoords({ top, left: rect.right + 6 });
+  }, []);
+
+  /** Opens a sub-area's menu beside its row. */
+  const openSub = useCallback(
+    (key: string, { focus = false }: { focus?: boolean } = {}) => {
+      clearSubTimers();
+      const row = subRowRefs.current.get(key);
+      const panel = panelRef.current;
+      if (!row || !panel) return;
+      const rowRect = row.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      focusSubOnOpen.current = focus;
+      setSubCoords({ top: rowRect.top - 4, left: panelRect.right + 4 });
+      setSubKey(key);
+    },
+    [clearSubTimers],
+  );
+
+  const scheduleSubOpen = useCallback(
+    (key: string) => {
+      if (subCloseTimer.current) {
+        clearTimeout(subCloseTimer.current);
+        subCloseTimer.current = null;
+      }
+      if (subKey === key) return;
+      if (subOpenTimer.current) clearTimeout(subOpenTimer.current);
+      // A pinned submenu (opened by a click) waits for a click elsewhere.
+      if (subPinned) return;
+      subOpenTimer.current = setTimeout(() => openSub(key), SUB_OPEN_DELAY);
+    },
+    [openSub, subKey, subPinned],
+  );
+
+  const scheduleSubClose = useCallback(() => {
+    if (subOpenTimer.current) {
+      clearTimeout(subOpenTimer.current);
+      subOpenTimer.current = null;
+    }
+    if (subPinned) return;
+    if (subCloseTimer.current) clearTimeout(subCloseTimer.current);
+    subCloseTimer.current = setTimeout(() => setSubKey(null), SUB_CLOSE_DELAY);
+  }, [subPinned]);
+
+  const cancelSubClose = useCallback(() => {
+    if (subOpenTimer.current) {
+      clearTimeout(subOpenTimer.current);
+      subOpenTimer.current = null;
+    }
+    if (subCloseTimer.current) {
+      clearTimeout(subCloseTimer.current);
+      subCloseTimer.current = null;
+    }
   }, []);
 
   const scheduleOpen = useCallback(() => {
@@ -202,38 +268,93 @@ export default function NavFlyoutGroup({
   useEffect(() => {
     setOpen(false);
     setPinned(false);
+    setSubKey(null);
+    setSubPinned(false);
   }, [pathname]);
 
-  // Clamp the panel inside the viewport once it's measured.
+  // A closed flyout takes its submenu with it.
+  useEffect(() => {
+    if (!showPanel) {
+      setSubKey(null);
+      setSubPinned(false);
+    }
+  }, [showPanel]);
+
+  // Clamp the panel inside the viewport once it's measured; move focus into
+  // it when it was opened from the keyboard.
   useEffect(() => {
     if (!showPanel) return;
     const panel = panelRef.current;
     if (!panel) return;
     const rect = panel.getBoundingClientRect();
-    const margin = 8;
-    if (rect.bottom > window.innerHeight - margin) {
+    if (rect.bottom > window.innerHeight - VIEWPORT_MARGIN) {
       setCoords((c) => ({
         ...c,
-        top: Math.max(margin, window.innerHeight - rect.height - margin),
+        top: Math.max(
+          VIEWPORT_MARGIN,
+          window.innerHeight - rect.height - VIEWPORT_MARGIN,
+        ),
       }));
+    }
+    if (focusPanelOnOpen.current) {
+      focusPanelOnOpen.current = false;
+      focusFirstItem(panel);
     }
   }, [showPanel]);
 
-  // Dismiss the pinned flyout on outside click / Escape.
+  // Keep the submenu on screen: flip it up near the viewport bottom, and to
+  // the flyout's left when there is no room on its right. It scrolls (CSS
+  // max-height) when it is taller than the viewport.
   useEffect(() => {
-    if (!pinned) return undefined;
+    if (!subKey) return;
+    const sub = subPanelRef.current;
+    const panel = panelRef.current;
+    if (!sub || !panel) return;
+    const rect = sub.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    setSubCoords((c) => {
+      let { top, left } = c;
+      if (top + rect.height > window.innerHeight - VIEWPORT_MARGIN) {
+        top = Math.max(
+          VIEWPORT_MARGIN,
+          window.innerHeight - rect.height - VIEWPORT_MARGIN,
+        );
+      }
+      if (left + rect.width > window.innerWidth - VIEWPORT_MARGIN) {
+        left = Math.max(VIEWPORT_MARGIN, panelRect.left - rect.width - 4);
+      }
+      return top === c.top && left === c.left ? c : { top, left };
+    });
+    if (focusSubOnOpen.current) {
+      focusSubOnOpen.current = false;
+      focusFirstItem(sub);
+    }
+  }, [subKey]);
+
+  // Dismiss on outside click / Escape while anything is pinned.
+  useEffect(() => {
+    if (!pinned && !subPinned) return undefined;
     const onPointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
       if (triggerRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setPinned(false);
-      setOpen(false);
+      if (subPanelRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) {
+        // A click elsewhere in the flyout releases a pinned submenu.
+        const inSubRow = Array.from(subRowRefs.current.values()).some((row) =>
+          row.contains(target),
+        );
+        if (!inSubRow) {
+          setSubPinned(false);
+          setSubKey(null);
+        }
+        return;
+      }
+      closeAll();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setPinned(false);
-        setOpen(false);
-      }
+      if (e.key !== "Escape") return;
+      if (subKey) closeSub();
+      else closeAll();
     };
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKey);
@@ -241,9 +362,15 @@ export default function NavFlyoutGroup({
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [pinned]);
+  }, [pinned, subPinned, subKey, closeAll, closeSub]);
 
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(
+    () => () => {
+      clearTimers();
+      clearSubTimers();
+    },
+    [clearTimers, clearSubTimers],
+  );
 
   const toggleFlyout = () => {
     position();
@@ -254,6 +381,256 @@ export default function NavFlyoutGroup({
     });
   };
 
+  const onTriggerKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    // The panels are portaled, but React bubbles their keys through this
+    // element too — only keys pressed on the rail row itself belong here.
+    if (!triggerRef.current?.contains(e.target as Node)) return;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      clearTimers();
+      if (showPanel) {
+        focusFirstItem(panelRef.current);
+      } else {
+        focusPanelOnOpen.current = true;
+        position();
+        setOpen(true);
+      }
+    } else if (e.key === "Escape" && showPanel) {
+      e.preventDefault();
+      closeAll();
+    }
+  };
+
+  const onPanelKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      moveFocus(panelRef.current, e.key === "ArrowDown" ? 1 : -1);
+    } else if (e.key === "ArrowRight") {
+      const row = (e.target as HTMLElement).closest<HTMLElement>(
+        "[data-sub-key]",
+      );
+      const key = row?.dataset.subKey;
+      if (key) {
+        e.preventDefault();
+        openSub(key, { focus: true });
+      }
+    } else if (e.key === "Escape" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "Escape" && subKey) {
+        closeSub();
+        return;
+      }
+      closeAll();
+      skipFocusOpen.current = true;
+      triggerLinkRef.current?.focus();
+    }
+  };
+
+  const onRowFocus = () => {
+    if (skipFocusOpen.current) {
+      skipFocusOpen.current = false;
+      return;
+    }
+    scheduleOpen();
+  };
+
+  const onSubKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      moveFocus(subPanelRef.current, e.key === "ArrowDown" ? 1 : -1);
+    } else if (e.key === "Escape" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      e.stopPropagation();
+      const key = subKey;
+      closeSub();
+      if (key) {
+        subRowRefs.current
+          .get(key)
+          ?.querySelector<HTMLElement>('[role="menuitem"]')
+          ?.focus();
+      }
+    }
+  };
+
+  // One renderer for both destinations and actions so they're pixel-identical.
+  // Action entries trigger an overlay/window in place instead of navigating —
+  // render a button, run the handler, and close the flyout. (Falls back to a
+  // plain Link for navigation entries and action entries without a handler.)
+  const renderChild = (child: ShellNavChild, activeHref?: string) => {
+    const panelHandler = child.panelAction
+      ? navPanelActions[child.panelAction]
+      : undefined;
+    if (panelHandler) {
+      return (
+        <button
+          key={childKey(child)}
+          type="button"
+          role="menuitem"
+          className="shell-nav-flyout-item"
+          onClick={() => {
+            panelHandler();
+            closeAll();
+          }}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon
+              name={NAV_WINDOW_PANEL_ICON}
+              size={16}
+              strokeWidth={1.75}
+            />
+          </span>
+          <span>{child.label}</span>
+        </button>
+      );
+    }
+
+    const actionHandler = child.action ? navActions[child.action] : undefined;
+    if (actionHandler) {
+      return (
+        <button
+          key={childKey(child)}
+          type="button"
+          role="menuitem"
+          className="shell-nav-flyout-item"
+          onClick={() => {
+            actionHandler();
+            closeAll();
+          }}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
+          </span>
+          <span>{child.label}</span>
+        </button>
+      );
+    }
+    return (
+      <AppLink
+        key={childKey(child)}
+        href={child.href}
+        role="menuitem"
+        className="shell-nav-flyout-item"
+        data-active={child.href === activeHref ? "true" : undefined}
+        onMouseEnter={subKey ? scheduleSubClose : undefined}
+        onClick={closeAll}
+      >
+        <span className="shell-nav-icon">
+          <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
+        </span>
+        <span>{child.label}</span>
+      </AppLink>
+    );
+  };
+
+  /** A sub-area row: its name navigates, hovering / its chevron opens its menu. */
+  const renderSubAreaRow = (child: ShellNavChild) => {
+    const key = childKey(child);
+    const isOpen = subKey === key;
+    const isActive = activeBranch === child;
+    return (
+      <div
+        key={key}
+        ref={(el) => {
+          if (el) subRowRefs.current.set(key, el);
+          else subRowRefs.current.delete(key);
+        }}
+        data-sub-key={key}
+        className="relative"
+        onMouseEnter={() => scheduleSubOpen(key)}
+        onMouseLeave={scheduleSubClose}
+      >
+        <AppLink
+          href={child.href}
+          role="menuitem"
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          className={cn(
+            "shell-nav-flyout-item pr-8",
+            isOpen && !isActive && "bg-accent text-accent-foreground",
+          )}
+          data-active={isActive ? "true" : undefined}
+          onClick={closeAll}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon name={child.iconName} size={16} strokeWidth={1.75} />
+          </span>
+          <span className="min-w-0 flex-1 truncate">{child.label}</span>
+        </AppLink>
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={`Open ${child.label} menu`}
+          className="absolute right-1 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          onClick={() => {
+            if (isOpen && subPinned) {
+              closeSub();
+              return;
+            }
+            openSub(key);
+            setSubPinned(true);
+          }}
+        >
+          <ShellIcon name="ChevronRight" size={14} strokeWidth={2} />
+        </button>
+      </div>
+    );
+  };
+
+  /** The sections / windows / create layout every menu panel shares. */
+  const renderMenuBody = (
+    label: string,
+    menuChildren: ShellNavChild[],
+    activeHref: string | undefined,
+    allowSubAreas: boolean,
+  ) => {
+    // Destinations up top (grouped), create actions collected at the bottom.
+    const { sections, panels, actions } = partitionNavChildren(menuChildren);
+    return (
+      <>
+        <div className="shell-nav-flyout-header">{label}</div>
+        {sections.map((section) => (
+          <div key={section.label ?? section.items[0]?.href}>
+            {/* A section named like the menu itself would repeat the header. */}
+            {section.label &&
+            section.label.toLowerCase() !== label.toLowerCase() ? (
+              <div className="shell-nav-flyout-section">{section.label}</div>
+            ) : null}
+            {section.items.map((child) =>
+              allowSubAreas && navChildHasSubmenu(child)
+                ? renderSubAreaRow(child)
+                : renderChild(child, activeHref),
+            )}
+          </div>
+        ))}
+        {panels.length > 0 && (
+          <>
+            {sections.length > 0 && (
+              <div
+                className="shell-nav-flyout-divider"
+                role="separator"
+                aria-orientation="horizontal"
+              />
+            )}
+            {panels.map((child) => renderChild(child, activeHref))}
+          </>
+        )}
+        {actions.length > 0 && (
+          <>
+            {(sections.length > 0 || panels.length > 0) && (
+              <div
+                className="shell-nav-flyout-divider"
+                role="separator"
+                aria-orientation="horizontal"
+              />
+            )}
+            {actions.map((child) => renderChild(child, activeHref))}
+          </>
+        )}
+      </>
+    );
+  };
+
   return (
     <div
       ref={triggerRef}
@@ -262,8 +639,10 @@ export default function NavFlyoutGroup({
       data-flyout-open={showPanel ? "true" : undefined}
       onMouseEnter={scheduleOpen}
       onMouseLeave={scheduleClose}
+      onKeyDown={onTriggerKeyDown}
     >
       <AppLink
+        ref={triggerLinkRef}
         href={item.href}
         data-nav-href={suppressActive ? undefined : item.href}
         data-nav-active={isGroupActive ? "true" : undefined}
@@ -272,7 +651,7 @@ export default function NavFlyoutGroup({
           "shell-nav-item shell-nav-group-link shell-tactile-subtle",
           isGroupActive && "shell-active-pill",
         )}
-        onFocus={scheduleOpen}
+        onFocus={onRowFocus}
       >
         <span className={cn("shell-nav-icon", navToneIconClass(item.tone))}>
           <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
@@ -286,7 +665,7 @@ export default function NavFlyoutGroup({
         aria-haspopup="menu"
         aria-expanded={showPanel}
         onClick={toggleFlyout}
-        onFocus={scheduleOpen}
+        onFocus={onRowFocus}
       >
         <ShellIcon
           name="ChevronRight"
@@ -312,42 +691,48 @@ export default function NavFlyoutGroup({
             }}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
+            onKeyDown={onPanelKeyDown}
           >
-            <div className="shell-nav-flyout-header">{item.label}</div>
-            {sections.map((section) => (
-              <div key={section.label ?? section.items[0]?.href}>
-                {/* A section named like the menu itself would repeat the header. */}
-                {section.label && section.label.toLowerCase() !== item.label.toLowerCase() ? (
-                  <div className="shell-nav-flyout-section">
-                    {section.label}
-                  </div>
-                ) : null}
-                {section.items.map(renderChild)}
-              </div>
-            ))}
-            {panels.length > 0 && (
-              <>
-                {sections.length > 0 && (
-                  <div
-                    className="shell-nav-flyout-divider"
-                    role="separator"
-                    aria-orientation="horizontal"
-                  />
-                )}
-                {panels.map(renderChild)}
-              </>
+            {renderMenuBody(
+              item.label,
+              children,
+              activeBranch?.href,
+              true,
             )}
-            {actions.length > 0 && (
-              <>
-                {(sections.length > 0 || panels.length > 0) && (
-                  <div
-                    className="shell-nav-flyout-divider"
-                    role="separator"
-                    aria-orientation="horizontal"
-                  />
-                )}
-                {actions.map(renderChild)}
-              </>
+          </div>,
+          document.body,
+        )}
+
+      {subArea &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={subPanelRef}
+            role="menu"
+            aria-label={subArea.label}
+            className="shell-nav-flyout"
+            data-nav-submenu=""
+            style={{
+              position: "fixed",
+              top: subCoords.top,
+              left: subCoords.left,
+              zIndex: 10000,
+            }}
+            onMouseEnter={() => {
+              cancelClose();
+              cancelSubClose();
+            }}
+            onMouseLeave={() => {
+              scheduleSubClose();
+              scheduleClose();
+            }}
+            onKeyDown={onSubKeyDown}
+          >
+            {renderMenuBody(
+              subArea.label,
+              subArea.children ?? [],
+              activeSubLeaf?.href,
+              false,
             )}
           </div>,
           document.body,

@@ -46,7 +46,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 ### Navigate on mobile
 
 1. The existing `#shell-mobile-menu` control opens the canonical `BottomSheet` with `surface="solid"` and a fixed 92dvh height.
-2. A group label/icon opens its module home; its separate arrow opens one child screen, and Back returns to the root without changing routes.
+2. A group label/icon opens its module home; its separate arrow opens one child screen. A sub-area row (an industry, a part of Media) drills in once more; Back steps up one level without changing routes.
 3. Search filters parent and child destinations from the same viewer-filtered `nav-data.ts` tree.
 4. Selecting a destination starts navigation, then closes the drawer; route changes also close it through `MobileMenuPathSync`.
 
@@ -86,6 +86,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- `2026-10-02` — Claude: THREE-LEVEL MENU (Arman's ruling). A nav child may carry its own `children` — a sub-area whose name opens its landing and whose menu opens beside the flyout (hover intent 140ms open / 320ms close, chevron click pins it, ArrowRight opens, Escape/ArrowLeft step back, clamped and flipped to stay on screen, scrolls when long) and as a drill-in on phones (Back steps one level). Industries lists only Education, Legal, Commerce, Medical (`/medical`); Media splits into Files, Images & Video, Audio & Transcripts, PDF & Scanning, Product Capture, Print; Workspace into Home, Docs, Projects, Data, Utilities. Every flat consumer walks nesting through `expandNavChildren`; active state uses `findActiveNavBranch` / leaf `findActiveNavChild`. `nav-no-loss.test.ts` walks all three levels and holds the Industries shape, the 20-row flyout cap and the three-level ceiling.
 - `2026-10-02` — Main menu rebuilt on the domain tree: 17 product domains in tree order, then Industries, then a temporary pink "Other" (`tone: "attention"`). Every former entry kept (frozen in `features/shell/__tests__/nav-no-loss.test.ts`), 85 previously unlinked pages added, duplicates merged (one Workflows holds the run catalog and the external studio). Children now carry guest rules through `navItemsForViewer`; a domain owns the routes of its destination children (`is-nav-group-active.ts`); flyouts scroll; the phone dock is its own fixed list.
 - `2026-10-02` — Claude: THE CHAT ON EVERY PAGE. `ShellChatDock` (packages/chat/src/canvas/workspace) is mounted once by AppShell beside the sidebar; it publishes `--shell-chat-w`, which the grid's first track adds. Open/closed is remembered per page family (cookie `canvas-workspace:page:<family>:chat`, server-read); with no choice it opens at ≥1440px. Header chat button on the left (`ShellChatToggle`) and ⌘\. Stands aside on /chat and canvas-workspace pages (Board, Education). Beside an open chat at 1024–1599px a domain panel folds to the strip. Marketing's own workspace wrap removed.
 

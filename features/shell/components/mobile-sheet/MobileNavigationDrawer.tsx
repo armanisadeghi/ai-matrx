@@ -30,6 +30,7 @@ import { ShellSettingsMenu } from "../account-rail/ShellSettingsMenu";
 import { ShellOrgSwitcher } from "../account-rail/ShellOrgSwitcher";
 import { isUserSettingsPath } from "@/features/settings/route-shell/settings-route-path";
 import {
+  findActiveNavBranch,
   findActiveNavChild,
   isExclusiveNavGroupActive,
   isOnRoute,
@@ -64,36 +65,47 @@ function searchResults(items: ShellNavItem[], query: string): SearchResult[] {
   if (!needle) return [];
 
   const results: SearchResult[] = [];
+  // Walks every level: a third-level row reads "Industries · Education".
+  const visit = (children: readonly ShellNavChild[], path: string) => {
+    for (const child of children) {
+      const childHaystack = [child.label, child.description, path]
+        .filter((part): part is string => typeof part === "string")
+        .join(" ")
+        .toLocaleLowerCase();
+      if (childHaystack.includes(needle)) {
+        results.push({ item: child, groupLabel: path });
+      }
+      if (child.children?.length) {
+        visit(child.children, `${path} · ${child.label}`);
+      }
+    }
+  };
   for (const item of items) {
     const parentHaystack = [item.label, item.description]
       .filter((part): part is string => typeof part === "string")
       .join(" ")
       .toLocaleLowerCase();
     if (parentHaystack.includes(needle)) results.push({ item });
-    for (const child of item.children ?? []) {
-      const childHaystack = [child.label, child.description, item.label]
-        .filter((part): part is string => typeof part === "string")
-        .join(" ")
-        .toLocaleLowerCase();
-      if (childHaystack.includes(needle)) {
-        results.push({ item: child, groupLabel: item.label });
-      }
-    }
+    visit(item.children ?? [], item.label);
   }
   return results;
 }
 
+/** A menu row that both navigates (its name) and drills in (its chevron). */
+type DrillNode = Pick<ShellNavItem, "label" | "href" | "iconName" | "tone"> & {
+  external?: boolean;
+  openInNewTab?: boolean;
+};
+
 function GroupButton({
   item,
-  candidates,
+  isActive,
   onOpen,
 }: {
-  item: ShellNavItem;
-  candidates: readonly ShellNavItem[];
+  item: DrillNode;
+  isActive: boolean;
   onOpen: () => void;
 }) {
-  const pathname = usePathname();
-  const isActive = isExclusiveNavGroupActive(pathname ?? "", item, candidates);
   const closeAfterNavigationStarts = () => {
     window.setTimeout(closeShellMobileMenu, 0);
   };
@@ -157,6 +169,8 @@ export default function MobileNavigationDrawer({
 }: MobileNavigationDrawerProps) {
   const [open, setOpen] = useState(false);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+  /** The sub-area drilled into inside the active group (the third level). */
+  const [activeSubId, setActiveSubId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
@@ -167,6 +181,11 @@ export default function MobileNavigationDrawer({
   const allItems = [...items, settingsItem];
   const activeGroup = allItems.find(
     (item) => navItemIdentity(item) === activeGroupId,
+  );
+  const activeSub = activeGroup?.children?.find(
+    (child) =>
+      (child.children?.length ?? 0) > 0 &&
+      navChildIdentity(child) === activeSubId,
   );
   const results = searchResults(allItems, query);
 
@@ -186,6 +205,7 @@ export default function MobileNavigationDrawer({
         // drawer as an outside interaction immediately after opening it.
         openFrame = window.requestAnimationFrame(() => {
           setActiveGroupId(null);
+          setActiveSubId(null);
           setQuery("");
           setOpen(true);
           openFrame = null;
@@ -211,6 +231,7 @@ export default function MobileNavigationDrawer({
     if (control && control.checked !== nextOpen) control.checked = nextOpen;
     if (!nextOpen) {
       setActiveGroupId(null);
+      setActiveSubId(null);
       setQuery("");
     }
   };
@@ -265,8 +286,11 @@ export default function MobileNavigationDrawer({
           <GroupButton
             key={navItemIdentity(item)}
             item={item}
-            candidates={allItems}
-            onOpen={() => setActiveGroupId(navItemIdentity(item))}
+            isActive={isExclusiveNavGroupActive(pathname, item, allItems)}
+            onOpen={() => {
+              setActiveSubId(null);
+              setActiveGroupId(navItemIdentity(item));
+            }}
           />
         ) : (
           <MobileSheetNavLink
@@ -299,18 +323,31 @@ export default function MobileNavigationDrawer({
     </div>
   );
 
-  const renderGroup = (group: ShellNavItem) => {
+  /**
+   * One menu view — a top-level group or a sub-area (the third level). A row
+   * that carries its own children drills in one level deeper.
+   */
+  const renderMenu = (
+    group: DrillNode & {
+      children?: ShellNavChild[];
+      ownedRoutePrefixes?: readonly string[];
+    },
+    level: "group" | "sub",
+  ) => {
     const { sections, panels, actions } = partitionNavChildren(
       group.children ?? [],
     );
-    const activeChild = findActiveNavChild(pathname, group);
+    const activeChild =
+      level === "group"
+        ? findActiveNavBranch(pathname, group)
+        : findActiveNavChild(pathname, group);
     const overviewActive =
       isOnRoute(pathname, group.href, true) ||
       (group.ownedRoutePrefixes ?? []).some((prefix) =>
         isOnRoute(pathname, prefix, true),
       );
     return (
-      <div className="shell-mobile-main-nav" key={group.href}>
+      <div className="shell-mobile-main-nav" key={`${level}:${group.href}`}>
         <MobileSheetNavLink
           href={group.href}
           iconName={group.iconName}
@@ -327,7 +364,16 @@ export default function MobileNavigationDrawer({
               <div className="shell-mobile-section-label">{section.label}</div>
             ) : null}
             {section.items.map((child) =>
-              renderChild(child, child === activeChild),
+              level === "group" && child.children?.length ? (
+                <GroupButton
+                  key={navChildIdentity(child)}
+                  item={child}
+                  isActive={child === activeChild}
+                  onOpen={() => setActiveSubId(navChildIdentity(child))}
+                />
+              ) : (
+                renderChild(child, child === activeChild)
+              ),
             )}
           </section>
         ))}
@@ -380,7 +426,9 @@ export default function MobileNavigationDrawer({
   // menu. Ignore any global-menu query while that route is active so its
   // hidden main-nav search view cannot take over the sheet.
   const activeQuery = settingsRoute ? "" : query;
-  const title = activeQuery.trim() ? "Search" : (activeGroup?.label ?? "Menu");
+  const title = activeQuery.trim()
+    ? "Search"
+    : (activeSub?.label ?? activeGroup?.label ?? "Menu");
   const showBack = Boolean(activeGroup) && !activeQuery.trim();
 
   return (
@@ -396,8 +444,14 @@ export default function MobileNavigationDrawer({
         <button
           type="button"
           className="shell-mobile-back-button"
-          onClick={() => setActiveGroupId(null)}
-          aria-label="Back to main menu"
+          onClick={() => {
+            // One level at a time: sub-area → its group → the main menu.
+            if (activeSub) setActiveSubId(null);
+            else setActiveGroupId(null);
+          }}
+          aria-label={
+            activeSub ? `Back to ${activeGroup?.label ?? "menu"}` : "Back to main menu"
+          }
           aria-hidden={!showBack}
           data-visible={showBack ? "true" : undefined}
           tabIndex={showBack ? 0 : -1}
@@ -432,13 +486,19 @@ export default function MobileNavigationDrawer({
           <MobileRouteMenuSlot />
           <div
             className="shell-mobile-view"
-            key={activeQuery.trim() ? "search" : (activeGroupId ?? "root")}
+            key={
+              activeQuery.trim()
+                ? "search"
+                : `${activeGroupId ?? "root"}/${activeSub ? activeSubId : ""}`
+            }
           >
             {activeQuery.trim()
               ? renderSearch()
-              : activeGroup
-                ? renderGroup(activeGroup)
-                : renderRoot()}
+              : activeGroup && activeSub
+                ? renderMenu(activeSub, "sub")
+                : activeGroup
+                  ? renderMenu(activeGroup, "group")
+                  : renderRoot()}
           </div>
           <div className="shell-mobile-route-nav" />
         </nav>

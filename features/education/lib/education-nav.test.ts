@@ -41,9 +41,10 @@ describe("education shell navigation", () => {
   });
 
   it("reaches every tool from the Education Hub shell item", () => {
-    const educationItem = primaryNavItems.find(
-      (item) => item.label === "Industries",
-    );
+    // Industries → Education → its tools (the third level).
+    const educationItem = primaryNavItems
+      .find((item) => item.label === "Industries")
+      ?.children?.find((child) => child.label === "Education");
 
     if (!educationItem?.children) {
       throw new Error("Education shell navigation is missing");

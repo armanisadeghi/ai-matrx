@@ -9,6 +9,7 @@ import {
   settingsItem,
   adminItemOnSurface,
   isNavActionChild,
+  expandNavChildren,
   type AdminNavSurface,
   type ShellNavItem,
   type ShellNavChild,
@@ -82,7 +83,8 @@ function flattenPrimaryNav(items: ShellNavItem[]): NavigationLink[] {
   const out: NavigationLink[] = [];
   for (const item of items) {
     out.push(shellItemToNavigationLink(item));
-    for (const child of item.children ?? []) {
+    // Third-level rows (an industry's or a sub-area's menu) are walked too.
+    for (const child of expandNavChildren(item.children, { leavesOnly: true })) {
       if (child.gate !== undefined) continue;
       // Action children (create/add affordances) are menu-only — they're not
       // navigation destinations, so they never enter flattened link lists
@@ -124,7 +126,7 @@ function flattenForFlatSidebar(items: ShellNavItem[]): NavigationLink[] {
     // A GATED CHILD NEVER REACHES A FLAT LIST. These surfaces are built
     // synchronously and cannot wait for a switch to answer, so a destination
     // that only exists where a switch is on is left to the sidebar, which can.
-    const children = (item.children ?? []).filter(
+    const children = expandNavChildren(item.children, { leavesOnly: true }).filter(
       (c) => !isNavActionChild(c) && c.gate === undefined,
     );
     if (children.length > 0 && item.dashboard === false) {
