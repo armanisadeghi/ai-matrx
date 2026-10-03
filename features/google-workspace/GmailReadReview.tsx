@@ -22,7 +22,7 @@ import type {
   GmailModifyAction,
   GmailSearchResult,
 } from "@/features/marketing/google/types";
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { GOOGLE_SCOPE, hasGoogleGrantedScope } from "@/lib/googleScopes";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -45,8 +45,7 @@ export function GmailReadReview() {
       row.owner_type === "user" &&
       row.owner_user_id === userId &&
       row.health === "connected" &&
-      (row.scopes.includes(GOOGLE_SCOPE.gmailReadonly) ||
-        row.scopes.includes(GOOGLE_SCOPE.gmailModify)),
+      hasGoogleGrantedScope(row.scopes, GOOGLE_SCOPE.gmailReadonly),
   );
   // A recorded Gmail grant can lose its provider authorization while remaining
   // the only account this person has connected. Keep it out of the read form,
@@ -58,8 +57,7 @@ export function GmailReadReview() {
         row.owner_user_id === userId &&
         row.status === "needs_attention" &&
         googleAccountFault(row) === "grant_expired_or_revoked" &&
-        (row.scopes.includes(GOOGLE_SCOPE.gmailReadonly) ||
-          row.scopes.includes(GOOGLE_SCOPE.gmailModify)),
+        hasGoogleGrantedScope(row.scopes, GOOGLE_SCOPE.gmailReadonly),
     )
     .map((account) => {
       const productKey = account.scopes.includes(GOOGLE_SCOPE.gmailModify)
@@ -68,8 +66,7 @@ export function GmailReadReview() {
       return {
         account,
         productKey,
-        capability:
-          productKey === "gmail_modify" ? gmailChanges : gmailReading,
+        capability: productKey === "gmail_modify" ? gmailChanges : gmailReading,
       };
     });
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
@@ -92,7 +89,10 @@ export function GmailReadReview() {
   }
   useEffect(() => {
     if (currentIdentity.current.identity !== identity) {
-      currentIdentity.current = { identity, epoch: currentIdentity.current.epoch + 1 };
+      currentIdentity.current = {
+        identity,
+        epoch: currentIdentity.current.epoch + 1,
+      };
     }
   }, [identity]);
   const sameMailbox = dataIdentity === identity;
@@ -106,7 +106,10 @@ export function GmailReadReview() {
   const [labels, setLabels] = useState<GmailLabelSummary[] | null>(null);
   const [nextLabelOffset, setNextLabelOffset] = useState<number | null>(null);
   const [knownLabelIds, setKnownLabelIds] = useState<string[] | null>(null);
-  const [undo, setUndo] = useState<{ action: GmailModifyAction; labelId?: string } | null>(null);
+  const [undo, setUndo] = useState<{
+    action: GmailModifyAction;
+    labelId?: string;
+  } | null>(null);
   const activeResult = sameMailbox ? result : null;
   const activeMessage = sameMailbox ? message : null;
   const activeKnownLabelIds = sameMailbox ? knownLabelIds : null;
@@ -121,7 +124,10 @@ export function GmailReadReview() {
     event.preventDefault();
     if (!connectionId || !query.trim() || busy) return;
     if (currentIdentity.current.identity !== identity) {
-      currentIdentity.current = { identity, epoch: currentIdentity.current.epoch + 1 };
+      currentIdentity.current = {
+        identity,
+        epoch: currentIdentity.current.epoch + 1,
+      };
     }
     const epoch = currentIdentity.current.epoch;
     setDataIdentity(identity);
@@ -140,14 +146,22 @@ export function GmailReadReview() {
       if (currentIdentity.current.epoch === epoch) setResult(searched);
     } catch (cause) {
       if (currentIdentity.current.epoch === epoch)
-        setError(cause instanceof Error ? cause.message : "Gmail search failed.");
+        setError(
+          cause instanceof Error ? cause.message : "Gmail search failed.",
+        );
     } finally {
       setBusy(false);
     }
   }
 
   async function onOpen(messageId: string) {
-    if (!connectionId || busy || !sameMailbox || !activeResult?.messages.some((row) => row.id === messageId)) return;
+    if (
+      !connectionId ||
+      busy ||
+      !sameMailbox ||
+      !activeResult?.messages.some((row) => row.id === messageId)
+    )
+      return;
     const epoch = currentIdentity.current.epoch;
     setDataIdentity(identity);
     setBusy(true);
@@ -163,21 +177,29 @@ export function GmailReadReview() {
         setKnownLabelIds(opened.label_ids ?? null);
       }
     } catch (cause) {
-      if (currentIdentity.current.epoch === epoch) setError(
-        cause instanceof Error ? cause.message : "This message could not open.",
-      );
+      if (currentIdentity.current.epoch === epoch)
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "This message could not open.",
+        );
     } finally {
       setBusy(false);
     }
   }
 
-  async function onModify(action: GmailModifyAction, labelOverride?: string, isUndo = false) {
+  async function onModify(
+    action: GmailModifyAction,
+    labelOverride?: string,
+    isUndo = false,
+  ) {
     if (!connectionId || !activeMessage || !canModify || busy) return;
     const epoch = currentIdentity.current.epoch;
     const opened = activeMessage;
-    const requestedLabelId = action === "add_label" || action === "remove_label"
-      ? (labelOverride ?? activeLabelId)
-      : "";
+    const requestedLabelId =
+      action === "add_label" || action === "remove_label"
+        ? (labelOverride ?? activeLabelId)
+        : "";
     if (
       (action === "add_label" || action === "remove_label") &&
       !requestedLabelId
@@ -197,8 +219,13 @@ export function GmailReadReview() {
           ? { labelId: requestedLabelId }
           : {}),
       });
-      if (updated.message_id !== opened.id || !Array.isArray(updated.label_ids)) {
-        throw new Error("Gmail did not confirm the changed message. Try again.");
+      if (
+        updated.message_id !== opened.id ||
+        !Array.isArray(updated.label_ids)
+      ) {
+        throw new Error(
+          "Gmail did not confirm the changed message. Try again.",
+        );
       }
       if (currentIdentity.current.epoch !== epoch) return;
       const description: Record<GmailModifyAction, string> = {
@@ -232,17 +259,32 @@ export function GmailReadReview() {
         remove_label: "add_label",
       };
       const changedLabel = labelForAction[action];
-      const changed = activeKnownLabelIds !== null && !!changedLabel &&
-        activeKnownLabelIds.includes(changedLabel) !== updated.label_ids.includes(changedLabel);
+      const changed =
+        activeKnownLabelIds !== null &&
+        !!changedLabel &&
+        activeKnownLabelIds.includes(changedLabel) !==
+          updated.label_ids.includes(changedLabel);
       setKnownLabelIds(updated.label_ids);
-      setUndo(changed && !isUndo
-        ? { action: inverse[action], ...(requestedLabelId ? { labelId: requestedLabelId } : {}) }
-        : null);
-      setMutationStatus(isUndo ? "Last change undone in Gmail." : `${description[action]} in Gmail.`);
-    } catch (cause) {
-      if (currentIdentity.current.epoch === epoch) setError(
-        cause instanceof Error ? cause.message : "This message could not be changed.",
+      setUndo(
+        changed && !isUndo
+          ? {
+              action: inverse[action],
+              ...(requestedLabelId ? { labelId: requestedLabelId } : {}),
+            }
+          : null,
       );
+      setMutationStatus(
+        isUndo
+          ? "Last change undone in Gmail."
+          : `${description[action]} in Gmail.`,
+      );
+    } catch (cause) {
+      if (currentIdentity.current.epoch === epoch)
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "This message could not be changed.",
+        );
     } finally {
       setBusy(false);
     }
@@ -259,12 +301,18 @@ export function GmailReadReview() {
         throw new Error("Gmail did not return a label list. Try again.");
       }
       if (currentIdentity.current.epoch !== epoch) return;
-      setLabels((previous) => offset === 0 ? result.labels : [...(previous ?? []), ...result.labels]);
+      setLabels((previous) =>
+        offset === 0 ? result.labels : [...(previous ?? []), ...result.labels],
+      );
       setNextLabelOffset(result.has_more ? result.next_offset : null);
       if (offset === 0) setLabelId("");
     } catch (cause) {
       if (currentIdentity.current.epoch === epoch)
-        setError(cause instanceof Error ? cause.message : "Gmail labels could not load.");
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Gmail labels could not load.",
+        );
     } finally {
       setBusy(false);
     }
@@ -276,56 +324,60 @@ export function GmailReadReview() {
         <h1 className="text-xl font-semibold">Gmail reading</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Search and open messages from the Google account you choose. Search
-          reads only when you ask. If this account has Gmail change access,
-          you can change an opened message with an explicit action. This screen
-          does not sync your whole mailbox or send email.
+          reads only when you ask. If this account has Gmail change access, you
+          can change an opened message with an explicit action. This screen does
+          not sync your whole mailbox or send email.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           Gmail reading access lets this screen search for your words and show
           the body of a message you select. Sending access cannot read messages;
-          metadata-only access cannot search by your words or show the body.
-          You choose the account and each search.
+          metadata-only access cannot search by your words or show the body. You
+          choose the account and each search.
         </p>
       </div>
       {!userId || inventory.isLoading ? (
-        <p className="rounded-md border p-3 text-sm">Loading Google accounts…</p>
+        <p className="rounded-md border p-3 text-sm">
+          Loading Google accounts…
+        </p>
       ) : inventory.isError ? null : (
         <>
           {reconnectableAccounts.length > 0 ? (
             <div className="rounded-md border p-3 text-sm">
-              {reconnectableAccounts.map(({ account, productKey, capability }) => {
-                const accountName =
-                  account.account_email ??
-                  account.account_name ??
-                  "this Google account";
-                return (
-                  <div
-                    key={account.id}
-                    className="flex flex-wrap items-center gap-2"
-                  >
-                    <span>
-                      Google&apos;s permission to read Gmail for {accountName} expired
-                      or was revoked.
-                    </span>
-                    {capability?.eligible ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() =>
-                          openConsent({
-                            initialConnectionId: account.id,
-                            initialProductKeys: [productKey],
-                          })
-                        }
-                      >
-                        {productKey === "gmail_modify"
-                          ? "Reconnect Gmail changes"
-                          : "Reconnect Gmail reading"}
-                      </Button>
-                    ) : null}
-                  </div>
-                );
-              })}
+              {reconnectableAccounts.map(
+                ({ account, productKey, capability }) => {
+                  const accountName =
+                    account.account_email ??
+                    account.account_name ??
+                    "this Google account";
+                  return (
+                    <div
+                      key={account.id}
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <span>
+                        Google&apos;s permission to read Gmail for {accountName}{" "}
+                        expired or was revoked.
+                      </span>
+                      {capability?.eligible ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            openConsent({
+                              initialConnectionId: account.id,
+                              initialProductKeys: [productKey],
+                            })
+                          }
+                        >
+                          {productKey === "gmail_modify"
+                            ? "Reconnect Gmail changes"
+                            : "Reconnect Gmail reading"}
+                        </Button>
+                      ) : null}
+                    </div>
+                  );
+                },
+              )}
               {reconnectableAccounts.some(
                 ({ capability }) => capability && !capability.eligible,
               ) ? (
@@ -335,9 +387,12 @@ export function GmailReadReview() {
                 </p>
               ) : capabilities.isLoading ? (
                 <p className="mt-2">Checking Gmail access availability…</p>
-              ) : reconnectableAccounts.some(({ capability }) => !capability) ? (
+              ) : reconnectableAccounts.some(
+                  ({ capability }) => !capability,
+                ) ? (
                 <p className="mt-2">
-                  Gmail access availability could not be verified. Try again shortly.
+                  Gmail access availability could not be verified. Try again
+                  shortly.
                   <ErrorAlchemyMenu />
                 </p>
               ) : null}
@@ -345,115 +400,137 @@ export function GmailReadReview() {
           ) : null}
           {accounts.length === 0 && reconnectableAccounts.length === 0 ? (
             <p className="rounded-md border p-3 text-sm">
-          No personal Google account with Gmail reading is connected here.{" "}
-          {gmailReading?.eligible ? (
-            <button
-              type="button"
-              className="underline"
-              onClick={() => openConsent({ initialProductKeys: ["gmail_read"] })}
-            >
-              Connect Gmail reading
-            </button>
-          ) : gmailReading && !gmailReading.eligible ? (
-            "Gmail reading is not available to you during this rollout."
-          ) : capabilities.isLoading ? (
-            "Checking Gmail reading availability…"
-          ) : (
-            "Gmail reading availability could not be verified. Try again shortly."
-          )}
-          {gmailChanges?.eligible ? (
-            <>
-              {" "}
-              <button
-                type="button"
-                className="underline"
-                onClick={() => openConsent({ initialProductKeys: ["gmail_modify"] })}
-              >
-                Connect Gmail changes
-              </button>
-            </>
-          ) : null}
-          <ErrorAlchemyMenu />
+              No personal Google account with Gmail reading is connected here.{" "}
+              {gmailReading?.eligible ? (
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() =>
+                    openConsent({ initialProductKeys: ["gmail_read"] })
+                  }
+                >
+                  Connect Gmail reading
+                </button>
+              ) : gmailReading && !gmailReading.eligible ? (
+                "Gmail reading is not available to you during this rollout."
+              ) : capabilities.isLoading ? (
+                "Checking Gmail reading availability…"
+              ) : (
+                "Gmail reading availability could not be verified. Try again shortly."
+              )}
+              {gmailChanges?.eligible ? (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() =>
+                      openConsent({ initialProductKeys: ["gmail_modify"] })
+                    }
+                  >
+                    Connect Gmail changes
+                  </button>
+                </>
+              ) : null}
+              <ErrorAlchemyMenu />
             </p>
           ) : accounts.length > 0 ? (
-        <form
-          className="flex flex-col gap-2 rounded-md border p-3"
-          onSubmit={(event) => void onSearch(event)}
-        >
-          <label className="text-sm font-medium" htmlFor="gmail-read-account">
-            Google account
-          </label>
-          <select
-            id="gmail-read-account"
-            className="h-10 rounded-md border bg-background px-2 text-sm"
-            value={connectionId}
-            disabled={busy}
-            onChange={(event) => {
-              setSelectedConnectionId(event.target.value);
-              setResult(null);
-              setMessage(null);
-              setMutationStatus("");
-              setError("");
-              setLabels(null);
-              setNextLabelOffset(null);
-              setLabelId("");
-              setKnownLabelIds(null);
-              setUndo(null);
-            }}
-          >
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.account_email ??
-                  account.account_name ??
-                  "Google account"}
-              </option>
-            ))}
-          </select>
-          {!canModify && gmailChanges?.eligible ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => openConsent({
-                initialConnectionId: connectionId,
-                initialProductKeys: ["gmail_modify"],
-              })}
+            <form
+              className="flex flex-col gap-2 rounded-md border p-3"
+              onSubmit={(event) => void onSearch(event)}
             >
-              Enable Gmail changes
-            </Button>
-          ) : null}
-          <label className="text-sm font-medium" htmlFor="gmail-read-query">
-            Search Gmail
-          </label>
-          <div className="flex gap-2">
-            <input
-              className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
-              id="gmail-read-query"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              maxLength={200}
-              placeholder="from:someone@example.com"
-            />
-            <Button type="submit" disabled={busy || !query.trim()}>
-              Search
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Shows at most 20 matches. Search terms and messages are not saved by
-            this screen.
-            <ErrorAlchemyMenu />
-          </p>
-        </form>
+              <label
+                className="text-sm font-medium"
+                htmlFor="gmail-read-account"
+              >
+                Google account
+              </label>
+              <select
+                id="gmail-read-account"
+                className="h-10 rounded-md border bg-background px-2 text-sm"
+                value={connectionId}
+                disabled={busy}
+                onChange={(event) => {
+                  setSelectedConnectionId(event.target.value);
+                  setResult(null);
+                  setMessage(null);
+                  setMutationStatus("");
+                  setError("");
+                  setLabels(null);
+                  setNextLabelOffset(null);
+                  setLabelId("");
+                  setKnownLabelIds(null);
+                  setUndo(null);
+                }}
+              >
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.account_email ??
+                      account.account_name ??
+                      "Google account"}
+                  </option>
+                ))}
+              </select>
+              {!canModify && gmailChanges?.eligible ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    openConsent({
+                      initialConnectionId: connectionId,
+                      initialProductKeys: ["gmail_modify"],
+                    })
+                  }
+                >
+                  Enable Gmail changes
+                </Button>
+              ) : null}
+              <label className="text-sm font-medium" htmlFor="gmail-read-query">
+                Search Gmail
+              </label>
+              <div className="flex gap-2">
+                <input
+                  className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm"
+                  id="gmail-read-query"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  maxLength={200}
+                  placeholder="from:someone@example.com"
+                />
+                <Button type="submit" disabled={busy || !query.trim()}>
+                  Search
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Shows at most 20 matches. Search terms and messages are not
+                saved by this screen.
+                <ErrorAlchemyMenu />
+              </p>
+            </form>
           ) : null}
         </>
       )}
       {activeError || inventory.isError ? (
-        <ErrorNotice size="inline" className="text-sm" message={activeError || "Google accounts could not load. Try again shortly."} />
+        <ErrorNotice
+          size="inline"
+          className="text-sm"
+          message={
+            activeError || "Google accounts could not load. Try again shortly."
+          }
+        />
       ) : null}
       {activeMutationStatus ? (
         <div className="flex items-center gap-2 text-sm" role="status">
           <span>{activeMutationStatus}</span>
           {activeUndo ? (
-            <Button type="button" variant="link" disabled={busy} onClick={() => void onModify(activeUndo.action, activeUndo.labelId, true)}>
+            <Button
+              type="button"
+              variant="link"
+              disabled={busy}
+              onClick={() =>
+                void onModify(activeUndo.action, activeUndo.labelId, true)
+              }
+            >
               Undo
             </Button>
           ) : null}
@@ -517,16 +594,23 @@ export function GmailReadReview() {
             </p>
           ) : null}
           {canModify ? (
-            <section aria-label="Gmail message actions" className="mt-4 border-t pt-4">
-              <p className="mb-2 text-sm font-medium">Change this message in Gmail</p>
+            <section
+              aria-label="Gmail message actions"
+              className="mt-4 border-t pt-4"
+            >
+              <p className="mb-2 text-sm font-medium">
+                Change this message in Gmail
+              </p>
               <div className="flex flex-wrap gap-2">
-                {([
-                  ["archive", "Archive"],
-                  ["mark_read", "Mark read"],
-                  ["mark_unread", "Mark unread"],
-                  ["star", "Star"],
-                  ["unstar", "Remove star"],
-                ] as const).map(([action, label]) => (
+                {(
+                  [
+                    ["archive", "Archive"],
+                    ["mark_read", "Mark read"],
+                    ["mark_unread", "Mark unread"],
+                    ["star", "Star"],
+                    ["unstar", "Remove star"],
+                  ] as const
+                ).map(([action, label]) => (
                   <Button
                     key={action}
                     type="button"
@@ -537,22 +621,38 @@ export function GmailReadReview() {
                     {label}
                   </Button>
                 ))}
-                {activeKnownLabelIds && !activeKnownLabelIds.includes("INBOX") ? (
-                  <Button type="button" variant="outline" disabled={busy} onClick={() => void onModify("restore_inbox")}>
+                {activeKnownLabelIds &&
+                !activeKnownLabelIds.includes("INBOX") ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void onModify("restore_inbox")}
+                  >
                     Restore to inbox
                   </Button>
                 ) : null}
               </div>
               <div className="mt-4">
                 {activeLabels === null ? (
-                  <Button type="button" variant="outline" disabled={busy} onClick={() => void onLoadLabels()}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void onLoadLabels()}
+                  >
                     Load Gmail labels
                   </Button>
                 ) : activeLabels.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No Gmail labels are available for this account.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No Gmail labels are available for this account.
+                  </p>
                 ) : (
                   <>
-                    <label htmlFor="gmail-label-picker" className="block text-sm font-medium">
+                    <label
+                      htmlFor="gmail-label-picker"
+                      className="block text-sm font-medium"
+                    >
                       Gmail label
                     </label>
                     <select
@@ -564,19 +664,36 @@ export function GmailReadReview() {
                     >
                       <option value="">Choose a label</option>
                       {activeLabels.map((label) => (
-                        <option key={label.id} value={label.id}>{label.name}</option>
+                        <option key={label.id} value={label.id}>
+                          {label.name}
+                        </option>
                       ))}
                     </select>
                     {activeNextLabelOffset !== null ? (
-                      <Button type="button" variant="link" disabled={busy} onClick={() => void onLoadLabels(activeNextLabelOffset)}>
+                      <Button
+                        type="button"
+                        variant="link"
+                        disabled={busy}
+                        onClick={() => void onLoadLabels(activeNextLabelOffset)}
+                      >
                         Load more labels
                       </Button>
                     ) : null}
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" disabled={busy || !activeLabelId} onClick={() => void onModify("add_label")}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy || !activeLabelId}
+                        onClick={() => void onModify("add_label")}
+                      >
                         Add label
                       </Button>
-                      <Button type="button" variant="outline" disabled={busy || !activeLabelId} onClick={() => void onModify("remove_label")}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy || !activeLabelId}
+                        onClick={() => void onModify("remove_label")}
+                      >
                         Remove label
                       </Button>
                     </div>
@@ -586,9 +703,22 @@ export function GmailReadReview() {
             </section>
           ) : (
             <div className="mt-4 border-t pt-4 text-sm text-muted-foreground">
-              <p>This account has Gmail reading access. Message changes require a separate Gmail change grant.</p>
+              <p>
+                This account has Gmail reading access. Message changes require a
+                separate Gmail change grant.
+              </p>
               {gmailChanges?.eligible ? (
-                <Button type="button" variant="outline" className="mt-2" onClick={() => openConsent({ initialConnectionId: connectionId, initialProductKeys: ["gmail_modify"] })}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-2"
+                  onClick={() =>
+                    openConsent({
+                      initialConnectionId: connectionId,
+                      initialProductKeys: ["gmail_modify"],
+                    })
+                  }
+                >
                   Enable Gmail changes
                 </Button>
               ) : null}

@@ -6,7 +6,9 @@
 // Backed by get_user_full_context — one RPC, cached in Redux, never re-fetched
 // unless explicitly invalidated after a mutation.
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { onlyOpenOrganizations } from "@/features/organizations/organizationsToCreateIn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFullContext,
@@ -80,4 +82,22 @@ export function useNavOrganizations() {
 export function useEnsureHierarchyLoaded() {
   const { isLoading, isSuccess, isError, error } = useNavTree();
   return { isLoading, isSuccess, isError, error };
+}
+
+/**
+ * The organizations a create/target picker may offer: the nav tree's organizations minus
+ * archived ones. Nothing is offered until the open-membership list is known, so an archived
+ * organization never flashes into a picker.
+ */
+export function useOrganizationsToCreateIn() {
+  const { orgs, isLoading } = useNavTree();
+  const { organizations: open, loading: openLoading } = useUserOrganizations();
+  const offered = useMemo(
+    () =>
+      openLoading
+        ? EMPTY_NAV_ORGS
+        : onlyOpenOrganizations(orgs, new Set(open.map((o) => o.id))),
+    [orgs, open, openLoading],
+  );
+  return { orgs: offered, isLoading: isLoading || openLoading };
 }

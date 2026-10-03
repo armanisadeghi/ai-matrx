@@ -17,6 +17,7 @@ import {
   productGrantScopes,
 } from "./provider-config";
 import type { ConnectorId } from "./types";
+import { hasGoogleGrantedScope } from "@/lib/googleScopes";
 
 /**
  * Product key → the scope whose presence on a live connection proves it.
@@ -31,7 +32,10 @@ export const GOOGLE_PRODUCT_SCOPES: Readonly<Record<string, string>> =
   Object.fromEntries(
     GOOGLE_CONNECTOR_PROVIDER.products
       .map((product) => {
-        const [primary] = productGrantScopes(GOOGLE_CONNECTOR_PROVIDER, product);
+        const [primary] = productGrantScopes(
+          GOOGLE_CONNECTOR_PROVIDER,
+          product,
+        );
         return primary ? ([product.key, primary] as const) : null;
       })
       .filter((entry): entry is readonly [string, string] => entry !== null),
@@ -78,7 +82,7 @@ export function googleConnectionFor<Row extends ScopeRow>(
   return rows.find(
     (row) =>
       row.health === "connected" &&
-      row.scopes.includes(GOOGLE_CONNECTOR_SCOPES[id]),
+      hasGoogleGrantedScope(row.scopes, GOOGLE_CONNECTOR_SCOPES[id]),
   );
 }
 
@@ -90,7 +94,8 @@ export function googleConnectionForProduct<Row extends ScopeRow>(
   const scope = GOOGLE_PRODUCT_SCOPES[productKey];
   if (!scope) return undefined;
   return rows.find(
-    (row) => row.health === "connected" && row.scopes.includes(scope),
+    (row) =>
+      row.health === "connected" && hasGoogleGrantedScope(row.scopes, scope),
   );
 }
 
@@ -113,6 +118,6 @@ export function googleStaleConnectionFor<Row extends ScopeRow>(
   return rows.find(
     (row) =>
       row.health !== "connected" &&
-      row.scopes.includes(GOOGLE_CONNECTOR_SCOPES[id]),
+      hasGoogleGrantedScope(row.scopes, GOOGLE_CONNECTOR_SCOPES[id]),
   );
 }

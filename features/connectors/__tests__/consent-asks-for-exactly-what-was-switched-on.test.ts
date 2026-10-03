@@ -34,7 +34,8 @@ const CALENDAR_EVENTS =
   "https://www.googleapis.com/auth/calendar.events.readonly";
 const GSC = "https://www.googleapis.com/auth/webmasters.readonly";
 const YOUTUBE = "https://www.googleapis.com/auth/youtube.readonly";
-const YOUTUBE_ANALYTICS = "https://www.googleapis.com/auth/yt-analytics.readonly";
+const YOUTUBE_ANALYTICS =
+  "https://www.googleapis.com/auth/yt-analytics.readonly";
 const OPENID = "openid";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
@@ -91,6 +92,20 @@ describe("buildConsentPlan", () => {
     expect(plan.request?.scopes).not.toContain(GMAIL_SEND);
   });
 
+  it("does not offer redundant Gmail read consent to a modify-only account", () => {
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["gmail_read"],
+      account: account([OPENID, "email", "profile", GMAIL_MODIFY]),
+      rollout: rollout(),
+    });
+
+    expect(plan.request).toBeNull();
+    expect(plan.alreadyGranted.map((product) => product.key)).toEqual([
+      "gmail_read",
+    ]);
+  });
+
   it("asks only for the switched-on products, plus identity", () => {
     const plan = buildConsentPlan({
       provider,
@@ -132,8 +147,13 @@ describe("buildConsentPlan", () => {
 
   it("asks only for YouTube on a separate same-identity connection when the chosen account holds other products", () => {
     const broadAccount = account([
-      OPENID, DRIVE_FILE, GMAIL_SEND, GMAIL_READONLY, CALENDAR_LIST,
-      CALENDAR_EVENTS, GSC,
+      OPENID,
+      DRIVE_FILE,
+      GMAIL_SEND,
+      GMAIL_READONLY,
+      CALENDAR_LIST,
+      CALENDAR_EVENTS,
+      GSC,
     ]);
     const plan = buildConsentPlan({
       provider,
@@ -143,10 +163,13 @@ describe("buildConsentPlan", () => {
     });
     expect(plan.request?.connectionPurpose).toBe("youtube_isolated");
     expect(plan.request?.targetAccountId).toBeNull();
-    expect(plan.request?.capabilityKeys).toEqual(["youtube", "youtube_analytics"]);
-    expect(new Set(plan.request?.scopes)).toEqual(new Set([
-      "openid", "email", "profile", YOUTUBE, YOUTUBE_ANALYTICS,
-    ]));
+    expect(plan.request?.capabilityKeys).toEqual([
+      "youtube",
+      "youtube_analytics",
+    ]);
+    expect(new Set(plan.request?.scopes)).toEqual(
+      new Set(["openid", "email", "profile", YOUTUBE, YOUTUBE_ANALYTICS]),
+    );
     expect(plan.request?.scopes).not.toContain(DRIVE_FILE);
     expect(plan.request?.scopes).not.toContain(GMAIL_READONLY);
   });
@@ -160,7 +183,8 @@ describe("buildConsentPlan", () => {
     });
     expect(plan.request).toBeNull();
     expect(plan.blocked.map(({ productKey }) => productKey)).toEqual([
-      "search_console", "youtube",
+      "search_console",
+      "youtube",
     ]);
     expect(plan.blocked[0]?.reason).toContain("separately");
   });

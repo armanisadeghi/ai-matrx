@@ -50,7 +50,8 @@ import {
   validateProjectSlug,
 } from "../types";
 import { useProjectSlugAvailability } from "../hooks";
-import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { organizationDisambiguators } from "@/features/organizations/organizationsToCreateIn";
+import { useOrganizationsToCreateIn } from "@/features/agent-context/hooks/useNavTree";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
@@ -138,7 +139,8 @@ export function OrgSelector({
   isMobile: boolean;
 }) {
   // Every organization is listed under its own name, in one list, with the
-  // viewer's real role.
+  // viewer's real role. Two with the same name show their address.
+  const detail = organizationDisambiguators(orgs);
   const label = selectedOrg?.name ?? "Select an organization";
   const Icon = selectedOrg ? Building2 : User;
 
@@ -193,6 +195,11 @@ export function OrgSelector({
           >
             <Building2 className="h-4 w-4 shrink-0" />
             <span className="truncate">{org.name}</span>
+            {detail.get(org.id) && (
+              <span className="text-[10px] text-muted-foreground truncate">
+                {detail.get(org.id)}
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground ml-auto capitalize">
               {org.role}
             </span>
@@ -232,7 +239,7 @@ export function ProjectFormCore({
   );
   const router = useRouter();
   const dispatchThunk = useDispatchThunk();
-  const { orgs, isLoading: orgsLoading } = useNavTree();
+  const { orgs, isLoading: orgsLoading } = useOrganizationsToCreateIn();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");

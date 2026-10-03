@@ -23,7 +23,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
-import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { useOrganizationsToCreateIn } from "@/features/agent-context/hooks/useNavTree";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
@@ -75,7 +75,7 @@ export function ProjectImportJsonPanel({
   onClose,
 }: ProjectImportJsonPanelProps) {
   const dispatchThunk = useDispatchThunk();
-  const { orgs, isLoading: orgsLoading } = useNavTree();
+  const { orgs, isLoading: orgsLoading } = useOrganizationsToCreateIn();
 
   const [raw, setRaw] = useState("");
   const [jsonValidation, setJsonValidation] =

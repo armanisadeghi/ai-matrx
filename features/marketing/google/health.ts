@@ -25,7 +25,7 @@
  * is the reader. This holds whatever the server writes tomorrow: a reason we do
  * not recognise never reaches a screen.
  */
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { GOOGLE_SCOPE, hasGoogleGrantedScope } from "@/lib/googleScopes";
 import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
@@ -81,7 +81,7 @@ export function diagnoseGoogleResourceBinding({
         (candidate) =>
           candidate.id === resource.connection_id &&
           candidate.health === "connected" &&
-          candidate.scopes.includes(requiredScope),
+          hasGoogleGrantedScope(candidate.scopes, requiredScope),
       ),
   );
   if (!connection) {
@@ -95,7 +95,7 @@ export function diagnoseGoogleResourceBinding({
   }
   if (
     connection.health !== "connected" ||
-    !connection.scopes.includes(requiredScope)
+    !hasGoogleGrantedScope(connection.scopes, requiredScope)
   ) {
     return {
       state: "scope_missing",
@@ -236,7 +236,11 @@ export function classifyGoogleAccountFault(
   const text = (rawError ?? "").trim();
   if (!text) return "unknown";
   if (/missing required scope/i.test(text)) return "scope_missing";
-  if (/\bno vault credential\b|\bno credential item\b|has no credential/i.test(text)) {
+  if (
+    /\bno vault credential\b|\bno credential item\b|has no credential/i.test(
+      text,
+    )
+  ) {
     return "credential_missing";
   }
   if (
@@ -256,7 +260,9 @@ export function classifyGoogleAccountFault(
   ) {
     return "grant_expired_or_revoked";
   }
-  if (/could not be discovered|none of the requested product apis/i.test(text)) {
+  if (
+    /could not be discovered|none of the requested product apis/i.test(text)
+  ) {
     return "discovery_incomplete";
   }
   return "unknown";
@@ -379,7 +385,9 @@ export const GOOGLE_UNAVAILABLE_FAULT_CODES: readonly GoogleAccountFault[] = [
 ];
 
 /** Does this fault mean blocked-with-nothing-to-press? */
-export function googleFaultBlocksEverything(fault: GoogleAccountFault): boolean {
+export function googleFaultBlocksEverything(
+  fault: GoogleAccountFault,
+): boolean {
   return GOOGLE_UNAVAILABLE_FAULT_CODES.includes(fault);
 }
 
@@ -395,10 +403,8 @@ export function googleAccountRefusalSentence(
     connection.account_email ||
     connection.account_name ||
     "this Google account";
-  return googleAccountFaultLanguage(
-    googleAccountFault(connection),
-    account,
-  ).reason;
+  return googleAccountFaultLanguage(googleAccountFault(connection), account)
+    .reason;
 }
 
 /**
@@ -487,7 +493,10 @@ export function diagnoseGoogleConnection(
   }
 
   if (connection.health === "revoked") {
-    return { ...googleAccountFaultLanguage("access_revoked", account), blocking: true };
+    return {
+      ...googleAccountFaultLanguage("access_revoked", account),
+      blocking: true,
+    };
   }
 
   if (!connection.credential_present) {

@@ -202,6 +202,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
   [GOOGLE_SCOPE.youtubeAnalyticsReadonly]:
     "Read your channel's performance reports",
   [GOOGLE_SCOPE.contactsReadonly]: "Read your Google Contacts",
+  [GOOGLE_SCOPE.contactsWrite]:
+    "Google permits viewing, editing, downloading and permanently deleting your contacts. AI Matrx currently offers reviewed, name-only edits to existing contacts",
   [GOOGLE_SCOPE.calendarEventsOwnedReadonly]:
     "Read events on calendars you own. No changes to your calendar",
   [GOOGLE_SCOPE.calendarListReadonly]:
@@ -209,6 +211,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
   [GOOGLE_SCOPE.calendarEventsReadonly]:
     "Read events on a calendar you explicitly select. No changes to any calendar",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
+  [GOOGLE_SCOPE.tasksWrite]:
+    "Google permits creating, editing, organizing and deleting your tasks. AI Matrx currently offers reviewed task creation and selected complete or reopen changes",
   [GOOGLE_SCOPE.tagManagerReadonly]:
     "Read your Tag Manager accounts, containers and tags",
 };
@@ -437,6 +441,25 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       },
     },
     {
+      key: "contacts_edits",
+      name: "Contacts edits",
+      promise:
+        "Preview and confirm name-only edits to existing Google Contacts. We never create contacts or change email addresses or phone numbers.",
+      group: WORKSPACE_GROUP,
+      icon: Contact,
+      mark: GoogleContactsMark,
+      capabilityKeys: ["contacts_write"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsWrite],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "reviewed name changes to existing Google Contacts",
+      firstAction: {
+        kind: "overlay",
+        label: "Review contact name changes",
+        overlayId: "googleContactsImportWindow",
+        needs: ["organizationId"],
+      },
+    },
+    {
       key: "other_contacts",
       name: "Other Contacts",
       promise:
@@ -475,6 +498,25 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       firstAction: {
         kind: "overlay",
         label: "Import your tasks",
+        overlayId: "googleTasksImportWindow",
+        needs: ["organizationId"],
+      },
+    },
+    {
+      key: "tasks_changes",
+      name: "Tasks changes",
+      promise:
+        "Review and confirm task creation and selected complete or reopen changes in Google Tasks. AI Matrx does not delete tasks or retry changes automatically.",
+      group: WORKSPACE_GROUP,
+      icon: ListChecks,
+      mark: GoogleTasksMark,
+      capabilityKeys: ["tasks_write"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tasksWrite],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "reviewed Google Tasks creation and status changes",
+      firstAction: {
+        kind: "overlay",
+        label: "Review task changes",
         overlayId: "googleTasksImportWindow",
         needs: ["organizationId"],
       },

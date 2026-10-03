@@ -43,6 +43,7 @@ import type {
   ConnectorProviderConfig,
 } from "./provider-config";
 import { productByKey } from "./provider-config";
+import { hasGoogleGrantedScope } from "@/lib/googleScopes";
 import {
   productHealth,
   productIsEligible,
@@ -149,13 +150,13 @@ export function buildConsentPlan({
   account: ConnectorAccount | null;
   rollout: readonly ConnectorCapabilityRollout[];
 }): ConsentPlan {
-  const granted = new Set(account?.grantedScopes ?? []);
-
   const selected = selectedProductKeys
     .map((key) => productByKey(provider, key))
     .filter((product): product is ConnectorProduct => product !== undefined)
     // Config order, never click order: the request reads the way the dialog does.
-    .sort((a, b) => provider.products.indexOf(a) - provider.products.indexOf(b));
+    .sort(
+      (a, b) => provider.products.indexOf(a) - provider.products.indexOf(b),
+    );
 
   const blocked: ConsentBlock[] = [];
   const alreadyGranted: ConnectorProduct[] = [];
@@ -237,7 +238,8 @@ export function buildConsentPlan({
       blocked: wanted.map(({ product }) => ({
         productKey: product.key,
         productName: product.name,
-        reason: "Connect YouTube separately from the other selected Google products. Your existing connections are unchanged.",
+        reason:
+          "Connect YouTube separately from the other selected Google products. Your existing connections are unchanged.",
       })),
       alreadyGranted,
       empty: true,
@@ -248,7 +250,9 @@ export function buildConsentPlan({
   const isolatedYouTube = youtubeWanted;
   return {
     request: {
-      connectionPurpose: isolatedYouTube ? "youtube_isolated" : "google_products",
+      connectionPurpose: isolatedYouTube
+        ? "youtube_isolated"
+        : "google_products",
       // Every capability behind every switched-on row. The hub matches the
       // scope set against exactly these keys and refuses anything else.
       capabilityKeys: [
@@ -259,10 +263,9 @@ export function buildConsentPlan({
       scopes: [
         ...new Set([
           ...provider.identityScopes,
-          ...(isolatedYouTube ? wanted.flatMap(({ product }) => product.scopes) : [
-            ...(account?.grantedScopes ?? []),
-            ...added,
-          ]),
+          ...(isolatedYouTube
+            ? wanted.flatMap(({ product }) => product.scopes)
+            : [...(account?.grantedScopes ?? []), ...added]),
         ]),
       ],
       addedScopes: added,
@@ -270,7 +273,7 @@ export function buildConsentPlan({
       renewals: wanted
         .filter(({ renewal }) => renewal)
         .map(({ product }) => product),
-      targetAccountId: isolatedYouTube ? null : account?.id ?? null,
+      targetAccountId: isolatedYouTube ? null : (account?.id ?? null),
     },
     blocked,
     alreadyGranted,
@@ -364,7 +367,7 @@ export function consentOutcomes({
   /** What the exchange did. A caller cannot forget it. */
   exchange: ConsentExchangeResult;
 }): ConsentOutcome[] {
-  const granted = new Set(account?.grantedScopes ?? []);
+  const grantedScopes = account?.grantedScopes ?? [];
   const requested = plan.request?.products ?? [];
   const outcomes: ConsentOutcome[] = plan.alreadyGranted.map((product) => ({
     product,
@@ -382,7 +385,7 @@ export function consentOutcomes({
       continue;
     }
     const missing = requiredScopesFor(provider, product, rollout).filter(
-      (scope) => !granted.has(scope),
+      (scope) => !hasGoogleGrantedScope(grantedScopes, scope),
     );
     outcomes.push(
       missing.length === 0

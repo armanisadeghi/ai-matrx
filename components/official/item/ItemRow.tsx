@@ -308,6 +308,15 @@ export function ItemRow({
       entity={entity}
       enabled={!isMobile && !editing}
       onCloseAutoFocus={handleCloseAutoFocus}
+      // The v3 context menu is not a Radix content, so `onCloseAutoFocus` never fires
+      // there: a Rename picked from the right-click menu set the pending flag and
+      // nothing ever opened the editor. Its close is the signal instead.
+      onOpenChange={(open) => {
+        if (!open && pendingRenameRef.current) {
+          pendingRenameRef.current = false;
+          setTimeout(() => setEditing(true), 0);
+        }
+      }}
     >
       {row}
     </ItemContextMenu>

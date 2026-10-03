@@ -30,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import { organizationDisambiguators } from "@/features/organizations/organizationsToCreateIn";
+import { useOrganizationsToCreateIn } from "@/features/agent-context/hooks/useNavTree";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type {
@@ -85,7 +86,8 @@ export function AddEveryoneInOrg({
   onDone,
   defaultOrgId,
 }: AddEveryoneInOrgProps) {
-  const { orgs } = useNavTree();
+  const { orgs } = useOrganizationsToCreateIn();
+  const detail = organizationDisambiguators(orgs);
   const me = useAppSelector(selectUserId);
   const [open, setOpen] = useState(false);
   const [orgId, setOrgId] = useState("");
@@ -213,6 +215,11 @@ export function AddEveryoneInOrg({
                 <div className="flex items-center gap-2">
                   <Building2 className="w-3 h-3" />
                   <span>{org.name}</span>
+                  {detail.get(org.id) && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {detail.get(org.id)}
+                    </span>
+                  )}
                 </div>
               </SelectItem>
             ))}

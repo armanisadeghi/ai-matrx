@@ -67,6 +67,7 @@ import {
   GOOGLE_SCOPE,
   GOOGLE_WORKSPACE_FILE_SCOPES,
   GOOGLE_WORKSPACE_SEND_SCOPES,
+  hasGoogleGrantedScope,
 } from "@/lib/googleScopes";
 import { pickGoogleWorkspaceFile } from "@/lib/googlePicker";
 import {
@@ -103,7 +104,7 @@ function errorMessage(error: unknown): string {
 }
 
 function hasScope(connection: GoogleConnectionSummary, scope: string): boolean {
-  return connection.scopes.includes(scope);
+  return hasGoogleGrantedScope(connection.scopes, scope);
 }
 
 /**
@@ -428,9 +429,12 @@ export function GoogleWorkspaceReviewWorkspace({
     if (!activeConnection || !selectedResource) return;
     const fileType = googleWorkspaceFileType(selectedResource.resource_type);
     if (fileType.clientRead !== "sheet" || !fileType.writable) {
-      toast.info(`AI Matrx does not write to ${fileType.label}s on this screen.`, {
-        description: fileType.readOnlyNote ?? undefined,
-      });
+      toast.info(
+        `AI Matrx does not write to ${fileType.label}s on this screen.`,
+        {
+          description: fileType.readOnlyNote ?? undefined,
+        },
+      );
       return;
     }
     void run("write-file", async () => {
@@ -496,11 +500,17 @@ export function GoogleWorkspaceReviewWorkspace({
       setActiveConnectionId(null);
       setSelectedResourceId(null);
       if (result.googleAuthorizationStatus === "active_for_other_connection") {
-        toast.success("Google connection removed from AI Matrx. Google authorization remains active for your other connection to this account.");
+        toast.success(
+          "Google connection removed from AI Matrx. Google authorization remains active for your other connection to this account.",
+        );
       } else if (result.googleAuthorizationStatus === "revoked") {
-        toast.success("Google account disconnected and Google confirmed authorization revocation.");
+        toast.success(
+          "Google account disconnected and Google confirmed authorization revocation.",
+        );
       } else {
-        toast.warning("Google connection removed from AI Matrx, but Google did not confirm authorization revocation. Review access in your Google Account.");
+        toast.warning(
+          "Google connection removed from AI Matrx, but Google did not confirm authorization revocation. Review access in your Google Account.",
+        );
       }
     });
   };
@@ -865,7 +875,10 @@ export function GoogleWorkspaceReviewWorkspace({
                                 */}
                                 {showRecordDoor && (
                                   <OpenGoogleDocumentRecordButton
-                                    resource={pickedGoogleRecordResource({ ...resource, ...freshRecords[resource.id] })}
+                                    resource={pickedGoogleRecordResource({
+                                      ...resource,
+                                      ...freshRecords[resource.id],
+                                    })}
                                     variant="ghost"
                                   />
                                 )}
@@ -885,9 +898,9 @@ export function GoogleWorkspaceReviewWorkspace({
                               <p className="flex items-start gap-1.5 px-3 pb-2 text-xs text-muted-foreground">
                                 <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
                                 <span className="min-w-0 flex-1">
-                                  {resource.display_name} is picked and
-                                  usable, but its record could not be
-                                  created: {fresh.record_absent_reason}
+                                  {resource.display_name} is picked and usable,
+                                  but its record could not be created:{" "}
+                                  {fresh.record_absent_reason}
                                 </span>
                               </p>
                             ) : null}
@@ -1025,7 +1038,8 @@ export function GoogleWorkspaceReviewWorkspace({
                   <div className="space-y-3 rounded-lg border p-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                       <CheckCircle2 className="h-4 w-4" />
-                      Gmail sending is ready. This sending permission cannot read your inbox.
+                      Gmail sending is ready. This sending permission cannot
+                      read your inbox.
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">

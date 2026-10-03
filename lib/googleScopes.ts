@@ -53,6 +53,31 @@ export const GOOGLE_SCOPE = {
 
 export type GoogleScope = (typeof GOOGLE_SCOPE)[keyof typeof GOOGLE_SCOPE];
 
+/**
+ * Whether one exact Google scope requirement is covered by a recorded grant.
+ *
+ * Google's Gmail, Contacts, and Tasks write scopes each include their paired
+ * read operation. Those are the only supported implications here; every other
+ * requirement needs an exact match.
+ * Keep this predicate out of consent request construction: what Google may
+ * authorize and what AI Matrx should ask a person to approve are different
+ * decisions.
+ */
+export function hasGoogleGrantedScope(
+  grantedScopes: readonly string[],
+  requiredScope: string,
+): boolean {
+  return (
+    grantedScopes.includes(requiredScope) ||
+    (requiredScope === GOOGLE_SCOPE.gmailReadonly &&
+      grantedScopes.includes(GOOGLE_SCOPE.gmailModify)) ||
+    (requiredScope === GOOGLE_SCOPE.contactsReadonly &&
+      grantedScopes.includes(GOOGLE_SCOPE.contactsWrite)) ||
+    (requiredScope === GOOGLE_SCOPE.tasksReadonly &&
+      grantedScopes.includes(GOOGLE_SCOPE.tasksWrite))
+  );
+}
+
 export const GOOGLE_IDENTITY_SCOPES = [
   GOOGLE_SCOPE.openid,
   GOOGLE_SCOPE.email,

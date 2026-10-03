@@ -64,6 +64,7 @@ import type {
   ConnectorProviderConfig,
 } from "./provider-config";
 import { productGrantScopes, scopeLanguage } from "./provider-config";
+import { hasGoogleGrantedScope } from "@/lib/googleScopes";
 
 /** One connected provider account, as any provider's adapter reports it. */
 export interface ConnectorAccount {
@@ -264,11 +265,7 @@ export function isConnectorRefusalCode(
  *                      ask for, and offers no button that would change nothing.
  */
 export type ConnectorRefusalDisposition =
-  | "reconnect"
-  | "self_healing"
-  | "ours"
-  | "retry"
-  | "share_required";
+  "reconnect" | "self_healing" | "ours" | "retry" | "share_required";
 
 const REFUSAL_DISPOSITION: Record<
   ConnectorRefusalCode,
@@ -481,8 +478,10 @@ export function productHealth({
   activity?: ConnectorActivityByProduct;
 }): ConnectorProductHealth {
   const required = requiredScopesFor(provider, product, rollout);
-  const granted = new Set(account?.grantedScopes ?? []);
-  const missingScopes = required.filter((scope) => !granted.has(scope));
+  const grantedScopes = account?.grantedScopes ?? [];
+  const missingScopes = required.filter(
+    (scope) => !hasGoogleGrantedScope(grantedScopes, scope),
+  );
   const rows = rolloutFor(product, rollout);
   const eligible = productIsEligible(product, rollout);
   const held = required.length > 0 && missingScopes.length < required.length;
@@ -490,7 +489,7 @@ export function productHealth({
   const scopes: ConnectorScopeFact[] = required.map((scope) => ({
     scope,
     language: scopeLanguage(provider, scope),
-    granted: granted.has(scope),
+    granted: hasGoogleGrantedScope(grantedScopes, scope),
   }));
 
   // The adapter may hand activity in directly (the pure call sites and the
@@ -523,14 +522,13 @@ export function productHealth({
    */
   const refusalStands = Boolean(
     lastRefusal &&
-      (recorded?.refusalStands ??
-        (!lastSuccessAt ||
-          !lastRefusal.at ||
-          Date.parse(lastRefusal.at) > Date.parse(lastSuccessAt))),
+    (recorded?.refusalStands ??
+      (!lastSuccessAt ||
+        !lastRefusal.at ||
+        Date.parse(lastRefusal.at) > Date.parse(lastSuccessAt))),
   );
   const standingRefusal = refusalStands ? lastRefusal : null;
-  const refusalNeedsReconnect =
-    standingRefusal?.disposition === "reconnect";
+  const refusalNeedsReconnect = standingRefusal?.disposition === "reconnect";
   /**
    * The provider will authorize nothing for this account, and this product's
    * grant is part of what died with the credential. One fresh approval renews
@@ -637,12 +635,16 @@ export function productHealth({
   // planner already refuses it; the row must agree instead of showing a
   // switch beside the availability warning. Existing complete grants can
   // still report their current state while the catalog is unavailable.
-  if (rows.length !== product.capabilityKeys.length && missingScopes.length > 0) {
+  if (
+    rows.length !== product.capabilityKeys.length &&
+    missingScopes.length > 0
+  ) {
     return row({
       state: "unavailable",
       label: "Availability unknown",
       reason: `We could not confirm whether ${product.name} can be connected right now.`,
-      remedy: "Try again in a moment; if you are asked which organization you are working in, pick it.",
+      remedy:
+        "Try again in a moment; if you are asked which organization you are working in, pick it.",
       togglable: false,
     });
   }
@@ -876,7 +878,8 @@ export function preferredAccountId({
   const holders = forProductKey
     ? ranked.filter((entry) =>
         entry.health.some(
-          (row) => row.product.key === forProductKey && row.state === "connected",
+          (row) =>
+            row.product.key === forProductKey && row.state === "connected",
         ),
       )
     : [];

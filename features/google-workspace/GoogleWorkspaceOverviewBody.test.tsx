@@ -7,6 +7,7 @@ import type {
   GoogleCapabilityMetadata,
   GoogleConnectionInventory,
 } from "@/features/marketing/google/types";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -272,6 +273,132 @@ describe("GoogleWorkspaceOverviewBody", () => {
     expect(mockOpenConsent).toHaveBeenCalledWith({
       initialProductKeys: ["gmail_read"],
     });
+  });
+
+  it("treats a healthy modify-only exact account as already granted Gmail reading", () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "gmail_read"
+          ? {
+              ...capability,
+              required_scopes: [
+                {
+                  scope: GOOGLE_SCOPE.gmailReadonly,
+                  provider_classification: "restricted",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockInventory.mockReturnValue({
+      data: {
+        ...inventory,
+        connections: [
+          { ...first, scopes: [GOOGLE_SCOPE.gmailModify] },
+          { ...second, scopes: [] },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    renderOverview();
+
+    const gmailCard = Array.from(host.querySelectorAll("article")).find(
+      (article) => article.textContent?.includes("Gmail reading"),
+    );
+    expect(gmailCard?.textContent).toContain("Account permission: Granted");
+    expect(gmailCard?.textContent).toContain("Manage Gmail reading");
+    expect(gmailCard?.textContent).not.toContain("Connect Gmail reading");
+  });
+
+  it("does not borrow Gmail reading permission from a healthy sibling account", () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "gmail_read"
+          ? {
+              ...capability,
+              required_scopes: [
+                {
+                  scope: GOOGLE_SCOPE.gmailReadonly,
+                  provider_classification: "restricted",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockInventory.mockReturnValue({
+      data: {
+        ...inventory,
+        connections: [
+          { ...first, scopes: [GOOGLE_SCOPE.gmailModify] },
+          { ...second, scopes: [] },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    renderOverview(second.id);
+
+    const gmailCard = Array.from(host.querySelectorAll("article")).find(
+      (article) => article.textContent?.includes("Gmail reading"),
+    );
+    expect(gmailCard?.textContent).toContain("Account permission: Needed");
+    expect(gmailCard?.textContent).toContain("Connect Gmail reading");
+  });
+
+  it("does not call a failed modify-only account granted Gmail reading", () => {
+    mockCapabilities.mockReturnValue({
+      data: capabilities.map((capability) =>
+        capability.key === "gmail_read"
+          ? {
+              ...capability,
+              required_scopes: [
+                {
+                  scope: GOOGLE_SCOPE.gmailReadonly,
+                  provider_classification: "restricted",
+                },
+              ],
+            }
+          : capability,
+      ),
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockInventory.mockReturnValue({
+      data: {
+        ...inventory,
+        connections: [
+          {
+            ...first,
+            scopes: [GOOGLE_SCOPE.gmailModify],
+            health: "revoked" as const,
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    renderOverview();
+
+    const gmailCard = Array.from(host.querySelectorAll("article")).find(
+      (article) => article.textContent?.includes("Gmail reading"),
+    );
+    expect(gmailCard?.textContent).toContain("Account permission: Needed");
+    expect(gmailCard?.textContent).toContain("Connect Gmail reading");
   });
 
   it("does not offer Gmail reading consent outside its admitted rollout", () => {

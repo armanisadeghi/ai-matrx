@@ -30,15 +30,21 @@ const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 const YOUTUBE = "https://www.googleapis.com/auth/youtube.readonly";
 const YT_ANALYTICS = "https://www.googleapis.com/auth/yt-analytics.readonly";
 const OPENID = "openid";
+const EMAIL = "email";
+const PROFILE = "profile";
+const GMAIL_READONLY = "https://www.googleapis.com/auth/gmail.readonly";
+const GMAIL_MODIFY = "https://www.googleapis.com/auth/gmail.modify";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
 const workspace = productByKey(provider, "workspace_files")!;
 const youtube = productByKey(provider, "youtube")!;
+const gmailRead = productByKey(provider, "gmail_read")!;
 
 const LIVE: ConnectorCapabilityRollout[] = [
   "drive_files",
   "docs",
   "sheets",
+  "slides",
   "youtube",
   "youtube_analytics",
 ].map((capabilityKey) => ({
@@ -130,6 +136,27 @@ describe("productHealth", () => {
     });
     expect(row.state).not.toBe("connected");
     expect(row.reason).toContain("turns on automatically");
+  });
+
+  it("counts a healthy Gmail modify grant as covering Gmail reading", () => {
+    const row = productHealth({
+      provider,
+      product: gmailRead,
+      account: account([OPENID, EMAIL, PROFILE, GMAIL_MODIFY]),
+      rollout: [
+        ...LIVE,
+        {
+          capabilityKey: "gmail_read",
+          phase: "available",
+          eligible: true,
+          requiredScopes: [GMAIL_READONLY],
+          ineligibleReason: null,
+        },
+      ],
+    });
+    expect(row.state).toBe("connected");
+    expect(row.missingScopes).toEqual([]);
+    expect(row.actionLabel).toBeNull();
   });
 
   it("shows the rollout line and no toggle for a gated product", () => {

@@ -38,7 +38,10 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
-import { GOOGLE_WORKSPACE_FILE_SCOPES } from "@/lib/googleScopes";
+import {
+  GOOGLE_WORKSPACE_FILE_SCOPES,
+  hasGoogleGrantedScope,
+} from "@/lib/googleScopes";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAuthReady,
@@ -160,7 +163,9 @@ function GoogleWorkspaceOverviewBodyContent({
       !capabilityKey ||
       !capability.eligible ||
       connection.health !== "connected" ||
-      requiredScopes.every((scope) => connection.scopes.includes(scope))
+      requiredScopes.every((scope) =>
+        hasGoogleGrantedScope(connection.scopes, scope),
+      )
     ) {
       return;
     }
@@ -457,7 +462,7 @@ function CapabilityCatalog({
             connection &&
             connection.health === "connected" &&
             capability.required_scopes.every((scope) =>
-              connection.scopes.includes(scope.scope),
+              hasGoogleGrantedScope(connection.scopes, scope.scope),
             ),
           );
           const matchingResources = resources.filter((resource) =>

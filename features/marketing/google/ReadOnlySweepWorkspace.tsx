@@ -35,6 +35,7 @@ import {
   GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
   GOOGLE_READ_ONLY_SWEEP_SCOPES,
   GOOGLE_SCOPE,
+  hasGoogleGrantedScope,
 } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
@@ -150,7 +151,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
 
   const sweepConnections = connections.filter((connection) =>
     SWEEP_REQUIRED_CONNECTION_SCOPES.every((scope) =>
-      connection.scopes.includes(scope),
+      hasGoogleGrantedScope(connection.scopes, scope),
     ),
   );
 
@@ -333,7 +334,11 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
             Tag Manager configuration through these connections.
           </p>
           <Button asChild size="sm" variant="outline" className="min-h-11">
-            <Link href={marketingRoutes.connectionsGoogle()} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={marketingRoutes.connectionsGoogle()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Manage or disconnect Google accounts
               <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
             </Link>
