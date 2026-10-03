@@ -134,7 +134,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
             <ErrorAlchemyMenu error={error} />
           </div>
         ) : spec ? (
-          <div className="grid gap-3" data-canvas-fit={fit} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          <div className="grid gap-3" data-canvas-fit={fit === "outside" ? undefined : fit} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
             {spec.stats.map((s, i) => {
               const t = s.trend ? TREND[s.trend] : null;
               return (
