@@ -10,7 +10,8 @@
  * edges before dismissing.
  */
 
-import React, { useCallback, useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -22,7 +23,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import {
+  useFileUpload,
+  type UseFileUploadResult,
+} from "@/features/files/handler/hooks/useFileUpload";
 import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
 import { composeUploadFolderPath } from "@/features/files/handler/utils/upload-folder-path";
 import { isUploadCancelledError } from "@/features/files/handler/errors";
@@ -353,6 +357,86 @@ function uploadDirectory(relativePath: string): string {
   return lastSlash > 0 ? relativePath.slice(0, lastSlash) : "";
 }
 
+/**
+ * Upload one candidate through the canonical upload hook and build its
+ * `UploadedFile`. Throws what the upload throws. Outside the component so the
+ * React Compiler can compile it (a try block with value blocks makes it skip).
+ */
+async function uploadCandidate(
+  upload: UseFileUploadResult["upload"],
+  candidate: UploadCandidate,
+  organizationId: string | null,
+): Promise<UploadedFile> {
+  const file = candidate.file;
+  const relativeDirectory = uploadDirectory(candidate.relativePath);
+  const folderPath = composeUploadFolderPath(
+    "userContent",
+    relativeDirectory
+      ? `prompt-attachments/${relativeDirectory}`
+      : "prompt-attachments",
+  );
+  // No `metadata.scope.organization_id` is passed here on purpose:
+  // `cloudUpload` resolves the owning workspace for EVERY upload path
+  // (`bindUploadOrganization`), asking the person when nothing is
+  // selected. This component sending nothing at all is precisely the
+  // 2026-08-30 bug — the server then filed the attachment in the
+  // uploader's own organization, which promptly disagreed with the
+  // organization they picked for the conversation a minute later. The
+  // fix belongs at the one upload choke point, not in each door. A host that KNOWS the
+  // workspace (the data grid's attachment cell: the table's organization) declares it,
+  // and the choke point honours a declared organization.
+  const normalized = await upload(
+    { kind: "file", file },
+    {
+      // The handler's own owner option — it wins over the ambient active organization
+      // (a `metadata.scope` value was overwritten by the active one: review-2 lane F live).
+      ...(organizationId ? { organizationId } : {}),
+      folderPath,
+      visibility: "personal",
+      createShareLink: true,
+      shareLinkPermissionLevel: "viewer",
+    },
+  );
+  const url = normalized.url ?? "";
+  const resolvedDetails = getFileDetailsByUrl(
+    url,
+    {
+      eTag: "",
+      size: file.size,
+      mimetype: file.type,
+      cacheControl: "max-age=3600",
+      lastModified: new Date(file.lastModified).toISOString(),
+      contentLength: file.size,
+    } as never,
+    normalized.fileId,
+  );
+  return {
+    name: file.name,
+    fileId: normalized.fileId,
+    url,
+    type: classifyUploadType(file.type),
+    mime_type: normalized.meta.mime ?? file.type,
+    // Opaque durable URLs often end in a checksum/storage key. The
+    // user-selected File name is the display identity and must survive
+    // into the composer and submitted message metadata.
+    details: { ...resolvedDetails, filename: file.name },
+  };
+}
+
+function uploadErrorMessage(err: unknown): string {
+  return err instanceof Error
+    ? err.message
+    : "Upload failed. The file may be too large or the server rejected it.";
+}
+
+/**
+ * The tiles `FileAcquisitionActions` renders inline, sized to the picker's
+ * scale: one compact row, text-xs labels (child selectors out-rank the
+ * tiles' own single-class utilities).
+ */
+const ACQUISITION_TILES_CLASS =
+  "gap-1 [&>button]:min-h-11 [&>button]:gap-0.5 [&>button]:rounded-lg [&>button]:border-border/70 [&>button]:px-1 [&>button]:py-1 [&>button]:text-xs [&>button]:font-normal";
+
 export function InlineUploadArea({
   onSelect,
   onBusyChange,
@@ -378,438 +462,372 @@ export function InlineUploadArea({
       (f) => f.status === "compressing" || f.status === "uploading",
     );
 
-  const setBusy = useCallback(
-    (busy: boolean) => onBusyChange?.(busy),
-    [onBusyChange],
-  );
+  const setBusy = (busy: boolean) => onBusyChange?.(busy);
 
-  const handleFiles = useCallback(
-    async (candidates: UploadCandidate[]) => {
-      if (candidates.length === 0) return;
-
-      setBusy(true);
-      setUploadError(null);
-      const initialStatuses: FileStatus[] = candidates.map(
-        ({ file, relativePath }) => ({
-          file,
-          relativePath,
-          status: "pending",
-        }),
-      );
-      setFileStatuses(initialStatuses);
-
-      const filesToUpload: UploadCandidate[] = [];
-      const updatedStatuses = [...initialStatuses];
-
-      // Pre-process: compress large files
-      for (let i = 0; i < candidates.length; i++) {
-        const candidate = candidates[i];
-        const file = candidate.file;
-        if (file.size > LARGE_FILE_THRESHOLD) {
-          const isImage = file.type.startsWith("image/");
-          const isPdf = file.type === "application/pdf";
-
-          if (isImage || isPdf) {
-            updatedStatuses[i] = {
-              ...updatedStatuses[i],
-              status: "compressing",
-            };
-            setFileStatuses([...updatedStatuses]);
-
-            const result = isImage
-              ? await compressImageFile(file)
-              : await compressPdfFile(file);
-
-            if (result) {
-              updatedStatuses[i] = {
-                ...updatedStatuses[i],
-                file: result.file,
-                relativePath: `${uploadDirectory(candidate.relativePath)}${uploadDirectory(candidate.relativePath) ? "/" : ""}${result.file.name}`,
-                status: "uploading",
-                compressionNote: result.note,
-              };
-              filesToUpload.push({
-                file: result.file,
-                relativePath: updatedStatuses[i].relativePath,
-              });
-            } else {
-              // Compression failed — upload original and warn
-              updatedStatuses[i] = {
-                ...updatedStatuses[i],
-                status: "uploading",
-                compressionNote: `Could not compress — uploading original (${formatFileSize(file.size)})`,
-              };
-              filesToUpload.push(candidate);
-            }
-          } else {
-            updatedStatuses[i] = {
-              ...updatedStatuses[i],
-              status: "uploading",
-            };
-            filesToUpload.push(candidate);
-          }
-        } else {
-          updatedStatuses[i] = {
-            ...updatedStatuses[i],
-            status: "uploading",
-          };
-          filesToUpload.push(candidate);
-        }
-      }
-
-      setFileStatuses([...updatedStatuses]);
-
-      const results: UploadedFile[] = [];
-      let firstError: string | null = null;
-      for (const candidate of filesToUpload) {
-        const file = candidate.file;
-        const statusIdx = updatedStatuses.findIndex(
-          (s) =>
-            s.relativePath === candidate.relativePath &&
-            s.status === "uploading",
-        );
-        try {
-          const relativeDirectory = uploadDirectory(candidate.relativePath);
-          const folderPath = composeUploadFolderPath(
-            "userContent",
-            relativeDirectory
-              ? `prompt-attachments/${relativeDirectory}`
-              : "prompt-attachments",
-          );
-          // No `metadata.scope.organization_id` is passed here on purpose:
-          // `cloudUpload` resolves the owning workspace for EVERY upload path
-          // (`bindUploadOrganization`), asking the person when nothing is
-          // selected. This component sending nothing at all is precisely the
-          // 2026-08-30 bug — the server then filed the attachment in the
-          // uploader's own organization, which promptly disagreed with the
-          // organization they picked for the conversation a minute later. The
-          // fix belongs at the one upload choke point, not in each door. A host that KNOWS the
-          // workspace (the data grid's attachment cell: the table's organization) declares it,
-          // and the choke point honours a declared organization.
-          const normalized = await upload(
-            { kind: "file", file },
-            {
-              // The handler's own owner option — it wins over the ambient active organization
-              // (a `metadata.scope` value was overwritten by the active one: review-2 lane F live).
-              ...(organizationId ? { organizationId } : {}),
-              folderPath,
-              visibility: "personal",
-              createShareLink: true,
-              shareLinkPermissionLevel: "viewer",
-            },
-          );
-          const url = normalized.url ?? "";
-          const resolvedDetails = getFileDetailsByUrl(
-            url,
-            {
-              eTag: "",
-              size: file.size,
-              mimetype: file.type,
-              cacheControl: "max-age=3600",
-              lastModified: new Date(file.lastModified).toISOString(),
-              contentLength: file.size,
-            } as never,
-            normalized.fileId,
-          );
-          results.push({
-            name: file.name,
-            fileId: normalized.fileId,
-            url,
-            type: classifyUploadType(file.type),
-            mime_type: normalized.meta.mime ?? file.type,
-            // Opaque durable URLs often end in a checksum/storage key. The
-            // user-selected File name is the display identity and must survive
-            // into the composer and submitted message metadata.
-            details: { ...resolvedDetails, filename: file.name },
-          });
-          if (statusIdx >= 0) {
-            updatedStatuses[statusIdx] = {
-              ...updatedStatuses[statusIdx],
-              status: "done",
-            };
-          }
-        } catch (err) {
-          // Declining the workspace question stops the whole batch quietly:
-          // nothing uploaded, no error surface, the picker exactly as it was.
-          if (isUploadCancelledError(err)) {
-            setFileStatuses([]);
-            return;
-          }
-          const errMsg =
-            err instanceof Error
-              ? err.message
-              : "Upload failed. The file may be too large or the server rejected it.";
-          if (!firstError) firstError = errMsg;
-          if (statusIdx >= 0) {
-            updatedStatuses[statusIdx] = {
-              ...updatedStatuses[statusIdx],
-              status: "error",
-              errorMessage: errMsg,
-            };
-          }
-        }
-        setFileStatuses([...updatedStatuses]);
-      }
-
-      if (firstError) setUploadError(firstError);
-      try {
-        if (results.length > 0) {
-          setIsFinalizing(true);
-          await onSelect(results);
-          if (clearHandedOver) {
-            setFileStatuses((prev) => prev.filter((f) => f.status !== "done"));
-          }
-        }
-      } finally {
-        // Upload + host-side durable wiring is one busy interval.
-        // Association/chat hosts must finish their edges before the
-        // user can reset or start a second batch.
+  /** Hand a batch to the host; upload + durable wiring is one busy interval. */
+  const handOver = (files: UploadedFile[]): Promise<void> => {
+    setIsFinalizing(true);
+    setBusy(true);
+    // Association/chat hosts must finish their edges before the user can
+    // reset or start a second batch.
+    return Promise.resolve()
+      .then(() => onSelect(files))
+      .finally(() => {
         setIsFinalizing(false);
         setBusy(false);
+      });
+  };
+
+  const handleFiles = async (candidates: UploadCandidate[]) => {
+    if (candidates.length === 0) return;
+
+    setBusy(true);
+    setUploadError(null);
+    const initialStatuses: FileStatus[] = candidates.map(
+      ({ file, relativePath }) => ({
+        file,
+        relativePath,
+        status: "pending",
+      }),
+    );
+    setFileStatuses(initialStatuses);
+
+    const filesToUpload: UploadCandidate[] = [];
+    const updatedStatuses = [...initialStatuses];
+
+    // Pre-process: compress large images and PDFs.
+    for (let i = 0; i < candidates.length; i++) {
+      const candidate = candidates[i];
+      const file = candidate.file;
+      const compressible =
+        file.size > LARGE_FILE_THRESHOLD &&
+        (file.type.startsWith("image/") || file.type === "application/pdf");
+      if (!compressible) {
+        updatedStatuses[i] = { ...updatedStatuses[i], status: "uploading" };
+        filesToUpload.push(candidate);
+        continue;
       }
-    },
-    [upload, onSelect, setBusy, organizationId, clearHandedOver],
-  );
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
-      void collectDroppedFiles(e.dataTransfer)
-        .then((dropped) => {
-          if (!accept) return handleFiles(dropped);
-          const refused = dropped.filter(
-            ({ file }) => !matchStorageAccept(file.name, file.type, accept).accepted,
-          );
-          if (refused.length) {
-            setUploadError(
-              `${refused.map(({ file }) => file.name).join(", ")} ${refused.length === 1 ? "is" : "are"} not a kind this takes, so ${refused.length === 1 ? "it was" : "they were"} not uploaded.`,
-            );
-          }
-          return handleFiles(dropped.filter((c) => !refused.includes(c)));
-        })
-        .catch((error: unknown) => {
-          console.error(
-            "[InlineUploadArea] failed to read dropped files",
-            error,
-          );
-          setUploadError(
-            error instanceof Error
-              ? error.message
-              : "Could not read that folder.",
-          );
-        });
-    },
-    [handleFiles, accept],
-  );
+      updatedStatuses[i] = { ...updatedStatuses[i], status: "compressing" };
+      setFileStatuses([...updatedStatuses]);
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
+      const result = file.type.startsWith("image/")
+        ? await compressImageFile(file)
+        : await compressPdfFile(file);
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+      if (result) {
+        const directory = uploadDirectory(candidate.relativePath);
+        const relativePath = directory
+          ? `${directory}/${result.file.name}`
+          : result.file.name;
+        updatedStatuses[i] = {
+          ...updatedStatuses[i],
+          file: result.file,
+          relativePath,
+          status: "uploading",
+          compressionNote: result.note,
+        };
+        filesToUpload.push({ file: result.file, relativePath });
+      } else {
+        // Compression failed — upload original and warn
+        updatedStatuses[i] = {
+          ...updatedStatuses[i],
+          status: "uploading",
+          compressionNote: `Could not compress — uploading original (${formatFileSize(file.size)})`,
+        };
+        filesToUpload.push(candidate);
+      }
+    }
+
+    setFileStatuses([...updatedStatuses]);
+
+    const results: UploadedFile[] = [];
+    let firstError: string | null = null;
+    for (const candidate of filesToUpload) {
+      const statusIdx = updatedStatuses.findIndex(
+        (s) =>
+          s.relativePath === candidate.relativePath && s.status === "uploading",
+      );
+      const outcome = await uploadCandidate(
+        upload,
+        candidate,
+        organizationId,
+      ).then(
+        (uploaded) => ({ uploaded, error: null }),
+        (error: unknown) => ({ uploaded: null, error }),
+      );
+      if (outcome.uploaded) {
+        results.push(outcome.uploaded);
+        if (statusIdx >= 0) {
+          updatedStatuses[statusIdx] = {
+            ...updatedStatuses[statusIdx],
+            status: "done",
+          };
+        }
+      } else {
+        // Declining the workspace question stops the whole batch quietly:
+        // nothing uploaded, no error surface, the picker exactly as it was.
+        if (isUploadCancelledError(outcome.error)) {
+          setFileStatuses([]);
+          setBusy(false);
+          return;
+        }
+        const errMsg = uploadErrorMessage(outcome.error);
+        if (!firstError) firstError = errMsg;
+        if (statusIdx >= 0) {
+          updatedStatuses[statusIdx] = {
+            ...updatedStatuses[statusIdx],
+            status: "error",
+            errorMessage: errMsg,
+          };
+        }
+      }
+      setFileStatuses([...updatedStatuses]);
+    }
+
+    if (firstError) setUploadError(firstError);
+    if (results.length === 0) {
+      setBusy(false);
+      return;
+    }
+    await handOver(results);
+    if (clearHandedOver) {
+      setFileStatuses((prev) => prev.filter((f) => f.status !== "done"));
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-  }, []);
+    void collectDroppedFiles(e.dataTransfer)
+      .then((dropped) => {
+        if (!accept) return handleFiles(dropped);
+        const refused = dropped.filter(
+          ({ file }) =>
+            !matchStorageAccept(file.name, file.type, accept).accepted,
+        );
+        if (refused.length) {
+          setUploadError(
+            `${refused.map(({ file }) => file.name).join(", ")} ${refused.length === 1 ? "is" : "are"} not a kind this takes, so ${refused.length === 1 ? "it was" : "they were"} not uploaded.`,
+          );
+        }
+        return handleFiles(dropped.filter((c) => !refused.includes(c)));
+      })
+      .catch((error: unknown) => {
+        console.error("[InlineUploadArea] failed to read dropped files", error);
+        setUploadError(
+          error instanceof Error
+            ? error.message
+            : "Could not read that folder.",
+        );
+      });
+  };
 
-  const clearAndReset = useCallback(() => {
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const clearAndReset = () => {
     setFileStatuses([]);
     setUploadError(null);
     setIsFinalizing(false);
     setBusy(false);
-  }, [setBusy]);
+  };
 
-  const addImageLink = async () => {
+  const addImageLink = () => {
     if (!link.trim() || fetchingLink) return;
     setUploadError(null);
     setFetchingLink(true);
-    try {
-      const file = await imageLinkToFile(link);
-      setLink("");
-      await handleFiles([candidateFromFile(file)]);
-    } catch (err) {
-      setUploadError(
-        err instanceof ImageLinkError || err instanceof Error
-          ? err.message
-          : "That image could not be added.",
-      );
-    } finally {
-      setFetchingLink(false);
-    }
+    void imageLinkToFile(link)
+      .then((file) => {
+        setLink("");
+        return handleFiles([candidateFromFile(file)]);
+      })
+      .catch((err: unknown) => {
+        setUploadError(
+          err instanceof ImageLinkError || err instanceof Error
+            ? err.message
+            : "That image could not be added.",
+        );
+      })
+      .finally(() => setFetchingLink(false));
   };
 
   const hasErrors = fileStatuses.some((f) => f.status === "error");
   const displayError = uploadError || hookError;
 
-  return (
-    <div className="shrink-0 border-b border-border px-2 py-1.5">
-      {fileStatuses.length === 0 ? (
-        /* Idle: compact drop target plus one aligned source row. */
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={cn(
-            "flex w-full flex-col items-center gap-1.5 rounded-md border border-dashed p-1.5 text-xs transition-colors",
-            isDragging
-              ? "border-primary bg-primary/5 text-primary"
-              : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
-          )}
-        >
-          {isDragging ? (
-            <span className="flex min-h-12 items-center gap-1.5">
-              <Upload className="h-4 w-4 shrink-0" />
-              Drop to upload and add
-            </span>
-          ) : (
-            <>
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <Upload className="h-3.5 w-3.5 shrink-0" />
-                {dropLabel(accept)}
-              </span>
-              <FileAcquisitionActions
-                presentation="inline"
-                className="w-full"
-                disabled={isLoading}
-                onFiles={(files) => handleFiles(files.map(candidateFromFile))}
-                multiple={selectionMode === "multiple"}
-                accept={accept}
-                storageImportFolderPath={composeUploadFolderPath(
-                  "userContent",
-                  "prompt-attachments",
-                )}
-                onStorageImported={async (files) => {
-                  setIsFinalizing(true);
-                  setBusy(true);
-                  try {
-                    await onSelect(canonicalImportsToUploadedFiles(files));
-                  } finally {
-                    setIsFinalizing(false);
-                    setBusy(false);
-                  }
-                }}
-                onError={setUploadError}
-              />
-              {imageLinks ? (
-                <form
-                  className="flex w-full items-center gap-1.5"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void addImageLink();
-                  }}
-                >
-                  <Input
-                    type="url"
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                    placeholder="Or paste an image link"
-                    aria-label="Image link"
-                    disabled={fetchingLink}
-                    className="h-9 min-w-0 flex-1 text-base sm:h-8 sm:text-xs"
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    variant="outline"
-                    className="h-9 shrink-0 text-xs sm:h-8"
-                    disabled={!link.trim() || fetchingLink}
-                  >
-                    {fetchingLink ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
-                  </Button>
-                </form>
-              ) : null}
-              {displayError ? (
-                <p role="alert" className="flex w-full items-start gap-1.5 text-[11px] text-destructive">
-                  <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-                  <span className="min-w-0 flex-1">{displayError}</span>
-                </p>
-              ) : null}
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {/* Compact progress rows — capped and scrollable. */}
-          <div className="max-h-32 space-y-1 overflow-y-auto">
-            {fileStatuses.map((fs, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex items-center gap-1.5 rounded border px-1.5 py-1 text-[11px]",
-                  fs.status === "error"
-                    ? "border-destructive/20 bg-destructive/10"
-                    : fs.status === "done"
-                      ? "border-emerald-500/20 bg-emerald-500/10"
-                      : "border-border bg-muted",
-                )}
-              >
-                <span className="shrink-0">
-                  {fs.status === "compressing" && (
-                    <Minimize2 className="h-3 w-3 animate-pulse text-blue-500" />
-                  )}
-                  {fs.status === "uploading" && (
-                    <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
-                  )}
-                  {fs.status === "done" && (
-                    <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                  )}
-                  {fs.status === "error" && (
-                    <AlertCircle className="h-3 w-3 text-destructive" />
-                  )}
-                  {fs.status === "pending" && (
-                    <FileIcon className="h-3 w-3 text-muted-foreground" />
-                  )}
-                </span>
-                <span
-                  className="min-w-0 flex-1 truncate text-foreground"
-                  title={fs.file.name}
-                >
-                  {fs.file.name}
-                </span>
-                <span className="shrink-0 text-muted-foreground">
-                  {fs.status === "compressing"
-                    ? "Compressing…"
-                    : fs.status === "uploading"
-                      ? "Uploading…"
-                      : formatFileSize(fs.file.size)}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {displayError && (
-            <div className="flex items-start gap-1.5 rounded border border-destructive/20 bg-destructive/10 px-1.5 py-1 text-[11px] text-destructive">
-              <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
-              <span className="min-w-0 flex-1">{displayError}</span>
-              <button
-                type="button"
-                onClick={clearAndReset}
-                className="shrink-0 opacity-60 hover:opacity-100"
-                aria-label="Dismiss upload error"
-              >
-                <X className="h-3 w-3" />
-              </button>
-              <ErrorAlchemyMenu error={displayError} />
-            </div>
-          )}
-
-          {!isProcessing && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 w-full text-xs"
-              onClick={clearAndReset}
+  if (fileStatuses.length > 0) {
+    return (
+      <div className="shrink-0 space-y-1">
+        {/* Progress rows — capped and scrollable. */}
+        <div className="max-h-40 space-y-1 overflow-y-auto">
+          {fileStatuses.map((fs, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex min-h-9 items-center gap-2 rounded-lg border px-2 py-1 text-sm",
+                fs.status === "error"
+                  ? "border-destructive/20 bg-destructive/10"
+                  : fs.status === "done"
+                    ? "border-emerald-500/20 bg-emerald-500/10"
+                    : "border-border bg-muted",
+              )}
             >
-              <Upload className="mr-1.5 h-3 w-3" />
-              {hasErrors ? "Try again" : "Upload more"}
-            </Button>
-          )}
+              <span className="shrink-0">
+                {fs.status === "compressing" && (
+                  <Minimize2 className="h-4 w-4 animate-pulse text-primary" />
+                )}
+                {fs.status === "uploading" && (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                )}
+                {fs.status === "done" && (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                )}
+                {fs.status === "error" && (
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                )}
+                {fs.status === "pending" && (
+                  <FileIcon className="h-4 w-4 text-muted-foreground" />
+                )}
+              </span>
+              <span
+                className="min-w-0 flex-1 truncate text-foreground"
+                title={fs.file.name}
+              >
+                {fs.file.name}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {fs.status === "compressing"
+                  ? "Compressing…"
+                  : fs.status === "uploading"
+                    ? "Uploading…"
+                    : formatFileSize(fs.file.size)}
+              </span>
+            </div>
+          ))}
         </div>
-      )}
+
+        {displayError && (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0 flex-1">{displayError}</span>
+            <button
+              type="button"
+              onClick={clearAndReset}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md opacity-60 hover:opacity-100 pointer-coarse:h-11 pointer-coarse:w-11"
+              aria-label="Dismiss upload error"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <ErrorAlchemyMenu error={displayError} />
+          </div>
+        )}
+
+        {!isProcessing && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-full rounded-lg text-sm pointer-coarse:h-11"
+            onClick={clearAndReset}
+          >
+            <Upload className="mr-1.5 h-4 w-4" />
+            {hasErrors ? "Try again" : "Upload more"}
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  /* Idle: one compact drop strip — the source tiles are the drop target. */
+  return (
+    <div className="shrink-0 space-y-1.5">
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        title={dropLabel(accept)}
+        className={cn(
+          "rounded-lg border border-dashed p-1 transition-colors",
+          isDragging
+            ? "border-primary bg-primary/5 text-primary"
+            : "border-border hover:border-muted-foreground/40",
+        )}
+      >
+        {isDragging ? (
+          <span className="flex min-h-11 items-center justify-center gap-2 text-sm">
+            <Upload className="h-4 w-4 shrink-0" />
+            Drop to upload and add
+          </span>
+        ) : (
+          <FileAcquisitionActions
+            presentation="inline"
+            className={ACQUISITION_TILES_CLASS}
+            disabled={isLoading}
+            onFiles={(files) => handleFiles(files.map(candidateFromFile))}
+            multiple={selectionMode === "multiple"}
+            accept={accept}
+            storageImportFolderPath={composeUploadFolderPath(
+              "userContent",
+              "prompt-attachments",
+            )}
+            onStorageImported={(files) =>
+              handOver(canonicalImportsToUploadedFiles(files))
+            }
+            onError={setUploadError}
+          />
+        )}
+      </div>
+      {imageLinks ? (
+        <form
+          className="flex w-full items-center gap-1.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addImageLink();
+          }}
+        >
+          <Input
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="Or paste an image link"
+            aria-label="Image link"
+            disabled={fetchingLink}
+            className="h-9 min-w-0 flex-1 rounded-lg text-base sm:text-sm pointer-coarse:h-11"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            variant="outline"
+            className="h-9 shrink-0 rounded-lg text-sm pointer-coarse:h-11"
+            disabled={!link.trim() || fetchingLink}
+          >
+            {fetchingLink ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Add"
+            )}
+          </Button>
+        </form>
+      ) : null}
+      {displayError ? (
+        <p
+          role="alert"
+          className="flex w-full items-start gap-1.5 px-1 text-xs text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span className="min-w-0 flex-1">{displayError}</span>
+          <ErrorAlchemyMenu error={displayError} />
+        </p>
+      ) : null}
     </div>
   );
 }

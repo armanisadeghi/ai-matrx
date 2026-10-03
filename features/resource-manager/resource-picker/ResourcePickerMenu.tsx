@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronRight, FolderOpen, Settings2, Bug, Search } from "lucide-react";
+import { ChevronRight, Settings2, Bug, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotesResourcePicker } from "./NotesResourcePicker";
 import { TasksResourcePicker } from "./TasksResourcePicker";
@@ -255,9 +255,6 @@ export function ResourcePickerMenu({
         <ConversationFilesPicker
           conversationId={conversationId}
           title="Files"
-          headerIcon={
-            <FolderOpen className="h-3.5 w-3.5 shrink-0 text-primary" />
-          }
           topSlot={
             <InlineUploadArea
               selectionMode={selectionMode}
