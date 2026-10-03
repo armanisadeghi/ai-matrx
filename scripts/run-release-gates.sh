@@ -897,6 +897,8 @@ if $STRICT; then
         # GUARD 7 — apps never write their own custom-data code (see the advisory list below).
         "Apps reaching custom.* outside @ai-matrx/records (ratchet)|pnpm check:no-custom-store-code"
         "No-custom-store-code guard can still fail (self-test)|pnpm check:no-custom-store-code:self-test"
+        # DECLARED APP TABLES — advisory in BOTH lanes (exits 0 on findings; see the advisory list below).
+        "Declared app tables (missing / archived / drifted / size)|pnpm check:app-tables"
     )
 else
     # Non-strict variants still print the full loud report; they exit 0.
@@ -1527,6 +1529,12 @@ else
         # common-docs projects/data-doctrine-adoption/v6/CENSUS-NO-CUSTOM-CODE.md. Static, offline.
         "Apps reaching custom.* outside @ai-matrx/records (ratchet)|pnpm check:no-custom-store-code"
         "No-custom-store-code guard can still fail (self-test)|pnpm check:no-custom-store-code:self-test"
+        # DECLARED APP TABLES (lane PLATFORM-APP-DATA, wave 3 slice 6). Every `*.app-table.ts`
+        # definition, every organization's copy: MISSING (global), ARCHIVED, DRIFTED, and SIZE at
+        # 50,000 rows then every 10,000 past Arman's last acknowledgement (DECISIONS.md, custom
+        # data, 2026-10-02). One [WARN] line + one ops.system_error row per finding; exits 0 on
+        # findings and 2 UNMEASURED when the store cannot be read. Never blocks.
+        "Declared app tables (missing / archived / drifted / size)|pnpm check:app-tables"
     )
 fi
 

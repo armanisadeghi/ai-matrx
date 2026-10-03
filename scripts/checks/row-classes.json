@@ -6,8 +6,8 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 113,
-    "live-db": 58,
+    "repo-only": 122,
+    "live-db": 59,
     "clone-db": 3
   },
   "rows": {
@@ -1413,7 +1413,7 @@
       "label": "Protocol mirror sync (aidream)",
       "class": "repo-only",
       "cmd": "pnpm exec tsx scripts/check-protocol-sync.ts --strict",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
     "controlrule-fields-match-aidream-s-model": {
@@ -1633,7 +1633,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 181 file(s) reached",
+      "reason": "no database access in 184 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -1783,10 +1783,59 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
+    "on-screen-context-that-is-not-context-scopes-rules-settings": {
+      "label": "On-screen \"context\" that is not context (scopes, rules, settings)",
+      "class": "repo-only",
+      "cmd": "pnpm check:context-word --strict",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "rendered-raw-identifier-snake-case-key-on-screen": {
+      "label": "Rendered raw identifier (snake_case key on screen)",
+      "class": "repo-only",
+      "cmd": "pnpm check:raw-identifiers --strict",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "raw-identifier-guard-self-test": {
+      "label": "Raw identifier guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:raw-identifiers:self-test",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "retired-word-used-old-schema-or-actor-tier-name": {
+      "label": "Retired word used (old schema or actor-tier name)",
+      "class": "repo-only",
+      "cmd": "pnpm check:retired-words",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "retired-words-guard-self-test": {
+      "label": "Retired-words guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:retired-words:self-test",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
     "fixed-width-child-in-a-zero-width-layer-phones-squeeze-it-to": {
       "label": "Fixed-width child in a zero-width layer (phones squeeze it to 0)",
       "class": "repo-only",
       "cmd": "pnpm check:zero-width-layers",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "panel-slide-off-the-panel-motion-literal-duration-or-curve": {
+      "label": "Panel slide off THE panel motion (literal duration or curve)",
+      "class": "repo-only",
+      "cmd": "pnpm check:motion-standard",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "motion-standard-guard-self-test": {
+      "label": "Motion standard guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:motion-standard:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
@@ -1829,6 +1878,20 @@
       "label": "Google authorization windows (a raw provider call bypassing the one-window gate)",
       "class": "repo-only",
       "cmd": "pnpm check:google-auth-gate",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "python-server-calls-outside-the-one-request-pipeline": {
+      "label": "Python-server calls outside the one request pipeline",
+      "class": "repo-only",
+      "cmd": "pnpm check:server-pipeline",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "server-request-pipeline-guard-self-test": {
+      "label": "Server request pipeline guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:server-pipeline:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
@@ -1992,6 +2055,30 @@
       "cmd": "pnpm check:no-custom-store-code:self-test",
       "reason": "no database access in 1 file(s) reached",
       "evidence": []
+    },
+    "declared-app-tables-missing-archived-drifted-size": {
+      "label": "Declared app tables (missing / archived / drifted / size)",
+      "class": "live-db",
+      "cmd": "pnpm check:app-tables",
+      "reason": "reaches code that can open the live database",
+      "evidence": [
+        {
+          "file": "scripts/generate-entity-types.ts",
+          "signal": "service-role / secret key"
+        },
+        {
+          "file": "scripts/generate-entity-types.ts",
+          "signal": "supabase-js client"
+        },
+        {
+          "file": "scripts/lib/check-target.ts",
+          "signal": "gate-db helper (openGateDb/withGateDb)"
+        },
+        {
+          "file": "scripts/lib/direct-db-env.ts",
+          "signal": "live database host"
+        }
+      ]
     }
   }
 }
