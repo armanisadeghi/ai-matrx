@@ -529,6 +529,10 @@ export interface TableRestorePass {
   built_on_remaining: number;
   /** Rows refused on their own now, left archived and named. */
   left: number;
+  /** Each row left archived, with the store's own reason for it. */
+  left_reasons?: Record<string, string>;
+  /** Restoring events of this table still open (a re-archive mid-restore leaves two). */
+  events_open?: number;
   table_restored: boolean;
   done: boolean;
   message: string;
