@@ -14,7 +14,6 @@
  */
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -115,7 +114,6 @@ export function ComposerEffortPill({
           >
             {pillWord}
           </span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0" />
         </button>
       </PopoverTrigger>
       <PopoverContent

@@ -73,7 +73,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_canvas_type",
     label: "Current canvas type",
     description:
-      'Artifact type rendered in the primary pane — one of the `CanvasContentType` values (e.g. "mermaid", "table", "code", "quiz", "html", "chart", "flashcards", "working_document"). Absent while the focused tab is not an item (Agent context, Values to send) — the open items are still listed in `open_items`.',
+      'Artifact type rendered in the primary pane — one of the `CanvasContentType` values (e.g. "mermaid", "table", "code", "quiz", "html", "chart", "flashcards", "working_document"). Absent while the focused tab is not an item (Agent context, Surface values) — the open items are still listed in `open_items`.',
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 12,

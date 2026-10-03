@@ -19,7 +19,7 @@ export { CONVERSATION_CONTEXT_KIND };
 /** Never the word "context": the tab names the page the values come from, or
  *  — with no page name — what it holds: the values the next message sends.
  *  ("Values" alone sat beside "Sent values" and said nothing, 2026-10-03.) */
-export const CONVERSATION_CONTEXT_LABEL = "Values to send";
+export const CONVERSATION_CONTEXT_LABEL = "Surface values";
 const LABEL = CONVERSATION_CONTEXT_LABEL;
 
 export interface ConversationContextTabData {

@@ -33,7 +33,7 @@ export default function ConversationContextCanvasView({ data, item, canvas, pres
   );
   const [failed, setFailed] = useState<string | null>(null);
 
-  // The tab names the chat it belongs to — never a bare "Values to send" that
+  // The tab names the chat it belongs to — never a bare "Surface values" that
   // could be read as the chat beside it.
   const what = canvasText(data, "title") || CONVERSATION_CONTEXT_LABEL;
   useCanvasTabTitle(canvas, item, chatTitle?.trim() ? subjectTitle(what, chatTitle) : "");

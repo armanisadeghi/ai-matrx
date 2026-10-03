@@ -20,8 +20,15 @@ import {
   Braces,
   CircleStop,
   AudioLines,
+  Loader2,
+  Square,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "../../../../store/hooks";
 import { announceComingSoon } from "@host/lib/coming-soon/announce";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
@@ -124,7 +131,16 @@ interface InputActionButtonsProps {
   composer?: {
     size: ComposerSize;
     mode: ComposerMode;
+    /** Compact only: after + and the voice controls (Scope · surface values). */
+    leading?: React.ReactNode;
     trailing?: React.ReactNode;
+    /**
+     * Which part of the arrangement this instance draws. Compact puts send
+     * INSIDE the card and everything else in the row under it, so it mounts
+     * two instances: `"send"` (stop/send only) and `"controls"` (the rest).
+     * Absent = everything (splash · page).
+     */
+    part?: "send" | "controls";
   };
 }
 
@@ -286,41 +302,65 @@ export function InputActionButtons({
         composer={{ mode: composer.mode, size: composer.size, surfaceKey }}
       />
     );
-    const voice = showMicrophone ? (
+    // The mic and its device chevron are ONE control group (Arman, 2026-10-03):
+    // both clickable, side by side. Live audio stands alone, no chevron.
+    const micGroup = micButton ? (
       <span className="inline-flex items-center">
-        {liveAudioButton}
+        {micButton}
         <MicDeviceMenu className={INPUT_BUTTON_IDLE_TINT} />
       </span>
-    ) : (
-      liveAudioButton
-    );
+    ) : null;
+    const sendControls = showSendButton ? (
+      <ComposerSendSlot conversationId={conversationId}>
+        {(hasSomethingToSend) => (
+          <>
+            {/* The run in flight: the indicator in send's own place, a press stops it. */}
+            {isExecuting ? (
+              <button
+                type="button"
+                onClick={handleStop}
+                title="Stop the run (everything streamed so far is kept)"
+                aria-label="Stop the run"
+                className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              >
+                <Loader2 className="h-4 w-4 animate-spin group-hover:hidden" />
+                <Square className="hidden h-3 w-3 fill-current group-hover:block" />
+              </button>
+            ) : null}
+            {/* Send: always present while idle (dim with nothing to send); while
+                a run streams it appears only to queue what was typed. */}
+            {!isExecuting || hasSomethingToSend || shouldShowVariables ? (
+              <ComposerSendButton
+                submitOnEnter={submitOnEnter}
+                isExecuting={isExecuting}
+                voiceBusy={voiceBusy}
+                disabled={isSendDisabled || !(hasSomethingToSend || shouldShowVariables)}
+                onSend={handleSend}
+              />
+            ) : null}
+          </>
+        )}
+      </ComposerSendSlot>
+    ) : null;
+
+    if (composer.part === "send") return sendControls;
+
     return (
-      <div
-        className={
-          compact
-            ? "flex min-w-0 items-center justify-between gap-1 shrink-0"
-            : "flex min-w-0 items-center justify-between gap-1 shrink-0"
-        }
-      >
+      <div className="flex min-w-0 items-center justify-between gap-1 shrink-0">
         <div className="flex min-w-0 items-center gap-0.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
           {variablesToggle}
-          {compact ? micButton : null}
-          {compact ? voice : null}
+          {compact ? micGroup : null}
+          {compact ? liveAudioButton : null}
+          {compact ? composer.leading : null}
         </div>
         <div className="flex min-w-0 items-center gap-0.5">
           {extraRightControls}
           {composer.trailing}
-          {compact ? null : micButton}
-          {compact ? null : voice}
-          {stopButton}
-          <ComposerSendSlot
-            conversationId={conversationId}
-            always={isExecuting || shouldShowVariables}
-          >
-            {sendButton}
-          </ComposerSendSlot>
+          {compact ? null : micGroup}
+          {compact ? null : liveAudioButton}
+          {composer.part === "controls" ? null : sendControls}
         </div>
       </div>
     );
@@ -412,23 +452,100 @@ export function InputActionButtons({
 }
 
 /**
- * Send appears when there is something to send (brief §2): text, an
- * attachment not yet sent, or a form of variables (`always`). Its own
- * component so ONLY the composer arrangement subscribes to the draft — the
- * classic toolbar must not re-render on every keystroke.
+ * The composer's view of the draft — its own component so ONLY the composer
+ * arrangement subscribes to the draft; the classic toolbar must not re-render
+ * on every keystroke.
  */
 function ComposerSendSlot({
   conversationId,
-  always,
   children,
 }: {
   conversationId: string;
-  always: boolean;
-  children: React.ReactNode;
+  children: (hasSomethingToSend: boolean) => React.ReactNode;
 }) {
   const hasSomethingToSend = useAppSelector(
     selectComposerHasSomethingToSend(conversationId),
   );
-  if (!always && !hasSomethingToSend) return null;
-  return <>{children}</>;
+  return <>{children(hasSomethingToSend)}</>;
+}
+
+const IS_MAC =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+function Keys({ keys }: { keys: string[] }) {
+  return (
+    <span className="flex shrink-0 items-center gap-0.5">
+      {keys.map((key) => (
+        <kbd
+          key={key}
+          className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border/60 px-1 font-sans text-[11px]"
+        >
+          {key}
+        </kbd>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * The composer's send control: a bare return glyph, no fill or border. Its
+ * tooltip lists exactly what the keys do here (`composerKeyIntent`).
+ */
+function ComposerSendButton({
+  submitOnEnter,
+  isExecuting,
+  voiceBusy,
+  disabled,
+  onSend,
+}: {
+  submitOnEnter: boolean;
+  isExecuting: boolean;
+  voiceBusy: boolean;
+  disabled: boolean;
+  onSend: () => void;
+}) {
+  const mod = IS_MAC ? "⌘" : "Ctrl";
+  const rows: { label: string; keys: string[] }[] = isExecuting
+    ? [
+        { label: "Queue for when it finishes", keys: submitOnEnter ? ["↵"] : [mod, "↵"] },
+        ...(submitOnEnter ? [{ label: "Steer in now", keys: [mod, "↵"] }] : []),
+        { label: "Stop and send", keys: [mod, "⇧", "↵"] },
+      ]
+    : submitOnEnter
+      ? [
+          { label: "Send", keys: ["↵"] },
+          { label: "New line", keys: ["⇧", "↵"] },
+        ]
+      : [
+          { label: "Send", keys: [mod, "↵"] },
+          { label: "New line", keys: ["↵"] },
+        ];
+  const name = isExecuting ? "Queue message" : voiceBusy ? "Finish recording to send" : "Send message";
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={disabled}
+          aria-label={name}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"
+        >
+          <CornerDownLeft className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="end" className="flex flex-col gap-1 py-1.5">
+        {voiceBusy ? (
+          <span>Finish recording to send</span>
+        ) : (
+          rows.map((row) => (
+            <span key={row.label} className="flex items-center justify-between gap-4">
+              <span>{row.label}</span>
+              <Keys keys={row.keys} />
+            </span>
+          ))
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
 }

@@ -91,7 +91,7 @@ export function buildCanvasScope(
     : null;
 
   // Nothing open → nothing to say. A NON-ITEM tab in focus (Agent context,
-  // Values to send) is not "nothing open": every item is still listed with its
+  // Surface values) is not "nothing open": every item is still listed with its
   // reference, so the agent can read and edit it (2026-10-03 — the whole scope
   // used to vanish, and the agent said it had no open_items).
   if (items.length === 0) return {} as SurfaceScopePayload;

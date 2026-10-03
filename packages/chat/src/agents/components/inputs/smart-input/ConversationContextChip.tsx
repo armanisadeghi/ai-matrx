@@ -74,7 +74,7 @@ export function useConversationContextTab(conversationId: string, agentId: strin
   const toggle = (selected?: string) =>
     tab.toggle({
       // The kind's own label (conversationContextKind.tsx) when the page has no name.
-      title: title || "Values to send",
+      title: title || "Surface values",
       data: { conversationId, agentId, title: title || null },
       ...(selected !== undefined ? { selected } : {}),
     });
@@ -217,9 +217,12 @@ export function useValueGroupSurface(conversationId: string): string | null {
 export function ConversationContextChip({
   conversationId,
   agentId,
+  bare = false,
 }: {
   conversationId: string;
   agentId: string | null;
+  /** The composer's face: eye + count only, no text, no border or background. */
+  bare?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const tab = useConversationContextTab(conversationId, agentId);
@@ -270,13 +273,17 @@ export function ConversationContextChip({
   if (!surfaceName && rows.length === 0) return null;
 
   if (!agentLayerKnown) {
-    const name = valueGroupName(surfaceName);
+    const name = bare ? "" : valueGroupName(surfaceName);
     return (
       <span
         role="status"
         aria-busy={!agentReadFailed}
         title={agentReadFailed ? "Couldn't read this agent's rules" : "Reading this agent's rules"}
-        className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-1.5 text-xs font-medium text-muted-foreground"
+        className={
+          bare
+            ? "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-muted-foreground"
+            : "inline-flex h-6 shrink-0 items-center gap-1 rounded-md border border-border px-1.5 text-xs font-medium text-muted-foreground"
+        }
       >
         {name ? <span className="min-w-0 truncate">{name}</span> : null}
         <span className="tabular-nums">{agentReadFailed ? "—" : rows.length}</span>
@@ -293,7 +300,8 @@ export function ConversationContextChip({
 
   return (
     <ContextRulesChip
-      label={valueGroupName(surfaceName)}
+      label={bare ? "" : valueGroupName(surfaceName)}
+      className={bare ? "border-transparent bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground" : undefined}
       rows={rows}
       cap={cap}
       on={surfaceName ? !off : undefined}

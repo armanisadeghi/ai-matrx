@@ -319,7 +319,7 @@ describe("canvas_item_content edits ANY open item, named by its reference", () =
 
 describe("a non-item tab in focus never hides the open items", () => {
   it("still lists every open item with its reference; nothing is 'current'", () => {
-    // Owner proof on /chat 2026-10-03: with "Values to send" focused the canvas
+    // Owner proof on /chat 2026-10-03: with "Surface values" focused the canvas
     // sent NOTHING, and the agent answered it had no open_items to read.
     const scope = buildCanvasScope({
       items: [

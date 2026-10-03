@@ -170,6 +170,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 
 ## Change Log
 
+- **2026-10-03** — Arman's layout pass: meta row = Scope · surface values (eye + count, no text) | Agent · Output · Effort, nothing bordered, no chevrons on Output/Effort; in the card the mic and its device chevron are one group, live audio stands alone, and send is a bare return glyph whose tooltip lists the keys; while a run streams the same spot shows a spinner that stops it. Compact: send sits in the card, + · voice · Scope · surface values | Agent · Effort ride the row under it. "Values to send" is now "Surface values".
+
 
 - **2026-10-03** — The value list shows the canvas before the first send. A page's own conversation (main /chat) received its companion (canvas) values only at submit, so the chip, popover and full view were empty until the first turn left. `previewCompanionScope` (refresh-surface-scope.thunk) writes the same entries ahead of the send — own conversation only, never the page — and `useCompanionValuesPreview` (called from `useConversationContextChipShown`) keeps them current on registry changes and the canvas host's `announceSurfaceScopeChange`. Guard: `surfaces/runtime/__tests__/companion-values-show-before-the-first-send.test.tsx`.
 

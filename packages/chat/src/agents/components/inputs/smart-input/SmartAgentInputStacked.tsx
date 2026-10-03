@@ -36,7 +36,7 @@ import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { composerShows } from "./composer/composer-mode-visibility";
 import { ComposerChipsRow } from "./composer/ComposerChipsRow";
-import { ComposerMetaRow, ComposerPills, ComposerValueGroupChip } from "./composer/ComposerMetaRow";
+import { ComposerMetaRow, ComposerPills, ComposerScopeCluster } from "./composer/ComposerMetaRow";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   presentation?: "default" | "ambient";
@@ -306,13 +306,31 @@ export function SmartAgentInputStacked({
         composer={{
           size: composer.size,
           mode: composer.mode,
-          trailing: compact ? (
-            <>
-              <ComposerValueGroupChip conversationId={conversationId} />
-              <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
-            </>
+          // Compact (Arman, 2026-10-03): send sits in the card; + · voice ·
+          // Scope · surface values | Agent · Effort ride the row under it.
+          leading: compact ? (
+            <ComposerScopeCluster conversationId={conversationId} composer={composer} />
           ) : undefined,
+          trailing: compact ? (
+            <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
+          ) : undefined,
+          part: compact ? "controls" : undefined,
         }}
+      />
+    );
+    // Compact: the send control alone, inside the card beside the text.
+    const sendInCard = (
+      <InputActionButtons
+        conversationId={conversationId}
+        uploadRoot={uploadRoot}
+        uploadPath={uploadPath}
+        showSendButton={showSendButton}
+        showSubmitOnEnterToggle={false}
+        showVariableIcon={showVariableIcon}
+        sendButtonVariant="blue"
+        surfaceKey={surfaceKey}
+        disableSend={sendBlocked}
+        composer={{ size: composer.size, mode: composer.mode, part: "send" }}
       />
     );
     return (
@@ -355,8 +373,17 @@ export function SmartAgentInputStacked({
             styleOverride={variablesPanelStyle}
             surfaceValueName={surfaceValueAnchors?.variables}
           />
-          {textarea}
-          {compact ? null : toolbar}
+          {compact ? (
+            <div className="flex min-w-0 items-end gap-1.5">
+              <div className="min-w-0 flex-1">{textarea}</div>
+              {sendInCard}
+            </div>
+          ) : (
+            <>
+              {textarea}
+              {toolbar}
+            </>
+          )}
         </SmartInputFileDropTarget>
         {compact ? (
           toolbar

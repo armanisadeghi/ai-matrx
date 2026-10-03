@@ -3,7 +3,7 @@
  *
  * Use case: yesterday the person opened the values tab for "Huddle supply
  * order list"; today, after a reload, the canvas restores it beside a
- * different chat. The tab read just "Values to send" and listed rows computed
+ * different chat. The tab read just "Surface values" and listed rows computed
  * for a conversation this session never loaded — the first turn's system
  * values a chat with history will never send — so it looked like the values
  * of the chat beside it.

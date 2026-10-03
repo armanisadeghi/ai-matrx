@@ -25,7 +25,6 @@ import {
   AudioLines,
   Braces,
   Check,
-  ChevronDown,
   Code,
   FileSpreadsheet,
   FileText,
@@ -322,7 +321,6 @@ export function ComposerOutputPill({
             aria-label={`Output: ${output.label}`}
           >
             <span className={cn("truncate", !output.isDefault && "font-medium text-foreground")}>{output.label}</span>
-            {output.isDefault ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : null}
           </button>
         </PopoverTrigger>
         {!output.isDefault ? (

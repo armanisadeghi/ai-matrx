@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * The meta row UNDER the composer card (brief §2): left Scope · Output, right
- * Agent · Effort (Work+). At compact width Agent · Effort ride the
+ * The meta row UNDER the composer card (brief §2): left Scope · surface values
+ * (eye + count), right Agent · Output · Effort (Work+). Nothing here carries a
+ * border or background (Arman, 2026-10-03). At compact width Agent · Effort ride the
  * toolbar row (`ComposerPills`); Scope and Output move into +.
  *
  * The row NEVER wraps (Arman, 2026-09-28): on a narrow screen it scrolls
@@ -36,8 +37,27 @@ export function ComposerValueGroupChip({ conversationId }: { conversationId: str
   if (!shown) return null;
   return (
     <span className="flex shrink-0 items-center">
-      <ConversationContextChip conversationId={conversationId} agentId={agentId ?? null} />
+      <ConversationContextChip conversationId={conversationId} agentId={agentId ?? null} bare />
     </span>
+  );
+}
+
+/** Scope · surface values — the left cluster (meta row; compact: after + and the voice controls). */
+export function ComposerScopeCluster({
+  conversationId,
+  composer,
+}: {
+  conversationId: string;
+  composer: ComposerPresentation;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5">
+      <ActiveContextLensChip
+        conversationId={conversationId}
+        className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
+      />
+      <ComposerValueGroupChip conversationId={conversationId} />
+    </div>
   );
 }
 
@@ -51,15 +71,18 @@ const SCOPE_CHIP_CLASS: Record<"plain" | "pill", string> = {
   pill: "h-6 rounded-full px-2.5",
 };
 
-/** Agent · (Effort) — the right cluster, shared by the meta row and the compact toolbar. */
+/** Agent · (Output) · (Effort) — the right cluster, shared by the meta row and the compact toolbar. */
 export function ComposerPills({
   conversationId,
   composer,
   menuSide,
+  withOutput = false,
 }: {
   conversationId: string;
   composer: ComposerPresentation;
   menuSide: "top" | "bottom";
+  /** The meta row carries Output here, between Agent and Effort (compact keeps it in +). */
+  withOutput?: boolean;
 }) {
   const effectiveModelId = useEffectiveModelId(conversationId);
   // Every size: the direct way to change effort (Work+) is the point of this pill.
@@ -79,6 +102,9 @@ export function ComposerPills({
         agentControl={composer.agent}
         menuSide={menuSide}
       />
+      {withOutput ? (
+        <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />
+      ) : null}
       {showEffort ? (
         <ComposerEffortPill
           conversationId={conversationId}
@@ -105,15 +131,8 @@ export function ComposerMetaRow({
     // `@container/composer-meta`: a narrow column (a chat beside a wide
     // canvas) folds the Scope chip to its icon, as a phone does.
     <div className={cn(COMPOSER_ROW_CLASS, "@container/composer-meta justify-between gap-2 px-1")}>
-      <div className="flex shrink-0 items-center gap-0.5">
-        <ActiveContextLensChip
-          conversationId={conversationId}
-          className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
-        />
-        <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />
-        <ComposerValueGroupChip conversationId={conversationId} />
-      </div>
-      <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
+      <ComposerScopeCluster conversationId={conversationId} composer={composer} />
+      <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} withOutput />
     </div>
   );
 }
