@@ -1,0 +1,15 @@
+// app/(core)/data-v2/pages/page.tsx — THE MOUNT, AND NOTHING MORE. Every page built from tables
+// (v6 lane 11, wave D); the screen is `PagesHome` (features/unified-data/pages).
+import { createRouteMetadata } from "@/utils/route-metadata";
+import { PagesHome } from "@/features/unified-data/pages/PagesHome";
+
+export const metadata = createRouteMetadata("/data-v2", {
+  titlePrefix: "Pages",
+  title: "Data",
+  description: "Pages built from your tables.",
+  letter: "PG",
+});
+
+export default function DataPagesRoute() {
+  return <PagesHome />;
+}
