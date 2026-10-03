@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T01:27:23.065Z",
+  "generated_at": "2026-10-03T01:57:50.479Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4664,6 +4664,12 @@
       "checksum": "2b501cc3ac6b4a4b676348e023b76c3db71fac132183a1fff062b3cc39eea47d",
       "applied_at": "2026-09-30 02:57:27.30551+00"
     },
+    "migrations/campaign/scopesb2_a_scope_value_shows_the_version_a_person_made.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesb2_a_scope_value_shows_the_version_a_person_made.sql",
+      "checksum": "ab13231271986df39d1fa8e595779090c4df6986695e94a794e85242471155b5",
+      "applied_at": "2026-10-03 01:57:49.07625+00"
+    },
     "migrations/campaign/scopesd1d2_the_values_read_never_cuts_a_long_value_and_reads_only_what_holds_one.sql": {
       "source": "matrx-frontend",
       "filename": "scopesd1d2_the_values_read_never_cuts_a_long_value_and_reads_only_what_holds_one.sql",
@@ -4729,6 +4735,12 @@
       "filename": "scopesoldwriters_the_old_writers_write_through_the_scope_doors.sql",
       "checksum": "40207af534f9d11a76243471df5b5d826ad1d60e4801b031b7b23c25b219b12d",
       "applied_at": "2026-09-30 02:51:50.536116+00"
+    },
+    "migrations/campaign/scopesoneswitch_the_scope_read_switch_answers_per_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesoneswitch_the_scope_read_switch_answers_per_person.sql",
+      "checksum": "caa561f30787a5d6e42ab977af38c074a01781390e42d093ab669054eafc1f35",
+      "applied_at": "2026-10-03 01:53:42.687937+00"
     },
     "migrations/campaign/scopesreadsrest_the_dictionary_trash_and_facts_read_the_store.sql": {
       "source": "matrx-frontend",
