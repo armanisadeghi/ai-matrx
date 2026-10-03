@@ -336,6 +336,17 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "Reads go through the data home's one door (custom.data_home) across every organization.",
   },
   {
+    id: "make-describe-box",
+    file: "features/make/describe/DescribeBox.tsx",
+    kind: "runtime",
+    why:
+      "Lane MAKE-HOME wave 3 — the describe box on /make: the person's sentence goes to the existing " +
+      "data.page_guidance mandate (its agent builds through the server's records tool); this file asks " +
+      "UNIFIED_DATA_CAMPAIGN.check for the organization before anything runs, then reads the data " +
+      "home's doors (custom.data_home_tables + custom.data_home_items) for that organization to show " +
+      "what was made.",
+  },
+  {
     id: "make-template-gallery",
     file: "features/make/gallery/TemplateGallery.tsx",
     kind: "runtime",
