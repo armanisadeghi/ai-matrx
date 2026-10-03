@@ -19,7 +19,18 @@ import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { supabase } from "@/utils/supabase/client";
+import { supabase as typedClient } from "@/utils/supabase/client";
+
+/** The probes call tables and RPCs no real schema has; they only need the client's shape. */
+interface LooseQuery extends PromiseLike<unknown> {
+  select(columns: string): LooseQuery;
+  insert(row: Record<string, unknown>): LooseQuery;
+  eq(column: string, value: unknown): LooseQuery;
+}
+const supabase = typedClient as unknown as {
+  schema(name: string): { from(table: string): LooseQuery };
+  rpc(name: string, args: Record<string, unknown>): PromiseLike<unknown>;
+};
 import { useRouter } from "next/navigation";
 import type { BoardItemType, ItemBodyProps } from "../items/types";
 import { expectQuiet, expectRemountSafe, runCycle, typeInto, type CycleResult } from "./remount-safety/harness";

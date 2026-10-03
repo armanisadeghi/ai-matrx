@@ -63,6 +63,15 @@ stale text. By construction a batched tile renders once per interval instead of 
   chat, note, task, research, project, war room, workflow run, table, record. Awake, with the reason: document (Univer is rebuilt from the
   server snapshot), file (`@monaco-editor/react` never re-creates its editor; previews re-download). What must outlive a sleeping body (a chat's live run, holding the
   tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
+- **A type sleeps when its remount-safety case passes** (`__tests__/remount-safety.*.test.tsx`, owner's
+  law 2026-10-02: hidden, shown and remounted with no lost work and no repeated side effects). Each
+  type's `Body` (+ `Host`) is mounted as the board mounts it over the real store and a recording
+  backend, the person acts, then it is hidden/shown and unmounted/remounted: the work must be kept,
+  nothing written/created/opened again, its own record not re-read, no `console.error`
+  (`<type>`), and ideally no network at all (`<type>:quiet`). `__tests__/remount-safety/cases.ts`
+  is the ledger: a red row runs as `it.failing` naming its owner; the fixing lane flips it to
+  `passing`. `remount-ledger.test.ts` fails when a type has no case, or sleeps while its row is red
+  without a named `sleepsAnyway` reason.
 - **Nothing inside a tile takes over the board** (`engine/tile-navigation.tsx`). A tile body sees a
   board-provided app router; a page it opens (router push, link, `location.assign`, form) lands ON the
   board as a Page tile (`BoardNavigationContext`), else in a new tab — never in this one. A meeting
@@ -382,6 +391,14 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-03 — Table and record tiles read nothing on wake or Undo. The record store's data layer
+  (`@ai-matrx/records` 0.65.0) owns every answer and the realtime subscription; the tiles' `Keep`
+  (`RecordsTileKeep`, `useRecordsHold(tileId)`) holds them open while the body sleeps, and the body
+  sits under `<RecordsHoldScope>`. A change made while asleep is on screen at wake.
+
+- 2026-10-03 — Remount-safety guard over every board item type (`__tests__/remount-safety.*`,
+  ledger `remount-safety/cases.ts`, cross-check `remount-ledger.test.ts`). Univer and the records
+  grid stand in at their engine boundary; everything above runs for real.
 - 2026-10-02 — Table and record sleep. Their three gates (where the table lives, the store switch, the
   share check) keep their answers per record for the session (`lib/kept-answer`), so a wake or an
   Undo-remount draws the content on its first frame, asks none of those doors again, and never

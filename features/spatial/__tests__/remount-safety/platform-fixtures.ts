@@ -22,6 +22,8 @@ const KNOBS: Record<string, unknown> = {
   "agents.chat_composer.remember_last_mode": true,
   "agents.chat_composer.compact_input_max_height_pct": 50,
   "selection_toolbar.highlight_while_editing": false,
+  // migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql
+  "data_tables.merged_grid": false,
 };
 
 export function seedPlatform(): void {
@@ -38,6 +40,8 @@ export function seedPlatform(): void {
     },
   ]);
   // lib/scoped-config/effectiveKnobs.ts — `{ resolved, stamp }`; nothing overridden.
+  // features/organizations/service/membershipsService.ts `MbrCountRow`
+  seedRpc("mbr_count", [{ container_id: ORGANIZATION.id, member_count: 4 }]);
   seedRpc("knob_snapshot", { resolved: KNOBS, stamp: "2026-10-02T08:00:00.000Z" });
   // lib/list-scope/shownTo.ts `ShownToContext`
   seedRpc("shown_to_context", { [ORGANIZATION.id]: { d: "everyone", t: [PERSON.id] } });
@@ -59,5 +63,5 @@ export function seedPlatform(): void {
   // favorites/pins (`ues_get_bulk`): only rows that HAVE state come back — none yet.
   seedRpc("ues_get_bulk", []);
   // lib/knobs/unifiedDataCampaign.ts — the record store is on for this organization.
-  seedRpc("unified_data_store_on", true);
+  seedRpc("unified_data_store_on", { on: true });
 }

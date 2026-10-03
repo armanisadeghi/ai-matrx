@@ -8,21 +8,37 @@
  * flips its row to `passing` (and the case becomes a normal `it`); a fix that
  * lands without the flip makes `it.failing` fail, so the row cannot go stale.
  *
- * A type may declare `sleeps: true` only while its row is `passing`
- * (`remount-ledger.test.ts`).
+ * A type may declare `sleeps: true` only while its row is `passing`, or while
+ * its red row names why with `sleepsAnyway` (`remount-ledger.test.ts`).
  */
 
 export type RemountStatus =
   | { status: "passing" }
-  | { status: "failing"; owner: string; why: string };
+  | {
+      status: "failing";
+      owner: string;
+      why: string;
+      /**
+       * The type declares `sleeps: true` although this row is red — debt the
+       * owning lane carries, with the reason sleeping is still acceptable. The
+       * ledger test fails when a red type sleeps WITHOUT this, and when this is
+       * left on a row that turned green or a type that no longer sleeps.
+       */
+      sleepsAnyway?: string;
+    };
 
 export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "chat": {
     status: "failing",
     owner: "chat lane",
-    why: "every wake/remount re-reads the transcript's assistant messages (ProposedDirectivesZone → fetchStoredDirectiveShells, chat.message)",
+    why: "wake/remount re-read the transcript's assistant messages (ProposedDirectivesZone → fetchStoredDirectiveShells, chat.message)",
+    sleepsAnyway: "browser-checked 2026-10-02; the re-read is a read, nothing is lost or written",
   },
-  "chat:quiet": { status: "passing" },
+  "chat:quiet": {
+    status: "failing",
+    owner: "chat lane",
+    why: "wake/remount re-read compute targets, action ledger, plans/tasks/todos, working documents, mandate resolution, conversation files",
+  },
   "note": { status: "passing" },
   "note:quiet": {
     status: "failing",
@@ -37,26 +53,85 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "note:split-view undo": { status: "passing" },
   "file": { status: "passing" },
   "file:quiet": { status: "passing" },
-  "udt_document": { status: "passing" },
-  "udt_document:quiet": { status: "passing" },
+  "udt_document": {
+    status: "failing",
+    owner: "documents lane",
+    why: "every wake and every remount writes a new workbench.udt_document_snapshots row and updates the document, with nothing typed since the last save",
+  },
+  "udt_document:quiet": {
+    status: "failing",
+    owner: "documents lane",
+    why: "wake/remount insert a snapshot and update the document row (a repeated save)",
+  },
   "data-table": { status: "passing" },
-  "data-table:quiet": { status: "passing" },
+  "data-table:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read table_copy_evaluation_state, iam.organizations (x2), record_change_actions",
+  },
   "record": { status: "passing" },
-  "record:quiet": { status: "passing" },
-  "task": { status: "passing" },
-  "task:quiet": { status: "passing" },
+  "record:quiet": {
+    status: "failing",
+    owner: "unified-data lane",
+    why: "wake/remount re-read row actions, table_copy_evaluation_state, iam.organizations, record_change_actions",
+  },
+  "task": {
+    status: "failing",
+    owner: "tasks lane",
+    why: "wake/remount re-read the task's subtasks (projects.tasks where parent_task_id = task)",
+    sleepsAnyway: "browser-checked 2026-10-02; the re-read is a read, nothing is lost or written",
+  },
+  "task:quiet": {
+    status: "failing",
+    owner: "tasks lane",
+    why: "wake/remount re-read subtasks and member counts",
+  },
   "war-room": { status: "passing" },
   "war-room:quiet": { status: "passing" },
-  "meeting": { status: "passing" },
-  "meeting:quiet": { status: "passing" },
+  "meeting": {
+    status: "failing",
+    owner: "meet lane",
+    why: "wake/remount re-read the meeting, its invitees and occurrences (useMeetingById keeps no answer per meeting)",
+  },
+  "meeting:quiet": {
+    status: "failing",
+    owner: "meet lane",
+    why: "wake/remount re-read the meeting, invitees, occurrences, record home",
+  },
   "workflow-run": { status: "passing" },
   "workflow-run:quiet": { status: "passing" },
-  "research": { status: "passing" },
-  "research:quiet": { status: "passing" },
-  "project": { status: "passing" },
-  "project:quiet": { status: "passing" },
-  "meeting_part": { status: "passing" },
-  "meeting_part:quiet": { status: "passing" },
+  "research": {
+    status: "failing",
+    owner: "research lane",
+    why: "wake/remount re-read research.rs_topic, get_topic_overview and research.rs_document (x2)",
+    sleepsAnyway: "browser-checked 2026-10-02; the re-read is a read, nothing is lost or written",
+  },
+  "research:quiet": {
+    status: "failing",
+    owner: "research lane",
+    why: "wake/remount re-read the topic, its overview and its document",
+  },
+  "project": {
+    status: "failing",
+    owner: "projects lane",
+    why: "remount loses the half-typed quick-add task (component state) and re-reads the project's tasks",
+    sleepsAnyway: "browser-checked 2026-10-02 for wake; the quick-add draft is lost only on a full remount",
+  },
+  "project:quiet": {
+    status: "failing",
+    owner: "projects lane",
+    why: "remount re-reads the project's tasks and membership",
+  },
+  "meeting_part": {
+    status: "failing",
+    owner: "meet lane",
+    why: "wake/remount re-read the meeting, its invitees and occurrences (same useMeetingById as the meeting tile)",
+  },
+  "meeting_part:quiet": {
+    status: "failing",
+    owner: "meet lane",
+    why: "wake/remount re-read the meeting, invitees and occurrences",
+  },
   "web-page": { status: "passing" },
   "web-page:quiet": { status: "passing" },
   "image": { status: "passing" },

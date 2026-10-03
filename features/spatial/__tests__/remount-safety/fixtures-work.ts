@@ -39,13 +39,12 @@ const note = {
   updated_at: "2026-09-30T18:22:00.000Z",
   updated_by: PERSON.id,
   version: 3,
-  visibility: "private",
+  visibility: "personal",
 } satisfies Database["workbench"]["Tables"]["notes"]["Row"];
 
 export function seedNote(): void {
   seed("workbench.notes", [note]);
   seedRpc("get_notes_shared_with_me", []);
-  seedRpc("mbr_count", [{ container_id: ORGANIZATION.id, member_count: 4 }]);
 }
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
@@ -95,7 +94,7 @@ const conversation = {
   updated_by: PERSON.id,
   variables: {},
   version: 2,
-  visibility: "private",
+  visibility: "personal",
 } satisfies Database["chat"]["Tables"]["conversation"]["Row"];
 
 function message(position: number, role: "user" | "assistant", text: string) {
@@ -213,7 +212,7 @@ export const fileRow = {
   updated_at: "2026-09-29T21:12:00.000Z",
   updated_by: PERSON.id,
   version: 1,
-  visibility: "private",
+  visibility: "personal",
   width: null,
 } satisfies Database["files"]["Tables"]["files"]["Row"];
 
@@ -229,7 +228,7 @@ const fileRecordApi = {
   mime_type: fileRow.mime_type,
   size_bytes: fileRow.size_bytes,
   checksum: fileRow.checksum,
-  visibility: "private",
+  visibility: "personal",
   current_version: 1,
   parent_folder_id: null,
   metadata: {},
