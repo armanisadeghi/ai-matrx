@@ -71,50 +71,66 @@ import { answerForRecent, isTestOrganization, recentlyChanged } from "./recent";
 import { MakeMount, NewTableBody, SavesTo } from "./MakeMount";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The data home's one answer, read once for the page: Recent and "Which table" both come from it.
+// Two reads across every organization: Recent (the data home's one call) and step 1's tables.
 // ─────────────────────────────────────────────────────────────────────────────
 
-type HomeRead =
+/** One door's answer on this page: reading, the store's words with Try again, or the rows. */
+export type Read<T> =
   | { phase: "reading" }
   | { phase: "failed"; why: string; retry: () => void }
-  | { phase: "read"; answer: doors.DataHomeAnswer; recent: DataHomeRow[] };
+  | { phase: "read"; data: T };
 
-function useMakeHomeRead(userId: string | null, testOrganizationIds: ReadonlySet<string>, ready: boolean): HomeRead {
-  const [read, setRead] = useState<HomeRead>({ phase: "reading" });
+function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T } | { ok: false; why: string }>): Read<T> {
+  const [read, setRead] = useState<Read<T>>({ phase: "reading" });
   const [attempt, setAttempt] = useState(0);
   const retry = () => {
     setRead({ phase: "reading" });
     setAttempt((n) => n + 1);
   };
-  const testKey = [...testOrganizationIds].sort().join(",");
   useEffect(() => {
-    if (!userId || !ready) return;
+    if (key === null) return;
     let alive = true;
-    void (async () => {
-      const source = supabaseDataSource(createClient());
-      const answered = await doors.dataHome(source, null);
-      if (!alive) return;
-      if (!answered.ok) {
-        setRead({ phase: "failed", why: doors.doorFailureLine(answered.error), retry });
-        return;
-      }
-      const client = createRecordsClient({ dataSource: source, actor: { actor: "user", user_id: userId }, organizationId: null });
-      const built = await buildDataHomeRows({
-        client,
-        dataSource: source,
-        answer: answerForRecent(answered.data, testOrganizationIds),
+    void load()
+      .then((answered) => {
+        if (!alive) return;
+        setRead(answered.ok ? { phase: "read", data: answered.data } : { phase: "failed", why: answered.why, retry });
+      })
+      .catch((err: unknown) => {
+        if (alive) setRead({ phase: "failed", why: err instanceof Error ? err.message : String(err), retry });
       });
-      if (!alive) return;
-      setRead({ phase: "read", answer: answered.data, recent: recentlyChanged(built.rows) });
-    })().catch((err: unknown) => {
-      if (alive) setRead({ phase: "failed", why: err instanceof Error ? err.message : String(err), retry });
-    });
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the set is keyed by its contents
-  }, [userId, ready, testKey, attempt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` names everything `load` reads
+  }, [key, attempt]);
   return read;
+}
+
+/**
+ * RECENT: the data home's one call (`custom.data_home`), built into rows by the home's own builder,
+ * with archived, test-organization and app-kept rows taken out first (recent.ts).
+ */
+function useRecentRead(userId: string | null, testOrganizationIds: ReadonlySet<string>, ready: boolean) {
+  const testKey = [...testOrganizationIds].sort().join(",");
+  return useRead<DataHomeRow[]>(userId && ready ? `${userId}|${testKey}` : null, async () => {
+    const source = supabaseDataSource(createClient());
+    const answered = await doors.dataHome(source, null);
+    if (!answered.ok) return { ok: false, why: doors.doorFailureLine(answered.error) };
+    const client = createRecordsClient({ dataSource: source, actor: { actor: "user", user_id: userId! }, organizationId: null });
+    const built = await buildDataHomeRows({ client, dataSource: source, answer: answerForRecent(answered.data, testOrganizationIds) });
+    return { ok: true, data: recentlyChanged(built.rows) };
+  });
+}
+
+/**
+ * STEP 1's LIST: every table the person can open in every organization she reaches — the lighter
+ * `custom.data_home_tables` door alone, so "Which table" never waits on the whole home.
+ */
+function useTablesRead(userId: string | null) {
+  return useRead<doors.DataHomeTableRow[]>(userId, async () => {
+    const answered = await doors.dataHomeTables(supabaseDataSource(createClient()), null);
+    return answered.ok ? { ok: true, data: answered.data } : { ok: false, why: doors.doorFailureLine(answered.error) };
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,7 +155,8 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
     () => new Set(organizations.filter((o) => isTestOrganization(o)).map((o) => o.id)),
     [organizations],
   );
-  const home = useMakeHomeRead(userId ?? null, testOrganizationIds, !organizationsLoading);
+  const recent = useRecentRead(userId ?? null, testOrganizationIds, !organizationsLoading);
+  const tables = useTablesRead(userId ?? null);
 
   const flow = tileFor(params.get(MAKE_FLOW_PARAM));
   const go = (next: Record<string, string | null>) => {
@@ -194,7 +211,7 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
             </ul>
           </section>
 
-          <RecentSection home={home} />
+          <RecentSection recent={recent} />
 
           <TemplatesSection
             activeOrganizationId={active.organizationState === "ready" ? active.organizationId : null}
@@ -210,7 +227,7 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
           {flow ? (
             <MakeFlowSheet
               tile={flow}
-              home={home}
+              tables={tables}
               testOrganizationIds={testOrganizationIds}
               activeOrganizationId={active.organizationState === "ready" ? active.organizationId : null}
               activeState={active.organizationState}
@@ -230,27 +247,28 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
   );
 }
 
-function RecentSection({ home }: { home: HomeRead }) {
+function RecentSection({ recent }: { recent: Read<DataHomeRow[]> }) {
   return (
     <section className="flex flex-col gap-2" aria-labelledby="make-recent">
       <h2 id="make-recent" className="text-sm font-medium text-muted-foreground">
         Recently changed
       </h2>
-      {home.phase === "reading" ? (
+      {recent.phase === "reading" ? (
         <Skeleton className="h-24 w-full" />
-      ) : home.phase === "failed" ? (
-        <ReadFailed home={home} />
-      ) : home.recent.length === 0 ? (
+      ) : recent.phase === "failed" ? (
+        <ReadFailed read={recent} />
+      ) : recent.data.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing changed yet</p>
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card" data-make-recent="">
-          {home.recent.map((row) => (
+          {recent.data.map((row) => (
             <li key={row.id} data-make-recent-row={row.kind}>
               <Link href={row.href} className="flex min-w-0 items-center gap-3 px-3 py-2.5 hover:bg-muted">
                 <KindIcon kind={row.kind} className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground">{row.name}</span>
-                <span className="hidden max-w-[40%] shrink truncate text-xs text-muted-foreground sm:block">
-                  {row.organizationName ?? "—"}
+                {/* Every row names its organization — on a phone as the second line. */}
+                <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3">
+                  <span className="truncate text-sm text-foreground sm:min-w-0 sm:flex-1">{row.name}</span>
+                  <span className="truncate text-xs text-muted-foreground sm:max-w-[40%]">{row.organizationName ?? "—"}</span>
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground">{whenWords(row.updatedAt)}</span>
               </Link>
@@ -263,11 +281,11 @@ function RecentSection({ home }: { home: HomeRead }) {
 }
 
 /** A read that did not answer: the store's sentence (in a person's words) and Try again. */
-function ReadFailed({ home }: { home: Extract<HomeRead, { phase: "failed" }> }) {
+function ReadFailed({ read }: { read: { why: string; retry: () => void } }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm" role="alert">
-      <span className="text-destructive">{home.why}</span>
-      <Button size="sm" variant="outline" onClick={home.retry}>
+      <span className="text-destructive">{read.why}</span>
+      <Button size="sm" variant="outline" onClick={read.retry}>
         Try again
       </Button>
     </div>
@@ -349,7 +367,7 @@ function TemplatesSection({
 
 export interface MakeFlowSheetProps {
   tile: MakeTile;
-  home: HomeRead;
+  tables: Read<doors.DataHomeTableRow[]>;
   testOrganizationIds: ReadonlySet<string>;
   activeOrganizationId: string | null;
   activeState: ReturnType<typeof useOrganizationRequired>["organizationState"];
@@ -403,7 +421,7 @@ function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organ
 }
 
 /** Step 1, shared by every flow that collects into a table. */
-function TableChoice({ home, testOrganizationIds, activeOrganizationId, activeState, onChoose }: MakeFlowSheetProps) {
+function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizationId, activeState, onChoose }: MakeFlowSheetProps) {
   const userId = useAppSelector(selectUserId);
   const [open, setOpen] = useState(true);
   const [search, setSearch] = useState("");
@@ -451,12 +469,12 @@ function TableChoice({ home, testOrganizationIds, activeOrganizationId, activeSt
     // eslint-disable-next-line react-hooks/exhaustive-deps -- replays once, when the organization lands
   }, [askOrganization, activeOrganizationId]);
 
-  if (home.phase === "reading") return <Skeleton className="h-10 w-64" />;
-  if (home.phase === "failed") return <ReadFailed home={home} />;
+  if (tablesRead.phase === "reading") return <Skeleton className="h-10 w-64" />;
+  if (tablesRead.phase === "failed") return <ReadFailed read={tablesRead} />;
 
   // The person's own tables in every organization she reaches (never the app's bookkeeping), the
   // most recently changed first and test organizations last; each names its organization.
-  const tables = home.answer.tables
+  const tables = tablesRead.data
     .filter((t) => t.kind === "table" && !t.kept_by_the_app)
     .slice()
     .sort(

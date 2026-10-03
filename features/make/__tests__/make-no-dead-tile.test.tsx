@@ -80,7 +80,7 @@ jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   useRecordsUiPorts: () => ({}),
 }));
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
-jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), doorFailureLine: () => "" }));
+jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn() }));
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => <i /> }));
 jest.mock("@/features/kits/service", () => ({ fetchAccessibleKits: async () => ({ kits: [], error: null }) }));
@@ -91,10 +91,9 @@ jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded after the mocks above
 const { MakeFlowSheet } = require("../MakeHome") as typeof import("../MakeHome");
 
-const HOME = {
+const TABLES = {
   phase: "read" as const,
-  answer: {
-    tables: [
+  data: [
       {
         table_id: "b1000000-0000-4000-8000-000000000001",
         table_name: "Patient Intake",
@@ -108,11 +107,7 @@ const HOME = {
         kept_by_the_app: false,
         kind: "table",
       },
-    ],
-    items: [],
-    changed_by: [],
-  },
-  recent: [],
+  ],
 };
 
 const REPO = path.resolve(__dirname, "../../..");
@@ -130,7 +125,7 @@ async function firstStep(tile: MakeTile): Promise<string | null> {
     root.render(
       <MakeFlowSheet
         tile={tile}
-        home={HOME}
+        tables={TABLES}
         testOrganizationIds={new Set()}
         activeOrganizationId={ORG}
         activeState="ready"
