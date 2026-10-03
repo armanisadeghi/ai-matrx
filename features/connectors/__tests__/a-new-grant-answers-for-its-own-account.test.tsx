@@ -3,6 +3,10 @@ import { createRoot, type Root } from "react-dom/client";
 import type { ConnectorAccount, ConnectorCapabilityRollout } from "../health";
 import { toast } from "@/lib/toast";
 
+(
+  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
 jest.mock("@/lib/toast", () => ({
   toast: { info: jest.fn(), success: jest.fn(), error: jest.fn() },
 }));
@@ -37,6 +41,7 @@ jest.mock("../google-adapter", () => ({
 
 import { ConnectorConsentBody } from "../ConnectorConsentDialog";
 import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 
 const provider = GOOGLE_CONNECTOR_PROVIDER;
 const gmailRead = provider.products.find((product) => product.key === "gmail_read")!;
@@ -99,6 +104,36 @@ it("shows a successful new Gmail reading grant against the returned connection",
     expect(container.textContent).toContain("Gmail reading");
     expect(container.textContent).not.toContain("did not grant this one");
     expect(toast.success).toHaveBeenCalledWith("Google connected.");
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    run.mockReset();
+  }
+});
+
+it("shows Gmail reading connected without an approval offer for a modify-only account", async () => {
+  const modifyOnly = {
+    ...connected,
+    grantedScopes: [...provider.identityScopes, GOOGLE_SCOPE.gmailModify],
+  };
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root: Root = createRoot(container);
+  try {
+    await act(async () =>
+      root.render(
+        <Fixture initial={[modifyOnly]} afterRefetch={[modifyOnly]} />,
+      ),
+    );
+    const connectedSwitch = container.querySelector<HTMLButtonElement>(
+      '[aria-label="Do not connect Gmail reading"]',
+    );
+    expect(connectedSwitch).not.toBeNull();
+    expect(connectedSwitch?.disabled).toBe(true);
+    expect(
+      container.querySelector('[aria-label="Connect Gmail reading"]'),
+    ).toBeNull();
+    expect(run).not.toHaveBeenCalled();
   } finally {
     act(() => root.unmount());
     container.remove();
