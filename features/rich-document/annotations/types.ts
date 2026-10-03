@@ -44,6 +44,11 @@ export interface AnnotationAuthor {
   id: string | null;
   name: string;
   avatarUrl?: string | null;
+  /**
+   * The agent that wrote it (a `comment_reply` from a run). The row is filed under the person
+   * whose run it was — `name` is the agent's, and its words are never edited under its name.
+   */
+  agent?: { id: string; name: string } | null;
 }
 
 export interface CommentReply {

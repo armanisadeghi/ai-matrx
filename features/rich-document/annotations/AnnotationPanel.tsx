@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { RichContent } from "@/components/rich-content/RichContent";
@@ -302,7 +303,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
         <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
         <span className="font-medium text-foreground">{label}</span>
         <span className="truncate text-muted-foreground">
-          {item.kind === "comment" || item.kind === "suggestion" ? `${item.author.name} · ${when(item.createdAt)}` : when(item.createdAt)}
+          {item.kind === "comment" || item.kind === "suggestion" ? <><AuthorName author={item.author} /> · {when(item.createdAt)}</> : when(item.createdAt)}
           {item.editedAt ? <EditedMark at={item.editedAt} /> : null}
         </span>
         {item.resolvedAt && <span className="ml-auto shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">Resolved</span>}
@@ -459,7 +460,7 @@ function ReplyRow({
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <p className="text-[11px] text-muted-foreground">
-        {reply.author.name} · {when(reply.createdAt)}
+        <AuthorName author={reply.author} /> · {when(reply.createdAt)}
         {reply.editedAt ? <EditedMark at={reply.editedAt} /> : null}
       </p>
       {editing ? (
@@ -505,9 +506,11 @@ function ReplyRow({
           <CommentBody body={reply.body} />
           {reply.mine && (
             <div className="flex gap-2">
-              <button type="button" className="text-[11px] text-muted-foreground hover:text-foreground" onClick={() => { setBase({ body: reply.body, version: reply.version }); setEditing(true); }}>
-                Edit
-              </button>
+              {reply.author.agent ? null : (
+                <button type="button" className="text-[11px] text-muted-foreground hover:text-foreground" onClick={() => { setBase({ body: reply.body, version: reply.version }); setEditing(true); }}>
+                  Edit
+                </button>
+              )}
               <button type="button" className="text-[11px] text-muted-foreground hover:text-destructive" onClick={() => void removeWithUndo(api.deleteComment(reply.id), "Reply deleted.", () => api.restoreComment(reply.id), "Reply restored.")}>
                 Delete
               </button>
@@ -651,7 +654,9 @@ function ThreadActions({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
-              <DropdownMenuItem onSelect={() => { setBase({ body: item.body, version: item.version ?? null }); setEditing(true); }}>Edit</DropdownMenuItem>
+              {item.author.agent ? null : (
+                <DropdownMenuItem onSelect={() => { setBase({ body: item.body, version: item.version ?? null }); setEditing(true); }}>Edit</DropdownMenuItem>
+              )}
               <DropdownMenuItem className="text-destructive" onSelect={() => void removeWithUndo(api.deleteComment(id), item.kind === "suggestion" ? "Suggestion deleted." : "Comment deleted.", () => api.restoreComment(id), item.kind === "suggestion" ? "Suggestion restored." : "Comment restored.")}>
                 <Trash2 className="mr-2 h-3.5 w-3.5" aria-hidden />Delete
               </DropdownMenuItem>
@@ -733,6 +738,17 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
 /** Comment text: people and dates as chips; everything else (incl. [[record]] wikilinks) through the ONE renderer. */
 /** Lines a comment shows before "Show more" (a long paste never floods the thread). */
 export const COMMENT_COLLAPSED_LINES = 8;
+
+/** Who wrote it: a person's name, or an agent's name with the agent mark. */
+function AuthorName({ author }: { author: ResolvedItem["author"] }) {
+  if (!author.agent) return <>{author.name}</>;
+  return (
+    <span className="inline-flex items-center gap-0.5 font-medium text-foreground" data-agent-author={author.agent.id}>
+      <AGENT_ICON className="h-3 w-3 shrink-0 text-primary" aria-label="Agent" />
+      {author.agent.name}
+    </span>
+  );
+}
 
 export function CommentBody({ body, className }: { body: string; className?: string }) {
   const [expanded, setExpanded] = useState(false);

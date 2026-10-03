@@ -2,7 +2,7 @@
 
 /**
  * Canvas kinds that show "something about the current item" — a record, a
- * source document, one engine's answer, a person's journey, a directive's
+ * source document, one engine's answer, a record's comment threads, a person's journey, a directive's
  * shape, a map topic, the suggestion inbox — and a page's own live panel. Each feature owns its kind beside its
  * code; this is only where they register, at boot, so a remembered tab renders
  * on the first paint after hydration. Every kind here is light: its body loads
@@ -28,6 +28,7 @@ import { NOTE_HISTORY_CANVAS_KIND } from "@/features/notes/canvas/noteHistoryKin
 import { CLOUD_FILE_EDITOR_CANVAS_KIND } from "@/features/files/canvas/cloudFileEditorKind";
 import { AGENT_PAYLOAD_CANVAS_KIND } from "@/features/marketing/content-plan/canvas/agentPayloadKind";
 import { WAR_ROOM_RESOURCES_CANVAS_KIND } from "@/features/war-room/canvas/warRoomResourcesKind";
+import { COMMENT_THREAD_CANVAS_KIND } from "@/features/rich-document/annotations/canvas/commentThreadKind";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -55,6 +56,8 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   AGENT_PAYLOAD_CANVAS_KIND,
   // A war room's / a thread's resources beside the room.
   WAR_ROOM_RESOURCES_CANVAS_KIND,
+  // A record's comment threads (the Notes & comments panel), keyed by entity:id.
+  COMMENT_THREAD_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];

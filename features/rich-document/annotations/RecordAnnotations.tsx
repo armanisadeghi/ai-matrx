@@ -6,9 +6,9 @@
 //   - installs the SAME annotation sidecar the study guide uses, anchored to
 //     the record itself (the note, the chat message, the document), so the one
 //     selection toolbar offers highlight, comment, suggest and link there;
-//   - owns the Notes & comments dock, placed the Google Docs way: on desktop a
-//     floating right-side panel that never pushes content (a transcript keeps
-//     its width), on a phone the bottom sheet. It opens when the person makes
+//   - owns the Notes & comments dock: on desktop the record's `comment-thread`
+//     canvas tab (the right-hand region is the canvas — never a second floating
+//     panel), on a phone the bottom sheet. It opens when the person makes
 //     or focuses an item (Comment, Highlight, a click on a painted passage) or
 //     picks "Notes & comments" in the ⋯ menu, and never opens empty by itself;
 //   - holds its reads and live channel while the content is far out of view

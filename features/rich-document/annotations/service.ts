@@ -36,6 +36,7 @@ import {
   type HighlightColor,
 } from "./constants";
 import { textAnchorProblem, type TextAnchor } from "./anchor";
+import { authorOf, type CommentAuthorRow } from "./comment-author";
 import { EditConflictError, SidecarError, humanError, isTransportFailure } from "./errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import type {
@@ -90,7 +91,7 @@ async function rpc<T>(fn: string, args: Record<string, unknown>, action: string)
 // Comments, suggestions, resolution
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CommentRow {
+interface CommentRow extends CommentAuthorRow {
   id: string;
   parent_id: string | null;
   body: string | null;
@@ -112,13 +113,6 @@ function isCommentRow(v: unknown): v is CommentRow {
     && typeof (v as CommentRow).created_at === "string";
 }
 
-function authorOf(row: CommentRow): AnnotationAuthor {
-  return {
-    id: row.created_by,
-    name: row.author_display_name || row.author_email || "Someone",
-    avatarUrl: row.author_avatar_url,
-  };
-}
 
 function asAnchor(v: unknown): TextAnchor | null {
   return v && typeof v === "object" && (v as { __kind?: unknown }).__kind === "text_anchor"

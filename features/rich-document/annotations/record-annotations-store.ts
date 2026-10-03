@@ -5,7 +5,8 @@
 // registers here with its record key and how many items it holds; at most ONE
 // dock is open at a time (Google Docs: one comment rail), so opening another
 // record's dock closes the first. The rich-document "Notes & comments" action
-// (⋯ menu) reads and toggles it by record key.
+// (⋯ menu) reads and toggles it by record key. On desktop an open dock is the
+// record's `comment-thread` canvas tab (canvas/commentThreadKind.ts).
 
 export interface DockEntry {
   instance: string;
@@ -18,6 +19,23 @@ export interface DockEntry {
 const entries = new Map<string, DockEntry>();
 let openInstance: string | null = null;
 const listeners = new Set<() => void>();
+/** Told when the PERSON closes a dock (its close button, the ⋯ toggle) — not when another record's dock takes over. */
+const closeListeners = new Map<string, Set<() => void>>();
+
+function closedByPerson(instance: string) {
+  for (const l of [...(closeListeners.get(instance) ?? [])]) l();
+}
+
+/** The dock's host hears the person close it (the canvas tab it shows in closes with it). */
+export function onDockClosedByPerson(instance: string, listener: () => void): () => void {
+  const set = closeListeners.get(instance) ?? new Set();
+  set.add(listener);
+  closeListeners.set(instance, set);
+  return () => {
+    set.delete(listener);
+    if (set.size === 0) closeListeners.delete(instance);
+  };
+}
 let version = 0;
 
 function emit() {
@@ -66,6 +84,15 @@ export function closeDock(instance: string) {
   if (openInstance !== instance) return;
   openInstance = null;
   emit();
+  closedByPerson(instance);
+}
+
+/** Opens the newest mount of a record's dock; false when the record is not rendered here. */
+export function openDockFor(recordKey: string): boolean {
+  const entry = latestFor(recordKey);
+  if (!entry) return false;
+  openDock(entry.instance);
+  return true;
 }
 
 /** The newest mount of a record (a record can render in two places; the ⋯ acts on the latest). */
@@ -85,13 +112,16 @@ export function dockStateFor(recordKey: string): { count: number; open: boolean 
 export function toggleDockFor(recordKey: string) {
   const entry = latestFor(recordKey);
   if (!entry) return;
-  openInstance = openInstance === entry.instance ? null : entry.instance;
+  const closing = openInstance === entry.instance;
+  openInstance = closing ? null : entry.instance;
   emit();
+  if (closing) closedByPerson(entry.instance);
 }
 
 /** Test seam. */
 export function resetDocksForTest() {
   entries.clear();
+  closeListeners.clear();
   openInstance = null;
   emit();
 }

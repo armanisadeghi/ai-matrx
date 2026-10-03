@@ -7,13 +7,30 @@
 
 "use client";
 
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { AnnotatedElement, AnnotationSidecarProvider, useOptionalSidecar, useSidecar } from "./AnnotationSidecar";
 import { AnnotationPanel } from "./AnnotationPanel";
-import { closeDock, isDockOpen, openDock, registerDock, setDockCount, subscribeDocks } from "./record-annotations-store";
+import { useOptionalCanvas } from "@ai-matrx/canvas/react";
+import { openCanvasItem } from "@/features/canvas/host/openCanvasItem";
+import {
+  closeDock,
+  isDockOpen,
+  onDockClosedByPerson,
+  openDock,
+  registerDock,
+  setDockCount,
+  subscribeDocks,
+} from "./record-annotations-store";
+import {
+  commentThreadItemId,
+  commentThreadOpenInput,
+  holdCommentThread,
+  readCommentThreadData,
+  useCommentThreadSlot,
+} from "./canvas/commentThreadKind";
 import { recordKeyOf } from "./record-of-source";
 import type { AnnotationSource } from "./types";
 
@@ -76,23 +93,99 @@ function RecordDock({ instance, recordKey, open }: { instance: string; recordKey
     );
   }
 
-  if (typeof document === "undefined") return null;
+  return <CanvasDock instance={instance} recordKey={recordKey} title={title} close={close} />;
+}
+
+/**
+ * Desktop: the dock IS the record's `comment-thread` canvas tab. The page keeps
+ * the sidecar (anchors, paint, the selection toolbar) and portals the panel
+ * into the tab — the right-hand region is the canvas, never a second floating
+ * panel. The person closing the tab closes the dock; the person closing the
+ * dock (its close button, the ⋯ toggle) closes the tab; another record's dock
+ * taking over leaves this tab showing the record's standalone thread.
+ */
+function CanvasDock({
+  instance,
+  recordKey,
+  title,
+  close,
+}: {
+  instance: string;
+  recordKey: string;
+  title: string;
+  close: () => void;
+}) {
+  const canvas = useOptionalCanvas();
+  const { api, setActiveKey } = useSidecar();
+  const split = recordKey.indexOf(":");
+  const token = recordKey.slice(0, split);
+  const id = recordKey.slice(split + 1);
+  const itemId = commentThreadItemId(token, id);
+  const latest = useRef({ close, title });
+  useEffect(() => {
+    latest.current = { close, title };
+  });
+
+  useEffect(() => {
+    const existing = canvas?.getState().items[itemId];
+    const opened = openCanvasItem(
+      canvas,
+      commentThreadOpenInput({
+        entity: token,
+        id,
+        title: latest.current.title,
+        focus: readCommentThreadData(existing?.data)?.focus ?? null,
+      }),
+    );
+    if (!canvas || !opened) {
+      // Announced by openCanvasItem; the dock must not stay "open" where nobody sees it.
+      latest.current.close();
+      return;
+    }
+    const release = holdCommentThread(opened);
+    let open = true;
+    const stopTab = canvas.store.subscribe(() => {
+      if (open && !canvas.getState().items[opened]) {
+        open = false;
+        latest.current.close();
+      }
+    });
+    const stopPerson = onDockClosedByPerson(instance, () => {
+      if (!open) return;
+      open = false;
+      canvas.close(opened);
+    });
+    return () => {
+      stopTab();
+      stopPerson();
+      release();
+    };
+  }, [canvas, instance, itemId, token, id]);
+
+  // Bring the asked-for thread forward (a receipt link, a reply that just landed).
+  const focus = useSyncExternalStore(
+    (listener) => canvas?.store.subscribe(listener) ?? (() => {}),
+    () => readCommentThreadData(canvas?.getState().items[itemId]?.data)?.focus ?? null,
+    () => null,
+  );
+  const items = api.state.items;
+  const focusKey = focus
+    ? (items.find((item) => item.commentId === focus || item.replies.some((r) => r.id === focus))?.key ?? null)
+    : null;
+  const slot = useCommentThreadSlot(itemId);
+  useEffect(() => {
+    if (!focusKey) return;
+    setActiveKey(focusKey);
+    slot?.querySelector(`[data-annotation-key="${focusKey}"]`)?.scrollIntoView?.({ block: "nearest" });
+    // setActiveKey is a fresh closure each render; the focus target is what moves.
+  }, [focusKey, slot]);
+
+  if (!slot) return null;
   return createPortal(
-    <div
-      role="complementary"
-      aria-label={title}
-      data-annotation-dock={recordKey}
-      onKeyDown={(e) => {
-        if (e.key === "Escape" && !e.defaultPrevented) {
-          e.stopPropagation();
-          close();
-        }
-      }}
-      className="fixed right-3 z-50 flex w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl"
-      style={{ top: "calc(var(--header-height, 3rem) + 0.75rem)", bottom: "0.75rem" }}
-    >
-      <AnnotationPanel className="min-h-0 flex-1" onClose={close} />
+    <div role="complementary" aria-label={title} data-annotation-dock={recordKey} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* The pane header is the only chrome: its close is the dock's close. */}
+      <AnnotationPanel className="min-h-0 flex-1" />
     </div>,
-    document.body,
+    slot,
   );
 }

@@ -7,8 +7,11 @@
  *
  *   1. A saved record's content becomes an annotation zone of the one selection toolbar.
  *   2. Inside a host that already has a sidecar (the study guide), no second one is mounted.
- *   3. The dock never opens by itself: it opens on the person's own act (a comment) — floating,
- *      outside the content, so the content keeps its width — and closes from its own header.
+ *   3. The dock never opens by itself: it opens on the person's own act (a comment) — as the
+ *      record's `comment-thread` canvas tab (never a floating right panel), outside the content,
+ *      so the content keeps its width — and the tab and the dock close together.
+ *   8. Anything can open a record's threads in the canvas, focused on one thread; a record that is
+ *      not rendered here still shows its canonical thread there.
  *   4. The ⋯ "Notes & comments" toggle is present only when the record holds something.
  *   5. Highlight and Private note are ABSENT on a kind with no annotates pair (a chat answer
  *      until its pairs exist) — never offered to refuse.
@@ -60,12 +63,20 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({ EntityRef: () =
 jest.mock("@/components/rich-content/RichContent", () => ({ RichContent: ({ source }: { source: string }) => <span>{source}</span> }));
 jest.mock("../LinkRecordSheet", () => ({ LinkRecordSheet: () => null }));
 jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => false }));
+jest.mock("@ai-matrx/associations/react", () => ({
+  CommentThread: ({ token, id }: { token: string; id: string }) => <p data-standalone-thread={`${token}:${id}`}>thread</p>,
+}));
+// jsdom has no layout: the column's tab strip scrolls the active tab into view.
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 
 import { RecordAnnotations } from "../RecordAnnotations";
 import { AnnotationSidecarProvider, AnnotatedContent } from "../AnnotationSidecar";
 import { zonesContaining } from "@/components/selection-toolbar/selection-zones";
 import { ANNOTATION_HOST_KEY, annotationSelectionProvider, type AnnotationSelectionHost } from "../annotation-actions";
-import { dockStateFor, resetDocksForTest } from "../record-annotations-store";
+import { dockStateFor, resetDocksForTest, toggleDockFor } from "../record-annotations-store";
+import { CanvasColumn, CanvasProvider, registerCanvasKind, useCanvas } from "@ai-matrx/canvas/react";
+import type { CanvasController } from "@ai-matrx/canvas";
+import { COMMENT_THREAD_CANVAS_KIND, openCommentThread } from "../canvas/commentThreadKind";
 import { annotationRecordOf } from "../record-of-source";
 import type { AnnotationSidecarApi } from "../useAnnotationSidecar";
 
@@ -94,16 +105,34 @@ async function settle() {
   for (let i = 0; i < 6; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 }
 
-async function mountAnswer() {
+registerCanvasKind(COMMENT_THREAD_CANVAS_KIND);
+let canvas: CanvasController | null = null;
+function CanvasProbe() {
+  canvas = useCanvas();
+  return null;
+}
+
+/** The answer in the page, beside the app's one canvas column. */
+async function mountAnswer({ answer = true }: { answer?: boolean } = {}) {
   await act(async () => {
     root.render(
-      <RecordAnnotations record={ANSWER}>
-        <p data-testid="answer">{BODY}</p>
-      </RecordAnnotations>,
+      <CanvasProvider persistence={null} hotkeys={false}>
+        <CanvasProbe />
+        <div data-testid="content">
+          {answer ? (
+            <RecordAnnotations record={ANSWER}>
+              <p data-testid="answer">{BODY}</p>
+            </RecordAnnotations>
+          ) : null}
+        </div>
+        <CanvasColumn />
+      </CanvasProvider>,
     );
   });
   await settle();
 }
+const THREAD_TAB = "comment-thread::message:msg-1";
+const tabs = () => Object.keys(canvas!.getState().items);
 
 const answerText = () => container.querySelector('[data-testid="answer"]')!.firstChild;
 const annotationZones = (node: Node | null) => zonesContaining(node).filter((z) => ANNOTATION_HOST_KEY in (z.contribution.host ?? {}));
@@ -137,22 +166,83 @@ it("2 — inside a host that already has a sidecar, no second one is mounted", a
   expect(service.listCommentThreads).not.toHaveBeenCalledWith(expect.objectContaining({ id: "msg-1" }));
 });
 
-it("3 — the dock opens on the person's own comment, floats outside the content, and closes from its header", async () => {
+it("3 — the dock opens on the person's own comment as the record's canvas tab, and closes with it", async () => {
   await mountAnswer();
   expect(dock()).toBeNull();
-  const before = container.innerHTML;
+  expect(tabs()).toEqual([]);
+  const content = container.querySelector('[data-testid="content"]')!;
+  const before = content.innerHTML;
   service.addComment.mockResolvedValue({ id: "c1" });
   await act(async () => { await api().postComment({ body: "Which scale — the truck scale or the floor scale?", anchor: null }); });
   await settle();
+  // One tab keyed by the record; the panel is inside it — never a fixed panel of its own.
+  expect(tabs()).toEqual([THREAD_TAB]);
   const opened = dock();
   expect(opened).not.toBeNull();
-  // Floating: portaled out of the content, fixed — the content keeps its width.
-  expect(container.contains(opened)).toBe(false);
-  expect(opened!.className).toContain("fixed");
-  expect(container.innerHTML).toBe(before);
-  const close = opened!.querySelector<HTMLButtonElement>('button[aria-label="Close notes and comments"]')!;
-  await act(async () => close.click());
+  expect(opened!.closest(`[data-comment-thread-slot="${THREAD_TAB}"]`)).not.toBeNull();
+  expect(document.querySelector(".fixed[data-annotation-dock]")).toBeNull();
+  expect(content.contains(opened)).toBe(false);
+  expect(content.innerHTML).toBe(before);
+
+  // The person closes the tab: the dock closes.
+  await act(async () => { canvas!.close(THREAD_TAB as never); });
+  await settle();
   expect(dock()).toBeNull();
+  expect(dockStateFor("message:msg-1")?.open).toBe(false);
+
+  // The ⋯ toggle opens the same tab; toggling it off closes the tab too.
+  await act(async () => toggleDockFor("message:msg-1"));
+  await settle();
+  expect(tabs()).toEqual([THREAD_TAB]);
+  expect(dock()).not.toBeNull();
+  await act(async () => toggleDockFor("message:msg-1"));
+  await settle();
+  expect(tabs()).toEqual([]);
+});
+
+it("8 — a receipt link opens the record's threads in the canvas, focused on the thread", async () => {
+  service.listCommentThreads.mockResolvedValue({
+    items: [
+      { key: "comment:c1", kind: "comment", saveState: "confirmed", anchor: null, author: { id: "me", name: "You" }, mine: true, createdAt: "2026-09-26T10:00:00Z", body: "Truck scale or floor scale?", replies: [{ id: "r1", version: 1, body: "The truck scale.", author: { id: null, name: "Intake agent" }, createdAt: "2026-09-26T10:01:00Z", mine: false }], commentId: "c1", version: 1 },
+      { key: "comment:c2", kind: "comment", saveState: "confirmed", anchor: null, author: { id: "me", name: "You" }, mine: true, createdAt: "2026-09-26T10:02:00Z", body: "Who signs the ticket?", replies: [], commentId: "c2", version: 1 },
+    ],
+    collaborationDoors: true,
+  });
+  await mountAnswer();
+  // A reply's id brings its root's card forward.
+  await act(async () => { openCommentThread(canvas, { entity: "message", id: "msg-1", title: "Chat answer", focus: "r1" }); });
+  await settle();
+  expect(tabs()).toEqual([THREAD_TAB]);
+  expect(dockStateFor("message:msg-1")?.open).toBe(true);
+  const card = (key: string) => dock()!.querySelector(`[data-annotation-key="${key}"]`);
+  expect(card("comment:c1")?.getAttribute("aria-current")).toBe("true");
+  expect(card("comment:c2")?.getAttribute("aria-current")).toBeNull();
+});
+
+it("9 — an agent's reply names the agent, with no Edit on its words", async () => {
+  service.listCommentThreads.mockResolvedValue({
+    items: [
+      { key: "comment:c1", kind: "comment", saveState: "confirmed", anchor: null, author: { id: "me", name: "You" }, mine: true, createdAt: "2026-09-26T10:00:00Z", body: "Truck scale or floor scale?", replies: [{ id: "r1", version: 1, body: "The truck scale.", author: { id: "me", name: "Scrap Intake Advisor", agent: { id: "agent-intake", name: "Scrap Intake Advisor" } }, createdAt: "2026-09-26T10:01:00Z", mine: true }], commentId: "c1", version: 1 },
+    ],
+    collaborationDoors: true,
+  });
+  await mountAnswer();
+  await act(async () => toggleDockFor("message:msg-1"));
+  await settle();
+  const reply = dock()!.querySelector('[data-agent-author="agent-intake"]');
+  expect(reply?.textContent).toContain("Scrap Intake Advisor");
+  const row = reply!.closest("div")!.parentElement!;
+  const buttons = [...row.querySelectorAll("button")].map((b) => b.textContent);
+  expect(buttons).not.toContain("Edit");
+  expect(buttons).toContain("Delete");
+});
+
+it("8b — a record not rendered here still shows its canonical thread in the tab", async () => {
+  await mountAnswer({ answer: false });
+  await act(async () => { openCommentThread(canvas, { entity: "task", id: "task-9", title: "Ship pricing page" }); });
+  await settle();
+  expect(tabs()).toEqual(["comment-thread::task:task-9"]);
+  expect(document.querySelector('[data-standalone-thread="task:task-9"]')).not.toBeNull();
 });
 
 it("4 — the ⋯ toggle is present only when the record holds something", async () => {

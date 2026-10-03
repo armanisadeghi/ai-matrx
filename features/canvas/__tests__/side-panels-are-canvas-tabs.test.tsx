@@ -8,7 +8,12 @@
  *  - a person's acquisition journey → `user-journey`, keyed by the row;
  *  - a directive's item shape → `directive-shape`, keyed by verb and noun;
  *  - a topical-map topic whose org chose the `drawer` frame → `topical-map-topic`;
- *  - the suggestion inbox → `kg-suggestions`.
+ *  - the suggestion inbox → `kg-suggestions`;
+ *  - a record's Notes & comments → `comment-thread`, keyed by the record.
+ *
+ * And statically: no component draws its own fixed, full-height panel against
+ * the right edge (the Notes & comments dock was one, 2026-10-03). A new one
+ * goes RED here by file and line.
  *
  * Real pieces throughout: the app's root reducer, the app's ONE canvas binding
  * (`CanvasHostProvider`, which registers every kind), the real openers callers
@@ -17,6 +22,8 @@
  */
 
 import React, { act, useEffect, useState } from "react";
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -315,5 +322,92 @@ describe("the suggestion inbox is a canvas tab", () => {
     expect(ids(store)).toEqual([`${KG_SUGGESTIONS_KIND}::inbox`]);
     expect(canvasOf(store).isOpen).toBe(true);
     m.unmount();
+  });
+});
+
+// ── no fixed right-hand panel (static) ─────────────────────────────────────
+
+/**
+ * A fixed element pinned to the right edge that spans the window's height: a
+ * class list with `fixed` and `right-*` (no `left-*`/`inset-x-*`: a full-width
+ * bar is not a side panel) and a vertical span — `inset-y-*`, `top-*` with
+ * `bottom-*`/`h-full|screen|dvh`, or a `style` beside it setting both `top`
+ * and `bottom`. Only unprefixed utilities count (`sm:right-0` on a toast is a
+ * breakpoint, not a dock).
+ */
+function fixedRightPanelLines(source: string): number[] {
+  const lines = source.split("\n");
+  const hits: number[] = [];
+  const strings = /"([^"\n]*)"|'([^'\n]*)'|`([^`\n]*)`/g;
+  lines.forEach((line, i) => {
+    for (const m of line.matchAll(strings)) {
+      const tokens = (m[1] ?? m[2] ?? m[3] ?? "").split(/[\s"'{}$()?]+/);
+      const has = (re: RegExp) => tokens.some((t) => re.test(t));
+      if (!has(/^fixed$/) || !has(/^right-/)) continue;
+      if (has(/^(left-|inset-x-|inset-0$)/)) continue;
+      const top = has(/^top-/);
+      const spans =
+        has(/^inset-y-/) ||
+        (top && has(/^(bottom-|h-(full|screen|dvh|svh|\[))/)) ||
+        (() => {
+          const near = lines.slice(i, i + 4).join(" ");
+          const style = near.match(/style=\{\{([^}]*)\}\}/)?.[1] ?? "";
+          return /\btop\s*:/.test(style) && /\bbottom\s*:/.test(style);
+        })();
+      if (spans) {
+        hits.push(i + 1);
+        break;
+      }
+    }
+  });
+  return hits;
+}
+
+/**
+ * Right-edge panels that predate the rule, named so the list only shrinks.
+ * Each still owes its move into the canvas (or its deletion).
+ */
+const KNOWN_FIXED_RIGHT_PANELS = [
+  "components/matrx/resizable/MatrxDynamicPanel.tsx",
+  "components/matrx/resizable/MatrxPanel.tsx",
+  "components/matrx/resizable/dev/ResizableRightPanel.tsx",
+];
+
+describe("no component draws its own fixed right-hand panel", () => {
+  it("the detector sees the old floating Notes & comments dock, and not a toast or a bar", () => {
+    const oldDock = [
+      "    <div",
+      '      role="complementary"',
+      '      className="fixed right-3 z-50 flex w-[22rem] flex-col rounded-lg border bg-card shadow-xl"',
+      '      style={{ top: "calc(var(--header-height, 3rem) + 0.75rem)", bottom: "0.75rem" }}',
+      "    >",
+    ].join("\n");
+    expect(fixedRightPanelLines(oldDock)).toEqual([3]);
+    expect(fixedRightPanelLines('<div className="fixed inset-y-0 right-0 z-50" />')).toEqual([1]);
+    expect(fixedRightPanelLines('<div className="fixed bottom-4 right-4 w-[340px]" />')).toEqual([]);
+    expect(fixedRightPanelLines('<div className="fixed bottom-0 left-0 right-0 pb-safe" />')).toEqual([]);
+    expect(fixedRightPanelLines('"fixed top-0 z-[100] flex max-h-dvh sm:bottom-0 sm:right-0 sm:top-auto"')).toEqual([]);
+  });
+
+  it("no tracked component outside the named list has one", () => {
+    const files = execSync("git ls-files '*.tsx'", { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+      .split("\n")
+      .filter((p) => p && !/(__tests__\/|\.test\.tsx$|\.spec\.tsx$)/.test(p));
+    const found: string[] = [];
+    for (const file of files) {
+      let source: string;
+      try {
+        source = readFileSync(file, "utf8");
+      } catch {
+        continue; // deleted in the working tree
+      }
+      if (!source.includes("fixed")) continue;
+      for (const line of fixedRightPanelLines(source)) found.push(`${file}:${line}`);
+    }
+    const unknown = found.filter((hit) => !KNOWN_FIXED_RIGHT_PANELS.some((known) => hit.startsWith(`${known}:`)));
+    // Detail about a thing opens a canvas tab keyed by that thing; a page's own panel is <CanvasPagePanel>.
+    expect(unknown).toEqual([]);
+    // Shrink-only: a named panel that is gone leaves the list.
+    for (const known of KNOWN_FIXED_RIGHT_PANELS) expect(found.some((hit) => hit.startsWith(`${known}:`))).toBe(true);
   });
 });
