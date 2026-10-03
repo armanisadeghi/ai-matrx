@@ -3,10 +3,10 @@
 -- functions it created (and the census) and their door rows, and deletes its three knobs. No
 -- table DDL.
 -- lock: platform
--- based-on: platform._drill_resolve(uuid, text) 2fcf1598f9d3e10802a00563b092dbc4e217fa6b4e387ce3e22b76d1af6b1049
+-- based-on: platform._drill_resolve(uuid, text) a9a14a0ae616b5270cd2b77c17e26eb0a5aa5c510622cac997d1d494fc2bb218
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 975612daf62b684a19aad8a51b3dfae65c478a95f3ae7a2dffe6ba99e0fd9bd8
--- based-on: platform.drill_rows(uuid, jsonb, jsonb) 5014f0d56f251b202d92f82929c9fc09f098e239bc5857b4248dac37c0a34041
--- based-on: platform.drill_describe(uuid, jsonb) 146f3ad7dd52068efcc0ff1fd988bd698c446997590168439389735d83bb5829
+-- based-on: platform.drill_rows(uuid, jsonb, jsonb) e42f0cea747930d0e2c24757c0072d51ca782db2cd4d83c35a1f365cf7de7321
+-- based-on: platform.drill_describe(uuid, jsonb) e06b56fd4bea8596ce51303b147f7e929841ebff6172ad7957d842d2e966446c
 
 set local lock_timeout = '3s';
 
