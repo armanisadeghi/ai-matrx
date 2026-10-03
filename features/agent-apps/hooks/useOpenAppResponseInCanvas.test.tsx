@@ -22,7 +22,7 @@ jest.mock("@/features/canvas/hooks/useOpenArtifactInCanvas", () => ({
   useOpenArtifactInCanvas: () => ({ openArtifact }),
 }));
 
-import { useOpenAppResponseInCanvas } from "./useOpenAppResponseInCanvas";
+import { useOpenAppHtmlPreview, useOpenAppResponseInCanvas } from "./useOpenAppResponseInCanvas";
 
 const SET_JSON = JSON.stringify({
   __kind: "flashcard_set",
@@ -69,4 +69,37 @@ it("a guest kind answer opens the kind's canvas type over its value", async () =
 it("a kindless answer keeps the HTML canvas", async () => {
   await door("<p>Hi</p>", "App", "c1");
   expect(openCanvas).toHaveBeenCalledWith(expect.objectContaining({ type: "html", data: { html: "<p>Hi</p>" } }));
+});
+
+describe("the HTML preview opens as a canvas tab, never a modal", () => {
+  let preview: ReturnType<typeof useOpenAppHtmlPreview>;
+  function PreviewProbe() {
+    preview = useOpenAppHtmlPreview("Study app");
+    return null;
+  }
+  beforeAll(() => {
+    const host = document.createElement("div");
+    act(() => createRoot(host).render(<PreviewProbe />));
+  });
+
+  it("the options menu's preview opens the html as a canvas html tab", () => {
+    preview("<h1>Hi</h1>");
+    expect(openCanvas).toHaveBeenCalledWith({
+      type: "html",
+      data: { html: "<h1>Hi</h1>" },
+      metadata: { title: "Study app" },
+    });
+  });
+
+  it("both agent-app shells hand the menu the canvas preview — no HtmlPreviewModal", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { join } = require("node:path") as typeof import("node:path");
+    for (const file of ["../components/shells/AgentAppFullyCustomShell.tsx", "../components/AgentAppPublicRendererImpl.tsx"]) {
+      const source = readFileSync(join(__dirname, file), "utf8");
+      expect(source).not.toContain("HtmlPreviewModal");
+      expect(source).toContain("useOpenAppHtmlPreview(app.name)");
+    }
+  });
 });

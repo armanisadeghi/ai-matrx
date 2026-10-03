@@ -59,3 +59,15 @@ export function useOpenAppResponseInCanvas() {
     openCanvas({ type: "html", data: { html: target.html }, metadata });
   };
 }
+
+/**
+ * The options menu's "HTML preview" for an agent app's answer: the html opens
+ * as a canvas `html` tab (full-bleed in the pane), keyed by its content, so the
+ * same preview asked twice focuses the tab it already has.
+ */
+export function useOpenAppHtmlPreview(fallbackTitle: string) {
+  const { open: openCanvas } = useCanvas();
+  return (html: string, title?: string): void => {
+    openCanvas({ type: "html", data: { html }, metadata: { title: title || fallbackTitle || "HTML Preview" } });
+  };
+}

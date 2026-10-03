@@ -21,7 +21,6 @@
  */
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import dynamic from "next/dynamic";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,12 +58,10 @@ import {
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
-import { useOpenAppResponseInCanvas } from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
-
-const HtmlPreviewModal = dynamic(
-  () => import("@/features/html-pages/components/HtmlPreviewModal"),
-  { ssr: false },
-);
+import {
+  useOpenAppHtmlPreview,
+  useOpenAppResponseInCanvas,
+} from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
 
 interface AgentAppFullyCustomShellProps {
   app: PublicAgentApp;
@@ -182,20 +179,11 @@ export function AgentAppFullyCustomShell({
   );
 
   // ── Action bar (copy / canvas / preview) ──────────────────────────────
-  const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
-  const [htmlPreviewContent, setHtmlPreviewContent] = useState("");
-  const [htmlPreviewTitle, setHtmlPreviewTitle] = useState("");
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
 
-  const handleShowHtmlPreview = useCallback(
-    (html: string, title?: string) => {
-      setHtmlPreviewContent(html);
-      setHtmlPreviewTitle(title || app.name || "HTML Preview");
-      setHtmlPreviewOpen(true);
-    },
-    [app.name],
-  );
+  // The HTML preview opens as a canvas tab beside the app (never a modal).
+  const handleShowHtmlPreview = useOpenAppHtmlPreview(app.name);
 
   // A kind answer opens as its kind, never as raw JSON (kind-never-raw S5).
   const openResponseInCanvas = useOpenAppResponseInCanvas();
@@ -418,15 +406,6 @@ export function AgentAppFullyCustomShell({
           onShowHtmlPreview={handleShowHtmlPreview}
           onOpenCanvas={handleOpenCanvas}
         />
-
-        {htmlPreviewOpen && (
-          <HtmlPreviewModal
-            isOpen={htmlPreviewOpen}
-            onClose={() => setHtmlPreviewOpen(false)}
-            htmlContent={htmlPreviewContent}
-            title={htmlPreviewTitle}
-          />
-        )}
       </div>
     </AgentAppTransferBoundary>
   );

@@ -7,7 +7,6 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import dynamic from "next/dynamic";
 import { AlertCircle, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { compileSlotComponent } from "../utils/compile-slot";
@@ -45,12 +44,10 @@ import {
 } from "@/features/agent-apps/components/shells/AgentAppMarkdownStreamBridge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
-import { useOpenAppResponseInCanvas } from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
-
-const HtmlPreviewModal = dynamic(
-  () => import("@/features/html-pages/components/HtmlPreviewModal"),
-  { ssr: false },
-);
+import {
+  useOpenAppHtmlPreview,
+  useOpenAppResponseInCanvas,
+} from "@/features/agent-apps/hooks/useOpenAppResponseInCanvas";
 
 interface AgentAppPublicRendererProps {
   app: PublicAgentApp;
@@ -569,18 +566,9 @@ function CustomComponentRenderer({
   // The old local-streamEvents → text reduction is gone with the bespoke fetch.
 
 
-  const [htmlPreviewOpen, setHtmlPreviewOpen] = useState(false);
-  const [htmlPreviewContent, setHtmlPreviewContent] = useState("");
-  const [htmlPreviewTitle, setHtmlPreviewTitle] = useState("");
 
-  const handleShowHtmlPreview = useCallback(
-    (html: string, title?: string) => {
-      setHtmlPreviewContent(html);
-      setHtmlPreviewTitle(title || app.name || "HTML Preview");
-      setHtmlPreviewOpen(true);
-    },
-    [app.name],
-  );
+  // The HTML preview opens as a canvas tab beside the app (never a modal).
+  const handleShowHtmlPreview = useOpenAppHtmlPreview(app.name);
 
   // A kind answer opens as its kind, never as raw JSON (kind-never-raw S5).
   const openResponseInCanvas = useOpenAppResponseInCanvas();
@@ -750,15 +738,6 @@ function CustomComponentRenderer({
           onShowHtmlPreview={handleShowHtmlPreview}
           onOpenCanvas={handleOpenCanvas}
         />
-
-        {htmlPreviewOpen && (
-          <HtmlPreviewModal
-            isOpen={htmlPreviewOpen}
-            onClose={() => setHtmlPreviewOpen(false)}
-            htmlContent={htmlPreviewContent}
-            title={htmlPreviewTitle}
-          />
-        )}
       </div>
     </MaybeSurfaceRuntimeProvider>
   );
