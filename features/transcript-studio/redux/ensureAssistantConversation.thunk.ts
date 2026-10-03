@@ -146,7 +146,10 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         }
 
         // Backfill the roster so the UI can show + switch the active agent.
-        if (!findRosterByConversation(roster, storedId)) {
+        // Only from a session row we have read: a session missing from the
+        // store has an unknown roster, and backfilling over `[]` replaced the
+        // whole roster with this one entry.
+        if (session && !findRosterByConversation(roster, storedId)) {
           const nextRoster = appendRoster(
             roster,
             makeRosterRef(storedId, storedAgentId),

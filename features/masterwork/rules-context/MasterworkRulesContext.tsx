@@ -73,7 +73,12 @@ export function MasterworkRulesProvider({
   const inherited = useContext(MasterworkRulesContext);
   const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<readonly RulebookRule[] | null>(null);
+  // What each leg last answered for. A re-run of an effect with the same inputs
+  // (a woken board tile re-runs every effect) re-reads nothing — THE REMOUNT LAW.
+  const [resolvedFor, setResolvedFor] = useState<string | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const given = rules ?? null;
+  const lookupKey = `${rulebookId ?? ""}|${masterworkId ?? ""}|${runId ?? ""}`;
 
   // Leg 1 — find the Rulebook, if we were not simply told.
   useEffect(() => {
@@ -81,6 +86,7 @@ export function MasterworkRulesProvider({
       setResolvedId(rulebookId);
       return;
     }
+    if (resolvedFor === lookupKey) return;
     let cancelled = false;
     const lookup = masterworkId
       ? rulebookIdForMasterwork(masterworkId)
@@ -89,7 +95,9 @@ export function MasterworkRulesProvider({
         : Promise.resolve(null);
     lookup
       .then((id) => {
-        if (!cancelled) setResolvedId(id);
+        if (cancelled) return;
+        setResolvedId(id);
+        setResolvedFor(lookupKey);
       })
       .catch(() => {
         // Enrichment. "We could not find the Rulebook" resolves nothing and
@@ -99,18 +107,22 @@ export function MasterworkRulesProvider({
     return () => {
       cancelled = true;
     };
-  }, [rulebookId, masterworkId, runId]);
+  }, [rulebookId, masterworkId, runId, lookupKey, resolvedFor]);
 
   // Leg 2 — read its rules, unless the surface handed them over.
   useEffect(() => {
     if (!resolvedId || given) {
       setLoaded(null);
+      setLoadedFor(null);
       return;
     }
+    if (loadedFor === resolvedId) return;
     let cancelled = false;
     getRulebook(resolvedId)
       .then((rulebook) => {
-        if (!cancelled) setLoaded(rulebook?.rules ?? null);
+        if (cancelled) return;
+        setLoaded(rulebook?.rules ?? null);
+        setLoadedFor(resolvedId);
       })
       .catch(() => {
         if (!cancelled) setLoaded(null);
@@ -118,7 +130,7 @@ export function MasterworkRulesProvider({
     return () => {
       cancelled = true;
     };
-  }, [resolvedId, given]);
+  }, [resolvedId, given, loadedFor]);
 
   const index = useMemo(() => {
     const inScope = given ?? loaded;

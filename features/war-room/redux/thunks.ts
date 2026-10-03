@@ -1513,7 +1513,15 @@ export const pruneThreadPhantomConversations = (threadId: string) =>
  */
 export const setThreadActiveConversation =
   (threadId: string, sessionId: string, conversationId: string) =>
-  async (dispatch: AppDispatch) => {
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    // The store already shows this chat as the thread's only active one: the
+    // edges need no write and no re-read (a remounted Chat tab re-binding).
+    const chatEdges = selectAssignmentsForContainer("thread", threadId)(getState()).filter(
+      (a) => a.entity_type === "conversation",
+    );
+    const edgesSettled =
+      chatEdges.some((a) => a.entity_id === conversationId) &&
+      chatEdges.every((a) => (a.is_active ?? true) === (a.entity_id === conversationId));
     dispatch(
       assignmentActiveSet({
         key: containerKey("thread", threadId),
@@ -1525,6 +1533,7 @@ export const setThreadActiveConversation =
       await dispatch(
         setActiveAssistantConversationThunk({ sessionId, conversationId }),
       ).unwrap();
+      if (edgesSettled) return;
       await assoc.setActiveAssignment(
         threadRef(threadId),
         "conversation",
@@ -1886,7 +1895,22 @@ export const attachEntityToContainer =
     entityId: string,
     opts: AttachEntityOptions = {},
   ) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    // The edge is already in the store exactly as asked: nothing to write and
+    // nothing to read (a surface re-stamping its edge on every mount).
+    const known = selectAssignmentsForContainer(ref.type, ref.id)(getState()).find(
+      (a) => a.entity_type === entityType && a.entity_id === entityId,
+    );
+    if (
+      known &&
+      assoc.assignmentAlreadyMatches(known, {
+        label: opts.label,
+        makeActive: opts.makeActive,
+        metadata: opts.metadata,
+      })
+    ) {
+      return true;
+    }
     try {
       const assignment = await assoc.createAssignment({
         ref,

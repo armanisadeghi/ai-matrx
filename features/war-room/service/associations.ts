@@ -230,6 +230,31 @@ interface CreateAssignmentInput {
 }
 
 /**
+ * True when attaching `input` over the existing edge `already` would change
+ * nothing: the edge is in the desired active state, the label is unchanged (no
+ * label passed = keep the existing one, exactly as the upsert does), and every
+ * metadata key passed already holds the same value. A surface that re-stamps
+ * the same edge on every mount — a remount, a board tile waking — therefore
+ * writes nothing (THE REMOUNT LAW, 2026-10-02: the old check treated ANY
+ * metadata as a change, so `ThreadAgentPanel` re-wrote its agent edge on every
+ * mount).
+ */
+export function assignmentAlreadyMatches(
+  already: Pick<WarRoomAssignment, "entity_type" | "is_active" | "label" | "metadata">,
+  input: Pick<CreateAssignmentInput, "makeActive" | "label" | "metadata">,
+): boolean {
+  const single = SINGLE_ACTIVE_ENTITY_TYPES.has(already.entity_type);
+  const wantActive = single ? (input.makeActive ?? true) : true;
+  if ((already.is_active ?? true) !== wantActive) return false;
+  if (input.label != null && input.label !== (already.label ?? null)) return false;
+  if (!isPlainObject(input.metadata)) return true;
+  const current = isPlainObject(already.metadata) ? already.metadata : {};
+  return Object.entries(input.metadata).every(
+    ([key, value]) => JSON.stringify(current[key] ?? null) === JSON.stringify(value ?? null),
+  );
+}
+
+/**
  * Attach a resource to a container. For single-active types (task/project/note/
  * studio_session) `makeActive` (default true) demotes the prior active one. The
  * UNIQUE (source,target) edge makes re-attaching the same resource idempotent.
@@ -249,18 +274,10 @@ export async function createAssignment(
   const already = existing.find(
     (a) => a.entity_type === entityType && a.entity_id === entityId,
   );
-  // True no-op ONLY when nothing would change: already linked, already in the
-  // desired active state, same label, and no metadata override passed. If a new
+  // True no-op when nothing would change (`assignmentAlreadyMatches`). If a new
   // label/metadata or an activation IS requested, fall through to the upsert so
   // it actually applies (with metadata patched over the existing edge below).
-  if (already) {
-    const wantActive = single ? makeActive : true;
-    const activeMatches = (already.is_active ?? true) === wantActive;
-    const labelMatches = (input.label ?? null) === (already.label ?? null);
-    const metaProvided =
-      isPlainObject(input.metadata) && Object.keys(input.metadata).length > 0;
-    if (activeMatches && labelMatches && !metaProvided) return already;
-  }
+  if (already && assignmentAlreadyMatches(already, input)) return already;
 
   const orgId = await resolveContainerOrgId(ref);
   const sameType = existing.filter((a) => a.entity_type === entityType);
@@ -328,13 +345,19 @@ export async function setActiveAssignment(
   entityId: string,
 ): Promise<void> {
   const targetType = containerTargetType(ref.type);
-  const orgId = await resolveContainerOrgId(ref);
-  const sameType = (await listAssignmentsForContainer(ref)).filter(
-    (a) => a.entity_type === entityType,
+  // Re-write is_active only on the same-type edges whose state actually
+  // changes (chosen → true, the rest → false). Re-activating the edge that is
+  // already the active one writes nothing (THE REMOUNT LAW: a surface that
+  // re-binds on every mount must not re-write the container's edges).
+  const changed = (await listAssignmentsForContainer(ref)).filter(
+    (a) =>
+      a.entity_type === entityType &&
+      (a.is_active ?? true) !== (a.entity_id === entityId),
   );
-  // Re-write is_active on every same-type edge (chosen → true, the rest → false).
+  if (changed.length === 0) return;
+  const orgId = await resolveContainerOrgId(ref);
   const results = await Promise.all(
-    sameType.map((a) =>
+    changed.map((a) =>
       associationsService.add({
         sourceType: entityToSource(a.entity_type),
         sourceId: a.entity_id,

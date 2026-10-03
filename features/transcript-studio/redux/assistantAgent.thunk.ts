@@ -47,6 +47,10 @@ interface ThunkApi {
  * the durable write, called from `useStudioAssistant` the moment the server has
  * confirmed the turn. Idempotent.
  */
+/** session:conversation pairs whose persist is in flight (several mounted
+ * assistants confirm the same turn at once — one write, not one each). */
+const persistsInFlight = new Set<string>();
+
 export const persistAssistantConversationThunk = createAsyncThunk<
   void,
   { sessionId: string; conversationId: string },
@@ -58,26 +62,41 @@ export const persistAssistantConversationThunk = createAsyncThunk<
     const session = getState().transcriptStudio.byId[sessionId];
     if (!session) return;
     const roster = session.assistantConversations ?? [];
-    // The conversation is normally already in the optimistic in-memory roster
-    // (with its agent); fall back to the resolved default if not.
-    const agentId =
-      findRosterByConversation(roster, conversationId)?.agentId ??
-      (await resolveDefaultAssistantAgentId(getState()));
-    const nextRoster = findRosterByConversation(roster, conversationId)
-      ? touchRoster(roster, conversationId)
-      : appendRoster(roster, makeRosterRef(conversationId, agentId));
+    // Already the persisted active conversation: nothing to write (a remount of
+    // the assistant re-confirms an old turn — THE REMOUNT LAW, 2026-10-02).
+    if (
+      session.assistantConversationId === conversationId &&
+      findRosterByConversation(roster, conversationId)
+    ) {
+      return;
+    }
+    const flightKey = `${sessionId}:${conversationId}`;
+    if (persistsInFlight.has(flightKey)) return;
+    persistsInFlight.add(flightKey);
     try {
-      const updated = await updateSession(sessionId, {
-        assistantConversationId: conversationId,
-        assistantConversations: nextRoster,
-      });
-      if (updated) dispatch(sessionUpserted(updated));
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(
-        "[studio] persistAssistantConversation: persist failed",
-        err,
-      );
+      // The conversation is normally already in the optimistic in-memory roster
+      // (with its agent); fall back to the resolved default if not.
+      const agentId =
+        findRosterByConversation(roster, conversationId)?.agentId ??
+        (await resolveDefaultAssistantAgentId(getState()));
+      const nextRoster = findRosterByConversation(roster, conversationId)
+        ? touchRoster(roster, conversationId)
+        : appendRoster(roster, makeRosterRef(conversationId, agentId));
+      try {
+        const updated = await updateSession(sessionId, {
+          assistantConversationId: conversationId,
+          assistantConversations: nextRoster,
+        });
+        if (updated) dispatch(sessionUpserted(updated));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(
+          "[studio] persistAssistantConversation: persist failed",
+          err,
+        );
+      }
+    } finally {
+      persistsInFlight.delete(flightKey);
     }
   },
 );
@@ -136,7 +155,23 @@ export const setActiveAssistantConversationThunk = createAsyncThunk<
     dispatch(assistantConversationIdSet({ sessionId, conversationId }));
     dispatch(setShowMicrophone({ conversationId, value: true }));
 
+    // Already the session's persisted active conversation: binding it again
+    // (a remounted panel re-binding) writes nothing.
+    if (
+      session?.assistantConversationId === conversationId &&
+      findRosterByConversation(roster, conversationId)
+    ) {
+      return conversationId;
+    }
+
     try {
+      // A session that is not in the store has an UNKNOWN roster and pointer,
+      // never empty ones: writing `touchRoster([])` erased the session's whole
+      // conversation roster whenever a war-room Chat tab bound before the
+      // session row was read, and writing the pointer alone re-wrote it on
+      // every mount. Unread → bind locally only; the durable pointer is written
+      // by the next confirmed turn (`persistAssistantConversationThunk`).
+      if (!session) return conversationId;
       const updated = await updateSession(sessionId, {
         assistantConversationId: conversationId,
         assistantConversations: touchRoster(roster, conversationId),

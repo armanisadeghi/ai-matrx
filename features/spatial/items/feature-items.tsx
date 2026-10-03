@@ -724,7 +724,7 @@ function WorkflowRunBody({ source, title, onSource }: ItemBodyProps) {
   }
   if (!loaded) return <BodySkeleton label="Opening the run" />;
   return (
-    <MasterworkRulesProvider runId={runId}>
+    <MasterworkRulesProvider masterworkId={loaded.definitionId}>
       <div className="flex h-full min-h-0 flex-col">
         <TileBar
           actions={
