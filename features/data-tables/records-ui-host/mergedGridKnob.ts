@@ -8,9 +8,9 @@
  * carrying the Sheet's controls (column menu, undo, add row, bulk edit, colour rules).
  * Off: records-ui's classic grid, kept only as an organization's or a person's explicit override.
  * The platform default is set in the admin dashboard (Limits & Knobs → Feature knobs); the row was
- * seeded by `migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql` and its declared
- * default turned on by `merge8_the_merged_grid_is_on_by_default.sql`. Read for the TABLE's
- * organization and this person, through the one ladder-resolved snapshot.
+ * seeded by `migrations/campaign/merge7_the_merged_grid_is_a_feature_knob.sql`; its declared
+ * default (`platform.feature_knob.default_value`) was turned On in the database 2026-10-03. Read for
+ * the TABLE's organization and this person, through the one ladder-resolved snapshot.
  */
 
 import { useAppSelector } from "@/lib/redux/hooks";
