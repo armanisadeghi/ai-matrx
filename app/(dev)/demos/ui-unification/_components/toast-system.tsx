@@ -353,12 +353,6 @@ export function SmartToastCard({
         <p ref={textRef} className="line-clamp-2 min-w-0 flex-1 break-words text-[13px] leading-snug text-foreground">
           {message}
         </p>
-        {/* Every error on screen carries the Alchemy Menu, on its own line. */}
-        {kind === "error" && (
-          <span className="text-[13px] leading-snug">
-            <ErrorAlchemyMenu input={{ message, source: "toast" }} label={message} />
-          </span>
-        )}
       </div>
     </div>
   );
@@ -448,15 +442,30 @@ export function SmartToastCard({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <TapTargetCopyButton
-          variant="transparent"
-          ariaLabel="Copy for AI"
-          tooltip="Copy for AI"
-          value={() =>
-            buildToastAiPayload(kind, message, options, shownAt.current ?? new Date().toISOString())
-          }
-          onCopied={onCopied}
-        />
+        {/* ONE copy affordance per toast. An error's is the Alchemy Menu (every
+            error on screen carries it, inside its own box); it takes the copy
+            slot instead of sitting beside a second copy glyph. */}
+        {kind === "error" ? (
+          <ErrorAlchemyMenu
+            input={{ message, source: "toast" }}
+            label={message}
+            details={{
+              route: typeof window !== "undefined" ? window.location.pathname : "",
+              ...(options.aiContext !== undefined ? { ai_context: options.aiContext } : {}),
+              ...(options.detail ? { detail: options.detail } : {}),
+            }}
+          />
+        ) : (
+          <TapTargetCopyButton
+            variant="transparent"
+            ariaLabel="Copy for AI"
+            tooltip="Copy for AI"
+            value={() =>
+              buildToastAiPayload(kind, message, options, shownAt.current ?? new Date().toISOString())
+            }
+            onCopied={onCopied}
+          />
+        )}
         <XTapButton variant="transparent" ariaLabel="Close" tooltip="Close" onClick={onClose} />
       </div>
     </div>

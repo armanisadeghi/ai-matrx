@@ -45,29 +45,33 @@ describe("ToastSystemSpecimen", () => {
     container.remove();
   });
 
-  it("gives every toast a message, a Copy for AI button and a close button", () => {
+  it("gives every toast a message, exactly ONE copy affordance and a close button", () => {
     const toasts = container.querySelectorAll("[data-toast-kind]");
     expect(toasts.length).toBeGreaterThanOrEqual(8);
     toasts.forEach((t) => {
-      expect(t.querySelector('[aria-label="Copy for AI"]')).not.toBeNull();
+      const copy = t.querySelectorAll('[aria-label="Copy for AI"]').length;
+      const alchemy = t.querySelectorAll("[data-error-alchemy-menu]").length;
+      // An error's copy affordance is the Alchemy Menu; every other kind's is Copy for AI.
+      if (t.getAttribute("data-toast-kind") === "error") expect([copy, alchemy]).toEqual([0, 1]);
+      else expect([copy, alchemy]).toEqual([1, 0]);
       expect(t.querySelector('[aria-label="Close"]')).not.toBeNull();
     });
   });
 
   it("copies the AI envelope for the clicked toast and shows the exact text", async () => {
-    const errorToast = container.querySelector('[data-toast-kind="error"]')!;
-    const copy = errorToast.querySelector<HTMLButtonElement>('[aria-label="Copy for AI"]')!;
+    const warningToast = container.querySelector('[data-toast-kind="warning"]')!;
+    const copy = warningToast.querySelector<HTMLButtonElement>('[aria-label="Copy for AI"]')!;
     await act(async () => {
       copy.click();
       await Promise.resolve();
     });
     expect(writeText).toHaveBeenCalledTimes(1);
     const text = writeText.mock.calls[0][0];
-    expect(text).toContain('<toast tone="error">');
-    expect(text).toContain("Error message");
+    expect(text).toContain('<toast tone="warning">');
+    expect(text).toContain("Warning message");
     expect(text).toContain(`<route>${window.location.pathname}</route>`);
     expect(text).toContain("<shown_at>");
-    expect(text).toContain('"specimen": "error"');
+    expect(text).toContain('"specimen": "warning"');
     expect(container.querySelector('[data-testid="toast-ai-payload"]')!.textContent).toBe(text);
   });
 
