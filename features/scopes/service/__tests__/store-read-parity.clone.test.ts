@@ -74,6 +74,8 @@
  *   - O7 #11 (`cleared-cell`): an old current row whose every value column is NULL (a cleared cell) that
  *     the store keeps no key for — the missing row and the list length it accounts for, nothing else.
  *   - O7 #5 (`fence-spelling`): unchanged (above).
+ *   - SCOPES-D1 (`whole-value-unread-here`): a text kept as a file the node suite cannot open (no bearer for
+ *     the file service); the cell says so. NOT measured by this suite — named apart, see diff().
  * The plants still bite through every one: value-text changes plain text (no rule touches it),
  * fence-label renames every label to "Planted Name" (none of the three label conditions holds).
  */
@@ -282,7 +284,7 @@ const UNORDERED_LISTS = new Set(["values"]);
 
 type DiffKind =
   | "value" | "clock" | "bookkeeping" | "fence-spelling" | "screen-order" | "value-list-order" | "absent-vs-null"
-  | "ruled-label" | "cleared-cell" | "ruled-archived-count" | "ruled-pending-restore";
+  | "ruled-label" | "cleared-cell" | "ruled-archived-count" | "ruled-pending-restore" | "whole-value-unread-here";
 
 /**
  * RULING 1's ONE KNOWN DROP (clone, 2026-10-02): Castellano & Reyes' "Workers' Compensation" scope
@@ -428,6 +430,26 @@ function diff(reader: string, arg: string, a: unknown, b: unknown, p: string, ou
     return;
   }
   if (a && b && typeof a === "object" && typeof b === "object") {
+    // A TEXT KEPT AS A FILE THIS SUITE CANNOT OPEN (SCOPES-D1). The store cell holds the first words and
+    // the screen reads the whole text through the file reader (readFileText → the Python file service,
+    // which this node suite reaches with no bearer: "authentication required"). The cell then says so
+    // (`value_incomplete`) instead of passing the first words off as the value. Not measured HERE, so it
+    // is named apart, never counted as agreement — and matched only when the store's words are exactly the
+    // old text's first words and the pointer names the old text's whole length.
+    const ao = a as Record<string, unknown>;
+    const bo = b as Record<string, unknown>;
+    const inc = bo.value_incomplete as { head?: unknown; chars?: unknown; file_id?: unknown } | null | undefined;
+    if (
+      inc && typeof inc.head === "string" && typeof inc.file_id === "string" && ao.value_incomplete == null &&
+      typeof ao.value_text === "string" && ao.value_text.length > inc.head.length &&
+      ao.value_text.startsWith(inc.head) && [...ao.value_text].length === inc.chars
+    ) {
+      push(out, { reader, arg, path: `${p}.value_text`, old: `${[...ao.value_text].length} chars`, store: `first ${inc.head.length} + file ${inc.file_id}`, kind: "whole-value-unread-here" });
+      const rest = (o: Record<string, unknown>) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== "value_text" && k !== "value_incomplete"));
+      stats.valueCells -= 1; // the recursion below counts this same cell again
+      diff(reader, arg, rest(ao), rest(bo), p, out, stats);
+      return;
+    }
     const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
     for (const k of keys) diff(reader, arg, (a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${p}.${k}`, out, stats);
     return;
