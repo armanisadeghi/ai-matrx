@@ -1017,6 +1017,20 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     // re-run their KnowledgeQuery since `last_notified_at`, notify the owner.
     surfaces: ["/knowledge hub — Save view dialog", "/knowledge hub — saved view menu"],
   },
+  "medical.workspace": {
+    id: "medical.workspace",
+    label: "Medical workspace",
+    owner: "medical",
+    promise:
+      "A home for your practice: clinical calculators, practice templates and agents set up for how you work.",
+    stage: "planned",
+    // Domain tree (common-docs/policies/domain-tree.md): "medical ? — Medical
+    // Hub (soon): added when work starts". /medical exists so the sidebar's
+    // Medical entry lands somewhere real: guests get the landing, members get
+    // this promise plus doors to what already works (ModulePromiseSurface).
+    // Delete this entry in the change that mounts the real workspace.
+    surfaces: ["/medical (signed in)", "/medical landing — What's available"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {

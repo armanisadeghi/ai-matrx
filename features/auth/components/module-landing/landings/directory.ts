@@ -25,6 +25,7 @@ import {
   Search,
   Shapes,
   Printer,
+  Stethoscope,
 } from "lucide-react";
 
 /**
@@ -49,7 +50,11 @@ export interface ModuleLandingDirectoryEntry {
   teaser: string;
   /** Optional grouping label for the grid section. */
   group:
-    "Conversational" | "Knowledge & Data" | "Build & Run" | "Org & Context";
+    | "Conversational"
+    | "Knowledge & Data"
+    | "Build & Run"
+    | "Org & Context"
+    | "Industries";
 }
 
 export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
@@ -265,8 +270,24 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
       "Model your team's dimensions — clients, repos, cases — and wire them into every action.",
     group: "Org & Context",
   },
+
+  // Industries — a domain-tree Industry whose front door is a ModuleLanding.
+  {
+    label: "Medical",
+    href: "/medical",
+    icon: Stethoscope,
+    teaser:
+      "Turn a clinician's know-how into agents the whole practice runs the same way.",
+    group: "Industries",
+  },
 ];
 
 export const MODULE_LANDING_GROUPS: ReadonlyArray<
   ModuleLandingDirectoryEntry["group"]
-> = ["Conversational", "Knowledge & Data", "Build & Run", "Org & Context"];
+> = [
+  "Conversational",
+  "Knowledge & Data",
+  "Build & Run",
+  "Org & Context",
+  "Industries",
+];

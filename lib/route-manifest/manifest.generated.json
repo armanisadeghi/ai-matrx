@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1296,
+  "routeCount": 1318,
   "routes": [
     {
       "pattern": "/",
@@ -384,6 +384,11 @@
       "source": "app/(admin)/administration/ai/ai-models/settings/page.tsx"
     },
     {
+      "pattern": "/administration/ai/ai-models/translations",
+      "status": "live",
+      "source": "app/(admin)/administration/ai/ai-models/translations/page.tsx"
+    },
+    {
       "pattern": "/administration/ai/ai-tasks",
       "status": "live",
       "source": "app/(admin)/administration/ai/ai-tasks/page.tsx"
@@ -477,6 +482,11 @@
       "pattern": "/administration/automation/scheduling/templates",
       "status": "live",
       "source": "app/(admin)/administration/automation/scheduling/templates/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflow-runs",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflow-runs/page.tsx"
     },
     {
       "pattern": "/administration/billing",
@@ -699,6 +709,11 @@
       "source": "app/(admin)/administration/database/sql-queries/page.tsx"
     },
     {
+      "pattern": "/administration/database/store-tables",
+      "status": "live",
+      "source": "app/(admin)/administration/database/store-tables/page.tsx"
+    },
+    {
       "pattern": "/administration/database/unified-data-ramp",
       "status": "live",
       "source": "app/(admin)/administration/database/unified-data-ramp/page.tsx"
@@ -862,6 +877,11 @@
       "pattern": "/administration/knowledge/kg-cost",
       "status": "live",
       "source": "app/(admin)/administration/knowledge/kg-cost/page.tsx"
+    },
+    {
+      "pattern": "/administration/knowledge/kg-cost/explore",
+      "status": "live",
+      "source": "app/(admin)/administration/knowledge/kg-cost/explore/page.tsx"
     },
     {
       "pattern": "/administration/knowledge/kg-inspector",
@@ -1124,6 +1144,11 @@
       "source": "app/(admin)/administration/ui/surfaces/[...name]/page.tsx"
     },
     {
+      "pattern": "/administration/usage",
+      "status": "live",
+      "source": "app/(admin)/administration/usage/page.tsx"
+    },
+    {
       "pattern": "/administration/users",
       "status": "live",
       "source": "app/(admin)/administration/users/page.tsx"
@@ -1182,6 +1207,16 @@
       "pattern": "/administration/users/limits",
       "status": "live",
       "source": "app/(admin)/administration/users/limits/page.tsx"
+    },
+    {
+      "pattern": "/administration/users/meetings",
+      "status": "live",
+      "source": "app/(admin)/administration/users/meetings/page.tsx"
+    },
+    {
+      "pattern": "/administration/users/meetings/[id]",
+      "status": "live",
+      "source": "app/(admin)/administration/users/meetings/[id]/page.tsx"
     },
     {
       "pattern": "/administration/users/organizations",
@@ -2069,6 +2104,51 @@
       "source": "app/(core)/commerce/triage/page.tsx"
     },
     {
+      "pattern": "/compare/old",
+      "status": "live",
+      "source": "app/(core)/compare/old/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/data-stores",
+      "status": "live",
+      "source": "app/(core)/compare/old/data-stores/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/graph-demo",
+      "status": "live",
+      "source": "app/(core)/compare/old/graph-demo/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/knowledge-home",
+      "status": "live",
+      "source": "app/(core)/compare/old/knowledge-home/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/libraries",
+      "status": "live",
+      "source": "app/(core)/compare/old/libraries/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/library-catalog",
+      "status": "live",
+      "source": "app/(core)/compare/old/library-catalog/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/rag",
+      "status": "live",
+      "source": "app/(core)/compare/old/rag/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/sources",
+      "status": "live",
+      "source": "app/(core)/compare/old/sources/page.tsx"
+    },
+    {
+      "pattern": "/compare/old/transcripts",
+      "status": "live",
+      "source": "app/(core)/compare/old/transcripts/page.tsx"
+    },
+    {
       "pattern": "/connect-computer",
       "status": "live",
       "source": "app/(core)/connect-computer/page.tsx"
@@ -2222,6 +2302,16 @@
       "pattern": "/developers/oauth",
       "status": "live",
       "source": "app/(public)/developers/oauth/page.tsx"
+    },
+    {
+      "pattern": "/devices",
+      "status": "live",
+      "source": "app/(core)/devices/page.tsx"
+    },
+    {
+      "pattern": "/devices/[deviceId]",
+      "status": "live",
+      "source": "app/(core)/devices/[deviceId]/page.tsx"
     },
     {
       "pattern": "/dictionary/admin",
@@ -3571,6 +3661,11 @@
       "source": "app/(core)/knowledge/graph/page.tsx"
     },
     {
+      "pattern": "/knowledge/hub",
+      "status": "live",
+      "source": "app/(core)/knowledge/hub/page.tsx"
+    },
+    {
       "pattern": "/knowledge/library",
       "status": "live",
       "source": "app/(core)/knowledge/library/page.tsx"
@@ -3604,6 +3699,11 @@
       "pattern": "/knowledge/sources/[id]",
       "status": "live",
       "source": "app/(core)/knowledge/sources/[id]/page.tsx"
+    },
+    {
+      "pattern": "/knowledge/transcripts/[id]",
+      "status": "live",
+      "source": "app/(core)/knowledge/transcripts/[id]/page.tsx"
     },
     {
       "pattern": "/knowledge/viewer/[id]",
@@ -3724,6 +3824,16 @@
       "pattern": "/loop/diagram",
       "status": "live",
       "source": "app/(public)/loop/diagram/page.tsx"
+    },
+    {
+      "pattern": "/make",
+      "status": "live",
+      "source": "app/(core)/make/page.tsx"
+    },
+    {
+      "pattern": "/make/templates/[id]",
+      "status": "live",
+      "source": "app/(core)/make/templates/[id]/page.tsx"
     },
     {
       "pattern": "/mandates",
@@ -4976,6 +5086,12 @@
       "source": "app/(core)/me/access-log/page.tsx"
     },
     {
+      "pattern": "/medical",
+      "status": "placeholder",
+      "source": "app/(core)/medical/page.tsx",
+      "promiseKey": "medical.workspace"
+    },
+    {
       "pattern": "/meet/[slug]",
       "status": "live",
       "source": "app/(meet)/meet/[slug]/page.tsx"
@@ -4994,6 +5110,11 @@
       "pattern": "/messages",
       "status": "live",
       "source": "app/(core)/messages/page.tsx"
+    },
+    {
+      "pattern": "/messages-showcase",
+      "status": "live",
+      "source": "app/(core)/messages-showcase/page.tsx"
     },
     {
       "pattern": "/messages/[conversationId]",
@@ -5591,6 +5712,61 @@
       "source": "app/(public)/r/[token]/page.tsx"
     },
     {
+      "pattern": "/rag",
+      "status": "live",
+      "source": "app/(core)/rag/page.tsx"
+    },
+    {
+      "pattern": "/rag/admin",
+      "status": "live",
+      "source": "app/(core)/rag/admin/page.tsx"
+    },
+    {
+      "pattern": "/rag/data-stores",
+      "status": "live",
+      "source": "app/(core)/rag/data-stores/page.tsx"
+    },
+    {
+      "pattern": "/rag/flow",
+      "status": "live",
+      "source": "app/(core)/rag/flow/page.tsx"
+    },
+    {
+      "pattern": "/rag/library",
+      "status": "live",
+      "source": "app/(core)/rag/library/page.tsx"
+    },
+    {
+      "pattern": "/rag/library-catalog",
+      "status": "live",
+      "source": "app/(core)/rag/library-catalog/page.tsx"
+    },
+    {
+      "pattern": "/rag/library/[id]/preview",
+      "status": "live",
+      "source": "app/(core)/rag/library/[id]/preview/page.tsx"
+    },
+    {
+      "pattern": "/rag/repositories",
+      "status": "live",
+      "source": "app/(core)/rag/repositories/page.tsx"
+    },
+    {
+      "pattern": "/rag/search",
+      "status": "live",
+      "source": "app/(core)/rag/search/page.tsx"
+    },
+    {
+      "pattern": "/rag/viewer/[id]",
+      "status": "live",
+      "source": "app/(core)/rag/viewer/[id]/page.tsx"
+    },
+    {
+      "pattern": "/rag/visualization",
+      "status": "live",
+      "source": "app/(core)/rag/visualization/page.tsx"
+    },
+    {
       "pattern": "/registered-results",
       "status": "live",
       "source": "app/(transitional)/registered-results/page.tsx"
@@ -5926,79 +6102,9 @@
       "source": "app/(public)/seo/structured-data/page.tsx"
     },
     {
-      "pattern": "/settings",
-      "status": "live",
-      "source": "app/(transitional)/settings/page.tsx"
-    },
-    {
-      "pattern": "/settings/access-requests",
-      "status": "live",
-      "source": "app/(core)/settings/access-requests/page.tsx"
-    },
-    {
       "pattern": "/settings/data",
       "status": "live",
       "source": "app/(core)/settings/data/page.tsx"
-    },
-    {
-      "pattern": "/settings/extension",
-      "status": "live",
-      "source": "app/(transitional)/settings/extension/page.tsx"
-    },
-    {
-      "pattern": "/settings/feedback",
-      "status": "live",
-      "source": "app/(transitional)/settings/feedback/page.tsx"
-    },
-    {
-      "pattern": "/settings/integrations",
-      "status": "live",
-      "source": "app/(transitional)/settings/integrations/page.tsx"
-    },
-    {
-      "pattern": "/settings/organizations",
-      "status": "live",
-      "source": "app/(transitional)/settings/organizations/page.tsx"
-    },
-    {
-      "pattern": "/settings/preferences",
-      "status": "live",
-      "source": "app/(transitional)/settings/preferences/page.tsx"
-    },
-    {
-      "pattern": "/settings/profile",
-      "status": "live",
-      "source": "app/(transitional)/settings/profile/page.tsx"
-    },
-    {
-      "pattern": "/settings/profile/voice",
-      "status": "live",
-      "source": "app/(transitional)/settings/profile/voice/page.tsx"
-    },
-    {
-      "pattern": "/settings/projects",
-      "status": "live",
-      "source": "app/(transitional)/settings/projects/page.tsx"
-    },
-    {
-      "pattern": "/settings/sandbox",
-      "status": "live",
-      "source": "app/(transitional)/settings/sandbox/page.tsx"
-    },
-    {
-      "pattern": "/settings/sandbox-storage",
-      "status": "live",
-      "source": "app/(transitional)/settings/sandbox-storage/page.tsx"
-    },
-    {
-      "pattern": "/settings/secrets",
-      "status": "live",
-      "source": "app/(transitional)/settings/secrets/page.tsx"
-    },
-    {
-      "pattern": "/settings/voice",
-      "status": "live",
-      "source": "app/(transitional)/settings/voice/page.tsx"
     },
     {
       "pattern": "/shapes",
@@ -6489,6 +6595,11 @@
       "pattern": "/workflows/runs/[runId]",
       "status": "live",
       "source": "app/(core)/workflows/runs/[runId]/page.tsx"
+    },
+    {
+      "pattern": "/workflows/runs/analyze",
+      "status": "live",
+      "source": "app/(core)/workflows/runs/analyze/page.tsx"
     },
     {
       "pattern": "/workflows/waiting",

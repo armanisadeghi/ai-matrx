@@ -82,6 +82,7 @@ const PLACEHOLDER_SHELLS = [
   "MePillarPlaceholder",
   "HrPillarSurface",
   "HrPillarPlaceholder",
+  "ModulePromiseSurface",
 ] as const;
 
 const PLACEHOLDER_RE = new RegExp(`\\b(?:${PLACEHOLDER_SHELLS.join("|")})\\b`);
