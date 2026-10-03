@@ -1181,13 +1181,6 @@ const TranscriptStudioWindow = lazyOverlay(
     ),
   { ssr: false },
 );
-const UndoHistoryOverlay = lazyOverlay(
-  () =>
-    import("@ai-matrx/chat/agents/components/undo-history/UndoHistoryOverlay").then(
-      (m) => ({ default: m.UndoHistoryOverlay }),
-    ),
-  { ssr: false },
-);
 const SettingsShellOverlay = lazyOverlay(
   () => import("@/features/settings/components/SettingsShellOverlay"),
   { ssr: false },
@@ -1660,7 +1653,6 @@ export default function OverlayController() {
     transcriptStudioWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "transcriptStudioWindow"),
     ),
-    undoHistory: useAppSelector((s) => selectIsOverlayOpen(s, "undoHistory")),
     userPreferences: useAppSelector((s) =>
       selectIsOverlayOpen(s, "userPreferences"),
     ),
@@ -2093,9 +2085,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     transcriptStudioWindow: useAppSelector((s) =>
       selectOverlayData(s, "transcriptStudioWindow"),
-    ) as Record<string, unknown> | null,
-    undoHistory: useAppSelector((s) =>
-      selectOverlayData(s, "undoHistory"),
     ) as Record<string, unknown> | null,
     whatsappMedia: useAppSelector((s) =>
       selectOverlayData(s, "whatsappMedia"),
@@ -7869,21 +7858,6 @@ export default function OverlayController() {
                 ? data.activeSessionId
                 : null
             }
-          />
-        );
-      })()}
-
-      {/* undoHistory */}
-      {(() => {
-        const isOpen = isOpenById.undoHistory;
-        const data = dataById.undoHistory as
-          Record<string, unknown> | null | undefined;
-        if (!isOpen) return null;
-        return (
-          <UndoHistoryOverlay
-            isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "undoHistory" }))}
-            agentId={typeof data?.agentId === "string" ? data.agentId : ""}
           />
         );
       })()}

@@ -925,14 +925,6 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "agentAssistantMarkdownDebugWindow",
   },
   {
-    id: "tile.undo-history",
-    label: "Undo History (new)",
-    icon: History,
-    category: "admin",
-    gate: "admin",
-    overlayId: "undoHistory",
-  },
-  {
     id: "tile.agent-full-modal",
     label: "Agent (full modal) (new)",
     icon: AppWindow,

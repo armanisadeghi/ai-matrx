@@ -25,8 +25,8 @@ Field names are camelCase `AgentDefinition` / record keys (see [`agent-definitio
 | `setAgentField` | [`AgentModelConfiguration.tsx`](../../components/builder/AgentModelConfiguration.tsx), [`AgentSettingsCore.tsx`](../../components/settings-management/AgentSettingsCore.tsx), [`AgentSettingsModal.tsx`](../../components/settings-management/AgentSettingsModal.tsx), [`AgentInlineControls.tsx`](../../components/settings-management/not-used/AgentInlineControls.tsx) | — | —[^setField] | **No** |
 | `setAgentSettings` | [`AgentSettingsCore.tsx`](../../components/settings-management/AgentSettingsCore.tsx), [`AgentSettingsModal.tsx`](../../components/settings-management/AgentSettingsModal.tsx) | — | settings | **No** |
 | `setActiveAgentId` | [`AgentListDropdown.tsx`](../../components/agent-listings/AgentListDropdown.tsx) | — | activeAgentId[^sliceRoot] | **N/A** |
-| `undoAgentEdit` / `redoAgentEdit` | [`useAgentUndoRedo.ts`](../../hooks/useAgentUndoRedo.ts), [`UndoHistoryOverlay.tsx`](../../components/undo-history/UndoHistoryOverlay.tsx) | — | —[^undo] | **No** |
-| `clearAgentUndoHistory` | [`UndoHistoryOverlay.tsx`](../../components/undo-history/UndoHistoryOverlay.tsx) | — | _undoPast<br>_undoFuture | **N/A** |
+| `undoAgentEdit` / `redoAgentEdit` | [`useAgentUndoRedo.ts`](../../hooks/useAgentUndoRedo.ts), [`AgentEditHistory.tsx`](../../components/undo-history/AgentEditHistory.tsx) | — | —[^undo] | **No** |
+| `clearAgentUndoHistory` | [`AgentEditHistory.tsx`](../../components/undo-history/AgentEditHistory.tsx) | — | _undoPast<br>_undoFuture | **N/A** |
 
 ---
 

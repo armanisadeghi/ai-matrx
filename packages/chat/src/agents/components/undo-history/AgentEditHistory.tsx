@@ -2,7 +2,6 @@
 
 import { useCallback, type ReactNode } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";
@@ -118,17 +117,15 @@ function previewValue(entry: UndoEntry): ReactNode {
   return "object";
 }
 
-interface UndoHistoryOverlayProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface AgentEditHistoryProps {
   agentId: string;
 }
 
-export function UndoHistoryOverlay({
-  isOpen,
-  onClose,
-  agentId,
-}: UndoHistoryOverlayProps) {
+/**
+ * An agent's in-session undo/redo timeline. A plain body: the host shows it in
+ * a canvas tab (kind `agent-edit-history`), whose pane header is the chrome.
+ */
+export function AgentEditHistory({ agentId }: AgentEditHistoryProps) {
   const dispatch = useAppDispatch();
   const record = useAppSelector((s) => selectAgentById(s, agentId));
   const agentName = useAppSelector((s) => selectAgentName(s, agentId));
@@ -176,22 +173,11 @@ export function UndoHistoryOverlay({
   );
 
   return (
-    <MatrxDynamicPanelHost
-      open={isOpen}
-      onOpenChange={(open) => !open && onClose()}
-      title={
-        <span className="inline-flex items-center gap-2">
-          <History className="h-4 w-4" />
-          Edit History
-        </span>
-      }
-      description={`${agentName ?? "Agent"} — ${past.length} undo / ${future.length} redo (${formatFileSize(totalBytes)})`}
-      expandButtonLabel="Edit history"
-      position="right"
-      defaultSize={32}
-      contentClassName="flex min-h-0 flex-1 flex-col p-0"
-    >
-      <div className="flex items-center gap-2 px-4 pb-2">
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="truncate px-4 pt-3 pb-1 text-[11px] text-muted-foreground">
+        {`${agentName ?? "Agent"} · ${past.length} undo · ${future.length} redo · ${formatFileSize(totalBytes)}`}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 px-4 pb-2">
         <Button
           size="sm"
           variant="outline"
@@ -338,6 +324,6 @@ export function UndoHistoryOverlay({
           )}
         </div>
       </ScrollArea>
-    </MatrxDynamicPanelHost>
+    </div>
   );
 }

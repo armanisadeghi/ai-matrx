@@ -1,5 +1,7 @@
 "use client";
 
+import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { agentEditHistoryInput } from "@/features/canvas/host/agent/agentEditHistoryKind";
 import {
   RefObject,
   useRef,
@@ -57,7 +59,6 @@ import type {
 } from "@ai-matrx/chat/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import MarkdownStream from "@/components/MarkdownStream";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
 import { useMessageFlags } from "@ai-matrx/chat/agents/message-flags/useMessageFlags";
@@ -168,14 +169,9 @@ export function MessageItem({
   });
   const messageFlags = useMessageFlags(agentId, messageIndex);
 
-  const handleViewHistory = useCallback(() => {
-    dispatch(
-      openOverlay({
-        overlayId: "undoHistory",
-        data: { agentId },
-      }),
-    );
-  }, [dispatch, agentId]);
+  // The edit history opens as a canvas tab beside the builder (one per agent).
+  const openEditHistory = useToolOpener(agentEditHistoryInput);
+  const handleViewHistory = () => openEditHistory({ agentId });
 
   const hasVariableSupport =
     variableDefinitions != null && variableDefinitions.length > 0;

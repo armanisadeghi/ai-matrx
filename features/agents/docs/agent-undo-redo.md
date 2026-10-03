@@ -50,16 +50,11 @@ Keyboard shortcuts are registered automatically:
 - `selectAgentCanUndo(state, agentId)` / `selectAgentCanRedo(state, agentId)`
 - `selectAgentUndoDepth(state, agentId)` / `selectAgentRedoDepth(state, agentId)`
 
-### History Overlay
+### Edit history tab
 
-A "View History" option in the context menu opens a Sheet panel (`components/undo-history/UndoHistoryOverlay.tsx`) that shows the full undo/redo timeline. Users can click any entry to jump directly to that state (multi-step undo/redo).
+A "View History" option in the context menu opens a canvas tab (kind `agent-edit-history`, one per agent — `features/canvas/host/agent/agentEditHistoryKind.tsx`) whose body is the chat package's `components/undo-history/AgentEditHistory.tsx`: the full undo/redo timeline. Users can click any entry to jump directly to that state (multi-step undo/redo). Each entry shows the field name, timestamp (relative), and a preview of the value.
 
-The overlay is registered in the centralized overlay system:
-- `overlaySlice.ts`: `undoHistory` overlay with `openUndoHistory({ agentId })` typed action creator
-- `OverlayController.tsx`: dynamically imports and renders `UndoHistoryOverlay` when open
-- Each entry shows the field name, timestamp (relative), and a preview of the value
-
-The overlay provides:
+The tab provides:
 - One-click undo/redo buttons with platform shortcut hints
 - Click-to-jump on any entry (executes multiple undo/redo steps)
 - Clear history button

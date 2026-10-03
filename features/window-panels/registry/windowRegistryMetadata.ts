@@ -2528,14 +2528,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
   {
-    slug: "undo-history",
-    overlayId: "undoHistory",
-    kind: "widget",
-    label: "Undo History",
-    defaultData: {},
-    ephemeral: true,
-  },
-  {
     slug: "admin-state-analyzer",
     overlayId: "adminStateAnalyzer",
     kind: "widget",

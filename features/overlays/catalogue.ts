@@ -1091,11 +1091,6 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  undoHistory: {
-    label: "Undo History",
-    instanceMode: "singleton",
-    isWindow: false,
-  },
   userPreferences: {
     label: "User Preferences",
     instanceMode: "singleton",

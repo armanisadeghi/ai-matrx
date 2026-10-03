@@ -6,6 +6,8 @@ import {
   useCallback,
   useMemo,
 } from "react";
+import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { agentEditHistoryInput } from "@/features/canvas/host/agent/agentEditHistoryKind";
 import { Label } from "@/components/ui/label";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -43,7 +45,6 @@ import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/s
 import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
 import { withAgentSystemInstruction } from "@ai-matrx/chat/agents/utils/agent-system-instruction";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Terminal } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 
@@ -119,14 +120,9 @@ export function SystemMessage({
     scope: () => textareaRefs.current[-1] ?? null,
   });
 
-  const handleViewHistory = useCallback(() => {
-    dispatch(
-      openOverlay({
-        overlayId: "undoHistory",
-        data: { agentId },
-      }),
-    );
-  }, [dispatch, agentId]);
+  // The edit history opens as a canvas tab beside the builder (one per agent).
+  const openEditHistory = useToolOpener(agentEditHistoryInput);
+  const handleViewHistory = () => openEditHistory({ agentId });
 
   // console.log("[AGENT SYSTEM MESSAGE] messages", messages);
   // console.log("[AGENT SYSTEM MESSAGE] systemMessage", systemMessage);
