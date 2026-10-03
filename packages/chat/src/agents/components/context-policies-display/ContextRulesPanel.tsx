@@ -66,13 +66,16 @@ export function ContextRulesPanel({
   agentId,
   selectedKey,
   onSelectedKeyChange,
+  narrow = false,
 }: {
   conversationId: string;
   agentId: string | null;
   selectedKey: string | null;
   onSelectedKeyChange: (key: string | null) => void;
+  /** The space it has is one column (a narrow pane): list, then detail with Back. */
+  narrow?: boolean;
 }) {
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile() || narrow;
   const dispatch = useAppDispatch();
   const save = useSaveContextRule();
   const saveMany = useSaveContextRules();
