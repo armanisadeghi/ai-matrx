@@ -245,15 +245,20 @@ const STORE_ONLY: { text: string; expect: (r: Row) => Outcome; type?: string; on
   { text: "ARRAYJOIN(ARRAYCOMPACT({Services}), \"; \")", expect: (r) => ok((SERVICES[str(r.patient)] ?? []).join("; ")) },
   // the refusals
   { text: 'REGEX_MATCH({Patient}, "([A-Z")', expect: () => no('`REGEX_MATCH` cannot read the pattern "([A-Z".') },
-  // A repeat inside a repeat is refused before it runs (lane 10 ruling, F4c).
-  { text: 'REGEX_MATCH({Patient}, "(o+)+x")', once: true, expect: () => no('`REGEX_MATCH` cannot repeat a group that already repeats inside, as in "(o+)". Write it without the inner repeat.') },
-  { text: 'REGEX_MATCH({Patient}, "(.*)*x")', once: true, expect: () => no('`REGEX_MATCH` cannot repeat a group that already repeats inside, as in "(.*)". Write it without the inner repeat.') },
-  { text: 'REGEX_MATCH({Patient}, "((ab)*)+")', once: true, expect: () => no('`REGEX_MATCH` cannot repeat a group that already repeats inside, as in "((ab)*)". Write it without the inner repeat.') },
-  { text: 'REGEX_MATCH({Patient}, "(o{2,})*")', once: true, expect: () => no('`REGEX_MATCH` cannot repeat a group that already repeats inside, as in "(o{2,})". Write it without the inner repeat.') },
-  { text: 'REGEX_MATCH({Patient}, "(an|an)*")', once: true, expect: () => no('`REGEX_MATCH` cannot repeat a group whose choices are the same, as in "(an|an)".') },
+  // Patterns RE2 accepts are accepted: Postgres's `~` answers yes/no with no capture tracking, so
+  // the classic runaway shapes run in milliseconds (lane 10 ruling after V9's measure).
+  { text: 'REGEX_MATCH({Patient}, "(o+)+x")', expect: (r) => ok(/(o+)+x/.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Patient}, "(.*)*x")', expect: (r) => ok(/(.*)*x/.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Patient}, "((ab)*)+")', expect: (r) => ok(/((ab)*)+/.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Patient}, "(o{2,})*")', expect: (r) => ok(/(o{2,})*/.test(str(r.patient))) },
+  { text: 'REGEX_MATCH({Patient}, "(an|an)*")', expect: (r) => ok(/(an|an)*/.test(str(r.patient))) },
   { text: 'REGEX_MATCH({Patient}, "^(Ma|Mo)+")', expect: (r) => ok(/^(Ma|Mo)+/.test(str(r.patient))) },
   { text: 'REGEX_MATCH({Patient}, "(an){1,3}")', expect: (r) => ok(/(an){1,3}/.test(str(r.patient))) },
   { text: 'REGEX_MATCH({Owner phone}, "^(\\\\(541\\\\) )?[0-9-]+$")', expect: (r) => ok(/^(\(541\) )?[0-9-]+$/.test(str(r.owner_phone))) },
+  { text: 'REGEX_MATCH({Desk notes}, "^(\\\\w+\\\\s?)+$")', expect: (r) => ok(/^(\w+\s?)+$/.test(str(r.desk_notes))) },
+  { text: 'REGEX_MATCH(LOWER(SUBSTITUTE({Species}, " ", "-")), "^[a-z]+(-[a-z]+)*$")', expect: (r) => ok(/^[a-z]+(-[a-z]+)*$/.test(str(r.species).replace(/ /g, "-").toLowerCase())) },
+  { text: 'REGEX_MATCH(LOWER(LEFT({Patient}, FIND(" ", {Patient}) - 1)) & "@mail.cedarridge-vet.com", "^[\\\\w.+-]+@[\\\\w-]+(\\\\.[\\\\w-]+)+$")', expect: () => ok(true) },
+  { text: 'REGEX_MATCH({Patient}, "((((a{1,100}){1,100}){1,100}){1,100})")', once: true, expect: () => no('`REGEX_MATCH` cannot work out a pattern this complex: "((((a{1,100}){1,100}){1,100}){1,100})".') },
   { text: 'REGEX_MATCH({Patient}, "(o)\\\\1")', expect: () => no('`REGEX_MATCH` does not support backreferences such as "\\1".') },
   { text: 'REGEX_MATCH({Patient}, "Moose(?= )")', expect: () => no('`REGEX_MATCH` does not support lookahead or lookbehind such as "(?=".') },
   { text: 'REGEX_MATCH({Patient}, "(?<!Big )Moose")', expect: () => no('`REGEX_MATCH` does not support lookahead or lookbehind such as "(?<!".') },

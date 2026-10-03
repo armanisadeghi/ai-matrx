@@ -25,9 +25,8 @@
 --   FIND(part, text, start?)                     1-based, 0 when absent, case-sensitive; start is
 --                                                JavaScript indexOf's (0-based, default 0)
 --   SUBSTITUTE(text, old, new, which?)           every occurrence, or only the which-th
---   REGEX_MATCH(text, pattern)                   yes/no, RE2 syntax: backreferences, lookaround and a
---                                                repeat inside a repeat are refused by name, \p{…}
---                                                classes become POSIX classes
+--   REGEX_MATCH(text, pattern)                   yes/no, RE2 syntax: backreferences and lookaround are
+--                                                refused by name, \p{…} classes become POSIX classes
 --   DATETIME_FORMAT(date, format?)               Airtable's (moment's) tokens, UTC, [literal] text;
 --                                                no format = the ISO text the language writes dates as
 --   WORKDAY(start, days, holidays?)              skips Saturday, Sunday and each listed date
@@ -284,79 +283,7 @@ declare
   v_name text;
   v_cls  text;
   j      integer;
-  -- the runaway-pattern scan: per open group, whether it repeats inside and where it starts
-  v_rep  boolean[] := '{}';
-  v_at   integer[] := '{}';
-  v_dep  integer := 0;
-  v_grp  text;
-  v_unb  boolean;
-  v_alts text[];
 begin
-  -- ── A REPEAT INSIDE A REPEAT IS REFUSED BEFORE ANYTHING RUNS: (a+)+, (.*)*, ((ab)*)+, and a
-  -- repeated choice between the same alternatives, (x|x)*. A backtracking engine can spend
-  -- forever on them; the person gets a plain sentence naming the group instead.
-  while i <= n loop
-    c := substr(p_pattern, i, 1);
-    if c = '\' then
-      if substr(p_pattern, i + 1, 1) = 'Q' then
-        j := strpos(substr(p_pattern, i + 2), '\E');
-        i := case when j = 0 then n + 1 else i + 2 + j + 1 end;
-      else
-        i := i + 2;
-      end if;
-      continue;
-    end if;
-    if v_in then
-      if c = ']' then v_in := false; end if;
-      i := i + 1;
-      continue;
-    end if;
-    if c = '[' then
-      v_in := true;
-      i := i + 1;
-      if substr(p_pattern, i, 1) = '^' then i := i + 1; end if;
-      if substr(p_pattern, i, 1) = ']' then i := i + 1; end if;
-      continue;
-    end if;
-    if c = '(' then
-      v_dep := v_dep + 1;
-      v_rep[v_dep] := false;
-      v_at[v_dep] := i;
-      i := i + 1;
-      continue;
-    end if;
-    -- an unbounded repeat: *, + or {n,}
-    v_unb := c in ('*', '+') or substr(p_pattern, i) ~ '^\{[0-9]*,\}';
-    if c = ')' and v_dep > 0 then
-      v_grp := substr(p_pattern, v_at[v_dep], i - v_at[v_dep] + 1);
-      v_nxt := substr(p_pattern, i + 1);
-      v_unb := left(v_nxt, 1) in ('*', '+') or v_nxt ~ '^\{[0-9]*,\}';
-      if v_unb and v_rep[v_dep] then
-        raise exception '`%` cannot repeat a group that already repeats inside, as in "%". Write it without the inner repeat.', p_fn, v_grp
-          using errcode = '22023';
-      end if;
-      if v_unb and strpos(substr(v_grp, 2), '(') = 0 then
-        v_alts := string_to_array(regexp_replace(v_grp, '^\((\?:)?|\)$', '', 'g'), '|');
-        if cardinality(v_alts) > 1 and cardinality(v_alts) <> (select count(distinct a) from unnest(v_alts) a) then
-          raise exception '`%` cannot repeat a group whose choices are the same, as in "%".', p_fn, v_grp
-            using errcode = '22023';
-        end if;
-      end if;
-      v_dep := v_dep - 1;
-      if v_dep > 0 and (v_unb or v_rep[v_dep + 1]) then
-        v_rep[v_dep] := true;
-      end if;
-      i := i + 1;
-      continue;
-    end if;
-    if v_unb and v_dep > 0 then
-      v_rep[v_dep] := true;
-    end if;
-    i := i + 1;
-  end loop;
-  i := 1;
-  v_in := false;
-
   while i <= n loop
     c := substr(p_pattern, i, 1);
     if c = '\' and i < n then
@@ -448,7 +375,7 @@ end
 $fn$;
 
 comment on function custom._fx_regex(text, text) is
-  'VIEWS-AND-FIELDS F4: an RE2 pattern (Airtable''s engine) as a Postgres regular expression. A repeat inside a repeat ((a+)+, (.*)*, (x|x)*), backreferences, lookaround and Postgres-only escapes are refused by name; \b \B \z, named groups, \Q…\E and \p{L|Lu|Ll|N|Nd|P} are translated.';
+  'VIEWS-AND-FIELDS F4: an RE2 pattern (Airtable''s engine) as a Postgres regular expression. Backreferences, lookaround and Postgres-only escapes are refused by name; \b \B \z, named groups, \Q…\E and \p{L|Lu|Ll|N|Nd|P} are translated.';
 
 create function custom._fx_items(p_organization_id uuid, p_node jsonb, p_values jsonb, p_context jsonb)
 returns jsonb
@@ -826,22 +753,23 @@ begin
       end loop;
       return to_jsonb(v_s);
     when 'fx.regex_match' then
-      -- REGEX_MATCH(text, pattern), read as RE2 reads it (custom._fx_regex), which also refuses
-      -- the patterns that can run away (a repeat inside a repeat) before anything runs. A pattern
-      -- the database still cannot read, one too complex, or one that runs past the statement's
-      -- time is said in a plain sentence; a timeout keeps its own sqlstate (57014) so
-      -- custom.derived_value still re-raises it as a cancelled read, never an empty cell. This is
-      -- the only handler in the evaluator: a regular expression is the one place a formula's own
-      -- text can make the work unbounded.
+      -- REGEX_MATCH(text, pattern), read as RE2 reads it (custom._fx_regex). Postgres's `~`
+      -- answers yes/no without tracking captures, so the classic runaway shapes ((a+)+,
+      -- (\w+\s?)+) run in milliseconds and are accepted, as RE2 accepts them. A pattern the
+      -- database cannot read, or one too complex to compile (both 2201B), or one that runs past
+      -- the statement's time is said in a plain sentence; a timeout keeps its own sqlstate
+      -- (57014) so custom.derived_value still re-raises it as a cancelled read, never an empty
+      -- cell. This is the only handler in the evaluator.
       v_t := custom._fx_regex(custom._fx_text(v_b), 'REGEX_MATCH');
       begin
         return to_jsonb(custom._fx_text(v_a) ~ v_t);
       exception
         when invalid_regular_expression then
+          if sqlerrm like '%too complex%' then
+            raise exception '`REGEX_MATCH` cannot work out a pattern this complex: "%".', custom._fx_text(v_b)
+              using errcode = '22023';
+          end if;
           raise exception '`REGEX_MATCH` cannot read the pattern "%".', custom._fx_text(v_b)
-            using errcode = '22023';
-        when program_limit_exceeded then
-          raise exception '`REGEX_MATCH` cannot work out a pattern this complex: "%".', custom._fx_text(v_b)
             using errcode = '22023';
         when query_canceled then
           raise exception '`REGEX_MATCH` took too long on this text. Try a simpler pattern.'
