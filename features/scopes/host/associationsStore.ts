@@ -54,32 +54,7 @@ export const associationsDataSource: AssociationsDataSource = {
     if (fn === "assoc_for_entity" || fn === "assoc_for_sources" || fn === "assoc_for_targets" || fn === "assoc_members_visible") {
       return readAssociationPages(fn, args);
     }
-    const call = supabase.rpc(fn, args);
-    if (fn !== "cmt_add") return call;
-    // The cmt_add tap (W6 comments adoption): EVERY comment post — the
-    // package CommentThread composer, the store service, any host caller —
-    // crosses this one seam, so the task "someone commented" notification
-    // fires here instead of inside a per-composer helper (the behavior the
-    // deleted taskService.createTaskComment carried). Fire-and-forget on
-    // success only; dynamic import keeps tasks code out of this module's
-    // import graph (and out of every non-React service consumer).
-    return call.then((res) => {
-      const completed = res as unknown as { data?: unknown; error?: unknown };
-      if (
-        !completed.error &&
-        args?.p_entity_type === "task" &&
-        typeof args.p_entity_id === "string" &&
-        typeof completed.data === "string"
-      ) {
-        const commentId = completed.data;
-        void import(
-          "@/features/tasks/services/taskCommentNotification"
-        ).then(({ sendTaskCommentNotification }) =>
-          sendTaskCommentNotification(commentId),
-        );
-      }
-      return res;
-    });
+    return supabase.rpc(fn, args);
   },
 };
 

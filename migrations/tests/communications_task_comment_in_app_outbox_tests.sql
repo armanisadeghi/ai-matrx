@@ -43,11 +43,29 @@ begin
     raise exception 'One saved comment must create one exact owner notice; got %', v_count;
   end if;
 
+  if 'email' = any (hr._notify_channels('comment.added', v_org, v_admin, null))
+     and not exists (select 1 from users.user_email_preferences p
+                      where p.user_id = v_admin and p.comment_notifications is false) then
+    select count(*) into v_count from communication.notification
+     where dedupe_key = format('comment.added:%s:email', v_comment)
+       and channel = 'email' and recipient_user_id = v_admin
+       and organization_id = v_org and target_id = v_task
+       and payload -> 'comment' ->> 'text' = 'The figures need one more pass.';
+    if v_count <> 1 then
+      raise exception 'One saved comment must create one exact email intent; got %', v_count;
+    end if;
+  end if;
+
   update platform.comments set body = 'Edited figures.' where id = v_comment;
   select count(*) into v_count from communication.notification
    where target_id = v_task and event_key = 'comment.added' and channel = 'in_app';
   if v_count <> 1 then
     raise exception 'Editing a comment created % notices', v_count;
+  end if;
+  select count(*) into v_count from communication.notification
+   where dedupe_key = format('comment.added:%s:email', v_comment);
+  if v_count > 1 then
+    raise exception 'Editing a comment duplicated its email intent';
   end if;
 
   insert into communication.notification_preference

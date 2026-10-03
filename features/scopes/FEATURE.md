@@ -189,9 +189,10 @@ this directory.
   a wiring module — grow the package.
 - `host/` — the ONE `@ai-matrx/associations` binding: `associationsStore.ts` (store
   singleton over supabase + `requireUserId`/`ensureOrgId` + errorSink + the
-  `ENTITY_OVERLAY`; its dataSource carries the **`cmt_add` tap** — the task
-  "someone commented" notification fires from this one seam, never a per-composer
-  helper), `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
+  `ENTITY_OVERLAY`; its dataSource forwards `cmt_add` without a browser
+  notification side effect. The draft saved-comment trigger creates one
+  in-app notice and optional email intent from the committed row),
+  `AssociationsHost.tsx` (the provider mount in `app/Providers.tsx`
   carrying the six UI ports: toast notifier, lazy WindowPanel shell, capture openers,
   the `file` picker override, EntityRef/door components, and `authorDisplay` —
   current-user comment-author enrichment from the `selectActiveUser*` selectors;
