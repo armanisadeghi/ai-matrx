@@ -145,7 +145,10 @@ export class DocumentModel {
     if (!this.loading) {
       this.loading = this.deps.loadLatest(this.documentId).then(
         (row) => {
-          if (row) this.knownSnapshots.add(row.id);
+          if (row) {
+            this.knownSnapshots.add(row.id);
+            this.savedFingerprint = contentFingerprint(row.snapshot);
+          }
           // A document never saved opens as ONE empty document for every view
           // (one unit id), so their edits replay into each other.
           if (!this.stored) this.stored = row ? row.snapshot : createEmpty();
@@ -167,6 +170,17 @@ export class DocumentModel {
       this.onViewMutation(id, info, options),
     );
     this.views.set(id, { id, port, dispose: () => subscription.dispose() });
+    // Nothing unsaved: what this view mounted IS the saved version (Univer and
+    // the snapshot repair may restate it — page geometry, defaults — without
+    // anyone changing a word). That is the baseline a save compares against.
+    if (!this.handle.hasPending()) {
+      try {
+        const mounted = port.snapshot();
+        if (mounted) this.savedFingerprint = contentFingerprint(mounted);
+      } catch (error) {
+        console.warn(`[document-model] could not read ${this.documentId}'s mounted document`, error);
+      }
+    }
     let detached = false;
     return () => {
       if (detached) return;
@@ -233,6 +247,12 @@ export class DocumentModel {
   }
 
   private saving = false;
+  /**
+   * The content of the version the server holds (loaded or last written). A
+   * save of the same content is no save: attaching, detaching, waking or a
+   * flush of an unchanged document never writes a snapshot row.
+   */
+  private savedFingerprint: string | null = null;
 
   /**
    * Write the body as it is now. Returns false when this tab is a collab peer
@@ -243,11 +263,14 @@ export class DocumentModel {
     const snapshot = this.latest();
     if (!snapshot) throw new Error("There is no open document to save.");
     if (this.collab && !this.collab.isHost() && reason !== "manual") return false;
+    const fingerprint = contentFingerprint(snapshot);
+    if (reason !== "manual" && fingerprint === this.savedFingerprint) return false;
     const origin = reason === "manual" ? "manual" : "autosave";
     this.saving = true;
     try {
       const { id } = await this.deps.save({ documentId: this.documentId, snapshot, origin });
       this.knownSnapshots.add(id);
+      this.savedFingerprint = fingerprint;
     } finally {
       this.saving = false;
     }
@@ -286,6 +309,7 @@ export class DocumentModel {
     const row = await this.deps.loadLatest(this.documentId);
     if (!row || this.hasUnsaved() || this.knownSnapshots.has(row.id)) return;
     this.knownSnapshots.add(row.id);
+    this.savedFingerprint = contentFingerprint(row.snapshot);
     this.stored = row.snapshot;
     this.relaying = true;
     try {
@@ -381,6 +405,15 @@ export class DocumentModel {
     this.pageClose?.();
     this.pageClose = null;
   }
+}
+
+/**
+ * What a snapshot STORES, as a comparable string: everything but the unit id
+ * and Univer's revision counter (both move without the content moving).
+ */
+function contentFingerprint(snapshot: DocumentSnapshotData): string {
+  const { id: _id, rev: _rev, ...content } = snapshot as DocumentSnapshotData & { rev?: unknown };
+  return JSON.stringify(content);
 }
 
 /** Mutations that change what a snapshot stores (never scroll / selection) — the editors' one dirty filter. */
