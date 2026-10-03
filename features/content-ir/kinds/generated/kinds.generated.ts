@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "1110e0cdd0a3";
+export const KIND_REGISTRY_FINGERPRINT = "ff4770b42a73";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -15001,7 +15001,7 @@ export interface PersonalizationTargetResult {
 }
 
 /**
- * Kind `personalization_write_result` (registry v5).
+ * Kind `personalization_write_result` (registry v6).
  */
 export interface PersonalizationWriteResult {
   __kind: "personalization_write_result";
@@ -20852,7 +20852,7 @@ export interface ToolTraceIncidentList {
  * both are kept: the tool DEDUPES on ``dedupe_key``, so a caller has to be able
  * to tell "I filed something new" from "I bumped an existing row's count".
  *  *
- *  * Kind `tool_trace_incident_report` (registry v4).
+ *  * Kind `tool_trace_incident_report` (registry v5).
  */
 export interface ToolTraceIncidentReport {
   /**
