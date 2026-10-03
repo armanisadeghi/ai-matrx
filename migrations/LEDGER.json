@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T15:25:24.782Z",
+  "generated_at": "2026-10-03T16:05:07.892Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -703,6 +703,30 @@
       "filename": "chairreadperf_c_the_definer_guard_leaves_temporary_functions_alone.sql",
       "checksum": "eb483e9e723cddc008c03a223f2e5228a8315dcbaf09215b9d8c598060f81b82",
       "applied_at": "2026-10-03 15:21:31.076573+00"
+    },
+    "migrations/campaign/chairreadperf_d_the_mask_keeps_its_plan.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_d_the_mask_keeps_its_plan.sql",
+      "checksum": "9b76c1201cee34eadfb11930632857a41545dc794c2a2b4dbbd11672fa4008ba",
+      "applied_at": "2026-10-03 16:04:58.026006+00"
+    },
+    "migrations/campaign/chairreadperf_e_the_values_step_reads_only_the_blocks_a_record_keeps.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_e_the_values_step_reads_only_the_blocks_a_record_keeps.sql",
+      "checksum": "a4e397f7ecaaeb00a471cbed8984594a6fb2cc91cfba6f3fce0837d200566159",
+      "applied_at": "2026-10-03 15:50:35.577157+00"
+    },
+    "migrations/campaign/chairreadperf_f_the_class_walk_hands_each_records_organization_on.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_f_the_class_walk_hands_each_records_organization_on.sql",
+      "checksum": "6928db748aff3cd301875f6128c799030486acb1ab15403646eac554108a8b11",
+      "applied_at": "2026-10-03 15:50:44.909548+00"
+    },
+    "migrations/campaign/chairreadperf_g_the_read_door_asks_the_wall_and_the_merge_table_once_a_call.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_g_the_read_door_asks_the_wall_and_the_merge_table_once_a_call.sql",
+      "checksum": "3479aa68284323a151619b0be6705a8cfe03a28ca6519decfff0e7968b7e9d13",
+      "applied_at": "2026-10-03 16:05:06.739349+00"
     },
     "migrations/campaign/chairsec_a_a_door_that_changes_a_row_asks_that_row.sql": {
       "source": "matrx-frontend",
