@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T14:46:36.869Z",
+  "generated_at": "2026-10-03T15:25:24.782Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -685,6 +685,24 @@
       "filename": "chairrc_a_record_changed_carries_its_change.sql",
       "checksum": "1844c6ba121d8268d898aead8b579ddb0244248b09a572ea383e5661eca7558f",
       "applied_at": "2026-10-02 18:28:08.644472+00"
+    },
+    "migrations/campaign/chairreadperf_a_the_read_door_takes_the_mask_from_the_row_it_holds.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_a_the_read_door_takes_the_mask_from_the_row_it_holds.sql",
+      "checksum": "8913c04fcbf4c322d0b2168a56ff1a0aafb872935a1a8cc59c7556708fcccab1",
+      "applied_at": "2026-10-03 15:21:13.996642+00"
+    },
+    "migrations/campaign/chairreadperf_b_the_class_walk_folds_in_the_persons_own_membership.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_b_the_class_walk_folds_in_the_persons_own_membership.sql",
+      "checksum": "4f94f0a29c8e410d26038c0878222ce8bd1c0c5a0f2f9abe71a24a1a24b022ba",
+      "applied_at": "2026-10-03 15:21:22.637543+00"
+    },
+    "migrations/campaign/chairreadperf_c_the_definer_guard_leaves_temporary_functions_alone.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairreadperf_c_the_definer_guard_leaves_temporary_functions_alone.sql",
+      "checksum": "eb483e9e723cddc008c03a223f2e5228a8315dcbaf09215b9d8c598060f81b82",
+      "applied_at": "2026-10-03 15:21:31.076573+00"
     },
     "migrations/campaign/chairsec_a_a_door_that_changes_a_row_asks_that_row.sql": {
       "source": "matrx-frontend",
@@ -7093,6 +7111,12 @@
       "filename": "visionreach_w6_an_outside_table_is_synced_and_read_only.sql",
       "checksum": "8a49e8e9ccfc993f6cdc1a9112271340f97a4fe1381414107727c0ab4e06ad6c",
       "applied_at": "2026-10-03 14:34:38.671368+00"
+    },
+    "migrations/campaign/visionreach_w7_read_only_includes_delete_and_refresh_repairs.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w7_read_only_includes_delete_and_refresh_repairs.sql",
+      "checksum": "3fdbab6d9e4d8c180334a6398f14c899be80754597116d853e0d1a9c0042c09c",
+      "applied_at": "2026-10-03 15:25:23.343765+00"
     },
     "migrations/campaign/vk_a_calendar_keeps_where_a_record_ends_and_a_timeline_is_a_view.sql": {
       "source": "matrx-frontend",

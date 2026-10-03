@@ -33,6 +33,12 @@ export interface SyncAnswer {
   rows_inserted: number;
   rows_updated: number;
   rows_archived: number;
+  /** Rows archived here that the outside table still has: Refresh brought them back. */
+  rows_restored: number;
+  /** Live rows in the synced table after this sync. */
+  rows_total: number;
+  /** What the sync could not reconcile, one sentence each. */
+  warnings: string[];
   synced_at: string;
 }
 

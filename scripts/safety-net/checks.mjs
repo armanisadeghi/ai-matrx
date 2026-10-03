@@ -14,6 +14,7 @@ import platform from "./checks/platform.mjs";
 import query from "./checks/query.mjs";
 import forms from "./checks/forms.mjs";
 import customFields from "./checks/custom-fields.mjs";
+import external from "./checks/external.mjs";
 
 export const ITEMS = {
   // Tables
@@ -173,9 +174,17 @@ export const ITEMS = {
   F02: "Public form at 1280 — every answer box ≥ 80% of the column, title and box on one edge",
   // Custom fields (lane 7 W5)
   CF01: "Every declared record view shows its custom-fields section (or says why not)",
+  // Connect a database (lane 5 VISION-REACH W3): a table synced from an outside Postgres
+  EXT01: "External — an outside table connects through the server and lands as a Synced table; Refresh finds every row again",
+  EXT02: "External — the read-only promise from the client channel: edit, new row, delete and a client-sent sync are refused in one sentence; our own column on a synced row is written",
+  EXT03: "External — a relation points at the synced table and links a row",
+  EXT04: "External — a person with no share meets the synced table nowhere (data home, search, pickers, rows, REST v1, MCP)",
+  EXT05: "External — control: the owner reads every row through REST v1 and the MCP",
+  EXT06: "External — the connection string is in no response body",
+  EXT07: "External — no-secret-to-client: the server's guard (connection string absent from every response, header, diagnostic and log line)",
 };
 
-export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query, ...forms, ...customFields];
+export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query, ...forms, ...customFields, ...external];
 
 for (const c of CHECKS) for (const id of c.items) if (!ITEMS[id]) throw new Error(`check ${c.id} names unknown item ${id}`);
 const ids = new Set();
