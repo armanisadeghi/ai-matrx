@@ -30,7 +30,28 @@ export interface PortalLook {
   /** The logo tile's fallback background (the accent, or the app's primary). */
   monogramClass: string;
   footerLinks: Array<{ label: string; href: string; external: boolean }>;
+  /** A cover picture's public address, or null (no cover band). */
+  coverUrl: string | null;
+  /**
+   * The accent as the app's own primary colour (buttons, progress, focus ring) for a page that
+   * should wear it — a public form (MAKE-HOME W5). Null for the app's own colour.
+   */
+  primaryVars: Record<string, string> | null;
 }
+
+/**
+ * Each accent as the theme's `--primary` triplet (`h s% l%`, the shape `app/globals.css` reads
+ * through `hsl(var(--primary))`), dark enough for white text on both grounds.
+ */
+const ACCENT_PRIMARY: Record<string, string> = {
+  slate: "215 19% 35%",
+  green: "142 72% 29%",
+  amber: "32 95% 40%",
+  red: "0 72% 45%",
+  blue: "221 83% 50%",
+  violet: "262 83% 55%",
+  teal: "175 84% 30%",
+};
 
 /** Only the three kinds of address the store accepts (`https://`, `mailto:`, `tel:`). */
 function safeHref(url: string): string | null {
@@ -57,6 +78,20 @@ export function portalLook(style: PortalStyle | null | undefined, fallbackName: 
     bandClass: accent ? SWATCH_CLASS[accent] : null,
     tintClass: accent ? ROW_TINT_CLASS[accent] : null,
     monogramClass: accent ? `${SWATCH_CLASS[accent]} text-white` : "bg-primary text-primary-foreground",
+    coverUrl: style?.cover_url && /^https:\/\//i.test(style.cover_url) ? style.cover_url : null,
+    primaryVars:
+      accent && ACCENT_PRIMARY[accent]
+        ? {
+            // The triplets AND the resolved colours: `--color-primary` is computed where it is
+            // declared (the root), so overriding only `--primary` below it changes nothing.
+            "--primary": ACCENT_PRIMARY[accent],
+            "--primary-foreground": "0 0% 100%",
+            "--ring": ACCENT_PRIMARY[accent],
+            "--color-primary": `hsl(${ACCENT_PRIMARY[accent]})`,
+            "--color-primary-foreground": "hsl(0 0% 100%)",
+            "--color-ring": `hsl(${ACCENT_PRIMARY[accent]})`,
+          }
+        : null,
     footerLinks: links
       .map((l) => ({ label: (l?.label ?? "").trim(), href: safeHref(l?.url ?? "") }))
       .filter((l): l is { label: string; href: string } => Boolean(l.label && l.href))

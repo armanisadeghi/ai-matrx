@@ -134,6 +134,8 @@ export interface PortalStyle {
   accent: PortalAccent | null;
   footer_links: Array<{ label: string; url: string }>;
   from_organization: string[];
+  /** MAKE-HOME W5: a cover picture's PUBLIC address (same rule as the logo), or null/absent. */
+  cover_url?: string | null;
 }
 
 /** S6 — one form a client may send from her portal (open ones only). */

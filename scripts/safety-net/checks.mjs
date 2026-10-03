@@ -12,6 +12,7 @@ import drill from "./checks/drill.mjs";
 import cutover from "./checks/cutover.mjs";
 import platform from "./checks/platform.mjs";
 import query from "./checks/query.mjs";
+import forms from "./checks/forms.mjs";
 
 export const ITEMS = {
   // Tables
@@ -163,9 +164,12 @@ export const ITEMS = {
   Q13: "Query — the roll-up door refuses rather than answer 0 from a walk that missed the field",
   Q14: "Query — REST v1 answers the questions exactly with a personal key",
   Q15: "Query — the AI Matrx MCP answers the questions exactly",
+  // Public form (lane MAKE-HOME W5, guard G4): a stranger's form fits a phone and its answer boxes fill the column
+  F01: "Public form at 390 — no sideways scroll, every answer box ≥ 80% of the column, title and box on one edge",
+  F02: "Public form at 1280 — every answer box ≥ 80% of the column, title and box on one edge",
 };
 
-export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query];
+export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query, ...forms];
 
 for (const c of CHECKS) for (const id of c.items) if (!ITEMS[id]) throw new Error(`check ${c.id} names unknown item ${id}`);
 const ids = new Set();

@@ -14,6 +14,19 @@ export function PortalAccentBand({ look }: { look: PortalLook }) {
   return <div aria-hidden className={`fixed inset-x-0 top-0 z-10 h-1 ${look.bandClass}`} />;
 }
 
+/**
+ * The cover picture across the top of a page (MAKE-HOME W5, Typeform's cover). A fixed aspect box,
+ * so the picture arriving never moves the form; nothing at all when the look carries no cover.
+ */
+export function PortalCover({ look }: { look: PortalLook }) {
+  if (!look.coverUrl) return null;
+  return (
+    <div className="aspect-[3/1] w-full overflow-hidden rounded-xl border border-border bg-muted">
+      <img src={look.coverUrl} alt="" className="h-full w-full object-cover" />
+    </div>
+  );
+}
+
 /** The logo tile: the business's picture, or its first letter on its colour. */
 export function PortalLogo({ look, size = "md" }: { look: PortalLook; size?: "sm" | "md" }) {
   const box = size === "sm" ? "h-9 w-9 text-sm" : "h-12 w-12 text-lg";

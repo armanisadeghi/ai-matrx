@@ -35,6 +35,7 @@ import { cache } from "react";
 import { typedAnswersFor } from "@/features/unified-data/typedAnswers";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import type { PortalStyle } from "@/features/portals/service";
 
 /**
  * THE STORE'S SCHEMA IS NOT IN `types/database.types.ts`, AND THAT IS CORRECT.
@@ -90,6 +91,12 @@ export interface PublicForm {
     thank_you?: { title?: string | null; body?: string | null; redirect_url?: string | null } | null;
     submit_label?: string | null;
     questions?: PublicFormQuestion[];
+    /**
+     * MAKE-HOME W5: the look a stranger sees, RESOLVED by the store (`custom._form_look` →
+     * `custom._portal_style`): the organization's look under the form's own colour, logo and
+     * cover — public addresses, never file ids.
+     */
+    look?: PortalStyle | null;
   };
   /** The exposed Fields as the store holds them, each with its own id. */
   fields: Array<Record<string, unknown>>;

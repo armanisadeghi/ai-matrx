@@ -183,6 +183,32 @@ export async function openWalk(name, { headless = true } = {}) {
       pages[key] = page;
       return page;
     },
+    /**
+     * A SIGNED-OUT page (MAKE-HOME W5): a stranger opening a link somebody sent — a public form, a
+     * booking page. No sign-in, no organization; the same intercepts and injected CSS as every page.
+     */
+    async anonPage({ width = 390, height = 844, colorScheme = "light" } = {}) {
+      const context = await browser.newContext({ viewport: { width, height }, colorScheme });
+      await installIntercepts(context);
+      if (process.env.SN_INJECT_CSS) {
+        await context.addInitScript((css) => {
+          const add = () => {
+            const st = document.createElement("style");
+            st.setAttribute("data-safety-net-plant", "");
+            st.textContent = css;
+            document.documentElement.appendChild(st);
+          };
+          if (document.documentElement) add();
+          else document.addEventListener("DOMContentLoaded", add);
+        }, process.env.SN_INJECT_CSS);
+      }
+      const page = await context.newPage();
+      page.on("console", (m) => {
+        if (m.type() === "error") errors.console.push({ seat: "stranger", url: page.url(), text: m.text().slice(0, 300) });
+      });
+      page.__seat = "stranger";
+      return page;
+    },
     /** Navigate, refusing Arman's own organization or table by id. */
     async goto(page, pathOrUrl, opts = {}) {
       const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${ORIGIN}${pathOrUrl}`;
