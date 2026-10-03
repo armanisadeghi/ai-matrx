@@ -41,7 +41,7 @@ jest.mock("@/features/unified-data/hub/doors", () => ({
 // eslint-disable-next-line import/first
 import { readArchivedDataHomePage } from "../dataHomeArchived";
 // eslint-disable-next-line import/first
-import { ARCHIVE_READ, ARCHIVE_READ_MAX, createDataHomeService } from "../dataHomeService";
+import { ARCHIVE_READ, ARCHIVE_READ_MAX, createDataHomeService, type ArchiveSort } from "../dataHomeService";
 // eslint-disable-next-line import/first
 import { DEFAULT_ENTITY_LIST_QUERY, type EntityListQuery } from "@/lib/entity-list/types";
 
@@ -146,7 +146,7 @@ const query = (archivedAxis: EntityListQuery["archived"], over: Partial<EntityLi
 
 /** A store archive of `size` tables, newest first, answered a page at a time like the door. */
 function storeArchive(size: number, orgOf: (i: number) => string = () => ORGS.harbor.id) {
-  return jest.fn(async (page: { offset: number; limit: number }) => {
+  return jest.fn(async (page: { offset: number; limit: number }, _sort?: ArchiveSort) => {
     const rows = Array.from({ length: Math.max(0, Math.min(page.limit, size - page.offset)) }, (_, i) =>
       row({ name: `Retired intake form ${page.offset + i}`, archived: true, organizationId: orgOf(page.offset + i) }),
     );
@@ -201,6 +201,22 @@ describe("W4 — the Archived filter pages like the store pages it", () => {
     ]);
     expect(p6).toMatchObject({ total: 130, hasMore: false });
     expect(p6.rows.map((r) => r.name)).toEqual(Array.from({ length: 5 }, (_, i) => `Retired intake form ${125 + i}`));
+  });
+
+  // Breaks caught: the archive ignoring the column sort (always newest archived first), or a new
+  // sort reading on from the old order's offset instead of starting the store's pages over.
+  it("a column sort is asked of the store, and a new sort starts the archive's pages over", async () => {
+    const readArchived = storeArchive(1300);
+    const service = homeService(readArchived);
+    await service.fetchPage(query("archived"), { ...SORT, sort: "name", direction: "asc" });
+    await service.fetchPage(query("archived", { page: 2 }), { ...SORT, sort: "name", direction: "asc" });
+    await service.fetchPage(query("archived"), { ...SORT, sort: "organization", direction: "desc" });
+    await service.fetchPage(query("archived"), { ...SORT, sort: "kind", direction: "asc" });
+    expect(readArchived.mock.calls.map((c) => [c[0].offset, c[1]])).toEqual([
+      [0, { sort: "name", desc: false }],
+      [0, { sort: "organization", desc: true }],
+      [0, { sort: "archived_at", desc: true }],
+    ]);
   });
 
   it("the organization filter keeps reading pages until this page is full", async () => {

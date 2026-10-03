@@ -444,12 +444,21 @@ export interface ArchivedEverywhereRow {
 export async function archivedTablesEverywhere(
   dataSource: RecordsDataSource,
   page: { limit: number; offset: number },
+  /** The store's order (tableactions_e): archived_at (default, newest first) · name · organization. */
+  sort?: { sort: "archived_at" | "name" | "organization"; desc: boolean },
 ): Promise<DoorAnswer<ArchivedEverywhereRow[]>> {
-  const answered = await call<{ tables?: ArchivedEverywhereRow[] }>(dataSource, "archived_tables_everywhere", {
-    p_lane: "org",
-    p_limit: page.limit,
-    p_offset: page.offset,
-  });
+  const base = { p_lane: "org", p_limit: page.limit, p_offset: page.offset };
+  const sorted = sort && !(sort.sort === "archived_at" && sort.desc);
+  let answered = await call<{ tables?: ArchivedEverywhereRow[] }>(
+    dataSource,
+    "archived_tables_everywhere",
+    sorted ? { ...base, p_sort: sort.sort, p_desc: sort.desc } : base,
+  );
+  // A STORE WITHOUT THE SORTED DOOR YET (main before the chair applies tableactions_e) answers the
+  // archive newest archived first, as it always did.
+  if (!answered.ok && sorted && (answered.error.sqlstate === "PGRST202" || answered.error.sqlstate === "42883")) {
+    answered = await call<{ tables?: ArchivedEverywhereRow[] }>(dataSource, "archived_tables_everywhere", base);
+  }
   return answered.ok ? { ok: true, data: answered.data.tables ?? [] } : answered;
 }
 

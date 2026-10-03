@@ -24,6 +24,26 @@ import type { DataHomeRow } from "./dataHomeRows";
 import { matchesTokens, parseTokens, scoreRow, UPDATED_BUCKET_MS } from "./dataHomeSearch";
 
 /** The most rows the home holds in hand (a stated bound, not a silent one). */
+
+/** The orders the store pages the archive in (`custom.archived_tables_everywhere` p_sort / p_desc). */
+export interface ArchiveSort {
+  sort: "archived_at" | "name" | "organization";
+  desc: boolean;
+}
+export const DEFAULT_ARCHIVE_SORT: ArchiveSort = { sort: "archived_at", desc: true };
+const archiveSortKey = (s: ArchiveSort) => `${s.sort}:${s.desc ? "desc" : "asc"}`;
+/**
+ * The list's column sort as the store's archive order. Name, Updated (an archived row's Updated is
+ * when it was archived) and Organization page in the store; another column keeps newest archived first.
+ */
+export function archiveSortOf(sort: EntityListSort): ArchiveSort {
+  const desc = sort.direction === "desc";
+  if (sort.sort === "name") return { sort: "name", desc };
+  if (sort.sort === "organization") return { sort: "organization", desc };
+  if (sort.sort === "updated") return { sort: "archived_at", desc };
+  return DEFAULT_ARCHIVE_SORT;
+}
+
 export const DATA_HOME_ROW_CAP = 5000;
 
 /** How many archived rows one store read asks for (one page ≈ 0.7 s for a many-org person). */
@@ -58,7 +78,10 @@ export interface DataHomeServiceOptions {
    * `offset`/`limit` are the store's; `ended` says the archive has nothing after these rows.
    * Absent → the axis shows active rows only.
    */
-  readArchived?: (page: { offset: number; limit: number }) => Promise<{ rows: DataHomeRow[]; ended: boolean }>;
+  readArchived?: (
+    page: { offset: number; limit: number },
+    sort?: ArchiveSort,
+  ) => Promise<{ rows: DataHomeRow[]; ended: boolean }>;
   /**
    * The rows `load` resolved to, synchronously, once they are in hand (undefined before). With it
    * the service answers the shell's `peek` — every keystroke repaints in its own render.
@@ -336,7 +359,26 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
   // badges and facet options are absent here rather than a full read of every archived table. The
   // order is the store's (newest archived first); a search, a lane, a filter or the organization
   // filter keeps reading pages until this page is full or the archive ends.
-  const archive: { rows: DataHomeRow[]; ended: boolean; reading: Promise<void> | null } = { rows: [], ended: false, reading: null };
+  // THE ARCHIVE SORTS BY ITS COLUMN IN THE STORE (TABLE-ACTIONS, 2026-10-03): name, archived
+  // (the Updated column) and organization are asked of `custom.archived_tables_everywhere`, which
+  // pages in that order; a new sort starts the archive's pages over.
+  const archive: { rows: DataHomeRow[]; ended: boolean; reading: Promise<void> | null; key: string } = {
+    rows: [],
+    ended: false,
+    reading: null,
+    key: archiveSortKey(DEFAULT_ARCHIVE_SORT),
+  };
+  let archiveSort: ArchiveSort = DEFAULT_ARCHIVE_SORT;
+  const sortArchiveBy = (sort: EntityListSort) => {
+    const next = archiveSortOf(sort);
+    const key = archiveSortKey(next);
+    if (key === archive.key) return;
+    archiveSort = next;
+    archive.key = key;
+    archive.rows = [];
+    archive.ended = false;
+    archive.reading = null;
+  };
   /** One store read: at least ARCHIVE_READ rows, or as many as this page still needs. */
   const readMoreArchive = (atLeast = ARCHIVE_READ) => {
     if (!opts.readArchived) {
@@ -344,15 +386,18 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
       return Promise.resolve();
     }
     if (!archive.reading) {
-      archive.reading = opts
-        .readArchived({ offset: archive.rows.length, limit: Math.min(Math.max(ARCHIVE_READ, atLeast), ARCHIVE_READ_MAX) })
+      const key = archive.key;
+      const reading: Promise<void> = opts
+        .readArchived({ offset: archive.rows.length, limit: Math.min(Math.max(ARCHIVE_READ, atLeast), ARCHIVE_READ_MAX) }, archiveSort)
         .then((answer) => {
+          if (archive.key !== key) return; // the sort changed while this page was in the air
           archive.rows.push(...answer.rows);
           if (answer.ended || archive.rows.length >= DATA_HOME_ROW_CAP) archive.ended = true;
         })
         .finally(() => {
-          archive.reading = null;
+          if (archive.reading === reading) archive.reading = null;
         });
+      archive.reading = reading;
     }
     return archive.reading;
   };
@@ -372,6 +417,7 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
   const activeHalf = (rows: DataHomeRow[], query: EntityListQuery, sort: EntityListSort) =>
     pageOf(rows, { ...query, page: 1 }, { ...sort, pageSize: Number.MAX_SAFE_INTEGER }).rows;
   const openEndedPage = async (query: EntityListQuery, sort: EntityListSort) => {
+    sortArchiveBy(sort);
     const before = query.archived === "all" ? activeHalf(await all(), query, sort) : [];
     for (let reads = 0; ; reads++) {
       const page = archivePageInHand(query, sort, before);
@@ -406,6 +452,7 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
     peek: {
       page(query, sort) {
         if (openEnded(query)) {
+          sortArchiveBy(sort);
           if (query.archived === "archived") return archivePageInHand(query, sort, []);
           const rows = inHand();
           return rows ? archivePageInHand(query, sort, activeHalf(rows, query, sort)) : undefined;

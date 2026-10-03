@@ -136,7 +136,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
         load: corpus.load,
         loaded: corpus.loaded,
         // The Archived filter's rows, a store page at a time, only when it asks (TABLE-ACTIONS item 10).
-        readArchived: (page) => readArchivedDataHomePage(dataSource, page, userId),
+        readArchived: (page, sort) => readArchivedDataHomePage(dataSource, page, userId, sort),
         server: corpus.server,
         isStarred: (row) => starredSet.has(row.id),
         ownerLabel,

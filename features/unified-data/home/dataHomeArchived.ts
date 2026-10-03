@@ -10,6 +10,7 @@
 import type { RecordsDataSource } from "@ai-matrx/records";
 
 import * as doors from "@/features/unified-data/hub/doors";
+import type { ArchiveSort } from "./dataHomeService";
 import { archivedPortalRow, archivedTableRow, type DataHomeRow } from "./dataHomeRows";
 
 /** The archive read's failure, in a person's words. */
@@ -27,8 +28,10 @@ export async function readArchivedDataHomePage(
   page: { offset: number; limit: number },
   /** The person reading — an archived table they made is Mine. */
   me: string | null = null,
+  /** The column the list is sorted by, as the store's archive order. */
+  sort?: ArchiveSort,
 ): Promise<{ rows: DataHomeRow[]; ended: boolean }> {
-  const tables = await doors.archivedTablesEverywhere(dataSource, page);
+  const tables = await doors.archivedTablesEverywhere(dataSource, page, sort);
   if (!tables.ok) throw archiveReadFailure(tables.error);
   const rows = tables.data.map((t) => archivedTableRow(t, me));
   if (tables.data.length >= page.limit) return { rows, ended: false };

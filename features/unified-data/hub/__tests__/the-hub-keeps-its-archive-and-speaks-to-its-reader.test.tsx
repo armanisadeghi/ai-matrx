@@ -33,10 +33,9 @@ const listArchived = jest.fn(async () => ({
     total: 2,
   },
 }));
-const recordRestore = jest.fn(async () => ({
-  ok: false as const,
-  error: { code: "check_violation", message: REFUSAL, hint: null, details: null },
-}));
+// Bring it back is the paged restore (custom.table_restore through doors.restoreTableIn,
+// TABLE-ACTIONS 2026-10-03); the store refuses its first pass with the sentence above.
+const mockRestoreTableIn = jest.fn(async () => ({ ok: false as const, error: { message: REFUSAL, sqlstate: "23514" } }));
 
 // Every hook answers the SAME object on every render, as the real ones do — a fresh object per
 // render would re-run the hub's effects forever.
@@ -51,7 +50,7 @@ jest.mock("next/link", () => ({
   __esModule: true,
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }));
-const CLIENT = { listArchived, recordRestore };
+const CLIENT = { listArchived, config: { organizationId: null } };
 const TABLES = { data: [], loading: false, error: null };
 jest.mock("@ai-matrx/records/react", () => ({
   useRecordsClient: () => CLIENT,
@@ -104,6 +103,7 @@ jest.mock("../doors", () => ({
   dataHomeItems: async () => ({ ok: true, data: [] }),
   dataHomeChangedBy: async () => ({ ok: true, data: [] }),
   dataHome: async () => ({ ok: true, data: { tables: [], items: [], changed_by: [] } }),
+  restoreTableIn: (...args: unknown[]) => mockRestoreTableIn(...(args as [])),
 }));
 jest.mock("../capabilities", () => {
   const actual = jest.requireActual("../capabilities");
@@ -171,6 +171,7 @@ describe("UI-FIX-19 · a refused Bring it back keeps the archive", () => {
     expect(rowOf("Status choices")).toBeDefined();
     // The refusal sits on Rooms' own row, in the store's words, naming the fix.
     expect(rowOf("Rooms")?.textContent).toMatch(/bring "Status choices" back first/);
+    expect(mockRestoreTableIn.mock.calls.map((c) => (c as unknown[]).slice(1, 3))).toEqual([["884d1ce8-0000-4000-8000-000000000000", ROOMS]]);
   });
 });
 
