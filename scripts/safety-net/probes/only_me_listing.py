@@ -252,13 +252,13 @@ def database_doors(member: Seat, case: str, fx: dict) -> None:
     s, b, raw = M("query_table_as_of", {"p_table_id": T, "p_limit": 50})
     judge(case, "query_table_as_of", s, b, raw, ids, lambda x: len(x))
     s, b, raw = M("table_row_counts", {"p_table_ids": [T]})
-    judge(case, "table_row_counts", s, b, raw, [], lambda x: x[0]["visible_rows"])
+    judge(case, "table_row_counts", s, b, raw, ids, lambda x: x[0]["visible_rows"])
     s, b, raw = M("record_aggregate", {"p_table_id": T, "p_group_by": [], "p_measures": [{"op": "count"}]})
-    judge(case, "record_aggregate count", s, b, raw, [], lambda x: x[0]["measures"]["count"])
+    judge(case, "record_aggregate count", s, b, raw, ids, lambda x: x[0]["measures"]["count"])
     s, b, raw = M("record_aggregate", {"p_table_id": T, "p_group_by": ["name"], "p_measures": [{"op": "count"}]})
     judge(case, "record_aggregate group by name", s, b, raw, ids, lambda x: sum(g["measures"]["count"] for g in x))
     s, b, raw = M("record_aggregate_as_of", {"p_table_id": T, "p_recorded_at": datetime.now(timezone.utc).isoformat(), "p_measure": "count"})
-    judge(case, "record_aggregate_as_of count", s, b, raw, [], lambda x: x[0]["result"])
+    judge(case, "record_aggregate_as_of count", s, b, raw, ids, lambda x: x[0]["result"])
     s, b, raw = M("field_history", {"p_table_id": T, "p_field_key": "name"})
     judge(case, "field_history (name)", s, b, raw, ids, by="name")
     s, b, raw = M("io_export", {"p_table_id": T})
@@ -303,8 +303,8 @@ def server_doors(key: str, fx: dict) -> None:
         s, b, raw = http("GET", f"{SERVER}/api/v1/tables/{T}/rows?limit=50", None, H)
         judge(case, "REST GET /v1/tables/<id>/rows", s, b, raw, ids, lambda x: len(x["rows"]))
         s, b, raw = http("POST", f"{SERVER}/api/v1/tables/{T}/aggregate", {"measure": "count"}, H)
-        judge(case, "REST POST /v1/tables/<id>/aggregate count", s, b, raw, [],
-              lambda x: x.get("value", x.get("result", (x.get("groups") or [{}])[0].get("value"))))
+        judge(case, "REST POST /v1/tables/<id>/aggregate count", s, b, raw, ids,
+              lambda x: x["groups"][0]["value"])
         s, b, raw = http("POST", f"{SERVER}/api/v1/tables/{T}/aggregate", {"measure": "count", "group_by": "name"}, H)
         judge(case, "REST POST /v1/tables/<id>/aggregate by name", s, b, raw, ids, by="name")
 
