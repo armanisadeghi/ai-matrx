@@ -1,17 +1,17 @@
 {
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
-  "route.pending": 1268,
+  "list.sourceWithoutCustomFields": 12,
+  "route.pending": 1304,
   "route.tokens": 13,
   "route.host": 1,
-  "window.pending": 181,
+  "window.pending": 182,
   "window.host": 1,
   "window.tokens": 2,
   "peek.tokens": 19,
   "peek.none": 5,
   "peek.any": 1,
-  "route.manifestRowWithoutFile": 14,
-  "table.pending": 241,
+  "table.pending": 242,
   "table.noncanonical": 26,
   "table.set": 1,
   "table.none": 1
@@ -349,6 +349,10 @@
    "file": "app/(admin)/administration/ai/ai-models/settings/page.tsx",
    "pending": true
   },
+  "route:/administration/ai/ai-models/translations": {
+   "file": "app/(admin)/administration/ai/ai-models/translations/page.tsx",
+   "pending": true
+  },
   "route:/administration/ai/ai-tasks": {
    "file": "app/(admin)/administration/ai/ai-tasks/page.tsx",
    "pending": true
@@ -423,6 +427,10 @@
   },
   "route:/administration/automation/scheduling/templates": {
    "file": "app/(admin)/administration/automation/scheduling/templates/page.tsx",
+   "pending": true
+  },
+  "route:/administration/automation/workflow-runs": {
+   "file": "app/(admin)/administration/automation/workflow-runs/page.tsx",
    "pending": true
   },
   "route:/administration/billing": {
@@ -601,6 +609,10 @@
    "file": "app/(admin)/administration/database/sql-queries/page.tsx",
    "pending": true
   },
+  "route:/administration/database/store-tables": {
+   "file": "app/(admin)/administration/database/store-tables/page.tsx",
+   "pending": true
+  },
   "route:/administration/database/unified-data-ramp": {
    "file": "app/(admin)/administration/database/unified-data-ramp/page.tsx",
    "pending": true
@@ -731,6 +743,10 @@
   },
   "route:/administration/knowledge/kg-cost": {
    "file": "app/(admin)/administration/knowledge/kg-cost/page.tsx",
+   "pending": true
+  },
+  "route:/administration/knowledge/kg-cost/explore": {
+   "file": "app/(admin)/administration/knowledge/kg-cost/explore/page.tsx",
    "pending": true
   },
   "route:/administration/knowledge/kg-inspector": {
@@ -941,6 +957,10 @@
    "file": "app/(admin)/administration/ui/surfaces/[...name]/page.tsx",
    "pending": true
   },
+  "route:/administration/usage": {
+   "file": "app/(admin)/administration/usage/page.tsx",
+   "pending": true
+  },
   "route:/administration/users": {
    "file": "app/(admin)/administration/users/page.tsx",
    "pending": true
@@ -987,6 +1007,14 @@
   },
   "route:/administration/users/limits": {
    "file": "app/(admin)/administration/users/limits/page.tsx",
+   "pending": true
+  },
+  "route:/administration/users/meetings": {
+   "file": "app/(admin)/administration/users/meetings/page.tsx",
+   "pending": true
+  },
+  "route:/administration/users/meetings/[id]": {
+   "file": "app/(admin)/administration/users/meetings/[id]/page.tsx",
    "pending": true
   },
   "route:/administration/users/organizations": {
@@ -1701,6 +1729,42 @@
    "file": "app/(core)/commerce/triage/page.tsx",
    "pending": true
   },
+  "route:/compare/old": {
+   "file": "app/(core)/compare/old/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/data-stores": {
+   "file": "app/(core)/compare/old/data-stores/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/graph-demo": {
+   "file": "app/(core)/compare/old/graph-demo/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/knowledge-home": {
+   "file": "app/(core)/compare/old/knowledge-home/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/libraries": {
+   "file": "app/(core)/compare/old/libraries/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/library-catalog": {
+   "file": "app/(core)/compare/old/library-catalog/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/rag": {
+   "file": "app/(core)/compare/old/rag/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/sources": {
+   "file": "app/(core)/compare/old/sources/page.tsx",
+   "pending": true
+  },
+  "route:/compare/old/transcripts": {
+   "file": "app/(core)/compare/old/transcripts/page.tsx",
+   "pending": true
+  },
   "route:/connect-computer": {
    "file": "app/(core)/connect-computer/page.tsx",
    "pending": true
@@ -1827,6 +1891,14 @@
   },
   "route:/developers/oauth": {
    "file": "app/(public)/developers/oauth/page.tsx",
+   "pending": true
+  },
+  "route:/devices": {
+   "file": "app/(core)/devices/page.tsx",
+   "pending": true
+  },
+  "route:/devices/[deviceId]": {
+   "file": "app/(core)/devices/[deviceId]/page.tsx",
    "pending": true
   },
   "route:/dictionary/admin": {
@@ -2899,6 +2971,10 @@
    "file": "app/(core)/knowledge/graph/page.tsx",
    "pending": true
   },
+  "route:/knowledge/hub": {
+   "file": "app/(core)/knowledge/hub/page.tsx",
+   "pending": true
+  },
   "route:/knowledge/library": {
    "file": "app/(core)/knowledge/library/page.tsx",
    "pending": true
@@ -2925,6 +3001,10 @@
   },
   "route:/knowledge/sources/[id]": {
    "file": "app/(core)/knowledge/sources/[id]/page.tsx",
+   "pending": true
+  },
+  "route:/knowledge/transcripts/[id]": {
+   "file": "app/(core)/knowledge/transcripts/[id]/page.tsx",
    "pending": true
   },
   "route:/knowledge/viewer/[id]": {
@@ -3021,6 +3101,14 @@
   },
   "route:/loop/diagram": {
    "file": "app/(public)/loop/diagram/page.tsx",
+   "pending": true
+  },
+  "route:/make": {
+   "file": "app/(core)/make/page.tsx",
+   "pending": true
+  },
+  "route:/make/templates/[id]": {
+   "file": "app/(core)/make/templates/[id]/page.tsx",
    "pending": true
   },
   "route:/mandates": {
@@ -4033,6 +4121,10 @@
    "file": "app/(core)/me/access-log/page.tsx",
    "pending": true
   },
+  "route:/medical": {
+   "file": "app/(core)/medical/page.tsx",
+   "pending": true
+  },
   "route:/meet/[slug]": {
    "file": "app/(meet)/meet/[slug]/page.tsx",
    "pending": true
@@ -4049,6 +4141,10 @@
   },
   "route:/messages": {
    "file": "app/(core)/messages/page.tsx",
+   "pending": true
+  },
+  "route:/messages-showcase": {
+   "file": "app/(core)/messages-showcase/page.tsx",
    "pending": true
   },
   "route:/messages/[conversationId]": {
@@ -4527,6 +4623,50 @@
   },
   "route:/r/[token]": {
    "file": "app/(public)/r/[token]/page.tsx",
+   "pending": true
+  },
+  "route:/rag": {
+   "file": "app/(core)/rag/page.tsx",
+   "pending": true
+  },
+  "route:/rag/admin": {
+   "file": "app/(core)/rag/admin/page.tsx",
+   "pending": true
+  },
+  "route:/rag/data-stores": {
+   "file": "app/(core)/rag/data-stores/page.tsx",
+   "pending": true
+  },
+  "route:/rag/flow": {
+   "file": "app/(core)/rag/flow/page.tsx",
+   "pending": true
+  },
+  "route:/rag/library": {
+   "file": "app/(core)/rag/library/page.tsx",
+   "pending": true
+  },
+  "route:/rag/library-catalog": {
+   "file": "app/(core)/rag/library-catalog/page.tsx",
+   "pending": true
+  },
+  "route:/rag/library/[id]/preview": {
+   "file": "app/(core)/rag/library/[id]/preview/page.tsx",
+   "pending": true
+  },
+  "route:/rag/repositories": {
+   "file": "app/(core)/rag/repositories/page.tsx",
+   "pending": true
+  },
+  "route:/rag/search": {
+   "file": "app/(core)/rag/search/page.tsx",
+   "pending": true
+  },
+  "route:/rag/viewer/[id]": {
+   "file": "app/(core)/rag/viewer/[id]/page.tsx",
+   "pending": true
+  },
+  "route:/rag/visualization": {
+   "file": "app/(core)/rag/visualization/page.tsx",
    "pending": true
   },
   "route:/registered-results": {
@@ -5195,6 +5335,10 @@
    "file": "app/(core)/workflows/runs/[runId]/page.tsx",
    "pending": true
   },
+  "route:/workflows/runs/analyze": {
+   "file": "app/(core)/workflows/runs/analyze/page.tsx",
+   "pending": true
+  },
   "route:/workflows/waiting": {
    "file": "app/(core)/workflows/waiting/page.tsx",
    "pending": true
@@ -5369,6 +5513,10 @@
   },
   "window:features/review-walk/components/ReviewWalkWindow.tsx": {
    "file": "features/review-walk/components/ReviewWalkWindow.tsx",
+   "pending": true
+  },
+  "window:features/rich-document/annotations/LinkRecordOverlay.tsx": {
+   "file": "features/rich-document/annotations/LinkRecordOverlay.tsx",
    "pending": true
   },
   "window:features/rich-document/hosts/ApplyToSourceReview.tsx": {
@@ -6324,6 +6472,7 @@
   "features/question-desk/components/InterviewListClient.tsx": "pending",
   "features/rag/components/RepositoriesPage.tsx": "pending",
   "features/rag/components/data-stores/RichMemberTable.tsx": "pending",
+  "features/records-tool-display/RecordsAnswerView.tsx": "pending",
   "features/reports/components/agent-drift/RollupTable.tsx": "pending",
   "features/research/admin/ProjectsOverview.tsx": "pending",
   "features/research/admin/TemplatesManager.tsx": "pending",

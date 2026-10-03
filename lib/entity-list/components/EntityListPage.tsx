@@ -229,6 +229,15 @@ function listRows(pane: HTMLElement): HTMLElement[] {
   return rows;
 }
 
+const WARNED_ROWS_WITHOUT_CUSTOM_FIELDS = new Set<string>();
+function warnRowsWithoutCustomFields(token: string) {
+  if (WARNED_ROWS_WITHOUT_CUSTOM_FIELDS.has(token)) return;
+  WARNED_ROWS_WITHOUT_CUSTOM_FIELDS.add(token);
+  console.warn(
+    `[entity-list] the "${token}" list's rows carry no custom_fields / organization_id, so it offers no custom-field columns until its source returns them (lib/record-pages listSources queue).`,
+  );
+}
+
 /** No organizations yet: one stable empty answer, so the column source does not re-ask. */
 const NO_ORGANIZATIONS: readonly string[] = [];
 
@@ -423,8 +432,15 @@ export function EntityListPage<TRow>({
   ]
     .sort()
     .join(",");
+  // A list whose rows do not carry `custom_fields` (and `organization_id`) would show a column of
+  // blanks for values that exist: it offers no custom columns until its source returns them (G1's
+  // census names each such source as a queue item). Said once in the console, per token.
+  const rowsCarryCustomFields =
+    list.rows.length > 0 &&
+    list.rows.every((row) => typeof row === "object" && row !== null && "custom_fields" in row && "organization_id" in row);
+  if (customFieldToken && list.rows.length > 0 && !rowsCarryCustomFields) warnRowsWithoutCustomFields(customFieldToken);
   const customFieldSource = useTableCustomFieldColumns<TRow>(
-    customFieldToken,
+    rowsCarryCustomFields ? customFieldToken : null,
     customFieldOrgKey ? customFieldOrgKey.split(",") : NO_ORGANIZATIONS,
   );
   const customFieldSpecs: EntityColumnSpec<TRow>[] = (customFieldSource?.columns ?? [])
@@ -1371,6 +1387,13 @@ export function EntityListPage<TRow>({
           (a refresh re-asks all three reads). Never shown while the rows
           themselves failed — the slot above already speaks for the list.
         */}
+        {!list.error && customFieldSource?.error ? (
+          <EntitySourceFailures
+            operation={`Load ${plural}`}
+            failures={[{ label: "The custom fields", error: customFieldSource.error }]}
+            consequence="They are not offered as columns until they load; the list itself is unaffected."
+          />
+        ) : null}
         {!list.error && (list.countsError || list.facetsError || teamsError) && (
           <EntitySourceFailures
             operation={`Load ${plural}`}

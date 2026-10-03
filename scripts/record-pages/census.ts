@@ -84,6 +84,11 @@ export interface Ledger {
   tablesPending: string[];
   /** I2 — lists not on the canonical table (`components/ui/table`): each moves to MatrxDataTable. */
   listQueue?: string[];
+  /**
+   * I2 — canonical lists of a registry token whose data source does not return `custom_fields`
+   * (nothing in the list's feature folder names it): they offer no custom columns until it does.
+   */
+  listSourcesWithoutCustomFields?: string[];
 }
 
 export interface Census {
@@ -331,7 +336,28 @@ export function buildCensus(opts: CensusOptions): Census {
   for (const f of ledgerQueue)
     if (!queueNow.has(f)) problems.push(`${f}: moved off components/ui/table (or gone) — remove it from listQueue.`);
 
+  // ── list sources that do not return custom_fields (shrink-only) ──
+  const sourcesNow = new Set<string>();
+  const allSources = trackedSources(root);
+  for (const rel of allSources) {
+    if (/\.test\.tsx?$/.test(rel)) continue;
+    const text = read(rel);
+    if (!text || !/EntityListConfig</.test(text)) continue;
+    if (!/registryToken:\s*["'][a-z0-9_]+["']|door:\s*\{\s*token:\s*["'][a-z0-9_]+["']/.test(text)) continue;
+    const dir = dirname(rel);
+    const folder = dir.split("/").slice(0, 3).join("/");
+    const carries = allSources.some((f) => f.startsWith(folder + "/") && /custom_fields/.test(read(f) ?? ""));
+    if (!carries) sourcesNow.add(rel);
+  }
+  const ledgerSources = new Set(opts.ledger.listSourcesWithoutCustomFields ?? []);
+  for (const f of sourcesNow)
+    if (!ledgerSources.has(f))
+      problems.push(`${f}: a list of a registry token whose source returns no custom_fields. Select custom_fields and organization_id in its source.`);
+  for (const f of ledgerSources)
+    if (!sourcesNow.has(f)) problems.push(`${f}: its source returns custom_fields now (or is gone) — remove it from listSourcesWithoutCustomFields.`);
+
   const counts: Record<string, number> = {};
+  counts["list.sourceWithoutCustomFields"] = sourcesNow.size;
   for (const u of units) {
     const k = `${u.kind}.${u.declaration.kind}`;
     counts[k] = (counts[k] ?? 0) + 1;

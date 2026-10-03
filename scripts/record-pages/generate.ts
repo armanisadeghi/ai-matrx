@@ -57,6 +57,18 @@ async function main() {
     writeFileSync(join(ROOT, LEDGER), JSON.stringify(ledger, null, 1) + "\n");
     census = buildCensus({ root: ROOT, entityTypes, ledger });
   }
+  if (args.has("--seed-list-sources") && !ledger.listSourcesWithoutCustomFields) {
+    // FIRST COUNT of the list-source queue only.
+    const probe = buildCensus({ root: ROOT, entityTypes, ledger: { ...ledger, listSourcesWithoutCustomFields: [] } });
+    ledger = {
+      ...ledger,
+      listSourcesWithoutCustomFields: probe.problems
+        .filter((p) => p.includes("whose source returns no custom_fields"))
+        .map((p) => p.split(":")[0]),
+    };
+    writeFileSync(join(ROOT, LEDGER), JSON.stringify(ledger, null, 1) + "\n");
+    census = buildCensus({ root: ROOT, entityTypes, ledger });
+  }
   if (args.has("--seed-list-queue") && !ledger.listQueue) {
     // FIRST COUNT of the I2 queue only.
     ledger = { ...ledger, listQueue: census.tables.filter((t) => t.rowToken === "noncanonical").map((t) => t.file) };
@@ -76,6 +88,9 @@ async function main() {
       tablesPending: ledger.tablesPending.filter((f) => tablesNow.has(f)),
       listQueue: (ledger.listQueue ?? []).filter((f) =>
         census.tables.some((t) => t.file === f && t.rowToken === "noncanonical"),
+      ),
+      listSourcesWithoutCustomFields: (ledger.listSourcesWithoutCustomFields ?? []).filter(
+        (f) => !census.problems.some((p) => p.startsWith(`${f}: its source returns custom_fields now`)),
       ),
     };
     writeFileSync(join(ROOT, LEDGER), JSON.stringify(ledger, null, 1) + "\n");

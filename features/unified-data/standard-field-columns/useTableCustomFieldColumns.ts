@@ -13,7 +13,9 @@ import { useStandardFieldColumns } from "./useStandardFieldColumns";
 export function useTableCustomFieldColumns<T>(
   token: string | null,
   organizationIds: readonly string[],
-): TableCustomFieldColumns<T> | null {
+): (TableCustomFieldColumns<T> & { error: string | null }) | null {
   const source = useStandardFieldColumns<T>(token ?? "", token && organizationIds.length ? organizationIds : null);
-  return token ? { columns: source.columns } : null;
+  // The source's own failure travels with the columns: a list says it could not read them, never
+  // silently offers none.
+  return token ? { columns: source.columns, error: source.error } : null;
 }
