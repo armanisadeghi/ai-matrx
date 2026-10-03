@@ -1,10 +1,11 @@
--- chair-step: this file ALTERs platform.entity_types (six ADD COLUMNs with constant defaults
--- and two CHECK constraints: a BRIEF ACCESS EXCLUSIVE lock on that table, metadata only, no
--- rewrite) and GRANTS EXECUTE to authenticated on three NEW functions
+-- chair-step: this file GRANTS EXECUTE to authenticated on three NEW functions
 -- (custom.entity_row_write, platform.api_tables, platform.api_facts), each declared in
--- platform.client_callable_door. It replaces three live bodies (platform._drill_resolve,
--- platform._drill_compile, platform.drill_rows), seeds two knobs and sets party's API facts.
--- It revokes nothing that existed. Its inverse puts the three bodies back byte for byte.
+-- platform.client_callable_door first. It replaces three live bodies (platform._drill_resolve,
+-- platform._drill_compile, platform.drill_rows), creates platform.api_reach_census, and seeds
+-- three knobs (table_api/standard_tables — the per-token API facts, party reached —,
+-- table_api/exact_count_max, table_api/statement_timeout_ms). NO table DDL: no ALTER, no strong
+-- lock on any table (chair ruling 2026-10-02: the facts are a knob, not registry columns). It
+-- revokes nothing that existed. Its inverse puts the three bodies back byte for byte.
 -- lock: platform
 -- based-on: platform._drill_resolve(uuid, text) 5a9327b2ba6e7011f76429fbe0b7fefb8e9de301ed894e23b20d9eb39385ff02
 -- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 4dae04a05458dc3ec08a714ae1c3f8462b132467f93669d1438313edcae8173e
@@ -30,9 +31,10 @@
 --   door 4  custom.entity_row_write   one UPDATE as the person (custom values merged atomically,
 --                                     registry-listed real columns only, archive/restore, the
 --                                     row's own organization, no actor argument)
---   door 7  platform.entity_types     api_reach, api_reach_reason, api_writable_columns,
---                                     create_via, search_columns, default_list_where; the census
---                                     platform.api_reach_census(); party set read_write
+--   door 7  table_api/standard_tables one knob: token -> reach, reason, writable_columns,
+--                                     create_via, search_columns, default_list_where (party:
+--                                     read_write, none writable, create refused); read only via
+--                                     platform.api_facts / api_tables; census api_reach_census()
 --   door 8  platform.client_callable_door rows for the three new doors
 -- A drill question that names no scope compiles exactly as before (the org/mine/platform lanes).
 --
@@ -41,52 +43,57 @@
 set local lock_timeout = '3s';
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
--- DOOR 7. THE REGISTRY SAYS HOW FAR THE TABLE API REACHES EACH STANDARD TABLE.
--- Six facts beside data_class / data_class_reason, in the same style. Each ADD COLUMN takes a
--- brief ACCESS EXCLUSIVE lock on platform.entity_types (metadata only: a constant default needs
--- no rewrite). Every default says "not reached": nothing is exposed by this ALTER alone.
+-- DOOR 7. HOW FAR THE TABLE API REACHES EACH STANDARD TABLE — one platform setting, per token.
+-- Chair ruling 2026-10-02: no ALTER on platform.entity_types (its ACCESS EXCLUSIVE lost to live
+-- readers 25 times on the clone); a fact like this is a knob, as custom/closed_custom_field_tables
+-- is. table_api/standard_tables maps a registry token to its facts; a token not named is not
+-- reached ("none"). Read only through platform.api_facts / platform.api_tables.
 -- ─────────────────────────────────────────────────────────────────────────────────────────
--- (Only when a column is missing: ADD COLUMN IF NOT EXISTS still queues for the lock.)
-DO $$
-BEGIN
-  IF (SELECT count(*) FROM pg_attribute
-       WHERE attrelid = 'platform.entity_types'::regclass AND NOT attisdropped
-         AND attname IN ('api_reach', 'api_reach_reason', 'api_writable_columns', 'create_via',
-                         'search_columns', 'default_list_where')) < 6 THEN
-    ALTER TABLE platform.entity_types
-      ADD COLUMN IF NOT EXISTS api_reach text NOT NULL DEFAULT 'none',
-      ADD COLUMN IF NOT EXISTS api_reach_reason text,
-      ADD COLUMN IF NOT EXISTS api_writable_columns text[] NOT NULL DEFAULT '{}'::text[],
-      ADD COLUMN IF NOT EXISTS create_via text NOT NULL DEFAULT 'refuse',
-      ADD COLUMN IF NOT EXISTS search_columns text[],
-      ADD COLUMN IF NOT EXISTS default_list_where jsonb NOT NULL DEFAULT '{}'::jsonb;
-  END IF;
-END $$;
+INSERT INTO platform.feature_knob
+  (feature, key, value, default_value, value_type, label, description, set_by, basis, review_due,
+   overridable_by, override_direction, propagation, public_read, delegable)
+VALUES
+  ('table_api', 'standard_tables',
+   '{"party": {"reach": "read_write", "reason": "lane 7 wave 3a: CRM people; custom values, archive and restore", "writable_columns": [], "create_via": "refuse", "search_columns": ["display_name", "legal_name", "primary_domain", "job_title"], "default_list_where": {"canonical_id": null, "record_class": "contact"}}}'::jsonb,
+   '{"party": {"reach": "read_write", "reason": "lane 7 wave 3a: CRM people; custom values, archive and restore", "writable_columns": [], "create_via": "refuse", "search_columns": ["display_name", "legal_name", "primary_domain", "job_title"], "default_list_where": {"canonical_id": null, "record_class": "contact"}}}'::jsonb,
+   'json',
+   'Standard tables the table API reaches',
+   'Which of AI Matrx''s own tables outside programs and assistants reach through the table API, and how: read or read and write, the columns it may change, how a new row is made, the columns its search reads, and the rows its lists hide by default.',
+   'agent',
+   'Lane 7 STANDARD-TABLES W3a, 2026-10-02 (design DESIGN-STANDARD-TABLES-W3 rev 3, chair ruling: a knob, not registry columns). A token is reached only after its owner reviews its triggers and services; 3a reaches CRM people with no writable real columns (ruling N2) and hides merged-away and discovered people by default, as the CRM list does.',
+   date '2027-01-02', array[]::text[], 'any', 'instant', false, true)
+ON CONFLICT (feature, key) DO NOTHING;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'entity_types_api_reach_word') THEN
-    ALTER TABLE platform.entity_types
-      ADD CONSTRAINT entity_types_api_reach_word CHECK (api_reach IN ('read_write', 'read', 'none')) NOT VALID;
-    ALTER TABLE platform.entity_types VALIDATE CONSTRAINT entity_types_api_reach_word;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'entity_types_default_list_where_object') THEN
-    ALTER TABLE platform.entity_types
-      ADD CONSTRAINT entity_types_default_list_where_object CHECK (jsonb_typeof(default_list_where) = 'object') NOT VALID;
-    ALTER TABLE platform.entity_types VALIDATE CONSTRAINT entity_types_default_list_where_object;
-  END IF;
-END $$;
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+-- THE ONE READER of table_api/standard_tables: one token's facts, with their defaults. DEFINER
+-- (a member's row rule on the registry hides tokens from her); returns facts only, no table data.
+-- ─────────────────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION platform.api_facts(p_token text)
+ RETURNS TABLE(api_reach text, api_reach_reason text, api_writable_columns text[], create_via text,
+               search_columns text[], default_list_where jsonb)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+  select coalesce(f ->> 'reach', 'none'),
+         f ->> 'reason',
+         coalesce(array(select jsonb_array_elements_text(f -> 'writable_columns')), '{}'::text[]),
+         coalesce(f ->> 'create_via', 'refuse'),
+         case when jsonb_typeof(f -> 'search_columns') = 'array'
+              then array(select jsonb_array_elements_text(f -> 'search_columns')) end,
+         case when jsonb_typeof(f -> 'default_list_where') = 'object' then f -> 'default_list_where' else '{}'::jsonb end
+    from (select platform.knob_resolve('table_api', 'standard_tables', null, null) -> p_token as f) k;
+$function$;
 
-COMMENT ON COLUMN platform.entity_types.api_reach IS
-  'How far REST v1 and the AI Matrx MCP reach this table: read_write | read | none. Set per token after its owner reviews its triggers and services (lane 7 wave 3).';
-COMMENT ON COLUMN platform.entity_types.api_writable_columns IS
-  'The real columns the Table API may change on this table. Default none; governed columns and the base contract never.';
-COMMENT ON COLUMN platform.entity_types.create_via IS
-  'How a new row is made through the Table API: insert, refuse, or a named server door.';
-COMMENT ON COLUMN platform.entity_types.search_columns IS
-  'The columns the Table API''s search reads (the whole term, ORed). Null means the title column.';
-COMMENT ON COLUMN platform.entity_types.default_list_where IS
-  'The one copy of "hidden by default": column -> value (null = is null), applied on top of the row rules to every list, dropped by all_rows, never applied to a read by id.';
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
+SELECT 'platform', 'api_facts', 'p_token text',
+       'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
+       'SECURITY DEFINER over the knob table_api/standard_tables: the Table API facts of one registry token (reach, API-writable columns, how a row is created, search columns, the default list rule). Facts only, no table data; p_token is a registry token.',
+       true, array['text'::regtype]::oid[]
+WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'platform' AND function_name = 'api_facts');
+
+GRANT EXECUTE ON FUNCTION platform.api_facts(text) TO authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- THE CENSUS: which tokens may be reached at all (read-only; seeding the eligible tokens is 3b).
@@ -100,7 +107,7 @@ AS $function$
   select e.token,
          r.why is null,
          r.why,
-         e.api_reach
+         coalesce((select f.api_reach from platform.api_facts(e.token) f), 'none')
     from platform.entity_types e
     cross join lateral (
       select case
@@ -117,20 +124,6 @@ AS $function$
    order by e.token;
 $function$;
 REVOKE ALL ON FUNCTION platform.api_reach_census() FROM PUBLIC;
-
--- ─────────────────────────────────────────────────────────────────────────────────────────
--- 3a: CRM PEOPLE. Read and write (custom values, archive and restore only — zero real columns,
--- ruling N2); a new person is made through CRM's add, which checks for duplicates; the four
--- columns the CRM list searches; merged-away and discovered people hidden by default.
--- ─────────────────────────────────────────────────────────────────────────────────────────
-UPDATE platform.entity_types
-   SET api_reach = 'read_write',
-       api_reach_reason = 'lane 7 wave 3a: CRM people; custom values, archive and restore',
-       api_writable_columns = '{}'::text[],
-       create_via = 'refuse',
-       search_columns = array['display_name', 'legal_name', 'primary_domain', 'job_title'],
-       default_list_where = '{"canonical_id": null, "record_class": "contact"}'::jsonb
- WHERE token = 'party';
 
 -- ─────────────────────────────────────────────────────────────────────────────────────────
 -- KNOBS: the Table API's count ceiling and its statement bound (both organization-settable).
@@ -169,9 +162,10 @@ AS $function$
          case when coalesce(nullif(e.label, ''), e.type) = e.type or lower(e.label) = lower(e.type)
               then initcap(replace(e.table_name, '_', ' ')) else e.label end,
          null::text,
-         e.api_reach
+         f.api_reach
     from platform.entity_types e
-   where e.api_reach <> 'none'
+    cross join lateral platform.api_facts(e.token) f
+   where f.api_reach <> 'none'
      and e.is_active
      and has_table_privilege(custom.caller_role(), format('%I.%I', e.schema_name, e.table_name), 'select')
    order by e.token;
@@ -187,26 +181,6 @@ WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name 
 
 GRANT EXECUTE ON FUNCTION platform.api_tables() TO authenticated;
 
--- The registry's API facts for one token, for door 4 (INVOKER, so it cannot read the registry
--- row a member's row rule hides). DEFINER; registry facts only.
-CREATE OR REPLACE FUNCTION platform.api_facts(p_token text)
- RETURNS TABLE(api_reach text, api_writable_columns text[], create_via text)
- LANGUAGE sql
- STABLE SECURITY DEFINER
- SET search_path TO 'pg_catalog'
-AS $function$
-  select e.api_reach, e.api_writable_columns, e.create_via from platform.entity_types e where e.token = p_token;
-$function$;
-
-INSERT INTO platform.client_callable_door
-  (schema_name, function_name, identity_args, declared_by, reason, signed_in_callers, identity_argtypes)
-SELECT 'platform', 'api_facts', 'p_token text',
-       'migrations/campaign/lane7w3a_the_table_api_reaches_crm_people.sql (lane 7 STANDARD-TABLES W3a)',
-       'SECURITY DEFINER over platform.entity_types: the three Table API facts of one registry token (reach, API-writable columns, how a row is created). Registry facts only, no table data; p_token is a registry token.',
-       true, array['text'::regtype]::oid[]
-WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door WHERE schema_name = 'platform' AND function_name = 'api_facts');
-
-GRANT EXECUTE ON FUNCTION platform.api_facts(text) TO authenticated;
 
 CREATE OR REPLACE FUNCTION platform._drill_resolve(p_organization_id uuid, p_token text)
  RETURNS jsonb
@@ -596,10 +570,10 @@ begin
   -- seat's own organizations; each reads its value only on rows of its own organization, so two
   -- organizations' "Tier" fields are two columns and a row carries a value in at most one.
   if v_decl is null then
-    select e.api_reach, e.api_reach_reason, coalesce(e.api_writable_columns, '{}'::text[]) as writable,
-           e.create_via, coalesce(e.search_columns, case when e.title_column is not null then array[e.title_column] end, '{}'::text[]) as search_columns,
-           coalesce(e.default_list_where, '{}'::jsonb) as default_list_where, e.custom_fields_enabled
-      into v_reg from platform.entity_types e where e.token = v_fact;
+    select f.api_reach, f.api_reach_reason, f.api_writable_columns as writable, f.create_via,
+           coalesce(f.search_columns, case when e.title_column is not null then array[e.title_column] end, '{}'::text[]) as search_columns,
+           f.default_list_where, e.custom_fields_enabled
+      into v_reg from platform.entity_types e cross join lateral platform.api_facts(e.token) f where e.token = v_fact;
     select jsonb_build_object(
              'organization_id', bool_or(att.attname = 'organization_id'),
              'created_by', bool_or(att.attname = 'created_by'),

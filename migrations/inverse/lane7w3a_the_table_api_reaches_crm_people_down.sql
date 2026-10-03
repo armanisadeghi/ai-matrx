@@ -1,10 +1,10 @@
 -- chair-step: the inverse of lane7w3a_the_table_api_reaches_crm_people.sql. It puts platform._drill_resolve,
 -- platform._drill_compile and platform.drill_rows back exactly as they were, drops the three
--- functions it created and their door rows, deletes its two knobs, and drops the six
--- platform.entity_types columns (a BRIEF ACCESS EXCLUSIVE lock on that table).
+-- functions it created (and the census) and their door rows, and deletes its three knobs. No
+-- table DDL.
 -- lock: platform
--- based-on: platform._drill_resolve(uuid, text) 9ab06085159c7ff7ef0acca607992c2cf4c1a18f8fba5caac05b784f11775c73
--- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 61fbf24ad9e50b3a6eba2fd8d5204c87311837829cec3da288b7dc5a949cd26e
+-- based-on: platform._drill_resolve(uuid, text) 362b1c6cbc2079ca9101e005fd7c4e5fa7d74fcca58cb4a01805261f96068cbe
+-- based-on: platform._drill_compile(uuid, jsonb, jsonb, text) 975612daf62b684a19aad8a51b3dfae65c478a95f3ae7a2dffe6ba99e0fd9bd8
 -- based-on: platform.drill_rows(uuid, jsonb, jsonb) e6b85722f62b3b68ba89ea0b7a1e5e231d490bada033e4fa46d881d979a9832f
 
 set local lock_timeout = '3s';
@@ -1435,14 +1435,5 @@ end
 $function$;
 
 -- the knobs go after their readers are gone (knob_resolve raises on a missing key)
-DELETE FROM platform.feature_knob WHERE feature = 'table_api' AND key IN ('exact_count_max', 'statement_timeout_ms');
+DELETE FROM platform.feature_knob WHERE feature = 'table_api' AND key IN ('exact_count_max', 'statement_timeout_ms', 'standard_tables');
 
-ALTER TABLE platform.entity_types
-  DROP CONSTRAINT IF EXISTS entity_types_api_reach_word,
-  DROP CONSTRAINT IF EXISTS entity_types_default_list_where_object,
-  DROP COLUMN IF EXISTS api_reach,
-  DROP COLUMN IF EXISTS api_reach_reason,
-  DROP COLUMN IF EXISTS api_writable_columns,
-  DROP COLUMN IF EXISTS create_via,
-  DROP COLUMN IF EXISTS search_columns,
-  DROP COLUMN IF EXISTS default_list_where;
