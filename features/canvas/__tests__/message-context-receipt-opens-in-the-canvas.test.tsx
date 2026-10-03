@@ -80,7 +80,7 @@ it("the receipt pill opens the message's receipt tab; again closes it", async ()
     );
   });
   const ids = () => Object.keys(store.getState().canvasHost.items);
-  const open = { title: "Sent · 3 sent", data: { conversationId: "c-1", messageId: "m-1" } };
+  const open = { title: "Sent values · 3", data: { conversationId: "c-1", messageId: "m-1" } };
 
   act(() => seen.tab?.toggle(open));
   await flush();

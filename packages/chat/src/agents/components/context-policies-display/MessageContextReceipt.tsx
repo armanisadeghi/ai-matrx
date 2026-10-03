@@ -56,6 +56,17 @@ export function receiptSummary(receipt: ContextReceiptData): string {
   return off > 0 ? `${sent} sent · ${off} off` : `${sent} sent`;
 }
 
+/**
+ * The receipt TAB's title: what it is plus how many values rode the turn —
+ * "Sent values · 5". The pill's own text ("5 sent · 1 off") read as
+ * "Sent · 5 sent · 1 off" in a tab strip: the word twice, and nothing saying
+ * what was sent (2026-10-03).
+ */
+export function receiptTabTitle(receipt: ContextReceiptData): string {
+  const sent = (receipt.rows ?? []).filter((r) => r.delivery !== "off").length;
+  return `Sent values · ${sent}`;
+}
+
 export function MessageContextReceiptTable({
   receipt,
   mismatches,
@@ -188,7 +199,7 @@ export function MessageContextReceipt({
       warn={hasMismatch}
       aria-label={summary}
       aria-pressed={tab.isVisible}
-      onClick={() => tab.toggle({ title: `Sent · ${summary}`, data: { conversationId, messageId } })}
+      onClick={() => tab.toggle({ title: receiptTabTitle(receipt), data: { conversationId, messageId } })}
       className={className}
     />
   );

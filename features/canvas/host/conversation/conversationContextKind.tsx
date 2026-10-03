@@ -16,8 +16,10 @@ import { CONVERSATION_CONTEXT_KIND } from "@ai-matrx/chat/host/canvas-tabs";
 import { canvasText } from "@/features/canvas/host/toolCanvas";
 
 export { CONVERSATION_CONTEXT_KIND };
-/** Never the word "context": the tab names the page the values come from. */
-const LABEL = "Values";
+/** Never the word "context": the tab names the page the values come from, or
+ *  — with no page name — what it holds: the values the next message sends.
+ *  ("Values" alone sat beside "Sent values" and said nothing, 2026-10-03.) */
+const LABEL = "Values to send";
 
 export interface ConversationContextTabData {
   conversationId: string;
