@@ -7,7 +7,7 @@
 // features as read-only presets that open their own editor. Right: the trigger, the condition and
 // the stack of steps, or the Runs tab. On/off, "Test with a record", Runs and "Open in Workflow
 // Studio" live in the page's header (`EntityModeHeader`), never in a new row. On a phone the list
-// is a drawer (`MobilePanelShell`).
+// opens from the header's sheet as a bottom sheet.
 //
 // The address is the state: `?workflow=<id>|new`, `?tab=runs`.
 
@@ -48,7 +48,6 @@ import {
   DialogTitle,
 } from "@ai-matrx/design-system";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
-import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { StatusBadge } from "@/components/official/status-badge/StatusBadge";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -209,6 +208,9 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   const [busy, setBusy] = useState<null | "save" | "on" | "off" | "test">(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [testOpen, setTestOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  // Picking a Workflow from the phone's sheet closes it.
+  useEffect(() => setListOpen(false), [selectedId, workflowParam]);
 
   useEffect(() => {
     setIssues([]);
@@ -463,6 +465,12 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
               },
             ]
           : []),
+        {
+          label: "Workflows on this table",
+          icon: Workflow,
+          onPress: () => setListOpen(true),
+          phoneOnly: true,
+        },
         ...(studioHref
           ? [
               {
@@ -606,27 +614,23 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
         />
       ) : null}
       <div className="h-full pt-[var(--shell-header-h)]">
-        <MobilePanelShell
-          desktop={
-            <div className="flex h-full min-h-0">
-              <aside className="w-72 shrink-0 overflow-y-auto border-r border-border p-3">
-                {list}
-              </aside>
-              <main className="min-w-0 flex-1 overflow-y-auto">{body}</main>
-            </div>
-          }
-          main={<div className="h-full overflow-y-auto">{body}</div>}
-          panels={[
-            {
-              id: "workflows",
-              label: "Workflows",
-              icon: Workflow,
-              content: <div className="p-3">{list}</div>,
-            },
-          ]}
-          menuIcon={Workflow}
-          menuLabel="Workflows"
-        />
+        {/* Desktop: the list beside the builder. Phone: the builder alone; the list opens from
+            the header's sheet ("Workflows on this table") as a bottom sheet. */}
+        <div className="hidden h-full min-h-0 md:flex">
+          <aside className="w-72 shrink-0 overflow-y-auto border-r border-border p-3">
+            {list}
+          </aside>
+          <main className="min-w-0 flex-1 overflow-y-auto">{body}</main>
+        </div>
+        <div className="h-full overflow-y-auto md:hidden">{body}</div>
+        <Dialog open={listOpen} onOpenChange={setListOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Workflows on this table</DialogTitle>
+            </DialogHeader>
+            {list}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
