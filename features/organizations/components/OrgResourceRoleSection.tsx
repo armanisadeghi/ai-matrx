@@ -49,9 +49,6 @@ export function OrgResourceRoleSection({
             {meta.title}
           </h3>
         </div>
-        <p className="text-xs text-muted-foreground hidden sm:block">
-          {meta.tagline}
-        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
