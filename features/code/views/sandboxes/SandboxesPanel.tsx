@@ -94,6 +94,17 @@ import {
 import { toast } from "@/lib/toast";
 import { clearFsChangesBucket } from "../../redux/fsChangesSlice";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
+import { EntityScopeTabs, scopeKindLabel } from "@/lib/entity-list/components/EntityScopeTabs";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import { useLaneParam } from "@/lib/entity-list/useLaneParam";
+import { laneCounts, laneIds, type LaneRow } from "@/lib/entity-list/laneRows";
+import { makeScope, withStandardLanes, type LaneSupport, type ListScopeKind } from "@/lib/list-scope/types";
+
+/** A sandbox can be shared but never published, so it has no Public lane. */
+const SANDBOX_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared"];
+const SANDBOX_LANE_SUPPORT: LaneSupport = { public: false };
+const SANDBOX_LANES = withStandardLanes(SANDBOX_SCOPES, { lanes: SANDBOX_LANE_SUPPORT });
 import {
   ACTIVE_ROW,
   HOVER_ROW,
@@ -122,6 +133,11 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const { setFilesystem, setProcess } = useCodeWorkspace();
 
   const [instances, setInstances] = useState<SandboxInstance[] | null>(null);
+  // The list header: lane (`?scope=`, opens on All via `lists.landing_tab/sandbox_instance`)
+  // and the organization filter (`?org_filter=`). Never the active organization.
+  const [lane, setLane] = useLaneParam("sandbox_instance", SANDBOX_LANES);
+  const [orgFilter, setOrgFilter] = useOrgFilterParam([]);
+  const [laneRows, setLaneRows] = useState<LaneRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // The list read's own failure (the banner above says it) — the empty view
@@ -202,12 +218,13 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetch("/api/sandbox");
+      const resp = await fetch("/api/sandbox?lanes=1");
       if (!resp.ok)
         throw new Error(`Failed to list sandboxes (${resp.status})`);
       const data: SandboxListResponse = await resp.json();
       if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentUserIdRef.current === scope.userId) {
         setInstances(data.instances ?? []);
+        setLaneRows(data.lanes ?? []);
         setListFailed(false);
       }
     } catch (err) {
@@ -502,6 +519,19 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   );
 
   const activeInstance = instances?.find((i) => i.id === activeId);
+  // A sandbox this page just created is in `instances` before the next lane read (every other
+  // row came from that read); it is the person's own, so it sits in Mine and All until then.
+  const knownLaneIds = new Set((laneRows ?? []).map((r) => r.id));
+  const ownUnread: LaneRow[] = (instances ?? [])
+    .filter((i) => !knownLaneIds.has(i.id))
+    .flatMap((i) => [
+      { id: i.id, lane: "mine", organization_id: i.organization_id },
+      { id: i.id, lane: "all", organization_id: i.organization_id },
+    ]);
+  const effectiveLaneRows = laneRows ? [...laneRows, ...ownUnread] : null;
+  const counts = laneCounts(effectiveLaneRows ?? [], SANDBOX_LANES, orgFilter);
+  const inLane = effectiveLaneRows ? laneIds(effectiveLaneRows, lane, orgFilter) : null;
+  const shownInstances = instances && inLane ? instances.filter((i) => inLane.has(i.id)) : instances;
 
   // A count competes with the title in the narrow workspace sidebar. The
   // refresh action carries progress instead; keep this only for reconciliation.
@@ -544,6 +574,20 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
           </>
         }
       />
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-1">
+        <div className="shrink-0">
+        <EntityScopeTabs
+          compact
+          scope={makeScope(lane)}
+          scopes={SANDBOX_SCOPES}
+          lanes={SANDBOX_LANE_SUPPORT}
+          counts={counts}
+          countsLoading={laneRows === null}
+          onChange={(next) => setLane(next.kind)}
+        />
+        </div>
+        <EntityOrgFilter className="min-w-0" orgId={orgFilter} onChange={setOrgFilter} counts={counts} countsLoading={laneRows === null} />
+      </div>
       {activeInstance && (
         <ActiveSandboxBanner
           instance={activeInstance}
@@ -574,6 +618,11 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
             Loading…
           </div>
         )}
+        {!listFailed && instances !== null && instances.length > 0 && shownInstances?.length === 0 && (
+          <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+            No sandboxes in {scopeKindLabel(lane)}
+          </p>
+        )}
         {!listFailed && instances?.length === 0 && (
           <div className="flex flex-col items-center gap-2 px-6 py-8 text-center text-neutral-500 dark:text-neutral-400">
             <Server size={32} strokeWidth={1.2} />
@@ -593,7 +642,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
             </button>
           </div>
         )}
-        {instances?.map((instance) => (
+        {shownInstances?.map((instance) => (
           <SandboxRow
             key={instance.id}
             instance={instance}

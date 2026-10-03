@@ -68,6 +68,7 @@ jest.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuItem: ({ children, onClick, disabled }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button onClick={onClick} disabled={disabled}>{children}</button>,
+  DropdownMenuLabel: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   DropdownMenuSeparator: () => null,
   DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
@@ -143,6 +144,11 @@ async function openCreateModal(container: HTMLDivElement) {
   return create;
 }
 
+// The list header's landing tab is a knob read; these tests are about creation, not lanes.
+jest.mock("@/lib/list-scope", () => ({
+  defaultListScopeFor: jest.fn(() => Promise.resolve({ kind: "all" })),
+}));
+
 describe("SandboxesPanel deletion", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -158,7 +164,7 @@ describe("SandboxesPanel deletion", () => {
     document.body.append(container);
     root = createRoot(container);
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string) => {
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [instance] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [instance] }));
       if (url === `/api/sandbox/${instance.id}`) return new Promise(() => {});
       throw new Error(`unexpected ${url}`);
     }) });
@@ -189,7 +195,7 @@ describe("SandboxesPanel deletion", () => {
     if (!refresh) throw new Error("unrelated refresh control was not rendered");
     expect(refresh.disabled).toBe(false);
     await act(async () => refresh.click());
-    expect(global.fetch).toHaveBeenCalledWith("/api/sandbox");
+    expect(global.fetch).toHaveBeenCalledWith("/api/sandbox?lanes=1");
   });
 });
 
@@ -209,7 +215,7 @@ describe("SandboxesPanel non-blocking creation", () => {
   it("closes the real modal before a held create response and keeps Escape and page controls usable", async () => {
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return new Promise(() => {});
-      if (url === "/api/sandbox") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1") return Promise.resolve(response({ instances: [] }));
       if (url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
@@ -225,7 +231,7 @@ describe("SandboxesPanel non-blocking creation", () => {
     if (!refresh) throw new Error("unrelated refresh control was not rendered");
     expect(refresh.disabled).toBe(false);
     await act(async () => refresh.click());
-    expect(global.fetch).toHaveBeenCalledWith("/api/sandbox");
+    expect(global.fetch).toHaveBeenCalledWith("/api/sandbox?lanes=1");
     // Reopening during the held request is safe: Escape still closes its
     // disabled form and cannot launch a second create request.
     await openCreateModal(container);
@@ -252,7 +258,7 @@ describe("SandboxesPanel non-blocking creation", () => {
   it("renders a 201 creating row without claiming it is ready", async () => {
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return Promise.resolve(response({ instance: { ...instance, status: "creating" } }, 201));
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -269,7 +275,7 @@ describe("SandboxesPanel non-blocking creation", () => {
   it("reports a definitive 429 as a refusal rather than an unknown outcome", async () => {
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return Promise.resolve(response({ error: "Quota reached" }, 429));
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -285,7 +291,7 @@ describe("SandboxesPanel non-blocking creation", () => {
   it("reports a lost create response as unknown and does not retry", async () => {
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return Promise.reject(new TypeError("network lost"));
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -308,7 +314,7 @@ describe("SandboxesPanel non-blocking creation", () => {
       if (url === "/api/sandbox" && init?.method === "POST") {
         return new Promise((resolve) => resolves.push(resolve));
       }
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -336,7 +342,7 @@ describe("SandboxesPanel non-blocking creation", () => {
     toast.loading.mockImplementationOnce(() => "unmounted-toast");
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return new Promise((resolve) => { resolveCreate = resolve; });
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -354,7 +360,7 @@ describe("SandboxesPanel non-blocking creation", () => {
     toast.loading.mockImplementationOnce(() => "logout-toast");
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return new Promise((resolve) => { resolveCreate = resolve; });
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -381,7 +387,7 @@ describe("SandboxesPanel non-blocking creation", () => {
       .mockImplementationOnce(() => "post-login-toast");
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return new Promise((resolve) => resolves.push(resolve));
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -425,7 +431,7 @@ describe("SandboxesPanel non-blocking creation", () => {
     nextRequest = request;
     Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string, init?: RequestInit) => {
       if (url === "/api/sandbox" && init?.method === "POST") return Promise.reject(new TypeError("held for payload assertion"));
-      if (url === "/api/sandbox" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      if (url === "/api/sandbox?lanes=1" || url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
       throw new Error(`unexpected ${url}`);
     }) });
     await act(async () => root.render(<SandboxesPanel />));
@@ -436,5 +442,77 @@ describe("SandboxesPanel non-blocking creation", () => {
     );
     expect(post).toBeDefined();
     expect(JSON.parse(post?.[1].body)).toEqual(request);
+  });
+});
+
+describe("SandboxesPanel list lanes", () => {
+  // Guard (2026-10-03): the /code sandbox list showed only the person's own sandboxes. It now
+  // reads every lane (`?lanes=1` → public.sandbox_instance_list_lanes) and opens on All.
+  const coworkers = { ...instance, id: "55555555-5555-4555-8555-555555555555", name: "Coworker box", user_id: "66666666-6666-4666-8666-666666666666" };
+  const sharedOne = { ...instance, id: "77777777-7777-4777-8777-777777777777", name: "Shared box", user_id: "88888888-8888-4888-8888-888888888888", organization_id: "99999999-9999-4999-8999-999999999999" };
+  const org = instance.organization_id;
+  const lanes = [
+    { id: instance.id, lane: "mine", organization_id: org },
+    { id: instance.id, lane: "orgs", organization_id: org },
+    { id: instance.id, lane: "all", organization_id: org },
+    { id: coworkers.id, lane: "orgs", organization_id: org },
+    { id: coworkers.id, lane: "all", organization_id: org },
+    { id: sharedOne.id, lane: "shared", organization_id: sharedOne.organization_id },
+    { id: sharedOne.id, lane: "all", organization_id: sharedOne.organization_id },
+  ];
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    selectedUserId = "33333333-3333-4333-8333-333333333333";
+    authReady = true;
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    Object.defineProperty(global, "fetch", { configurable: true, writable: true, value: jest.fn((url: string) => {
+      if (url === "/api/sandbox?lanes=1") return Promise.resolve(response({ instances: [instance, coworkers, sharedOne], lanes }));
+      if (url === "/api/sandbox/reconcile") return Promise.resolve(response({ instances: [] }));
+      return new Promise(() => {});
+    }) });
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+    window.history.replaceState(null, "", "/");
+  });
+
+  async function shownWith(search: string) {
+    window.history.replaceState(null, "", `/code${search}`);
+    await act(async () => root.render(<SandboxesPanel />));
+    await settle();
+    return container.textContent ?? "";
+  }
+
+  it("opens on All with every lane's sandboxes", async () => {
+    const text = await shownWith("");
+    expect(text).toContain("Test sandbox");
+    expect(text).toContain("Coworker box");
+    expect(text).toContain("Shared box");
+  });
+
+  it("Mine shows only the person's own sandboxes", async () => {
+    const text = await shownWith("?scope=mine");
+    expect(text).toContain("Test sandbox");
+    expect(text).not.toContain("Coworker box");
+    expect(text).not.toContain("Shared box");
+  });
+
+  it("Shared shows only what was shared with the person", async () => {
+    const text = await shownWith("?scope=shared");
+    expect(text).toContain("Shared box");
+    expect(text).not.toContain("Test sandbox");
+  });
+
+  it("the organization filter narrows every lane", async () => {
+    const text = await shownWith(`?org_filter=${sharedOne.organization_id}`);
+    expect(text).toContain("Shared box");
+    expect(text).not.toContain("Coworker box");
   });
 });

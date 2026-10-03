@@ -13,6 +13,8 @@ import {
 import type { Database } from "@/types/database.types";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { extractErrorMessage } from "@/utils/errors";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 type SandboxInstanceInsert =
   Database["public"]["Tables"]["sandbox_instances"]["Insert"];
@@ -40,14 +42,51 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
 
     const includeDeleted = searchParams.get("include_deleted") === "true";
+    // `?lanes=1`: the list header's read. Every sandbox in any lane (All = Mine, My Orgs,
+    // Shared) from `public.sandbox_instance_list_lanes` — SECURITY INVOKER, run as this
+    // person, so row security stays the ceiling — and the lane rows come back beside them
+    // so the page can show each lane and its count (lib/entity-list/laneRows.ts).
+    // Without it the read stays the person's own, for every other caller.
+    const withLanes = searchParams.get("lanes") === "1";
+    let laneRows: LaneRow[] | null = null;
+    if (withLanes) {
+      // Every page of it: a lane read past the API's 1,000-row cap is re-read in full, never cut short.
+      let laneError: { message: string } | null = null;
+      let lanes: LaneRow[] | null = null;
+      try {
+        lanes = await readAllRows<LaneRow>(
+          async ({ from, to }) => {
+            const res = await supabase
+              .rpc("sandbox_instance_list_lanes", {}, { count: "exact" })
+              .order("lane", { ascending: true })
+              .order("id", { ascending: true })
+              .range(from, to);
+            if (res.error) throw new Error(res.error.message);
+            return res;
+          },
+          { label: "sandbox_instance_list_lanes", pageSize: 1000 },
+        );
+      } catch (e) {
+        laneError = { message: extractErrorMessage(e, "Lane read failed") };
+      }
+      if (laneError) {
+        return NextResponse.json(
+          { error: "Failed to fetch sandbox lanes", details: laneError.message },
+          { status: 500 },
+        );
+      }
+      laneRows = lanes ?? [];
+    }
 
     let query = supabase
       .from("sandbox_instances")
       .select("*", { count: "exact" })
-      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .range(offset, offset + limit - 1);
+    query = laneRows
+      ? query.in("id", [...new Set(laneRows.filter((r) => r.lane === "all").map((r) => r.id))])
+      : query.eq("user_id", user.id);
 
     if (!includeDeleted) {
       query = query.is("deleted_at", null);
@@ -81,6 +120,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       instances: instances.map(decorateSandboxRow),
+      ...(laneRows ? { lanes: laneRows } : {}),
       pagination: {
         total: count || 0,
         limit,

@@ -92,6 +92,8 @@ export type SandboxInstance = Omit<
 
 export interface SandboxListResponse {
   instances: SandboxInstance[];
+  /** Present when the list asked `?lanes=1`: one row per (lane, sandbox). */
+  lanes?: { id: string; lane: string; organization_id: string | null }[];
   pagination: {
     total: number;
     limit: number;
