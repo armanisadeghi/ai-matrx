@@ -20,8 +20,16 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "chat": { status: "passing" },
   "chat:quiet": { status: "passing" },
   "note": { status: "passing" },
-  "note:quiet": { status: "passing" },
-  "note:split-view caret": { status: "passing" },
+  "note:quiet": {
+    status: "failing",
+    owner: "notes lane",
+    why: "wake/remount re-read sharing authority (may_manage_sharing x2), docproc.processed_documents, iam.organizations, memberships",
+  },
+  "note:split-view caret": {
+    status: "failing",
+    owner: "notes lane",
+    why: "remount puts the Split view's caret/selection at 0 (kept across hide/show)",
+  },
   "note:split-view undo": { status: "passing" },
   "file": { status: "passing" },
   "file:quiet": { status: "passing" },

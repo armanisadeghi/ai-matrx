@@ -30,6 +30,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { makeStore, type AppStore } from "@/lib/redux/store";
 import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import { closeAllOverlays } from "@/lib/redux/slices/overlaySlice";
 import { AppProviders } from "./app-providers";
 import { SurfaceActivity, createSurfaceCapture } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { FocusHostContext, SpatialStoreContext } from "../../engine/react";
@@ -317,6 +318,10 @@ export async function runCycle(type: BoardItemType, source: NodeSource, steps: C
       if (steps.saveDelayMs) await settle(steps.saveDelayMs);
       await settleQuiet();
     }
+    // The person closes whatever the tile opened while they worked: waking or
+    // remounting must not open it again.
+    const t = tile;
+    act(() => void t.store.dispatch(closeAllOverlays()));
     const channelsAtBaseline = openChannelCount();
     const openedBefore = tile.opened().length;
     const navigatedBefore = navigations().length;
