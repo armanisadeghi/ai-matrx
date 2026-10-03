@@ -1,45 +1,48 @@
 "use client";
 
 /**
- * RunToolPicker — the Smart Input's Tools tab. Two stacked sections:
+ * RunToolPicker — THE Tools surface for one conversation. Every place that
+ * shows a run's tools renders this one component (Chat Options › Tools, the
+ * Quickset tab, the attach menu's Tools view, the phone + sheet's Tools page).
  *
- *   1. "This agent's tools" — the agent's REAL configured tool set, read live
- *      from the agentDefinition slice (built-in registry tools resolved to
- *      names + custom tools). Read-only here; this is the agent's
- *      saved definition, edited in the Agent Builder, not per-conversation.
- *      Rendered as ONE collapsible header row (count + auto-injection state
- *      always visible) so the actionable add-list below gets the space.
+ * Three parts, nothing else (Arman, 2026-10-03):
+ *   1. Automatic tools — one switch: may the server add tools for this chat
+ *      (`builderAdvancedSettings.disableToolInjection`, per conversation; the
+ *      agent's own `auto_tools_disabled` overrides it and locks the switch).
+ *   2. This agent's tools — the agent's REAL saved tool set, read live from
+ *      the agentDefinition slice (registry tools + custom tools), plus the
+ *      tools added for this run, each removable. The agent's own set is
+ *      edited in the Agent Builder: the run request has no per-run exclude
+ *      field, so it is listed, not switchable, here.
+ *   3. Add tools — the full registry catalog, grouped by category, searchable;
+ *      one click adds to (or removes from) `builderAdvancedSettings.addedTools`,
+ *      which `buildToolInjection` folds into the request on top of the agent's
+ *      own tools. Tools the agent already has are marked and not addable twice.
  *
- *   2. "Add tools to this run" — additive registry picks stored on
- *      `builderAdvancedSettings.addedTools`, folded into the request by
- *      `buildToolInjection`. Per-conversation, ephemeral, on TOP of the
- *      agent's own tools.
+ * Layout is a container query, not a viewport check: at ≥ 42rem of its own
+ * width (the Chat Options window opened on Tools) it is two columns; narrower
+ * (the attach popover, Quickset, the phone sheet) it is one column with a
+ * segmented control between "Agent's tools" and "Add tools".
  *
- * Before this rework the tab showed ONLY the add-picker against the full
- * registry and never reflected the agent's actual tools — model/settings were
- * snapshotted into the instance but tools never were, so there was nothing
- * "real" to show. We read the agent definition directly here instead.
+ * Model gate: tool support is a MODEL capability — the server drops every
+ * tool for a model that can't use them, so adding is disabled (clearing stays
+ * reachable) and the surface says so in one line.
  */
 
 import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import { readOf } from "@host/components/read-state/ReadGate";
 import { useEffect, useState } from "react";
-import {
-  Search,
-  X,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Wrench,
-  Code2,
-  ShieldOff,
-  AlertTriangle,
-} from "lucide-react";
+import { AlertTriangle, Check, Code2, Wrench, X } from "lucide-react";
 import type { DatabaseTool } from "@host/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { ProInput } from "@host/components/official/ProInput";
-import { cn } from "@ai-matrx/design-system";
+import { cn, SegmentedControl, Skeleton } from "@ai-matrx/design-system";
+import { Switch } from "@host/components/ui/switch";
+import {
+  PickerEmpty,
+  PickerRow,
+  PickerSearchField,
+  PickerSectionLabel,
+} from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import {
   selectAllTools,
   selectToolsStatus,
@@ -72,17 +75,12 @@ import { selectBuilderAdvancedSettings } from "../../../redux/execution-system/i
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../types/instance.types";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
-import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 import { getToolDisplayName } from "../../../../tool-call-visualization/registry/registry";
+import { groupToolCatalog, toolCategoryLabel } from "./run-tool-catalog";
 
-export function RunToolPicker({
-  conversationId,
-  onBack,
-}: {
-  conversationId: string;
-  /** Inside the attach menu: Back sits beside the search box (no title row). */
-  onBack?: () => void;
-}) {
+type Pane = "agent" | "add";
+
+export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
   const tools = useAppSelector(selectAllTools);
   const status = useAppSelector(selectToolsStatus);
@@ -105,10 +103,8 @@ export function RunToolPicker({
     agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
   );
 
-  // Tool support is a MODEL capability — the server drops added tools for
-  // models that can't use them. Read the effective (override ?? base) model for
-  // this run and gate the add-picker so we don't offer tools that will be
-  // silently dropped. Permissive default (see supportsTools).
+  // Tool support is a MODEL capability — read the effective (override ??
+  // base) model for this run. Permissive default (see supportsTools).
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
@@ -121,9 +117,8 @@ export function RunToolPicker({
     selectModelFullyLoaded(s, effectiveModelId),
   );
   const modelRegistryLoading = useAppSelector((s) => s.modelRegistry.isLoading);
-  // The registry may hold only the lightweight "options" record (no controls).
-  // Pull the full record so the capability read is accurate; the thunk no-ops
-  // when already loaded.
+  // The registry may hold only the lightweight "options" record (no
+  // controls); pull the full record so the capability read is accurate.
   useEffect(() => {
     if (effectiveModelId && !modelIsFull && !modelRegistryLoading) {
       void dispatch(fetchModelById(effectiveModelId));
@@ -149,24 +144,18 @@ export function RunToolPicker({
   const addedList = settings.addedTools ?? [];
   const added = new Set(addedList);
   const [search, setSearch] = useState("");
-  // Accordion: one description open at a time keeps the list scannable.
-  const [expandedToolId, setExpandedToolId] = useState<string | null>(null);
-  // The agent's configured set is read-only reference — collapsed by default
-  // so the actionable add-list owns the vertical space.
-  const [agentSectionOpen, setAgentSectionOpen] = useState(false);
-  // The registry catalog — needed to resolve the agent's tool UUIDs to names
-  // AND to drive the add-picker. Load it once.
+  const [pane, setPane] = useState<Pane>("agent");
+
+  // The registry catalog resolves the agent's tool ids to names AND drives
+  // the add list. Only the first read: a failed read waits for "Try again".
   useEffect(() => {
-    // Only the first read: a failed read waits for "Try again" instead of
-    // re-reading in a loop.
     if (status === "idle") {
       void dispatch(fetchAvailableTools());
     }
   }, [status, dispatch]);
 
-  // The agent's tools/customTools/mcp live in the customExecution payload,
-  // which the chat path may not have fetched. Pull it on demand so the "real"
-  // section isn't silently empty for a tool-carrying agent.
+  // The agent's tools live in the customExecution payload, which the chat
+  // path may not have fetched. Pull it so the agent's set isn't silently empty.
   useEffect(() => {
     if (agentId && !agentReady) {
       void dispatch(fetchAgentExecutionFull(agentId));
@@ -180,364 +169,360 @@ export function RunToolPicker({
         changes: { addedTools: next },
       }),
     );
-
   const toggle = (id: string) =>
     setAdded(
       added.has(id) ? addedList.filter((t) => t !== id) : [...addedList, id],
+    );
+  const setServerMayAdd = (allow: boolean) =>
+    dispatch(
+      setBuilderAdvancedSettings({
+        conversationId,
+        changes: { disableToolInjection: !allow },
+      }),
     );
 
   // No useMemo — React Compiler memoizes (CLAUDE.md core invariant).
   const list = tools ?? [];
   const toolMap = new Map(list.map((t) => [t.id, t]));
-
   const builtInIds = Array.isArray(agentToolIds) ? agentToolIds : [];
+  const agentOwned = new Set(builtInIds);
   const customList = Array.isArray(agentCustomTools) ? agentCustomTools : [];
   const agentToolCount = builtInIds.length + customList.length;
+  const agentLoading = !!agentId && !agentReady;
+  const catalogLoading = status === "loading" && list.length === 0;
+  const catalogFailed = status === "failed" && list.length === 0;
 
-  const visible = !search.trim()
-    ? // Selected first so the user can see/remove their picks at a glance.
-      [
-        ...list.filter((t) => added.has(t.id)),
-        ...list.filter((t) => !added.has(t.id)),
-      ]
-    : filterAndSortBySearch(list, search, [
+  const query = search.trim();
+  const matches = query
+    ? filterAndSortBySearch(list, query, [
         { get: (t) => t.name, weight: "title" },
+        { get: (t) => getToolDisplayName(t.name), weight: "title" },
         { get: (t) => t.description, weight: "body" },
         { get: (t) => t.category, weight: "tag" },
-      ]);
+      ])
+    : [];
+  const groups = query ? [] : groupToolCatalog(list);
 
-  const loadingEmpty = status === "loading" && (tools?.length ?? 0) === 0;
-  const agentLoading = !!agentId && !agentReady;
-
-  const backButton = onBack ? (
-    <button
-      type="button"
-      onClick={onBack}
-      aria-label="Back"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground pointer-coarse:h-11 pointer-coarse:w-11"
-    >
-      <ChevronLeft className="h-5 w-5" />
-    </button>
-  ) : null;
-
-  // One-row header: (Back +) search + added-count chip with inline clear.
-  const searchRow = (
-    <div
-      className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5"
-      title="Add tools to this run — on top of the agent's own tools."
-    >
-      {backButton}
-      <ProInput
-        enableCleanup={false}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search tools to add…"
-        startIcon={<Search className="h-4 w-4" />}
-        clearable
-        onClear={() => setSearch("")}
-        enableVoice={false}
-        wrapperClassName="min-w-0 flex-1"
-        className="h-9 text-sm pointer-coarse:h-11"
-      />
-      {added.size > 0 && (
-        <span className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 pl-2.5 pr-1 text-xs font-medium text-primary">
-          {added.size} added
-          <button
-            type="button"
-            onClick={() => setAdded([])}
-            title="Clear all added tools"
-            aria-label="Clear all added tools"
-            className="flex h-5 w-5 items-center justify-center rounded-full transition-colors hover:bg-primary/20"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </span>
-      )}
-    </div>
+  const agentCountNode = (
+    <UntrustedCount
+      read={readOf({ isLoading: agentLoading, error: agentReadError })}
+      value={agentToolCount}
+      label="This agent's tools"
+    />
   );
 
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {onBack &&
-        (modelSupportsTools ? (
-          searchRow
-        ) : (
-          <div className="flex shrink-0 items-center gap-1.5 border-b border-border p-1.5">
-            {backButton}
-            <span className="truncate text-sm font-medium text-foreground">Tools</span>
-          </div>
-        ))}
-      {/* ── Section 1: the agent's REAL configured tools (collapsible) ── */}
-      <div className="shrink-0 border-b border-border">
-        <button
-          type="button"
-          onClick={() => setAgentSectionOpen((o) => !o)}
-          aria-expanded={agentSectionOpen}
-          className="flex h-9 w-full items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/50 pointer-coarse:h-11"
-        >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform",
-              agentSectionOpen && "rotate-90",
-            )}
-          />
-          <Wrench className="h-4 w-4 shrink-0 text-primary" />
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            This agent&apos;s tools
-          </span>
-          <span className="text-xs tabular-nums text-muted-foreground/80">
-            <UntrustedCount
-              read={readOf({ isLoading: agentLoading, error: agentReadError })}
-              value={agentToolCount}
-              label="This agent's tools"
-            />
-          </span>
-          {agentId && (
-            <span
-              title={
-                autoToolsDisabled
-                  ? "Automatic tool injection is OFF — only the agent's configured tools run."
-                  : "Automatic tool injection is ON — surface & capability tools may be added at run time."
-              }
-              className={cn(
-                "ml-auto flex shrink-0 items-center gap-1 text-xs",
-                autoToolsDisabled
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-muted-foreground/70",
-              )}
-            >
-              <ShieldOff className="h-3.5 w-3.5" />
-              {autoToolsDisabled ? "auto-inject off" : "auto-inject on"}
+  const catalogRow = (tool: DatabaseTool) => {
+    const onAgent = agentOwned.has(tool.id);
+    const selected = added.has(tool.id);
+    return (
+      <PickerRow
+        key={tool.id}
+        leading={<CheckBox on={onAgent || selected} muted={onAgent} />}
+        label={getToolDisplayName(tool.name)}
+        secondary={tool.description ?? undefined}
+        title={tool.description ?? undefined}
+        selected={selected}
+        disabled={onAgent || !modelSupportsTools}
+        trailing={
+          onAgent ? (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              On agent
             </span>
-          )}
-        </button>
+          ) : selected ? (
+            <span className="shrink-0 text-xs text-primary">Added</span>
+          ) : null
+        }
+        onClick={() => toggle(tool.id)}
+      />
+    );
+  };
 
-        {agentSectionOpen && (
-          <div className="max-h-48 overflow-y-auto px-2.5 pb-2">
-            {agentReadError ? (
-              <p className="py-1 text-xs text-destructive">
-                Couldn&apos;t read this agent&apos;s tools: {agentReadError}
-                <ErrorAlchemyMenu error={agentReadError} />
-              </p>
-            ) : agentLoading ? (
-              <p className="py-1 text-xs text-muted-foreground">
-                Loading the agent&apos;s tools…
-              </p>
-            ) : agentToolCount === 0 ? (
-              <p className="py-1 text-xs text-muted-foreground">
-                No tools of its own
-                {!autoToolsDisabled &&
-                  "; surface tools may be added at run"}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-0.5">
-                {builtInIds.map((id) => {
-                  const t = toolMap.get(id);
-                  return (
-                    <AgentToolBadge
-                      key={id}
-                      icon={<Wrench className="h-3.5 w-3.5" />}
-                      label={t?.name ?? id}
-                      sub={t?.category ?? undefined}
-                    />
-                  );
-                })}
-                {customList.map((t) => (
-                  <AgentToolBadge
-                    key={t.name}
-                    icon={<Code2 className="h-3.5 w-3.5" />}
-                    label={getToolDisplayName(t.name)}
-                    sub={t.description ?? "custom"}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Model-capability advisory — the selected model can't use tools; the
-            server drops them all at run time. Non-blocking, always visible. */}
-        {!modelSupportsTools && (
-          <div className="flex items-start gap-1.5 border-t border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-            <span className="text-xs leading-snug text-amber-700 dark:text-amber-300">
-              This model doesn&apos;t support tools — any tools above or added
-              here are dropped at run time. Switch to a tool-capable model to use
-              them.
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* ── Section 2: add registry tools to THIS run ─────────────────── */}
-      {!modelSupportsTools ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            Tools can&apos;t be added while this model is selected.
-          </p>
-          {/* Clear stays reachable so a user can clean up a set that would
-              otherwise be silently dropped at run time. */}
-          {added.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setAdded([])}
-              className="text-xs text-muted-foreground hover:text-destructive"
-            >
-              Clear {added.size} added tool{added.size === 1 ? "" : "s"}
-            </button>
-          )}
-        </div>
-      ) : (
+  // ── Left: this agent's tools + this run's additions ──────────────────
+  const agentPane = (
+    <div
+      className={cn(
+        "min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-1.5",
+        pane === "agent" ? "flex" : "hidden",
+        "@2xl:flex @2xl:border-r @2xl:border-border",
+      )}
+    >
+      {addedList.length > 0 ? (
         <>
-          {!onBack && searchRow}
-
-          {/* min-h-0: a flex child's default min-height:auto floors it at
-              content height, so without it this list grows past the panel and
-              never scrolls (the whole surface just gets clipped). */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
-            {loadingEmpty ? (
-              <p className="px-3 py-3 text-sm text-muted-foreground">
-                Loading tools…
-              </p>
-            ) : status === "failed" && (tools?.length ?? 0) === 0 ? (
-              <ReadFailure
-                error={toolsError ?? true}
-                what="the tool catalog"
-                className="m-2"
-                onRetry={() => void dispatch(fetchAvailableTools())}
-              />
-            ) : visible.length === 0 ? (
-              <p className="px-3 py-3 text-sm text-muted-foreground">
-                {search ? `No tools match "${search}"` : "No tools available."}
-              </p>
-            ) : (
-              visible.map((t) => (
-                <ToolRow
-                  key={t.id}
-                  tool={t}
-                  selected={added.has(t.id)}
-                  expanded={expandedToolId === t.id}
-                  onToggle={() => toggle(t.id)}
-                  onToggleExpand={() =>
-                    setExpandedToolId((cur) => (cur === t.id ? null : t.id))
+          <PickerSectionLabel
+            action={
+              <button
+                type="button"
+                onClick={() => setAdded([])}
+                className="rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                Clear
+              </button>
+            }
+          >
+            Added for this run · {addedList.length}
+          </PickerSectionLabel>
+          <div className="flex flex-col">
+            {addedList.map((id) => {
+              const t = toolMap.get(id);
+              return (
+                <PickerRow
+                  key={id}
+                  icon={Wrench}
+                  iconClassName="text-primary"
+                  label={t ? getToolDisplayName(t.name) : id}
+                  secondary={t ? toolCategoryLabel(t.category) : undefined}
+                  title="Remove from this run"
+                  trailing={
+                    <X className="h-4 w-4 shrink-0 text-muted-foreground" />
                   }
+                  onClick={() => toggle(id)}
                 />
-              ))
-            )}
+              );
+            })}
           </div>
         </>
-      )}
-    </div>
-  );
-}
-
-/** Compact read-only row for one of the agent's configured tools. */
-function AgentToolBadge({
-  icon,
-  label,
-  sub,
-  tone = "muted",
-}: {
-  icon: React.ReactNode;
-  label: string;
-  sub?: string;
-  /** `warning` marks a row whose backing connection is not usable right now. */
-  tone?: "muted" | "warning";
-}) {
-  return (
-    <div className="flex items-baseline gap-2 rounded-md bg-muted/40 px-2 py-1 text-sm">
-      <span className="self-center text-muted-foreground">{icon}</span>
-      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-        {label}
-      </span>
-      {sub && (
-        <span
-          className={cn(
-            "shrink-0 truncate text-xs",
-            tone === "warning"
-              ? "text-amber-600 dark:text-amber-400"
-              : "text-muted-foreground/60",
-          )}
-        >
-          {sub}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/**
- * Single-line tool row: checkbox + name + expand chevron. Clicking the row
- * toggles selection; the chevron expands the full description below. The row
- * is a div[role=button] (not <button>) so the chevron can be a real button —
- * nested buttons are invalid HTML.
- */
-function ToolRow({
-  tool,
-  selected,
-  expanded,
-  onToggle,
-  onToggleExpand,
-}: {
-  tool: DatabaseTool;
-  selected: boolean;
-  expanded: boolean;
-  onToggle: () => void;
-  onToggleExpand: () => void;
-}) {
-  return (
-    <div className={cn("rounded-lg", selected && "bg-primary/5")}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-pressed={selected}
-        onClick={onToggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onToggle();
-          }
-        }}
-        className="flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-accent pointer-coarse:h-11"
+      ) : null}
+      <PickerSectionLabel
+        action={
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {agentCountNode}
+          </span>
+        }
       >
-        <span
-          className={cn(
-            "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
-            selected
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-muted-foreground/40",
-          )}
-        >
-          {selected && <Check className="h-3 w-3" />}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-          {getToolDisplayName(tool.name)}
-        </span>
-        {tool.description && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleExpand();
-            }}
-            aria-expanded={expanded}
-            aria-label={expanded ? "Hide description" : "Show description"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                expanded && "rotate-180",
-              )}
+        This agent&apos;s tools
+      </PickerSectionLabel>
+      {!agentId ? (
+        <PickerEmpty>No agent on this chat</PickerEmpty>
+      ) : agentReadError ? (
+        <ReadFailure
+          error={agentReadError}
+          what="this agent's tools"
+          size="compact"
+          className="m-1.5"
+          onRetry={() => void dispatch(fetchAgentExecutionFull(agentId))}
+        />
+      ) : agentLoading ? (
+        <RowSkeletons />
+      ) : agentToolCount === 0 ? (
+        <p className="px-2 py-2 text-xs text-muted-foreground">
+          No tools of its own
+        </p>
+      ) : (
+        <div className="flex flex-col">
+          {builtInIds.map((id) => {
+            const t = toolMap.get(id);
+            return (
+              <ToolLine
+                key={id}
+                icon={Wrench}
+                label={t ? getToolDisplayName(t.name) : id}
+                detail={t ? toolCategoryLabel(t.category) : undefined}
+                title={t?.description ?? undefined}
+              />
+            );
+          })}
+          {customList.map((t) => (
+            <ToolLine
+              key={t.name}
+              icon={Code2}
+              label={getToolDisplayName(t.name)}
+              detail="Custom"
+              title={t.description ?? undefined}
             />
-          </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ── Right: the catalog ──────────────────────────────────────────────
+  const addPane = (
+    <div
+      className={cn(
+        "min-h-0 flex-1 flex-col",
+        pane === "add" ? "flex" : "hidden",
+        "@2xl:flex",
+      )}
+    >
+      <div className="shrink-0 p-1.5 pb-0">
+        <PickerSearchField
+          value={search}
+          onChange={setSearch}
+          placeholder={
+            list.length > 0 ? `Search ${list.length} tools` : "Search tools"
+          }
+          disabled={!modelSupportsTools}
+        />
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
+        {!modelSupportsTools ? (
+          <PickerEmpty>
+            Pick a model that supports tools to add any.
+          </PickerEmpty>
+        ) : catalogLoading ? (
+          <RowSkeletons />
+        ) : catalogFailed ? (
+          <ReadFailure
+            error={toolsError ?? true}
+            what="the tool catalog"
+            className="m-2"
+            onRetry={() => void dispatch(fetchAvailableTools())}
+          />
+        ) : query ? (
+          matches.length === 0 ? (
+            <PickerEmpty>No tools match &ldquo;{query}&rdquo;</PickerEmpty>
+          ) : (
+            matches.map(catalogRow)
+          )
+        ) : groups.length === 0 ? (
+          <PickerEmpty>No tools available</PickerEmpty>
+        ) : (
+          groups.map((group) => (
+            <section key={group.label}>
+              <PickerSectionLabel
+                action={
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {group.tools.length}
+                  </span>
+                }
+              >
+                {group.label}
+              </PickerSectionLabel>
+              {group.tools.map(catalogRow)}
+            </section>
+          ))
         )}
       </div>
-      {expanded && tool.description && (
-        <p className="px-2 pb-2 pl-[2.125rem] text-xs leading-snug text-muted-foreground">
-          {tool.description}
-        </p>
+    </div>
+  );
+
+  const serverMayAdd =
+    !(settings.disableToolInjection ?? false) && !autoToolsDisabled;
+
+  return (
+    <div className="@container flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      {/* ── 1. Automatic tools ── */}
+      <div className="flex shrink-0 flex-col gap-1.5 border-b border-border p-1.5">
+        <label
+          className={cn(
+            "flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-sm text-foreground hover:bg-accent pointer-coarse:h-11",
+            autoToolsDisabled &&
+              "cursor-not-allowed opacity-60 hover:bg-transparent",
+          )}
+          title={
+            autoToolsDisabled
+              ? "Turned off in this agent's settings"
+              : undefined
+          }
+        >
+          <span className="min-w-0 flex-1 truncate">Server can add tools</span>
+          <Switch
+            checked={serverMayAdd}
+            disabled={autoToolsDisabled}
+            onCheckedChange={setServerMayAdd}
+            aria-label="Server can add tools"
+            className="shrink-0"
+          />
+        </label>
+        {!modelSupportsTools ? (
+          <div className="flex items-center gap-1.5 px-2 text-xs text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+            <span className="truncate">
+              This model can&apos;t use tools; they&apos;re dropped
+            </span>
+          </div>
+        ) : null}
+        {/* ── Narrow: one pane at a time ── */}
+        <SegmentedControl
+          className="@2xl:hidden"
+          fullWidth
+          size="sm"
+          value={pane}
+          onValueChange={(next) => setPane(next === "add" ? "add" : "agent")}
+          data={[
+            {
+              value: "agent",
+              ariaLabel: "Agent's tools",
+              label: (
+                <span className="flex items-center gap-1.5">
+                  Agent&apos;s tools
+                  <span className="tabular-nums text-muted-foreground">
+                    {agentCountNode}
+                    {addedList.length > 0 ? ` +${addedList.length}` : ""}
+                  </span>
+                </span>
+              ),
+            },
+            { value: "add", label: "Add tools" },
+          ]}
+        />
+      </div>
+
+      {/* ── 2 + 3 ── */}
+      <div className="flex min-h-0 flex-1 @2xl:grid @2xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] @2xl:grid-rows-[minmax(0,1fr)]">
+        {agentPane}
+        {addPane}
+      </div>
+    </div>
+  );
+}
+
+/** Checkbox glyph for a catalog row (agent-owned rows show a muted tick). */
+function CheckBox({ on, muted }: { on: boolean; muted?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+        on
+          ? muted
+            ? "border-muted-foreground/40 bg-muted text-muted-foreground"
+            : "border-primary bg-primary text-primary-foreground"
+          : "border-muted-foreground/40",
       )}
+    >
+      {on ? <Check className="h-3 w-3" /> : null}
+    </span>
+  );
+}
+
+/** A read-only line for one of the agent's own tools. */
+function ToolLine({
+  icon: Icon,
+  label,
+  detail,
+  title,
+}: {
+  icon: typeof Wrench;
+  label: string;
+  detail?: string;
+  title?: string;
+}) {
+  return (
+    <div
+      title={title}
+      className="flex h-9 min-w-0 items-center gap-2.5 rounded-lg px-1.5 pointer-coarse:h-11"
+    >
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+        {label}
+      </span>
+      {detail ? (
+        <span className="max-w-[40%] shrink-0 truncate text-xs text-muted-foreground">
+          {detail}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function RowSkeletons() {
+  return (
+    <div className="flex flex-col gap-1.5 p-1.5">
+      {[0, 1, 2, 3].map((i) => (
+        <Skeleton key={i} className="h-7 w-full rounded-md" />
+      ))}
     </div>
   );
 }

@@ -10,8 +10,9 @@
  *     (`initialView` + `onExitInitialView`), so every attach behaviour — the
  *     durable file edges, Google's context directive, conversation references
  *     as context entries, URL auto-detection — is the SAME code;
- *   - Tools / Skills are the run pickers (`ToolsResourcePicker` /
- *     `SkillsResourcePicker` inside `ResourcePickerMenu`);
+ *   - Tools is THE Tools surface (`RunToolPicker`): on desktop a click opens
+ *     it in Chat Options on its Tools tab; on the phone sheet it is a page;
+ *   - Skills is the run picker (`SkillsResourcePicker` in `ResourcePickerMenu`);
  *   - Connectors is `ComposerConnectorsPanel` (every connector: on/off per
  *     chat, reconnect, choose repositories/files, browse all) + Google files;
  *   - Environment is `ComputeLensBar` + the cloud browser opener;
@@ -69,7 +70,6 @@ import { setScratchpadGateThunk } from "../../../../redux/execution-system/insta
 import { selectAgentIdFromInstance } from "../../../../redux/execution-system/conversations/conversations.selectors";
 import { selectIsMemoryEnabledForConversation } from "../../../../redux/execution-system/observational-memory/observational-memory.selectors";
 import {
-  selectBuilderAdvancedSettings,
   selectMemoryToggleRequest,
   selectAutoClearConversation,
   selectSubmitOnEnter,
@@ -81,10 +81,8 @@ import { selectUserInputText } from "../../../../redux/execution-system/instance
 import {
   clearMemoryToggleRequest,
   requestMemoryToggle,
-  setBuilderAdvancedSettings,
   setSubmitOnEnter,
 } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../../types/instance.types";
 import { setUserInputText } from "../../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@host/features/message-templates/utils/prepend-template-to-draft";
 import { SmartInputMessageTemplatePicker } from "@host/features/message-templates/components/SmartInputMessageTemplatePicker";
@@ -115,6 +113,7 @@ import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchO
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
 import { RunConfigOverrides } from "../../../run-controls/RunConfigOverrides";
 import { RunInputCapabilities } from "../../../run-controls/RunInputCapabilities";
+import { RunToolPicker } from "../RunToolPicker";
 
 /** Picker cascades need a definite height for their internal scroll chains;
  *  the available-height cap keeps the bottom on screen. */
@@ -168,8 +167,6 @@ export function ComposerPlusMenu({
   const openCloudBrowser = useOpenCloudBrowserCanvas();
   const sandboxBlocked = useSandboxBindingBlocked(conversationId);
 
-  const advancedSettings =
-    useAppSelector(selectBuilderAdvancedSettings(conversationId)) ?? DEFAULT_BUILDER_ADVANCED_SETTINGS;
   const workingDocEnabled = useAppSelector(selectWorkingDocEnabled(conversationId));
   const scratchEnabled = useAppSelector(selectWorkingDocEnabled(conversationId, "scratch"));
   const memoryEnabled = useAppSelector(selectIsMemoryEnabledForConversation(conversationId));
@@ -276,32 +273,24 @@ export function ComposerPlusMenu({
           </ComposerSubmenu>
         ) : null}
         {shows("plus.tools") ? (
-          <ComposerSubmenu row={{ icon: Wrench, label: "Tools", badge: counts.tools }} panelClassName={PICKER_PANEL}>
-            {(closeCascade) => (
-              <div className="flex h-full min-h-0 flex-col">
-                <div className="min-h-0 flex-1">{picker("tools", closeCascade)}</div>
-                {/* Brief §4: the server may hand the agent tools the chat
-                    needs (a RAG tool for a large document). The same
-                    per-conversation switch Advanced Settings carries, worded
-                    as what it does. */}
-                <div className="shrink-0 border-t border-border p-1">
-                  <ComposerMenuSwitchRow
-                    label="Let the server add tools"
-                    description="e.g. a search tool when you attach a large document"
-                    checked={!(advancedSettings.disableToolInjection ?? false)}
-                    onCheckedChange={(allow) =>
-                      dispatch(
-                        setBuilderAdvancedSettings({
-                          conversationId,
-                          changes: { disableToolInjection: !allow },
-                        }),
-                      )
-                    }
-                  />
-                </div>
-              </div>
-            )}
-          </ComposerSubmenu>
+          presentation === "sheet" ? (
+            // Phone: a full-height page — THE Tools surface, one pane at a time.
+            <ComposerSubmenu row={{ icon: Wrench, label: "Tools", badge: counts.tools }}>
+              <RunToolPicker conversationId={conversationId} />
+            </ComposerSubmenu>
+          ) : (
+            // Desktop: a click (never a hover cascade) opens THE Tools surface
+            // roomy, in Chat Options on its Tools tab.
+            <ComposerMenuRow
+              icon={Wrench}
+              label="Tools"
+              badge={counts.tools}
+              onClick={() => {
+                close();
+                openRunControlsWindow({ conversationId, initialTab: "tools" });
+              }}
+            />
+          )
         ) : null}
         {shows("plus.connectors") ? (
           <ComposerSubmenu row={{ icon: Plug, label: "Connections" }} panelClassName="w-[360px] h-[min(70dvh,480px)]">
