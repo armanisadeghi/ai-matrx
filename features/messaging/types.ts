@@ -83,6 +83,11 @@ export interface ResourceSharedActionPayload {
   permission_level?: PermissionLevel;
   /** Display name of the person who shared it. */
   sharer_name?: string;
+  /**
+   * Site-relative address for THIS recipient, when the type alone cannot say (a table row shared
+   * with someone outside its organization opens at /p/e/record/<id>). Absent → the registry's.
+   */
+  resource_href?: string | null;
 }
 
 /**

@@ -111,7 +111,9 @@ function ResourceSharedCard({
   const openDetail = useOpenDetail();
   const openItem = useOpenItemPresentation();
   if (!p?.resource_type || !p?.resource_id) return null;
-  const href = getResourceSharePath(p.resource_type, p.resource_id);
+  const href =
+    (typeof p.resource_href === "string" && p.resource_href.startsWith("/") ? p.resource_href : null) ??
+    getResourceSharePath(p.resource_type, p.resource_id);
   const Icon = getResourceIcon(p.resource_type);
   const title = p.resource_title || p.resource_label || "Shared item";
   const subtitle = p.sharer_name

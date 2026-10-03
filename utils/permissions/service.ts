@@ -589,8 +589,10 @@ export async function shareWithUser(
       if (!user) return;
       const resourceLabel = getResourceTypeLabel(resourceType);
 
-      // (1) Email (respects the recipient's preferences server-side).
-      fetch("/api/sharing/notify", {
+      // (1) Email (respects the recipient's preferences server-side). It answers the address it
+      // named for THIS recipient (a table row outside its organization: /p/e/record/<id>, access
+      // ladder T-40), which the in-app card below opens too.
+      const notified: Promise<string | null> = fetch("/api/sharing/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -598,7 +600,15 @@ export async function shareWithUser(
           resourceType,
           resourceId,
         }),
-      }).catch((err) => console.error("Sharing notification failed:", err));
+      })
+        .then(async (res) => {
+          const body = (await res.json().catch(() => null)) as { path?: unknown } | null;
+          return typeof body?.path === "string" ? body.path : null;
+        })
+        .catch((err) => {
+          console.error("Sharing notification failed:", err);
+          return null;
+        });
 
       // (2) In-app DM with a clickable resource card. Lazy import keeps the
       // messaging service out of the permissions bundle.
@@ -621,8 +631,8 @@ export async function shareWithUser(
         );
         return;
       }
-      import("@/features/messaging/service/sendDirectActionMessage")
-        .then(({ sendDirectActionMessage }) =>
+      Promise.all([import("@/features/messaging/service/sendDirectActionMessage"), notified])
+        .then(([{ sendDirectActionMessage }, resourceHref]) =>
           sendDirectActionMessage({
             recipientId: userId,
             organizationId: dmOrganizationId,
@@ -641,6 +651,7 @@ export async function shareWithUser(
                   user.user_metadata?.name ||
                   user.email ||
                   "Someone",
+                ...(resourceHref ? { resource_href: resourceHref } : {}),
               },
             },
           }),

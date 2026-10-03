@@ -107,6 +107,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get resource details. The address can depend on the recipient: a table row shared with a
+    // person outside its organization opens at its own page (access ladder T-40).
+    const resourceDetails = await getResourceDetails(
+      supabase,
+      resourceType,
+      resourceId,
+      {
+        isMemberOf: async (organizationId) => {
+          const { data, error } = await admin.rpc("auth_is_org_member", {
+            user_id: recipientUserId,
+            org_id: organizationId,
+          });
+          if (error) throw new Error(`auth_is_org_member: ${error.message}`);
+          return data === true;
+        },
+      },
+    );
+    if (!resourceDetails) {
+      console.warn("Could not fetch resource details:", {
+        resourceType,
+        resourceId,
+      });
+      return NextResponse.json(
+        { success: false, error: "Resource details not found" },
+        { status: 404 },
+      );
+    }
+    // The in-app card opens the same place the email names.
+    const path = resourceDetails.path ?? null;
+
     // Check if user wants email notifications only after the grant is proven.
     const shouldSendEmail = await checkEmailPreferences(admin, recipientUserId);
     if (!shouldSendEmail) {
@@ -114,6 +144,7 @@ export async function POST(request: NextRequest) {
         success: true,
         skipped: true,
         reason: "User has disabled sharing notifications",
+        path,
       });
     }
 
@@ -124,24 +155,7 @@ export async function POST(request: NextRequest) {
     if (recipientError || !recipientEmail) {
       console.warn("No email found for user:", recipientUserId);
       return NextResponse.json(
-        { success: false, error: "User email not found" },
-        { status: 404 },
-      );
-    }
-
-    // Get resource details
-    const resourceDetails = await getResourceDetails(
-      supabase,
-      resourceType,
-      resourceId,
-    );
-    if (!resourceDetails) {
-      console.warn("Could not fetch resource details:", {
-        resourceType,
-        resourceId,
-      });
-      return NextResponse.json(
-        { success: false, error: "Resource details not found" },
+        { success: false, error: "User email not found", path },
         { status: 404 },
       );
     }
@@ -168,7 +182,7 @@ export async function POST(request: NextRequest) {
     if (!emailResult.success) {
       console.error("Failed to send sharing notification:", emailResult.error);
       return NextResponse.json(
-        { success: false, error: "Failed to send email" },
+        { success: false, error: "Failed to send email", path },
         { status: 500 },
       );
     }
@@ -176,6 +190,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       emailSent: true,
+      path,
     });
   } catch (error: unknown) {
     console.error("Error in POST /api/sharing/notify:", error);
