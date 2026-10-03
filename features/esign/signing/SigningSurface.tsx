@@ -207,6 +207,11 @@ export function SigningSurface({
   /** The document has rendered on this screen: that is the fact `preview` records (§4.1). */
   async function markPreviewed(doc: DocView) {
     if (doc.previewed) return;
+    // A signed document is reopened to read or keep a copy; there is nothing left to record.
+    if (step === "done") {
+      patchDoc(doc.id, { previewed: true });
+      return;
+    }
     patchDoc(doc.id, { previewed: true });
     const answer = await signingAct(dispatch, door, "preview", { document_id: doc.id }).catch(() => null);
     if (answer && !answer.granted) setNotice(reasonText(answer.reason));
