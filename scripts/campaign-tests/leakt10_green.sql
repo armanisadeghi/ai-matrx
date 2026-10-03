@@ -15,8 +15,19 @@
 --
 -- EVERY ASSERTED CLAUSE RUNS FROM THE SEAT `authenticated`, through the doors a signed-in
 -- person's browser reaches, carrying that person's own claims. `admin@admin.com` owns the
--- throwaway organization; `test@test.com` (Dana) is a plain MEMBER of it and is shared exactly
+-- throwaway organization; `test@test.com` (Dana) is NOT a member of it and is shared exactly
 -- one Project. Nobody's own records are touched and the whole thing ends in ROLLBACK.
+--
+-- WHY DANA IS AN OUTSIDER (lane CHAIR-CENSUS-13, 2026-10-03). Until this day she was a plain
+-- member of an organization set to `member_default_visibility = shared_only`. The access ladder
+-- retired that setting on 2026-10-03: every table starts at Organization, so every member of the
+-- owning organization opens its records, and `iam.member_lane_open` answers true for every
+-- organization ("Only me" hides from lists, it never locks; real separation is another
+-- organization or a Confidential table). Under that ruling a member opening Project Y's risk is
+-- the RIGHT answer, and part 1 asserted the retired one. The T10 shape is unchanged: the person
+-- who may be handed a whole Table through one shared Home is now the one the ladder still keeps
+-- out of the rest — somebody who is not a member and holds one share — exactly the "sharee" the
+-- census (custom.list_door_disagreements) asks about since CD-LADDER.
 --
 -- PARTS: 0 the seat · 1 T10, every list door against the record door · 2 T7's last clause,
 -- a column a formula depends on · 3 the comment refusal says what is true · 4 the two censuses
@@ -33,7 +44,7 @@
 -- says which database this is, and SKIPS (never fake-passes) when a declared dependency is
 -- absent here. Declare dependencies with `\set requires` above the include; see the preamble.
 \set suite 'leakt10_green.sql'
-\set requires 'row:platform.feature_knob:feature = \'custom\' and key = \'member_default_visibility\''
+\set requires 'function:custom.list_door_disagreements|function:custom.refusals_claiming_a_level_never_asked'
 \i scripts/campaign-tests/_preamble.sql
 \if :matrx_skip
 \quit
@@ -58,12 +69,11 @@ delete from iam.organizations where id = :ORG;
 
 insert into iam.organizations (id, name, slug, abbreviation, created_by)
 values (:ORG, 'Rincon Plumbing Co', 'rincon-plumbing-leakt10-green', 'RPC', :ADMIN);
+-- DANA HOLDS NO MEMBERSHIP HERE (see the header): her only way in is the one share below.
 insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
-values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active'),
-       (:ORG, 'organization', :ORG, :DANA,  'member', 'active');
+values (:ORG, 'organization', :ORG, :ADMIN, 'owner',  'active');
 insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
-values ('custom', 'system_enabled',            'organization', :ORG, :ORG, 'true'::jsonb,          'LEAK-T10 green suite'),
-       ('custom', 'member_default_visibility', 'organization', :ORG, :ORG, '"shared_only"'::jsonb, 'LEAK-T10 green suite');
+values ('custom', 'system_enabled',            'organization', :ORG, :ORG, 'true'::jsonb,          'LEAK-T10 green suite');
 
 do $t$
 declare
