@@ -414,7 +414,7 @@ function searchPrompt(
   return `${delivery === "insert" ? "Insert" : "Copy"} the reference by choosing a ${noun} below.`;
 }
 
-function RecordStep({
+export function RecordStep({
   onBrowseFiles,
   onPickMany,
   ...header
@@ -426,18 +426,21 @@ function RecordStep({
   const isEntity = isEntityTypeToken(type.token);
 
   return (
-    <div className="flex min-h-0 flex-col gap-3">
+    // The whole chain is flex-col + min-h-0 so the record list fills the
+    // dialog / phone sheet instead of stopping at a fixed height (G10A).
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <StepHeader {...header} />
 
-      <p className="text-xs text-muted-foreground">
+      <p className="shrink-0 text-xs text-muted-foreground">
         {searchPrompt(directiveClass, delivery, type.label)}
       </p>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <ReferenceTypeAdder
           type={type.token}
           onBrowseFiles={onBrowseFiles}
           onPickMany={onPickMany}
+          fill
         />
       </div>
 
@@ -611,7 +614,7 @@ function WriteStep({
   })();
 
   return (
-    <div className="flex min-h-0 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <StepHeader {...header} />
 
       {formMode === "update" && target && (

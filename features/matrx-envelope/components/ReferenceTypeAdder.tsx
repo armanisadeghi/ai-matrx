@@ -24,6 +24,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Link2, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
@@ -62,6 +63,12 @@ export interface ReferenceTypeAdderProps {
   allowedScopeTypeIds?: string[] | null;
   onBrowseFiles: () => void;
   onPickMany: (items: ReferenceItem[]) => void;
+  /**
+   * The record list fills its container instead of stopping at a fixed height
+   * — for a host that gives it the whole sheet (the reference picker). Every
+   * ancestor up to that host must be `flex flex-col min-h-0`.
+   */
+  fill?: boolean;
 }
 
 export function ReferenceTypeAdder({
@@ -70,6 +77,7 @@ export function ReferenceTypeAdder({
   allowedScopeTypeIds = null,
   onBrowseFiles,
   onPickMany,
+  fill = false,
 }: ReferenceTypeAdderProps) {
   if (!type) return null;
   if (type === "file") return <FileTypeAdder onBrowseFiles={onBrowseFiles} />;
@@ -97,7 +105,7 @@ export function ReferenceTypeAdder({
       </p>
     );
   }
-  return <RecordReferencePicker token={type} onPickMany={onPickMany} />;
+  return <RecordReferencePicker token={type} onPickMany={onPickMany} fill={fill} />;
 }
 
 function FileTypeAdder({ onBrowseFiles }: { onBrowseFiles: () => void }) {
@@ -237,8 +245,8 @@ function ScopeTypeAdder({
   }
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
+    <div className={fill ? "flex min-h-0 flex-1 flex-col gap-2" : "space-y-2"}>
+      <div className="relative shrink-0">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           data-reference-autofocus
@@ -263,7 +271,12 @@ function ScopeTypeAdder({
       <div
         role="listbox"
         aria-label="Scope results"
-        className="max-h-56 space-y-0.5 overflow-y-auto"
+        className={cn(
+          "space-y-0.5 overflow-y-auto",
+          // A popover / cell caps the list; a sheet lets it fill (G10A review:
+          // the phone sheet showed ~4 rows with half the sheet empty below).
+          fill ? "min-h-0 flex-1" : "max-h-56",
+        )}
       >
         {!treeError && candidates.length === 0 && (
           <p className="px-1 py-2 text-xs text-muted-foreground">
@@ -321,9 +334,12 @@ function ScopeTypeAdder({
 export function RecordReferencePicker({
   token,
   onPickMany,
+  fill = false,
 }: {
   token: EntityTypeToken;
   onPickMany: (items: ReferenceItem[]) => void;
+  /** See `ReferenceTypeAdderProps.fill`. */
+  fill?: boolean;
 }) {
   const [query, setQuery] = useState("");
   // Retry = remount the results body (re-runs the search) keeping the query.
@@ -339,6 +355,7 @@ export function RecordReferencePicker({
       onQueryChange={setQuery}
       onPickMany={onPickMany}
       onRetry={() => setAttempt((n) => n + 1)}
+      fill={fill}
     />
   );
 }
@@ -349,6 +366,7 @@ interface RecordSearchProps {
   onQueryChange: (next: string) => void;
   onPickMany: (items: ReferenceItem[]) => void;
   onRetry: () => void;
+  fill: boolean;
 }
 
 /** Whose records: everything the person can see — the active org never narrows a list. */
@@ -360,6 +378,7 @@ function RecentRecordSearch({
   onQueryChange,
   onPickMany,
   onRetry,
+  fill,
 }: RecordSearchProps) {
   const plural = referenceTypeDisplayPlural(token);
   const list = useKindItems(token, EVERY_RECORD_I_CAN_SEE, query);
@@ -384,6 +403,7 @@ function RecentRecordSearch({
       error={list.error && list.items.length === 0 ? list.error.message : null}
       ready={!list.loading && !list.error}
       onRetry={onRetry}
+      fill={fill}
       rows={rows}
       footer={
         list.hasMore ? (
@@ -577,6 +597,7 @@ function RecordReferenceSearch({
   onQueryChange,
   onPickMany,
   onRetry,
+  fill,
 }: RecordSearchProps) {
   // The ONE search path (debounced, stale-guarded) scoped to this token. It
   // reports a failed read as `error` — never "no matches".
@@ -596,6 +617,7 @@ function RecordReferenceSearch({
       error={search.error && search.results.length === 0 ? search.error : null}
       ready={search.status === "ready"}
       onRetry={onRetry}
+      fill={fill}
       rows={search.results.map((c) => ({ id: c.id, title: c.title, secondary: null }))}
       footer={null}
     />
@@ -638,6 +660,7 @@ function CandidateSearch({
   error,
   ready,
   onRetry,
+  fill,
   rows,
   footer,
 }: {
@@ -649,6 +672,7 @@ function CandidateSearch({
   error: string | null;
   ready: boolean;
   onRetry: () => void;
+  fill: boolean;
   rows: Array<{ id: string; title: string; secondary: string | null }>;
   footer: React.ReactNode;
 }) {
@@ -659,8 +683,8 @@ function CandidateSearch({
   const plural = referenceTypeDisplayPlural(token);
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
+    <div className={fill ? "flex min-h-0 flex-1 flex-col gap-2" : "space-y-2"}>
+      <div className="relative shrink-0">
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           data-reference-autofocus
@@ -685,7 +709,12 @@ function CandidateSearch({
       <div
         role="listbox"
         aria-label={`${plural} results`}
-        className="max-h-56 space-y-0.5 overflow-y-auto"
+        className={cn(
+          "space-y-0.5 overflow-y-auto",
+          // A popover / cell caps the list; a sheet lets it fill (G10A review:
+          // the phone sheet showed ~4 rows with half the sheet empty below).
+          fill ? "min-h-0 flex-1" : "max-h-56",
+        )}
       >
         {error ? (
           <ReadFailure
