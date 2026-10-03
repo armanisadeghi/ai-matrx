@@ -93,6 +93,13 @@ import {
 } from "./layout-utils";
 import { formatDiagramType } from "./ui-utils";
 import {
+  diagramDirectionForFlow,
+  shouldRelayoutOnFlowChange,
+  type CanvasFlow,
+} from "./presentation-direction";
+import { preferredFlowDirection } from "@ai-matrx/canvas";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
+import {
   materializeDiagramDefaults,
   type DiagramData,
   type DiagramEdge,
@@ -889,6 +896,17 @@ const DiagramFlow: React.FC<{
   const nodesInitialized = useNodesInitialized();
   const hasAutoLayoutApplied = useRef(false);
   const autoLayoutFrameRef = useRef<number | null>(null);
+
+  // Inside the canvas the pane's shape picks the flow: a tall narrow pane lays
+  // the graph out top to bottom. `null` outside the canvas — unchanged there.
+  const canvasPresentation = useCanvasPresentation();
+  const canvasFlow: CanvasFlow | null = canvasPresentation
+    ? preferredFlowDirection(canvasPresentation)
+    : null;
+  // Set once the person picks an arrangement; from then on a pane flip never
+  // re-lays out over their choice.
+  const personArranged = useRef(false);
+  const lastCanvasFlow = useRef<CanvasFlow | null>(canvasFlow);
 
   const initialNodes = useMemo(
     () => buildReactFlowNodes(diagram, editing),
@@ -1764,14 +1782,43 @@ const DiagramFlow: React.FC<{
       applyGridLayout();
       return;
     }
-    applyDirectedLayout(diagram.layout?.direction ?? "TB");
+    applyDirectedLayout(
+      diagramDirectionForFlow(canvasFlow, diagram.layout?.direction, diagram.type),
+    );
   }, [
     applyDirectedLayout,
     applyGridLayout,
     applyRadialLayout,
     diagram.layout?.algorithm,
     diagram.layout?.direction,
+    diagram.type,
+    canvasFlow,
   ]);
+
+  // Every arrangement the person picks from the toolbar is theirs to keep.
+  const arrangeByPerson = useCallback((arrange: () => void) => {
+    personArranged.current = true;
+    arrange();
+  }, []);
+
+  // The pane flipped (split, unsplit, expand): re-flow an arrangement that is
+  // still ours. A layout that has not run yet picks up the new flow on its own.
+  useEffect(() => {
+    const previousFlow = lastCanvasFlow.current;
+    lastCanvasFlow.current = canvasFlow;
+    if (
+      !shouldRelayoutOnFlowChange({
+        previousFlow,
+        flow: canvasFlow,
+        autoLaidOut: hasAutoLayoutApplied.current,
+        personArranged: personArranged.current,
+        authoring: Boolean(onDiagramChange),
+      })
+    ) {
+      return;
+    }
+    applyAutoLayout();
+  }, [canvasFlow, applyAutoLayout, onDiagramChange]);
 
   const resetLayout = useCallback(() => {
     setNodes(buildReactFlowNodes(diagram, editing));
@@ -2510,28 +2557,36 @@ const DiagramFlow: React.FC<{
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-52">
               <DropdownMenuLabel>Arrange map</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => applyDirectedLayout("TB")}>
+              <DropdownMenuItem onSelect={() =>
+                  arrangeByPerson(() => applyDirectedLayout("TB"))
+                }>
                 <ArrowDown className="mr-2 h-4 w-4" />
                 Top to bottom
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => applyDirectedLayout("LR")}>
+              <DropdownMenuItem onSelect={() =>
+                  arrangeByPerson(() => applyDirectedLayout("LR"))
+                }>
                 <ArrowRight className="mr-2 h-4 w-4" />
                 Left to right
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => applyDirectedLayout("BT")}>
+              <DropdownMenuItem onSelect={() =>
+                  arrangeByPerson(() => applyDirectedLayout("BT"))
+                }>
                 <ArrowUp className="mr-2 h-4 w-4" />
                 Bottom to top
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => applyDirectedLayout("RL")}>
+              <DropdownMenuItem onSelect={() =>
+                  arrangeByPerson(() => applyDirectedLayout("RL"))
+                }>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Right to left
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={applyGridLayout}>
+              <DropdownMenuItem onSelect={() => arrangeByPerson(applyGridLayout)}>
                 <LayoutGrid className="mr-2 h-4 w-4" />
                 Balanced grid
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={applyRadialLayout}>
+              <DropdownMenuItem onSelect={() => arrangeByPerson(applyRadialLayout)}>
                 <Circle className="mr-2 h-4 w-4" />
                 Around a center
               </DropdownMenuItem>
@@ -2540,7 +2595,7 @@ const DiagramFlow: React.FC<{
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={resetLayout}
+              onClick={() => arrangeByPerson(resetLayout)}
               aria-label="Restore saved layout"
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Reset Layout"
