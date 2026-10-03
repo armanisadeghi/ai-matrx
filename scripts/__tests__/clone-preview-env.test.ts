@@ -20,7 +20,13 @@ const env = require("../clone-preview/clone-preview-env.cjs") as {
   parseCloneRef: (text: string) => Record<string, string>;
   parseEnvFile: (text: string) => Record<string, string>;
   pickApiKeys: (payload: unknown) => { publishable: string; secret: string };
-  renderCloneEnv: (input: { cloneRef: string; apiUrl: string; publishable: string; secret: string }) => string;
+  renderCloneEnv: (input: {
+    cloneRef: string;
+    apiUrl: string;
+    publishable: string;
+    secret: string;
+    livePublishable: string;
+  }) => string;
   validateCloneEnv: (e: Record<string, string>, cloneRef: string) => string[];
 };
 
@@ -50,6 +56,7 @@ describe(".env.clone.local generation", () => {
     apiUrl: `https://${CLONE}.supabase.co`,
     publishable: "sb_publishable_x",
     secret: "sb_secret_y",
+    livePublishable: "sb_publishable_live",
   });
 
   it("points Supabase at the clone and EVERY backend URL at the one paired server", () => {
@@ -89,6 +96,16 @@ describe(".env.clone.local generation", () => {
     expect(env.validateCloneEnv(prod, CLONE).join(" ")).toMatch(/NEXT_PUBLIC_MATRX_RELAY_URL/);
     const { NEXT_PUBLIC_MATRX_RELAY_URL: _dropped, ...missing } = parsed;
     expect(env.validateCloneEnv(missing, CLONE).join(" ")).toMatch(/NEXT_PUBLIC_MATRX_RELAY_URL is '\(unset\)'/);
+  });
+
+  it("wires the sign-in bridge to live auth with only live's PUBLISHABLE key", () => {
+    const parsed = env.parseEnvFile(rendered);
+    expect(parsed.MATRX_CLONE_SIGNIN_LIVE_URL).toBe("https://db.matrxserver.com");
+    expect(parsed.MATRX_CLONE_SIGNIN_LIVE_PUBLISHABLE_KEY).toBe("sb_publishable_live");
+    const secretLeak = { ...parsed, MATRX_CLONE_SIGNIN_LIVE_PUBLISHABLE_KEY: "sb_secret_live" };
+    expect(env.validateCloneEnv(secretLeak, CLONE).join(" ")).toMatch(/not a publishable key/);
+    const { MATRX_CLONE_SIGNIN_LIVE_URL: _gone, ...unwired } = parsed;
+    expect(env.validateCloneEnv(unwired, CLONE).join(" ")).toMatch(/MATRX_CLONE_SIGNIN_LIVE_URL is '\(unset\)'/);
   });
 
   it("prefers new-style keys, falls back to legacy, refuses masked ones", () => {

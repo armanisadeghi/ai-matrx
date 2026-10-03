@@ -68,7 +68,11 @@ database. So clone mode:
 3. launches with `MATRX_PREVIEW_MODE=clone` and `MATRX_CLONE_PAIRED=<ref>`;
    `next.config.js` re-checks that the Supabase URL is that clone before a worker
    spawns;
-4. on every reuse, re-proves the pairing and refuses a server started for a
+4. signs people in with Google / GitHub / Apple through a bridge: providers only return to a
+   callback registered in advance and the clone's ref is new nightly, so the round-trip runs on
+   live auth and `/auth/clone-signin` opens the SAME account on the clone, revoking the live
+   session at once (`utils/supabase/oauthStart.ts`; guard `oauthStart.door.test.ts`);
+5. on every reuse, re-proves the pairing and refuses a server started for a
    clone CLONE-REF no longer names (restart it: `pnpm preview:stop &&
    pnpm preview:start`).
 

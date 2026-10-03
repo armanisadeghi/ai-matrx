@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { startOAuthSignIn } from "@/utils/supabase/oauthStart";
 import { headers } from "next/headers";
 import {
   authDestinationOr,
@@ -154,12 +155,7 @@ export async function loginWithGoogle(
   await stashGuestFingerprintForOAuth(formData);
   // console.log(`[${timestamp}] 🚨 IMPORTANT: This URL must be whitelisted in Supabase Dashboard → Authentication → URL Configuration`);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: callbackUrl,
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "google", callbackUrl);
 
   if (data.url) {
     console.log(
@@ -208,12 +204,7 @@ export async function loginWithGithub(
   // /auth/callback can transfer guest-owned data onto the account. Fail-open.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "github",
-    options: {
-      redirectTo: callbackUrl,
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "github", callbackUrl);
 
   if (data.url) {
     console.log(`[${timestamp}] GitHub login - Redirecting to OAuth provider:`);
@@ -261,12 +252,7 @@ export async function loginWithApple(
   // /auth/callback can transfer guest-owned data onto the account. Fail-open.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "apple",
-    options: {
-      redirectTo: callbackUrl,
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "apple", callbackUrl);
 
   if (data.url) {
     console.log(`[${timestamp}] Apple login - Redirecting to OAuth provider:`);

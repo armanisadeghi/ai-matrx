@@ -4,6 +4,7 @@
 
 import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
+import { startOAuthSignIn } from "@/utils/supabase/oauthStart";
 import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
@@ -323,12 +324,7 @@ export async function signInWithGoogleAction(formData: FormData) {
   // any failure just means a normal OAuth login with no transfer.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "google", callbackUrl.toString());
 
   if (error) {
     console.error("signInWithGoogleAction OAuth error:", error.message);
@@ -360,12 +356,7 @@ export async function signInWithGithubAction(formData: FormData) {
   // any failure just means a normal OAuth login with no transfer.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "github",
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "github", callbackUrl.toString());
 
   if (error) {
     return encodedRedirect("error", "/login", error.message, formData);
@@ -506,12 +497,7 @@ export async function signUpWithGoogleAction(formData: FormData) {
   // any failure just means a normal OAuth login with no transfer.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "google", callbackUrl.toString());
 
   if (error) {
     return encodedRedirect("error", "/sign-up", error.message, formData);
@@ -542,12 +528,7 @@ export const signUpWithGithubAction = async (formData: FormData) => {
   // any failure just means a normal OAuth login with no transfer.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "github",
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "github", callbackUrl.toString());
 
   if (error) {
     return encodedRedirect("error", "/sign-up", error.message, formData);
@@ -578,12 +559,7 @@ export async function signInWithAppleAction(formData: FormData) {
   // any failure just means a normal OAuth login with no transfer.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "apple",
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "apple", callbackUrl.toString());
 
   if (error) {
     return encodedRedirect("error", "/login", error.message, formData);
@@ -614,12 +590,7 @@ export const signUpWithAppleAction = async (formData: FormData) => {
   // any failure just means a normal OAuth login with no transfer.
   await stashGuestFingerprintForOAuth(formData);
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "apple",
-    options: {
-      redirectTo: callbackUrl.toString(),
-    },
-  });
+  const { data, error } = await startOAuthSignIn(supabase, "apple", callbackUrl.toString());
 
   if (error) {
     return encodedRedirect("error", "/sign-up", error.message, formData);
