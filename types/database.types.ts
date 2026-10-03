@@ -28996,6 +28996,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29013,6 +29017,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29030,6 +29038,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29083,6 +29095,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29100,6 +29116,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29117,6 +29137,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29137,6 +29161,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29154,6 +29182,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29171,6 +29203,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29191,6 +29227,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29208,6 +29248,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29225,6 +29269,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29245,6 +29293,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29262,6 +29314,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29279,6 +29335,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29299,6 +29359,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29316,6 +29380,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29333,6 +29401,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29353,6 +29425,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29370,6 +29446,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29387,6 +29467,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29407,6 +29491,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29424,6 +29512,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29441,6 +29533,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29461,6 +29557,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29478,6 +29578,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29495,6 +29599,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29515,6 +29623,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29532,6 +29644,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29549,6 +29665,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29569,6 +29689,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29586,6 +29710,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29603,6 +29731,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29623,6 +29755,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29640,6 +29776,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29657,6 +29797,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29677,6 +29821,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29694,6 +29842,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29711,6 +29863,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29731,6 +29887,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29748,6 +29908,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29765,6 +29929,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29785,6 +29953,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29802,6 +29974,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29819,6 +29995,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29839,6 +30019,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29856,6 +30040,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29873,6 +30061,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29893,6 +30085,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -29910,6 +30106,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -29927,6 +30127,10 @@ export type Database = {
           id?: string
           metadata?: Json
           organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          search_engine_indexed?: boolean | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           table_id?: string | null
           updated_at?: string
@@ -30842,6 +31046,15 @@ export type Database = {
         }
         Returns: Json
       }
+      _entity_choice_keys: {
+        Args: {
+          p_doc: Json
+          p_fields: Record<string, unknown>[]
+          p_old: Json
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       _entity_reference_target_ok: {
         Args: { p_id: string; p_organization_id: string; p_token: string }
         Returns: boolean
@@ -31242,6 +31455,14 @@ export type Database = {
         Args: { p_data: Json; p_organization_id: string; p_table_id: string }
         Returns: Json
       }
+      _record_outside_projection: {
+        Args: {
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_record_id: string
+          p_user: string
+        }
+        Returns: Json
+      }
       _record_shown_to_ctx: {
         Args: { p_organization_ids: string[]; p_table_id: string }
         Returns: Json
@@ -31378,6 +31599,10 @@ export type Database = {
           p_record_id: string
         }
         Returns: string
+      }
+      _write_via_mark: {
+        Args: { p_keep_outer?: boolean; p_via: string }
+        Returns: undefined
       }
       absence_reasons: { Args: never; Returns: string[] }
       action_declare: {
@@ -31609,7 +31834,9 @@ export type Database = {
           p_measures?: Json
           p_organization_id: string
           p_required?: string
+          p_search?: string
           p_table_id: string
+          p_time_zone?: string
           p_window?: Json
         }
         Returns: string
@@ -31800,6 +32027,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -32394,6 +32625,10 @@ export type Database = {
           p_user: string
         }
         Returns: boolean
+      }
+      confidential_header: {
+        Args: { p_id: string; p_user: string }
+        Returns: Json
       }
       confidential_names: {
         Args: { p_organization_id: string; p_user: string; p_value: Json }
@@ -33137,6 +33372,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -33321,6 +33560,10 @@ export type Database = {
         }
         Returns: Json
       }
+      field_add_rung: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       field_behaviour: { Args: { p_field_data: Json }; Returns: string }
       field_choice_usage: {
         Args: { p_field_id: string; p_organization_id: string }
@@ -33416,6 +33659,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -33897,6 +34144,7 @@ export type Database = {
         Args: { p_keys: string[]; p_new: Json; p_old: Json }
         Returns: Json
       }
+      io_change_via: { Args: never; Returns: string }
       io_changed_field_ids: {
         Args: {
           p_new: Json
@@ -34336,6 +34584,15 @@ export type Database = {
       }
       member_personal_tables: {
         Args: { p_organization_id: string; p_person: string }
+        Returns: Json
+      }
+      member_records_take_over: {
+        Args: {
+          p_from: string
+          p_organization_id: string
+          p_reason: string
+          p_to: string
+        }
         Returns: Json
       }
       merge_field_kernel_id: { Args: never; Returns: string }
@@ -35246,6 +35503,7 @@ export type Database = {
           p_search?: string
           p_sort?: Json
           p_table_id: string
+          p_time_zone?: string
           p_view_id?: string
         }
         Returns: Json
@@ -35261,7 +35519,9 @@ export type Database = {
           p_measures?: Json
           p_organization_id: string
           p_required?: string
+          p_search?: string
           p_table_id: string
+          p_time_zone?: string
         }
         Returns: {
           compare: Json
@@ -35362,6 +35622,7 @@ export type Database = {
           record_id: string
           table_id: string
           version: number
+          via: string
         }[]
       }
       record_delete: {
@@ -35508,6 +35769,16 @@ export type Database = {
         }
         Returns: Json
       }
+      record_search_sql: {
+        Args: {
+          p_alias?: string
+          p_organization_id: string
+          p_search: string
+          p_table_id: string
+          p_time_zone?: string
+        }
+        Returns: string
+      }
       record_source_key: { Args: { p_table_id: string }; Returns: string }
       record_source_keys: { Args: { p_table_id: string }; Returns: string[] }
       record_source_table: { Args: { p_key: string }; Returns: string }
@@ -35620,6 +35891,24 @@ export type Database = {
           p_table_id: string
         }
         Returns: string[]
+      }
+      records_search: {
+        Args: {
+          p_include_app_tables?: boolean
+          p_limit?: number
+          p_offset?: number
+          p_organization_ids?: string[]
+          p_search: string
+          p_table_ids?: string[]
+        }
+        Returns: {
+          name: string
+          organization_id: string
+          record_id: string
+          table_id: string
+          table_name: string
+          updated_at: string
+        }[]
       }
       refusals_claiming_a_level_never_asked: {
         Args: never
@@ -35872,6 +36161,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -35962,6 +36255,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -36031,6 +36328,7 @@ export type Database = {
         Args: {
           p_approved_on: string
           p_arman_words: string
+          p_maker_is_reader?: boolean
           p_readers: Json
           p_table_id: string
         }
@@ -36504,6 +36802,10 @@ export type Database = {
           id: string
           metadata: Json
           organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          search_engine_indexed: boolean | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           table_id: string | null
           updated_at: string
@@ -90378,6 +90680,10 @@ export type Database = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
       }
+      share_target_in_closed_org: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: boolean
+      }
       share_tool_is_withheld: {
         Args: { p_tool_name: string }
         Returns: boolean
@@ -101803,6 +102109,7 @@ export type Database = {
         }
         Returns: string
       }
+      record_public_view: { Args: { p_record_id: string }; Returns: Json }
       record_share_accept: { Args: { p_token: string }; Returns: Json }
       record_share_peek: { Args: { p_token: string }; Returns: Json }
       reference_categories_list: {

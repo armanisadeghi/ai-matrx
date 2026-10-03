@@ -26741,6 +26741,10 @@ export type ChatDatabase = {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
       }
+      share_target_in_closed_org: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: boolean
+      }
       share_tool_is_withheld: {
         Args: { p_tool_name: string }
         Returns: boolean
@@ -36812,6 +36816,7 @@ export type ChatDatabase = {
         }
         Returns: string
       }
+      record_public_view: { Args: { p_record_id: string }; Returns: Json }
       record_share_accept: { Args: { p_token: string }; Returns: Json }
       record_share_peek: { Args: { p_token: string }; Returns: Json }
       reference_categories_list: {
