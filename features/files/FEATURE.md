@@ -57,11 +57,28 @@ in the same change.
    `Files.uploadNewVersion`), which uploads to the file's exact stored `file_path` (the service
    version-bumps that row) and throws when the answer names another row or `is_new`. Guard:
    `redux/save-file-new-version.test.ts`.
+7b. **A text file being edited has ONE working copy, in the store.** `cloudFiles.workingCopies[fileId]`
+   (`FileWorkingCopy`: text, baseText, baseVersion, saving, savedAt, saveError; dirty = text ≠ baseText)
+   is what every editor view shows and writes — the Edit tab, a board tile, the `cloud-file-editor`
+   canvas tab. `useFileWorkingCopy` fills it from the bytes once (and again only for new bytes: a
+   clean copy follows them, a dirty one keeps the person's text); `saveFileWorkingCopy`
+   (`redux/working-copy.ts`) is the only save path — one save per file at a time, a second request
+   waits then saves what is left, a leaving flush (hide / unmount / pagehide) never saves twice.
+   `pagehide` also keeps an unsaved copy in sessionStorage for a reload. Never hold the text in
+   component state. The Monaco wrapper renders `<Editor>` only while its effects are attached
+   (`useEffectsAttached`) and keeps the model per path (`keepModel`), so a hidden-then-shown editor
+   re-creates (never blank) with its undo history. Guards:
+   `components/core/FileEditor/__tests__/CloudFileInlineEditor.working-copy.test.tsx`,
+   `features/code/editor/__tests__/MonacoEditor.wake.test.tsx`.
 8. **Reads hit Supabase directly, except exact-id hydration.** `useEnsureCloudFile` is the one
    exception: it calls the authenticated `GET /files/{id}?include_urls=false` access gate because
    the browser RLS planner can time out before a primary-key lookup. Do not reintroduce a browser
    `files.files` exact-id read there; normal lists and metadata writes remain direct Supabase.
-9. **Renderable media identity and bytes are centrally cached.** Keep `fileId` as identity; use
+9. **Renderable media identity and bytes are centrally cached — per file id + version.** The blob
+   cache holds one version per file; `useFileBlob` reads `currentVersion` from the store, a cached
+   copy of another version is a miss, and only a version change refetches. A save caches the bytes
+   it uploaded as the new version (`replaceWithSavedBytes`), and the realtime echo of that version
+   does not drop them, so no viewer downloads what this tab just uploaded. Keep `fileId` as identity; use
    `useFileAsset` to select a persisted display variant and the shared `useFileBlob` cache whenever
    private image pixels must not depend on the file-session cookie. `FilePreview`,
    `MediaThumbnail`, and picker thumbnails all consume that same asset/variant identity; HEIC/HEIF
@@ -144,6 +161,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-10-02 — One working copy per file; the editor survives hide / show / remount.** A board file tile's Monaco went blank after the tile slept (`@monaco-editor/react` disposes its editor when `<Activity>` detaches effects and never re-creates it), and the typed text lived in `CloudFileInlineEditor` state, so a second view showed other text and a remount mid-save showed the old bytes. Now: `cloudFiles.workingCopies` + `useFileWorkingCopy` + `saveFileWorkingCopy` (invariant 7b); `MonacoEditor` mounts `<Editor>` only while attached + `keepModel` (same gate on the direct `Editor`/`DiffEditor` users: `SmallCodeEditorImpl`, `TabDiffView`, `TripleDiffView`, `components/diff/code/CodeDiff`); blob cache keyed by version, seeded on save, realtime echo skipped (invariant 9). The board's file item now `sleeps`. Tests: the two guards in 7b (5 of 7 and 3 of 3 red on the old code).
 - **2026-10-02 — Edit opens the file's editor as a canvas tab.** A preview's Edit action opens kind `cloud-file-editor` (`canvas/cloudFileEditorKind.ts`), body = `CloudFileInlineEditor`. The Sheet `CloudFileEditor` + `CloudFileEditorHost`/`requestEdit` are deleted. Test: `__tests__/the-file-editor-opens-in-the-canvas.test.tsx`.
 - **2026-09-30 — System folders off by default too (V5-B).** "Use existing → Folders" counted 56,037 folders for the test account (system-files/variants/<id>, page-captures-<org>/<site>, coding sessions). A folder the system owns now carries `metadata.system_artifact`, stamped at aidream's one folder door (`CloudSyncDB.create_folder*`, `system_folder_marker`) and backfilled on live (7,309 folders, metadata only); `platform._inventory_filter` hides it and every `is_system` folder unless `files.show_system_files` is on, and the counts/lists (`entity_kind_counts`, `reference_search_candidates`) take the person's setting as `p_show_system_files` (resolved in the database when omitted). The browser folder rule `isSystemFolderPath` also covers variant folders. Admin folder count 56,037 → 236 (live). Test: `utils/__tests__/system-folders-listed-only-when-on.test.ts`.
 - **2026-09-30 — Saving an edited file writes a new version of THAT file, never a copy.** Edit tab → type → Save created `files.files` row "name (1).txt" and left the original at version 1 while the editor said "Saved": `CloudFileInlineEditor`, `CloudFileEditor` and `writeAny` (stored files) all re-uploaded through `uploadFiles`, whose collision rename turns a taken name into "name (1).ext" (and, with the folder not loaded, dropped the file at the root). New `saveFileNewVersion` thunk + `Files.uploadNewVersion` upload to the file's exact stored path with the file's own organization (the files service has no by-id content endpoint; the path upload version-bumps the row, per matrx-utils `managed_write_async`), update `currentVersion`, drop the blob/Office caches, reload the version list, and refuse any answer naming a different row or `is_new`. The inline editor's unmount flush now announces a failure instead of swallowing it. Known limit: the service looks the path up under the UPLOADER, so a person with write access to someone else's file would get the refusal, not a save — that needs a by-id replace endpoint server-side. Test: `redux/save-file-new-version.test.ts` (2 of 4 red on the old code: "notes (1).txt" with the folder loaded, "notes.txt" at root without).

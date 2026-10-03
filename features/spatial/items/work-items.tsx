@@ -396,5 +396,9 @@ export const WORK_ITEMS: BoardItemType[] = [
       return id ? `/files/f/${id}` : null;
     },
     kindLabel: "file",
+    // Checked 2026-10-02: the Edit tab's text, dirty state and undo come back after a sleep and a
+    // remount (one working copy per file in the store); the editor re-creates, never blank; one
+    // save; the preview is not downloaded again.
+    sleeps: true,
   },
 ];

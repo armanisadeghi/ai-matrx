@@ -395,6 +395,10 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   workflow + surface are read once into Redux (`loadRunSurface`), its `Keep` holds the one stream
   adoption, and the tile's stage passes `floatOnLeave={false}` — waking, hiding or removing it never
   opens the floating run window. Guard: `__tests__/feature-items-remount.test.tsx`.
+- 2026-10-02 — The file tile sleeps: its editor text, dirty state and undo come back after a sleep and a
+  remount (one working copy per file in the store, features/files FEATURE.md 7b), Monaco re-creates on wake
+  (never blank), one save, no repeated download — checked in the browser on a board with the file also open
+  in a canvas tab.
 - 2026-10-02 — Sleep census: chat, note, task, research and project now sleep, each checked in the
   browser (sleep → wake → text/scroll/draft kept, nothing relaunched or re-created, edits still save).
   Effects that threw work away on a re-run were made idempotent at their source: the Visual rich
