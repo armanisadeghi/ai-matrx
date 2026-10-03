@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 import {
@@ -137,7 +138,9 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
         />
         <div className="max-h-72 overflow-y-auto" role="list" aria-label="Organizations">
           {orgs === null ? (
-            <div className="px-1 py-2 text-xs text-muted-foreground">Loading…</div>
+            <div className="flex justify-center py-3" aria-label="Reading organizations" role="status">
+              <Spinner className="h-4 w-4" />
+            </div>
           ) : readError ? (
             <ErrorNotice size="inline" className="px-1 py-2 text-xs" message={readError} operation="Read organizations" calls={["iam.organizations"]} />
           ) : shown.length === 0 ? (
