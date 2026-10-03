@@ -1,25 +1,23 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState } from "react";
 import { isOpenStatus } from "@/features/tasks/constants/status";
-import {
-  ChevronRight,
-  Search,
-  Loader2,
-  CheckSquare,
-  Circle,
-  CheckCircle2,
-  FolderKanban,
-  ChevronDown,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Loader2, FolderKanban, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/utils/cn";
 import { useProjectsWithTasks } from "@/features/tasks/hooks/useTaskManager";
 import type { ProjectWithTasks, DatabaseTask } from "@/features/tasks/types";
 import { filterAndSortBySearch, matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+  PickerEmpty,
+  PickerRow,
+  PickerSearchField,
+  PickerSectionLabel,
+  PickerView,
+  PickerViewBody,
+  ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
 interface TasksResourcePickerProps {
@@ -31,415 +29,318 @@ interface TasksResourcePickerProps {
   ) => void;
 }
 
-export function TasksResourcePicker({
-  onBack,
-  onSelect,
-}: TasksResourcePickerProps) {
+const ACTION_BUTTON_CLASS =
+  "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium transition-colors pointer-coarse:h-10";
+
+const CHIP_CLASS = "shrink-0 rounded-full px-1.5 py-0.5 text-xs";
+
+const getPriorityColor = (priority?: "low" | "medium" | "high" | null) => {
+  if (!priority) return "bg-muted text-muted-foreground";
+  switch (priority) {
+    case "high":
+      return "bg-destructive/15 text-destructive";
+    case "medium":
+      return "bg-amber-500/15 text-amber-600 dark:text-amber-400";
+    case "low":
+      return "bg-blue-500/15 text-blue-600 dark:text-blue-400";
+  }
+};
+
+/**
+ * The Tasks view of the canonical resource picker: projects, then a project's
+ * tasks. Back goes up one level; the open project shows as a section label
+ * carrying the completed toggle and the bulk actions.
+ */
+export function TasksResourcePicker({ onBack, onSelect }: TasksResourcePickerProps) {
   const { projects, loading, error: projectsError, refresh } = useProjectsWithTasks();
   const searchInputRef = usePickerInputFocus();
-  const [selectedProject, setSelectedProject] =
-    useState<ProjectWithTasks | null>(null);
+  const [selectedProject, setSelectedProject] = useState<ProjectWithTasks | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
 
-  // Filter projects by search — keep original order; match on project name or any nested task title/description.
-  const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return projects;
-    return projects.filter((project) => {
-      if (
-        matchesSearch(project, searchQuery, [
-          { get: (p) => p.name, weight: "title" },
-        ])
-      ) {
-        return true;
-      }
-      return project.tasks?.some((task) =>
-        matchesSearch(task, searchQuery, [
-          { get: (t) => t.title, weight: "title" },
-          { get: (t) => t.description, weight: "body" },
-        ]),
-      );
-    });
-  }, [projects, searchQuery]);
+  const hasQuery = searchQuery.trim().length > 0;
 
-  // Filter tasks by search and completion status
-  const filteredTasks = useMemo(() => {
-    if (!selectedProject) return [];
-    let tasks = selectedProject.tasks || [];
+  // Keep original order; match on project name or any nested task title/description.
+  const filteredProjects = !hasQuery
+    ? projects
+    : projects.filter((project) => {
+        if (matchesSearch(project, searchQuery, [{ get: (p) => p.name, weight: "title" }])) {
+          return true;
+        }
+        return project.tasks?.some((task) =>
+          matchesSearch(task, searchQuery, [
+            { get: (t) => t.title, weight: "title" },
+            { get: (t) => t.description, weight: "body" },
+          ]),
+        );
+      });
 
-    // Filter by completion status
+  let filteredTasks: DatabaseTask[] = [];
+  if (selectedProject) {
+    filteredTasks = selectedProject.tasks || [];
     if (!showCompleted) {
-      tasks = tasks.filter((task) => isOpenStatus(task.status));
+      filteredTasks = filteredTasks.filter((task) => isOpenStatus(task.status));
     }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      tasks = filterAndSortBySearch(tasks, searchQuery, [
+    if (hasQuery) {
+      filteredTasks = filterAndSortBySearch(filteredTasks, searchQuery, [
         { get: (t) => t.title, weight: "title" },
         { get: (t) => t.description, weight: "body" },
       ]);
     }
+  }
 
-    return tasks;
-  }, [selectedProject, searchQuery, showCompleted]);
-
-  // Count tasks per project (incomplete/total)
   const getProjectTaskCount = (project: ProjectWithTasks) => {
     const tasks = project.tasks || [];
     const incomplete = tasks.filter((t) => isOpenStatus(t.status)).length;
-    const total = tasks.length;
-    return { incomplete, total };
+    return { incomplete, total: tasks.length };
   };
 
-  // Get priority badge color
-  const getPriorityColor = (priority?: "low" | "medium" | "high" | null) => {
-    if (!priority) return "bg-muted text-muted-foreground";
-    switch (priority) {
-      case "high":
-        return "bg-destructive/15 text-destructive";
-      case "medium":
-        return "bg-amber-500/15 text-amber-600 dark:text-amber-400";
-      case "low":
-        return "bg-blue-500/15 text-blue-600 dark:text-blue-400";
-    }
-  };
-
-  // Toggle task selection
   const toggleTaskSelection = (taskId: string) => {
     setSelectedTaskIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
     });
   };
 
-  // Select all filtered tasks
-  const selectAllTasks = () => {
-    const allIds = new Set(filteredTasks.map((t) => t.id));
-    setSelectedTaskIds(allIds);
-  };
+  const selectAllTasks = () => setSelectedTaskIds(new Set(filteredTasks.map((t) => t.id)));
+  const clearAllSelections = () => setSelectedTaskIds(new Set());
 
-  // Clear all selections
-  const clearAllSelections = () => {
-    setSelectedTaskIds(new Set());
-  };
-
-  // Add selected tasks
   const addSelectedTasks = () => {
-    const tasks = filteredTasks.filter((t) => selectedTaskIds.has(t.id));
-    tasks.forEach((task) => {
-      onSelect({ type: "task", data: task });
-    });
+    filteredTasks
+      .filter((t) => selectedTaskIds.has(t.id))
+      .forEach((task) => onSelect({ type: "task", data: task }));
     setSelectedTaskIds(new Set());
   };
 
-  return (
-    <div className="flex flex-col max-h-[min(460px,70dvh)]">
-      {/* Header */}
-      <ResourcePickerSubViewHeader
-        title={selectedProject ? selectedProject.name : "Tasks"}
-        onBack={
-          selectedProject
-            ? () => {
-                setSelectedProject(null);
-                setExpandedTaskId(null);
-                setSelectedTaskIds(new Set());
+  const openProject = (project: ProjectWithTasks) => {
+    setSelectedProject(project);
+    setExpandedTaskId(null);
+    setSelectedTaskIds(new Set());
+  };
+
+  const closeProject = () => {
+    setSelectedProject(null);
+    setExpandedTaskId(null);
+    setSelectedTaskIds(new Set());
+  };
+
+  const formatDue = (due: string, withYear: boolean) =>
+    new Date(due).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      ...(withYear ? { year: "numeric" } : {}),
+    });
+
+  const renderTask = (task: DatabaseTask) => {
+    const isCompleted = task.status === "completed";
+    const isOverdue = !!task.due_date && new Date(task.due_date) < new Date() && !isCompleted;
+    const isExpanded = expandedTaskId === task.id;
+    const isSelected = selectedTaskIds.has(task.id);
+    const dueClass = isOverdue ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
+
+    return (
+      <div
+        key={task.id}
+        className={cn("rounded-lg", isSelected && "bg-primary/5", isExpanded && !isSelected && "bg-muted/40")}
+      >
+        <div className="flex items-center gap-1">
+          <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center pointer-coarse:h-11 pointer-coarse:w-11">
+            <Checkbox
+              size="md"
+              checked={isSelected}
+              onCheckedChange={() => toggleTaskSelection(task.id)}
+              aria-label={task.title}
+            />
+          </label>
+          <div className="min-w-0 flex-1">
+            <PickerRow
+              label={<span className={cn(isCompleted && "text-muted-foreground")}>{task.title}</span>}
+              secondary={
+                !isExpanded && (task.priority || task.due_date || task.description) ? (
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {task.priority && (
+                      <span className={cn(CHIP_CLASS, getPriorityColor(task.priority))}>{task.priority}</span>
+                    )}
+                    {task.due_date && (
+                      <span className={cn(CHIP_CLASS, dueClass)}>{formatDue(task.due_date, false)}</span>
+                    )}
+                    {task.description && <span className="min-w-0 truncate">{task.description}</span>}
+                  </span>
+                ) : undefined
               }
-            : onBack
-        }
-        actions={
-          selectedProject ? (
-            <>
-              <label className="flex shrink-0 items-center gap-1 cursor-pointer">
-                <Checkbox
-                  checked={showCompleted}
-                  onCheckedChange={(checked) => {
-                    setShowCompleted(checked === true);
-                    setExpandedTaskId(null);
-                  }}
-                  className="h-3 w-3"
-                />
-                <span className="text-[10px] text-muted-foreground">
-                  Completed
+              trailing={
+                <span
+                  className={cn(
+                    CHIP_CLASS,
+                    "font-medium",
+                    isCompleted
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      : "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+                  )}
+                >
+                  {task.status}
                 </span>
-              </label>
-              {selectedTaskIds.size > 0 ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-[10px] text-muted-foreground hover:bg-muted/60"
-                    onClick={clearAllSelections}
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
-                    onClick={addSelectedTasks}
-                  >
-                    Add ({selectedTaskIds.size})
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-[10px] text-muted-foreground hover:bg-muted/60"
-                    onClick={selectAllTasks}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-500/10"
-                    onClick={() =>
-                      onSelect({ type: "project", data: selectedProject })
-                    }
-                  >
-                    Add Project
-                  </Button>
-                </>
-              )}
-            </>
-          ) : undefined
-        }
-      />
-
-      {/* Search */}
-      <div className="px-2 py-1.5 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setExpandedTaskId(null);
-            }}
-            className="h-7 text-xs pl-7 pr-2 bg-background border-border"
-          />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              }
+              onClick={() => onSelect({ type: "task", data: task })}
+            />
           </div>
-        ) : projectsError && projects.length === 0 ? (
-          <ReadFailure error={projectsError} what="your projects and tasks" onRetry={() => void refresh()} />
-        ) : selectedProject ? (
-          // Show tasks in project
-          <div className="p-1">
-            {filteredTasks.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-8">
-                {searchQuery ? "No tasks found" : "No tasks in this project"}
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {filteredTasks.map((task) => {
-                  const isCompleted = task.status === "completed";
-                  const isOverdue =
-                    task.due_date &&
-                    new Date(task.due_date) < new Date() &&
-                    !isCompleted;
-                  const isExpanded = expandedTaskId === task.id;
-                  const isSelected = selectedTaskIds.has(task.id);
-
-                  return (
-                    <div
-                      key={task.id}
-                      className={`rounded overflow-hidden border transition-all ${
-                        isSelected
-                          ? "border-primary/40 bg-primary/5"
-                          : "border-transparent hover:border-border"
-                      }`}
-                    >
-                      <div className="flex items-start gap-2 px-2 py-1.5">
-                        {/* Checkbox for multi-select */}
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleTaskSelection(task.id)}
-                          className="mt-0.5 flex-shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-
-                        {/* Task content - clickable to immediately add */}
-                        <button
-                          onClick={() => onSelect({ type: "task", data: task })}
-                          className="flex-1 text-left hover:bg-muted/60 transition-colors rounded px-1 py-0.5 -mx-1 -my-0.5 min-w-0"
-                        >
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span
-                              className={`text-xs font-medium truncate ${
-                                isCompleted
-                                  ? "text-muted-foreground"
-                                  : "text-foreground"
-                              }`}
-                            >
-                              {task.title}
-                            </span>
-                            <span
-                              className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
-                                isCompleted
-                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                  : "bg-blue-500/15 text-blue-600 dark:text-blue-400"
-                              }`}
-                            >
-                              {task.status}
-                            </span>
-                          </div>
-                          {!isExpanded && task.description && (
-                            <div className="text-[10px] text-muted-foreground line-clamp-1 leading-tight mb-1">
-                              {task.description}
-                            </div>
-                          )}
-                          {!isExpanded && (
-                            <div className="flex gap-1 flex-wrap items-center">
-                              {task.priority && (
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}
-                                >
-                                  {task.priority}
-                                </span>
-                              )}
-                              {task.due_date && (
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                    isOverdue
-                                      ? "bg-destructive/15 text-destructive"
-                                      : "bg-muted text-muted-foreground"
-                                  }`}
-                                >
-                                  {new Date(task.due_date).toLocaleDateString(
-                                    "en-US",
-                                    { month: "short", day: "numeric" },
-                                  )}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </button>
-
-                        {/* Chevron - toggles expansion */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedTaskId(isExpanded ? null : task.id);
-                          }}
-                          className="flex-shrink-0 p-1 -mr-1 hover:bg-muted/60 rounded transition-colors"
-                          title={isExpanded ? "Hide details" : "Show details"}
-                        >
-                          <ChevronDown
-                            className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="px-2 pb-2 pl-9 space-y-2 bg-background/50">
-                          {task.description && (
-                            <div className="max-h-24 overflow-y-auto scrollbar-thin rounded bg-background p-2 border-border">
-                              <div className="text-[11px] text-foreground whitespace-pre-wrap leading-relaxed">
-                                {task.description}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex gap-1 flex-wrap items-center">
-                            {task.priority && (
-                              <span
-                                className={`text-[10px] px-1.5 py-0.5 rounded-full ${getPriorityColor(task.priority)}`}
-                              >
-                                {task.priority} priority
-                              </span>
-                            )}
-                            {task.due_date && (
-                              <span
-                                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                  isOverdue
-                                    ? "bg-destructive/15 text-destructive"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                Due:{" "}
-                                {new Date(task.due_date).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  },
-                                )}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+          <button
+            type="button"
+            onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:h-11 pointer-coarse:w-11"
+            aria-label={isExpanded ? "Hide details" : "Show details"}
+            aria-expanded={isExpanded}
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+          </button>
+        </div>
+        {isExpanded && (
+          <div className="space-y-2 pb-2 pl-11 pr-2">
+            {task.description && (
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-background p-2.5">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                  {task.description}
+                </div>
               </div>
             )}
-          </div>
-        ) : (
-          // Show projects
-          <div className="p-1">
-            {filteredProjects.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-8">
-                {searchQuery ? "No projects found" : "No projects yet"}
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {filteredProjects.map((project) => {
-                  const { incomplete, total } = getProjectTaskCount(project);
-
-                  return (
-                    <button
-                      key={project.id}
-                      onClick={() => {
-                        setSelectedProject(project);
-                        setExpandedTaskId(null);
-                        setSelectedTaskIds(new Set());
-                      }}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors group"
-                    >
-                      <FolderKanban className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-500" />
-                      <div className="flex-1 text-left min-w-0">
-                        <div className="text-xs font-medium text-foreground truncate">
-                          {project.name}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {incomplete > 0
-                            ? `${incomplete} pending`
-                            : "All complete"}{" "}
-                          · {total} total
-                        </div>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-foreground flex-shrink-0" />
-                    </button>
-                  );
-                })}
+            {(task.priority || task.due_date) && (
+              <div className="flex flex-wrap items-center gap-1">
+                {task.priority && (
+                  <span className={cn(CHIP_CLASS, getPriorityColor(task.priority))}>
+                    {task.priority} priority
+                  </span>
+                )}
+                {task.due_date && (
+                  <span className={cn(CHIP_CLASS, dueClass)}>Due: {formatDue(task.due_date, true)}</span>
+                )}
               </div>
             )}
           </div>
         )}
       </div>
+    );
+  };
+
+  const projectActions = selectedProject ? (
+    <div className="flex shrink-0 items-center gap-0.5">
+      <label className="flex h-8 cursor-pointer items-center gap-1.5 px-1.5 pointer-coarse:h-10">
+        <Checkbox
+          checked={showCompleted}
+          onCheckedChange={(checked) => {
+            setShowCompleted(checked === true);
+            setExpandedTaskId(null);
+          }}
+        />
+        <span className="text-xs text-muted-foreground">Completed</span>
+      </label>
+      {selectedTaskIds.size > 0 ? (
+        <>
+          <button
+            type="button"
+            className={cn(ACTION_BUTTON_CLASS, "text-muted-foreground hover:bg-accent hover:text-foreground")}
+            onClick={clearAllSelections}
+          >
+            Clear
+          </button>
+          <button
+            type="button"
+            className={cn(ACTION_BUTTON_CLASS, "text-primary hover:bg-primary/10")}
+            onClick={addSelectedTasks}
+          >
+            Add ({selectedTaskIds.size})
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            className={cn(ACTION_BUTTON_CLASS, "text-muted-foreground hover:bg-accent hover:text-foreground")}
+            onClick={selectAllTasks}
+          >
+            Select all
+          </button>
+          <button
+            type="button"
+            className={cn(ACTION_BUTTON_CLASS, "text-primary hover:bg-primary/10")}
+            onClick={() => onSelect({ type: "project", data: selectedProject })}
+          >
+            Add project
+          </button>
+        </>
+      )}
     </div>
+  ) : null;
+
+  const renderBody = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+    if (projectsError && projects.length === 0) {
+      return (
+        <ReadFailure error={projectsError} what="your projects and tasks" onRetry={() => void refresh()} />
+      );
+    }
+    if (selectedProject) {
+      if (filteredTasks.length === 0) {
+        return <PickerEmpty>{hasQuery ? "No tasks found" : "No tasks in this project"}</PickerEmpty>;
+      }
+      return <div>{filteredTasks.map(renderTask)}</div>;
+    }
+    if (filteredProjects.length === 0) {
+      return <PickerEmpty>{hasQuery ? "No projects found" : "No projects yet"}</PickerEmpty>;
+    }
+    return (
+      <div>
+        {filteredProjects.map((project) => {
+          const { incomplete, total } = getProjectTaskCount(project);
+          return (
+            <PickerRow
+              key={project.id}
+              icon={FolderKanban}
+              iconClassName="text-blue-600 dark:text-blue-500"
+              label={project.name}
+              secondary={`${incomplete > 0 ? `${incomplete} pending` : "All complete"} · ${total} total`}
+              chevron
+              onClick={() => openProject(project)}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  return (
+    <PickerView>
+      <ResourcePickerSubViewHeader
+        onBack={selectedProject ? closeProject : onBack}
+        search={
+          <PickerSearchField
+            ref={searchInputRef}
+            placeholder={selectedProject ? "Search tasks" : "Search projects and tasks"}
+            value={searchQuery}
+            onChange={(value) => {
+              setSearchQuery(value);
+              setExpandedTaskId(null);
+            }}
+          />
+        }
+      />
+      {selectedProject && (
+        <div className="shrink-0 border-b border-border px-1.5 pb-1">
+          <PickerSectionLabel action={projectActions}>
+            {selectedProject.name}
+          </PickerSectionLabel>
+        </div>
+      )}
+      <PickerViewBody>{renderBody()}</PickerViewBody>
+    </PickerView>
   );
 }

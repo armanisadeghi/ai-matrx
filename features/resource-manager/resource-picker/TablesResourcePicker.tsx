@@ -1,16 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  ChevronRight,
-  Search,
-  Loader2,
-  Table2,
-  CheckSquare,
-  Eye,
-  X,
-} from "lucide-react";
-import { Input } from "@ai-matrx/design-system";
+import { useState, useEffect } from "react";
+import { Columns3, Eye, Grid2x2, Loader2, Rows3, Table2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +12,15 @@ import {
 import LocatedTableViewer from "@/features/data-tables/components/LocatedTableViewer";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
-import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import {
+  PickerEmpty,
+  PickerRow,
+  PickerSearchField,
+  PickerSectionLabel,
+  PickerView,
+  PickerViewBody,
+  ResourcePickerSubViewHeader,
+} from "./ResourcePickerSubViewHeader";
 import type { TableBookmark } from "@ai-matrx/agents/message-parts";
 import {
   isUserTableFieldRow,
@@ -140,36 +139,33 @@ export function TablesResourcePicker({
   };
 
   // Filter tables by search
-  const filteredTables = useMemo(() => {
-    if (!searchQuery.trim()) return tables;
-    return filterAndSortBySearch(tables, searchQuery, [
-      { get: (t) => t.table_name, weight: "title" },
-      { get: (t) => t.description, weight: "body" },
-    ]);
-  }, [tables, searchQuery]);
+  const filteredTables = !searchQuery.trim()
+    ? tables
+    : filterAndSortBySearch(tables, searchQuery, [
+        { get: (t) => t.table_name, weight: "title" },
+        { get: (t) => t.description, weight: "body" },
+      ]);
 
   // Filter rows by search — each row's cell values are treated as body-weight fields.
-  const filteredRows = useMemo(() => {
-    if (!searchQuery.trim()) return rows;
-    return filterAndSortBySearch(rows, searchQuery, [
-      {
-        get: (row) =>
-          Object.values(row.data)
-            .filter((v) => v != null)
-            .map((v) => String(v)),
-        weight: "body",
-      },
-    ]);
-  }, [rows, searchQuery]);
+  const filteredRows = !searchQuery.trim()
+    ? rows
+    : filterAndSortBySearch(rows, searchQuery, [
+        {
+          get: (row) =>
+            Object.values(row.data)
+              .filter((v) => v != null)
+              .map((v) => String(v)),
+          weight: "body",
+        },
+      ]);
 
   // Filter columns by search
-  const filteredColumns = useMemo(() => {
-    if (!searchQuery.trim()) return fields;
-    return filterAndSortBySearch(fields, searchQuery, [
-      { get: (f) => f.display_name, weight: "title" },
-      { get: (f) => f.field_name, weight: "subtitle" },
-    ]);
-  }, [fields, searchQuery]);
+  const filteredColumns = !searchQuery.trim()
+    ? fields
+    : filterAndSortBySearch(fields, searchQuery, [
+        { get: (f) => f.display_name, weight: "title" },
+        { get: (f) => f.field_name, weight: "subtitle" },
+      ]);
 
   // Get display value for a row
   const getRowDisplayValue = (row: TableRow) => {
@@ -195,13 +191,6 @@ export function TablesResourcePicker({
 
     // Last resort: use row ID
     return row.id.substring(0, 8);
-  };
-
-  // Handle table preview
-  const handlePreviewTable = (e: React.MouseEvent, tableId: string) => {
-    e.stopPropagation();
-    setPreviewTableId(tableId);
-    setShowPreviewModal(true);
   };
 
   const closePreviewModal = () => {
@@ -312,246 +301,176 @@ export function TablesResourcePicker({
     }
   };
 
-  // Get header title
-  const getHeaderTitle = () => {
-    if (viewMode === "tables") return "Tables";
-    if (viewMode === "table-options")
-      return selectedTable?.table_name || "Select Type";
-    if (viewMode === "rows") return "Select Row";
-    if (viewMode === "columns") return "Select Column";
-    if (viewMode === "cell-row") return "Select Row";
-    if (viewMode === "cell-column") return "Select Column";
-    return "Tables";
+  const locationLabel = () => {
+    if (!selectedTable) return null;
+    if (viewMode === "rows" || viewMode === "cell-row") return `${selectedTable.table_name} / Rows`;
+    if (viewMode === "columns") return `${selectedTable.table_name} / Columns`;
+    if (viewMode === "cell-column" && selectedRow) {
+      return `${selectedTable.table_name} / ${getRowDisplayValue(selectedRow)} / Columns`;
+    }
+    return selectedTable.table_name;
   };
 
+  const spinner = (
+    <div className="flex items-center justify-center py-10">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+    </div>
+  );
+
+  const referenceTypes: {
+    type: SelectionType;
+    icon: typeof Table2;
+    label: string;
+    secondary: string;
+  }[] = [
+    { type: "table", icon: Table2, label: "Full table", secondary: "Reference all rows and columns" },
+    { type: "row", icon: Rows3, label: "Single row", secondary: "Reference one specific row" },
+    { type: "column", icon: Columns3, label: "Full column", secondary: "Reference all values in one column" },
+    { type: "cell", icon: Grid2x2, label: "Single cell", secondary: "Reference one specific cell value" },
+  ];
+
+  const renderBody = () => {
+    if (loading) return spinner;
+    if (error) {
+      return (
+        <div className="px-3 py-10 text-center text-sm text-destructive">
+          {error}
+          <ErrorAlchemyMenu error={error} />
+        </div>
+      );
+    }
+
+    if (viewMode === "tables") {
+      if (filteredTables.length === 0) {
+        return <PickerEmpty>{searchQuery ? "No tables found" : "No tables yet"}</PickerEmpty>;
+      }
+      return (
+        <div>
+          {filteredTables.map((table) => {
+            const org = orgNameOf(table);
+            const secondary = org || table.description
+              ? `${org ? `${org}${table.description ? " · " : ""}` : ""}${table.description ?? ""}`
+              : undefined;
+            return (
+              <PickerRow
+                key={table.id}
+                icon={Table2}
+                iconClassName="text-emerald-600 dark:text-emerald-400"
+                label={table.table_name}
+                secondary={secondary}
+                chevron
+                onClick={() => handleTableSelect(table)}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (viewMode === "table-options") {
+      if (!selectedTable) return null;
+      return (
+        <div>
+          <PickerSectionLabel>{locationLabel()}</PickerSectionLabel>
+          <PickerRow
+            icon={Eye}
+            iconClassName="text-primary"
+            label="Preview table data"
+            onClick={() => {
+              setPreviewTableId(selectedTable.id);
+              setShowPreviewModal(true);
+            }}
+          />
+          {referenceTypes.map(({ type, icon, label, secondary }) => (
+            <PickerRow
+              key={type}
+              icon={icon}
+              label={label}
+              secondary={secondary}
+              busy={loadingDetails && selectionType === type}
+              disabled={loadingDetails}
+              onClick={() => void handleSelectionTypeSelect(type)}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    if (viewMode === "rows" || viewMode === "cell-row") {
+      return (
+        <div>
+          <PickerSectionLabel>{locationLabel()}</PickerSectionLabel>
+          {loadingDetails ? (
+            spinner
+          ) : filteredRows.length === 0 ? (
+            <PickerEmpty>{searchQuery ? "No rows found" : "No rows in table"}</PickerEmpty>
+          ) : (
+            filteredRows.map((row) => (
+              <PickerRow
+                key={row.id}
+                icon={Rows3}
+                label={getRowDisplayValue(row)}
+                secondary={`${Object.keys(row.data).length} fields`}
+                chevron={viewMode === "cell-row"}
+                onClick={() => handleRowSelect(row)}
+              />
+            ))
+          )}
+        </div>
+      );
+    }
+
+    if (viewMode === "columns" || viewMode === "cell-column") {
+      return (
+        <div>
+          <PickerSectionLabel>{locationLabel()}</PickerSectionLabel>
+          {loadingDetails ? (
+            spinner
+          ) : filteredColumns.length === 0 ? (
+            <PickerEmpty>{searchQuery ? "No columns found" : "No columns in table"}</PickerEmpty>
+          ) : (
+            filteredColumns.map((field) => (
+              <PickerRow
+                key={field.id}
+                icon={Columns3}
+                label={field.display_name}
+                secondary={`${field.data_type}${field.is_required ? " · Required" : ""}`}
+                onClick={() => handleColumnSelect(field)}
+              />
+            ))
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const searchPlaceholder =
+    viewMode === "tables"
+      ? "Search tables"
+      : viewMode === "rows" || viewMode === "cell-row"
+        ? "Search rows"
+        : viewMode === "columns" || viewMode === "cell-column"
+          ? "Search columns"
+          : "Search";
+
   return (
-    <div className="flex flex-col max-h-[min(460px,70dvh)]">
-      {/* Header */}
+    <PickerView>
       <ResourcePickerSubViewHeader
-        title={getHeaderTitle()}
         onBack={handleBackNavigation}
         disabled={loadingDetails}
-        icon={
-          <Table2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
+        search={
+          <PickerSearchField
+            ref={searchInputRef}
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            loading={loadingDetails}
+            onChange={setSearchQuery}
+          />
         }
       />
-
-      {/* Search */}
-      <div className="px-2 py-1.5 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-7 text-xs pl-7 pr-2 bg-background border-border"
-            disabled={loadingDetails}
-          />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <div className="text-xs text-destructive text-center py-8">
-            {error}
-            <ErrorAlchemyMenu error={error} />
-          </div>
-        ) : viewMode === "tables" ? (
-          // Show tables list
-          <div className="p-1">
-            {filteredTables.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-8">
-                {searchQuery ? "No tables found" : "No tables yet"}
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {filteredTables.map((table) => (
-                  <button
-                    key={table.id}
-                    onClick={() => handleTableSelect(table)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors group"
-                  >
-                    <Table2 className="w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <div className="flex-1 text-left min-w-0">
-                      <div className="text-xs font-medium text-foreground truncate">
-                        {table.table_name}
-                      </div>
-                      {(orgNameOf(table) || table.description) && (
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {orgNameOf(table) ? `${orgNameOf(table)}${table.description ? " · " : ""}` : ""}{table.description}
-                        </div>
-                      )}
-                    </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 group-hover:text-foreground flex-shrink-0" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : viewMode === "table-options" ? (
-          // Show table options
-          <div className="p-2">
-            {selectedTable && (
-              <div className="space-y-1.5">
-                {/* Preview button */}
-                <button
-                  onClick={() => {
-                    setPreviewTableId(selectedTable.id);
-                    setShowPreviewModal(true);
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md border border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/15 text-blue-600 dark:text-blue-400 transition-colors"
-                >
-                  <Eye className="w-4 h-4 flex-shrink-0" />
-                  <span className="text-xs font-medium">
-                    Preview Table Data
-                  </span>
-                </button>
-
-                {/* Selection type options */}
-                <div className="space-y-0.5">
-                  <div className="text-[10px] font-medium text-muted-foreground px-1 mb-1">
-                    Select Reference Type:
-                  </div>
-                  <button
-                    onClick={() => handleSelectionTypeSelect("table")}
-                    disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
-                  >
-                    <div className="text-xs font-medium text-foreground">
-                      Full Table
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Reference all rows and columns
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleSelectionTypeSelect("row")}
-                    disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
-                  >
-                    <div className="text-xs font-medium text-foreground">
-                      Single Row
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Reference one specific row
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleSelectionTypeSelect("column")}
-                    disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
-                  >
-                    <div className="text-xs font-medium text-foreground">
-                      Full Column
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Reference all values in one column
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => handleSelectionTypeSelect("cell")}
-                    disabled={loadingDetails}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors disabled:opacity-50"
-                  >
-                    <div className="text-xs font-medium text-foreground">
-                      Single Cell
-                    </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Reference one specific cell value
-                    </div>
-                  </button>
-                </div>
-
-                {loadingDetails && (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ) : viewMode === "rows" || viewMode === "cell-row" ? (
-          // Show rows list
-          <div className="p-1">
-            {loadingDetails ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredRows.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-8">
-                {searchQuery ? "No rows found" : "No rows in table"}
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {filteredRows.map((row) => (
-                  <button
-                    key={row.id}
-                    onClick={() => handleRowSelect(row)}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-foreground truncate">
-                          {getRowDisplayValue(row)}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground truncate">
-                          {Object.keys(row.data).length} fields
-                        </div>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : viewMode === "columns" || viewMode === "cell-column" ? (
-          // Show columns list
-          <div className="p-1">
-            {loadingDetails ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : filteredColumns.length === 0 ? (
-              <div className="text-xs text-muted-foreground text-center py-8">
-                {searchQuery ? "No columns found" : "No columns in table"}
-              </div>
-            ) : (
-              <div className="space-y-0.5">
-                {filteredColumns.map((field) => (
-                  <button
-                    key={field.id}
-                    onClick={() => handleColumnSelect(field)}
-                    className="w-full text-left px-2 py-1.5 rounded hover:bg-muted/60 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <CheckSquare className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-foreground truncate">
-                          {field.display_name}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {field.data_type}
-                          {field.is_required && " · Required"}
-                        </div>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/70 flex-shrink-0" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : null}
-      </div>
+      <PickerViewBody>{renderBody()}</PickerViewBody>
 
       {/* Preview Modal */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
@@ -575,6 +494,6 @@ export function TablesResourcePicker({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PickerView>
   );
 }
