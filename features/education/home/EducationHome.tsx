@@ -62,7 +62,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  * learner's own commitments (plan, due work) always outrank browsing surfaces,
  * and so a single kit can carry the page when there is nothing else.
  */
-const BLOCKS: HomeBlock[] = [
+export const BLOCKS: HomeBlock[] = [
   {
     id: "start-here",
     // Only when the account is genuinely empty. The moment a learner owns one
@@ -140,7 +140,7 @@ const BLOCKS: HomeBlock[] = [
  * The complete tool registry. `EDU_TOOLS` remains the source of truth while
  * `EDU_TOOL_NAV` supplies the shell-safe icon projection guarded for parity.
  */
-function toolNavigation(snapshot: EducationSnapshot): MetricNavigationItem[] {
+export function toolNavigation(snapshot: EducationSnapshot): MetricNavigationItem[] {
   const toolBySlug = new Map(EDU_TOOLS.map((tool) => [tool.slug, tool]));
   const libraryMetric = new Map<string, { value: number; description: string }>(
     [
