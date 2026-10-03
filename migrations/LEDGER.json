@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T04:31:38.894Z",
+  "generated_at": "2026-10-03T07:54:00.912Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -517,6 +517,18 @@
       "filename": "chairdoors2_j_a_table_gives_its_new_rows_their_row_controls.sql",
       "checksum": "db4929148f79bcf58d723fdb7b91423b71868009fb272ca35640b7691d7f125a",
       "applied_at": "2026-10-02 20:14:34.01767+00"
+    },
+    "migrations/campaign/chairdoors3b_a_a_signed_in_person_never_writes_the_other_workflow_ledgers.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3b_a_a_signed_in_person_never_writes_the_other_workflow_ledgers.sql",
+      "checksum": "9e19857e3dd5ebddf0abdd7d72751b3414e27e99c4ed46b1ade059b7958f7c40",
+      "applied_at": "2026-10-03 07:53:26.065417+00"
+    },
+    "migrations/campaign/chairdoors3b_b_workflow_messages_have_a_text_rate_knob_and_an_email_price.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3b_b_workflow_messages_have_a_text_rate_knob_and_an_email_price.sql",
+      "checksum": "8ba68a12471f5d8b7d9224033c79a55571102e71b40d6d8cd121282870ebfba4",
+      "applied_at": "2026-10-03 07:53:59.961956+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
@@ -3487,6 +3499,12 @@
       "filename": "lane7sec_r1_every_writer_follows_the_field_rule.sql",
       "checksum": "8fd7b69c42265d97f37e3a6f6d3d5d4ca103d849c24b9fb600ad65e9a43fd4a7",
       "applied_at": "2026-10-02 19:13:06.960394+00"
+    },
+    "migrations/campaign/lane7w2_c_a_grouped_list_has_its_own_ceiling.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane7w2_c_a_grouped_list_has_its_own_ceiling.sql",
+      "checksum": "181dbf02ee13cb23dfc41b677550ab0d53774e45dcd57eea219891b32e44172c",
+      "applied_at": "2026-10-03 05:08:43.852675+00"
     },
     "migrations/campaign/leakt10_a_home_of_a_table_is_not_the_whole_table.sql": {
       "source": "matrx-frontend",
