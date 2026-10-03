@@ -60,8 +60,9 @@ stale text. By construction a batched tile renders once per interval instead of 
   warm). A tile acts on it only with `sleeps` (React `<Activity mode="hidden">`) / `discardable`, set per
   item type (`BoardItemType.sleeps`) after a browser check — waking re-runs every effect, and content
   whose mount effect resets itself loses work. Sleeping (browser-checked 2026-10-02): label, image,
-  chat, note, task, research, project, war room, workflow run, table, record. Awake, with the reason: document (Univer is rebuilt from the
-  server snapshot), file (`@monaco-editor/react` never re-creates its editor; previews re-download). What must outlive a sleeping body (a chat's live run, holding the
+  chat, note, task, research, project, war room, workflow run, table, record, document (the tile does not rebuild Univer: the
+  last view parks its Univer instance on the document's model and the next view re-parents that same instance into its
+  container, so the text and undo history survive — 08a47eaf1d). Awake, with the reason: file (`@monaco-editor/react` never re-creates its editor; previews re-download). What must outlive a sleeping body (a chat's live run, holding the
   tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
 - **A type sleeps when its remount-safety case passes** (`__tests__/remount-safety.*.test.tsx`, owner's
   law 2026-10-02: hidden, shown and remounted with no lost work and no repeated side effects). Each
@@ -391,6 +392,7 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-03 — Document tiles were drawn solid black (pixel 0,0,0,255) from first boot, every browser and theme. Cause: Univer 1.0 paints its own fills as theme tokens ("gray.0") and the editor's pass-through colour service handed them to the canvas unresolved (an unparseable fillStyle leaves the canvas default black); the theme hook also called the 0.x `getRenderById`. Not the kept-instance re-parenting. Fix and guard: features/data-tables/FEATURE.md.
 - 2026-10-03 — Chat, task, research and project pass the core remount law with no waiver: what each tile shows is a store read kept in Redux by record and read once (`lib/redux/store-reads/useStoreRead.ts`), and the project's half-typed quick-add task is a draft in the store by project. research:quiet is green; chat:quiet (the @ai-matrx/associations conversation-files hook), task:quiet and project:quiet (EntityCustomFields) stay red with their owners named in the ledger. Browser (clone, admin's Workspace): sleep→wake and remove+Undo on all four read none of their records; the quick-add draft survives both.
 - 2026-10-03 — The board's document item sleeps. A document is one working copy per tab (lib/working-copy, kind udt_document), kept warm after its last view; a wake or a removed-and-undone tile reads and writes nothing (remount harness udt_document + :quiet green; browser: slept, woke with its text, zero requests).
 - 2026-10-03 — Table and record tiles read nothing on wake or Undo. The record store's data layer

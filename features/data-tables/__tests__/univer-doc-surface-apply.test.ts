@@ -24,8 +24,10 @@ interface Harness {
   dirtied: string[];
 }
 
-function harness(options: { withBackground?: boolean } = {}): Harness {
-  const { withBackground = true } = options;
+function harness(
+  options: { withBackground?: boolean; documentFlavor?: number } = {},
+): Harness {
+  const { withBackground = true, documentFlavor = 1 } = options;
   const canvasEle = { style: { backgroundColor: "#fafafa" } };
   const fills: (string | undefined)[][] = [];
   const dirtied: string[] = [];
@@ -33,6 +35,13 @@ function harness(options: { withBackground?: boolean } = {}): Harness {
   const background = {
     setFillColors: (...args: (string | undefined)[]) => fills.push(args),
     makeDirty: () => dirtied.push("background"),
+    getSkeleton: () => ({
+      getViewModel: () => ({
+        getDataModel: () => ({
+          getSnapshot: () => ({ documentStyle: { documentFlavor } }),
+        }),
+      }),
+    }),
   };
 
   return {
@@ -80,6 +89,22 @@ describe("applyUniverDocSurfaceColors", () => {
       expect(h.canvasEle.style.backgroundColor).toBe(colors.frame);
       expect(h.fills[0]![0]).toBe(colors.frame);
     }
+  });
+
+  it("a PAGELESS (modern) document's workspace is the paper, so the ink stays legible in dark mode", () => {
+    // 2026-10-03: a modern document has no sheet — Univer paints the text
+    // straight onto the workspace fill. Giving that fill the dark frame put
+    // black ink on rgb(39, 39, 42).
+    const h = harness({ documentFlavor: 2 });
+    applyUniverDocSurfaceColors(h.render, dark);
+    expect(h.fills[0]![0]).toBe(dark.page);
+    expect(h.canvasEle.style.backgroundColor).toBe(dark.page);
+    // …and it holds when Univer resets the fills on the next keystroke.
+    const background = h.render.components!.get(DOC_BACKGROUND_COMPONENT_KEY) as {
+      setFillColors: (...a: (string | undefined)[]) => void;
+    };
+    background.setFillColors(undefined, undefined, undefined, undefined);
+    expect(h.fills.at(-1)![0]).toBe(dark.page);
   });
 
   it("a theme flip repaints the surface with the new colours", () => {
