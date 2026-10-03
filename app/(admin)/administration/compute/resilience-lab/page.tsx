@@ -393,7 +393,7 @@ async function runServerScenario(args: {
         // BackendApiError. The connect timeout is this lab's own: abort when
         // response headers have not arrived within 15s.
         const connectTimer = setTimeout(
-          () => abortController.abort(new Error("Connect timeout (15s)")),
+          () => abortController.abort(new DOMException("Connect timeout (15s)", "TimeoutError")),
           15_000,
         );
         let response: Response;

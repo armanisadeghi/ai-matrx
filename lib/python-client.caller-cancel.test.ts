@@ -22,7 +22,7 @@ jest.mock("@/lib/diagnostics/capturePythonClientError", () => ({
 }));
 
 import { capturePythonClientError } from "@/lib/diagnostics/capturePythonClientError";
-import { getJson, postJson, requestRaw } from "@/lib/python-client";
+import { getJson, postJson, requestRaw, uploadWithProgress } from "@/lib/python-client";
 
 /**
  * A request the caller cancelled is not an incident (live 2026-10-01: the
@@ -80,6 +80,64 @@ describe("python-client and a cancelled request", () => {
     });
     await new Promise((r) => setTimeout(r, 0));
     controller.abort(new DOMException("timed out", "TimeoutError"));
+    await expect(pending).rejects.toBeDefined();
+    expect(captureMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** The upload transport is an XHR: a minimal stand-in that only knows abort. */
+class FakeXhr {
+  upload = { addEventListener: () => {} };
+  timeout = 0;
+  private listeners: Record<string, Array<() => void>> = {};
+  open() {}
+  setRequestHeader() {}
+  send() {}
+  addEventListener(type: string, fn: () => void) {
+    (this.listeners[type] ??= []).push(fn);
+  }
+  abort() {
+    for (const fn of this.listeners.abort ?? []) fn();
+  }
+}
+
+describe("uploadWithProgress and a cancelled upload", () => {
+  const original = (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest;
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest = FakeXhr;
+  });
+  afterAll(() => {
+    (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest = original;
+  });
+
+  function upload(signal: AbortSignal) {
+    return uploadWithProgress("/files/upload", new FormData(), () => {}, {
+      signal, baseUrlOverride: "https://server.example.test", organizationId: ORG,
+    });
+  }
+
+  it("the person cancels: it rejects, nothing is filed", async () => {
+    const controller = new AbortController();
+    const pending = upload(controller.signal);
+    await new Promise((r) => setTimeout(r, 0));
+    controller.abort();
+    await expect(pending).rejects.toBeDefined();
+    expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it("an abort the caller never asked for is filed", async () => {
+    const controller = new AbortController();
+    let xhr: FakeXhr | undefined;
+    (globalThis as { XMLHttpRequest?: unknown }).XMLHttpRequest = class extends FakeXhr {
+      constructor() {
+        super();
+        xhr = this;
+      }
+    };
+    const pending = upload(controller.signal);
+    await new Promise((r) => setTimeout(r, 0));
+    xhr!.abort();
     await expect(pending).rejects.toBeDefined();
     expect(captureMock).toHaveBeenCalledTimes(1);
   });

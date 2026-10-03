@@ -967,8 +967,10 @@ export async function uploadWithProgress<T>(
   );
 
   return new Promise((resolve, reject) => {
+    // A cancel the caller asked for (its signal aborted -> xhr.abort()) is not
+    // filed — the same rule as `failClient`; a stalled or failed upload is.
     const rejectCaptured = (error: BackendApiError) => {
-      captureClientError(error, "POST", path, url);
+      if (!cancelledByCaller(opts.signal)) captureClientError(error, "POST", path, url);
       reject(error);
     };
 

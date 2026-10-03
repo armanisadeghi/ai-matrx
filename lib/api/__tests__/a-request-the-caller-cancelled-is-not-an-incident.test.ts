@@ -8,8 +8,7 @@
  *
  * WHAT THIS PINS, through callApi itself:
  *   1. the caller aborts its signal → the request answers with an error, nothing is filed;
- *   2. the caller's signal aborts with a TimeoutError → that is a failure, it is filed;
- *   3. an abort the caller never asked for (its signal untouched) → filed.
+ *   2. the caller's signal aborts with a TimeoutError → that is a failure, it is filed.
  */
 
 const captured: unknown[] = [];
