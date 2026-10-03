@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T07:54:00.912Z",
+  "generated_at": "2026-10-03T08:01:36.732Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -541,6 +541,12 @@
       "filename": "chairsec_a_a_door_that_changes_a_row_asks_that_row.sql",
       "checksum": "3175f0a6e4ffd55a0d2ae218519145ebe0c486bbb2284a98328c0f6a6875d546",
       "applied_at": "2026-10-02 18:23:26.976937+00"
+    },
+    "migrations/campaign/chairselfapproval_a_decision_is_made_at_its_own_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairselfapproval_a_decision_is_made_at_its_own_door.sql",
+      "checksum": "b4f5f178bf31d5e8a3d20a6a92629bca6d0b2508964832769f13b537ad8946ba",
+      "applied_at": "2026-10-03 08:00:03.773972+00"
     },
     "migrations/campaign/chairstep_doorsonly2_revoke_client_writes.sql": {
       "source": "matrx-frontend",
@@ -4723,6 +4729,12 @@
       "filename": "scopesdlast_the_agent_context_read_never_cuts_a_long_value.sql",
       "checksum": "f4d83fdd2e7a90b85896def5fd5b45d0322bc8d1b3a2bb461c78be6ed0e87aca",
       "applied_at": "2026-10-03 01:27:21.911957+00"
+    },
+    "migrations/campaign/scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql",
+      "checksum": "fc74ae479bc4a509631522a7066e8fd75a29183d646f6d33990b3c14a8238c6c",
+      "applied_at": "2026-10-03 08:01:35.18795+00"
     },
     "migrations/campaign/scopeshandoffbudget_the_agent_handoff_reads_a_scope_type_in_one_pass.sql": {
       "source": "matrx-frontend",
