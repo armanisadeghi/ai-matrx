@@ -202,21 +202,21 @@ function TableArtifactMaterialized({
       <Suspense fallback={<MatrxMiniLoader />}>
         <LocatedTableViewer
           tableId={linkedTableId}
-          // The table draws records-ui's page: the three actions sit in its one menu.
-          recordStoreMenuExtras={[
+          // The table draws records-ui's page: the artifact's own entries join its one action list
+          // ("Open in new tab" is the list's own, so it is not repeated here).
+          actionExtensions={[
             {
-              key: "artifact-window",
+              id: "artifact-window",
               label: "Open in a floating window",
-              onSelect: () => openTableWindow({ tableId: linkedTableId, title: tableTitle }),
+              icon: "external-link",
+              group: "open",
+              run: () => {
+                openTableWindow({ tableId: linkedTableId, title: tableTitle });
+              },
             },
-            {
-              key: "artifact-new-tab",
-              label: "Open the full table in a new tab",
-              onSelect: () => window.open(`/data/${linkedTableId}`, "_blank", "noopener,noreferrer"),
-            },
-            ...(reverting
-              ? []
-              : [{ key: "artifact-revert", label: "Revert to text", onSelect: () => void handleRevert() }]),
+            reverting
+              ? { id: "artifact-revert", label: "Revert to text", icon: "file-text", group: "manage", disabledReason: "Reverting…", run: () => {} }
+              : { id: "artifact-revert", label: "Revert to text", icon: "file-text", group: "manage", run: () => void handleRevert() },
           ]}
         />
       </Suspense>

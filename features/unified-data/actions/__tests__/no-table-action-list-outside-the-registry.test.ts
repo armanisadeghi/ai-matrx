@@ -37,8 +37,6 @@ const REGISTRY = new Set([
 
 /** Today's lists outside the registry. Delete a line when its list moves onto the registry. */
 const BASELINE = [
-  // `dataHomeRowActions` — the Data home row ⋯.
-  "features/unified-data/home/DataHomeList.tsx",
   // `buildDatasetTableMenuSection` — the Sheet's table section.
   "features/data-tables/dataset-table-actions.tsx",
 ];

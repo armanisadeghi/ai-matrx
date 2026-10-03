@@ -20,6 +20,7 @@ import type { PageView } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { TableFavoriteStar } from "./TableFavoriteStar";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { TableSwitcher } from "@/features/unified-data/components/TableSwitcher";
 import { useDeclarePageObjectOrganization } from "@/features/shell/pageObjectOrganization";
@@ -78,7 +79,10 @@ function TableRouteHeader({
         <>
           <ChevronLeftTapButton onClick={back} ariaLabel="Back" />
           {name ? (
-            <TableSwitcher tableId={tableId} name={name} allTablesHref={allTablesHref} footer={switcherFooter} />
+            <>
+              <TableSwitcher tableId={tableId} name={name} allTablesHref={allTablesHref} footer={switcherFooter} />
+              <TableFavoriteStar tableId={tableId} organizationId={organizationId} />
+            </>
           ) : (
             <span className="truncate px-1.5 text-sm font-medium text-foreground">Data</span>
           )}

@@ -19,6 +19,8 @@ export interface TableMenuExtras {
   copyAgain?: () => void;
   /** The row-change agent offer: opens the schedule, or says why it is not available. */
   rowChangeAgent?: () => void;
+  /** Workflows on this table (lane 11): the simple builder for this table. */
+  workflows?: () => void;
 }
 
 export const NOT_A_COPY_REASON = "Only on a copied table";
@@ -27,8 +29,11 @@ const NOOP = () => {};
 
 /** The three entries, in their one order — pass as `host.extend`'s result. */
 export function tableMenuExtensions(extras: TableMenuExtras): ObjectAction[] {
-  const { testCopy, copyAgain, rowChangeAgent } = extras;
+  const { testCopy, copyAgain, rowChangeAgent, workflows } = extras;
   return [
+    workflows
+      ? { id: "workflows", label: "Workflows", icon: "blocks", group: "built-on", run: workflows }
+      : { id: "workflows", label: "Workflows", icon: "blocks", group: "built-on", disabledReason: "Not available here", run: NOOP },
     testCopy
       ? { id: "test-copy", label: testCopy.label, icon: "copy", group: "manage", run: testCopy.run }
       : { id: "test-copy", label: "Copy status", icon: "copy", group: "manage", disabledReason: NOT_A_COPY_REASON, run: NOOP },

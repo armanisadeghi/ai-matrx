@@ -16,11 +16,12 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { RecordStoreTableHost } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 
 type ViewerProps = {
   tableId: string;
-  /** The host's own actions, drawn in the table's one menu (records-ui `TablePage.menuExtras`). */
-  recordStoreMenuExtras?: Array<{ key: string; label: string; onSelect: () => void }>;
+  /** The host's own entries in the table's one action list (records-ui `host.extend`). */
+  actionExtensions?: readonly ObjectAction[];
   /** A PREVIEW (the tables picker): read-only, through the records-ui `rights` port. */
   readOnly?: boolean;
 };
@@ -29,7 +30,7 @@ type Located =
   | { tableId: string; state: "record"; organizationId: string }
   | { tableId: string; state: "refused"; why: string };
 
-export function LocatedTableViewer({ tableId, recordStoreMenuExtras, readOnly = false }: ViewerProps) {
+export function LocatedTableViewer({ tableId, actionExtensions, readOnly = false }: ViewerProps) {
   const [located, setLocated] = useState<Located | null>(null);
 
   useEffect(() => {
@@ -75,7 +76,7 @@ export function LocatedTableViewer({ tableId, recordStoreMenuExtras, readOnly = 
     <RecordStoreTableHost
       tableId={tableId}
       organizationId={located.organizationId}
-      menuExtras={recordStoreMenuExtras}
+      {...(actionExtensions ? { actionExtensions } : {})}
       readOnly={readOnly}
     />
   );

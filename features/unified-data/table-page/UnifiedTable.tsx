@@ -5,7 +5,7 @@
  *
  * `/data-v2/[tableId]` and a Board tile (`features/spatial/items/data-items.tsx`) render the SAME
  * table page: records-ui's `TablePage` inside `RecordsMount`, reading as the TABLE's organization,
- * with the same ports, realtime, Sheet layout, merged-grid knob, table-menu extras and
+ * with the same ports, realtime, Sheet layout, merged-grid knob, table action list and
  * `matrx-user/data-tables` agent surface (`RecordStoreTableSurface`). Only the route adds route
  * chrome: its header (back, title switcher), the shell's page-organization declaration, the page
  * capture, and the address the view follows.
@@ -21,7 +21,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import type { PageView, RecordsMountProps } from "@ai-matrx/records-ui";
+import type { PageView, RecordsMountProps, TablePageActionHost } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 import { Button } from "@ai-matrx/design-system";
 
@@ -47,15 +47,14 @@ import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/reco
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
 import { toast } from "@/lib/toast";
 import { copyAgain } from "@/features/unified-data/cutover/copyAgain";
-import {
-  ROW_CHANGE_AGENT_LABEL,
-  useRowChangeAgentOffer,
-} from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
+import { useRowChangeAgentOffer } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
+import { tableMenuExtensions } from "@/features/unified-data/actions/tableMenuExtensions";
+import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
+import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
 import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import type { ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { extrasAsActionHost } from "@/features/unified-data/actions/tableMenuExtensions";
 
 /**
  * WHAT THE PAGE IS ASKED TO OPEN ON — the route reads it from its address (`?view=`, `?record=`,
@@ -195,59 +194,56 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
       setCopyVersion((v) => v + 1);
     });
   };
-  const testCopyExtras =
-    copyEvaluation.state === "test-copy"
-      ? [
-          {
-            key: "test-copy",
-            label: copyEvaluation.says,
-            onSelect: () => {
-              void tableCopyEvaluation(createClient(), tableId).then((now) => {
-                const said = now.state === "test-copy" ? now : copyEvaluation;
-                toast.info(said.says, {
-                  description: said.detail,
-                  ...(object.state === "found"
-                    ? {
-                        action: {
-                          label: "Data switch",
-                          onClick: () => router.push(`/organizations/${object.organizationId}/settings#data`),
-                        },
-                      }
-                    : {}),
-                });
-              });
-            },
-          },
-          { key: "copy-again", label: "Copy this table again", onSelect: copyThisTableAgain },
-        ]
-      : [];
-  const rowChangeExtras =
-    rowChangeOffer.state === "offered"
-      ? [
-          {
-            key: "row-change-agent",
-            label: ROW_CHANGE_AGENT_LABEL,
-            onSelect: () => router.push((rowChangeOffer as { href: string }).href),
-          },
-        ]
-      : rowChangeOffer.state === "refused"
-        ? [
-            {
-              key: "row-change-agent",
-              label: ROW_CHANGE_AGENT_LABEL,
-              onSelect: () =>
-                toast.error("Running an agent when a row changes is not available", {
-                  description: (rowChangeOffer as { why: string }).why,
-                }),
-            },
-          ]
-        : [];
-  // WORKFLOWS ON THIS TABLE (lane 11 wave 2): the simple builder, with every existing feature
-  // that acts on this table listed beside it.
-  const workflowExtras = [
-    { key: "workflows", label: "Workflows", onSelect: () => router.push(`/workflows/builder/${tableId}`) },
-  ];
-  const menuExtras = [...workflowExtras, ...testCopyExtras, ...rowChangeExtras];
+  /** The test-copy line: says what this copy is, and re-checks it, in the table's one menu. */
+  const testCopyStatus = () => {
+    void tableCopyEvaluation(createClient(), tableId).then((now) => {
+      const said = now.state === "test-copy" ? now : copyEvaluation;
+      if (said.state !== "test-copy") return;
+      toast.info(said.says, {
+        description: said.detail,
+        ...(object.state === "found"
+          ? {
+              action: {
+                label: "Data switch",
+                onClick: () => router.push(`/organizations/${object.organizationId}/settings#data`),
+              },
+            }
+          : {}),
+      });
+    });
+  };
+  /** The table's favorite — the Data home's own star (`useTableFavorite`). */
+  const favorite = useTableFavorite(tableId, object.state === "found" ? object.organizationId : null);
+  /**
+   * THE APP'S PART OF THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS): favorite, the page origin
+   * for Copy link, a re-read after Move, and this app's own entries (`tableMenuExtensions`: the
+   * test-copy line, "Copy this table again", the row-change agent) — always listed, disabled with a
+   * reason where they do not apply. Duplicate is left unbound until its store door is live, so it
+   * says "Not available here".
+   */
+  const actionHost: TablePageActionHost = {
+    ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
+    ...(favorite.known ? { isFavorite: favorite.isFavorite, toggleFavorite: favorite.toggle } : {}),
+    onMoved: () => object.retry(),
+    extend: () =>
+      tableMenuExtensions({
+        // WORKFLOWS ON THIS TABLE (lane 11 wave 2): the simple builder.
+        workflows: () => router.push(`/workflows/builder/${tableId}`),
+        ...(copyEvaluation.state === "test-copy"
+          ? { testCopy: { label: copyEvaluation.says, run: testCopyStatus }, copyAgain: copyThisTableAgain }
+          : {}),
+        ...(rowChangeOffer.state === "offered"
+          ? { rowChangeAgent: () => router.push((rowChangeOffer as { href: string }).href) }
+          : rowChangeOffer.state === "refused"
+            ? {
+                rowChangeAgent: () =>
+                  toast.error("Running an agent when a row changes is not available", {
+                    description: (rowChangeOffer as { why: string }).why,
+                  }),
+              }
+            : {}),
+      }),
+  };
 
   /** Why the table did not open, in one sentence (for a capture), or null when it did. */
   const says: string | null =
@@ -327,7 +323,7 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
     gridContext,
     whereItLives,
     allTablesHref,
-    menuExtras,
+    actionHost,
     says,
     mountsTheTable,
     recordsConfig,
@@ -390,7 +386,7 @@ export function UnifiedTableBody({
           onViewChanged={onViewChanged}
           activeRail={address.rail}
           activeItemId={address.item}
-          actionHost={extrasAsActionHost(mount.menuExtras)}
+          actionHost={mount.actionHost}
           {...pageHeader}
         />
       </RecordStoreTableSurface>
@@ -434,8 +430,11 @@ export function UnifiedTableBody({
     return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
   }
   return (
-    <RecordsMount letTheStoreDecideRights config={mount.recordsConfig} host={mount.recordsHost ?? undefined}>
-      {mountedTable}
-    </RecordsMount>
+    // The table page's right-click is the proposed menu (`DataMenuProvider`); its ⋯ is the action list.
+    <DataMenuProvider>
+      <RecordsMount letTheStoreDecideRights config={mount.recordsConfig} host={mount.recordsHost ?? undefined}>
+        {mountedTable}
+      </RecordsMount>
+    </DataMenuProvider>
   );
 }

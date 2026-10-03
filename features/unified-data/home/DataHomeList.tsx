@@ -13,22 +13,19 @@
 // in the footer). Nothing in this file reads the active organization for a read.
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
-import type { EntityListConfig, EntityListController, EntityRowActionsResult } from "@/lib/entity-list/config";
+import type { EntityListConfig } from "@/lib/entity-list/config";
 import { makeScope } from "@/lib/list-scope/types";
-import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { isTestOrganization } from "@/features/make/recent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import type { ItemMenuConfig } from "@/components/official/item/types";
 
 import {
   DATA_HOME_DEFAULT_KIND_KNOB,
@@ -47,7 +44,9 @@ import { createRecordCountStore } from "./dataHomeRecordCounts";
 import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
-import { nextStarred, useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
+import { useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
+import { useDataHomeRowMenus } from "./useDataHomeRowMenus";
+import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
 import { DataHomeRecent, recentRows } from "./DataHomeRecent";
@@ -63,7 +62,6 @@ export interface DataHomeListProps {
 }
 
 export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: DataHomeListProps) {
-  const router = useRouter();
   const client = useRecordsClient();
   const userId = useAppSelector(selectUserId);
   const marks = useDataHomeMarks();
@@ -77,10 +75,13 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   // outputs, a choice column's Lists — stay out of the home until the person turns this on in
   // Filters; on, the corpus is read again with them. Her own synced preference, so it holds.
   const [showAppTables, setShowAppTables] = useDataHomeShowAppTables();
+  /** A row's menu renamed, moved or archived a table: the corpus is read again. */
+  const [corpusVersion, setCorpusVersion] = useState(0);
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(
     () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),
-    [client, dataSource, showAppTables],
+    // `corpusVersion`: a row's menu renamed, moved or archived a table, so the corpus is read again.
+    [client, dataSource, showAppTables, corpusVersion],
   );
   // THE RECORDS COLUMN, lazily: cells on screen ask this; the list never waits on it.
   const recordCounts = useMemo(
@@ -111,6 +112,14 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
     [organizations],
   );
   const recent = recentRows(marks.recent, rowsById, testOrganizationIds);
+  // THE ROW'S MENU IS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS): row ⋯, card ⋯ and
+  // right-click all draw `menuFor`, which draws `tableActions()` for a table row.
+  const rowMenus = useDataHomeRowMenus({
+    rows: rowsById,
+    starred: starredSet,
+    onOpened: (row) => marks.opened(row.id),
+    onChanged: () => setCorpusVersion((v) => v + 1),
+  });
 
   const service = useMemo(
     () =>
@@ -143,7 +152,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // organizations the viewer belongs to or holds a grant in), so System is absent, not empty.
       lanes: { system: false },
       service,
-      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}`,
+      serviceKey: `${starredKey}|${serverVersion}|${showAppTables ? "app" : ""}|${corpusVersion}`,
       columns,
       prefsVersion: 1,
       prefsDefaults: {
@@ -158,7 +167,11 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // `/` search, ↑/↓ move, Enter opens, `s` stars, Esc clears — the shell's one keyboard handler.
       rowKeys: true,
       door: { column: "name", hrefFor: (row) => row.href },
-      useRowActions: (list) => dataHomeRowActions(list, starredSet, marks, router),
+      useRowActions: rowMenus.useRowActions,
+      // WHAT A ROW IS, for right-click's Attach To (a record-store table is a `record`). No
+      // `resourceType`: the action list carries Share, so v3's generic Share is not drawn beside it.
+      getRowEntity: (row) =>
+        row.kind === "table" && row.tableId ? { type: "record", id: row.tableId, title: row.name } : undefined,
       favorite: {
         isFavorite: (row) => starredSet.has(row.id),
         canToggle: () => true,
@@ -252,90 +265,39 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, showAppTables, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, router, starredSet, marks]);
+  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus]);
 
   return (
-    <EntityListPage
-      config={config}
-      defaultScope={makeScope(defaultScope)}
-      clearsShellHeader={false}
-      notice={(list) => (
-        <>
-          {!list.query.search ? <DataHomeRecent rows={recent} onOpened={(row) => marks.opened(row.id)} /> : null}
-          {corpus.meta.refusals.length > 0 || corpus.meta.capped || corpus.meta.searchTrouble ? (
-          <div role="status" className="flex flex-col gap-1 text-xs text-muted-foreground" data-data-home-notice="">
-            {corpus.meta.capped ? <span>Showing the newest {DATA_HOME_ROW_CAP.toLocaleString()}.</span> : null}
-            {corpus.meta.searchTrouble ? (
-              <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
-                Search inside fields did not answer. {corpus.meta.searchTrouble}
-                <ErrorAlchemyMenu error={corpus.meta.searchTrouble} />
-              </span>
+    // The right-click on every row and card is the proposed menu (`DataMenuProvider`).
+    <DataMenuProvider>
+      <EntityListPage
+        config={config}
+        defaultScope={makeScope(defaultScope)}
+        clearsShellHeader={false}
+        notice={(list) => (
+          <>
+            {!list.query.search ? <DataHomeRecent rows={recent} onOpened={(row) => marks.opened(row.id)} /> : null}
+            {corpus.meta.refusals.length > 0 || corpus.meta.capped || corpus.meta.searchTrouble ? (
+            <div role="status" className="flex flex-col gap-1 text-xs text-muted-foreground" data-data-home-notice="">
+              {corpus.meta.capped ? <span>Showing the newest {DATA_HOME_ROW_CAP.toLocaleString()}.</span> : null}
+              {corpus.meta.searchTrouble ? (
+                <span className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  Search inside fields did not answer. {corpus.meta.searchTrouble}
+                  <ErrorAlchemyMenu error={corpus.meta.searchTrouble} />
+                </span>
+              ) : null}
+              {corpus.meta.refusals.map((r) => (
+                <span key={r.listing} className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  {r.listing} could not be read. {r.message}
+                  <ErrorAlchemyMenu error={r.message} />
+                </span>
+              ))}
+            </div>
             ) : null}
-            {corpus.meta.refusals.map((r) => (
-              <span key={r.listing} className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
-                {r.listing} could not be read. {r.message}
-                <ErrorAlchemyMenu error={r.message} />
-              </span>
-            ))}
-          </div>
-          ) : null}
-        </>
-      )}
-      footer={footer}
-    />
+          </>
+        )}
+        footer={footer}
+      />
+    </DataMenuProvider>
   );
-}
-
-function dataHomeRowActions(
-  _list: EntityListController<DataHomeRow>,
-  starred: ReadonlySet<string>,
-  marks: ReturnType<typeof useDataHomeMarks>,
-  router: ReturnType<typeof useRouter>,
-): EntityRowActionsResult<DataHomeRow> {
-  const toggle = (row: DataHomeRow) => {
-    const { next, refused } = nextStarred([...starred], row.id);
-    if (refused) {
-      toast.error("You can keep up to 500 favorites. Remove one first.");
-      return;
-    }
-    // The new set makes a new service (serviceKey), and the shell re-asks: the row moves at once.
-    marks.setStarred(next);
-  };
-  return {
-    actions: {
-      onOpenRow: (row) => {
-        marks.opened(row.id);
-        router.push(row.href);
-      },
-      onToggleFavorite: toggle,
-      menuFor: (row) => (): ItemMenuConfig => {
-        const isStarred = starred.has(row.id);
-        return {
-          sections: [
-            {
-              id: "open",
-              items: [
-                { id: "open", kind: "link", label: "Open", href: row.href },
-                { id: "open-tab", kind: "link", label: "Open in new tab", icon: ExternalLink, href: row.href, target: "_blank" },
-                ...(row.publicHref
-                  ? [{ id: "public", kind: "link" as const, label: "Open public link", icon: Link2, href: row.publicHref, target: "_blank" as const }]
-                  : []),
-              ],
-            },
-            {
-              id: "mark",
-              items: [
-                {
-                  id: "star",
-                  label: isStarred ? "Remove from favorites" : "Add to favorites",
-                  icon: isStarred ? StarOff : Star,
-                  onSelect: () => toggle(row),
-                },
-              ],
-            },
-          ],
-        };
-      },
-    },
-  };
 }

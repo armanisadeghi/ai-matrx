@@ -30,6 +30,7 @@ import {
   type HostLayout,
   type OpenRecordsAsk,
   type RecordsUiHost,
+  type TablePageActionHost,
 } from "@ai-matrx/records-ui";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -37,7 +38,6 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
-import { extrasAsActionHost } from "@/features/unified-data/actions/tableMenuExtensions";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -58,6 +58,8 @@ import { createClient } from "@/utils/supabase/client";
 import type { DataBuildOrAskOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 import { useMergedGridKnob } from "./mergedGridKnob";
+import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
+import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
 
 type DataSource = ReturnType<typeof recordsDataSource>;
 
@@ -298,15 +300,18 @@ export function useRecordsDataSource(): DataSource {
 export function RecordStoreTableHost({
   tableId,
   organizationId,
-  menuExtras,
+  actionExtensions,
   className,
   readOnly = false,
 }: {
   tableId: string;
   /** The organization the table lives in (`locateTable`'s answer), never the active one. */
   organizationId: string;
-  /** Host actions for the table's one menu ("Open in a window", "Revert to text", …). */
-  menuExtras?: Array<{ key: string; label: string; onSelect: () => void }>;
+  /**
+   * The host's own entries in the table's one action list ("Open in a floating window", "Revert to
+   * text", …), placed by the registry (`host.extend`, lane TABLE-ACTIONS). Same ids every render.
+   */
+  actionExtensions?: readonly ObjectAction[];
   className?: string;
   /** A preview: read-only whatever the person holds (the picker's preview). */
   readOnly?: boolean;
@@ -318,6 +323,13 @@ export function RecordStoreTableHost({
   const gridContext = useGridContextChannel();
   const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
   const host = recordsUiHostFor({ ports, merged, gridContext, ...(readOnly ? { rights: PREVIEW_RIGHTS } : {}) });
+  const favorite = useTableFavorite(tableId, organizationId);
+  const actionHost: TablePageActionHost = {
+    ...(typeof window !== "undefined" ? { origin: window.location.origin } : {}),
+    isFavorite: favorite.isFavorite,
+    toggleFavorite: favorite.toggle,
+    ...(actionExtensions && actionExtensions.length > 0 ? { extend: () => actionExtensions } : {}),
+  };
   return (
     <div
       className={className ?? "flex h-full min-h-0 flex-1 flex-col overflow-hidden"}
@@ -331,7 +343,7 @@ export function RecordStoreTableHost({
         host={host}
       >
         <RecordStoreTableSurface channel={gridContext} enabled={merged}>
-          <TablePage tableId={tableId} actionHost={extrasAsActionHost(menuExtras)} />
+          <TablePage tableId={tableId} actionHost={actionHost} />
         </RecordStoreTableSurface>
       </RecordsMount>
     </div>
