@@ -53,7 +53,7 @@ import {
 import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorCore";
 import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import { useNoteWorkingCopy, adoptNoteSource } from "../hooks/useNoteWorkingCopy";
+import { useNoteWorkingCopy } from "../hooks/useNoteWorkingCopy";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
@@ -327,8 +327,9 @@ export function NoteContentEditor({
       return;
     }
 
-    // Don't clobber words still pending in ANY view of this note.
-    if (!adoptNoteSource(noteId, reduxContent) && workingCopy.hasPending()) return;
+    // Don't clobber words still pending in ANY view of this note (the
+    // working copy keeps them; useNoteWorkingCopy offered it the new body).
+    if (workingCopy.hasPending()) return;
 
     const previous = localContentRef.current;
     lastReduxRef.current = reduxContent;

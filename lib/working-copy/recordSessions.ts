@@ -26,8 +26,8 @@
  * timer, a `pagehide` listener) therefore opens once per record and closes
  * once — never once per mount.
  *
- * Consumers: `./workingCopyStore.ts` (plain values — a note's body) and
- * `features/data-tables/document-model/` (a Univer document's body).
+ * Consumer: `./workingCopyKind.ts` (the one working-copy primitive — notes,
+ * files and cloud documents all run on it).
  */
 
 export interface RecordSessionHooks<S> {
@@ -102,12 +102,13 @@ export function createRecordSessionRegistry<S>(
       if (entry.generation !== generation) return; // a view came back
       tryDrop(id, entry);
     };
+    // Work that settled synchronously drops the session now; anything still
+    // running drops it when it lands (or a returning view keeps it).
+    after();
     if (outcome && typeof (outcome as Promise<void>).then === "function") {
       (outcome as Promise<void>).then(after, (error: unknown) => {
         console.error(`[record-session] flushing ${id} on its last view failed`, error);
       });
-    } else {
-      after();
     }
   };
 

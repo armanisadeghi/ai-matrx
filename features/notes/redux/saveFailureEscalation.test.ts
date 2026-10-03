@@ -16,11 +16,16 @@ import notesReducer, {
 } from "./slice";
 import { NOTE_SAVE_FAILURE_BLOCK_THRESHOLD } from "./notes.types";
 import { collectNoteDrafts } from "../utils/notesDrafts";
+import { configureStore as configureViewStore } from "@reduxjs/toolkit";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import { holdNoteWorkingCopy, noteWorkingCopy } from "../utils/noteLiveContent";
+
+/** The store an editor view renders from (only the working copies matter here). */
+const viewStore = () => configureViewStore({ reducer: { workingCopies: workingCopiesReducer } });
 
 /** An editor view typing `content` into the note's working copy (not yet committed). */
 function typeIntoView(noteId: string, content: string): () => void {
-  const release = holdNoteWorkingCopy(noteId, jest.fn());
+  const release = holdNoteWorkingCopy(noteId, viewStore());
   noteWorkingCopy.edit(noteId, content);
   return release;
 }

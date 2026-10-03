@@ -37,6 +37,8 @@ export interface CoalescedCommitOptions<V> {
 export interface CoalescedCommit {
   /** An edit happened: commit after the delay (restarting any armed timer). */
   schedule: () => void;
+  /** An edit happened that waits for an explicit flush (no autosave): pending, no timer. */
+  mark: () => void;
   /**
    * Commit now; resolves when every requested commit has run. Nothing pending
    * → nothing written, unless `force` (an explicit "save a snapshot now").
@@ -119,6 +121,9 @@ export function createCoalescedCommit<V>(
   };
 
   return {
+    mark() {
+      dirty = true;
+    },
     schedule() {
       dirty = true;
       if (timer) clearTimeout(timer);

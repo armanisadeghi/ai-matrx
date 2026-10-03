@@ -14,6 +14,7 @@ import { Provider, useSelector } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import { enableMapSet } from "immer";
 import { createRoot } from "react-dom/client";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import notesReducer, {
   upsertNoteFromServer,
   markNoteSaveError,
@@ -112,6 +113,8 @@ const makeStore = () =>
   configureStore({
     reducer: {
       notes: notesReducer,
+      // The note's working copy (lib/working-copy) — every editor view reads it.
+      workingCopies: workingCopiesReducer,
       userAuth: (state = { id: ACTOR, authReady: true }) => state,
     },
     middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }),

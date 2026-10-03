@@ -61,6 +61,7 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { enableMapSet } from "immer";
 import { createRoot, type Root } from "react-dom/client";
 import notesReducer, { upsertNoteFromServer } from "../redux/slice";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "../components/NoteContentEditor";
 import { getNoteLiveContent } from "../utils/noteLiveContent";
@@ -91,6 +92,7 @@ function makeStore() {
   const store = configureStore({
     reducer: {
       notes: notesReducer,
+      workingCopies: workingCopiesReducer,
       userAuth: (state = { id: ACTOR, authReady: true }) => state,
       appContext: appContextReducer,
     },

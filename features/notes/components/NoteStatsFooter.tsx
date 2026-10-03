@@ -11,7 +11,6 @@
 // Designed for WindowPanel `footerVariant="bar"` — no self-owned bg/border
 // (the slot provides that). Pass `standalone` when rendering outside a slot.
 
-import { useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectNoteById,
@@ -19,10 +18,8 @@ import {
   selectNoteIsDirtyById,
   selectNoteIsSavingById,
 } from "../redux/selectors";
-import {
-  getNoteLiveContent,
-  subscribeNoteLiveContent,
-} from "../utils/noteLiveContent";
+import { noteWorkingCopy } from "../utils/noteLiveContent";
+import { selectWorkingCopyValue } from "@/lib/working-copy/workingCopySlice";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -43,11 +40,7 @@ export function NoteStatsFooter({
   standalone = false,
 }: NoteStatsFooterProps) {
   const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
-  const liveContent = useSyncExternalStore(
-    (onStoreChange) => subscribeNoteLiveContent(noteId, onStoreChange),
-    () => getNoteLiveContent(noteId),
-    () => undefined,
-  );
+  const liveContent = useAppSelector((state) => selectWorkingCopyValue(state, noteWorkingCopy.key(noteId)));
   const content = liveContent ?? reduxContent;
 
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));

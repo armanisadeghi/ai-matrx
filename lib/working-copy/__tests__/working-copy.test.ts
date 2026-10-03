@@ -8,7 +8,9 @@
 // stale source.
 import { createCoalescedCommit } from "../coalescedCommit";
 import { createRecordSessionRegistry } from "../recordSessions";
-import { createWorkingCopyStore } from "../workingCopyStore";
+import { configureStore } from "@reduxjs/toolkit";
+import { defineWorkingCopyKind } from "../workingCopyKind";
+import workingCopiesReducer, { getWorkingCopy } from "../workingCopySlice";
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
@@ -154,66 +156,96 @@ describe("createCoalescedCommit", () => {
   });
 });
 
-describe("createWorkingCopyStore", () => {
-  const makeStore = () => {
+describe("defineWorkingCopyKind (Redux-backed)", () => {
+  const makeKind = () => {
     const commits: Array<[string, string]> = [];
-    const store = createWorkingCopyStore<string>({
-      name: "test",
-      commitDelay: () => 300,
-      commit: (id, value) => void commits.push([id, value]),
+    const kind = defineWorkingCopyKind({
+      entity: `route-sheet-${Math.random().toString(36).slice(2, 8)}`,
+      delay: () => 300,
+      save: ({ id, entry }) => {
+        commits.push([id, entry.value ?? ""]);
+        return { value: entry.value, savedAt: null };
+      },
     });
-    return { store, commits };
+    const store = configureStore({ reducer: { workingCopies: workingCopiesReducer } });
+    const value = (id: string) => getWorkingCopy(store.getState(), kind.key(id))?.value;
+    return { kind, store, commits, value };
   };
 
-  it("two views of one record share one copy and one commit", () => {
-    const { store, commits } = makeStore();
-    const seen: string[] = [];
-    const releaseA = store.attach("note-route-sheet");
-    const releaseB = store.attach("note-route-sheet");
-    store.subscribe("note-route-sheet", () => seen.push(store.get("note-route-sheet") ?? "(none)"));
-    store.edit("note-route-sheet", "Route 4: Elm St bins");
-    expect(seen).toEqual(["Route 4: Elm St bins"]);
+  it("two views of one record share one copy in Redux and one commit", () => {
+    const { kind, store, commits, value } = makeKind();
+    const releaseA = kind.attach("monday", store);
+    const releaseB = kind.attach("monday", store);
+    kind.load("monday", "Route 4");
+    kind.edit("monday", "Route 4: Elm St bins");
+    expect(value("monday")).toBe("Route 4: Elm St bins");
+    expect(getWorkingCopy(store.getState(), kind.key("monday"))?.views).toBe(2);
     jest.advanceTimersByTime(300);
-    expect(commits).toEqual([["note-route-sheet", "Route 4: Elm St bins"]]);
+    expect(commits).toEqual([["monday", "Route 4: Elm St bins"]]);
     releaseA();
     releaseB();
     expect(commits).toHaveLength(1);
   });
 
-  it("the last view leaving commits pending words and releases the copy; another view leaving does not", () => {
-    const { store, commits } = makeStore();
-    const releaseA = store.attach("n1");
-    const releaseB = store.attach("n1");
-    store.edit("n1", "half a sentence");
+  it("the last view leaving commits pending words and releases the entry; another view leaving does not", () => {
+    const { kind, store, commits, value } = makeKind();
+    const releaseA = kind.attach("n1", store);
+    const releaseB = kind.attach("n1", store);
+    kind.load("n1", "");
+    kind.edit("n1", "half a sentence");
     releaseA();
     expect(commits).toEqual([]);
-    expect(store.get("n1")).toBe("half a sentence");
+    expect(value("n1")).toBe("half a sentence");
     releaseB();
     expect(commits).toEqual([["n1", "half a sentence"]]);
-    expect(store.get("n1")).toBeUndefined();
+    expect(store.getState().workingCopies.byKey[kind.key("n1")]).toBeUndefined();
     jest.advanceTimersByTime(1000);
     expect(commits).toHaveLength(1);
   });
 
-  it("adopt never clobbers pending typing, and takes the source once it is committed", () => {
-    const { store } = makeStore();
-    const release = store.attach("n2");
-    store.edit("n2", "local words");
-    expect(store.adopt("n2", "remote words")).toBe(false);
-    expect(store.get("n2")).toBe("local words");
+  it("a moved source never clobbers pending typing, and is taken once it is committed", () => {
+    const { kind, store, value } = makeKind();
+    const release = kind.attach("n2", store);
+    kind.load("n2", "stored words");
+    kind.edit("n2", "local words");
+    kind.load("n2", "remote words");
+    expect(value("n2")).toBe("local words");
     jest.advanceTimersByTime(300);
-    expect(store.adopt("n2", "remote words")).toBe(true);
-    expect(store.get("n2")).toBe("remote words");
+    kind.load("n2", "remote words again");
+    expect(value("n2")).toBe("remote words again");
     release();
   });
 
   it("reset drops the pending commit (a resolved conflict is not overwritten)", () => {
-    const { store, commits } = makeStore();
-    const release = store.attach("n3");
-    store.edit("n3", "mine");
-    store.reset("n3", "resolved");
+    const { kind, store, commits } = makeKind();
+    const release = kind.attach("n3", store);
+    kind.load("n3", "theirs");
+    kind.edit("n3", "mine");
+    kind.reset("n3", "resolved");
     jest.advanceTimersByTime(1000);
     release();
     expect(commits).toEqual([]);
+  });
+
+  it("autosave: false waits for an explicit save, and the last view leaving writes it once", async () => {
+    const saves: string[] = [];
+    const kind = defineWorkingCopyKind({
+      entity: "lease-text",
+      autosave: false,
+      delay: () => 0,
+      save: async ({ entry }) => {
+        saves.push(entry.value ?? "");
+        return { value: entry.value };
+      },
+    });
+    const store = configureStore({ reducer: { workingCopies: workingCopiesReducer } });
+    const release = kind.attach("unit-4b", store);
+    kind.load("unit-4b", "Rent due on the 1st");
+    kind.edit("unit-4b", "Rent due on the 1st; late fee after the 5th");
+    jest.advanceTimersByTime(10_000);
+    expect(saves).toEqual([]);
+    release();
+    await Promise.resolve();
+    expect(saves).toEqual(["Rent due on the 1st; late fee after the 5th"]);
   });
 });

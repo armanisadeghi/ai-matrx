@@ -6,7 +6,7 @@ import { Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
-import { useNoteWorkingCopy, adoptNoteSource } from "../../hooks/useNoteWorkingCopy";
+import { useNoteWorkingCopy } from "../../hooks/useNoteWorkingCopy";
 import { noteWorkingCopy } from "../../utils/noteLiveContent";
 import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
@@ -204,13 +204,6 @@ export default function MobileNoteEditor({
     setSyncedNoteId(noteId);
     conflict.resetForNoteSwitch();
   }
-
-  // ── Redux -> every view (realtime / remote edits / undo) ─────────────
-  // The working copy takes the record's new body unless words are still
-  // pending in some view of this note.
-  useEffect(() => {
-    adoptNoteSource(noteId, reduxContent);
-  }, [reduxContent, noteId]);
 
   const handleChange = useCallback(
     (content: string) => {

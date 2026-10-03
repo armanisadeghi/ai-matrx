@@ -43,7 +43,7 @@ import { canvasReducer as canvasHostReducer } from "@ai-matrx/canvas";
 import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
 import notesReducer from "@/features/notes/redux/slice";
-import documentSessionsReducer from "@/features/data-tables/redux/documentSessionsSlice";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import topicalMapReducer from "@/features/marketing/seo/topical-map/redux/slice";
 import schedulingTasksReducer from "@/features/scheduling/redux/tasks/slice";
 import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
@@ -178,7 +178,8 @@ export const slimReducerMap = {
   textDiff: textDiffReducer,
   noteVersions: noteVersionsReducer,
   notes: notesReducer,
-  documentSessions: documentSessionsReducer,
+  // THE working copy of every record being edited (lib/working-copy).
+  workingCopies: workingCopiesReducer,
   // Topical map workspace — selection, expansion, view, filters and optimistic
   // edits per open map. Views are ROUTES, so this slice is what makes selection
   // and expansion survive switching between outline/table/graph/text.

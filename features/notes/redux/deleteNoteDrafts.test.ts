@@ -7,12 +7,17 @@
 import { deleteNote, noteHasUnsavedEdits } from "./thunks";
 import { supabase } from "@/utils/supabase/client";
 import { NOTE_DELETED_DRAFT_REASON, captureNoteDraftFor } from "../utils/notesDrafts";
+import { configureStore as configureViewStore } from "@reduxjs/toolkit";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import { holdNoteWorkingCopy, noteWorkingCopy } from "../utils/noteLiveContent";
+
+/** The store an editor view renders from (only the working copies matter here). */
+const viewStore = () => configureViewStore({ reducer: { workingCopies: workingCopiesReducer } });
 
 let releaseView: (() => void) | null = null;
 /** An editor view typing `content` into the note's working copy (not yet committed). */
 function typeIntoView(noteId: string, content: string) {
-  releaseView = holdNoteWorkingCopy(noteId, jest.fn());
+  releaseView = holdNoteWorkingCopy(noteId, viewStore());
   noteWorkingCopy.edit(noteId, content);
 }
 
