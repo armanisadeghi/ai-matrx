@@ -40,9 +40,11 @@ import {
 import {
   BasicInput,
   Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@ai-matrx/design-system";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
@@ -178,6 +180,7 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   const [says, setSays] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "save" | "on" | "off" | "test">(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [testOpen, setTestOpen] = useState(false);
 
   useEffect(() => {
     setIssues([]);
@@ -395,19 +398,6 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
       onModeSelect={(href) =>
         go({ tab: href.endsWith("tab=runs") ? "runs" : "build" })
       }
-      right={
-        view && !detached && organizationId ? (
-          <TestWithRecord
-            tableId={tableId}
-            dataSource={dataSource}
-            userId={userId}
-            tables={tables}
-            disabled={!isOn || busy !== null}
-            disabledWhy={!isOn ? "Turn it on to test" : null}
-            onRun={onTest}
-          />
-        ) : null
-      }
       actions={[
         ...(readOnly
           ? []
@@ -417,7 +407,6 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
                 icon: Save,
                 onPress: () => void onSave(),
                 disabled: busy !== null || (!dirty && !!view),
-                showLabel: true,
               },
               {
                 label: isOn
@@ -434,6 +423,16 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
                 pinnedOnPhone: true,
               },
             ]),
+        ...(view && !readOnly
+          ? [
+              {
+                label: busy === "test" ? "Testing…" : "Test with a record",
+                icon: FlaskConical,
+                onPress: () => setTestOpen(true),
+                disabled: busy !== null,
+              },
+            ]
+          : []),
         ...(studioHref
           ? [
               {
@@ -478,20 +477,6 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   else if (tab === "runs")
     main = view ? (
       <div className="flex flex-col gap-3">
-        {/* The header's "Test with a record" is desktop-only; a phone gets it here. */}
-        {!detached && organizationId ? (
-          <div className="sm:hidden">
-            <TestWithRecord
-              tableId={tableId}
-              dataSource={dataSource}
-              userId={userId}
-              tables={tables}
-              disabled={!isOn || busy !== null}
-              disabledWhy={!isOn ? "Turn it on to test" : null}
-              onRun={onTest}
-            />
-          </div>
-        ) : null}
         <BuilderRunsList runs={runs} loading={runsLoading} error={runsError} />
       </div>
     ) : (
@@ -570,6 +555,17 @@ export function WorkflowBuilderPage({ tableId }: { tableId: string }) {
   return (
     <div className="h-full overflow-hidden">
       {header}
+      {view && organizationId ? (
+        <TestWithRecord
+          open={testOpen}
+          onOpenChange={setTestOpen}
+          tableId={tableId}
+          dataSource={dataSource}
+          userId={userId}
+          tables={tables}
+          onRun={onTest}
+        />
+      ) : null}
       <div className="h-full pt-[var(--shell-header-h)]">
         <MobilePanelShell
           desktop={
@@ -711,44 +707,29 @@ function WorkflowList({
 }
 
 function TestWithRecord({
+  open,
+  onOpenChange,
   tableId,
   dataSource,
   userId,
   tables,
-  disabled,
-  disabledWhy,
   onRun,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   tableId: string;
   dataSource: ReturnType<typeof recordsDataSource>;
   userId: string | null;
   tables: ReturnType<typeof useTablesAnywhere>;
-  disabled: boolean;
-  disabledWhy: string | null;
   onRun: (recordId: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [recordId, setRecordId] = useState<string | null>(null);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5"
-          disabled={disabled}
-          title={disabledWhy ?? undefined}
-        >
-          <FlaskConical className="h-4 w-4" />
-          <span>Test with a record</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        sizing="content"
-        align="end"
-        className="flex w-80 flex-col gap-2 p-3"
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Test with a record</DialogTitle>
+        </DialogHeader>
         <TableScope
           dataSource={dataSource}
           userId={userId}
@@ -761,19 +742,20 @@ function TestWithRecord({
             onChange={setRecordId}
           />
         </TableScope>
-        <Button
-          type="button"
-          size="sm"
-          disabled={!recordId}
-          onClick={() => {
-            if (!recordId) return;
-            setOpen(false);
-            onRun(recordId);
-          }}
-        >
-          Run test
-        </Button>
-      </PopoverContent>
-    </Popover>
+        <DialogFooter>
+          <Button
+            type="button"
+            disabled={!recordId}
+            onClick={() => {
+              if (!recordId) return;
+              onOpenChange(false);
+              onRun(recordId);
+            }}
+          >
+            Run test
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

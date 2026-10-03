@@ -102,7 +102,9 @@ export function BuilderEditor({
   );
 }
 
-function asConditionFields(fields: Field[] | null | undefined): ConditionField[] {
+function asConditionFields(
+  fields: Field[] | null | undefined,
+): ConditionField[] {
   return (fields ?? []).map((f) => ({
     id: String(f.id),
     key: f.key,
@@ -250,6 +252,7 @@ function EditorBody({
         {spec.trigger.event === "record.matches" ? (
           <ConditionGroup
             lead="Becomes"
+            emptyLabel="choose"
             expr={spec.trigger.to ?? null}
             fields={conditionFields}
             onChange={(next) =>
@@ -270,7 +273,7 @@ function EditorBody({
       </Card>
 
       {/* ── The condition ── */}
-      <Card title="Only if">
+      <Card title="Condition">
         <ConditionGroup
           lead="Only if"
           expr={spec.condition ?? null}
