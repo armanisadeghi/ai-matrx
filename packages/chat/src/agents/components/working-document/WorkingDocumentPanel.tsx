@@ -52,14 +52,12 @@ import {
   type WorkingDocumentSurfaceContext,
 } from "./workingDocumentSurface";
 import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
-import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { useLiveWorkingDocPatch } from "../../redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
 import { WorkingDocumentAgentDiff } from "./WorkingDocumentAgentDiff";
 import { WorkingDocumentLatestVersionDiff } from "./WorkingDocumentLatestVersionDiff";
 import {
   patchWorkingDocViewState,
-  setWorkingDocHistoryOpen,
   setWorkingDocMainView,
   setWorkingDocSeenPatch,
   useWorkingDocViewState,
@@ -158,7 +156,7 @@ export function WorkingDocumentPanel({
   // tool-call message animates. Drives the agent-diff view and the "Agent
   // edited" notification.
   const livePatch = useLiveWorkingDocPatch(conversationId);
-  const { mainView, historyOpen, seenPatchCallId } =
+  const { mainView, seenPatchCallId } =
     useWorkingDocViewState(conversationId);
 
   // A patch is "unseen" until the user opens the diff view (or a fresh one lands
@@ -573,24 +571,6 @@ export function WorkingDocumentPanel({
               />
             )}
           </div>
-          {enabled && (
-            <WorkingDocumentVersionHistory
-              conversationId={conversationId}
-              currentContent={draft}
-              open={historyOpen}
-              onOpenChange={(open) =>
-                setWorkingDocHistoryOpen(conversationId, open)
-              }
-              // Applying a snapshot is a WRITE — hidden for view-only sharees
-              // (their commit would be RLS-refused).
-              onApplySnapshot={viewOnly ? undefined : (snapshotContent) => {
-                onChange(snapshotContent);
-                flush();
-                setWorkingDocHistoryOpen(conversationId, false);
-                setWorkingDocMainView(conversationId, "editor");
-              }}
-            />
-          )}
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">

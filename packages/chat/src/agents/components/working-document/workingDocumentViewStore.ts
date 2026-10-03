@@ -8,7 +8,6 @@ export type WorkingDocMainView = "editor" | "agent-diff";
 export interface WorkingDocViewState {
   mainView: WorkingDocMainView;
   editorMode: EditorMode;
-  historyOpen: boolean;
   hasUnseenChange: boolean;
   saving: boolean;
   /**
@@ -23,7 +22,6 @@ export interface WorkingDocViewState {
 const DEFAULT_STATE: WorkingDocViewState = {
   mainView: "editor",
   editorMode: "plain",
-  historyOpen: false,
   hasUnseenChange: false,
   saving: false,
   seenPatchCallId: null,
@@ -51,7 +49,6 @@ export function patchWorkingDocViewState(
   if (
     merged.mainView === cur.mainView &&
     merged.editorMode === cur.editorMode &&
-    merged.historyOpen === cur.historyOpen &&
     merged.hasUnseenChange === cur.hasUnseenChange &&
     merged.saving === cur.saving &&
     merged.seenPatchCallId === cur.seenPatchCallId
@@ -74,13 +71,6 @@ export function setWorkingDocEditorMode(
   editorMode: EditorMode,
 ): void {
   patchWorkingDocViewState(conversationId, { editorMode });
-}
-
-export function setWorkingDocHistoryOpen(
-  conversationId: string,
-  historyOpen: boolean,
-): void {
-  patchWorkingDocViewState(conversationId, { historyOpen });
 }
 
 /** Acknowledge the latest agent patch — clears the notification, keeps the diff. */

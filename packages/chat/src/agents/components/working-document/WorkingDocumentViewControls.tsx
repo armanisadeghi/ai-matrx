@@ -22,10 +22,11 @@ import { cn } from "@ai-matrx/design-system";
 import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
 import {
   setWorkingDocEditorMode,
-  setWorkingDocHistoryOpen,
   setWorkingDocMainView,
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
+import { useChatCanvasTab } from "../../../host/canvas";
+import { WORKING_DOCUMENT_HISTORY_KIND } from "../../../host/canvas-tabs";
 
 export const WORKING_DOC_VIEW_MODES = [
   { mode: "plain" as const, label: "Edit", icon: FileText },
@@ -59,8 +60,14 @@ export function WorkingDocumentViewControls({
   showDiff = true,
   readOnly = false,
 }: WorkingDocumentViewControlsProps) {
-  const { mainView, editorMode, historyOpen, hasUnseenChange, saving } =
+  const { mainView, editorMode, hasUnseenChange, saving } =
     useWorkingDocViewState(conversationId);
+  // Version history is the conversation's canvas tab beside the document;
+  // the button shows pressed while it is in front.
+  const history = useChatCanvasTab({
+    kind: WORKING_DOCUMENT_HISTORY_KIND,
+    key: conversationId,
+  });
 
   const modes = readOnly
     ? WORKING_DOC_VIEW_MODES.filter(
@@ -161,11 +168,14 @@ export function WorkingDocumentViewControls({
 
       <button
         type="button"
-        onClick={() => setWorkingDocHistoryOpen(conversationId, !historyOpen)}
+        onClick={() =>
+          history.toggle({ title: "Version history", data: { conversationId } })
+        }
         title="Version history"
+        aria-pressed={history.isVisible}
         className={cn(
           "flex shrink-0 cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
-          historyOpen
+          history.isVisible
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}

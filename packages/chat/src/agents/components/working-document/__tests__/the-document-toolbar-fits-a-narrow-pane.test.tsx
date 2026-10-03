@@ -24,6 +24,11 @@ import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 import { WorkingDocumentViewControls } from "../WorkingDocumentViewControls";
 
+// The History button opens its canvas tab through the host's canvas port.
+jest.mock("../../../../host/canvas", () => ({
+  useChatCanvasTab: () => ({ isAvailable: true, isVisible: false, selected: null, toggle: () => undefined }),
+}));
+
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", { configurable: true, value: true });
 
 function render(node: React.ReactNode) {

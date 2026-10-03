@@ -1,33 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { NoteVersionHistoryPanel } from "../../../next/lazy/NoteVersionHistoryPanel";
 import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from "lucide-react";
-import {
-  MatrxDynamicPanelHost,
-  sidePanelWidthToPercent,
-} from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-} from "@ai-matrx/design-system";
 import { DiffViewer } from "@ai-matrx/diff/react";
 import { Button } from "@ai-matrx/design-system";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
 import { selectWorkingDocBinding } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
+import { useWorkingDocument } from "../../hooks/useWorkingDocument";
+import { setWorkingDocMainView } from "./workingDocumentViewStore";
 import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 interface WorkingDocumentVersionHistoryProps {
   conversationId: string;
-  currentContent: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onApplySnapshot?: (content: string) => void;
+  /** A version was restored into the editor (the host closes its tab). */
+  onRestored?: () => void;
 }
 
 function formatWhen(iso: string | null): string {
@@ -302,81 +291,37 @@ function HistoryBody({
   );
 }
 
+/**
+ * A conversation's working-document version history — a plain body the host
+ * shows as a canvas tab (kind `working-document-history`, one per
+ * conversation) beside the document. It reads the document through the same
+ * `useWorkingDocument` every editor mount shares, so "Restore" writes through
+ * the normal commit path (which captures a fresh version — history is never
+ * lost) and returns the person to the editor.
+ */
 export function WorkingDocumentVersionHistory({
   conversationId,
-  currentContent,
-  open,
-  onOpenChange,
-  onApplySnapshot,
+  onRestored,
 }: WorkingDocumentVersionHistoryProps) {
-  const isMobile = useIsMobile();
-  const [viewportWidth, setViewportWidth] = useState(() =>
-    typeof window === "undefined" ? 1440 : window.innerWidth,
-  );
-
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const panelBody = useMemo(
-    () => (
+  const { draft, onChange, flush, viewOnly } = useWorkingDocument(conversationId, "working");
+  return (
+    <div className="h-full min-h-0 overflow-hidden bg-background">
       <HistoryBody
         conversationId={conversationId}
-        currentContent={currentContent}
-        onApplySnapshot={onApplySnapshot}
+        currentContent={draft}
+        // Applying a snapshot is a WRITE — absent for view-only sharees (their
+        // commit would be RLS-refused).
+        onApplySnapshot={
+          viewOnly
+            ? undefined
+            : (snapshotContent) => {
+                onChange(snapshotContent);
+                flush();
+                setWorkingDocMainView(conversationId, "editor");
+                onRestored?.();
+              }
+        }
       />
-    ),
-    [conversationId, currentContent, onApplySnapshot],
-  );
-
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="h-[88dvh] gap-0 p-0">
-          <DrawerTitle className="sr-only">
-            Working document history
-          </DrawerTitle>
-          <DrawerDescription className="sr-only">
-            Compare and restore prior working-document versions
-          </DrawerDescription>
-          <div className="flex h-11 shrink-0 items-center border-b border-border bg-muted/40 px-3">
-            <span className="text-sm font-semibold text-foreground">
-              Version history
-            </span>
-          </div>
-          <div className="min-h-0 flex-1 overflow-hidden">{panelBody}</div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  const minPct = sidePanelWidthToPercent(360, viewportWidth);
-  const maxPct = sidePanelWidthToPercent(820, viewportWidth);
-  const defaultPct = sidePanelWidthToPercent(
-    520,
-    viewportWidth,
-    minPct,
-    maxPct,
-  );
-
-  return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Version history"
-      description="Cycle durable versions, or compare any two"
-      expandButtonLabel="Version history"
-      position="right"
-      defaultSize={defaultPct}
-      minSize={minPct}
-      maxSize={maxPct}
-      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
-      className="z-40"
-    >
-      {open ? panelBody : null}
-    </MatrxDynamicPanelHost>
+    </div>
   );
 }
