@@ -179,39 +179,49 @@ revoke all on function custom._template_doors() from public, anon, authenticated
 -- src/templates/types.ts): @today, @today+3d, @today-2w, @today+1m 09:30 …  A bare day answers a
 -- date; with a time it answers the moment in the business's time zone, with its offset.
 create or replace function custom._template_date(p_token text, p_today date, p_tz text)
- returns text
- language plpgsql
- stable
- set search_path to 'pg_catalog'
+ returns text language plpgsql stable set search_path to 'pg_catalog'
 as $function$
+-- TS twin: apps/shared/records/src/templates/types.ts resolveDateToken (aidream). Parity-proven by lane 8.
+-- The FULL TemplateSpec seed-date grammar (RELATIVE_DATE):
+--   anchor @today | @mon…@sun (this week, Monday-first) | @last-tue | @next-fri
+--   offset +N/-N in d w m y, or b (business days, Monday–Friday);  ~b moves Sat/Sun to Monday;  " HH:MM" = moment in p_tz
 declare
-  m        text[];
-  v_day    date;
-  v_n      integer;
-  v_local  timestamp;
-  v_at     timestamptz;
-  v_off    integer;
+  m text[]; v_day date := p_today; v_anchor text; v_n integer; v_left integer; v_step integer;
+  v_local timestamp; v_at timestamptz; v_off integer;
 begin
-  m := regexp_match(p_token, '^@today(?:([+-])(\d{1,4})([dwmy]))?(?: ([01]\d|2[0-3]):([0-5]\d))?$');
+  m := regexp_match(p_token,
+    '^@(today|(?:last-|next-)?(?:mon|tue|wed|thu|fri|sat|sun))(?:([+-])(\d{1,4})([dwmyb]))?(~b)?(?: ([01]\d|2[0-3]):([0-5]\d))?$');
   if m is null then
     raise exception 'The template has a seed date "%" that is not one the template grammar knows.', p_token
-      using errcode = '22007', hint = 'Seed dates are @today, @today+3d, @today-2w, @today+1m or any of them with a 24-hour time: @today+1d 09:30.';
+      using errcode = '22007',
+            hint = 'Seed dates are @today, @mon…@sun, @last-tue or @next-fri, then +3d, -2w, +1m, -1y or +5b (business days), then ~b to move a weekend to Monday, then a 24-hour time: @today-15b 10:40.';
   end if;
-  v_day := p_today;
-  if m[1] is not null then
-    v_n := (case when m[1] = '-' then -1 else 1 end) * m[2]::integer;
-    v_day := case m[3]
-               when 'd' then v_day + v_n
-               when 'w' then v_day + v_n * 7
-               when 'm' then (v_day + make_interval(months => v_n))::date
-               else (v_day + make_interval(years => v_n))::date
-             end;
+  v_anchor := m[1];
+  if v_anchor <> 'today' then
+    v_day := p_today - (extract(isodow from p_today)::integer - 1)
+             + (array_position(array['mon','tue','wed','thu','fri','sat','sun'], regexp_replace(v_anchor, '^(last|next)-', '')) - 1)
+             + case when v_anchor like 'last-%' then -7 when v_anchor like 'next-%' then 7 else 0 end;
   end if;
-  if m[4] is null then
-    return to_char(v_day, 'YYYY-MM-DD');
+  if m[2] is not null then
+    v_n := (case when m[2] = '-' then -1 else 1 end) * m[3]::integer;
+    if m[4] = 'b' then
+      v_left := abs(v_n); v_step := case when v_n < 0 then -1 else 1 end;
+      while v_left > 0 loop
+        v_day := v_day + v_step;
+        if extract(isodow from v_day) < 6 then v_left := v_left - 1; end if;
+      end loop;
+    else
+      v_day := case m[4] when 'd' then v_day + v_n when 'w' then v_day + v_n * 7
+                 when 'm' then (v_day + make_interval(months => v_n))::date
+                 else (v_day + make_interval(years => v_n))::date end;
+    end if;
   end if;
-  v_local := v_day + make_time(m[4]::integer, m[5]::integer, 0);
-  v_at := v_local at time zone p_tz;                          -- that wall-clock moment in the zone
+  if m[5] is not null then
+    v_day := v_day + case extract(isodow from v_day)::integer when 6 then 2 when 7 then 1 else 0 end;
+  end if;
+  if m[6] is null then return to_char(v_day, 'YYYY-MM-DD'); end if;
+  v_local := v_day + make_time(m[6]::integer, m[7]::integer, 0);
+  v_at := v_local at time zone p_tz;
   v_off := extract(epoch from (v_local - (v_at at time zone 'UTC')))::integer / 60;
   return to_char(v_local, 'YYYY-MM-DD"T"HH24:MI:SS')
          || case when v_off < 0 then '-' else '+' end
