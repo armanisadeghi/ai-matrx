@@ -1,3 +1,4 @@
+// record-view: message_template
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";

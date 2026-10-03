@@ -1,3 +1,4 @@
+// record-view: crm_deal
 import { Handshake } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";

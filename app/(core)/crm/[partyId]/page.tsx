@@ -1,3 +1,4 @@
+// record-view: party
 import { cache } from "react";
 import { Contact } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";

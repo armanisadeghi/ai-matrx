@@ -1,0 +1,7527 @@
+[
+ {
+  "token": "access_delta_probe",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "access_delta_run",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "access_request",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "account_addon",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "acquisition_block",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "activity",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "admin_audit_log",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "admin_email_log",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "admin_markdown_sample",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "admin_user",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "admission_config",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "agent",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_card",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_definition_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_drift_alert",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_exemplar",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_mandate_note",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_prompt_remediation",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_run_stage",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_schedule",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "agent_schedule_claim",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "agent_shortcut",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_surface_binding",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_term_list",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_usage",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "agent_user_kv",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "ai_api",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_calls",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_endpoint",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_model",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_model_alias",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_offering",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_provider",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_setting",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_usage_executions",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_usage_hourly",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_usage_hourly_watermark",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "analysis_result",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "anon_form",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "anon_function_birth_grandfather",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "anon_hit",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "anon_inbound",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "anon_replay",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "anon_submission",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "anon_token",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "api_field_warning",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "api_request_log",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_config",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_config_history",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "app_definition_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_error",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_execution",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_instance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_log",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "app_log_muted_pattern",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_log_norm_exception",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_rate_limit",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_setting",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "app_sync_status",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "approach",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "artifact",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assessment",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assessment_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assessment_result",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assignment_session",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assist",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assist_producer_policy",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "assist_producer_policy_history",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "association_type",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "assurance_level",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "attempt",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_broken_functions",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_canonical_findings",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_exemption",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "audit_function_deps",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_function_runtime_probe",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_m2m_candidates",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_refresh_log",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_stale_registry",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "audit_unregistered_candidates",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "base_entity_template",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "batch_cost_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "batch_provider_batch",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "batch_work_item",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_capability",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_capability_limit",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_connect_account",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_customer",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_plan",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_plan_limit",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_price",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_product",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_spend_approval",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_spend_guardrail",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_stripe_event",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "billing_subscription",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_usage_ledger",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "billing_user_plan",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "browser_account_binding",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_action_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_authenticator_window",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_capture",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_control_request",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_handoff",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_login_attempt",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_login_recipe",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_profile",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_profile_checkpoint",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_site_observation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_site_policy",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "browser_stream_ticket",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "build_lock",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "calendar_event",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "campaign_watch_ramp_gate_run",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "campaign_watch_switch_outbox",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "campaign_watch_switch_window",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_comment",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_comment_like",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_item",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_item_state",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_like",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_score",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "canvas_view",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "capture_window",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "carrying_rule",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "catalog_entries_history",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "catalog_entry",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "category",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "change_type_default",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "chat_user_usage_summary",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "citations",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "class_purchase",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "classifier_revision_ledger",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "client_callable_door",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "client_callable_door_retirement",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "client_excluded_column_unregistered",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "cmp_entry",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cmp_feedback",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "code_file",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "code_folder",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "code_repository",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "coding_session",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "coding_session_entry",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "comment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_allocation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_grading",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_identifier",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_lot_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_mandate_result",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_price_factor",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_reshoot_request",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_review",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_asset_unknown",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_certified_printer",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_cloud_sync_connection",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_business_policy",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_category",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_category_aspect",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_category_tree",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_custom_policy",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_inventory_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_inventory_item_group",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_inventory_item_group_member",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_inventory_location",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_listing",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_marketplace_policy",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_media_asset",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_notification_destination",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_notification_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_notification_subscription",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_notification_topic",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_offer",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_order",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_order_line_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_shipping_fulfillment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_ebay_store_category",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_human_correction",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_intake_artifact",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_intake_asset",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_intake_batch",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_label_batch",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_label_code",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_marketplace_account",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_marketplace_account_deletion_audit",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_marketplace_api_call",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_marketplace_rate_budget",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_marketplace_site",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_marketplace_sync_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_prediction_outcome",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_print_order",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_product",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_product_channel_ref",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_product_media",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_product_variant",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "commerce_recall_audit",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "communication_calendar_selected_snapshot_state",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "communication_channel_readiness",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "comparison_set",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "component_group",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "contact_medium",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "contact_submission",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_certification",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_component",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_component_incident",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_conformance",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_edge",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_example",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_instance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_ir_kind_surface",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "content_lane",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "context_access_log",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "context_item",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "context_item_suggestion",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "context_item_value",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "context_value_refs",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "conversation",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "conversation_value",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "courts",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "credential_attachment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "credential_item",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "credential_mutation_receipt",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_address",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_affiliation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_blocklist_entry",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_contact_candidate",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_deal",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_deal_stage_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_enrichment_call",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_interaction",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_merge_candidate",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_outreach_list",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_outreach_list_member",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_party_merge",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_party_research",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_registry_ingest_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_registry_source",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_sending_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_sending_identity",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_sending_identity_check",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "crm_sending_policy",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_agg_digest_checked",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_entity_definition",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_field_definition",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_field_target",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_record",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_share_tails_mine_repair",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_agent_memory",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_agent_plan",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_agent_task",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_code_edit",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_code_message_file",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_conversation_documents",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "cx_media",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_observational_memory",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_observational_memory_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_pending_injection",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_request",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_request_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_tool_trace",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_user_request",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "cx_user_todo",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dashboard_saved_view",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "data_rights_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "data_store",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "data_store_members",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "dataset",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "ddl_guard_log",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "deck_suggestion",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "definer_class_exemption",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "definer_client_grant_grandfather",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "definer_grant_baseline",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "deprecated_relation",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "derive_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dev_login_audit",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dict_entry",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dict_provider_publication",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "dict_setting",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dm_conversation",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dm_message",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dm_participant",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "doc_render",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "doc_signature",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "dockets",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "document",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "document_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "domain_classification",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "edge_payload_kind",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "egress_device",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "egress_pairing",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "egress_ticket",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "emails",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "embedding_cache",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "embeddings_google_gemini_2_1536",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "embeddings_oai_3_small_1536",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "embeddings_voyage_4_large_1024",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "embeddings_voyage_code_3_1024",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "endpoint_family_sweep_state",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "engine_owner_task",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "entity_grant",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "entity_relationship",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "entity_type",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "esign_campaign",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_campaign_member",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_consent_disclosure",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_envelope",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_envelope_certificate",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_envelope_document",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_envelope_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_envelope_external_ref",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_envelope_signer",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_provider",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_provider_binding",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "esign_signing_key",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "execution_event_cursor",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "extension_auth_code",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "external_link",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "external_source",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "extract_sweep_state",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "fc_card",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "fc_detail",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "fc_set",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "feature_doc",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "feature_knob",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "feedback_comments",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "feedback_user_messages",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "field_component",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "file",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "file_analysis",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "file_entities",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "file_overrides",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "file_page_annotations",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "file_pages",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "file_rag_job",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "file_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "files_account_tier",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "files_machine_written_prefix",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "files_sync_mapping",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "files_user_account",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "flashcard_data",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "flashcard_history",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "flashcard_sets",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "flexible_data",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "folder",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "function_contract",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "game_badge",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "game_result",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "game_room",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "global_execution",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "global_execution_checkpoint",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "global_execution_control",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "global_execution_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "global_meter_entry",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "global_origin",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "global_request",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "google_document",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "growth_loop_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "growth_loop_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "growth_loop_stage_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "guardian_link",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "guest_conversion_audit",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "guest_execution_log",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "guest_executions",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "guided_checklist_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "heatmap_save",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hindsight_enrollment",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hindsight_finding",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hindsight_regression_case",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hindsight_replay",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hindsight_replay_step",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hindsight_review",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_access_audit",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_access_role",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_accommodation_request",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_ai_evidence",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_alert_routing_rule",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_application",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_approval_authority",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_approval_delegation",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_asset",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_asset_assignment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_attendance_exception",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_auto_close_rule",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_availability",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_background_check",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_benefits_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_calculation_snapshot",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_candidate",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_candidate_conversion",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_candidate_message",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_careers_portal",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_checklist_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_checklist_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_checklist_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_checklist_template_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_compensation",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_corrective_action",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_course",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_course_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_credential",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_crew",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_deduction_code",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_department",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_derived_grant",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_disposition_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_earning_code",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_eeo_response",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_emergency_contact",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_employee",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_employee_private",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_employer_profile",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_employment",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_employment_pin",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_engagement",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_establishment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_external_identity",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_field_policy",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_holiday",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_holiday_calendar",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_i9",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_i9_document",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_incident",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_incident_party",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_interview",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_interview_kit",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_job_title",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_jurisdiction",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_jurisdiction_rule",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_jurisdiction_rule_class",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_jurisdiction_rule_org_decision",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_jurisdiction_rule_test",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_kiosk_device",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_kiosk_session",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_labor_target",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_leave_case",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_leave_enrollment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_leave_ledger",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_leave_policy",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_leave_request",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_legal_hold",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_legal_hold_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_location",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_new_hire_report",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_offer",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_opening",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_overtime_alert",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_overtime_alert_rule",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_overtime_preapproval",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_pay_group",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_pay_period",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_pay_period_employment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_payroll_export",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_payroll_export_line",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_position_assignment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_posting",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_posting_publication",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_provider_binding",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_provider_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_provisioning_result",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_punch",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_recalculation_batch",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_record_class",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_records_request",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_reference_check",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_reporting_line",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_requisition",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_restricted_note",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_retention_rule",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_role_assignment",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_schedule",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_schedule_change",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_schedule_guidance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_schedule_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_schedule_template_shift",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_scorecard",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_separation",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_shift",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_shift_claim",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_staffing_requirement",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_survey",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_survey_invitation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_survey_question",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_survey_response",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_tax_registration",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_tax_withholding",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_time_adjustment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_training_assignment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_training_attempt",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_transcript_entry",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_verification_letter_request",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_work_interval",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_binding",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_decision",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_definition",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_failure",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_flow_type",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_instance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_step",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workflow_step_definition",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "hr_workweek",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "html_extraction",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "iam_access_audit",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "iam_api_key",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "iam_emergency_door_request",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "iam_org_availability_key",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "iam_read_lane_v2_rollout",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "idempotency",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "industry",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "industry_curator",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "infra_status",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "ingest_runs",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "integration_connection",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "integration_connection_resource",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "interview_decision_interview",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "interview_decision_question",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "interview_document_revision",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "interview_hole",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "interview_question",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "interview_session",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "interview_turn",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "invitation",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "invitation_code",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "invitation_request",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "io_comment",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "io_contract",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "io_import",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "io_outbox",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "item_mastery",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "judge_verdict",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "jurisdiction_policy",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "keyword_classification_queue",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "kg_alert",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_chunk_entities",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_chunks",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_clusters",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_edges",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_entities",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_entity_aliases",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_suggestion_ack",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_sweep_queue",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_sweep_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_sweep_state",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "kg_value_match",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "knob_override",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "knob_override_audit",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "knob_rung_lock",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "knob_scope_kind",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "knob_write_door",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "league_membership",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "learn_doc",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "library_doc",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "lifecycle_archive",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_archive_row",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_audit",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_entity_plan",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_map_build",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_reference_map",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_run",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "lifecycle_tier_ledger",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "location",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "mandate",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_advance_batch_row",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_binding",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_candidate",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_candidate_run",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_candidate_run_payload",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_goal_clauses",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_observation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_reference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_scan",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mandate_treatment",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "marketing_initiative",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "masterwork_corpus_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "masterwork_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "masterwork_run_kind",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "masterwork_source",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "math_course_structure",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "math_problem",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "matrx_action_ledger",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mcp_config",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mcp_server",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mcp_user_conn",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "media_capture_handoff",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "media_catalog_setting",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "media_library_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "media_selection_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "media_selection_job",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "media_source_library",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_call_invite",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_chat_message",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_invitee",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_meeting",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_note",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_occurrence_override",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_participant",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_recording",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meet_transcript_segment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "membership",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "membership_grant",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "merge_field_provenance",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "message",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "message_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "message_template_detail",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "meta_excluded_schema",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "meta_table_stats_history",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "metadata_reserved_keys",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "microservice_project",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "migration_log",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "mtx_media_heal_queue",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "mtx_public_url_guard",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "ner_shadow",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "note",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "note_folder",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notification",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notification_channel_preference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notification_event_override",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notification_event_type",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notification_preference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notification_submission",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "notify_outsider_door_baseline",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "oauth_handoff_claim",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "opinion_clusters",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "opinions",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "ops_check_item",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ops_check_run",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ops_db_host_sample",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "ops_issue_class",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "ops_issue_event",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ops_proof_check",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ops_proof_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ops_proof_scenario",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_admin_audit",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_change_policy",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_context_ledger",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_industries",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_member_control",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_module_config",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "org_plan",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "organization",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "organization_preferences",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "organization_visibility_version",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "output_feedback",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "outreach_acceptance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "page_extraction_job",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "page_extraction_page_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "page_extraction_results",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "page_extraction_runs",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "page_intent_queue",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "page_mapping_queue",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "part_config",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "part_config_sub",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "party",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "party_contact_point",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "passkey_credential",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pb_claim_appeals_fd31de",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "pb_insurance_claims_fd31de",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "pc_article",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pc_episode",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pc_show",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pc_studio_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pc_studio_run_asset",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pdf_consolidation_log",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "pdf_redaction_audit",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "pdf_redaction_key_escrow",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "permission_grant",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "plan_cms_fill_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "plan_cms_fill_job",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "plan_entity",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "plan_node",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "plan_node_artifact",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "plan_node_step",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "plan_profile",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_action_request",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_actor_session",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_actor_token",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_actor_token_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_class_approval_by_arman",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_continued_access",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_cutover_census_run",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_cutover_evaluation_replaced",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_cutover_evaluation_write",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_cutover_seam",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_cutover_seam_measure",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_cutover_seam_press",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_dated_change",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_doors_only_pending_cutover",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_google_calendar_event_create_intent",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_google_task_create_intent",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_kernel_fingerprint_record",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_org_knob_override",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "platform_outcome_event",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_outsider_consumer",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_provision_base_contract_pending",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_reachability",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_reachability_rebuild_pending",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_realtime_topic_prefix",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_reference_category",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_reference_declaration",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_repo",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_saved_view",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_schema",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_secure_delivery",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_share_link",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "platform_strict_class_probe",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "platform_user_knob_override",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "podcast_race",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "processed_document",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "processed_document_page",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "product_capture_file",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "product_capture_item",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "product_capture_payload",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "product_capture_product",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "product_capture_question",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "profile",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "project",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "prompt",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "provider_account",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "provider_account_credential",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "provision",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "provision_generate_target",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_grant",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "provision_marker",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_rule_message",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_schema",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_shape_debt",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_spec",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_spec_grandfather",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provision_vocabulary",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "provlock_recall_visits_all8u5",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "purpose",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "quiz_session",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "rag_ingest_run",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "rag_library_audit_log",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "rate_limit_buckets",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "reachability_pending",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "recompute_queue",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "record",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "record_alias",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "redaction_mapping",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_analysis",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_content",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_context_bundle",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_document",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_intent",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "research_keyword",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_media",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_source",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_synthesis",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_tag",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "research_topic",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "retention_policy",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "retrieval_audit",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "review_queue",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "route_manifest_entry",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "row_version",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "rulebook",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "runtime_operation_stream",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "runtime_operation_stream_batch",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sandbox_instance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sch_agent_task",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sch_run",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sch_task",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sch_trigger",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "schema_client_exposure",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "schema_migration_ledger",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "schema_migration_legacy",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "schema_migration_slot_grandfather",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "schema_templates",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scope",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scope_association_suggestion",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scope_dataset_instance",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scope_door_registry",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scope_item_value_suggestion",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scope_suggestion",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scope_type",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scrape_domain",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scrape_domain_settings",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scrape_failure_log",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scrape_parsed_page",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "scrape_path_override",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scrape_path_pattern",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "scrape_retry_queue",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "search_item",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_ai_capability",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_ai_visibility_citation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_ai_visibility_claim",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_ai_visibility_panel",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_ai_visibility_response",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_ai_visibility_signal",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_backlink",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_backlink_change_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_backlink_dimension_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_backlink_observation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_backlink_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_change_assessment",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_change_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_change_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_change_metric",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_change_set",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_change_theory",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_collection_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_competitor",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_competitor_observation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_competitor_opportunity",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_coverage_mention",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_coverage_tracker",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_dimension_value_matcher",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_engine_schedule",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_geo_place",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_gsc_dig_rule",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_class_rule",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_edge",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_facet",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_market",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_market_observation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_place",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_saved_view",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_keyword_topic",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_landscape_brief",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_link_gap_domain",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_link_gap_match",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_map_facet",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_map_facet_value",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_map_topic",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_page_measurement_health",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_page_performance",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_pr_moment",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_provider_call",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_provider_task",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_rank_observation",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_rank_target",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_raw_payload",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_referring_domain_profile",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_reputation_case",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_search_performance_daily",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_serp_mention",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_serp_opportunity",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_serp_result",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_serp_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_geo_area",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_keyword_offering",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_keyword_value",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_offering_value",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_topic_value",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_value_combo",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_value_worth",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_site_vocabulary",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_source_request",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_starter_pack",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_starter_pack_item",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_story_angle",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_topic",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_topical_map",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_tracker_story",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "seo_web_analytics_daily",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "share_link",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "shareable_resource_registry",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "shared_canvas_item",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "short_link",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "shortcut_category",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "sign_in_fk_legacy",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "skill",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "skill_category",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "skill_detail",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "skill_render_definition",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_consent",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_conversation",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_message",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_message_media",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_notification",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_notification_preference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_phone_number",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "sms_rate_limits",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "sms_webhook_logs",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "soft_delete_cascade_job",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "soft_delete_edge",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "source_authority",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "spatial_board",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "stage_ref_kind",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "stamped_write_table",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "structure",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "structured_list",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "studio_cleaned_segments",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "studio_concept_items",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "studio_documents",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "studio_module_segments",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "studio_raw_segments",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "studio_recording_chunks",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "studio_recording_segments",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "studio_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "studio_session",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "studio_session_settings",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_attempt",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_goal",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_media",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_plan",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_plan_block",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_plan_day",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_reminder_context",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_reminder_delivery",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_session",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_source_chunk",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "study_streak",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "study_structured_section",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "superseded_policy",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "surface",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "system_announcement",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "system_context_item",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "system_error",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "system_orgs",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "system_write_failure",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "t13_backfill_ledger",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "t13_default_ledger",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "t13_row_column_events",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "task",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "task_user_state",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "taxonomy_node",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "team",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "template_context_items",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "template_scope_types",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "templates",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "test_handset_inbox",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "test_handset_verification",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "thread",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_binding",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_bundle",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_call",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_definition_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_executor",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_surface_defaults",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_test_sample",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_ui",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_ui_incident",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "tool_ui_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "topic_placement_queue",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "transcript",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "trigger_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "udt_dataset_fields",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "udt_dataset_row_versions",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": false
+ },
+ {
+  "token": "udt_dataset_rows",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "udt_dataset_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "udt_dataset_template_fields",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "udt_document",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "udt_document_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "udt_structured_list_items",
+  "type": "deprecated",
+  "custom_fields_enabled": false,
+  "is_active": false,
+  "has_organization": true
+ },
+ {
+  "token": "udt_workbook_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "ui_client",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_agent_pref",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_agent_role",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_client_tool",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_config",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_item_type",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_value",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ui_surface_write_target",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "univer_payload",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "unsubscribe_token",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "uploads_inflight",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "user",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "user_achievement",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_active_context",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_analysis_preference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_email_preference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_entity_state",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "user_feedback",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_follows",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "user_form_profile",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_markdown_sample",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_memory",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_preference",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_profile",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_secret",
+  "type": "restricted",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_secret_audit",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_secret_grant",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_stat",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "user_storage_usage",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "user_surface_state",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "vault_fill_approvals",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "vault_fill_devices",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "vault_fill_nonces",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "visibility_cache",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "visibility_epoch",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "voice",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "war_room",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_demo",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_guidance",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_highlight",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_pattern",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_recipe",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_screenshot",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wbx_seo_audit",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wc_claim",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wc_impairment_definition",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wc_injury",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "wc_report",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "web_analysis_item",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_brand",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_brand_asset",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_brand_offering",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_business_fact",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_business_location",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_channel_analytics_daily",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_crawl_event",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_crawl_preset",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_crawl_schedule",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_crawl_session",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_crawl_url",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_discovered_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_finding",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_gsc_page_stat",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_link_edge",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_listing_publisher",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_location_listing",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_news_item",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_offering_template",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_page",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_page_content",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_page_evidence",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_page_sitemap",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_property",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_provider",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_result",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_screenshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_site",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_site_endpoint_rule",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_site_item_config",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_site_offering",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_sitemap",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_snapshot",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_tag_manager_snapshot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_voice_fingerprint",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "web_youtube_video",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "webhook_deliveries",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "webhook_dispatch_state",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "webhooks",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "wf_node_data_slot",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "work_claim",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "work_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workbook",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "worker_heartbeat",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "workflow",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_card",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_checkpoint",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_comparison",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_definition_version",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_idempotency",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_job",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_node_events",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_node_outcome",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_plan",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_plan_event",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_plan_sample",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_recovery_audit",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_run",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_run_cost",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "workflow_run_facts",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_run_log",
+  "type": "ledger",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_runtime_surface",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_template",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_trigger",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_trigger_fire",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "workflow_work_item",
+  "type": "detail",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "working_document",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "write_guard_key",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "youtube_quota_day",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "youtube_search",
+  "type": "entity",
+  "custom_fields_enabled": true,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "youtube_video",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ }
+]
