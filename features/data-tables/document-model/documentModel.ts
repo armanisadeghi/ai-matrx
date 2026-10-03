@@ -364,16 +364,20 @@ export class DocumentModel {
     }
   }
 
-  /** The last view left: leave the rooms (the session then writes what it held). */
+  /**
+   * The last view left: leave the collab room (presence must not outlive the
+   * person). The snapshot channel stays open while the session is kept alive,
+   * so a collaborator's save still reaches the body a returning view boots from.
+   */
   rest(): void {
     this.collab?.stop();
     this.collab = null;
     this.awareness = null;
-    this.realtimeClose?.();
-    this.realtimeClose = null;
   }
 
   close(): void {
+    this.realtimeClose?.();
+    this.realtimeClose = null;
     this.pageClose?.();
     this.pageClose = null;
   }

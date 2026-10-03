@@ -27,6 +27,7 @@ import {
   workingCopyDiscarded,
   workingCopyEdited,
   workingCopyKey,
+  workingCopyRecordLoaded,
   workingCopyReleased,
   workingCopyReset,
   workingCopySaved,
@@ -101,6 +102,12 @@ export interface WorkingCopyKindConfig<E> {
   close?: (engine: E | undefined, handle: WorkingCopyHandle) => void;
   /** How long "Saved" shows before fading to idle (ms). Default 1500. */
   savedFadeMs?: number;
+  /**
+   * Keep the record's session (its Redux entry and engine) this long after
+   * the last view leaves and its work settles, so a view that returns soon
+   * reads nothing again. Default 0.
+   */
+  keepAliveMs?: number;
 }
 
 interface Session<E> {
@@ -125,6 +132,8 @@ export interface WorkingCopyKind<E> {
   load: (id: string, value: string, options?: { version?: number | null; draft?: string | null }) => void;
   /** The record already holds `value` (a resolved conflict): show it, drop pending. */
   reset: (id: string, value: string) => void;
+  /** The record's metadata was read or written (kept for every view, read once). */
+  setRecord: (id: string, record: unknown) => void;
   discard: (id: string) => void;
   /** Save now; resolves when every requested save has run. */
   flush: (id: string, reason?: CommitReason, force?: boolean) => Promise<void>;
@@ -183,6 +192,7 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       config.lastViewGone?.(session.engine, session.handle);
       return session.commit.flush("flush");
     },
+    keepAliveMs: config.keepAliveMs,
     canDrop: (session) =>
       !session.commit.hasPending() &&
       !session.commit.isBusy() &&
@@ -310,6 +320,11 @@ export function defineWorkingCopyKind<E = never>(config: WorkingCopyKindConfig<E
       if (!session) return;
       session.commit.cancel();
       dispatch(session, workingCopyReset({ key: session.key, value }));
+    },
+    setRecord(id, record) {
+      const session = registry.peek(id);
+      if (!session) return;
+      dispatch(session, workingCopyRecordLoaded({ key: session.key, record }));
     },
     discard(id) {
       const session = registry.peek(id);

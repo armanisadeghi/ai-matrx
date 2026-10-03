@@ -189,10 +189,13 @@ beforeEach(() => {
 afterEach(async () => {
   for (const finish of pendingSaves.splice(0)) finish();
   await settle();
-  jest.useRealTimers();
-  // Every view gone and every save landed → the model is dropped (no leak,
-  // and the next open reads the server again).
+  // Every view gone and every save landed → the document is kept warm for a
+  // returning view, then dropped (no leak; a later open reads the server).
+  await act(async () => {
+    jest.advanceTimersByTime(10 * 60_000);
+  });
   expect(openDocumentModelIds()).toEqual([]);
+  jest.useRealTimers();
 });
 
 describe("a document open in several views", () => {

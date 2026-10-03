@@ -41,6 +41,13 @@ export interface RecordSessionHooks<S> {
   canDrop?: (session: S, id: string) => boolean;
   /** Tear the session down. Called once, when the entry is dropped. */
   close?: (session: S, id: string) => void;
+  /**
+   * Keep a settled, view-less session this long before dropping it, so a view
+   * that comes back soon (a board tile waking, a removed tile undone, Back
+   * and forward) finds the record in memory and reads nothing again. 0 (the
+   * default) drops it as soon as its work settles.
+   */
+  keepAliveMs?: number;
 }
 
 export interface RecordSessionHandle<S> {
@@ -69,6 +76,7 @@ interface Entry<S> {
   holders: number;
   /** Bumped on every acquire, so a stale lastViewGone completion cannot drop a re-acquired session. */
   generation: number;
+  dropTimer: ReturnType<typeof setTimeout> | null;
 }
 
 export function createRecordSessionRegistry<S>(
@@ -76,12 +84,27 @@ export function createRecordSessionRegistry<S>(
 ): RecordSessionRegistry<S> {
   const entries = new Map<string, Entry<S>>();
 
-  const tryDrop = (id: string, entry: Entry<S>) => {
+  const dropNow = (id: string, entry: Entry<S>) => {
     if (entries.get(id) !== entry) return;
     if (entry.holders > 0) return;
     if (hooks.canDrop && !hooks.canDrop(entry.session, id)) return;
     entries.delete(id);
     hooks.close?.(entry.session, id);
+  };
+
+  const tryDrop = (id: string, entry: Entry<S>) => {
+    if (entries.get(id) !== entry || entry.holders > 0) return;
+    if (hooks.canDrop && !hooks.canDrop(entry.session, id)) return;
+    const keep = hooks.keepAliveMs ?? 0;
+    if (keep <= 0) {
+      dropNow(id, entry);
+      return;
+    }
+    if (entry.dropTimer) clearTimeout(entry.dropTimer);
+    entry.dropTimer = setTimeout(() => {
+      entry.dropTimer = null;
+      dropNow(id, entry);
+    }, keep);
   };
 
   const release = (id: string, entry: Entry<S>) => {
@@ -116,8 +139,12 @@ export function createRecordSessionRegistry<S>(
     acquire(id) {
       let entry = entries.get(id);
       if (!entry) {
-        entry = { session: hooks.open(id), holders: 0, generation: 0 };
+        entry = { session: hooks.open(id), holders: 0, generation: 0, dropTimer: null };
         entries.set(id, entry);
+      }
+      if (entry.dropTimer) {
+        clearTimeout(entry.dropTimer);
+        entry.dropTimer = null;
       }
       entry.generation += 1;
       entry.holders += 1;

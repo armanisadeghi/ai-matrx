@@ -44,6 +44,7 @@ import textDiffReducer from "./slices/textDiffSlice";
 import noteVersionsReducer from "./slices/noteVersionsSlice";
 import notesReducer from "@/features/notes/redux/slice";
 import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
+import sharingStatusReducer from "./slices/sharingStatusSlice";
 import topicalMapReducer from "@/features/marketing/seo/topical-map/redux/slice";
 import schedulingTasksReducer from "@/features/scheduling/redux/tasks/slice";
 import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
@@ -180,6 +181,8 @@ export const slimReducerMap = {
   notes: notesReducer,
   // THE working copy of every record being edited (lib/working-copy).
   workingCopies: workingCopiesReducer,
+  // Each record's visibility, read once per tab (useSharingStatus).
+  sharingStatus: sharingStatusReducer,
   // Topical map workspace — selection, expansion, view, filters and optimistic
   // edits per open map. Views are ROUTES, so this slice is what makes selection
   // and expansion survive switching between outline/table/graph/text.

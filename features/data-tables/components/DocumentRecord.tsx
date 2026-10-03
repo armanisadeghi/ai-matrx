@@ -25,6 +25,8 @@ import { Loader2 } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
+import { useAppStore } from "@/lib/redux/hooks";
+import { documentWorkingCopy } from "../document-model/documentModels";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
@@ -80,6 +82,13 @@ export interface DocumentRecordHeaderParts {
   actions: ReactNode | null;
 }
 
+/** What the document's working copy keeps about it besides the body. */
+interface DocumentRecordMeta {
+  row: DocumentRow;
+  userId: string | null;
+  canEdit: boolean;
+}
+
 export interface DocumentRecordProps {
   documentId: string;
   /** Places the title field and the actions. Rendered above the body. */
@@ -126,17 +135,35 @@ export function DocumentRecord({
     onDocumentRef.current = onDocument;
   }, [onDocument]);
 
+  // The row, the person and the edit gate are the document's metadata in the
+  // one working copy (Redux `workingCopies["udt_document:<id>"].record`): read
+  // once, kept for every view of the document, so a tile that wakes or remounts
+  // reads none of it again.
+  const store = useAppStore();
+  const userIdRef = useRef<string | null>(null);
+  const remember = () => {
+    if (!docRef.current) return;
+    const meta: DocumentRecordMeta = {
+      row: docRef.current,
+      userId: userIdRef.current,
+      canEdit: canEditRef.current,
+    };
+    documentWorkingCopy.setRecord(id, meta);
+  };
+
   /** The ONE place that advances the row — keeps state and the ref in step. */
   const commitDocument = (next: DocumentRow) => {
     docRef.current = next;
     setDoc(next);
     onDocumentRef.current?.(next);
+    remember();
   };
 
   /** Same, for the edit gate. */
   const applyCanEdit = (next: boolean) => {
     canEditRef.current = next;
     setCanEdit(next);
+    remember();
   };
 
   const lendBodyPort = (port: DocumentBodyPort | null) => {
@@ -145,6 +172,24 @@ export function DocumentRecord({
 
   useEffect(() => {
     let active = true;
+    const release = documentWorkingCopy.attach(id, store);
+    const cached = documentWorkingCopy.entry(id)?.record as DocumentRecordMeta | undefined;
+    if (cached) {
+      // Held in memory (another view, or this tile before it slept).
+      docRef.current = cached.row;
+      setDoc(cached.row);
+      onDocumentRef.current?.(cached.row);
+      setRenameDraft(cached.row.document_name);
+      userIdRef.current = cached.userId;
+      setCurrentUserId(cached.userId);
+      canEditRef.current = cached.canEdit;
+      setCanEdit(cached.canEdit);
+      setPermsResolved(true);
+      return () => {
+        active = false;
+        release();
+      };
+    }
     (async () => {
       const res = await getDocument(id);
       if (!active) return;
@@ -157,6 +202,7 @@ export function DocumentRecord({
 
       const { data: userData } = await getClaimsUser(supabase);
       const userId = userData?.user?.id ?? null;
+      userIdRef.current = userId;
       setCurrentUserId(userId);
 
       // Editor gate: owner ALWAYS edits; non-owner edits when the access kernel
@@ -170,8 +216,9 @@ export function DocumentRecord({
     })();
     return () => {
       active = false;
+      release();
     };
-  }, [id]);
+  }, [id, store]);
 
   const isOwner =
     doc !== null && currentUserId !== null && doc.user_id === currentUserId;

@@ -42,6 +42,12 @@ export interface WorkingCopyEntry {
   savedAt: number | null;
   /** Editors showing this record right now. */
   views: number;
+  /**
+   * The record's metadata as last read (its row, the person's edit gate), so a
+   * view that remounts or wakes reads nothing again. Serializable; set by the
+   * kind's views (`kind.setRecord`).
+   */
+  record?: unknown;
 }
 
 export interface WorkingCopiesState {
@@ -188,6 +194,10 @@ const workingCopySlice = createSlice({
       recomputeDirty(entry);
       entry.status = "idle";
     },
+    /** The record's metadata was read or written (a row, an edit gate). */
+    workingCopyRecordLoaded(state, action: PayloadAction<{ key: string; record: unknown }>) {
+      entryFor(state, action.payload.key).record = action.payload.record;
+    },
     /** No view, nothing pending: the record's own store is the truth again. */
     workingCopyReleased(state, action: PayloadAction<{ key: string }>) {
       const entry = state.byKey[action.payload.key];
@@ -210,6 +220,7 @@ export const {
   workingCopySettled,
   workingCopyDiscarded,
   workingCopyReset,
+  workingCopyRecordLoaded,
   workingCopyReleased,
 } = workingCopySlice.actions;
 
@@ -234,6 +245,12 @@ export const selectWorkingCopy = createSelector(
 export const selectWorkingCopyValue = createSelector(
   [selectWorkingCopy],
   (entry): string | undefined => entry?.value,
+);
+
+/** The record's metadata as last read (see `WorkingCopyEntry.record`). */
+export const selectWorkingCopyRecord = createSelector(
+  [selectWorkingCopy],
+  (entry): unknown => entry?.record,
 );
 
 export const selectWorkingCopyStatus = createSelector(

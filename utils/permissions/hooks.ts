@@ -7,7 +7,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { extractErrorMessage } from "@/utils/errors";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import {
+  selectSharingStatus,
+  sharingStatusFailed,
+  sharingStatusKey,
+  sharingStatusLoaded,
+  sharingStatusRequested,
+} from "@/lib/redux/slices/sharingStatusSlice";
 import {
   Permission,
   PermissionWithDetails,
@@ -635,35 +642,38 @@ export function useSharingStatus(
   resourceId: string,
   enabled: boolean = true,
 ) {
-  const [rowState, setRowState] = useState<ResourceVisibility>({
-    isPublic: false,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const store = useAppStore();
+  const key = sharingStatusKey(resourceType, resourceId);
+  const entry = useAppSelector((state) => selectSharingStatus(state, key));
 
-  const refresh = useCallback(async () => {
+  // Read the record's visibility (once per record per tab, or on purpose).
+  const refresh = async () => {
     if (!resourceType || !resourceId || !enabled) return;
-    setLoading(true);
-    setError(null);
+    store.dispatch(sharingStatusRequested({ key }));
     try {
       const v = await getResourceVisibility(resourceType, resourceId);
-      setRowState(v);
+      store.dispatch(sharingStatusLoaded({ key, visibility: v }));
     } catch (err) {
       console.error("Error fetching sharing status:", err);
-      setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
+      store.dispatch(sharingStatusFailed({ key, error: extractErrorMessage(err) }));
     }
-  }, [resourceType, resourceId, enabled]);
+  };
 
+  // A mount reads the record's answer from the store; only a record nobody in
+  // this tab has read yet is fetched (a woken / remounted view reads nothing).
+  const known = entry !== undefined;
   useEffect(() => {
+    if (known || !resourceType || !resourceId || !enabled) return;
+    // Another view of the same record may have asked a moment ago.
+    if (selectSharingStatus(store.getState(), key)) return;
     void refresh();
-  }, [refresh]);
+    // `refresh` is rebuilt per render; the key and the gate decide.
+  }, [known, key, enabled]);
 
   return {
-    isPublic: rowState.isPublic,
-    loading,
-    error,
+    isPublic: entry?.visibility?.isPublic ?? false,
+    loading: entry ? entry.loading : enabled,
+    error: entry?.error ?? null,
     refresh,
   };
 }

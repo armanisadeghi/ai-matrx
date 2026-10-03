@@ -10,14 +10,21 @@
  * mutations, and additionally deny-list any mutation whose id marks it as
  * scroll / selection / viewport bookkeeping, belt-and-braces.
  */
-import { CommandType, type ICommandInfo } from "@univerjs/core";
+import type { ICommandInfo } from "@univerjs/core";
+
+/**
+ * Univer's `CommandType.MUTATION`. A literal, so this filter (and the document
+ * model that uses it outside the editor chunk) never pulls Univer's runtime —
+ * which touches `window` at import — into a server-rendered chunk.
+ */
+const MUTATION = 2;
 
 /** Non-content command ids that must never mark the document dirty. */
 const NON_CONTENT_ID_PATTERN =
   /(scroll|selection|set-selections|viewport|zoom|hover|cursor|focus|activate)/i;
 
 export function isSnapshotMutation(command: ICommandInfo): boolean {
-  if (command.type !== CommandType.MUTATION) return false;
+  if (command.type !== MUTATION) return false;
   if (NON_CONTENT_ID_PATTERN.test(command.id)) return false;
   return true;
 }

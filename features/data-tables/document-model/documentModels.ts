@@ -75,9 +75,18 @@ const deps: DocumentModelDeps = {
   },
 };
 
+/**
+ * How long a document stays in memory after its last view leaves (and its save
+ * lands): a board tile waking, a removed tile undone or Back and forward within
+ * this reads nothing again — not the row, not the body. Its snapshot channel
+ * stays open meanwhile, so a collaborator's save still arrives.
+ */
+const DOCUMENT_KEEP_ALIVE_MS = 5 * 60_000;
+
 export const documentWorkingCopy = defineWorkingCopyKind<DocumentModel>({
   entity: "udt_document",
   delay: () => DOCUMENT_SAVE_DELAY_MS,
+  keepAliveMs: DOCUMENT_KEEP_ALIVE_MS,
   createEngine: (handle) => new DocumentModel(handle, deps),
   firstViewArrived: (model) => model?.wake(),
   lastViewGone: (model) => model?.rest(),
