@@ -127,6 +127,24 @@ function claimDelegatedCall(keys: string[]): boolean {
   return true;
 }
 
+const ANSWERED_CALL_STATUSES = new Set(["completed", "failed", "error", "cancelled"]);
+
+/** True when this conversation's own record of `callId` says it was answered. */
+function callAlreadyAnswered(
+  state: ChatRootState,
+  conversationId: string,
+  callId: string,
+): boolean {
+  const records = state.observability?.toolCalls;
+  if (!records) return false;
+  return Object.values(records).some(
+    (record) =>
+      record?.callId === callId &&
+      record.conversationId === conversationId &&
+      ANSWERED_CALL_STATUSES.has(String(record.status)),
+  );
+}
+
 /** Test seam: forget every routed call (a fresh page). */
 export function resetRoutedDelegatedCallsForTests(): void {
   routedDelegatedCalls.clear();
@@ -158,7 +176,7 @@ export interface SurfaceDelegatedToolCallArgs {
 export const surfaceDelegatedToolCall = (
   args: SurfaceDelegatedToolCallArgs,
 ): ThunkAction<void, ChatRootState, unknown, UnknownAction> => {
-  return (dispatch) => {
+  return (dispatch, getState) => {
     const {
       conversationId,
       requestId,
@@ -169,6 +187,13 @@ export const surfaceDelegatedToolCall = (
       event,
       source = "live",
     } = args;
+
+    // A call the conversation already holds as ANSWERED is never run again —
+    // the per-page routed-call memory below forgets on reload, and a replayed
+    // `tool_delegated` (a rejoined run's journal) re-ran an approved canvas
+    // write against the already-changed page and posted a failure for a call
+    // that had succeeded (clone conversation beb271db, 2026-10-03).
+    if (callAlreadyAnswered(getState(), conversationId, callId)) return;
 
     if (
       !claimDelegatedCall(
