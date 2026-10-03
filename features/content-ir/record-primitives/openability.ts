@@ -28,8 +28,12 @@ export type Openability =
 
 /** The doors, injectable so the guard can count calls. */
 export interface OpenabilityDoors {
-  /** Ids of `ids` the viewer may read in `tableId`; null when the door refused the whole call. */
-  readRecords(organizationId: string, tableId: string, ids: string[]): Promise<Set<string> | null>;
+  /**
+   * Ids of `ids` the viewer may read in `tableId`; null when the door refused the whole call. The
+   * table's OWN organization is asked (never the active one, which is not a read filter);
+   * `organizationId` is used only when the table's cannot be found.
+   */
+  readRecords(organizationId: string | null, tableId: string, ids: string[]): Promise<Set<string> | null>;
   /** The `/o/<id>` door: open, or its own sentence. */
   resolveId(id: string): Promise<{ open: boolean; says: string | null }>;
   /** `{token:id → label|null}` (null = withheld); null when the call failed. */
@@ -46,11 +50,25 @@ const keyOf = (r: RelationRef) => `${r.token}:${r.id}`;
 
 export function supabaseOpenabilityDoors(): OpenabilityDoors {
   const supabase = createClient();
+  const tableOrgs = new Map<string, Promise<string | null>>();
+  const tableOrg = (tableId: string) => {
+    let known = tableOrgs.get(tableId);
+    if (!known) {
+      known = Promise.resolve(supabase.schema("platform").rpc("resolve_id", { p_id: tableId })).then(({ data }) => {
+        const org = (data as { organization_id?: string } | null)?.organization_id;
+        return typeof org === "string" ? org : null;
+      });
+      tableOrgs.set(tableId, known);
+    }
+    return known;
+  };
   return {
     async readRecords(organizationId, tableId, ids) {
+      const owner = (await tableOrg(tableId)) ?? organizationId;
+      if (!owner) return null;
       const { data, error } = await supabase
         .schema("custom")
-        .rpc("read_records_by_ids", { p_organization_id: organizationId, p_table_id: tableId, p_record_ids: ids });
+        .rpc("read_records_by_ids", { p_organization_id: owner, p_table_id: tableId, p_record_ids: ids });
       if (error) return null;
       return new Set(((data ?? []) as Array<{ id: string }>).map((row) => row.id));
     },
@@ -95,13 +113,13 @@ export function createOpenabilityBatcher(doors: OpenabilityDoors, organizationId
     settleAll(noDoor, () => ({ state: "closed", sentence: NO_DOOR }));
 
     const records = refs.filter((r) => r.token === "record");
-    const toResolve: RelationRef[] = records.filter((r) => !r.tableId || !organizationId);
+    const toResolve: RelationRef[] = records.filter((r) => !r.tableId);
     const byTable = new Map<string, RelationRef[]>();
     for (const r of records) {
-      if (r.tableId && organizationId) byTable.set(r.tableId, [...(byTable.get(r.tableId) ?? []), r]);
+      if (r.tableId) byTable.set(r.tableId, [...(byTable.get(r.tableId) ?? []), r]);
     }
     const tableWork = [...byTable.entries()].map(async ([tableId, group]) => {
-      const readable = await doors.readRecords(organizationId as string, tableId, [...new Set(group.map((g) => g.id))]);
+      const readable = await doors.readRecords(organizationId, tableId, [...new Set(group.map((g) => g.id))]);
       if (readable === null) {
         toResolve.push(...group);
         return;
@@ -222,7 +240,7 @@ export function usePickListMembership(
   const signature = [...new Set(ids)].join("|");
   const [answer, setAnswer] = useState<ListMembership>({ state: "checking" });
   useEffect(() => {
-    if (!organizationId || !listId || !signature) {
+    if (!listId || !signature) {
       setAnswer({ state: "refused" });
       return;
     }
