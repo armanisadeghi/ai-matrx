@@ -95,11 +95,10 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveScopeChips } from "@/features/scopes/components/active-context/ActiveScopeChips";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
-import { setBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -154,34 +153,10 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 const RAG_SEARCH_SURFACE = "matrx-user/knowledge-search";
 const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
 // The chat agent is the `chat.default_new_chat` MANDATE (resolved in
-// AgentChatTab — the user's own binding wins); the Knowledge tools below are armed
-// onto its run regardless of which agent resolves.
-
-/**
- * Knowledge tool family (registry tool UUIDs from `tool.definition`). Armed
- * additively on the conversation via `addedTools` so the agent can actually
- * search the user's indexed content, list/inspect data stores, fetch chunks,
- * and verify answers — even when the base chat agent doesn't ship these tools
- * by default. The server tool-merge funnel adds `document_content` whenever
- * one of the knowledge search tools is present, so every agent surface receives
- * the physical-page validation companion consistently. The conversation also
- * receives the page's retrieval scope via `runtime.applicationScope` (see
- * `createRagSearchScope`).
- *
- * Twelve tools were consolidated into six on 2026-07-18. Tool ids are STABLE
- * across a rename, so the four survivors below kept their ids — but the four
- * absorbed tools this list used to arm (`rag_search_data_store`,
- * `rag_list_data_stores`, `rag_get_data_store`, `rag_get_chunk`) are now
- * soft-deleted `tool.definition` rows and have been removed. Their capability
- * lives on as `knowledge_search(data_store_id=…)` and the `knowledge_browse`
- * actions (`stores` / `store` / `chunk`), which the ids below already arm.
- */
-const RAG_AGENT_TOOL_IDS = [
-  "3921fc69-0763-4538-9e36-5a29a088a5bd", // knowledge_search (was rag_search)
-  "df009bb5-1b9a-49a4-8db1-90b654f970a2", // knowledge_browse (was rag_list_sources)
-  "16964a48-af53-423d-a3c4-0ff3a0a061eb", // knowledge_compare (was rag_search_cross_doc)
-  "cb86a0ca-439e-4e63-be45-44c2dcd159f5", // verify (was rag_verify_answer)
-];
+// AgentChatTab — the user's own binding wins). The Knowledge tool family
+// (knowledge_search, knowledge_browse, knowledge_compare, verify) is the
+// surface's own declaration: `tool.surface_defaults` for
+// `matrx-user/knowledge-search` (2026-10-03, TOOL-SOURCES T1).
 
 // ===========================================================================
 // Shared
@@ -2383,9 +2358,9 @@ function Stat({ label, value }: { label: string; value: number | string }) {
  *      retrieval scope (selected data store, source-kind filter, pipeline
  *      flags) via the registered `matrx-user/knowledge-search` surface, so an agent
  *      engineer can bind those values into the agent's context / tool args.
- *   2. The Knowledge tool family is armed on the conversation via `addedTools`, so
- *      the agent can search / inspect the user's indexed content regardless of
- *      whether the base agent ships those tools.
+ *   2. The Knowledge tool family is the SURFACE's own declaration
+ *      (`tool.surface_defaults` row for `matrx-user/knowledge-search`), so the
+ *      server adds it to any run launched here — never a fake "user pick".
  */
 function AgentChatTab({ scope }: { scope: Scope }) {
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
@@ -2419,7 +2394,6 @@ function AgentChatTab({ scope }: { scope: Scope }) {
 }
 
 function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string }) {
-  const dispatch = useAppDispatch();
   const surfaceKey = `${RAG_SEARCH_SOURCE_FEATURE}:${agentId}`;
   const searchContext = useRagSearchContext();
   const activeOrganizationId = searchContext.filters?.organization_id ?? null;
@@ -2486,19 +2460,6 @@ function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string })
       applicationScope,
     },
   });
-
-  // Arm the Knowledge tool family additively on this conversation as soon as it
-  // exists. The instance UI-state entry is created synchronously inside the
-  // launch thunk, so by the time `conversationId` is set the dispatch lands.
-  useEffect(() => {
-    if (!conversationId) return;
-    dispatch(
-      setBuilderAdvancedSettings({
-        conversationId,
-        changes: { addedTools: RAG_AGENT_TOOL_IDS },
-      }),
-    );
-  }, [conversationId, dispatch]);
 
   if (!conversationId) {
     return (

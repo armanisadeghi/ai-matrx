@@ -46,7 +46,6 @@ import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 // consumer runs. See features/.../client-capabilities/register-all.ts.
 import "../client-capabilities/register-all";
 import { surfacePatchContractLine } from "../../../../surfaces/runtime/surface-write-patch";
-import { isCompanionSurface } from "../../../../surfaces/runtime/surface-chain";
 import { detectActiveSurface } from "../../../../surfaces/utils/route-to-surface";
 import { selectCreatorSettings } from "../../../../host/prefs";
 import { isWarRoomToolName } from "@host/features/agents/war-room-tools/tools/names";
@@ -63,7 +62,13 @@ import {
   listAgentWritableTargets,
   SURFACE_WRITE_TOOL_NAME,
 } from "../../../../surfaces/runtime/surface-writeback";
-import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import {
+  announceUnboundPageTools,
+  isRunWithoutInterface,
+  resolvePageToolBinding,
+} from "./page-tool-binding";
+import { selectAgentAutoToolsDisabled } from "../../agent-definition/selectors";
+import type { UserOverrides } from "../../../types/request.types";
 import { describeAgentWritableTargets } from "../../../../surfaces/runtime/agent-offer";
 import {
   announceWithheldSurfaceWriteTools,
@@ -80,29 +85,6 @@ interface BuildOptions {
    */
   seedTools?: ToolSpec[];
 }
-
-/**
- * TEMPORARY STOPGAP — remove once the aidream `sandbox-fs` capability ships
- * `enabled_tools` (see packages/matrx-ai/matrx_ai/capabilities/built_in.py).
- *
- * Arming the coding toolset is the server's job: declaring the `sandbox-fs`
- * capability should auto-inject these via the capability registry. Until that
- * deploys, a bound box is inert (a normal agent carries none of these tools),
- * so we push them as additive request tools whenever the binding is active.
- * Delete this list + its use below the moment the capability change is live.
- */
-const SANDBOX_FS_STOPGAP_TOOL_NAMES = [
-  "fs_read",
-  "fs_write",
-  "fs_edit",
-  "fs_patch",
-  "fs_list",
-  "fs_mkdir",
-  "fs_search",
-  "shell_execute",
-  "shell_python",
-  "git_ingest",
-] as const;
 
 /**
  * THE VALUE CONTRACT ON THE WIRE.
@@ -216,18 +198,15 @@ export async function buildToolInjection(
 ): Promise<ToolInjectionResult> {
   const mode = options.mode ?? "additive";
 
-  // Creator brakes on surface-driven tool injection. When on, we declare NO
-  // `client.surface` so the server's surface resolver never runs — nothing is
-  // auto-attached and the agent runs with only its own saved tools. We also
-  // skip the sandbox-fs client stopgap below. Two scopes, OR'd together:
-  //   - global  (creatorDebugSlice.settings.disableToolInjection) — all runs.
-  //   - request (builderAdvancedSettings.disableToolInjection)    — this convo.
-  // The durable per-agent equivalent is `agx_agent.tool_config.auto_tools_disabled`
-  // (the server's kill switch in tool_merge.py §4), set from the agent's Tools tab.
+  // The creator-only GLOBAL debug brake (creatorDebugSlice) — when on, we
+  // declare NO `client.surface` and offer no page tools, so the agent runs
+  // with only its own saved tools. The person's per-chat switch is a
+  // different thing: it travels as `user.auto_tools` and the server enforces
+  // it (TOOL-SOURCES rule A); the client mirrors it for page tools below.
   const perConversation = selectBuilderAdvancedSettings(conversationId)(state);
   const disableInjection =
-    (selectCreatorSettings(state)?.disableToolInjection ?? false) ||
-    (perConversation?.disableToolInjection ?? false);
+    selectCreatorSettings(state)?.disableToolInjection ?? false;
+  const autoToolsOn = selectEffectiveAutoTools(state, conversationId);
 
   // ── 1. Tools — merge non-widget client tools + widget-derived names ─────
   //
@@ -295,13 +274,9 @@ export async function buildToolInjection(
     .map((name) => getScribeInlineToolDef(name))
     .filter((def): def is NonNullable<typeof def> => def != null);
 
-  // Per-conversation tools the user added from the Smart Input tools menu
-  // (registry UUIDs → server-executed registry specs). Explicit picks, so they
-  // ride regardless of the disable-injection brake (which only gates the
-  // surface's AUTOMATIC tools, not deliberate additions).
-  const addedToolSpecs: ToolSpec[] = (perConversation?.addedTools ?? []).map(
-    (id) => ({ kind: "registered", name: id, delegate: false }),
-  );
+  // The person's own picks are NOT tools[] entries: they travel as
+  // `user.add` (see `buildUserToolOverrides`), so the server knows they are
+  // explicit and keeps them when the auto-tools switch is off.
 
   const allTools: ToolSpec[] = [
     ...(options.seedTools ?? []),
@@ -309,7 +284,6 @@ export async function buildToolInjection(
     ...warRoomInlineSpecs,
     ...warRoomMasterInlineSpecs,
     ...scribeInlineSpecs,
-    ...addedToolSpecs,
   ];
 
   // SURFACE client tools (SurfaceManifest.clientTools) — the action half of
@@ -336,14 +310,29 @@ export async function buildToolInjection(
   // ...EXCEPT the COMPANION panes beside the page (the canvas): they are not
   // the page, so its own conversation gets their targets and tools — and
   // only theirs (`SurfaceManifest.companion`, 2026-10-03).
-  const isOwnPageConversation = isPageOwnConversation(conversationId);
-  if (!disableInjection) {
-    const ownFilter = <T extends { surfaceName: string }>(rows: readonly T[]): T[] =>
-      isOwnPageConversation
-        ? rows.filter((row) => isCompanionSurface(row.surfaceName))
-        : [...rows];
-    const liveSurfaceTools = ownFilter(listLiveSurfaceClientTools());
-    const writableTargets = ownFilter(listAgentWritableTargets());
+  //
+  // 🚨 AND ONLY TO A RUN BOUND TO THAT SURFACE (Arman, 2026-10-03). The
+  // mounted stack is global; the binding is per conversation — see
+  // `./page-tool-binding`. A background extraction, a JSON answer, a launch
+  // that opted out of the page, or a window bound to another screen gets
+  // nothing from a page it is not bound to. Page tools are transient (T1),
+  // so the person's auto-tools switch OFF withholds them too.
+  if (!disableInjection && autoToolsOn) {
+    const binding = resolvePageToolBinding(state, conversationId);
+    const allSurfaceTools = listLiveSurfaceClientTools();
+    const allWritableTargets = listAgentWritableTargets();
+    const liveSurfaceTools = binding.bound
+      ? allSurfaceTools.filter((row) => binding.accepts(row.surfaceName))
+      : [];
+    const writableTargets = binding.bound
+      ? allWritableTargets.filter((row) => binding.accepts(row.surfaceName))
+      : [];
+    if (!binding.bound) {
+      announceUnboundPageTools(conversationId, binding.reason, [
+        ...allSurfaceTools.map((row) => row.tool.name),
+        ...(allWritableTargets.length > 0 ? [SURFACE_WRITE_TOOL_NAME] : []),
+      ]);
+    }
     const outputContract =
       liveSurfaceTools.length > 0 || writableTargets.length > 0
         ? await resolveRunOutputContract(state, conversationId)
@@ -451,16 +440,6 @@ export async function buildToolInjection(
     };
   }
 
-  // STOPGAP: arm the coding toolset client-side while a sandbox is bound.
-  // Remove once aidream's `sandbox-fs` capability declares `enabled_tools`.
-  // Skipped under the disable-injection brake — it's an automatic injection.
-  if (!disableInjection && activeCapabilities.includes("sandbox-fs")) {
-    for (const name of SANDBOX_FS_STOPGAP_TOOL_NAMES) {
-      // delegate:false — these run server-side and proxy into the box.
-      allTools.push({ kind: "registered", name, delegate: false });
-    }
-  }
-
   // The DB-registered surface name the server resolves to a tool set via
   // tool_resolve_for_request + tool.surface_defaults.always_include_tools
   // (e.g. matrx-user/chat carries the UI-first tools; most surfaces carry
@@ -519,6 +498,45 @@ export async function buildToolInjection(
 }
 
 /**
+ * The person's effective auto-tools switch for this conversation: their
+ * per-chat choice when they made one, else the agent's own default
+ * (`auto_tools_disabled`, read from the slice; unknown ⇒ on).
+ */
+export function selectEffectiveAutoTools(
+  state: ChatRootState,
+  conversationId: string,
+): boolean {
+  const choice =
+    selectBuilderAdvancedSettings(conversationId)(state)?.autoTools ?? null;
+  if (choice !== null) return choice;
+  const agentId = state.conversations.byConversationId[conversationId]?.agentId;
+  return !(agentId ? selectAgentAutoToolsDisabled(state, agentId) : false);
+}
+
+/**
+ * The person's tool decisions for this conversation, as the server's USER
+ * layer (TOOL-SOURCES P2 / A / U): picks → `user.add`, removals →
+ * `user.remove`, the per-chat switch → `user.auto_tools` (omitted while it
+ * follows the agent). Empty object when the person decided nothing.
+ */
+export function buildUserToolOverrides(
+  state: ChatRootState,
+  conversationId: string,
+): Pick<UserOverrides, "add" | "remove" | "auto_tools"> {
+  const settings = selectBuilderAdvancedSettings(conversationId)(state);
+  const unique = (list: readonly string[] | undefined) =>
+    [...new Set((list ?? []).filter((v) => typeof v === "string" && v.length > 0))];
+  const remove = unique(settings?.removedTools);
+  const add = unique(settings?.addedTools).filter((id) => !remove.includes(id));
+  const autoTools = settings?.autoTools ?? null;
+  return {
+    ...(add.length > 0 && { add }),
+    ...(remove.length > 0 && { remove }),
+    ...(autoTools !== null && { auto_tools: autoTools }),
+  };
+}
+
+/**
  * The surface a request names as `client.surface` — the server's PRIMARY
  * surface for this turn (its surface resolver, and the saved-context-rule
  * lookup in aidream context_rules). One derivation, used here and by the
@@ -533,10 +551,16 @@ export function resolveClientSurface(
   const perConversation = selectBuilderAdvancedSettings(conversationId)(state);
   const launchSurface =
     state.conversations.byConversationId[conversationId]?.surfaceName ?? null;
+  // A run nobody can see (background, JSON answer) never borrows the ROUTE's
+  // surface: the route's defaults carry client-executed UI tools (the chat
+  // surface's `user`, `request_user_takeover`) that only a person can answer.
+  const routeGuess = isRunWithoutInterface(state, conversationId)
+    ? undefined
+    : detectActiveSurface();
   return (
     perConversation?.surfaceOverride ||
     launchSurface ||
-    detectActiveSurface() ||
+    routeGuess ||
     undefined
   );
 }

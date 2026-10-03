@@ -6,18 +6,17 @@
  * Quickset tab, the attach menu's Tools view, the phone + sheet's Tools page).
  *
  * Three parts, nothing else (Arman, 2026-10-03):
- *   1. Automatic tools — one switch: may the server add tools for this chat
- *      (`builderAdvancedSettings.disableToolInjection`, per conversation; the
- *      agent's own `auto_tools_disabled` overrides it and locks the switch).
+ *   1. Automatic tools — THE per-chat switch (`builderAdvancedSettings.autoTools`,
+ *      sent as `user.auto_tools`, saved with the conversation). It shows the
+ *      agent's own default until the person flips it; the person wins both
+ *      ways (TOOL-SOURCES rule A).
  *   2. This agent's tools — the agent's REAL saved tool set, read live from
- *      the agentDefinition slice (registry tools + custom tools), plus the
- *      tools added for this run, each removable. The agent's own set is
- *      edited in the Agent Builder: the run request has no per-run exclude
- *      field, so it is listed, not switchable, here.
+ *      the agentDefinition slice (registry tools + custom tools). Each can be
+ *      removed for this chat (`removedTools` → `user.remove`, absolute).
  *   3. Add tools — the full registry catalog, grouped by category, searchable;
  *      one click adds to (or removes from) `builderAdvancedSettings.addedTools`,
- *      which `buildToolInjection` folds into the request on top of the agent's
- *      own tools. Tools the agent already has are marked and not addable twice.
+ *      sent as `user.add`. Tools the agent already has are marked and not
+ *      addable twice.
  *
  * Layout is the shared two-list `RunPicksSurface` (also RunSkillPicker's):
  * two columns at ≥ 42rem of its own width, otherwise one pane at a time.
@@ -30,13 +29,13 @@
 import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import { readOf } from "@host/components/read-state/ReadGate";
 import { useEffect } from "react";
-import { AlertTriangle, Code2, Wrench } from "lucide-react";
+import { AlertTriangle, Code2, Undo2, Wrench, X } from "lucide-react";
+import { PickerRow } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import type { DatabaseTool } from "@host/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { PickerEmpty } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import {
   RunPicksSurface,
-  PicksLine,
   PicksNote,
   PicksNotice,
   PicksSkeletons,
@@ -169,11 +168,29 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
     setAdded(
       added.has(id) ? addedList.filter((t) => t !== id) : [...addedList, id],
     );
-  const setServerMayAdd = (allow: boolean) =>
+  // The switch shows the agent's default until the person flips it; flipping
+  // back to the default returns to "follow the agent" (null).
+  const agentDefaultOn = !autoToolsDisabled;
+  const autoChoice = settings.autoTools ?? null;
+  const autoOn = autoChoice ?? agentDefaultOn;
+  const setAutoTools = (on: boolean) =>
     dispatch(
       setBuilderAdvancedSettings({
         conversationId,
-        changes: { disableToolInjection: !allow },
+        changes: { autoTools: on === agentDefaultOn ? null : on },
+      }),
+    );
+  const removedList = settings.removedTools ?? [];
+  const removed = new Set(removedList);
+  const toggleRemoved = (name: string) =>
+    dispatch(
+      setBuilderAdvancedSettings({
+        conversationId,
+        changes: {
+          removedTools: removed.has(name)
+            ? removedList.filter((n) => n !== name)
+            : [...removedList, name],
+        },
       }),
     );
 
@@ -231,25 +248,55 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
     <div className="flex flex-col">
       {builtInIds.map((id) => {
         const t = toolMap.get(id);
+        // Removals travel by NAME (the server matches names on every entry).
+        const name = t?.name ?? id;
+        const isRemoved = removed.has(name);
         return (
-          <PicksLine
+          <PickerRow
             key={id}
             icon={Wrench}
-            label={t ? getToolDisplayName(t.name) : "Unknown tool"}
-            detail={t ? toolCategoryLabel(t.category) : undefined}
-            title={t?.description ?? (t ? undefined : id)}
+            label={
+              <span className={isRemoved ? "text-muted-foreground line-through" : undefined}>
+                {t ? getToolDisplayName(t.name) : "Unknown tool"}
+              </span>
+            }
+            title={isRemoved ? "Restore for this chat" : "Remove for this chat"}
+            pressed={!isRemoved}
+            trailing={
+              isRemoved ? (
+                <Undo2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <X className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )
+            }
+            onClick={() => toggleRemoved(name)}
           />
         );
       })}
-      {customList.map((t) => (
-        <PicksLine
-          key={t.name}
-          icon={Code2}
-          label={getToolDisplayName(t.name)}
-          detail="Custom"
-          title={t.description ?? undefined}
-        />
-      ))}
+      {customList.map((t) => {
+        const isRemoved = removed.has(t.name);
+        return (
+          <PickerRow
+            key={t.name}
+            icon={Code2}
+            label={
+              <span className={isRemoved ? "text-muted-foreground line-through" : undefined}>
+                {getToolDisplayName(t.name)}
+              </span>
+            }
+            title={isRemoved ? "Restore for this chat" : "Remove for this chat"}
+            pressed={!isRemoved}
+            trailing={
+              isRemoved ? (
+                <Undo2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              ) : (
+                <X className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )
+            }
+            onClick={() => toggleRemoved(t.name)}
+          />
+        );
+      })}
     </div>
   );
 
@@ -259,13 +306,11 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
       icon={Wrench}
       topSlot={
         <PicksSwitchRow
-          label="Server can add tools"
-          checked={
-            !(settings.disableToolInjection ?? false) && !autoToolsDisabled
-          }
-          disabled={autoToolsDisabled}
-          disabledTitle="Turned off in this agent's settings"
-          onCheckedChange={setServerMayAdd}
+          label="Auto tools"
+          detail={autoChoice === null ? "Agent default" : "This chat"}
+          title={`Agent default: ${agentDefaultOn ? "on" : "off"}`}
+          checked={autoOn}
+          onCheckedChange={setAutoTools}
         />
       }
       notice={

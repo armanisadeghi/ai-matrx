@@ -226,7 +226,8 @@ export function useRunControlsState(
     hasModelOverride ||
     anyDocActive ||
     hasActiveContext ||
-    !!settings?.disableToolInjection ||
+    (settings?.autoTools ?? null) !== null ||
+    (settings?.removedTools?.length ?? 0) > 0 ||
     !!settings?.surfaceOverride;
 
   const tabTrailing = (tabId: RunControlsTab): ReactNode => {

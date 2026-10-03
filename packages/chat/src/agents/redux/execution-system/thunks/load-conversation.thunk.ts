@@ -334,6 +334,8 @@ export const loadConversation = createAsyncThunk<
         addedTools?: string[];
         addedSkills?: string[];
         addedMcpServers?: string[];
+        removedTools?: string[];
+        autoTools?: boolean | null;
       } = {};
       if (!local.addedTools.length && storedRun.addedTools.length)
         changes.addedTools = storedRun.addedTools;
@@ -341,6 +343,10 @@ export const loadConversation = createAsyncThunk<
         changes.addedSkills = storedRun.addedSkills;
       if (!local.addedMcpServers.length && storedRun.addedMcpServers.length)
         changes.addedMcpServers = storedRun.addedMcpServers;
+      if (!local.removedTools.length && storedRun.removedTools.length)
+        changes.removedTools = storedRun.removedTools;
+      if (local.autoTools === null && storedRun.autoTools !== null)
+        changes.autoTools = storedRun.autoTools;
       if (Object.keys(changes).length) {
         dispatch(setBuilderAdvancedSettings({ conversationId, changes }));
       }

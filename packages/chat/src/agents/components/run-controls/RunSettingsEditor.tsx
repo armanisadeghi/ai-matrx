@@ -133,20 +133,6 @@ export function RunSettingsQuickControls({
         quickset={quickset}
       />
       <SettingsRow
-        id={`disable-tool-injection-${conversationId}`}
-        label="Disable Tool Injection"
-        checked={settings.disableToolInjection ?? false}
-        quickset={quickset}
-        onChange={(value) =>
-          dispatch(
-            setBuilderAdvancedSettings({
-              conversationId,
-              changes: { disableToolInjection: value },
-            }),
-          )
-        }
-      />
-      <SettingsRow
         id={`debug-${conversationId}`}
         label="Debug Mode"
         checked={settings.debug}
@@ -495,7 +481,6 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
             Reference
           </h3>
           <p>Surface Simulator changes the surface reported for this run, which changes the available surface tools.</p>
-          <p>Disable Tool Injection prevents automatic surface and capability tools; the agent&apos;s saved tools remain available.</p>
           <p>Conversation Memory is queued for the next turn. Configure and inspect its persisted details from Memory Inspector.</p>
           {isAdmin && <p>Block, Snapshot, V2 Spine, routes, and request overrides are advanced admin/test controls.</p>}
         </section>

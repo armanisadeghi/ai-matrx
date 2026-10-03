@@ -34,7 +34,8 @@ export function buildChatRunConfiguration(
 
   const addedTools = settings?.addedTools ?? [];
   const addedSkills = settings?.addedSkills ?? [];
-  const disableToolInjection = settings?.disableToolInjection ?? false;
+  const removedTools = settings?.removedTools ?? [];
+  const autoTools = settings?.autoTools ?? null;
   const surfaceOverride = settings?.surfaceOverride ?? null;
   const debug = settings?.debug ?? false;
 
@@ -59,15 +60,17 @@ export function buildChatRunConfiguration(
     addedSkills.length > 0 ||
     overriddenSettings.length > 0 ||
     sandbox !== null ||
-    disableToolInjection ||
+    removedTools.length > 0 ||
+    autoTools !== null ||
     surfaceOverride !== null ||
     debug;
   if (!customized) return null;
 
   return {
     added_tools: addedTools,
+    removed_tools: removedTools,
     added_skills: addedSkills,
-    disable_tool_injection: disableToolInjection,
+    auto_tools: autoTools,
     surface_override: surfaceOverride,
     overridden_settings: overriddenSettings,
     model_override: modelOverride,

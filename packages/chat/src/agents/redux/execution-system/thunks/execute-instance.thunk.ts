@@ -27,10 +27,7 @@ import {
 import { mintClientTempId } from "@ai-matrx/kit/ids";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import type {
-  AssembledAgentStartRequest,
-  UserOverrides,
-} from "../../../types/request.types";
+import type { AssembledAgentStartRequest } from "../../../types/request.types";
 import type { RequestInitiation } from "../../../types/instance.types";
 import { toast } from "../../../../host/notify";
 import { buildToolInjection } from "../utils/build-tool-injection";
@@ -90,7 +87,8 @@ import {
 import { resolveEndpointPath } from "@ai-matrx/agents/matrx";
 import { resolveStartPath } from "../utils/resolve-start-path";
 import { selectEndpointOverrideConfig } from "../../../../host/server/api-config";
-import { selectDesktopTargetInstanceId, selectDirectiveApplyPolicy } from "../../../../host/prefs";
+import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
+import { buildRequestUserOverrides } from "../utils/request-user-overrides";
 import {
   createRequest,
   setRequestStatus,
@@ -437,24 +435,11 @@ export function assembleRequest(
   // highest-priority leg of the backend cascade (agent → surface → user).
   // "default" means "don't send" — let the backend resolve its own default
   // (`ask` → approval card). Any other value flows through on every turn.
-  const userOverrides = buildUserOverrides(state);
+  const userOverrides = buildRequestUserOverrides(state, conversationId);
   if (userOverrides) request.user = userOverrides;
 
   rememberRequestContextRows(request, contextRows);
   return request;
-}
-
-/**
- * Builds the USER-layer overrides object from user preferences. Returns
- * `undefined` when nothing is set (so we omit the `user` field entirely and
- * let the backend resolve from the surface / agent / default cascade).
- */
-function buildUserOverrides(state: ChatRootState): UserOverrides | undefined {
-  const applyPolicy = selectDirectiveApplyPolicy(state);
-  if (applyPolicy && applyPolicy !== "default") {
-    return { apply_policy: applyPolicy };
-  }
-  return undefined;
 }
 
 // =============================================================================

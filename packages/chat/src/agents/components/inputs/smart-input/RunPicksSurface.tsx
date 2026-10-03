@@ -273,12 +273,17 @@ export function RunPicksSurface({
 /** The one-line switch row a domain puts in `topSlot`. */
 export function PicksSwitchRow({
   label,
+  detail,
+  title,
   checked,
   disabled,
   disabledTitle,
   onCheckedChange,
 }: {
   label: string;
+  /** Short muted note before the switch (e.g. "Agent default"). */
+  detail?: string;
+  title?: string;
   checked: boolean;
   disabled?: boolean;
   disabledTitle?: string;
@@ -290,9 +295,12 @@ export function PicksSwitchRow({
         "flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-sm text-foreground hover:bg-accent pointer-coarse:h-11",
         disabled && "cursor-not-allowed opacity-60 hover:bg-transparent",
       )}
-      title={disabled ? disabledTitle : undefined}
+      title={disabled ? disabledTitle : title}
     >
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {detail ? (
+        <span className="shrink-0 text-xs text-muted-foreground">{detail}</span>
+      ) : null}
       <Switch
         checked={checked}
         disabled={disabled}

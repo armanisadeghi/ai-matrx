@@ -191,6 +191,7 @@ import { selectModelById } from "@host/features/ai-models/redux/modelRegistrySli
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { payloadSafetyStore } from "@ai-matrx/kit/payload-safety";
 import { netRequests } from "../../../../host/diagnostics";
+import { buildRequestUserOverrides } from "../utils/request-user-overrides";
 import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
@@ -596,6 +597,11 @@ export async function assembleManualRequest(
     request.agent_id = agent.parentAgentId ?? agent.id;
     request.is_version = agent.isVersion;
   }
+
+  // USER layer — the person's tool picks / removals / auto-tools switch and
+  // apply policy ride the builder's manual run too (TOOL-SOURCES rule R).
+  const userOverrides = buildRequestUserOverrides(state, conversationId);
+  if (userOverrides) request.user = userOverrides as ChatRequestPayload["user"];
 
   // Manual request-override escape hatch ("Chat Options → Settings"). A raw
   // JSON object the user typed is shallow-merged onto the final body — for

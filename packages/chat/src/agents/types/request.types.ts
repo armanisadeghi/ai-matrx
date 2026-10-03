@@ -891,8 +891,15 @@ export interface PendingToolCall {
 // with the wire schema while carrying the wrong shape.
 // =============================================================================
 
-/** USER-layer overrides — OpenAPI `UserOverrides` (add / remove / apply_policy). */
-export type UserOverrides = components["schemas"]["UserOverrides"];
+/**
+ * USER-layer overrides — OpenAPI `UserOverrides` (add / remove / apply_policy /
+ * auto_tools). `auto_tools` is in the regenerated contract (aidream 4e2b043398)
+ * but not yet in the installed `@ai-matrx/agents` 0.43.14; the intersection is
+ * a no-op from the next publish and goes with the next `pnpm sync-types`.
+ */
+export type UserOverrides = components["schemas"]["UserOverrides"] & {
+  auto_tools?: boolean | null;
+};
 
 /**
  * Outbound body for POST /ai/agents/{agent_id} while it is being assembled.

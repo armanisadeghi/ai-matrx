@@ -38,7 +38,7 @@ import {
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
-import type { UserOverrides } from "../../../types/request.types";
+import { buildRequestUserOverrides } from "../utils/request-user-overrides";
 
 import { generateRequestId } from "../utils/ids";
 import {
@@ -79,7 +79,7 @@ import {
   patchConversation,
   setInstanceStatus,
 } from "../conversations/conversations.slice";
-import { selectDesktopTargetInstanceId, selectDirectiveApplyPolicy } from "../../../../host/prefs";
+import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 import {
   selectProjectId,
   selectScopeSelectionsContext,
@@ -298,14 +298,9 @@ export const resumeInstance = createAsyncThunk<
         ),
       );
 
-      // USER-layer apply policy — keep the resumed loop's directive handling
-      // aligned with the user's preference (highest-priority cascade leg).
-      // "default" → omit (let the backend resolve its own default).
-      const applyPolicy = selectDirectiveApplyPolicy(state);
-      const userOverrides: UserOverrides | undefined =
-        applyPolicy && applyPolicy !== "default"
-          ? { apply_policy: applyPolicy }
-          : undefined;
+      // USER layer — the person's apply policy, tool picks, removals and
+      // auto-tools switch, exactly as the original turn sent them.
+      const userOverrides = buildRequestUserOverrides(state, conversationId);
       const desktopTargetInstanceId = selectDesktopTargetInstanceId(state);
 
       // Conversation identity — same contract as continue turns. Resume used

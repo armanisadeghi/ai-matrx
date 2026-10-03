@@ -434,7 +434,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "run_configuration",
     label: "Run configuration",
     description:
-      "Composite of the user's Chat Options customization for this run: { added_tools, added_skills, disable_tool_injection, surface_override, overridden_settings, model_override, sandbox, debug }. Empty when the run has no customization (all defaults).",
+      "Composite of the user's Chat Options customization for this run: { added_tools, removed_tools, added_skills, auto_tools, surface_override, overridden_settings, model_override, sandbox, debug }. Empty when the run has no customization (all defaults).",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 350,
@@ -636,8 +636,10 @@ export interface ChatSandboxBindingRef {
 /** Composite Chat Options customization emitted in `run_configuration`. */
 export interface ChatRunConfigurationRef {
   added_tools: string[];
+  removed_tools: string[];
   added_skills: string[];
-  disable_tool_injection: boolean;
+  /** The person's per-chat auto-tools switch; null = follows the agent. */
+  auto_tools: boolean | null;
   surface_override: string | null;
   /** Keys of instance-level LLM setting overrides (e.g. ["model", "temperature"]). */
   overridden_settings: string[];

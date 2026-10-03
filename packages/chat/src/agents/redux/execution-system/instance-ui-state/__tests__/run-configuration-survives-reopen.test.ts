@@ -118,6 +118,8 @@ it("persists tools and skills added mid-turn once the turn completes, keeping th
     addedTools: [TOOL],
     addedSkills: [SKILL],
     addedMcpServers: [],
+    removedTools: [],
+    autoTools: null,
   });
 });
 
@@ -126,7 +128,19 @@ it("parse round-trips the stored shape and ignores junk", () => {
     parsePersistedRunConfiguration({
       run_configuration: { added_tools: [TOOL, 3, ""], added_skills: [SKILL] },
     }),
-  ).toEqual({ addedTools: [TOOL], addedSkills: [SKILL], addedMcpServers: [] });
+  ).toEqual({
+    addedTools: [TOOL],
+    addedSkills: [SKILL],
+    addedMcpServers: [],
+    removedTools: [],
+    autoTools: null,
+  });
+  // The per-chat switch and removals survive a reopen too.
+  expect(
+    parsePersistedRunConfiguration({
+      run_configuration: { removed_tools: ["web"], auto_tools: false },
+    }),
+  ).toMatchObject({ removedTools: ["web"], autoTools: false });
   expect(parsePersistedRunConfiguration({})).toBeNull();
   expect(parsePersistedRunConfiguration(null)).toBeNull();
 });

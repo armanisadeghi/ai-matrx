@@ -3,7 +3,8 @@
 // THE RUN CONFIGURATION SURVIVES A REOPEN (table stakes — never lose what the
 // person set). Tools, skills and MCP servers a person adds to ONE
 // conversation (`builderAdvancedSettings.addedTools / addedSkills /
-// addedMcpServers`) lived only in Redux: reopening the conversation from
+// addedMcpServers`), the tools they remove (`removedTools`) and their
+// auto-tools switch (`autoTools`) lived only in Redux: reopening the conversation from
 // history showed Tools 0 / Skills 0 and the next turn ran without them (phone
 // run PB-08 #2, 2026-10-01).
 //
@@ -37,12 +38,18 @@ export interface PersistedRunConfiguration {
   addedTools: string[];
   addedSkills: string[];
   addedMcpServers: string[];
+  /** Tools the person removed for this chat (`user.remove`). */
+  removedTools: string[];
+  /** The per-chat auto-tools switch; null = follow the agent. */
+  autoTools: boolean | null;
 }
 
 const EMPTY: PersistedRunConfiguration = {
   addedTools: [],
   addedSkills: [],
   addedMcpServers: [],
+  removedTools: [],
+  autoTools: null,
 };
 
 function strings(value: unknown): string[] {
@@ -63,6 +70,8 @@ export function parsePersistedRunConfiguration(
     addedTools: strings(r.added_tools),
     addedSkills: strings(r.added_skills),
     addedMcpServers: strings(r.added_mcp_servers),
+    removedTools: strings(r.removed_tools),
+    autoTools: typeof r.auto_tools === "boolean" ? r.auto_tools : null,
   };
 }
 
@@ -71,6 +80,8 @@ function toStored(config: PersistedRunConfiguration) {
     added_tools: config.addedTools,
     added_skills: config.addedSkills,
     added_mcp_servers: config.addedMcpServers,
+    removed_tools: config.removedTools,
+    auto_tools: config.autoTools,
   };
 }
 
@@ -79,6 +90,8 @@ export function runConfigurationSignature(config: PersistedRunConfiguration): st
     [...config.addedTools].sort(),
     [...config.addedSkills].sort(),
     [...config.addedMcpServers].sort(),
+    [...config.removedTools].sort(),
+    config.autoTools,
   ]);
 }
 
@@ -93,6 +106,8 @@ export function selectRunConfiguration(
     addedTools: s.addedTools ?? [],
     addedSkills: s.addedSkills ?? [],
     addedMcpServers: s.addedMcpServers ?? [],
+    removedTools: s.removedTools ?? [],
+    autoTools: s.autoTools ?? null,
   };
 }
 

@@ -36,6 +36,7 @@ jest.mock("../../../../../surfaces/runtime/registry", () => ({
   // No surface authored the value (the registry fallback of `publishingPlace`).
   getDeclaringSurface: () => null,
   getManifest: (name: string) => mockGetManifest(name),
+  getSurfaceAncestry: () => [],
 }));
 
 // The capability providers register a large client module graph that this

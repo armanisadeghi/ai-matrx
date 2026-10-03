@@ -706,12 +706,15 @@ export interface BuilderAdvancedSettings {
   structuredInstruction: Partial<SystemInstruction>;
 
   /**
-   * Creator-only, THIS conversation only: when true, `buildToolInjection`
-   * omits `client.surface` so the server attaches no surface/automatic tools
-   * for this run. The request-scoped twin of the global creator brake
-   * (creatorDebugSlice.settings.disableToolInjection). Default false.
+   * THE PERSON'S per-chat auto-tools switch (TOOL-SOURCES rule A), sent as
+   * `user.auto_tools` on every turn and saved with the conversation
+   * (`metadata.run_configuration.auto_tools`). `null`/absent = follow the
+   * agent's own `auto_tools_disabled`; `true`/`false` overrides it both ways.
+   * OFF ⇒ the server adds no transient tools and the client offers no page
+   * tools; the agent's own tools, picks (`addedTools`) and self-healing tools
+   * still ride.
    */
-  disableToolInjection?: boolean;
+  autoTools?: boolean | null;
 
   /**
    * Creator-only "Surface Simulator": when set, `buildToolInjection` sends
@@ -724,13 +727,17 @@ export interface BuilderAdvancedSettings {
 
   /**
    * Tools the user added to THIS conversation from the Smart Input tools menu
-   * — registry tool UUIDs, server-executed (delegate:false), additive on top of
-   * the agent's own saved tools. `buildToolInjection` folds them into the
-   * request `tools`. These are explicit picks, so they ride regardless of the
-   * disable-injection brake (which only suppresses the surface's AUTOMATIC
-   * tools, not deliberate additions).
+   * — registry tool UUIDs. Sent as `user.add` (TOOL-SOURCES P2): explicit
+   * picks survive the auto-tools switch and beat the agent's forbidden list.
+   * Never mixed into the anonymous request `tools[]`.
    */
   addedTools?: string[];
+
+  /**
+   * Tools the person REMOVED from THIS conversation (registry tool names, or a
+   * custom tool's name). Sent as `user.remove` — absolute on the server.
+   */
+  removedTools?: string[];
 
   /**
    * Connected MCP servers explicitly enabled for THIS conversation. These are
@@ -813,9 +820,10 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   maxRetriesPerIteration: 2,
   useStructuredSystemInstruction: false,
   structuredInstruction: {},
-  disableToolInjection: false,
+  autoTools: null,
   surfaceOverride: null,
   addedTools: [],
+  removedTools: [],
   addedMcpServers: [],
   addedSkills: [],
   outputTypes: ["text"],
