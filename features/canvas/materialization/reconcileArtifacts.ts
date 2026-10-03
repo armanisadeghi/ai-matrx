@@ -12,7 +12,8 @@
  *
  * Which records it acts on is decided by the SAME detector the live commit
  * uses (`holdsMaterializableContent` → `planMaterialization`), capped per load
- * to avoid write storms.
+ * to avoid write storms, and scanned OFF the critical path in time slices of
+ * `RECONCILE_SLICE_MS`.
  *
  * `reconcileSourceBlocks` is the ANY-SURFACE core (the pre-filter + cap were
  * always source-agnostic); `reconcileMessagesArtifacts` is the chat
@@ -45,6 +46,27 @@ export function holdsMaterializableContent(content: unknown): boolean {
   return plan.hasChanges || plan.materializedArtifactIds.length > 0;
 }
 
+// ── Main-thread budget ───────────────────────────────────────────────────────
+
+/**
+ * The scan runs the block splitter on EVERY record, so on a long conversation
+ * it is real work: measured 2026-10-02 on clone conversations, 14–38 ms for
+ * 835–874 assistant messages in Node (more in a dev browser), all of it ONE
+ * synchronous block inside the conversation-load thunk. It now never runs in
+ * the caller's task and yields to the main thread whenever a slice exceeds
+ * this budget, so no load ever carries a reconcile long task.
+ */
+export const RECONCILE_SLICE_MS = 8;
+
+type SchedulerWithYield = { yield?: () => Promise<void> };
+
+/** Give the main thread back: `scheduler.yield()` where it exists, else a macrotask. */
+function yieldToMain(): Promise<void> {
+  const scheduler = (globalThis as { scheduler?: SchedulerWithYield }).scheduler;
+  if (typeof scheduler?.yield === "function") return scheduler.yield();
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 // ── Any-surface core ─────────────────────────────────────────────────────────
 
 export interface SourceReconcileInput {
@@ -73,8 +95,16 @@ export async function reconcileSourceBlocks(
   const results: SourceReconcileResult[] = [];
   let processed = 0;
 
+  // Never scan inside the caller's task (the load thunk is on the critical path).
+  await yieldToMain();
+  let sliceStart = performance.now();
+
   for (const item of items) {
     if (processed >= max) break;
+    if (performance.now() - sliceStart >= RECONCILE_SLICE_MS) {
+      await yieldToMain();
+      sliceStart = performance.now();
+    }
     if (!holdsMaterializableContent(item.content)) continue;
 
     processed++;
@@ -106,6 +136,8 @@ export async function reconcileSourceBlocks(
         err,
       );
     }
+    // materializeBlocks awaited I/O — the thread was given back; a new slice starts.
+    sliceStart = performance.now();
   }
 
   return results;
