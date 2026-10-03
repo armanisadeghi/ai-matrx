@@ -7,7 +7,7 @@
 //                 drawer holding the modes AND the actions. Never cram the
 //                 phone header — few things up top, everything else in the sheet.
 //
-// Actions are DECLARATIVE so the same list renders as glass tap targets on
+// Actions are DECLARATIVE so the same list renders as transparent tap targets on
 // desktop and drawer rows on mobile. `primary` renders solid primary,
 // `destructive` renders solid bg-destructive (per /demos/button-demo).
 // Tap targets carry their own 44px geometry — never wrap them in gap/padding.
@@ -33,9 +33,9 @@ import {
 } from "@/features/shell/components/header/RouteModeNav";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import {
-  TapTargetButton,
   TapTargetButtonDestructive,
   TapTargetButtonSolid,
+  TapTargetButtonTransparent,
 } from "@ai-matrx/tap-target";
 import {
   BottomSheet,
@@ -78,7 +78,7 @@ export interface EntityHeaderAction {
    */
   newTab?: boolean;
   /**
-   * Show the NAME beside the icon on desktop (glass, not solid). For a page
+   * Show the NAME beside the icon on desktop (transparent, not solid). For a page
    * whose icon-only actions would otherwise read as unlabeled glyphs.
    */
   showLabel?: boolean;
@@ -122,7 +122,7 @@ export interface EntityModeHeaderProps {
    * the mode you are NOT in (View ⇄ Edit) — instead of a trip into the sheet.
    */
   modeSwitchOnPhone?: boolean;
-  /** Declarative actions — glass tap targets on desktop, drawer rows on mobile. */
+  /** Declarative actions — transparent tap targets on desktop, drawer rows on mobile. */
   actions?: EntityHeaderAction[];
   /** Desktop-only extra controls (e.g. a Switch). Hidden below sm. */
   right?: React.ReactNode;
@@ -139,7 +139,7 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
     rel: action.newTab ? "noopener noreferrer" : undefined,
   };
   // Primary + destructive show their NAME inline (like the demo's Send /
-  // Delete pills); plain glass actions stay icon-only with a tooltip
+  // Delete pills); plain actions stay icon-only with a tooltip
   // (tap targets tooltip automatically from ariaLabel when no label).
   if (action.destructive) {
     return <TapTargetButtonDestructive {...shared} label={action.label} />;
@@ -160,10 +160,10 @@ function DesktopAction({ action }: { action: EntityHeaderAction }) {
   }
   if (action.showLabel) {
     return (
-      <TapTargetButton {...shared} ariaLabel={action.label} label={action.label} />
+      <TapTargetButtonTransparent {...shared} ariaLabel={action.label} label={action.label} />
     );
   }
-  return <TapTargetButton {...shared} ariaLabel={action.label} />;
+  return <TapTargetButtonTransparent {...shared} ariaLabel={action.label} />;
 }
 
 /**
@@ -316,23 +316,17 @@ export function EntityModeHeader({
       <RouteHeader
         left={
           <>
-            {/* ALL GLASS OR NONE (tap-target placement rule 2): the back
-                button and the entity's name share ONE glass capsule instead of
-                a glass circle beside bare text (CrumbTrailHeader's shape). The
-                back button is the group variant; the name adds the half-gap. */}
-            <div
-              data-matrx-glass
-              className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-0 items-center rounded-full"
-            >
-            <ChevronLeftTapButton variant="group" href={resolvedBackHref} ariaLabel="Back" />
+            {/* THE HEADER IS NOT GLASS (owner, 2026-10-03): the shell paints
+                the band solid, so every control in it is transparent. The name
+                beside the back button carries its own inset (rule 3). */}
+            <ChevronLeftTapButton variant="transparent" href={resolvedBackHref} ariaLabel="Back" />
             {entityOptions && entityOptions.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     aria-label="Switch"
-                    data-matrx-glass
-                    className="flex items-center gap-0.5 min-w-0 rounded-full ms-1 me-1 px-1.5 py-0.5 hover:bg-[var(--matrx-glass-bg-active)] transition-colors"
+                    className="flex items-center gap-0.5 min-w-0 rounded-full ms-[3px] px-1.5 py-0.5 hover:bg-[var(--matrx-glass-bg-active)] transition-colors"
                   >
                     {label}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -366,9 +360,8 @@ export function EntityModeHeader({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <span data-matrx-glass className="flex min-w-0 items-center ps-1 pe-2.5">{label}</span>
+              <span className="flex min-w-0 items-center ps-[3px]">{label}</span>
             )}
-            </div>
             {isPhone &&
               modeSwitchOnPhone &&
               modes
@@ -378,7 +371,7 @@ export function EntityModeHeader({
                   const Icon = m.icon ?? MoreHorizontal;
                   return (
                     <span key={`mode-${m.href}`} className="shrink-0">
-                      <TapTargetButton
+                      <TapTargetButtonTransparent
                         icon={<Icon className="h-4 w-4" />}
                         ariaLabel={m.name}
                         onClick={() =>
@@ -407,7 +400,7 @@ export function EntityModeHeader({
                       {a.primary ? (
                         <TapTargetButtonSolid {...shared} />
                       ) : (
-                        <TapTargetButton {...shared} />
+                        <TapTargetButtonTransparent {...shared} />
                       )}
                     </span>
                   );
@@ -450,7 +443,7 @@ export function EntityModeHeader({
             {/* Mobile: one trigger, everything in the drawer */}
             {hasSheet && (
               <div className="sm:hidden">
-                <TapTargetButton
+                <TapTargetButtonTransparent
                   icon={<MoreHorizontal className="h-4 w-4" />}
                   ariaLabel="More"
                   onClick={() => setSheetOpen(true)}

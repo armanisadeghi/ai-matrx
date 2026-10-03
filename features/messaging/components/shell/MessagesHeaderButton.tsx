@@ -48,6 +48,7 @@ function GuestMessagesButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
     <MessageTapButton
+      variant="transparent"
       ariaLabel="Messages — sign in to message people"
       tooltip="Messages (sign in)"
       onClick={() => openAuthGate(MESSAGES_AUTH_GATE)}
@@ -62,6 +63,7 @@ function SignedInMessagesButton() {
   return (
     <div className="relative shrink-0" data-messages-header-button>
       <MessageTapButton
+        variant="transparent"
         ariaLabel={label}
         tooltip={label}
         className={unread > 0 ? "text-primary" : undefined}

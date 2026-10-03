@@ -131,8 +131,10 @@ interface RouteModeNavProps {
   fallbackLabel?: string;
 }
 
+// A solid track, never glass: the header band is solid, so nothing moves
+// behind it ("glass only floats" — owner, 2026-10-03).
 const PILL =
-  "matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
+  "bg-muted flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
 // Route navigation lives inside the shell's compact fixed-height header. The
 // collapsed mobile trigger alone is a true tap control, so it reserves a 44px
 // hit target without changing the compact desktop pill geometry. Its sheet

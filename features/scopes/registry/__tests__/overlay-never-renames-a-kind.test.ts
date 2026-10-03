@@ -34,7 +34,6 @@ const AWAITING_A_NAMING_RULING = new Set<string>([
   "sandbox_instance: Sandbox Instance → Sandboxes",
   "seo_keyword: SEO Keyword → Keywords",
   "spatial_board: Spatial Board → Boards",
-  "studio_session: Audio Session → Recordings",
   "udt_document: Cloud document → Documents",
   "web_brand: Brand → Marketing Accounts",
   "web_crawl_session: Crawl Session → Crawls",

@@ -20,8 +20,8 @@ const TRANSCRIPTS_NAV_ITEMS: RouteNavItem[] = TRANSCRIPTS_MODES.map(
 /**
  * Shared transcripts shell header — route nav + THE DOOR to Scribe's agents,
  * on the shared RouteHeader: the nav steps down (full → icons → menu) by the
- * main column's width and the door folds into "…" instead of the row
- * scrolling under its clip beside an open canvas.
+ * main column's width instead of the row scrolling under its clip beside an
+ * open canvas.
  */
 export function TranscriptsListHeader() {
   const pathname = usePathname();
@@ -29,7 +29,9 @@ export function TranscriptsListHeader() {
   return (
     <RouteHeader
       center={<RouteModeNav items={TRANSCRIPTS_NAV_ITEMS} activeHref={activeHref} />}
-      right={<MandateDoorLink feature="transcript_studio" label="Transcript agents" />}
+      // THE DOOR to Scribe's agents draws nothing in the row (disclosure lives
+      // in the shell's Agents menu), so it is no folding action.
+      left={<MandateDoorLink feature="transcript_studio" label="Transcript agents" />}
     />
   );
 }

@@ -22,7 +22,7 @@ import { useRef, useState } from "react";
 import { SurfaceAgentsPanelImpl } from "../../../next/lazy/SurfaceAgentsPanelImpl";
 import { Loader2 } from "lucide-react";
 
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
 import {
   Popover,
@@ -49,7 +49,7 @@ export const AGENTS_AUTH_GATE = {
 function GuestAgentsButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
-    <TapTargetButton
+    <TapTargetButtonTransparent
       icon={<INTELLIGENCE_ICON className="h-5 w-5" />}
       ariaLabel="Agents for this page — sign in to use them"
       tooltip="Agents (sign in)"
@@ -74,7 +74,7 @@ function SignedInAgentsButton() {
   };
 
   const trigger = (
-    <TapTargetButton
+    <TapTargetButtonTransparent
       icon={<INTELLIGENCE_ICON className="h-5 w-5" />}
       ariaLabel="Agents for this page"
       tooltip="Agents"

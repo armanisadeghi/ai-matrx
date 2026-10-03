@@ -32,6 +32,7 @@ import {
   Layers,
   LayoutGrid,
   List,
+  MessageSquareQuote,
   Mic,
   Notebook,
   StickyNote,
@@ -330,6 +331,16 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     typeLabel: "Code",
     icon: Code2,
     themeKey: "editor_code_snippet",
+    editable: false,
+    Body: GenericBody,
+  },
+  {
+    // A remark staged for the next message (instance-resources/remarks.ts). The
+    // chip names its own kind (Comment, Choice, Edit…) — see remark-display.ts.
+    blockTypes: ["input_remarks"],
+    typeLabel: "Comment",
+    icon: MessageSquareQuote,
+    themeKey: "input_remarks",
     editable: false,
     Body: GenericBody,
   },

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { Atom, ImageIcon } from "lucide-react";
-import { PlusTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
+import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   IMAGES_ROOT_PATH,
   findImagesRoute,
@@ -31,7 +31,7 @@ const IMAGE_MODE_ITEMS: RouteNavItem[] = [
 /**
  * The /images header on the shared RouteHeader: the title ellipsizes, the
  * Manager/Studio switch steps down (full → icons → menu) by the main column's
- * width, and the actions fold into "…" (Upload, the primary, stays) — so the
+ * width, and Upload (the one action) stays — so the
  * row fits beside an open canvas instead of scrolling under its clip.
  */
 export function ImagesListHeader() {
@@ -56,16 +56,9 @@ export function ImagesListHeader() {
         </div>
       }
       center={<RouteModeNav items={IMAGE_MODE_ITEMS} />}
-      right={
-        <>
-          <ZapTapButton
-            href="/images/studio"
-            ariaLabel="Open Image Studio"
-            label="Studio"
-          />
-          <PlusTapButton href="/images/upload" ariaLabel="Upload image" />
-        </>
-      }
+      // Studio is a mode in the nav — ONE control per choice (a second
+      // "Studio" button here pushed the nav out of a narrow row).
+      right={<PlusTapButton href="/images/upload" ariaLabel="Upload image" />}
     />
   );
 }

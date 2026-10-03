@@ -21,6 +21,7 @@ import {
   releaseComposerDraftAlias,
 } from "./composer-draft-store";
 import { applyComposerDraft } from "./restore-composer-draft.thunk";
+import { restoreComposerRemarks } from "./restore-composer-remarks.thunk";
 import {
   flushComposerDraftWrite,
   isDraftRestoreEnabled,
@@ -120,6 +121,8 @@ export function useComposerDraftRestore(
     setRestoredValue(null);
     setStorageAvailable(isComposerDraftStorageAvailable());
     if (!enabled) return;
+    // Staged remarks (comments, choices, edits…) come back as their chips.
+    dispatch(restoreComposerRemarks(conversationId, ownerId));
     const token = peekComposerDraft(conversationId, liveAlias, ownerId);
     if (!token) return;
     // Compare-and-apply — the thunk refuses the token if a send, another tab or

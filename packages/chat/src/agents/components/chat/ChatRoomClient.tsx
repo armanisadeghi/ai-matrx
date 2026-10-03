@@ -22,6 +22,10 @@ import {
   clearFocus,
 } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
+import {
+  readStoredRemarks,
+  restageRemarks,
+} from "../../redux/execution-system/instance-resources/remarks";
 import { chatRouteSurfaceKey, stageChatAgentSwitch } from "./begin-fresh-chat";
 import { buildChatComposerTextMenu } from "./agent-context/chatComposerTextMenu";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
@@ -583,6 +587,9 @@ export function ChatRoomClient({
         text: transfer.text,
       }),
     );
+    // "New chat about this": the passage arrives as a remark chip, never as text.
+    const remarks = readStoredRemarks(transfer.remarks);
+    if (remarks.length) dispatch(restageRemarks(liveConversationId, remarks));
   }, [
     conversationIdProp,
     liveConversationId,

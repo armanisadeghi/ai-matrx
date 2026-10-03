@@ -358,6 +358,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
           body: content,
           contentVersion: Math.max(1, record.contentVersion ?? 1),
           ...(record.href ? { href: record.href } : {}),
+          ...(record.conversationId ? { conversationId: record.conversationId } : {}),
         }
       : null;
 

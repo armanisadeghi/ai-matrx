@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
 import { AtSign, CalendarDays, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,8 @@ export interface MentionComposerProps {
   className?: string;
   /** The textarea, for a host that must hand focus to it (a menu that just closed). */
   inputRef?: MutableRefObject<HTMLTextAreaElement | null>;
+  /** A control at the start of the button row (a chat answer's "With next message" switch). */
+  leading?: ReactNode;
 }
 
 export function MentionComposer({
@@ -60,6 +62,7 @@ export function MentionComposer({
   secondary,
   className,
   inputRef,
+  leading,
 }: MentionComposerProps) {
   const [value, setValue] = useState(initialValue);
   const [second, setSecond] = useState("");
@@ -274,7 +277,8 @@ export function MentionComposer({
         />
       )}
       {error && <ErrorNotice size="inline" className="text-xs" message={error} />}
-      <div className="flex justify-end gap-1">
+      <div className="flex items-center justify-end gap-1">
+        {leading ? <div className="mr-auto flex min-w-0 items-center">{leading}</div> : null}
         {onCancel && (
           <Button size="sm" variant="ghost" onClick={onCancel} disabled={posting}>
             Cancel

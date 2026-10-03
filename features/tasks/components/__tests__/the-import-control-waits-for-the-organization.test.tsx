@@ -175,7 +175,7 @@ function render(): { host: HTMLElement; unmount: () => void } {
 
 function importButton(host: HTMLElement): HTMLButtonElement {
   const found = Array.from(host.querySelectorAll("button")).find((button) =>
-    (button.textContent ?? "").includes("Import from Google Tasks"),
+    button.getAttribute("aria-label") === "Import from Google Tasks",
   );
   if (!found) throw new Error("the import control did not render at all");
   return found as HTMLButtonElement;

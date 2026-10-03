@@ -150,7 +150,7 @@ function mount() {
 
 function importButton() {
   return [...container.querySelectorAll("button")].find((node) =>
-    (node.textContent ?? "").includes("Import from Google Tasks"),
+    node.getAttribute("aria-label") === "Import from Google Tasks",
   );
 }
 

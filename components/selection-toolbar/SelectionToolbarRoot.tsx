@@ -32,6 +32,9 @@ import { useOpenFeedbackWindow } from "@/features/overlays/openers/feedbackDialo
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { useRouter } from "next/navigation";
+import { toast } from "@/lib/toast";
+import { openNewChatAbout } from "@ai-matrx/chat/agents/components/chat/new-chat-about";
 import {
   zonesContaining,
   useSelectionZonesVersion,
@@ -122,6 +125,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
   const userId = useAppSelector(selectUserId);
   const dispatch = useAppDispatch();
   const openFeedback = useOpenFeedbackWindow();
+  const router = useRouter();
   const orgId = useAppSelector(selectOrganizationId);
   const highlightKnob = useEffectiveKnob(orgId, userId, HIGHLIGHT_WHILE_EDITING_KNOB);
   const highlightWhileEditing =
@@ -365,6 +369,17 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
           }),
         ),
       openFeedback: (report) => openFeedback(report),
+      newChatAbout: (passage) => {
+        openNewChatAbout({
+          passage,
+          identity: { userId: userId ?? null, organizationId: orgId ?? null },
+          dispatch,
+          navigate: (href) => React.startTransition(() => router.push(href)),
+        }).catch((error: unknown) => {
+          console.error("[selection-toolbar] New chat about this could not open:", error);
+          toast.error("The new chat could not open. Try again.");
+        });
+      },
     };
     const toolbar: SelectionToolbarHost = {
       kind: "selection-toolbar",
@@ -385,7 +400,7 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
       host: { ...halves, selectionToolbar: toolbar, [SELECTION_COMMON_HOST_KEY]: common },
     });
     // `open.seq` is the selection identity; a knob or mode flip re-targets too.
-  }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId, slots, dispatch, openFeedback]);
+  }, [open?.seq, open?.mode, highlightWhileEditing, ui, orgId, userId, slots, dispatch, openFeedback, router]);
 
   if (!open || !target) return null;
 

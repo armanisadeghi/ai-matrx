@@ -27,6 +27,18 @@ export const HIGHLIGHT_WHILE_EDITING_KNOB = {
 /** The code default while the knob loads (and the seeded default): off. */
 export const HIGHLIGHT_WHILE_EDITING_DEFAULT = false;
 
+/**
+ * The comment composer's "Send with my next message" switch on a chat answer
+ * (Turn References, ruling 5): its starting position. Default ON — a comment on
+ * an answer is usually meant for the agent, and the person can switch it off
+ * per comment.
+ */
+export const COMMENT_SENDS_WITH_NEXT_MESSAGE_KNOB = {
+  feature: SELECTION_TOOLBAR_KNOB_FEATURE,
+  key: "comment_sends_with_next_message",
+} as const;
+export const COMMENT_SENDS_WITH_NEXT_MESSAGE_DEFAULT = true;
+
 export interface SelectionToolbarKnobs {
   highlightWhileEditing: boolean;
 }
@@ -91,6 +103,8 @@ export const SELECTION_ACTION_MODES: Readonly<Record<string, ModeRule>> = {
   "selection:tutor-ask": ["read"],
   // Reporting (every annotated passage: study guides, documents in Annotate)
   "selection:report": ["read"],
+  // A chat answer's passage, taken to a new conversation as a comment
+  "selection:new-chat": ["read"],
   // Rich-editor tables (the caret or a selection in a table cell)
   "selection:table-row-above": ["edit"],
   "selection:table-row-below": ["edit"],
@@ -164,6 +178,8 @@ export interface SelectionCommonHost {
   shapeText: string | null;
   /** The app's feedback window (a passage report). */
   openFeedback(report: { title: string; subject: FeedbackSubject }): void;
+  /** Open a new chat with this passage of a chat answer staged as a comment (empty body). */
+  newChatAbout(passage: { quote: string; conversationId: string; messageId: string }): void;
 }
 
 // ── Fitting the bar: priority, then the registry's overflow ─────────────────
@@ -219,6 +235,7 @@ export const SELECTION_PRIORITY: Readonly<Record<SelectionMode, readonly string[
     "selection:tutor-ask",
     "selection:link-record",
     "selection:report",
+    "selection:new-chat",
     "selection:copy",
     "selection:save-to-notes",
     "selection:save-to-table",
@@ -245,6 +262,11 @@ function presentAt(id: string, target: ClickTarget): boolean {
   if (key === SELECTION_COMMON_HOST_KEY && id !== "selection:save-to-table") {
     const annotation = hostHalf<{ capture?: (o: { silent?: boolean }) => unknown }>(target, "annotation");
     if (annotation && (!annotation.capture || annotation.capture({ silent: true }))) return false;
+  }
+  // New chat about this is a chat answer's alone (its record carries the conversation).
+  if (id === "selection:new-chat") {
+    const annotation = hostHalf<{ source?: { token?: string; conversationId?: string } }>(target, "annotation");
+    if (annotation?.source?.token !== "message" || !annotation.source.conversationId) return false;
   }
   if (id.startsWith("selection:table-")) {
     const editor = hostHalf<{ inTable?: () => boolean }>(target, "richEditor");

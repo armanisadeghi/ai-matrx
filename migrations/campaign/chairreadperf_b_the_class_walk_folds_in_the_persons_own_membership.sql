@@ -113,12 +113,9 @@ begin
            -- a Confidential Table's row and a row with a parent answer from their own document
            (t.data ->> 'level' = 'confidential') is true
              or jsonb_typeof(x.data -> 'parent_id') = 'string' as alone,
-           -- this person's own live memberships on it, the only ones the ladder reads
-           (select string_agg(m.container_type || '/' || coalesce(m.role, '') || '/' || coalesce(m.status, ''), ','
-                              order by m.container_type, m.role, m.status)
-              from iam.memberships m
-             where m.container_type in ('record', 'scope') and m.container_id = u.id
-               and m.user_id = p_user_id and m.deleted_at is null) as mine,
+           -- this person's own live memberships on it, the only ones the ladder reads (read once for
+           -- the person, grouped, and joined: an aggregate run once per id cost 0.09 ms an id)
+           mm.mine,
            ( exists (select 1 from iam.permissions p
                       where p.resource_type = 'record' and p.resource_id = u.id)
           or exists (select 1 from platform.entity_grants g
@@ -147,6 +144,12 @@ begin
       from (select distinct unnest(p_ids) as id) u
       left join custom.record x on x.id = u.id
       left join custom.record t on t.organization_id = x.organization_id and t.id = x.table_id
+      left join (select m.container_id,
+                        string_agg(m.container_type || '/' || coalesce(m.role, '') || '/' || coalesce(m.status, ''), ','
+                                   order by m.container_type, m.role, m.status) as mine
+                   from iam.memberships m
+                  where m.user_id = p_user_id and m.container_type in ('record', 'scope') and m.deleted_at is null
+                  group by m.container_id) mm on mm.container_id = u.id
      where u.id is not null
   loop
     if not r.found or v_fk or r.table_id is null or r.table_id = v_kernel or r.named or r.alone then

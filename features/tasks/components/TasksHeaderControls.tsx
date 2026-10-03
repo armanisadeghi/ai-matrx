@@ -69,7 +69,7 @@ export function TasksHeaderControls() {
               />
             ) : null}
           </div>
-          <h1 className="ml-1 min-w-0 truncate text-sm font-medium text-foreground md:ml-2">
+          <h1 className="ml-1 shrink-0 text-sm font-medium text-foreground md:ml-2">
             Tasks
           </h1>
           {/* Page-layer assist chips (overdue pileup) — renders nothing when
@@ -82,13 +82,18 @@ export function TasksHeaderControls() {
           <span className="ml-1 shrink-0">
             <HrTasksDoor />
           </span>
+          {/* THE DOOR LAW — the agent that triages tasks is a Mandate
+              (`tasks.triage`) the user may swap for their own, with no deploy.
+              It draws nothing in the row (disclosure lives in the shell's
+              Agents menu), so it stays out of the folding actions. */}
+          <MandateDoorLink feature="tasks" label="Task agents" />
         </div>
       }
       right={
         <>
           {/* Google-native PLAN §4.7 — the import opens IN PLACE as a window, so
-              the list stays where it was. Read-only toward Google. Folds into
-              "…" first when the main column is narrow (beside the canvas). */}
+              the list stays where it was. Read-only toward Google. The one
+              action: below its width it goes icon-only. */}
           <Button
             size="sm"
             variant="ghost"
@@ -106,12 +111,8 @@ export function TasksHeaderControls() {
             )}
           >
             <CalendarCheck className="h-3.5 w-3.5" />
-            <span className="max-sm:sr-only" data-header-compact-label>Import from Google Tasks</span>
+            <span className="max-sm:sr-only" data-header-compact-label>Import</span>
           </Button>
-          {/* THE DOOR LAW — the agent that triages tasks is a Mandate
-              (`tasks.triage`) the user may swap for their own, with no deploy.
-              Deep-linked to the `tasks` domain. */}
-          <MandateDoorLink feature="tasks" label="Task agents" />
         </>
       }
     />

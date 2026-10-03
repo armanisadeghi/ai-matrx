@@ -27,6 +27,12 @@ export interface ChatDraftTransfer {
   targetAgentId: string;
   /** Prepared context rendered as an attachment, never composer text. */
   resources?: Resource[];
+  /**
+   * Remarks to stage in the new chat (instance-resources/remarks.ts StoredRemark
+   * shape — "New chat about this" carries the passage as a comment). Validated
+   * by the receiver with `readStoredRemarks`.
+   */
+  remarks?: unknown[];
   /** The transfer is valid only for the identity that created it. */
   userId?: string | null;
   organizationId?: string | null;
@@ -106,7 +112,7 @@ export function consumeChatDraftTransfer(
     }
     throw new Error("Prepared chat content was invalid and was not attached.");
   }
-  if (resources?.length && (!expectedIdentity ||
+  if ((resources?.length || parsed.remarks?.length) && (!expectedIdentity ||
     parsed.userId !== expectedIdentity.userId ||
     parsed.organizationId !== expectedIdentity.organizationId)) {
     try {

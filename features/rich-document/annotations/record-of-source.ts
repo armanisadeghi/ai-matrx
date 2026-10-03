@@ -15,6 +15,8 @@ export interface AnnotationRecord {
   title?: string;
   contentVersion?: number;
   href?: string;
+  /** A chat answer's conversation. */
+  conversationId?: string;
 }
 
 /** The record a ContentSource names, or null (raw, prompt results, an ephemeral working document…). */
@@ -37,6 +39,7 @@ export function annotationRecordOf(source: ContentSource): AnnotationRecord | nu
         id: messageId,
         title: "Chat answer",
         href: `/chat/${source.conversationId}`,
+        conversationId: source.conversationId,
       };
     }
     case "working-document":

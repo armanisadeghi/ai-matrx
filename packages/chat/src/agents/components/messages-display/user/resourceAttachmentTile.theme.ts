@@ -106,6 +106,11 @@ export const RESOURCE_ATTACHMENT_TILE_THEMES: Record<
       "bg-gradient-to-br from-red-100 via-red-50/95 to-white/80 dark:from-red-950/50 dark:via-red-950/25 dark:to-red-950/10",
     icon: "text-red-600 dark:text-red-400",
   },
+  remark: {
+    surface:
+      "bg-gradient-to-br from-amber-100 via-amber-50/95 to-white/80 dark:from-amber-950/50 dark:via-amber-950/25 dark:to-amber-950/10",
+    icon: "text-amber-600 dark:text-amber-400",
+  },
   editor_code_snippet: {
     surface:
       "bg-gradient-to-br from-cyan-100 via-cyan-50/95 to-white/80 dark:from-cyan-950/50 dark:via-cyan-950/25 dark:to-cyan-950/10",
@@ -140,6 +145,7 @@ const BLOCK_TYPE_THEME_KEY: Record<string, string> = {
   text: "default",
   editor_error: "editor_error",
   editor_code_snippet: "editor_code_snippet",
+  input_remarks: "remark",
   // demo ids
   "image-legacy": "image",
   "audio-legacy": "audio",

@@ -35,7 +35,17 @@ import { LinkRecordSheet } from "./LinkRecordSheet";
 import { PassageQuote } from "./PassageQuote";
 import type { AnnotationSource } from "./types";
 import { useSelectionZone, type SelectionToolbarUi } from "@/components/selection-toolbar/selection-zones";
-import { PASSAGE_ACTIONS_HOST_KEY } from "@/components/selection-toolbar/selection-actions";
+import {
+  COMMENT_SENDS_WITH_NEXT_MESSAGE_DEFAULT,
+  COMMENT_SENDS_WITH_NEXT_MESSAGE_KNOB,
+  PASSAGE_ACTIONS_HOST_KEY,
+} from "@/components/selection-toolbar/selection-actions";
+import { Switch } from "@/components/ui/switch";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import {
   ANNOTATION_HOST_KEY,
   ANNOTATION_PANELS,
@@ -246,6 +256,7 @@ function useAnnotatedRoot(root: HTMLElement | null, passageActions?: readonly Ac
   const host: AnnotationSelectionHost = {
     kind: "annotation",
     api,
+    source,
     capture,
     report: (selection) => ({
         title: `Report an issue with ${source.title || "this document"}`,
@@ -392,6 +403,50 @@ function AnnotationPanelBody({
 
   const suggest = panel === ANNOTATION_PANELS.suggest;
   return (
+    <CommentComposerPanel
+      api={api}
+      source={source}
+      selection={selection}
+      suggest={suggest}
+      onCancel={() => ui.closePanel()}
+      done={done}
+    />
+  );
+}
+
+/**
+ * The Comment / Suggest composer. On a chat answer a comment also offers
+ * "With next message" (Turn References, ruling 5): when on, the saved comment
+ * is staged as a remark chip in that conversation's composer and rides along
+ * with the person's next message. Its starting position is the
+ * `selection_toolbar.comment_sends_with_next_message` knob (default on).
+ */
+function CommentComposerPanel({
+  api,
+  source,
+  selection,
+  suggest,
+  onCancel,
+  done,
+}: {
+  api: AnnotationSidecarApi;
+  source: AnnotationSource;
+  selection: CapturedSelection;
+  suggest: boolean;
+  onCancel: () => void;
+  done: () => void;
+}) {
+  const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
+  const orgId = useAppSelector(selectOrganizationId);
+  const knob = useEffectiveKnob(orgId, userId, COMMENT_SENDS_WITH_NEXT_MESSAGE_KNOB);
+  const knobDefault = typeof knob === "boolean" ? knob : COMMENT_SENDS_WITH_NEXT_MESSAGE_DEFAULT;
+  // The person's own flip wins over the knob for this comment.
+  const [flipped, setFlipped] = useState<boolean | null>(null);
+  const sendWithNext = flipped ?? knobDefault;
+  const conversationId = !suggest && source.token === "message" ? source.conversationId : undefined;
+  const switchId = useId();
+  return (
     <div className="grid gap-1 p-1">
       <blockquote className="line-clamp-2 border-l-2 border-primary/50 pl-2 text-xs text-muted-foreground">
         <PassageQuote exact={selection.anchor.exact} />
@@ -404,13 +459,44 @@ function AnnotationPanelBody({
         placeholder={suggest ? "Replace with…" : "Comment — type @ to mention someone, a record or a date"}
         submitLabel={suggest ? "Suggest" : "Comment"}
         secondary={suggest ? { placeholder: "Why? (optional)" } : undefined}
-        onCancel={() => ui.closePanel()}
+        onCancel={onCancel}
+        leading={
+          conversationId ? (
+            <label htmlFor={switchId} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Switch id={switchId} checked={sendWithNext} onCheckedChange={(on) => setFlipped(on)} />
+              With next message
+            </label>
+          ) : undefined
+        }
         onSubmit={async (text, why) => {
           done();
+          const stageInto = conversationId && sendWithNext ? conversationId : null;
           const notice = await api.postComment(
             suggest
               ? { body: why ?? "", anchor: selection.anchor, suggestedText: text }
-              : { body: text, anchor: selection.anchor },
+              : {
+                  body: text,
+                  anchor: selection.anchor,
+                  ...(stageInto
+                    ? {
+                        onWritten: (commentId: string) => {
+                          dispatch(
+                            stageRemark(
+                              stageInto,
+                              {
+                                kind: "comment",
+                                target: { conversationId: stageInto, messageId: source.id },
+                                commentId,
+                                quote: selection.anchor.exact,
+                                body: text,
+                              },
+                              { coalesceKey: `comment:${commentId}` },
+                            ),
+                          );
+                        },
+                      }
+                    : {}),
+                },
           );
           announceMentions(notice);
         }}

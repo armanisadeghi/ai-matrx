@@ -32,6 +32,8 @@ import { parseReferenceFence } from "@ai-matrx/agents/envelope";
 import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
 
 import { resolveContextItemDef } from "../../context-items/registry";
+import { remarkKindDisplay } from "../../context-items/remark-display";
+import { remarkSourceOf } from "../../../redux/execution-system/instance-resources/remarks";
 import {
   AttachedDocumentChip,
   type AttachedDocumentSettings,
@@ -191,9 +193,12 @@ function ResourceChip({
 
   // Every attachment — files, media, notes, tasks, everything — renders as the
   // SAME ResourceAttachmentTile so the row is uniform regardless of content.
-  const display = isContextValueResource(resource)
-    ? { icon: Layers, label: "Context value" }
-    : getBlockTypeDisplay(resource.blockType);
+  const remark = remarkSourceOf(resource)?.remark;
+  const display = remark
+    ? remarkKindDisplay(remark.kind)
+    : isContextValueResource(resource)
+      ? { icon: Layers, label: "Context value" }
+      : getBlockTypeDisplay(resource.blockType);
   const label = getResourceLabel(resource);
 
   if (resource.blockType === "image") {

@@ -12,7 +12,7 @@
 //       { label: site.name, href: `/cms/${site.id}`, options: siblingSites },
 //       { label: "Settings" },
 //     ]}
-//     right={<PlusTapButton … />}
+//     right={<PlusTapButton variant="transparent" … />}
 //   />
 //
 // Mobile: the trail collapses to the LAST crumb (+ its dropdown) so the row
@@ -163,23 +163,17 @@ export function CrumbTrailHeader({
     <RouteHeader
       fallback={fallback}
       left={
-        // ALL GLASS OR NONE (tap-target placement rule 2): the shell header
-        // floats over the scrolling page, so its controls are glass — and the
-        // back button and the trail beside it share ONE glass capsule instead
-        // of a glass circle next to bare text. The back button is the group
-        // variant (the capsule's own inset pill, 28px in a 32px box: 2px each
-        // side), so the trail adds 4px to keep one 6px gap from the pill
-        // (rule 3); its end inset matches the glyph's inset from the start.
-        <div
-          data-matrx-glass
-          className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-0 items-center rounded-full"
-        >
-          <ChevronLeftTapButton variant="group" href={back} ariaLabel="Back" />
+        // THE HEADER IS NOT GLASS (owner, 2026-10-03): the shell paints the
+        // header band solid, so nothing moves behind it — by "glass only
+        // floats" every control in it is transparent. The back button is a
+        // plain transparent tap target; its box carries 3px beside the pill,
+        // so the trail adds its own 3px (`ps-[3px]`) for one 6px gap (rule 3).
+        <>
+          <ChevronLeftTapButton variant="transparent" href={back} ariaLabel="Back" />
           {/* Desktop: full trail */}
           <nav
-            data-matrx-glass
             aria-label="Breadcrumb"
-            className="hidden sm:flex min-w-0 items-center gap-1 ps-1 pe-2"
+            className="hidden sm:flex min-w-0 items-center gap-1 ps-[3px]"
           >
             {trail.map((crumb, i) => (
               <Fragment key={`${crumb.label}-${i}`}>
@@ -192,13 +186,12 @@ export function CrumbTrailHeader({
           </nav>
           {/* Mobile: last crumb only */}
           <nav
-            data-matrx-glass
             aria-label="Breadcrumb"
-            className="flex sm:hidden min-w-0 items-center ps-1 pe-2"
+            className="flex sm:hidden min-w-0 items-center ps-[3px]"
           >
             <CrumbNode crumb={last} isLast />
           </nav>
-        </div>
+        </>
       }
       right={right}
     />

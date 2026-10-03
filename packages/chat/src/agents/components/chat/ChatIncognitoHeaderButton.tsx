@@ -14,7 +14,7 @@ export function ChatIncognitoHeaderButton() {
       <GhostTapButton
         ariaLabel={isIncognito ? "Exit incognito chat" : "Incognito chat"}
         tooltip={isIncognito ? "Exit incognito chat" : "Incognito chat"}
-        variant={isIncognito ? "solid" : "glass"}
+        variant={isIncognito ? "solid" : "transparent"}
         bgColor={isIncognito ? "bg-foreground" : undefined}
         iconColor={isIncognito ? "text-background" : undefined}
         hoverBgColor={isIncognito ? "hover:bg-foreground/90" : undefined}

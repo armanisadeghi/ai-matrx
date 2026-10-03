@@ -637,6 +637,7 @@ export function AgentAssistantMessage({
         body: renderedText,
         contentVersion: 1,
         ...(answerRecord.href ? { href: answerRecord.href } : {}),
+        ...(answerRecord.conversationId ? { conversationId: answerRecord.conversationId } : {}),
       }
     : null;
 

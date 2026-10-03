@@ -9,7 +9,7 @@
 // API: addHighlight / postComment / link).
 
 import type { ComponentType } from "react";
-import { Link2, MessageSquarePlus, PencilLine, Send } from "lucide-react";
+import { Link2, MessageCirclePlus, MessageSquarePlus, PencilLine, Send } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/selection-toolbar/selection-actions";
 import { HIGHLIGHT_COLORS, type HighlightColor } from "./constants";
 import type { TextAnchor } from "./anchor";
+import type { AnnotationSource } from "./types";
 import type { AnnotationSidecarApi } from "./useAnnotationSidecar";
 
 export const ANNOTATION_HOST_KEY = "annotation";
@@ -39,6 +40,8 @@ export interface CapturedSelection {
 export interface AnnotationSelectionHost {
   kind: "annotation";
   api: AnnotationSidecarApi;
+  /** The saved record the passage belongs to (a chat answer carries its conversation). */
+  source: AnnotationSource;
   /**
    * Pin the current selection to the source text. `silent` answers "can it be
    * pinned?" without telling the person; otherwise a selection that cannot be
@@ -158,9 +161,34 @@ const REPORT: Action = {
   },
 };
 
+/** A chat answer's passage → a new chat, the passage staged as a comment on that answer. */
+const NEW_CHAT: Action = {
+  id: "selection:new-chat",
+  label: "New chat about this",
+  icon: registerAlchemyIcon(MessageCirclePlus),
+  category: "share",
+  order: 13,
+  placement: "primary",
+  preserveSelection: true,
+  eligible: (t) =>
+    hostHalf<SelectionCommonHost>(t, SELECTION_COMMON_HOST_KEY)
+      ? eligibleHere("selection:new-chat", t, (h) => h.source?.token === "message" && Boolean(h.source.conversationId))
+      : absent,
+  run: (t) => {
+    const host = annotationHostOf(t);
+    const selection = host?.capture();
+    const common = hostHalf<SelectionCommonHost>(t, SELECTION_COMMON_HOST_KEY);
+    const conversationId = host?.source.conversationId;
+    if (!host || !selection || !common || !conversationId) return;
+    selectionToolbarHostOf(t)?.ui.close({ clearSelection: true });
+    common.newChatAbout({ quote: selection.anchor.exact, conversationId, messageId: host.source.id });
+  },
+};
+
 const ACTIONS: Action[] = [
   ...HIGHLIGHTS,
   REPORT,
+  NEW_CHAT,
   panelAction("selection:comment", "Comment", MessageSquarePlus, 10, ANNOTATION_PANELS.comment),
   panelAction("selection:suggest", "Suggest an edit", PencilLine, 11, ANNOTATION_PANELS.suggest),
   panelAction("selection:link-record", "Link a record…", Link2, 12, ANNOTATION_PANELS.link, (h) => h.api.state.capabilities.links),

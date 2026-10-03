@@ -20,6 +20,12 @@
  * `--dump` writes every (seat, type) answer digest and the timings; `--same <before.json>` compares this run's
  * digests with that file's and is RED when any (seat, type) answers different bytes.
  *
+ * THE "OLD" SIDE IS NO LONGER THE OLD PATH (found 2026-10-03): public.resolve_full_context now sets the person's
+ * claims and calls custom.resolve_context — the old tables and their switch are gone — so `live / old` reads
+ * ~1.05x on both databases and says nothing about the bar. The reference for "<= 1.5x the old hand-off" is lane
+ * 9's last measurement of the old path on production (admin 1,484–1,498 ms, member 604–631 ms for this set);
+ * judge the `live` milliseconds against those. BUDGET below stays as a tripwire only.
+ *
  * VERDICTS (exit 1 on any RED):
  *   BUDGET  live / old <= 1.5 for each seat.
  *   SAME    (with --same) every (seat, type) digest equals the earlier run's.

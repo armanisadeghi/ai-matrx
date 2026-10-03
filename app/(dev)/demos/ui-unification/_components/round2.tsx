@@ -49,7 +49,16 @@ const ROWS = [
   { name: "Old onboarding checklist", meta: "Updated 1w ago · Dana Reyes", status: "failed" },
 ] as const;
 
-type Tone = "neutral" | "success" | "warning" | "destructive" | "info";
+export type Tone = "neutral" | "success" | "warning" | "destructive" | "info";
+
+/** The settled badge tints: token roles only, correct in dark mode. */
+export const TONE_CLASS: Record<Tone, string> = {
+  neutral: "border-border bg-muted text-muted-foreground",
+  success: "border-success/40 bg-success/10 text-success",
+  warning: "border-warning/60 bg-warning/15 text-foreground",
+  destructive: "border-destructive/40 bg-destructive/10 text-destructive",
+  info: "border-info/40 bg-info/10 text-info",
+};
 const STATUS_TONE: Record<string, Tone> = { draft: "neutral", live: "success", review: "warning", failed: "destructive" };
 const STATUS_LABEL: Record<string, string> = { draft: "Draft", live: "Live", review: "In review", failed: "Failed" };
 
@@ -166,13 +175,7 @@ function StatusPill({ status, mode }: { status: string; mode: "raw" | "token" })
   };
   // The SAME tinted look, expressed as token roles: one place to change,
   // correct in dark mode, and no agent ever types a palette class.
-  const token: Record<Tone, string> = {
-    neutral: "border-border bg-muted text-muted-foreground",
-    success: "border-success/40 bg-success/10 text-success",
-    warning: "border-warning/60 bg-warning/15 text-foreground",
-    destructive: "border-destructive/40 bg-destructive/10 text-destructive",
-    info: "border-info/40 bg-info/10 text-info",
-  };
+  const token = TONE_CLASS;
   return (
     <span
       className={cn(
@@ -424,7 +427,7 @@ export function LoadingCenterSpinner() {
 /* The structure of "icon + title + action" with the colour of           */
 /* EmptyStateCard (a tinted icon disc), at dense sizes, token colours.   */
 
-function EmptyCombined({ size }: { size: "inline" | "block" }) {
+export function EmptyCombined({ size }: { size: "inline" | "block" }) {
   const block = size === "block";
   return (
     <div className={cn("flex flex-col items-center text-center", block ? "gap-2 py-8" : "gap-1.5 py-4")}>

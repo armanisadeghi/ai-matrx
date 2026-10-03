@@ -1,6 +1,6 @@
 -- chair-step: inverse of migrations/campaign/chairreadperf_b_the_class_walk_folds_in_the_persons_own_membership.sql — puts back the custom.levels_of body it replaced (signature, grants unchanged).
 -- lane: CHAIR-READPERF
--- based-on: custom.levels_of(uuid, uuid[]) 4d9e461c309482874403d72fec223e2e7e0d67905b4df6f7944c237dfad46e8a
+-- based-on: custom.levels_of(uuid, uuid[]) 297b0c7c548540d57f516d57f623559d92c6f50e09be60c58691f971ab61620c
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom.levels_of(p_user_id uuid, p_ids uuid[])
