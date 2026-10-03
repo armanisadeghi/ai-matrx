@@ -25,8 +25,8 @@
  *
  * It is the ONE rail — adding a future source (artifacts, canvas items, …) is a
  * single push into `items`, never a new bespoke strip. It reuses the existing
- * openers (`ContextPolicyDetailSheet`, `TaskPanel`, `ActiveContextLensChip`) — it
- * does not reinvent any detail surface.
+ * openers (the canvas's `conversation-context` tab, `TaskPanel`,
+ * `ActiveContextLensChip`) — it does not reinvent any detail surface.
  *
  * Mobile-friendly: the most important pills stay inline; the rest collapse into
  * a clean "…" overflow menu so the rail never wraps or crowds the composer.
@@ -83,6 +83,7 @@ import { useConversationFollowsPage } from "../../../../surfaces/runtime/useConv
 import {
   ConversationContextChip,
   useConversationContextChipShown,
+  useConversationContextTab,
 } from "./ConversationContextChip";
 import { SmartAgentResourceChips } from "../resources/SmartAgentResourceChips";
 import { AttachedDocumentChips } from "../resources/AttachedDocumentChips";
@@ -93,7 +94,6 @@ import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
 } from "../../context-policies-display/contextPolicyIcons";
-import { ContextRulesPanel } from "../../context-policies-display/ContextRulesPanel";
 import { CloudBrowserHandoffCanvasOpener } from "@host/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
 import {
   cloudBrowserCanvasSourceId,
@@ -307,26 +307,15 @@ export function ConversationContextRail({
   });
   const showSetScopeCta = needsScope;
 
-  // ── Detail surfaces (one of each, opened on demand) ────────────────────────
-  // The full view (every value + full control) — one panel, opened on demand,
-  // optionally on one value.
-  const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  // ── Detail surfaces ────────────────────────────────────────────────────────
+  // The full view (every value + full control) is the conversation's context
+  // tab in the canvas: same pill again → close; a different pill → switch.
+  const contextTab = useConversationContextTab(conversationId, agentId ?? null);
   const [listsOpen, setListsOpen] = useState(false);
 
-  const closeOtherSurfaces = () => {
+  const toggleEntry = (key: string) => {
     setListsOpen(false);
-  };
-
-  /** Same pill again → close; different pill → switch. */
-  const toggleEntry = (key?: string) => {
-    if (detailOpen && key !== undefined && activeKey === key) {
-      setDetailOpen(false);
-      return;
-    }
-    closeOtherSurfaces();
-    setActiveKey(key ?? null);
-    setDetailOpen(true);
+    contextTab.toggle(key);
   };
 
   /**
@@ -371,7 +360,6 @@ export function ConversationContextRail({
       setListsOpen(false);
       return;
     }
-    setDetailOpen(false);
     setListsOpen(true);
   };
 
@@ -571,7 +559,7 @@ export function ConversationContextRail({
         // "Table ID", "Table Name" and "Table Columns" three chips that all read "Table".
         word: label,
         hint: "Click: view details · X: remove",
-        active: detailOpen && activeKey === e.key,
+        active: contextTab.isVisible && contextTab.selected === e.key,
         onOpen: () => toggleEntry(e.key),
         onRemove: () =>
           dispatch(removeContextEntry({ conversationId, key: e.key })),
@@ -604,11 +592,6 @@ export function ConversationContextRail({
   const detailSurfaces = (
     <DetailSurfaces
       conversationId={conversationId}
-      agentId={agentId ?? null}
-      activeKey={activeKey}
-      setActiveKey={setActiveKey}
-      detailOpen={detailOpen}
-      setDetailOpen={setDetailOpen}
       listsOpen={listsOpen}
       setListsOpen={setListsOpen}
     />
@@ -719,9 +702,7 @@ export function ConversationContextRail({
             <div data-rail-entry="" className="ml-auto flex shrink-0 items-center">
               <ConversationContextChip
                 conversationId={conversationId}
-                onOpenFullView={(key) =>
-                  void openAfterCurrentLayerCloses(() => toggleEntry(key))
-                }
+                agentId={agentId ?? null}
               />
             </div>
           ) : null}
@@ -808,20 +789,10 @@ function RailPill({ item }: { item: RailItem }) {
 
 function DetailSurfaces({
   conversationId,
-  agentId,
-  activeKey,
-  setActiveKey,
-  detailOpen,
-  setDetailOpen,
   listsOpen,
   setListsOpen,
 }: {
   conversationId: string;
-  agentId: string | null;
-  activeKey: string | null;
-  setActiveKey: (key: string | null) => void;
-  detailOpen: boolean;
-  setDetailOpen: (open: boolean) => void;
   listsOpen: boolean;
   setListsOpen: (open: boolean) => void;
 }) {
@@ -830,14 +801,6 @@ function DetailSurfaces({
       {/* Agent-initiated Cloud Browser open: when a run raises a human-handoff,
           the Cloud Browser opens in the canvas (same surface the pill opens). */}
       <CloudBrowserHandoffCanvasOpener conversationId={conversationId} />
-      <ContextRulesPanel
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        conversationId={conversationId}
-        agentId={agentId}
-        selectedKey={activeKey}
-        onSelectedKeyChange={setActiveKey}
-      />
       <TaskPanel
         conversationId={conversationId}
         open={listsOpen}

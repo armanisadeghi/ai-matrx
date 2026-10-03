@@ -14,8 +14,9 @@
  * (`selectResolvedContextRows`, `saveContextRule`), so this panel and the chip
  * can never disagree. Mobile: list, then detail with Back (inside the body).
  *
- * Mounted ONCE per rail at a stable position, so opening, closing or switching
- * values never remounts it.
+ * It is the body of the host's canvas tab `conversation-context` (one per
+ * conversation, `host/canvas-tabs.ts`); the pane header is its chrome, so it
+ * draws no header or close of its own. The composer chip toggles that tab.
  */
 
 import { useConversationDisplayRows } from "../inputs/smart-input/useConversationDisplayRows";
@@ -25,7 +26,6 @@ import {
   type ContextViewLoader,
   type ResolvedContextRow,
 } from "@ai-matrx/agents/context";
-import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { selectAgentContextPolicies } from "../../redux/agent-definition/selectors";
@@ -37,8 +37,6 @@ import {
   useMandateKillSwitch,
   useSaveContextRule,
   useSaveContextRules,
-  useValueGroupSurface,
-  valueGroupName,
 } from "../inputs/smart-input/ConversationContextChip";
 import { AgentEditAccessBadge } from "@host/features/agents/components/context-policies-management/AgentEditAccessControl";
 import { decodeAgentEditAccess } from "../../utils/agent-edit-access";
@@ -64,15 +62,11 @@ import {
 } from "../context-items/bodies/WorkingDocumentBody";
 
 export function ContextRulesPanel({
-  open,
-  onOpenChange,
   conversationId,
   agentId,
   selectedKey,
   onSelectedKeyChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   conversationId: string;
   agentId: string | null;
   selectedKey: string | null;
@@ -90,9 +84,6 @@ export function ContextRulesPanel({
     selectDisplayReceiptMessageId(state, conversationId),
   );
   const blocks = useAppSelector((state) => selectDisplayReceiptBlocks(state, conversationId));
-  // The title is the chip's own group name — the page the values come from —
-  // never the word "context" (Arman, 2026-10-01); no page, no title text.
-  const pageName = valueGroupName(useValueGroupSurface(conversationId));
   const loadView: ContextViewLoader = (target) =>
     dispatch(loadContextView({ conversationId, messageId: receiptMessageId, agentId }, target));
   const mandateKey = useAppSelector(
@@ -155,15 +146,7 @@ export function ContextRulesPanel({
   };
 
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      title={pageName}
-      expandButtonLabel={pageName || "Values"}
-      position="right"
-      defaultSize={44}
-      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
-    >
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       <ContextRulesPanelBody
         rows={rows}
         cap={cap}
@@ -179,6 +162,6 @@ export function ContextRulesPanel({
         onSelectedKeyChange={onSelectedKeyChange}
         className="min-h-0 flex-1"
       />
-    </MatrxDynamicPanelHost>
+    </div>
   );
 }

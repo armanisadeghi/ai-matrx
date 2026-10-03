@@ -21,6 +21,7 @@ import type { AnchorHTMLAttributes, ComponentType, ReactNode, Ref } from "react"
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
 import type { ChatDatabase } from "./db-types";
 import type { ChatWindowId } from "./windows";
+import type { ChatCanvasTabKind } from "./canvas-tabs";
 import type { ChatWindowOpeners } from "./window-openers";
 import type { DefaultChatServerApi, DefaultChatServerTypes } from "./defaults/server-api";
 
@@ -768,15 +769,46 @@ export interface ChatCanvasOpeners {
   toggle(): void;
 }
 
+/** A tab the package names (`./canvas-tabs.ts`): one per kind + key. */
+export interface ChatCanvasTabRef {
+  kind: ChatCanvasTabKind;
+  key: string;
+}
+
+/** What a toggle opens when the tab is absent (an open tab keeps its own). */
+export interface ChatCanvasTabOpen {
+  title: string;
+  data: Readonly<Record<string, string | null>>;
+  /**
+   * The value to show. Absent: a launcher press (absent → open · behind →
+   * focus · in front → close). Present: in front on this value → close;
+   * otherwise open or focus on it.
+   */
+  selected?: string;
+}
+
+/** A launcher's view of one named tab, plus its press. */
+export interface ChatCanvasTab {
+  /** A canvas column exists on this screen. */
+  readonly isAvailable: boolean;
+  /** In front with the canvas showing — the launcher shows pressed. */
+  readonly isVisible: boolean;
+  /** The tab's `selected` field, or null. */
+  readonly selected: string | null;
+  toggle(open: ChatCanvasTabOpen): void;
+}
+
 /**
- * Canvas port. Both members are React hooks, called during render.
+ * Canvas port. Every member is a React hook, called during render.
  * `useOpeners` must return referentially stable functions and must NOT
- * subscribe to canvas state (headless openers call it from effects).
+ * subscribe to canvas state (headless openers call it from effects);
+ * `useTab` subscribes to its one tab.
  * Default: no canvas — every verb refuses and says so (`defaults/canvas.ts`).
  */
 export interface ChatCanvasPort {
   useView(): ChatCanvasView;
   useOpeners(): ChatCanvasOpeners;
+  useTab(tab: ChatCanvasTabRef): ChatCanvasTab;
 }
 
 export interface ChatHost {

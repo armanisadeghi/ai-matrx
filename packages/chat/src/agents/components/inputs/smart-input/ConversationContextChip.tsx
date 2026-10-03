@@ -14,6 +14,12 @@
  *
  * The page's master switch (see the whole page / not) stays: it is the
  * surface on/off, and only exists when a page is in play.
+ *
+ * Pressing the chip toggles the conversation's context tab in the host's
+ * canvas (`conversation-context`, keyed by the conversation id — Arman,
+ * 2026-10-02): absent → open · behind → focus · in front → close, and the chip
+ * shows pressed while the tab is in front. A screen with no canvas keeps the
+ * chip's own popover; its full-view button then refuses aloud.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -52,6 +58,29 @@ import { resolveClientSurface } from "../../../redux/execution-system/utils/buil
 import { resolveMandateKillSwitch } from "../../../redux/execution-system/context-rules/mandate-kill-switch";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { useMachineFramesVisible } from "../../shared/transcript-audience";
+import { useChatCanvasTab } from "../../../../host/canvas";
+import { CONVERSATION_CONTEXT_KIND } from "../../../../host/canvas-tabs";
+import type { ChatCanvasTab } from "../../../../host/contract";
+
+/** The pressed face — the same tokens as the rail's active pills. */
+const PRESSED_FACE = "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30 hover:bg-primary/20";
+
+/**
+ * The conversation's context tab in the host canvas: pressed state plus the
+ * press (whole view, or one value with `selected`). One hook for the chip and
+ * the rail's value pills, so they toggle the same tab.
+ */
+export function useConversationContextTab(conversationId: string, agentId: string | null) {
+  const tab: ChatCanvasTab = useChatCanvasTab({ kind: CONVERSATION_CONTEXT_KIND, key: conversationId });
+  const title = valueGroupName(useValueGroupSurface(conversationId));
+  const toggle = (selected?: string) =>
+    tab.toggle({
+      title: title || "Values",
+      data: { conversationId, agentId, title: title || null },
+      ...(selected !== undefined ? { selected } : {}),
+    });
+  return { isAvailable: tab.isAvailable, isVisible: tab.isVisible, selected: tab.selected, toggle };
+}
 
 /**
  * The chip's text: the group's REAL name (the page's display name) or nothing.
@@ -184,13 +213,13 @@ export function useValueGroupSurface(conversationId: string): string | null {
 
 export function ConversationContextChip({
   conversationId,
-  onOpenFullView,
+  agentId,
 }: {
   conversationId: string;
-  /** Open the full view, optionally on one value. */
-  onOpenFullView: (key?: string) => void;
+  agentId: string | null;
 }) {
   const dispatch = useAppDispatch();
+  const tab = useConversationContextTab(conversationId, agentId);
   const isMobile = useIsMobile();
   const save = useSaveContextRule();
   const saveMany = useSaveContextRules();
@@ -275,11 +304,21 @@ export function ConversationContextChip({
       modelReadsContext={receiptEntry?.receipt.model_reads_context !== false}
       onChange={save}
       onResetAll={resetAll}
-      onOpenFullView={() => onOpenFullView()}
-      onOpenRow={(key) => onOpenFullView(key)}
+      onOpenFullView={() => tab.toggle()}
+      onOpenRow={(key) => tab.toggle(key)}
       mismatchCount={mismatches.length}
       mismatches={mismatches}
       isMobile={isMobile}
+      // With a canvas the chip never opens its popover: every press toggles the tab.
+      {...(tab.isAvailable
+        ? {
+            open: false,
+            onOpenChange: (next: boolean) => {
+              if (next) tab.toggle();
+            },
+            className: tab.isVisible ? PRESSED_FACE : undefined,
+          }
+        : {})}
     />
   );
 }

@@ -19,6 +19,15 @@ import { canvasItemId } from "@ai-matrx/canvas";
 
 export const CONVERSATION_DOCUMENTS_KIND = "conversation-documents";
 export const SCRATCHPAD_KIND = "global-scratchpad";
+/**
+ * Everything a conversation's next turn carries, with full control (the
+ * composer's value chip opens it): ONE tab per conversation, keyed by its id.
+ * The tab's `selected` field is the value it shows.
+ */
+export const CONVERSATION_CONTEXT_KIND = "conversation-context";
+
+/** Every tab kind the package opens by name through `canvas.useTab`. */
+export type ChatCanvasTabKind = typeof CONVERSATION_CONTEXT_KIND;
 /** The scratchpad tab follows the ACTIVE scratchpad, so there is exactly one. */
 export const SCRATCHPAD_TAB_KEY = "default";
 
@@ -30,4 +39,9 @@ export function conversationDocumentsTabId(conversationId: string): string {
 /** The canvas tab id of the scratchpad tab. */
 export function scratchpadTabId(): string {
   return canvasItemId(SCRATCHPAD_KIND, SCRATCHPAD_TAB_KEY);
+}
+
+/** The canvas tab id of a conversation's context tab. */
+export function conversationContextTabId(conversationId: string): string {
+  return canvasItemId(CONVERSATION_CONTEXT_KIND, conversationId);
 }

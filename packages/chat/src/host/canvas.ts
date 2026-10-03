@@ -11,7 +11,7 @@
  * context; the port's own hooks are stable for the host's lifetime.
  */
 
-import type { ChatCanvasOpeners, ChatCanvasView } from "./contract";
+import type { ChatCanvasOpeners, ChatCanvasTab, ChatCanvasTabRef, ChatCanvasView } from "./contract";
 import { useChatHost } from "./react";
 
 /** Live view of what the canvas holds. Re-renders when that changes. */
@@ -22,4 +22,9 @@ export function useChatCanvasView(): ChatCanvasView {
 /** Open / offer / hide / toggle with stable identities; never subscribes. */
 export function useChatCanvasOpeners(): ChatCanvasOpeners {
   return useChatHost().canvas.useOpeners();
+}
+
+/** One named tab (`./canvas-tabs.ts`) as a launcher: pressed state + toggle. */
+export function useChatCanvasTab(tab: ChatCanvasTabRef): ChatCanvasTab {
+  return useChatHost().canvas.useTab(tab);
 }

@@ -11,6 +11,7 @@
 
 import type {
   ChatCanvasOpeners,
+  ChatCanvasTab,
   ChatCanvasPort,
   ChatCanvasView,
   ChatDiagnosticsPort,
@@ -57,8 +58,18 @@ export function createUnhostedCanvas(
     },
   };
 
+  const tab: ChatCanvasTab = {
+    isAvailable: false,
+    isVisible: false,
+    selected: null,
+    toggle(open) {
+      refuse("toggle tab", open?.title ?? null);
+    },
+  };
+
   return {
     useView: () => UNHOSTED_CANVAS_VIEW,
     useOpeners: () => openers,
+    useTab: () => tab,
   };
 }

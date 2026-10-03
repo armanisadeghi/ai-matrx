@@ -19,11 +19,13 @@ import {
   resolveChatHost,
   type ChatCanvasOpeners,
   type ChatCanvasPort,
+  type ChatCanvasTab,
   type ChatCanvasView,
   type ChatDiagnosticContext,
 } from "../index";
 import { ChatProvider } from "../react";
-import { useChatCanvasOpeners, useChatCanvasView } from "../canvas";
+import { useChatCanvasOpeners, useChatCanvasTab, useChatCanvasView } from "../canvas";
+import { CONVERSATION_CONTEXT_KIND } from "../canvas-tabs";
 import { _resetAnnouncements } from "../errors";
 import { createFakeDb } from "./fake-db";
 
@@ -47,13 +49,19 @@ afterEach(() => {
 function renderUnderHost(canvas?: ChatCanvasPort) {
   const { db } = createFakeDb();
   const captured: ChatDiagnosticContext[] = [];
-  const seen: { view: ChatCanvasView | null; openers: ChatCanvasOpeners | null } = {
+  const seen: {
+    view: ChatCanvasView | null;
+    openers: ChatCanvasOpeners | null;
+    tab: ChatCanvasTab | null;
+  } = {
     view: null,
     openers: null,
+    tab: null,
   };
   function Probe() {
     seen.view = useChatCanvasView();
     seen.openers = useChatCanvasOpeners();
+    seen.tab = useChatCanvasTab({ kind: CONVERSATION_CONTEXT_KIND, key: "c1" });
     return null;
   }
   const store = configureStore({ reducer: { probe: () => 0 } });
@@ -90,11 +98,16 @@ describe("an unhosted canvas refuses, and says so", () => {
     expect(openers.offer(DOC)).toBe(false);
     expect(openers.openPointer({ artifactId: "a1", type: "code" })).toBe(false);
     openers.toggle();
+    const tab = seen.tab as ChatCanvasTab;
+    expect(tab.isAvailable).toBe(false);
+    expect(tab.isVisible).toBe(false);
+    tab.toggle({ title: "Notes", data: { conversationId: "c1" } });
 
     const notices = warn.mock.calls.map(([line]) => String(line));
     expect(notices.some((line) => line.includes('Canvas open of "working_document" did nothing'))).toBe(true);
     expect(notices.every((line) => !line.includes("Canvas") || line.includes("Pass a `canvas` port"))).toBe(true);
     expect(captured.map((ctx) => ctx.code)).toEqual([
+      "canvas-host-missing",
       "canvas-host-missing",
       "canvas-host-missing",
       "canvas-host-missing",
@@ -136,9 +149,12 @@ describe("an unhosted canvas refuses, and says so", () => {
       hide: () => undefined,
       toggle: () => undefined,
     };
-    const { seen } = renderUnderHost({ useView: () => view, useOpeners: () => openers });
+    const tab: ChatCanvasTab = { isAvailable: true, isVisible: true, selected: null, toggle: () => undefined };
+    const port: ChatCanvasPort = { useView: () => view, useOpeners: () => openers, useTab: () => tab };
+    const { seen } = renderUnderHost(port);
     expect(seen.view).toBe(view);
     expect(seen.openers).toBe(openers);
-    expect(resolveChatHost({ db: createFakeDb().db, canvas: { useView: () => view, useOpeners: () => openers } }).overridden.has("canvas")).toBe(true);
+    expect(seen.tab).toBe(tab);
+    expect(resolveChatHost({ db: createFakeDb().db, canvas: port }).overridden.has("canvas")).toBe(true);
   });
 });
