@@ -69,7 +69,7 @@ import {
   type MakeTile,
 } from "./tiles";
 import { answerForRecent, isTestOrganization, recentlyChanged } from "./recent";
-import { MakeMount, NewTableBody, SavesTo } from "./MakeMount";
+import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two reads across every organization: Recent (the data home's one call) and step 1's tables.
@@ -408,9 +408,9 @@ function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organ
   if (chosen) return <BuilderFor flow={tile.flow} {...chosen} onLand={onLand} />;
   // A table is made where new things are saved; the one New table body asks for it when none is chosen.
   if (tile.flow === "table") return <NewTableBody />;
-  // Table and portal are made where new things are saved: with none chosen, ask for it (A3).
+  // A portal is made where new things are saved: with none chosen, ask for it (A3).
   if (!activeOrganizationId) {
-    return <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New tables" compact />;
+    return <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New client portals" description={SAVED_WHERE_CHOSEN} compact />;
   }
   if (tile.flow === "portal") {
     return (
@@ -518,7 +518,7 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
       {making ? <Skeleton className="h-6 w-48" /> : null}
       {refused ? <p className="text-sm text-destructive">{refused}</p> : null}
       {askOrganization && !activeOrganizationId ? (
-        <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New tables" compact />
+        <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New tables" description={SAVED_WHERE_CHOSEN} compact />
       ) : null}
     </div>
   );

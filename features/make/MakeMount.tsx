@@ -36,6 +36,9 @@ import {
 } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 
+/** The no-organization notice's line here: nothing failed to load, a new thing needs a home. */
+export const SAVED_WHERE_CHOSEN = "New things are saved in the organization you choose";
+
 export function MakeMount({ organizationId, children }: { organizationId: string; children: ReactNode }) {
   const userId = useAppSelector(selectUserId);
   const dataSource = useRecordsDataSource();
@@ -92,7 +95,7 @@ export function NewTableBody({ what }: { what?: "create" | "examples" | undefine
   const active = useOrganizationRequired();
   if (active.organizationState !== "ready" || !active.organizationId) {
     const state = active.organizationState === "ready" ? "required" : active.organizationState;
-    return <OrganizationContextNotice state={state} what="New tables" compact />;
+    return <OrganizationContextNotice state={state} what="New tables" description={SAVED_WHERE_CHOSEN} compact />;
   }
   const asked = what ? { create: what === "create" ? 1 : 0, examples: what === "examples" ? 1 : 0 } : undefined;
   return (
