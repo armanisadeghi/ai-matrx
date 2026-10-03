@@ -177,13 +177,15 @@ describe("the Rulebook's rule_draft target advertises its registered value contr
     expect(line).toMatch(/\{ mode: string,/);
     expect(line).toContain("statement?: string");
     expect(line).toContain("isPolicy?: boolean");
-    // The marker is data, never something the write's author has to think
-    // about, so the PRÉCIS deliberately omits it — the target's own prose
-    // carries the requirement instead, and it must, or the model would send a
-    // value the seam refuses.
+    // THE KIND-MARKER LAW: the marker is part of the data and is never hidden
+    // from the contract (agent-offer.ts, 2026-09-29). The précis advertises it
+    // marked "(stamped)" — the seam supplies it, so it carries no `?` and the
+    // author need not invent it — and the target's own prose still names the
+    // exact value, or the model would send a value the seam refuses.
     const precis = /\[kind=[a-z_]+ (\{.*?\})\]/s.exec(line ?? "")?.[1];
     expect(precis).toBeDefined();
-    expect(precis).not.toContain("__kind");
+    expect(precis).toContain("__kind (stamped): string");
+    expect(precis).not.toContain("__kind?");
     expect(line).toContain('`__kind` must be "masterwork_rule_draft"');
   });
 
