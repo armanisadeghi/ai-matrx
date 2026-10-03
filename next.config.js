@@ -1066,10 +1066,10 @@ const nextConfig = {
 // extra `next dev` (own port, own NEXT_DISTDIR) brought 70-130 Turbopack workers
 // and 15-25 GB with it; extra servers rebooted the 256 GB Mac twice, and a second
 // "clone" server on another port stalled it again on 2026-09-30. So there is ONE
-// server, on port 3001, and the database is its MODE (clone by default, `--live`
-// for production). `pnpm preview:start` (scripts/agent-dev-server.sh) is the only
-// launcher; every other `next dev` — another port, a second concurrent server even
-// with a valid token, an unpaired clone mode — is refused here, before a single
+// server, on port 3001, on the live database (owner ruling 2026-10-03). `pnpm
+// preview:start` (scripts/agent-dev-server.sh) is the only launcher; every other
+// `next dev` — another port, a second concurrent server even with a valid token,
+// any mode but live — is refused here, before a single
 // worker spawns. The table and the rule: scripts/agent-harness/shared-dev-servers.cjs.
 const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
 const { sharedDevServerRefusal, otherDevServers } = require("./scripts/agent-harness/shared-dev-servers.cjs");

@@ -71,6 +71,7 @@ import {
   createManualInstanceNoAgent,
 } from "./create-instance.thunk";
 import { executeInstance } from "./execute-instance.thunk";
+import { ensureExecutionOrganization } from "../utils/required-organization";
 import {
   replaceSurfaceVariableValues,
   setHostVariableValues,
@@ -1213,6 +1214,19 @@ export const launchAgentExecution = createAsyncThunk<
     // launcher instead of reading a stale hard default.
     dispatch(setAutoRun({ conversationId, value: effectiveAutoRun }));
   }
+
+  // NO ORGANIZATION IS A QUESTION ASKED BEFORE ANY WINDOW OPENS.
+  // Every run is organization-scoped and the execution thunk asks when none is
+  // selected — but a window that opens first and is then cancelled out of the
+  // picker sits at "Ready to run" with nothing sent and nothing said (the
+  // shortcut stall, 2026-10-03). So the same gate runs here, before the
+  // gate/overlay open: pick → the launch continues in the chosen organization;
+  // close the picker → nothing opened and nothing was started, which is exactly
+  // what "not now" means (the rejection is `OrganizationSelectionCancelled`,
+  // which every toast boundary treats as nothing happened). A conversation that
+  // already owns an organization, a selected one, the admin seat and a
+  // fingerprint guest never ask: the gate is a no-op for them.
+  await ensureExecutionOrganization(getState() as ChatRootState, conversationId);
 
   if (effectiveShowPreExecutionGate) {
     const downstreamOverlayId = DISPLAY_MODE_TO_OVERLAY_ID[resolvedDisplayMode];

@@ -1,8 +1,8 @@
 /**
  * The Matrx 2 relay: where a browser reaches a device. A per-environment VALUE (law: env vars are
  * values) with the production default, so a missing variable can never point a live page at a
- * test relay. Clone-mode previews set it to the TEST relay, which trusts only the nightly copy
- * (scripts/clone-preview/clone-preview-env.cjs pairs the two).
+ * test relay. A process wired to the nightly copy sets it to the TEST relay, which trusts only
+ * that copy.
  */
 import { BEARER_PREFIX, PROTOCOL_VERSION, RelayStatusResponse, SUBPROTOCOL, versionSubprotocol } from "@ai-matrx/desktop-protocol";
 import type { RelayDeviceStatusEvent } from "@ai-matrx/desktop-protocol";

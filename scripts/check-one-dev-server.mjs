@@ -76,7 +76,7 @@ function staticFindings(root) {
   return findings;
 }
 
-/** Every env the table's own entries could hand a dev server: tokens x dist dirs x modes x pairing. */
+/** Every env the table's own entries could hand a dev server: tokens x dist dirs x modes (live, or none). */
 function candidateEnvs(mod) {
   const servers = [];
   if (mod.ONE_DEV_SERVER) {
@@ -84,18 +84,14 @@ function candidateEnvs(mod) {
     for (const distDir of Object.values(s.distDirs || {})) servers.push({ token: s.token, distDir });
   }
   for (const s of Object.values(mod.SHARED_DEV_SERVERS || {})) servers.push({ token: s.token, distDir: s.distDir });
-  const ref = "abcdefghijklmnopqrst";
   const envs = [];
   for (const { token, distDir } of servers) {
-    for (const mode of ["clone", "live", undefined]) {
-      for (const paired of [true, false]) {
-        envs.push({
-          MATRX_SHARED_PREVIEW: token,
-          NEXT_DISTDIR: distDir,
-          ...(mode ? { MATRX_PREVIEW_MODE: mode } : {}),
-          ...(paired ? { MATRX_CLONE_PAIRED: ref, NEXT_PUBLIC_SUPABASE_URL: `https://${ref}.supabase.co` } : {}),
-        });
-      }
+    for (const mode of ["live", undefined]) {
+      envs.push({
+        MATRX_SHARED_PREVIEW: token,
+        NEXT_DISTDIR: distDir,
+        ...(mode ? { MATRX_PREVIEW_MODE: mode } : {}),
+      });
     }
   }
   return envs;

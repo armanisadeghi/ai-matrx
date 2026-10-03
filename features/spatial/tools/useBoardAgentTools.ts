@@ -628,6 +628,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         const index = itemSurfacesRef.current;
         if (!index || !store) return null;
         const state = handed();
+        if (state.items.size === 0) console.warn("[board] nothing handed for the agent's write", { targetName: query.targetName });
         const now = Date.now();
         const liveId = store.getFocused() ?? store.getEditing() ?? store.getSelected();
         const onBoard = new Set(tilesRef.current().map((t) => t.id));
@@ -651,6 +652,26 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
             listAgentWritableTargets(capture).some((entry) => entry.target.name === query.targetName);
           if (capture && fits) return { source: capture, release: () => releaseLater(release) };
           release();
+          console.warn("[board] a handed item did not take the agent's write", {
+            id,
+            targetName: query.targetName,
+            mounted: Boolean(capture),
+            runtime: runtime?.surfaceName ?? null,
+            declares: capture ? listAgentWritableTargets(capture).map((entry) => entry.target.name) : [],
+          });
+        }
+        if (state.items.size > 0 && candidates.length === 0) {
+          console.warn("[board] no handed item could take the agent's write", {
+            targetName: query.targetName,
+            handed: [...state.items.entries()].map(([id, entry]) => ({
+              id,
+              onBoard: onBoard.has(id),
+              ageMs: now - entry.at,
+              sameConversation: !entry.conversationId || !query.conversationId || entry.conversationId === query.conversationId,
+              personPickedSince: state.personPickedAt > entry.at,
+            })),
+            onScreenDeclares: query.onScreenDeclares,
+          });
         }
         return null;
       }),

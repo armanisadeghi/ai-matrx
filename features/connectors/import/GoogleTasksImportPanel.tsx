@@ -58,6 +58,15 @@ import type {
   TaskListingResultPending,
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { GoogleTasksWriteControls } from "./GoogleTasksWriteControls";
+import {
+  useGoogleCapabilities,
+  useGoogleConnectionInventory,
+} from "@/features/marketing/google/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 
 /** What an outcome action means, in words a person reads (Law 10). */
 const TASK_ACTION_COPY: Record<string, string> = {
@@ -77,6 +86,21 @@ export interface GoogleTasksImportPanelProps {
   onImported?: (taskIds: string[]) => void;
 }
 
+export function taskWriteConnectionForListing(
+  connections: GoogleConnectionSummary[],
+  listing: TaskListingResultPending | null,
+  actorId: string | null,
+): GoogleConnectionSummary | null {
+  if (!listing || !actorId) return null;
+  return connections.find((connection) =>
+    connection.id === listing.connection_id &&
+    connection.owner_type === "user" &&
+    connection.owner_user_id === actorId &&
+    connection.health === "connected" &&
+    connection.scopes.includes(GOOGLE_SCOPE.tasksWrite)
+  ) ?? null;
+}
+
 export function GoogleTasksImportPanel({
   organizationId,
   projectId = null,
@@ -94,6 +118,9 @@ export function GoogleTasksImportPanel({
   // (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18).
   const organizationGate = useOrganizationRequired();
   const effectiveOrganizationId = organizationId ?? organizationGate.organizationId;
+  const actorId = useAppSelector(selectUserId);
+  const connectionInventory = useGoogleConnectionInventory();
+  const capabilities = useGoogleCapabilities();
   const [listing, setListing] = useState<TaskListingResultPending | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +202,19 @@ export function GoogleTasksImportPanel({
     provenIds: (active?.tasks ?? []).map((task) => task.task_id),
     selected: chosen,
   });
+  const writeConnection = taskWriteConnectionForListing(
+    connectionInventory.data?.connections ?? [],
+    listing,
+    actorId,
+  );
+  const writeCapability = capabilities.data?.find(
+    (capability) => capability.key === "tasks_write",
+  );
+  const writeEligible = writeCapability?.rollout_phase === "internal_test" &&
+    writeCapability.eligible && Boolean(writeConnection);
+  const selectedWriteTask = active && chosen.length === 1
+    ? active.tasks.find((task) => task.task_id === chosen[0]) ?? null
+    : null;
 
   const toggle = (taskId: string) => {
     if (!active) return;
@@ -440,8 +480,7 @@ export function GoogleTasksImportPanel({
       ) : null}
       {active?.has_more ? (
         <p className="border-b border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-          This list holds more tasks than one read covers; the counts above are
-          true of the ones shown.
+          More tasks exist; counts cover only those shown.
         </p>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -551,6 +590,23 @@ export function GoogleTasksImportPanel({
             </li>
           ))}
         </ul>
+        {active && actorId && writeEligible && writeConnection ? (
+          <GoogleTasksWriteControls
+            key={`${actorId}:${effectiveOrganizationId}:${writeConnection.id}:${active.task_list_id}:${selectedWriteTask?.task_id ?? "none"}`}
+            actorId={actorId}
+            organizationId={effectiveOrganizationId}
+            connectionId={writeConnection.id}
+            accountLabel={writeConnection.account_email ?? listing?.google_account ?? "Selected Google account"}
+            taskListId={active.task_list_id}
+            taskListTitle={active.title}
+            selectedTask={selectedWriteTask}
+            onRefresh={() => void load()}
+          />
+        ) : active && writeCapability && !writeCapability.eligible ? (
+          <p className="border-t border-border p-4 text-xs text-muted-foreground">
+            {writeCapability.limitation || writeCapability.remedy}
+          </p>
+        ) : null}
       </div>
       {/* 🚨 NO CONTROLS OVER A LIST NOBODY READ (F-113). With no list in hand —
           a refused read, or an account with none — this footer rendered

@@ -28,6 +28,8 @@
  * would render empty sentences against the live server.
  */
 
+import type { components } from "@ai-matrx/agents/generated/api-types";
+
 /** One row of the declared Google field → Person field map. */
 export interface ContactFieldSpecPending {
   key: string;
@@ -173,71 +175,9 @@ export interface ContactFieldChoicePending {
   override_manual?: boolean;
 }
 
-export interface TaskCandidatePending {
-  task_id: string;
-  title: string;
-  notes: string | null;
-  due_at: string | null;
-  status: string | null;
-  completed_at: string | null;
-  source_updated_at: string | null;
-  already_imported: boolean;
-  matrx_task_id: string | null;
-  imported_at: string | null;
-  changes: string[];
-  kept_local: string[];
-  /** Differs with no record of what the import wrote — kept, NOT called an edit. */
-  unrecorded?: string[];
-}
-
-export interface TaskListViewPending {
-  task_list_id: string;
-  title: string;
-  tasks: TaskCandidatePending[];
-  total: number;
-  already_imported: number;
-  importable: number;
-  has_more: boolean;
-  count_line: string;
-}
-
-export interface TaskListingResultPending {
-  google_account: string | null;
-  task_lists: TaskListViewPending[];
-  total: number;
-  already_imported: number;
-  importable: number;
-  warnings: string[];
-}
-
-export type TaskOutcomeActionPending =
-  | "created"
-  | "updated"
-  | "unchanged"
-  | "kept_local"
-  | "unrecorded"
-  | "would_create"
-  | "would_update";
-
-export interface TaskImportOutcomePending {
-  task_id: string;
-  title: string;
-  action: TaskOutcomeActionPending;
-  matrx_task_id: string | null;
-  changed_fields: string[];
-  kept_local_fields: string[];
-  unrecorded_fields?: string[];
-  note: string;
-}
-
-export interface TaskImportResultPending {
-  google_account: string | null;
-  task_list_id: string;
-  task_list: string;
-  dry_run: boolean;
-  results: TaskImportOutcomePending[];
-  created: number;
-  updated: number;
-  unchanged: number;
-  warnings: string[];
-}
+export type TaskCandidatePending = components["schemas"]["TaskCandidate"];
+export type TaskListViewPending = components["schemas"]["TaskListView"];
+export type TaskListingResultPending = components["schemas"]["TaskListingResult"];
+export type TaskOutcomeActionPending = components["schemas"]["TaskImportOutcome"]["action"];
+export type TaskImportOutcomePending = components["schemas"]["TaskImportOutcome"];
+export type TaskImportResultPending = components["schemas"]["TaskImportResult"];

@@ -3,8 +3,8 @@
  *
  * Why (lane F1/X1 of the Mandate Candidates campaign, 2026-09-30): a process wired to the nightly
  * clone holds production's provider keys (Resend, Twilio, Slack) while the copy holds production's
- * real people. The dev server in clone mode (`pnpm preview:start`) is exactly such a process. The
- * clone's quarantine stops the DATABASE calling out; it cannot stop this server.
+ * real people. Any server process pointed at the clone is exactly such a process. The clone's
+ * quarantine stops the DATABASE calling out; it cannot stop this server.
  *
  * THE RULE (the same one aidream enforces in `aidream/services/clone_connection/outbound_guard.py`):
  * a server may hand a message to a provider for an arbitrary recipient, or change provider-side
@@ -13,8 +13,8 @@
  *
  * THE ONE IDENTITY ANSWER: the host of `NEXT_PUBLIC_SUPABASE_URL`, the URL every server-side
  * Supabase client in this repo is built from (`utils/supabase/adminClient.ts`). Production is the
- * custom domain `db.matrxserver.com` or `brsgrqvjdzwihsvnfqkf.supabase.co`; the clone preview's
- * URL is `<clone-ref>.supabase.co` (`scripts/clone-preview/clone-preview-env.cjs`).
+ * custom domain `db.matrxserver.com` or `brsgrqvjdzwihsvnfqkf.supabase.co`; a clone's URL is
+ * `<clone-ref>.supabase.co`.
  *
  * THE SEAMS: `lib/email/client.ts::sendEmail` (all app email), `app/api/test-email`,
  * `lib/sms/send.ts::sendSms` (every SMS), `lib/sms/verify.ts::sendVerification` (Twilio Verify),

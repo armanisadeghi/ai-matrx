@@ -3,10 +3,10 @@
  *
  * WHY (reviewer, 2026-10-02): the directive builder's header said
  * "production http://localhost:8200" while it was serving the nightly clone.
- * "production" is the NAME of the selected server slot (`activeServer`), and in
- * clone mode every slot's URL is rewritten to the clone-wired local aidream
- * (`scripts/clone-preview/clone-preview-env.cjs`), so the slot name and the
- * place the calls actually land disagree. A badge must say where the calls land.
+ * "production" is the NAME of the selected server slot (`activeServer`), and a
+ * process wired to the clone rewrites a slot's URL to a clone-wired local
+ * aidream, so the slot name and the place the calls actually land can disagree.
+ * A badge must say where the calls land.
  *
  * Two facts decide it, both already this app's own values:
  *  - the DATABASE, from `NEXT_PUBLIC_SUPABASE_URL` (production is the custom

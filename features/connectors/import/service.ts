@@ -12,6 +12,7 @@
  */
 
 import { getJson, postJson } from "@/lib/python-client";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 import type {
   ContactFieldChoicePending,
   ContactFieldSpecPending,
@@ -30,6 +31,40 @@ const OTHER_CONTACTS_PREVIEW_PATH = "/google-integrations/other-contacts/preview
 const OTHER_CONTACTS_REVIEW_PATH = "/google-integrations/other-contacts/review";
 const OTHER_CONTACTS_IMPORT_PATH = "/google-integrations/other-contacts/import";
 const OTHER_CONTACTS_ADMISSION_PATH = "/google-integrations/other-contacts/admission";
+const TASK_WRITE_PREVIEW_PATH = "/google-integrations/tasks/write/preview";
+const TASK_WRITE_APPLY_PATH = "/google-integrations/tasks/write/apply";
+const TASK_CREATE_PATH = "/google-integrations/tasks/create";
+
+export type GoogleTaskStatusWriteRequest = components["schemas"]["GoogleTaskStatusWriteRequest"];
+export type GoogleTaskStatusApplyRequest = components["schemas"]["GoogleTaskStatusApplyRequest"];
+export type GoogleTaskStatusPreview = components["schemas"]["GoogleTaskStatusPreview"];
+export type GoogleTaskStatusResult = components["schemas"]["GoogleTaskStatusResult"];
+export type GoogleTaskCreateRequest = components["schemas"]["GoogleTaskCreateRequest"];
+export type GoogleTaskCreateResult = components["schemas"]["GoogleTaskCreateResult"];
+
+export async function previewGoogleTaskStatus(
+  request: GoogleTaskStatusWriteRequest,
+): Promise<GoogleTaskStatusPreview> {
+  return (await postJson<GoogleTaskStatusPreview>(TASK_WRITE_PREVIEW_PATH, request, {
+    organizationId: request.organization_id,
+  })).data;
+}
+
+export async function applyGoogleTaskStatus(
+  request: GoogleTaskStatusApplyRequest,
+): Promise<GoogleTaskStatusResult> {
+  return (await postJson<GoogleTaskStatusResult>(TASK_WRITE_APPLY_PATH, request, {
+    organizationId: request.organization_id,
+  })).data;
+}
+
+export async function createGoogleTask(
+  request: GoogleTaskCreateRequest,
+): Promise<GoogleTaskCreateResult> {
+  return (await postJson<GoogleTaskCreateResult>(TASK_CREATE_PATH, request, {
+    organizationId: request.organization_id,
+  })).data;
+}
 
 export interface OtherContactsAdmissionPending {
   eligible: boolean;
