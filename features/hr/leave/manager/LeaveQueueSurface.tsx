@@ -18,7 +18,7 @@
  * 47 successes and 3 typed conflicts is the CORRECT result of a bulk of 50, and this surface
  * renders each skip with its own reason rather than folding it into a count. A flow whose
  * definition forbids bulk refuses the whole batch (`WF_BULK_FORBIDDEN`) — also rendered, also
- * not a toast. The selection checkbox is ABSENT on a row whose flow forbids bulk.
+ * not a toast. Copy selection includes every row; decision targets retain the flow's bulk rule.
  *
  * 🚨 THE BALANCE NUMBER ON A ROW IS THE SERVER'S, AND IT IS LABELLED FOR WHAT IT IS.
  * §4.4 asks for "balance after". `hr.leave_wf_validate` freezes `projected_balance_at_start`
@@ -222,6 +222,9 @@ export function LeaveQueueSurface() {
   const focused = requestParam
     ? queue.mine.filter((row) => row.request?.id === requestParam)
     : queue.mine;
+  // Copy selection is independent of the existing batch-decision rule.
+  const currentSelectedIds = focused.filter((row) => selectedIds.includes(row.step_id)).map((row) => row.step_id);
+  const bulkIds = focused.filter((row) => currentSelectedIds.includes(row.step_id) && row.allow_bulk_decide === true).map((row) => row.step_id);
   /** The link resolved to nothing decidable — a real answer, not an empty list. */
   const focusMissed = requestParam !== null && !queue.loading && focused.length === 0;
   const visibleScopes = SCOPES.filter(
@@ -234,12 +237,13 @@ export function LeaveQueueSurface() {
   }
 
   async function runBulk(intent: "approve" | "reject", reason?: string) {
+    if (bulkIds.length === 0) return;
     setBulkBusy(true);
     setBulkRefusal(null);
     setBulkOutcomes(null);
     try {
       const envelope = await bulkDecide(
-        selectedIds,
+        bulkIds,
         HR_DECISION_VERB[intent],
         reason ?? null,
       );
@@ -636,32 +640,29 @@ export function LeaveQueueSurface() {
                   : "Nothing in this scope is waiting on a decision right now.",
             }}
             selection={{
-              selectedIds,
+              selectedIds: currentSelectedIds,
               onSelectedIdsChange: setSelectedIds,
               noun: "request",
-              // ABSENT, not disabled, on a flow whose definition forbids bulk: a checkbox you
-              // can tick and then be refused is worse than no checkbox.
-              isRowSelectable: (row) => row.allow_bulk_decide === true,
               actions: () => (
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     size="sm"
-                    disabled={bulkBusy}
+                    disabled={bulkBusy || bulkIds.length === 0}
                     onClick={() => void runBulk("approve")}
                   >
                     <Check className="mr-2 h-4 w-4" />
-                    Approve {selectedIds.length}
+                    Approve {bulkIds.length}
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant="destructive"
-                    disabled={bulkBusy}
+                    disabled={bulkBusy || bulkIds.length === 0}
                     onClick={() => setBulkReasonOpen(true)}
                   >
                     <X className="mr-2 h-4 w-4" />
-                    Deny {selectedIds.length}
+                    Deny {bulkIds.length}
                   </Button>
                 </div>
               ),
@@ -742,7 +743,7 @@ export function LeaveQueueSurface() {
       <TextInputDialog
         open={bulkReasonOpen}
         onOpenChange={setBulkReasonOpen}
-        title={`Deny ${selectedIds.length} ${selectedIds.length === 1 ? "request" : "requests"}`}
+        title={`Deny ${bulkIds.length} ${bulkIds.length === 1 ? "request" : "requests"}`}
         description="Every person you deny reads this reason. The engine refuses a denial without one."
         multiline
         rows={3}

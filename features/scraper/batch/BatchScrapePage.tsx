@@ -797,16 +797,17 @@ export default function BatchScrapePage() {
                 selection={{
                   selectedIds,
                   onSelectedIdsChange: setSelectedIds,
-                  isRowSelectable: (row) => row.status === "success",
                   noun: "page",
                   actions: (selected) => (
                     <Button
                       size="sm"
                       className="h-7 gap-1.5 text-xs"
+                      disabled={!selected.some((row) => row.status === "success" && row.processedDocumentId)}
+                      title="Save selected pages that became Sources"
                       onClick={() => openSaveForSelected(selected)}
                     >
                       <Bookmark className="h-3.5 w-3.5" />
-                      Save selected…
+                      Save {selected.filter((row) => row.status === "success" && row.processedDocumentId).length}…
                     </Button>
                   ),
                 }}

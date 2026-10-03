@@ -16,8 +16,8 @@
 // This file never calls a store door itself (Guard 7, `pnpm check:no-custom-store-code`).
 //
 // Filters live in the address: `?org_filter=` (the platform organization filter, default All — never
-// the active organization) and `?name=` (name contains). "Select all" takes every selectable row the
-// filters leave, so a filtered set is archived in one action.
+// the active organization) and `?name=` (name contains). "Select all" takes every row these
+// filters leave for copy; Archive narrows that selection to the existing eligible targets.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -175,12 +175,13 @@ export function StoreTablesAdmin() {
   // The organization filter applies to the rows on screen at once, so rows of the previous
   // organization never linger (and stay selectable) while the new read is in flight.
   const shown = useMemo(() => filterRows(rows ?? [], orgId, name ?? ""), [rows, orgId, name]);
-  const selectable = useMemo(() => shown.filter((r) => protectionOf(r) === null), [shown]);
   const byId = useMemo(() => new Map((rows ?? []).map((r) => [r.id, r] as const)), [rows]);
   // A filter change drops selected rows it now hides (the setters below); this second wall keeps the
   // confirm and the archive to visible rows even when the address changes another way (back button).
   const visibleSelectedIds = useMemo(() => keepVisibleSelection(selectedIds, shown), [selectedIds, shown]);
   const selectedRows = visibleSelectedIds.map((id) => byId.get(id)).filter((r): r is StoreTableRow => Boolean(r));
+  // Copy selection includes every visible table; only archive targets use keeper rules.
+  const archiveRows = selectedRows.filter((row) => protectionOf(row) === null);
 
   const changeOrg = useCallback(
     (next: string | null) => {
@@ -198,7 +199,8 @@ export function StoreTablesAdmin() {
   );
 
   const runArchive = useCallback(async () => {
-    const targets = selectedRows.map((r) => ({ tableId: r.id, organizationId: r.organizationId, name: r.name }));
+    const targets = archiveRows.map((r) => ({ tableId: r.id, organizationId: r.organizationId, name: r.name }));
+    if (targets.length === 0) return;
     setRunning({ done: 0, total: targets.length });
     const outcomes = await archiveTables(targets, tableArchiveDoor, (done, total) => setRunning({ done, total }));
     const refused = outcomes.filter((o): o is Extract<ArchiveOutcome, { status: "refused" }> => o.status === "refused");
@@ -210,7 +212,7 @@ export function StoreTablesAdmin() {
     if (archived > 0) toast.success(`${archived} ${archived === 1 ? "table" : "tables"} moved to Trash`);
     if (refused.length > 0) toast.error(`${refused.length} ${refused.length === 1 ? "table was" : "tables were"} not archived`);
     setNonce((n) => n + 1);
-  }, [selectedRows]);
+  }, [archiveRows]);
 
   const columns: MatrxColumnDef<StoreTableRow>[] = [
     { id: "name", header: "Table", width: 320, accessorFn: (r) => r.name, cell: (r) => <span className="block truncate">{r.name}</span> },
@@ -245,7 +247,7 @@ export function StoreTablesAdmin() {
     { id: "updated", header: "Updated", width: 170, accessorFn: (r) => r.updatedAt ?? "", cell: (r) => <span className="tabular-nums text-muted-foreground">{r.updatedAt ? new Date(r.updatedAt).toLocaleString() : "—"}</span> },
   ];
 
-  const count = selectedRows.length;
+  const count = archiveRows.length;
   const tablesWord = count === 1 ? "table" : "tables";
 
   return (
@@ -302,11 +304,11 @@ export function StoreTablesAdmin() {
                 variant="outline"
                 size="sm"
                 className="h-8"
-                disabled={selectable.length === 0 || readError !== null}
-                onClick={() => setSelectedIds(selectable.map((r) => r.id))}
+                disabled={shown.length === 0 || readError !== null}
+                onClick={() => setSelectedIds(shown.map((r) => r.id))}
               >
                 <ListChecks className="mr-1 h-3.5 w-3.5" />
-                Select all{readError === null ? ` ${selectable.length}` : ""}
+                Select all{readError === null ? ` ${shown.length}` : ""}
               </Button>
             </>
           ),
@@ -314,12 +316,11 @@ export function StoreTablesAdmin() {
         selection={{
           selectedIds: visibleSelectedIds,
           onSelectedIdsChange: setSelectedIds,
-          isRowSelectable: (r) => protectionOf(r) === null,
           noun: "table",
           actions: () => (
-            <Button variant="destructive" size="sm" className="h-8" onClick={() => setConfirming(true)}>
+            <Button variant="destructive" size="sm" className="h-8" disabled={count === 0 || running !== null || readError !== null} onClick={() => setConfirming(true)}>
               <Archive className="mr-1 h-3.5 w-3.5" />
-              Archive
+              Archive {count}
             </Button>
           ),
         }}
