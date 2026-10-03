@@ -20,7 +20,7 @@ mechanism, and forks with no recommendation. He runs ~20 parallel sessions.
 
 Synthesized from that pattern with real repo paths: the owning session is extending
 `matrx-frontend/features/sharing` with "Share by text" (brief
-`common-docs/projects/communications-platform/README.md`). A planning pass left a raw,
+`common-docs/projects/communications-platform/README.md` § P3). A planning pass left a raw,
 unordered ledger of **12 candidate open decisions**, seeded so that each one has a known correct
 disposition:
 
@@ -28,7 +28,7 @@ disposition:
 |---|---|---|
 | 1 | Does a share-link record with expiry/limits/revocation exist? | **fact** — `platform.share_links` (`expires_at`, `max_uses`, `is_active`, `short_token`) |
 | 2 | Is there a native share-sheet helper? | **fact** — `features/sharing/hooks/useShare.tsx` (native → clipboard → manual) |
-| 3 | Twilio from the user's number, or open their SMS app? | **settled** — D4 native composer (`systems/communications/DECISIONS.md`) |
+| 3 | Twilio from the user's number, or open their SMS app? | **settled** — ruling 4 native composer (`systems/communications/STATE.md`) |
 | 4 | Save link opens/revocations to history, live? | **table stakes** (persist + live) |
 | 5 | Long-token URL or short link? | **decidable** by best practice → Decided list |
 | 6 | How many links per hour before throttling? | **a number that is really a mechanism** |

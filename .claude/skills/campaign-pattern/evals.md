@@ -24,7 +24,7 @@ a shared checkout other agents commit into. Deliverable: a ≤70-line `plan.md` 
 questions (first five actions with lane+model; phases/gates; what "done" means; what reaches the
 owner; what stops a lane; how the campaign survives losing the session). Plan only — no repo access,
 no questions to the owner. Scenario files live in the eval scratch dir of the authoring session; the
-prompt and mandate are reproducible from `projects/hr-domain/` (the mandate is its founding message).
+prompt and mandate are reproducible from `systems/human-resources/projects/hr-domain/PLAN.md` (the mandate is its founding message).
 
 **Lane for every run:** `standard` (opus, medium), fresh subagent, zero authorship, reads only the
 skill under test plus the method skills it points at. **Grader:** `quick` (sonnet), zero authorship,
