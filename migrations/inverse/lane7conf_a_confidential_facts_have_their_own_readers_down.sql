@@ -1,8 +1,9 @@
 -- inverse of lane7conf_a_confidential_facts_have_their_own_readers.sql. Puts every confidential value
 -- back on crm.party (nothing is lost), then removes the trigger, the policy, the doors, the knob,
 -- the registry row and the split table. Re-base before use if a later file replaced any of these.
+-- window-class: drops crm.party's trigger (ACCESS EXCLUSIVE, metadata only) and the split table; run in the window.
+-- Run lane7conf_b's inverse first (its policy calls hr.employee_row_reader).
 set local lock_timeout = '3s';
-DROP POLICY IF EXISTS hr_employee_confidential_readers ON hr.employee;
 DELETE FROM platform.client_callable_door
  WHERE (schema_name, function_name) IN (('crm','party_confidential_level'), ('public','crm_party_confidential_read'), ('public','crm_party_confidential_write'), ('hr','employee_row_reader'));
 DROP FUNCTION IF EXISTS hr.employee_row_reader(uuid);

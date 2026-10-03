@@ -116,7 +116,10 @@ try {
   const mRec = await member.sb.schema("custom").rpc("entity_record_read", { p_organization_id: ORG, p_token: "hr_employee", p_record_id: empId });
   const legal = JSON.stringify(mRec.data ?? null).includes("legal_first_name");
   check("member does NOT read the employee row (legal names) through entity_record_read", !legal, mRec.error ? `error: ${mRec.error.message}` : legal ? "row returned" : "withheld");
-  check("that read is not an error", !mRec.error, mRec.error?.message);
+  // A single-record door answers a row the person cannot open with its own closed-door sentence (the
+  // same one as for any record they cannot reach) — never a crash, never developer text, never the row.
+  const plain = !mRec.error || (/^[A-Z][^\n]{10,160}\.$/.test(mRec.error.message) && !/legal|relation|column|SQL/i.test(mRec.error.message));
+  check("that read is the door's plain closed-door answer, not a crash", plain, mRec.error ? `${mRec.error.code}: ${mRec.error.message}` : "no error");
 
   // 6. HR — history of the employee row, as the member.
   const hist = await member.sb.schema("history").from("row_versions").select("id, row_data").eq("entity_type", "hr_employee").eq("row_id", empId).limit(5);

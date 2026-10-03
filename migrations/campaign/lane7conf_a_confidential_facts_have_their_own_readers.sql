@@ -1,4 +1,3 @@
--- draft: lane7 confidential split — rehearsal + guard pending
 -- chair-step: NEEDS ARMAN WATCHING (CHAIR-GUIDANCE § What needs Arman watching). This file:
 --   · CREATES ONE TABLE crm.party_confidential (row security ON, every client privilege revoked —
 --     crm's default ACL would otherwise hand authenticated arwd; registered in platform.entity_types
@@ -8,7 +7,8 @@
 --   · GRANTS EXECUTE to authenticated on two new doors (public.crm_party_confidential_read,
 --     public.crm_party_confidential_write) and on hr.employee_row_reader (the policy predicate).
 --   · LOCKS: CREATE TRIGGER on crm.party (SHARE ROW EXCLUSIVE: writes wait, reads do not);
---     (the hr.employee policy is file b, alone: lane7conf_b_an_employee_row_is_read_by_the_employee_and_hr.sql) lock_timeout 3s; re-run on a lock refusal (the file is idempotent).
+--     the sign-in freeze above. lock_timeout 3s; re-run on a lock refusal (the file is idempotent).
+--   · The hr.employee policy is file b, alone: lane7conf_b_an_employee_row_is_read_by_the_employee_and_hr.sql.
 --   · No column is added or dropped; no existing function body is replaced; no index on a live table.
 -- Inverse: migrations/inverse/lane7conf_a_confidential_facts_have_their_own_readers_down.sql
 -- lane: STANDARD-TABLES (lane 7)
