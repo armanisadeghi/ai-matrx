@@ -2,7 +2,7 @@
 -- called only from inside the SECURITY DEFINER trigger) and replaces one live trigger body
 -- (CREATE OR REPLACE, no trigger DDL). It changes no grant and alters no table. Its inverse puts
 -- the trigger body back byte for byte and drops the new function.
--- based-on: custom._entity_custom_fields_guard() e29bf768997e4a2e1a0c1523dc88ff25f67a850e3b9d7617b2cd2263d7ee3c2a
+-- based-on: custom._entity_custom_fields_guard() f13edfda19808d5d4245ae195c56a9f736e5d37a7b092852c2bbc0c587081812
 --
 -- LANE 7 · W2 FIX ROUND 1 — A CHOICE ON A STANDARD ROW HOLDS ITS KEY.
 --
@@ -26,6 +26,9 @@
 -- -> "downtown"; RED without this file: "Harbor", the id and "Downtown" stored as sent.
 -- Round 2: the options table id is read from the Field's own column first, its config only for a
 -- Field written before that column (the client reads it the same way).
+-- ORDER (round 4): based on lane7sec_r2_an_archived_field_never_blocks_a_row.sql's guard body —
+-- apply r2 FIRST, then this file; this file inserts its one call into r2's body and changes nothing
+-- else, so r2's archive fix stands. Its inverse returns r2's body byte for byte.
 -- Coordination: lane 7 SEC owns this trigger's field-rule half; this file inserts one call above
 -- validate_values and changes nothing else in the body.
 
@@ -161,6 +164,7 @@ declare
   v_ok       text;
   v_admin    text;
   v_hdr      text;
+  v_arch     jsonb;   -- LANE7-SEC-ARCHIVE: this token's archived Fields, key -> label
 begin
   -- WRITE-PERF-4: `to_jsonb(new)` ONCE. This serialised the whole row twice (three times on
   -- an UPDATE) to read two keys out of it; on a wide standard table that is the row's entire
@@ -273,6 +277,44 @@ begin
 
   if v_fields is not null then
     perform custom.validate_values(v_org, v_fields, coalesce(v_doc, '{}'::jsonb), null);
+  end if;
+
+  -- LANE7-SEC-ARCHIVE (2026-10-02). AN ARCHIVED FIELD'S VALUE IS CARRIED, NEVER A BLOCK. Archiving
+  -- a Field keeps every value it holds so restoring it brings them back. Those values (and their
+  -- envelopes under `_values`) ride along on every later write of the row untouched — the
+  -- envelope check below knows a retired Field of a standard table by its token — and only a
+  -- write that CHANGES or CLEARS one is refused, for every writer, in one sentence. Read once
+  -- per statement.
+  v_memo := platform.memo_k_get('scfa:' || v_org::text || ':' || v_token);
+  if v_memo is null then
+    select coalesce(jsonb_object_agg(f.data ->> 'key', coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key')), '{}'::jsonb)
+      into v_arch
+      from custom.record f
+     where f.organization_id = v_org
+       and f.table_id = custom.field_kernel_id()
+       and f.deleted_at is not null
+       and f.data ->> 'table_token' = v_token
+       and f.data ->> 'key' is not null
+       and not exists (select 1 from unnest(coalesce(v_fields, '{}'::custom.record[])) l
+                        where l.data ->> 'key' = f.data ->> 'key');
+    perform platform.memo_k_put('scfa:' || v_org::text || ':' || v_token, v_arch::text);
+  else
+    v_arch := v_memo;
+  end if;
+  if v_arch <> '{}'::jsonb then
+    select string_agg(format('"%s"', v_arch ->> k), ', ' order by k) into v_list
+      from jsonb_object_keys(v_arch) k
+     where (v_old -> k) is distinct from (v_doc -> k)
+        -- an edit of the archived value's stored history is an edit too; an envelope the write
+        -- did not send at all is not, and is carried back below
+        or (jsonb_typeof(v_doc -> '_values') = 'object' and (v_doc -> '_values') ? k
+            and (v_old -> '_values' -> k) is distinct from (v_doc -> '_values' -> k));
+    if v_list is not null then
+      raise exception '% on this record is archived, so its value is kept as it was and nothing was written; restoring the field from Trash lets it change again.',
+                      v_list
+        using errcode = '23514',
+              hint = 'LANE7-SEC-ARCHIVE: an archived field''s value is carried untouched; an owner or admin can restore the field from Trash.';
+    end if;
   end if;
 
   -- LANE7-SEC (2026-10-02, round 1, CHAIR-SEC-R1). THE FIELD RULE, ON EVERY WRITE PATH.
@@ -467,6 +509,15 @@ begin
   end if;
   v_doc := custom.stamp_value_envelopes(v_doc, v_actor, v_obo, now());
   v_doc := custom.value_versions(v_old, v_doc);
+  -- LANE7-SEC-ARCHIVE: an archived Field's envelope is carried exactly as it was, never restamped.
+  if v_arch <> '{}'::jsonb and jsonb_typeof(v_doc -> '_values') = 'object' then
+    select jsonb_set(v_doc, '{_values}',
+             (v_doc -> '_values')
+             || coalesce((select jsonb_object_agg(k, v_old -> '_values' -> k)
+                            from jsonb_object_keys(v_arch) k
+                           where (v_old -> '_values') ? k), '{}'::jsonb))
+      into v_doc;
+  end if;
 
   v_refusal := custom.value_envelope_refusal(v_doc);
   if v_refusal is not null then

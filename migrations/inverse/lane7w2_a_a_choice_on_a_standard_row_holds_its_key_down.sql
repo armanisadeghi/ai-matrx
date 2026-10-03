@@ -1,7 +1,7 @@
 -- chair-step: the inverse of lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql. It puts
--- custom._entity_custom_fields_guard back byte for byte as it was before that file ran and drops
--- the one function that file created. Values already resolved to keys stay keys (a key is valid).
--- based-on: custom._entity_custom_fields_guard() 0464f27ce28beb795be17172ae76e1197149928f3ef2e44a6b3df03e71280e9c
+-- custom._entity_custom_fields_guard back byte for byte as lane7sec_r2 left it (the body that file was
+-- based on) and drops the one function that file created. Values already resolved to keys stay keys.
+-- based-on: custom._entity_custom_fields_guard() 5c5c510cb34808b67a4bac1ca739b1e0d0b24d1cdcb10889fe860b12d5690a75
 
 CREATE OR REPLACE FUNCTION custom._entity_custom_fields_guard()
  RETURNS trigger
@@ -39,6 +39,7 @@ declare
   v_ok       text;
   v_admin    text;
   v_hdr      text;
+  v_arch     jsonb;   -- LANE7-SEC-ARCHIVE: this token's archived Fields, key -> label
 begin
   -- WRITE-PERF-4: `to_jsonb(new)` ONCE. This serialised the whole row twice (three times on
   -- an UPDATE) to read two keys out of it; on a wide standard table that is the row's entire
@@ -145,6 +146,44 @@ begin
   -- keeps it exactly as it is.
   if v_fields is not null then
     perform custom.validate_values(v_org, v_fields, coalesce(v_doc, '{}'::jsonb), null);
+  end if;
+
+  -- LANE7-SEC-ARCHIVE (2026-10-02). AN ARCHIVED FIELD'S VALUE IS CARRIED, NEVER A BLOCK. Archiving
+  -- a Field keeps every value it holds so restoring it brings them back. Those values (and their
+  -- envelopes under `_values`) ride along on every later write of the row untouched — the
+  -- envelope check below knows a retired Field of a standard table by its token — and only a
+  -- write that CHANGES or CLEARS one is refused, for every writer, in one sentence. Read once
+  -- per statement.
+  v_memo := platform.memo_k_get('scfa:' || v_org::text || ':' || v_token);
+  if v_memo is null then
+    select coalesce(jsonb_object_agg(f.data ->> 'key', coalesce(nullif(f.data ->> 'label', ''), f.data ->> 'key')), '{}'::jsonb)
+      into v_arch
+      from custom.record f
+     where f.organization_id = v_org
+       and f.table_id = custom.field_kernel_id()
+       and f.deleted_at is not null
+       and f.data ->> 'table_token' = v_token
+       and f.data ->> 'key' is not null
+       and not exists (select 1 from unnest(coalesce(v_fields, '{}'::custom.record[])) l
+                        where l.data ->> 'key' = f.data ->> 'key');
+    perform platform.memo_k_put('scfa:' || v_org::text || ':' || v_token, v_arch::text);
+  else
+    v_arch := v_memo;
+  end if;
+  if v_arch <> '{}'::jsonb then
+    select string_agg(format('"%s"', v_arch ->> k), ', ' order by k) into v_list
+      from jsonb_object_keys(v_arch) k
+     where (v_old -> k) is distinct from (v_doc -> k)
+        -- an edit of the archived value's stored history is an edit too; an envelope the write
+        -- did not send at all is not, and is carried back below
+        or (jsonb_typeof(v_doc -> '_values') = 'object' and (v_doc -> '_values') ? k
+            and (v_old -> '_values' -> k) is distinct from (v_doc -> '_values' -> k));
+    if v_list is not null then
+      raise exception '% on this record is archived, so its value is kept as it was and nothing was written; restoring the field from Trash lets it change again.',
+                      v_list
+        using errcode = '23514',
+              hint = 'LANE7-SEC-ARCHIVE: an archived field''s value is carried untouched; an owner or admin can restore the field from Trash.';
+    end if;
   end if;
 
   -- LANE7-SEC (2026-10-02, round 1, CHAIR-SEC-R1). THE FIELD RULE, ON EVERY WRITE PATH.
@@ -339,6 +378,15 @@ begin
   end if;
   v_doc := custom.stamp_value_envelopes(v_doc, v_actor, v_obo, now());
   v_doc := custom.value_versions(v_old, v_doc);
+  -- LANE7-SEC-ARCHIVE: an archived Field's envelope is carried exactly as it was, never restamped.
+  if v_arch <> '{}'::jsonb and jsonb_typeof(v_doc -> '_values') = 'object' then
+    select jsonb_set(v_doc, '{_values}',
+             (v_doc -> '_values')
+             || coalesce((select jsonb_object_agg(k, v_old -> '_values' -> k)
+                            from jsonb_object_keys(v_arch) k
+                           where (v_old -> '_values') ? k), '{}'::jsonb))
+      into v_doc;
+  end if;
 
   v_refusal := custom.value_envelope_refusal(v_doc);
   if v_refusal is not null then
