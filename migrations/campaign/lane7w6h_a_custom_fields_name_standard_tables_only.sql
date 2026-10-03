@@ -387,5 +387,23 @@ BEGIN
   RETURN NEW;
 END $function$;
 
+-- The two SECURITY DEFINER bodies replaced here that had no access declaration: declared IN DATA,
+-- server-only (neither is granted to a client role; neither changes who may call it).
+INSERT INTO platform.client_callable_door
+  (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers, argument_rules)
+SELECT d.* FROM (VALUES
+  ('platform', 'promote_custom_field_index', 'p_definition_id uuid, p_concurrently boolean', ARRAY['uuid'::regtype,'boolean'::regtype]::oid[],
+   'p_definition_id: a platform.custom_field_definition row, unknown -> foreign_key_violation; builds an index only for a standard table.',
+   'migrations/campaign/lane7w6h_a_custom_fields_name_standard_tables_only.sql (lane 7 STANDARD-TABLES W6H)',
+   'server_only: index promotion is a platform operator''s action on the retiring field system; no client role holds EXECUTE.', false, false,
+   '{"version":1,"arguments":{"p_definition_id":{"type":"uuid","position":1,"optional":false,"null_rule":{},"foreign":{"bounded":true,"note":"Server-only; an unknown id is refused before any read."}},"p_concurrently":{"type":"boolean","position":2,"optional":true,"null_rule":{},"foreign":{"not_an_id":true}}}}'::jsonb),
+  ('platform', 'backfill_record_names', 'p_definition_id uuid, p_batch integer', ARRAY['uuid'::regtype,'integer'::regtype]::oid[],
+   'p_definition_id: no longer read; the door refuses (custom objects retired).',
+   'migrations/campaign/lane7w6h_a_custom_fields_name_standard_tables_only.sql (lane 7 STANDARD-TABLES W6H)',
+   'server_only: a retired platform job (custom objects moved to the record store); it now only refuses, and no client role holds EXECUTE.', false, false,
+   '{"version":1,"arguments":{"p_definition_id":{"type":"uuid","position":1,"optional":false,"null_rule":{},"foreign":{"bounded":true,"note":"Never read: the door refuses every call."}},"p_batch":{"type":"integer","position":2,"optional":true,"null_rule":{},"foreign":{"not_an_id":true}}}}'::jsonb)
+) d(schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers, argument_rules)
+ WHERE NOT EXISTS (SELECT 1 FROM platform.client_callable_door c WHERE c.schema_name = d.schema_name AND c.function_name = d.function_name);
+
 ALTER TABLE platform.custom_field_definition DROP CONSTRAINT IF EXISTS custom_field_definition_target_definition_id_fkey;
 ALTER TABLE platform.custom_field_definition DROP CONSTRAINT IF EXISTS custom_field_definition_reference_target_definition_id_fkey;

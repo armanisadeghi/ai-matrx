@@ -456,6 +456,7 @@ BEGIN
   RETURN NEW;
 END $function$;
 
+-- The two access declarations the up added stay: the restored bodies are SECURITY DEFINER too and need them.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'custom_field_definition_target_definition_id_fkey' AND conrelid = 'platform.custom_field_definition'::regclass) THEN
     ALTER TABLE platform.custom_field_definition ADD CONSTRAINT custom_field_definition_target_definition_id_fkey FOREIGN KEY (target_definition_id) REFERENCES platform.custom_entity_definition(id);
