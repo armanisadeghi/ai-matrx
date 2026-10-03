@@ -26,8 +26,11 @@
 -- organization or a Confidential table). Under that ruling a member opening Project Y's risk is
 -- the RIGHT answer, and part 1 asserted the retired one. The T10 shape is unchanged: the person
 -- who may be handed a whole Table through one shared Home is now the one the ladder still keeps
--- out of the rest — somebody who is not a member and holds one share — exactly the "sharee" the
--- census (custom.list_door_disagreements) asks about since CD-LADDER.
+-- out of the rest — a PORTAL PRINCIPAL (VIS-31), not a member, admitted through the organization
+-- wall by custom.portal_admits and reaching exactly her own client record and what names it —
+-- the person custom.list_door_disagreements has asked about since PORTAL (2026-09-20). A plain
+-- non-member with a share is stopped at the wall itself (custom.assert_client_may_reach), so no
+-- client door can leak to her at all.
 --
 -- PARTS: 0 the seat · 1 T10, every list door against the record door · 2 T7's last clause,
 -- a column a formula depends on · 3 the comment refusal says what is true · 4 the two censuses
@@ -81,7 +84,7 @@ declare
   v_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_dana  constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
   c_admin_j text; c_dana_j text; v_boss text := current_user;
-  v_home uuid; v_tproj uuid; v_hx uuid; v_hy uuid; v_trisk uuid; v_rx uuid; v_ry uuid;
+  v_home uuid; v_tproj uuid; v_hx uuid; v_hy uuid; v_trisk uuid; v_rx uuid; v_ry uuid; v_portal uuid;
   v_num uuid; v_dbl uuid; v_item uuid; v_titems uuid;
   n int; v_opened boolean; v_msg text;
 begin
@@ -124,15 +127,24 @@ begin
     'fields', jsonb_build_array(jsonb_build_object('name','title','kind','text')),
     'title_field','title','parent_id', v_home::text));
   perform custom.field_declare(v_org, v_trisk, jsonb_build_object('label','Title','type','text'));
+  perform custom.field_declare(v_org, v_trisk, jsonb_build_object(
+    'label','Project','key','project','type','relation','relation_target', v_tproj));
   -- ONE TABLE, TWO HOMES — acceptance test 10's shape.
   perform custom.home_add(v_org, v_trisk, v_hx);
   perform custom.home_add(v_org, v_trisk, v_hy);
-  v_rx := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in X'));
-  v_ry := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in Y'));
+  v_rx := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in X', 'project', v_hx::text));
+  v_ry := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in Y', 'project', v_hy::text));
   perform custom.record_reparent(v_org, v_rx, v_hx);
   perform custom.record_reparent(v_org, v_ry, v_hy);
-  -- SHE IS GIVEN PROJECT X AND NOTHING ELSE.
-  perform custom.share_grant(v_org, v_hx, 'user', v_dana, 'viewer'::public.permission_level);
+  -- SHE IS GIVEN PROJECT X AND NOTHING ELSE — as a PORTAL PRINCIPAL (VIS-31), the one kind of
+  -- person the organization wall admits (custom.assert_client_may_reach → custom.portal_admits)
+  -- without a membership, and whose whole reach is a grant on her own client record plus the
+  -- edge a Risk's naming field carries (custom.carrying_edges_of arm 4). The Projects table is
+  -- the portal's client table; Risks name their Project through `project`.
+  v_portal := custom.portal_declare(v_org, 'Rincon Plumbing project portal', v_tproj,
+    jsonb_build_array(jsonb_build_object('table_id', v_trisk, 'names_via', 'project',
+      'visible_fields', jsonb_build_array('title'), 'editable_fields', '[]'::jsonb, 'comments', false)));
+  perform custom.portal_invite(v_org, v_portal, v_hx, 'test@test.com', v_dana);
 
   -- ══════════════════════════════ PART 1 — T10, from HER seat
   perform set_config('request.jwt.claims', c_dana_j, true);
