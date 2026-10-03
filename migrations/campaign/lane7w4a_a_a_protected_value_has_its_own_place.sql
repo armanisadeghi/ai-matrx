@@ -1,13 +1,17 @@
 -- chair-step: NEEDS ARMAN WATCHING (CHAIR-GUIDANCE § What needs Arman watching): this file CREATES TWO
 -- TABLES (custom.entity_protected_value, custom.entity_protected_value_version: every
--- client role revoked; row security off on purpose, see § 2) and adds one locked platform knob row (custom/protected_field_rules, INSERT).
+-- client role revoked; row security off on purpose, see § 2; registered in platform.entity_types as
+-- machinery, INSERT) and adds one locked platform knob row (custom/protected_field_rules, INSERT).
 -- No ALTER of an existing table, no strong lock on a live table, no grant to any client role.
 -- Its inverse drops both tables (refused while either holds a row) and the knob row.
--- ORDER (production): lane7sec_r2_an_archived_field_never_blocks_a_row.sql, then
+-- ORDER (production, chair ruling): r2 -> w2_a -> 5b2 -> 4a (a, b, c):
+-- lane7sec_r2_an_archived_field_never_blocks_a_row.sql, then
 -- lane7w2_a_a_choice_on_a_standard_row_holds_its_key.sql (re-based on r2), then
+-- lane7w5b2_a_record_read_takes_only_the_columns_you_may_read.sql (custom.entity_record_read), then
 -- lane7w4a_a_a_protected_value_has_its_own_place.sql, then lane7w4a_b_a_protected_field_is_read_by_the_people_it_names.sql, then
 -- lane7w4a_c_the_people_a_field_names_reach_its_values.sql. Based on production's bodies (custom._entity_custom_fields_guard e29bf768…) plus SEC r2
--- plus W2's Choice-key lines; onehome_d2 (pending, fragment-based) applies before or after this
+-- plus W2's Choice-key lines; custom.entity_record_read on 5b2's body (both anchors are lines 5b2
+-- keeps; the clone proof ran on that body); onehome_d2 (pending, fragment-based) applies before or after this
 -- unchanged. Body edits in file b are FRAGMENT edits on the live body (each anchor asserted present
 -- exactly once, refused by name otherwise), so they land on r2+W2 with or without onehome_d2 and
 -- with or without W3a/W5 — the clone proof ran on prod+r2+W2+onehome_d2+W3a+W5.
@@ -96,4 +100,14 @@ CREATE INDEX IF NOT EXISTS entity_protected_value_version_row_idx
 REVOKE ALL ON custom.entity_protected_value_version FROM PUBLIC, anon, authenticated, service_role;
 COMMENT ON TABLE custom.entity_protected_value_version IS
   'LANE7-W4A: every version of a protected value (writes, clears, and the copies the protect door moved out of rows and out of history.row_versions). Read only through custom.field_access''s rule.';
+
+-- Registered at birth as machinery (the schema custom is CLOSED: no client grant, reachable only by the
+-- owner and SECURITY DEFINER code), the same class as custom.organization_visibility_version.
+INSERT INTO platform.entity_types (token, schema_name, table_name, label, audit_class, audit_class_reason, table_ref)
+SELECT v.token, 'custom', v.tbl, v.label, 'machinery',
+       'machinery: no grant to anon or authenticated and RLS off; schema custom is declared CLOSED, so the table is reachable only by the owner and SECURITY DEFINER code (custom.field_access''s rule decides every read)',
+       ('custom.' || v.tbl)::regclass
+  FROM (VALUES ('entity_protected_value', 'entity_protected_value', 'Protected field value'),
+               ('entity_protected_value_version', 'entity_protected_value_version', 'Protected field value version')) v(token, tbl, label)
+ WHERE NOT EXISTS (SELECT 1 FROM platform.entity_types e WHERE e.token = v.token);
 

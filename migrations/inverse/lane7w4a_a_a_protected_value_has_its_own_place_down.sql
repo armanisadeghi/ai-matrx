@@ -7,6 +7,7 @@ begin
     raise exception 'Protected values exist; this inverse would drop them. Nothing was changed.' using errcode = '55000';
   end if;
 end $$;
+DELETE FROM platform.entity_types WHERE token IN ('entity_protected_value', 'entity_protected_value_version');
 DROP TABLE IF EXISTS custom.entity_protected_value_version;
 DROP TABLE IF EXISTS custom.entity_protected_value;
 DELETE FROM platform.feature_knob WHERE feature = 'custom' AND key = 'protected_field_rules';
