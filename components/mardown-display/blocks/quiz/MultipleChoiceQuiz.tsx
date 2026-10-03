@@ -52,6 +52,8 @@ import {
   getPerformanceData,
 } from "./quiz-utils";
 import { useQuizPersistence } from "@/hooks/useQuizPersistence";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { emitKindInteraction } from "@/features/content-ir/react/kind-interaction";
 import { parseQuizJSON, type RawQuizJSON } from "./quiz-parser";
 import { InlineLatexRenderer } from "@/features/math/components/InlineLatexRenderer";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -322,6 +324,29 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
     }
     return quizState.results;
   }, [showResults, quizState]);
+
+  // A finished quiz's score rides along with the person's next message as one
+  // interaction chip (the shape interaction seam). Only a NEW result stages.
+  const dispatch = useAppDispatch();
+  const stagedResultRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!results || !showResults) return;
+    const key = `${results.correctCount}/${results.answeredCount}/${results.totalQuestions}`;
+    if (stagedResultRef.current === key) return;
+    const first = stagedResultRef.current === null && !!loadedSession?.state?.results;
+    stagedResultRef.current = key;
+    if (first) return; // a result reloaded from a saved session is not a new action
+    void dispatch(
+      emitKindInteraction({
+        kind: "quiz",
+        title: parsedQuiz?.title || null,
+        conversationId,
+        messageId,
+        blockIndex,
+        state: { results },
+      }),
+    );
+  }, [results, showResults, dispatch, parsedQuiz?.title, conversationId, messageId, blockIndex, loadedSession]);
 
   // Show loading only if quiz data not parsed yet (never block for saves/duplicate checks)
   if (!parsedQuiz || !quizState) {

@@ -28,10 +28,6 @@ export default function TroubleshootingArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<
-    TroubleshootingState & Record<string, unknown>
-  >(artifactId, "generic");
-
   const troubleshooting = useMemo(
     () =>
       resolveMarkdownPayload({
@@ -43,6 +39,19 @@ export default function TroubleshootingArtifact({
       }),
     [serverData, data, raw, isStreamActive],
   );
+
+  // Answer state also rides the next message as one interaction chip (the
+  // shape interaction seam); view state never does.
+  const { state, loaded, save } = useArtifactState<
+    TroubleshootingState & Record<string, unknown>
+  >(artifactId, "generic", undefined, undefined, {
+    kind: "troubleshooting",
+    title: (troubleshooting as { title?: string } | null)?.title ?? null,
+    conversationId,
+    messageId,
+    blockIndex,
+    data: troubleshooting,
+  });
 
   if (!troubleshooting) {
     return isStreamActive ? <MatrxMiniLoader /> : null;

@@ -12,6 +12,11 @@
  * interaction simply isn't persisted until the artifact exists. (A non-UUID id
  * has no `canvas_items` row to attach state to; writing against it would fail
  * the FK silently, so we stay inert instead — see `isMaterializedArtifactId`.)
+ *
+ * `interaction` (optional) — the shape this state belongs to in a chat answer.
+ * Every save also feeds the shape interaction seam (`emitKindInteraction`), so
+ * the person's answer state rides along with their next message as one chip —
+ * with or without a canvas id (staging never depends on persistence).
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,6 +24,14 @@ import { getAdapter, type ArtifactLink } from "./artifact-adapters";
 import { isMaterializedArtifactId } from "../artifactId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { toast } from "@/lib/toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  emitKindInteraction,
+  type KindInteractionEvent,
+} from "@/features/content-ir/react/kind-interaction";
+
+/** Where this state's shape sits in a chat answer (absent off-chat). */
+export type ArtifactInteractionTarget = Omit<KindInteractionEvent, "state">;
 
 interface UseArtifactStateResult<TState extends Record<string, unknown>> {
   state: TState | null;
@@ -33,8 +46,15 @@ export function useArtifactState<
   adapterKey?: string,
   link?: ArtifactLink,
   debounceMs = 600,
+  interaction?: ArtifactInteractionTarget,
 ): UseArtifactStateResult<TState> {
+  const dispatch = useAppDispatch();
   const [state, setState] = useState<TState | null>(null);
+  // The merged state as of the last save, for the interaction seam.
+  const stateRef = useRef<TState | null>(null);
+  stateRef.current = state;
+  const interactionRef = useRef(interaction);
+  interactionRef.current = interaction;
   const [loaded, setLoaded] = useState(false);
   const pending = useRef<Partial<TState>>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,12 +119,19 @@ export function useArtifactState<
   const save = useCallback(
     (patch: Partial<TState>) => {
       // Optimistic local merge so the UI reflects the change immediately.
-      setState((prev) => ({ ...(prev ?? {}), ...patch }) as TState);
+      const before = stateRef.current;
+      const merged = { ...(before ?? {}), ...patch } as TState;
+      stateRef.current = merged;
+      setState(merged);
       pending.current = { ...pending.current, ...patch };
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(flush, debounceMs);
+      timer.current = setTimeout(() => {
+        const target = interactionRef.current;
+        if (target) void dispatch(emitKindInteraction({ ...target, state: merged, previous: before ?? null }));
+        flush();
+      }, debounceMs);
     },
-    [flush, debounceMs],
+    [flush, debounceMs, dispatch],
   );
 
   // Keep a ref to the latest flush so the once-on-unmount cleanup always uses

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,6 +22,11 @@ import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
 import { useQuestionnaireContext } from "./QuestionnaireContext";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { Button } from "@/components/ui/button";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
+import { questionnaireAnswers } from "./questionnaire-answers";
+import { durableRecordId } from "@ai-matrx/kit/ids";
 
 export type QuestionOption = { name: string };
 
@@ -769,9 +773,6 @@ const DebugDisplay = ({
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Debug View</CardTitle>
-          <CardDescription>
-            Current form state with its questions
-          </CardDescription>
         </div>
         <button
           onClick={handleCopy}
@@ -814,6 +815,27 @@ const DebugToggle = ({
     </button>
   );
 };
+
+const SubmitAnswersRow = ({
+  answeredCount,
+  changed,
+  submitted,
+  onSubmit,
+}: {
+  answeredCount: number;
+  changed: boolean;
+  submitted: boolean;
+  onSubmit: () => void;
+}) => (
+  <div className="flex items-center justify-end gap-2 pt-2">
+    {submitted && !changed ? (
+      <span className="text-xs text-muted-foreground">Added to your next message</span>
+    ) : null}
+    <Button size="sm" onClick={onSubmit} disabled={answeredCount === 0 || (submitted && !changed)}>
+      {submitted ? "Update" : "Submit"}
+    </Button>
+  </div>
+);
 
 const cleanQuestionTitle = (title: string) => {
   return title.replace(/^Q\d*:\s*|^Question:\s*/i, "");
@@ -949,6 +971,11 @@ const QuestionnaireRenderer = ({
   const themeColors = THEMES[theme];
 
   const formState = getFormState(uniqueId);
+
+  // Submit (Turn References ruling 6): the answers ride along with the
+  // person's next message as ONE `answers` chip, updated on a re-submit.
+  const dispatch = useAppDispatch();
+  const [submittedAnswers, setSubmittedAnswers] = useState<string | null>(null);
 
   // Persist the user's answers via the artifact-state channel (canvas_item_state,
   // keyed by the materialized artifact id) so they survive reload AND the agent
@@ -1144,6 +1171,31 @@ const QuestionnaireRenderer = ({
             />
           );
         })}
+
+        {conversationId && messageId ? (
+          <SubmitAnswersRow
+            answeredCount={questionnaireAnswers(Object.keys(questionData), formState).length}
+            changed={submittedAnswers !== JSON.stringify(questionnaireAnswers(Object.keys(questionData), formState))}
+            submitted={submittedAnswers !== null}
+            onSubmit={() => {
+              const answers = questionnaireAnswers(Object.keys(questionData), formState);
+              if (answers.length === 0) return;
+              dispatch(
+                stageRemark(
+                  conversationId,
+                  {
+                    kind: "answers",
+                    target: { conversationId, messageId: durableRecordId(messageId) ?? null, blockIndex: blockIndex ?? null },
+                    title: questionnaireTitle || null,
+                    answers,
+                  },
+                  { coalesceKey: `answers:${messageId}:${blockIndex ?? 0}` },
+                ),
+              );
+              setSubmittedAnswers(JSON.stringify(answers));
+            }}
+          />
+        ) : null}
 
         <div className="mt-6 mb-8">
           <DebugDisplay

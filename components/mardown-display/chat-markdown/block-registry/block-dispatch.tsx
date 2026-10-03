@@ -2804,7 +2804,7 @@ const SHAPE_BLOCK_DISPATCH = {
     );
   },
 
-  display_questionnaire: ({ block, index }) => {
+  display_questionnaire: ({ block, index, conversationId, durableMessageId }) => {
     // Python sends: { introduction, questions }
     const sd = block.serverData ?? {};
     return (
@@ -2812,6 +2812,9 @@ const SHAPE_BLOCK_DISPATCH = {
         key={index}
         introduction={(sd.introduction as string) ?? ""}
         questions={(sd.questions as Record<string, unknown>[]) ?? []}
+        conversationId={conversationId}
+        messageId={durableMessageId}
+        blockIndex={index}
       />
     );
   },

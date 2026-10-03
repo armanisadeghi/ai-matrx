@@ -28,10 +28,6 @@ export default function ProgressArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<
-    ProgressTrackerState & Record<string, unknown>
-  >(artifactId, "generic");
-
   const tracker = useMemo(
     () =>
       resolveMarkdownPayload({
@@ -43,6 +39,19 @@ export default function ProgressArtifact({
       }),
     [serverData, data, raw, isStreamActive],
   );
+
+  // Answer state also rides the next message as one interaction chip (the
+  // shape interaction seam); view state never does.
+  const { state, loaded, save } = useArtifactState<
+    ProgressTrackerState & Record<string, unknown>
+  >(artifactId, "generic", undefined, undefined, {
+    kind: "progress",
+    title: (tracker as { title?: string } | null)?.title ?? null,
+    conversationId,
+    messageId,
+    blockIndex,
+    data: tracker,
+  });
 
   if (!tracker) {
     return isStreamActive ? <MatrxMiniLoader /> : null;

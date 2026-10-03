@@ -24,6 +24,7 @@ export default function QuestionnaireArtifact({
   data,
   serverData,
   artifactId,
+  conversationId,
   messageId,
   blockIndex,
   isStreamActive,
@@ -57,6 +58,9 @@ export default function QuestionnaireArtifact({
         questionnaireId={
           artifactId ?? `questionnaire-${messageId}-${blockIndex ?? 0}`
         }
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
         initialState={state ?? undefined}
         onStateChange={save as (s: QuestionnaireState) => void}
       />

@@ -24,7 +24,11 @@
 
 import { useCallback, useRef } from "react";
 import { toast } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  emitKindInteraction,
+  type KindInteractionEvent,
+} from "../kind-interaction";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
@@ -64,7 +68,17 @@ function inFlightKey(key: string, input: unknown): string {
   return key;
 }
 
-export function useKindActionRunner(): RunKindAction {
+/**
+ * `origin` — the shape in a chat answer this runner acts for. When given, a
+ * write the person applies to a surface (`apply_surface_write`) also rides
+ * their next message as the shape's interaction chip (kind-interaction.ts).
+ */
+export type KindActionOrigin = Omit<KindInteractionEvent, "state" | "previous" | "data">;
+
+export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
+  const dispatch = useAppDispatch();
+  const originRef = useRef(origin);
+  originRef.current = origin;
   const { launchAgent } = useAgentLauncher();
   const userId = useAppSelector(selectUserId);
   const inFlight = useRef<Set<string>>(new Set());
@@ -90,7 +104,24 @@ export function useKindActionRunner(): RunKindAction {
       inFlight.current.add(guardKey);
 
       try {
-        return await def.handler(input, { launchAgent, userId });
+        const result = await def.handler(input, { launchAgent, userId });
+        const at = originRef.current;
+        if (result.ok && key === "apply_surface_write" && at) {
+          const written = result.result as { surfaceName?: string } | undefined;
+          const target = (input as { target?: unknown } | null)?.target;
+          void dispatch(
+            emitKindInteraction({
+              ...at,
+              kind: "surface_write",
+              state: {
+                written: [typeof target === "string" ? target : null, written?.surfaceName ? `on ${written.surfaceName}` : null]
+                  .filter(Boolean)
+                  .join(" "),
+              },
+            }),
+          );
+        }
+        return result;
       } catch (err) {
         const message =
           err instanceof Error ? err.message : `Action "${key}" failed.`;
@@ -105,6 +136,6 @@ export function useKindActionRunner(): RunKindAction {
         inFlight.current.delete(guardKey);
       }
     },
-    [launchAgent, userId],
+    [launchAgent, userId, dispatch],
   );
 }

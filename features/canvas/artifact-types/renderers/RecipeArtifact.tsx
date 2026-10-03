@@ -28,10 +28,6 @@ export default function RecipeArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<
-    RecipeState & Record<string, unknown>
-  >(artifactId, "generic");
-
   const recipe = useMemo(
     () =>
       resolveMarkdownPayload({
@@ -43,6 +39,19 @@ export default function RecipeArtifact({
       }),
     [serverData, data, raw, isStreamActive],
   );
+
+  // Answer state also rides the next message as one interaction chip (the
+  // shape interaction seam); view state never does.
+  const { state, loaded, save } = useArtifactState<
+    RecipeState & Record<string, unknown>
+  >(artifactId, "generic", undefined, undefined, {
+    kind: "recipe",
+    title: (recipe as { title?: string } | null)?.title ?? null,
+    conversationId,
+    messageId,
+    blockIndex,
+    data: recipe,
+  });
 
   if (!recipe) {
     return isStreamActive ? <MatrxMiniLoader /> : null;

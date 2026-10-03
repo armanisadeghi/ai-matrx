@@ -28,10 +28,6 @@ export default function DecisionTreeArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const { state, loaded, save } = useArtifactState<
-    DecisionTreeState & Record<string, unknown>
-  >(artifactId, "generic");
-
   const decisionTree = useMemo(
     () =>
       resolveJsonPayload({
@@ -43,6 +39,19 @@ export default function DecisionTreeArtifact({
       }),
     [serverData, data, raw, isStreamActive],
   );
+
+  // Answer state also rides the next message as one interaction chip (the
+  // shape interaction seam); view state never does.
+  const { state, loaded, save } = useArtifactState<
+    DecisionTreeState & Record<string, unknown>
+  >(artifactId, "generic", undefined, undefined, {
+    kind: "decision_tree",
+    title: (decisionTree as { title?: string } | null)?.title ?? null,
+    conversationId,
+    messageId,
+    blockIndex,
+    data: decisionTree,
+  });
 
   if (!decisionTree) {
     return isStreamActive ? <MatrxMiniLoader /> : null;
