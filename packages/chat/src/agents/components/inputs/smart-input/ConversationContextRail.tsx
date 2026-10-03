@@ -13,7 +13,7 @@
  *   • Working document      → click toggles it in/out of the CANVAS; X turns it
  *                             off for this chat (same as the docs-menu switch).
  *   • Scratchpad            → same canvas toggle + X (per-conversation gate).
- *   • Agent lists           → plan / tasks / todos (the `TaskPanel` drawer).
+ *   • Agent lists           → plan / tasks / todos (the canvas `conversation-lists` tab).
  *   • Any other live context entry the agent or user set (slot / ad-hoc) —
  *     click opens the detail sheet; X removes the entry from context.
  *
@@ -25,7 +25,7 @@
  *
  * It is the ONE rail — adding a future source (artifacts, canvas items, …) is a
  * single push into `items`, never a new bespoke strip. It reuses the existing
- * openers (the canvas's `conversation-context` tab, `TaskPanel`,
+ * openers (the canvas's `conversation-context` and `conversation-lists` tabs,
  * `ActiveContextLensChip`) — it does not reinvent any detail surface.
  *
  * Mobile-friendly: the most important pills stay inline; the rest collapse into
@@ -35,7 +35,7 @@
  * in every SmartAgentInput.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   FileText,
   ListChecks,
@@ -125,7 +125,7 @@ import {
   subscribeAgentLists,
   unsubscribeAgentLists,
 } from "../../../ui-first-tools/redux/agent-lists.thunks";
-import { TaskPanel } from "../../../ui-first-tools/ui/lists/TaskPanel";
+import { useConversationListsTab } from "../../../ui-first-tools/ui/lists/TaskPanel";
 import { selectAgentContextPolicies } from "../../../redux/agent-definition/selectors";
 import { ActiveContextButton } from "@host/features/scopes/components/active-context/ActiveContextButton";
 import { selectActiveScopeIdsByType } from "@host/features/scopes/redux/selectors/active-context";
@@ -311,10 +311,10 @@ export function ConversationContextRail({
   // The full view (every value + full control) is the conversation's context
   // tab in the canvas: same pill again → close; a different pill → switch.
   const contextTab = useConversationContextTab(conversationId, agentId ?? null);
-  const [listsOpen, setListsOpen] = useState(false);
+  // The agent lists are the conversation's lists tab in the canvas.
+  const listsTab = useConversationListsTab(conversationId);
 
   const toggleEntry = (key: string) => {
-    setListsOpen(false);
     contextTab.toggle(key);
   };
 
@@ -353,14 +353,6 @@ export function ConversationContextRail({
     } else {
       openDocuments({ conversationId, initialKind: "working" });
     }
-  };
-
-  const toggleLists = () => {
-    if (listsOpen) {
-      setListsOpen(false);
-      return;
-    }
-    setListsOpen(true);
   };
 
   /**
@@ -459,8 +451,8 @@ export function ConversationContextRail({
               ? `${open} todo${open === 1 ? "" : "s"}`
               : undefined,
         hint: "Click: open the task panel",
-        active: listsOpen,
-        onOpen: toggleLists,
+        active: listsTab.isVisible,
+        onOpen: listsTab.toggle,
       });
     }
 
@@ -590,11 +582,7 @@ export function ConversationContextRail({
   // whether or not the rail itself shows — so a value that drops out of the
   // rail (or the rail emptying) never remounts an open panel.
   const detailSurfaces = (
-    <DetailSurfaces
-      conversationId={conversationId}
-      listsOpen={listsOpen}
-      setListsOpen={setListsOpen}
-    />
+    <DetailSurfaces conversationId={conversationId} />
   );
 
   // Zero footprint when there's nothing to surface. The attachment chips
@@ -666,7 +654,7 @@ export function ConversationContextRail({
                       key={item.id}
                       onSelect={() => {
                         // Let the overflow menu release its Radix body lock before
-                        // ContextPolicyDetailSheet / TaskPanel takes ownership.
+                        // the next surface (a canvas tab, a dialog) takes ownership.
                         void openAfterCurrentLayerCloses(item.onOpen);
                       }}
                       className="gap-2"
@@ -787,25 +775,8 @@ function RailPill({ item }: { item: RailItem }) {
 
 // ── Detail surfaces (kept in one place so they mount once) ────────────────────
 
-function DetailSurfaces({
-  conversationId,
-  listsOpen,
-  setListsOpen,
-}: {
-  conversationId: string;
-  listsOpen: boolean;
-  setListsOpen: (open: boolean) => void;
-}) {
-  return (
-    <>
-      {/* Agent-initiated Cloud Browser open: when a run raises a human-handoff,
-          the Cloud Browser opens in the canvas (same surface the pill opens). */}
-      <CloudBrowserHandoffCanvasOpener conversationId={conversationId} />
-      <TaskPanel
-        conversationId={conversationId}
-        open={listsOpen}
-        onOpenChange={setListsOpen}
-      />
-    </>
-  );
+function DetailSurfaces({ conversationId }: { conversationId: string }) {
+  // Agent-initiated Cloud Browser open: when a run raises a human-handoff,
+  // the Cloud Browser opens in the canvas (same surface the pill opens).
+  return <CloudBrowserHandoffCanvasOpener conversationId={conversationId} />;
 }

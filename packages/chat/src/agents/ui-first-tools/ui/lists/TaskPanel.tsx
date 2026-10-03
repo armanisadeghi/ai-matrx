@@ -1,8 +1,11 @@
 "use client";
 
 /**
- * TaskPanel — drawer-style panel showing the active conversation's plan,
- * agent tasks, and user todos. Opens via TaskPanelChip in the chat header.
+ * TaskPanel — the active conversation's plan, agent tasks, and user todos.
+ * It is the body of the host's canvas tab `conversation-lists` (one per
+ * conversation, `host/canvas-tabs.ts`); the composer rail's Tasks pill and
+ * TaskPanelChip toggle that tab (`useConversationListsTab`). The pane header
+ * is its chrome.
  *
  * Each section is read-write: clicking a status icon cycles task status;
  * clicking a todo checkbox marks it done; inline-edit titles persist on
@@ -23,7 +26,6 @@ import {
   Plus,
   ChevronRight,
 } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
@@ -61,11 +63,20 @@ import {
 import { setPlanStatus } from "../../service/agent-plan.service";
 import { confirm as confirmDialog } from "@host/components/dialogs/confirm/ConfirmDialogHost";
 import { selectUserId } from "../../../../host/identity";
+import { useChatCanvasTab } from "../../../../host/canvas";
+import { CONVERSATION_LISTS_KIND } from "../../../../host/canvas-tabs";
 
 interface TaskPanelProps {
   conversationId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+}
+
+/** The conversation's agent lists tab in the host canvas: pressed state + toggle. */
+export function useConversationListsTab(conversationId: string) {
+  const tab = useChatCanvasTab({ kind: CONVERSATION_LISTS_KIND, key: conversationId });
+  return {
+    isVisible: tab.isVisible,
+    toggle: () => tab.toggle({ title: "Agent lists", data: { conversationId } }),
+  };
 }
 
 const STATUS_ORDER: CxAgentTaskStatus[] = [
@@ -96,37 +107,26 @@ function StatusIcon({ status }: { status: CxAgentTaskStatus }) {
   }
 }
 
-export function TaskPanel({
-  conversationId,
-  open,
-  onOpenChange,
-}: TaskPanelProps) {
+export function TaskPanel({ conversationId }: TaskPanelProps) {
   const dispatch = useAppDispatch();
 
+  // Mounted while its tab is open: read once, then follow realtime.
   useEffect(() => {
-    if (!open) return undefined;
     void dispatch(hydrateAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {
       dispatch(unsubscribeAgentLists(conversationId));
     };
-  }, [open, conversationId, dispatch]);
+  }, [conversationId, dispatch]);
 
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Agent lists"
-      position="right"
-      defaultSize={32}
-      contentClassName="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3"
-    >
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background px-4 py-3">
       <div className="flex flex-col gap-5">
         <PlanSection conversationId={conversationId} />
         <TasksSection conversationId={conversationId} />
         <TodosSection conversationId={conversationId} />
       </div>
-    </MatrxDynamicPanelHost>
+    </div>
   );
 }
 

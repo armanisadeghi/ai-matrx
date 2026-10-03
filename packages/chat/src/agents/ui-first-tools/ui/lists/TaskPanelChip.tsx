@@ -2,7 +2,8 @@
 
 /**
  * TaskPanelChip — small chip in the chat header that shows the active
- * conversation's plan/task/todo counts. Click to open the TaskPanel drawer.
+ * conversation's plan/task/todo counts. Click toggles the conversation's
+ * agent lists tab in the canvas (TaskPanel is its body).
  *
  * Hidden when the conversation has no plan/tasks/todos (zero pixel
  * footprint). Subscribes to the agentLists slice; when the agent calls
@@ -12,7 +13,7 @@
  * shows correct counts even if the user reloaded the page mid-conversation.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ListChecks } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
@@ -26,7 +27,7 @@ import {
   unsubscribeAgentLists,
 } from "../../redux/agent-lists.thunks";
 import { cn } from "@ai-matrx/design-system";
-import { TaskPanel } from "./TaskPanel";
+import { useConversationListsTab } from "./TaskPanel";
 
 interface TaskPanelChipProps {
   conversationId: string;
@@ -38,7 +39,7 @@ export function TaskPanelChip({
   className,
 }: TaskPanelChipProps) {
   const dispatch = useAppDispatch();
-  const [open, setOpen] = useState(false);
+  const lists = useConversationListsTab(conversationId);
   const hasContent = useAppSelector(selectHasAgentListsContent(conversationId));
   const taskCounts = useAppSelector(selectAgentTaskCounts(conversationId));
   const todoCounts = useAppSelector(selectUserTodoCounts(conversationId));
@@ -62,11 +63,13 @@ export function TaskPanelChip({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={lists.toggle}
+        aria-pressed={lists.isVisible}
         className={cn(
           "inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded-md",
           "bg-card hover:bg-muted text-muted-foreground hover:text-foreground",
           "border border-border transition-colors",
+          lists.isVisible && "border-primary bg-primary/15 text-primary",
           className,
         )}
         title="Open agent lists panel"
@@ -81,11 +84,6 @@ export function TaskPanelChip({
           </span>
         )}
       </button>
-      <TaskPanel
-        conversationId={conversationId}
-        open={open}
-        onOpenChange={setOpen}
-      />
     </>
   );
 }

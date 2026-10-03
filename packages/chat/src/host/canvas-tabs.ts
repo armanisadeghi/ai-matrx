@@ -26,8 +26,11 @@ export const SCRATCHPAD_KIND = "global-scratchpad";
  */
 export const CONVERSATION_CONTEXT_KIND = "conversation-context";
 
+/** A conversation's agent lists (plan, agent tasks, the person's todos): ONE tab per conversation. */
+export const CONVERSATION_LISTS_KIND = "conversation-lists";
+
 /** Every tab kind the package opens by name through `canvas.useTab`. */
-export type ChatCanvasTabKind = typeof CONVERSATION_CONTEXT_KIND;
+export type ChatCanvasTabKind = typeof CONVERSATION_CONTEXT_KIND | typeof CONVERSATION_LISTS_KIND;
 /** The scratchpad tab follows the ACTIVE scratchpad, so there is exactly one. */
 export const SCRATCHPAD_TAB_KEY = "default";
 
@@ -44,4 +47,9 @@ export function scratchpadTabId(): string {
 /** The canvas tab id of a conversation's context tab. */
 export function conversationContextTabId(conversationId: string): string {
   return canvasItemId(CONVERSATION_CONTEXT_KIND, conversationId);
+}
+
+/** The canvas tab id of a conversation's agent lists tab. */
+export function conversationListsTabId(conversationId: string): string {
+  return canvasItemId(CONVERSATION_LISTS_KIND, conversationId);
 }
