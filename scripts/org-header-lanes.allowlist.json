@@ -4,6 +4,10 @@
     {
       "file": "app/api/admin/coolify-logs/route.ts",
       "reason": "The Bearer token is COOLIFY_API_TOKEN sent to the Coolify control plane (coolify.app.matrxserver.com), not a Supabase JWT to aidream — Coolify has no organization concept and is not behind matrx-connect AuthMiddleware."
+    },
+    {
+      "file": "features/files/devices/console/relay.ts",
+      "reason": "The Bearer token is the device owner's relay token sent to the Matrx 2 device relay (relay.matrxserver.com) for a device's live status — the relay authorizes by device ownership, has no organization concept, and is not behind matrx-connect AuthMiddleware."
     }
   ]
 }

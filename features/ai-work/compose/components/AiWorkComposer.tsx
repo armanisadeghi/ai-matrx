@@ -93,6 +93,8 @@ import {
 } from "../savedRequests";
 import { ComposerSection } from "./ComposerSection";
 import { HostedRunControls } from "./HostedRunControls";
+import { HostedBillingStep } from "./HostedBillingStep";
+import type { HostedBilling, OwnPlanStatus } from "@/features/ai-work/lib/ownPlan";
 import { DestinationStep } from "./DestinationStep";
 import { HomeStep } from "./HomeStep";
 
@@ -214,6 +216,14 @@ function ComposerBody({
   const [hostedRunning, setHostedRunning] = useState(false);
   const [hostedRuntimeId, setHostedRuntimeId] = useState<string | null>(null);
   const hostedConversationId = useRef<string | null>(null);
+  // ── Who pays for a hosted run. AI Matrx credits unless the person picks
+  //    their own Claude plan AND the server reports them signed in to it.
+  const [hostedBilling, setHostedBilling] = useState<HostedBilling>("platform");
+  const [ownPlanStatus, setOwnPlanStatus] = useState<OwnPlanStatus | null>(
+    null,
+  );
+  const ownPlanReady =
+    hostedBilling === "platform" || ownPlanStatus?.state === "signed_in";
 
   const skillSettings = useAppSelector(
     selectBuilderAdvancedSettings(conversationId ?? ""),
@@ -291,7 +301,7 @@ function ComposerBody({
       : destination === "claude-code"
         ? localCapability.available && Boolean(localFolder)
         : destination === "claude-code-hosted"
-          ? hostedAvailability.selectable && !hostedRunning
+          ? hostedAvailability.selectable && !hostedRunning && ownPlanReady
           : false);
 
   /**
@@ -426,6 +436,7 @@ function ComposerBody({
             conversationId: runConversationId,
             prompt: requestText.trim(),
             agentId,
+            billing: hostedBilling,
           },
           {
             onAdopted: (ids) =>
@@ -628,6 +639,15 @@ function ComposerBody({
             </p>
           </div>
         )}
+        {destination === "claude-code-hosted" &&
+          hostedAvailability.selectable && (
+            <HostedBillingStep
+              billing={hostedBilling}
+              onBillingChange={setHostedBilling}
+              status={ownPlanStatus}
+              onStatusChange={setOwnPlanStatus}
+            />
+          )}
       </ComposerSection>
 
       <ComposerSection
@@ -808,6 +828,16 @@ function ComposerBody({
                 ? "Claude Code in a Matrx Sandbox we start for you"
                 : "AI Matrx"}
           </dd>
+          {destination === "claude-code-hosted" && (
+            <>
+              <dt className="text-muted-foreground">Paid by</dt>
+              <dd className="text-foreground">
+                {hostedBilling === "own_plan"
+                  ? "Your Claude plan"
+                  : "AI Matrx credits"}
+              </dd>
+            </>
+          )}
           <dt className="text-muted-foreground">Expert system</dt>
           <dd className="text-foreground">
             {destination === "claude-code"
@@ -846,6 +876,13 @@ function ComposerBody({
         {!requestText.trim() && (
           <span className="text-xs text-muted-foreground">
             Write your request first.
+          </span>
+        )}
+        {destination === "claude-code-hosted" && !ownPlanReady && (
+          <span className="text-xs text-muted-foreground">
+            {ownPlanStatus?.state === "signed_in_not_plan"
+              ? "Sign in with a Claude plan, or use AI Matrx credits."
+              : "Connect your Claude account first."}
           </span>
         )}
         <HostedRunControls
