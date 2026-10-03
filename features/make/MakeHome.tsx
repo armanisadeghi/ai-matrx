@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight } from "lucide-react";
 import { createRecordsClient, supabaseDataSource } from "@ai-matrx/records/core";
 import { bookingPath, publicFormPath } from "@ai-matrx/records";
 import {
@@ -48,11 +48,10 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "@/features/unified-data/hub/doors";
-import { buildDataHomeRows, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
+import { buildDataHomeRows, dataHomeKindWord, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 import { HUB_CAPABILITIES } from "@/features/unified-data/hub/capabilities";
 import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
 import { createClient } from "@/utils/supabase/client";
-import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import {
@@ -76,9 +75,12 @@ import { DescribeBox } from "./describe/DescribeBox";
 
 /** One door's answer on this page: reading, the store's words with Try again, or the rows. */
 export type Read<T> =
-  | { phase: "reading" }
+  | { phase: "reading"; slow?: { retry: () => void } }
   | { phase: "failed"; why: string; retry: () => void }
   | { phase: "read"; data: T };
+
+/** How long a read may show a skeleton before the page says it is slow (MAKE-HOME 1c: ≤ 10 s). */
+export const SLOW_READ_MS = 8_000;
 
 function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T } | { ok: false; why: string }>): Read<T> {
   const [read, setRead] = useState<Read<T>>({ phase: "reading" });
@@ -90,6 +92,10 @@ function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T 
   useEffect(() => {
     if (key === null) return;
     let alive = true;
+    // A read still out after SLOW_READ_MS says so, with Try again — never a silent skeleton.
+    const slow = setTimeout(() => {
+      if (alive) setRead((now) => (now.phase === "reading" ? { phase: "reading", slow: { retry } } : now));
+    }, SLOW_READ_MS);
     void load()
       .then((answered) => {
         if (!alive) return;
@@ -100,6 +106,7 @@ function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T 
       });
     return () => {
       alive = false;
+      clearTimeout(slow);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` names everything `load` reads
   }, [key, attempt]);
@@ -172,10 +179,6 @@ export default function MakeHome() {
     const s = q.toString();
     router.push(s ? `${pathname}?${s}` : pathname, { scroll: false });
   };
-  const open = (tile: MakeTile) => {
-    if (tile.href) router.push(tile.href);
-    else go({ [MAKE_FLOW_PARAM]: tile.flow, [MAKE_TABLE_PARAM]: null, [MAKE_ORG_PARAM]: null, [MAKE_ID_PARAM]: null });
-  };
   const close = () =>
     go({ [MAKE_FLOW_PARAM]: null, [MAKE_TABLE_PARAM]: null, [MAKE_ORG_PARAM]: null, [MAKE_ID_PARAM]: null });
   // THE MADE THING'S ID GOES INTO THE ADDRESS, REPLACING IT (wave 1b): a reload reopens it.
@@ -201,24 +204,30 @@ export default function MakeHome() {
               <SavesTo />
             </div>
             <DescribeBox />
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3" data-make-tiles="">
+            {/* A tile is a real link (/make?make=<flow>): it opens on the FIRST click, even before the
+                page is interactive — a plain navigation that reloads with the flow open (MAKE-HOME 1c).
+                The second line may take two lines: the tile's narrowest width holds a 60-character
+                line in two (guard: a-tile-line-fits-its-slot). */}
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,17rem),1fr))] gap-3" data-make-tiles="">
               {MAKE_TILES.map((tile) => (
                 <li key={tile.id} className="min-w-0">
-                  <button
-                    type="button"
+                  <Link
+                    href={tile.href ?? `${pathname}?${MAKE_FLOW_PARAM}=${tile.flow}`}
+                    scroll={false}
                     data-make-tile={tile.id}
-                    onClick={() => open(tile)}
-                    className="group flex h-full w-full min-w-0 items-start gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group relative flex h-full w-full min-w-0 items-start gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <KindIcon kind={tile.kind} className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-foreground">{tile.label}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{tile.what}</span>
+                      <span className="block truncate pr-4 text-sm font-medium text-foreground">{tile.label}</span>
+                      <span className="line-clamp-2 text-xs text-muted-foreground" data-make-tile-what="">
+                        {tile.what}
+                      </span>
                     </span>
-                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-                  </button>
+                    <ChevronRight className="absolute right-3 top-4 h-4 w-4 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -263,7 +272,9 @@ function RecentSection({ recent }: { recent: Read<DataHomeRow[]> }) {
       <h2 id="make-recent" className="text-sm font-medium text-muted-foreground">
         Recently changed
       </h2>
-      {recent.phase === "reading" ? (
+      {recent.phase === "reading" && recent.slow ? (
+        <ReadFailed read={{ why: "Still reading. This is taking longer than usual.", retry: recent.slow.retry }} />
+      ) : recent.phase === "reading" ? (
         <Skeleton className="h-24 w-full" />
       ) : recent.phase === "failed" ? (
         <ReadFailed read={recent} />
@@ -276,11 +287,17 @@ function RecentSection({ recent }: { recent: Read<DataHomeRow[]> }) {
               <Link href={row.href} className="flex min-w-0 items-center gap-3 px-3 py-2.5 hover:bg-muted">
                 <KindIcon kind={row.kind} className="h-4 w-4 shrink-0 text-muted-foreground" />
                 {/* Every row names its organization — on a phone as the second line. */}
+                {/* Two rows of the same name differ by what they are, where they live and when they
+                    changed: kind word · parent table · organization, and the change time. */}
                 <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3">
                   <span className="truncate text-sm text-foreground sm:min-w-0 sm:flex-1">{row.name}</span>
-                  <span className="truncate text-xs text-muted-foreground sm:max-w-[40%]">{row.organizationName ?? "—"}</span>
+                  <span className="truncate text-xs text-muted-foreground sm:max-w-[50%]" data-make-recent-facts="">
+                    {recentFacts(row)}
+                  </span>
                 </span>
-                <span className="shrink-0 text-xs text-muted-foreground">{whenWords(row.updatedAt)}</span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground" title={row.updatedAt ? new Date(row.updatedAt).toLocaleString() : undefined}>
+                  {whenWords(row.updatedAt)}
+                </span>
               </Link>
             </li>
           ))}
@@ -300,6 +317,13 @@ function ReadFailed({ read }: { read: { why: string; retry: () => void } }) {
       </Button>
     </div>
   );
+}
+
+/** "Form · in Patient Intake · Cedar Ridge Physical Therapy" — what tells two same-named rows apart. */
+export function recentFacts(row: Pick<DataHomeRow, "kind" | "parentName" | "organizationName">): string {
+  return [dataHomeKindWord(row.kind), row.parentName ? `in ${row.parentName}` : null, row.organizationName ?? "—"]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function whenWords(at: string | null): string {
@@ -358,11 +382,18 @@ export function MakeFlowSheet(props: MakeFlowSheetProps) {
 }
 
 function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organizationId: string } | null }) {
-  const { tile, chosen, activeOrganizationId, activeState, onLand, madeId, onMade } = props;
+  const { tile, chosen, activeOrganizationId, activeState, onLand, onClose, madeId, onMade } = props;
   if (tile.asksForTable && !chosen) return <TableChoice {...props} />;
   if (chosen) {
     return (
-      <BuilderFor flow={tile.flow} {...chosen} madeId={madeId ?? null} onMade={onMade ?? (() => undefined)} onLand={onLand} />
+      <BuilderFor
+        flow={tile.flow}
+        {...chosen}
+        madeId={madeId ?? null}
+        onMade={onMade ?? (() => undefined)}
+        onLand={onLand}
+        onClose={onClose}
+      />
     );
   }
   // A table is made where new things are saved; the one New table body asks for it when none is chosen.
@@ -372,13 +403,42 @@ function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organ
     return <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New client portals" description={SAVED_WHERE_CHOSEN} compact />;
   }
   if (tile.flow === "portal") {
-    return (
-      <MakeMount organizationId={activeOrganizationId}>
-        <PortalBuilder onSaved={() => toast.success("Portal saved")} />
-      </MakeMount>
-    );
+    return <PortalFlow organizationId={activeOrganizationId} madeId={madeId ?? null} onMade={onMade ?? (() => undefined)} />;
   }
   return null;
+}
+
+/** The portal flow: its id goes into the address once saved, and a reload reopens THAT portal. */
+function PortalFlow({ organizationId, madeId, onMade }: { organizationId: string; madeId: string | null; onMade: (id: string) => void }) {
+  const [saved, setSaved] = useState(Boolean(madeId));
+  return (
+    <div className="flex flex-col gap-3">
+      {saved ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm" data-make-landing="">
+          <SavedMark />
+        </div>
+      ) : null}
+      <MakeMount organizationId={organizationId}>
+        <PortalBuilder
+          {...(madeId ? { portalId: madeId } : {})}
+          onSaved={(id: string) => {
+            onMade(id);
+            setSaved(true);
+          }}
+        />
+      </MakeMount>
+    </div>
+  );
+}
+
+/** The one "it is saved" mark every flow shows once the made thing exists. */
+function SavedMark() {
+  return (
+    <span className="inline-flex items-center gap-1 text-muted-foreground" role="status" data-make-saved="">
+      <Check className="h-3.5 w-3.5" aria-hidden />
+      Saved
+    </span>
+  );
 }
 
 /** Step 1, shared by every flow that collects into a table. */
@@ -433,7 +493,13 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
     // eslint-disable-next-line react-hooks/exhaustive-deps -- replays once, when the organization lands
   }, [askOrganization, activeOrganizationId]);
 
-  if (tablesRead.phase === "reading") return <Skeleton className="h-10 w-64" />;
+  if (tablesRead.phase === "reading") {
+    return tablesRead.slow ? (
+      <ReadFailed read={{ why: "Still reading. This is taking longer than usual.", retry: tablesRead.slow.retry }} />
+    ) : (
+      <Skeleton className="h-10 w-64" />
+    );
+  }
   if (tablesRead.phase === "failed") return <ReadFailed read={tablesRead} />;
 
   // The person's own tables in every organization she reaches (never the app's bookkeeping), the
@@ -494,6 +560,7 @@ function BuilderFor({
   madeId,
   onMade,
   onLand,
+  onClose,
 }: {
   flow: MakeFlow;
   tableId: string;
@@ -501,8 +568,15 @@ function BuilderFor({
   madeId: string | null;
   onMade: (id: string) => void;
   onLand: (href: string) => void;
+  onClose: () => void;
 }) {
   const tableHref = `/data-v2/${tableId}`;
+  // Made and saved: from the address on a reload, or the moment the builder answers its id.
+  const [saved, setSaved] = useState(Boolean(madeId));
+  const keep = (id: string) => {
+    onMade(id);
+    setSaved(true);
+  };
   // Reopened from the address: its link is there from the first paint.
   const [made, setMade] = useState<{ href: string | null; label: string } | null>(() =>
     !madeId
@@ -521,7 +595,7 @@ function BuilderFor({
           tableId={tableId}
           {...(madeId ? { activeFormId: madeId } : { createOnMount: true })}
           onActiveForm={(form) => {
-            onMade(form.id);
+            keep(form.id);
             setMade(form.state === "draft" ? { href: null, label: "" } : { href: publicFormPath(form.id), label: "Public link" });
           }}
         />
@@ -533,7 +607,7 @@ function BuilderFor({
           tableId={tableId}
           {...(madeId ? { bookingId: madeId } : { startNew: true })}
           onSaved={(page) => {
-            onMade(page.form_id);
+            keep(page.form_id);
             setMade({ href: bookingPath(page.form_id), label: "Booking link" });
           }}
         />
@@ -545,22 +619,32 @@ function BuilderFor({
           tableId={tableId}
           {...(madeId ? { activeDashboardId: madeId } : { createOnMount: true })}
           onCreated={(id) => {
-            onMade(id);
+            keep(id);
             setMade({ href: `${tableHref}?dashboard=${id}`, label: "Open dashboard" });
           }}
         />
       );
       break;
     case "checklist":
-      builder = <ChecklistTemplateEditor aboutTableId={tableId} onDone={() => onLand(`${tableHref}?rail=checklists`)} />;
+      // Save stays here and says Saved (its id goes into the address; a second Save re-states it);
+      // Cancel closes the flow. "Open table" below lands on the table's checklists.
+      builder = (
+        <ChecklistTemplateEditor
+          aboutTableId={tableId}
+          {...(madeId ? { templateId: madeId } : {})}
+          onSaved={keep}
+          onDone={onClose}
+        />
+      );
       break;
     default:
       builder = null;
   }
-  const rail = flow === "form" ? "forms" : flow === "booking" ? "bookings" : null;
+  const rail = flow === "form" ? "forms" : flow === "booking" ? "bookings" : flow === "checklist" ? "checklists" : null;
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2 text-sm" data-make-landing="">
+        {saved ? <SavedMark /> : null}
         {made?.href ? (
           <Link href={made.href} target={flow === "dashboard" ? undefined : "_blank"} className="text-primary underline-offset-2 hover:underline">
             {made.label}

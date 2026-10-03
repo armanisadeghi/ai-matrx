@@ -220,7 +220,10 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       <section className="mt-6 flex flex-col gap-3">
         <h2 className="text-base font-medium">{thanks?.title ?? "You're booked"}</h2>
         <p className="text-sm text-muted-foreground">
-          {whenText(stage.slot.at, zone)} — {thanks?.body ?? "We have sent a confirmation."}
+          {/* NEVER CLAIM WHAT DID NOT HAPPEN (MAKE-HOME 1c): no email is sent from here, so the
+              screen says the time and the owner's own words, never "we have sent a confirmation". */}
+          {whenText(stage.slot.at, zone)}
+          {thanks?.body ? ` — ${thanks.body}` : ""}
         </p>
         {stage.ref ? (
           // THE LINK IS SHOWN, NOT ONLY EMAILED. An email can be lost and a
@@ -368,8 +371,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       {days.length === 0 ? (
         // read-gate-exempt: slots arrive with the server-rendered booking page (a failed read never renders this picker); the copy says the window is over
         <p className="rounded border border-dashed px-3 py-2 text-sm text-muted-foreground">
-          There is no time left inside the hours this is offered in. More appear here as the days
-          move forward — this is empty because the window is over, not because something failed.
+          No times are left in the hours offered. More appear as the days move forward.
         </p>
       ) : (
         days.map(([day, inDay]) => (
