@@ -95,6 +95,11 @@ it("a test organization is the stored classification, never a name", () => {
   expect(isTestOrganization({ settings: { test_fixture: true } })).toBe(true);
   expect(isTestOrganization({ settings: {} })).toBe(false);
   expect(isTestOrganization({})).toBe(false);
+  // Table B's unmarked debris counts until is_test lands; is_test, once a row carries it, decides alone.
+  expect(isTestOrganization({ id: "4cedc83e-0757-4f99-b57a-a464451e4886", settings: {} })).toBe(true);
+  expect(isTestOrganization({ id: CEDAR, settings: {} })).toBe(false);
+  expect(isTestOrganization({ id: CEDAR, is_test: true })).toBe(true);
+  expect(isTestOrganization({ id: SCRATCH, settings: { test_fixture: true }, is_test: false })).toBe(false);
   expect(carriesArchived({ state: "archived" })).toBe(true);
   expect(carriesArchived({ deleted_at: "2026-09-25T10:00:00Z" })).toBe(true);
   expect(carriesArchived({ state: "open" })).toBe(false);
