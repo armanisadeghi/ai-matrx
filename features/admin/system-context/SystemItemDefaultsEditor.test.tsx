@@ -92,7 +92,7 @@ it("shows the heading with no prose under it and the default list by name, with 
 
 it("adds and removes an item and saves exactly the new list through the knob", async () => {
   const { save } = await render({ value: DEFAULTS, defaultValue: DEFAULTS, items: ITEMS });
-  await act(async () => button("Add company_name").click());
+  await act(async () => button("Add Company Name").click());
   await act(async () => button("Take current_datetime off the list").click());
   expect(listed()).toEqual(["current_date", "current_timezone", "company_name"]);
   await act(async () => button("Save").click());
