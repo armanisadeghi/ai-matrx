@@ -55,6 +55,17 @@ describe("buildContinuationBody", () => {
     expect(body.active_scope_type_ids).toEqual(["lanes"]);
   });
 
+  it("carries where a mounted screen's values sit on every later turn (a transcript on the Knowledge page)", () => {
+    const body = buildContinuationBody(
+      {
+        user_input: "And who covers Saturday?",
+        context_surfaces: { transcript_title: "matrx-user/transcripts" },
+      } as AssembledAgentStartRequest,
+      { retry: false, debug: false, cacheBypass: null },
+    );
+    expect(body.context_surfaces).toEqual({ transcript_title: "matrx-user/transcripts" });
+  });
+
   it("forwards every field classified as forwarded, and nothing classified otherwise", () => {
     const payload: Record<string, unknown> = {};
     for (const key of Object.keys(CONTINUATION_FIELD_ROUTING)) payload[key] = [`v-${key}`];

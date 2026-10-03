@@ -17,7 +17,9 @@
 import type { ConversationContinueRequest } from "../../../types/agent-api-types";
 import type { AssembledAgentStartRequest } from "../../../types/request.types";
 
-type ContinueKey = keyof ConversationContinueRequest;
+// `context_surfaces` is in the server contract from @ai-matrx/agents 0.43.12;
+// named here so the field rides before that release is adopted.
+type ContinueKey = keyof ConversationContinueRequest | "context_surfaces";
 
 /** `true` = forwarded from the assembled payload when set; a string = why not. */
 export const CONTINUATION_FIELD_ROUTING = {
@@ -44,10 +46,15 @@ export const CONTINUATION_FIELD_ROUTING = {
   // The page rule (RULES.md §0): every turn of the page's own conversation, or
   // of one whose page switch is off, withholds the page — not only the first.
   page_context: true,
+  // Where each mounted screen's value sits (a transcript open on the Knowledge
+  // page) — every turn, from the same door call as `context`.
+  context_surfaces: true,
   block_mode: true,
   snapshot: true,
   memory: true,
   memory_model: true,
+  // The chosen class of `memory_model` — rides only with it.
+  memory_offering_id: true,
   memory_scope: true,
   // Per-conversation skill picks (Chat Options → Skills).
   skill_config: true,
