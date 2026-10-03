@@ -20,9 +20,9 @@
  *   - **Quiet for…** — the standard windows, in the same menu as Reset
  *     position and the door to every assist.
  *
- * While quiet the dock collapses to one small muted dot rather than vanishing:
- * `/assists` is not in the sidebar, so a total disappearance would be a dead
- * end with no way back (THE DOOR LAW).
+ * While quiet the dock renders NOTHING (Arman, 2026-10-02: a silenced dock that
+ * still shows is a bug). The door back is the "turn on" control on `/assists`,
+ * which is in the sidebar (THE DOOR LAW).
  */
 
 import { useEffect, useState } from "react";
@@ -79,7 +79,6 @@ import {
 } from "../presentation-cycle";
 import {
   DEFAULT_QUIET_KEY,
-  formatQuietRemaining,
   QUIET_WINDOWS,
   type QuietWindowKey,
 } from "../quiet";
@@ -96,7 +95,6 @@ export default function AssistsDock() {
   const {
     ready: preferencesReady,
     quiet,
-    quietUntil,
     goQuiet,
     resume,
     dockPosition,
@@ -195,60 +193,9 @@ export default function AssistsDock() {
     transform: "translateY(var(--keyboard-inset-height, 0px))",
   };
 
-  if (quiet) {
-    const remaining = formatQuietRemaining(quietUntil);
-    return (
-      <>
-        <div
-          data-assists-dock=""
-          className="fixed right-3 z-40 md:hidden transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30"
-          style={mobileLauncherStyle}
-        >
-          <button
-            type="button"
-            onClick={() => {
-              resume();
-              toast.success("Assists are back on");
-            }}
-            title={
-              remaining
-                ? `Assists are quiet (${remaining}) — tap to turn them back on`
-                : "Assists are quiet — tap to turn them back on"
-            }
-            aria-label="Assists are quiet. Turn them back on."
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-card/90 text-muted-foreground opacity-50 shadow-sm backdrop-blur-glass transition-[opacity,transform] hover:opacity-100 focus-visible:opacity-100"
-          >
-            <BellOff className="h-4 w-4" />
-          </button>
-        </div>
-        <div data-assists-dock="" className="fixed z-40 hidden pb-safe md:block transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30" style={style}>
-          <button
-            type="button"
-            onPointerDown={onPointerDown}
-            onClick={() => {
-              if (suppressClickRef.current) return;
-              resume();
-              toast.success("Assists are back on");
-            }}
-            title={
-              remaining
-                ? `Assists are quiet (${remaining}) — click to turn them back on`
-                : "Assists are quiet — click to turn them back on"
-            }
-            className="flex items-center gap-1 rounded-full border border-border/60 bg-card/80 px-2 py-1 text-[11px] text-muted-foreground opacity-50 shadow-sm transition-opacity hover:opacity-100 focus-visible:opacity-100"
-          >
-            <BellOff className="h-3 w-3" />
-            <span className="sr-only">
-              Assists are quiet. Turn them back on.
-            </span>
-            <span aria-hidden="true" className="hidden sm:inline">
-              {remaining ?? "quiet"}
-            </span>
-          </button>
-        </div>
-      </>
-    );
-  }
+  // Quiet means invisible (Arman, 2026-10-02). The way back on lives on the
+  // Assists page, which is in the sidebar.
+  if (quiet) return null;
 
   if (isMobile) {
     return (

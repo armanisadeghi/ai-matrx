@@ -56,6 +56,7 @@ import {
   SOURCE_SUPPRESSED_UNTIL,
 } from "../source-suppression";
 import { formatQuietRemaining } from "../quiet";
+import { useAssistsPrefs } from "../hooks/useAssistsPrefs";
 import { ASSIST_URGENCY_ICON } from "../components/urgency-icon";
 import {
   ASSIST_URGENCIES,
@@ -111,6 +112,13 @@ const STATUS_TONE: Record<AssistStatus, string> = {
 };
 
 export function AssistsManager() {
+  // The only way back on while quiet: the dock renders nothing then.
+  const {
+    quiet: assistsQuiet,
+    quietUntil: assistsQuietUntil,
+    resume: resumeAssists,
+  } = useAssistsPrefs();
+  const assistsQuietRemaining = formatQuietRemaining(assistsQuietUntil);
   const [tab, setTab] = useState<string>("pending");
   const [includeSnoozed, setIncludeSnoozed] = useState(false);
   const [starredOnly, setStarredOnly] = useState(false);
@@ -608,6 +616,20 @@ export function AssistsManager() {
                 Dismiss these {shownIds.length}
               </Button>
             </>
+          )}
+          {assistsQuiet && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              onClick={() => {
+                resumeAssists();
+                toast.success("Assists are back on");
+              }}
+            >
+              <VolumeX className="h-3 w-3" />
+              Quiet{assistsQuietRemaining ? ` · ${assistsQuietRemaining}` : ""} — turn on
+            </Button>
           )}
           <Button
             size="sm"
