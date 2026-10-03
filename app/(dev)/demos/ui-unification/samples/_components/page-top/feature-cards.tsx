@@ -49,7 +49,7 @@ export interface FeatureCardItem {
   tone?: FeatureTone;
 }
 
-function CardBody({ item }: { item: FeatureCardItem }) {
+function CardBody({ item, titleInset }: { item: FeatureCardItem; titleInset?: number }) {
   const Icon = item.icon;
   return (
     <>
@@ -57,7 +57,9 @@ function CardBody({ item }: { item: FeatureCardItem }) {
         <Icon className="size-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[0.8125rem] font-semibold leading-5 text-foreground">{item.title}</span>
+        <span className="block truncate text-[0.8125rem] font-semibold leading-5 text-foreground" style={titleInset ? { paddingRight: titleInset } : undefined}>
+          {item.title}
+        </span>
         <span className="block truncate text-xs leading-4 text-muted-foreground">{item.line}</span>
       </span>
     </>
@@ -113,11 +115,11 @@ export function RotatingFeatureCard({ items, className }: { items: FeatureCardIt
       <Link href={item.href} className={cn(CARD, "pr-3")} aria-label={`${item.title} — ${item.line}`}>
         {/* key: the body re-mounts per item so it fades in, never slides. */}
         <span key={item.href} className="flex min-w-0 flex-1 items-center gap-2.5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300">
-          <CardBody item={item} />
+          <CardBody item={item} titleInset={items.length > 1 ? items.length * 10 + 6 : undefined} />
         </span>
       </Link>
       {items.length > 1 ? (
-        <div className="absolute bottom-1.5 right-2 flex items-center gap-0.5" role="group" aria-label="More features">
+        <div className="absolute right-3 top-[13px] flex items-center" role="group" aria-label="More features">
           {items.map((it, i) => (
             <button
               key={it.href}
@@ -125,7 +127,7 @@ export function RotatingFeatureCard({ items, className }: { items: FeatureCardIt
               aria-label={`Show ${it.title}`}
               aria-current={i === index || undefined}
               onClick={() => setIndex(i)}
-              className="flex size-3 cursor-pointer items-center justify-center"
+              className="flex h-3 w-2.5 cursor-pointer items-center justify-center"
             >
               <span
                 className={cn(
@@ -164,17 +166,17 @@ export function FeatureCards({
       aria-label={ariaLabel}
       className={cn(
         // Phone: one sideways strip (cards ~11rem), scrollbar hidden, snaps.
-        "-mx-3 flex snap-x gap-2 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "-mx-3 flex snap-x scroll-px-3 gap-2 overflow-x-auto px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         "sm:mx-0 sm:grid sm:overflow-visible sm:px-0",
         cols,
         className,
       )}
     >
       {items.map((item) => (
-        <FeatureCard key={item.href} item={item} className="w-44 shrink-0 snap-start sm:w-auto" />
+        <FeatureCard key={item.href} item={item} className="w-52 shrink-0 snap-start sm:w-auto" />
       ))}
       {rotating && rotating.length > 0 ? (
-        <RotatingFeatureCard items={rotating} className="w-44 shrink-0 snap-start sm:w-auto" />
+        <RotatingFeatureCard items={rotating} className="w-52 shrink-0 snap-start sm:w-auto" />
       ) : null}
     </nav>
   );
