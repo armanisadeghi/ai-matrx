@@ -140,5 +140,7 @@ test("a Date & time cell typed 10/03/2026 1200PM stores noon on that day", async
   expect([box.selectionStart, box.selectionEnd]).toEqual([1, 1]);
   await typeRest(box, "10/03/2026 1200PM");
   await enter(box);
-  expect(written()).toEqual(["2026-10-03T12:00"]);
+  // Noon where the person is, as the absolute instant every grid stores (grids review 3) — never
+  // the zone-less "2026-10-03T12:00" the Sheet used to write.
+  expect(written()).toEqual([new Date(2026, 9, 3, 12, 0).toISOString()]);
 });
