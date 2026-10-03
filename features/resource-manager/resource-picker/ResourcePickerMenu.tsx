@@ -118,6 +118,8 @@ interface ResourcePickerMenuProps {
    * closes its cascade on Back.
    */
   onExitInitialView?: () => void;
+  /** Files view: files the host already chose (phone Camera / Photos). */
+  initialUploadFiles?: readonly File[];
 }
 
 export function ResourcePickerMenu({
@@ -136,6 +138,7 @@ export function ResourcePickerMenu({
   initialView = null,
   onReopenAt,
   onExitInitialView,
+  initialUploadFiles,
 }: ResourcePickerMenuProps) {
   const finishPick = onPicked ?? onClose;
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(initialView);
@@ -257,6 +260,7 @@ export function ResourcePickerMenu({
           title="Files"
           topSlot={
             <InlineUploadArea
+              startWith={initialUploadFiles}
               selectionMode={selectionMode}
               onSelect={async (files) => {
                 // Preserve selection order and wait for every durable edge

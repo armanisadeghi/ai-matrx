@@ -26,10 +26,12 @@
  * Mobile keeps the existing bottom-sheet presentation (RunControlsMenu).
  */
 
-import { useState, type ReactNode } from "react";
+import { useContext, useRef, useState, type ReactNode } from "react";
 import {
   AppWindow,
   Brain,
+  Camera,
+  Image as ImageIcon,
   Boxes,
   Cloud,
   Eye,
@@ -102,6 +104,8 @@ import {
   ComposerMenuDivider,
   ComposerMenuLabel,
   ComposerMenuLevel,
+  ComposerMenuPresentationContext,
+  ComposerSheetNavContext,
   ComposerMenuRow,
   ComposerMenuSwitchRow,
   ComposerSubmenu,
@@ -190,10 +194,15 @@ export function ComposerPlusMenu({
   const close = () => setOpen(false);
 
   /** One existing picker, opened straight into its own view, in a cascade. */
-  const picker = (view: Exclude<ResourcePickerViewId, null>, closeCascade: () => void) => (
+  const picker = (
+    view: Exclude<ResourcePickerViewId, null>,
+    closeCascade: () => void,
+    initialUploadFiles?: readonly File[],
+  ) => (
     <ResourcePickerMenu
       conversationId={conversationId}
       initialView={view}
+      initialUploadFiles={initialUploadFiles}
       onExitInitialView={closeCascade}
       fillHost
       onResourceSelected={(resource: Resource) => attachResource(resource)}
@@ -219,10 +228,15 @@ export function ComposerPlusMenu({
   const body = (
         <ComposerMenuCloseAllContext.Provider value={close}>
         <ComposerMenuLevel>
+        {/* Phone sheet only: Claude's Camera / Photos / Files row. */}
+        <SheetQuickAdd openFiles={(files, back) => picker("files", back, files)} />
         {/* Attach — every mode */}
-        <ComposerSubmenu row={{ icon: FolderOpen, label: "Add files or photos" }} panelClassName={PICKER_PANEL}>
-          {(closeCascade) => picker("files", closeCascade)}
-        </ComposerSubmenu>
+        {presentation === "sheet" ? null : (
+          // On the phone the Files tile above is this door.
+          <ComposerSubmenu row={{ icon: FolderOpen, label: "Add files or photos" }} panelClassName={PICKER_PANEL}>
+            {(closeCascade) => picker("files", closeCascade)}
+          </ComposerSubmenu>
+        )}
         <ComposerSubmenu row={{ icon: Link2, label: "Add a link" }} panelClassName={LINK_PANEL}>
           {(closeCascade) => picker("webpage", closeCascade)}
         </ComposerSubmenu>
@@ -571,5 +585,66 @@ export function ComposerEnvironmentPanel({
       <ComposerMenuRow icon={AppWindow} label="Persistent browser" description="Open the agent's cloud browser" onClick={onOpenBrowser} />
       <ComposerMenuRow icon={Plus} label="Add a sandbox or computer" onClick={onOpenSandbox} />
     </>
+  );
+}
+
+/**
+ * The phone sheet's top row — Claude iOS's Camera / Photos / Files. Camera
+ * and Photos use the device's own pickers, then open the Files page with
+ * those files already uploading through the one upload pipeline; Files opens
+ * the Files page. Renders nothing in the desktop popover.
+ */
+function SheetQuickAdd({
+  openFiles,
+}: {
+  openFiles: (files: readonly File[] | undefined, back: () => void) => ReactNode;
+}) {
+  const presentation = useContext(ComposerMenuPresentationContext);
+  const nav = useContext(ComposerSheetNavContext);
+  const camera = useRef<HTMLInputElement>(null);
+  const photos = useRef<HTMLInputElement>(null);
+  if (presentation !== "sheet" || !nav) return null;
+  const open = (files?: readonly File[]) =>
+    nav.push({ title: "Add files or photos", render: () => openFiles(files, nav.pop) });
+  const fromInput = (input: HTMLInputElement) => {
+    const files = Array.from(input.files ?? []);
+    input.value = "";
+    if (files.length > 0) open(files);
+  };
+  const tiles = [
+    { label: "Camera", icon: Camera, onClick: () => camera.current?.click() },
+    { label: "Photos", icon: ImageIcon, onClick: () => photos.current?.click() },
+    { label: "Files", icon: FolderOpen, onClick: () => open() },
+  ];
+  return (
+    <div className="sheet-gap mb-6 grid shrink-0 grid-cols-3 gap-2.5">
+      {tiles.map(({ label, icon: Icon, onClick }) => (
+        <button
+          key={label}
+          type="button"
+          onClick={onClick}
+          className="flex h-[76px] flex-col items-center justify-center gap-1.5 rounded-xl bg-card text-sm text-foreground active:bg-accent"
+        >
+          <Icon className="h-6 w-6" />
+          {label}
+        </button>
+      ))}
+      <input
+        ref={camera}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => fromInput(e.currentTarget)}
+      />
+      <input
+        ref={photos}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        className="hidden"
+        onChange={(e) => fromInput(e.currentTarget)}
+      />
+    </div>
   );
 }

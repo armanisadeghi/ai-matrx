@@ -11,7 +11,7 @@
  */
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -76,6 +76,11 @@ export interface UploadedFile {
 }
 
 interface InlineUploadAreaProps {
+  /**
+   * Files already chosen by the host (the phone sheet's Camera / Photos
+   * tiles): uploaded on mount through this same pipeline, progress shown.
+   */
+  startWith?: readonly File[];
   /**
    * Fired once per batch with every file that uploaded successfully.
    * Failed files stay visible in the progress list with a retry.
@@ -446,6 +451,7 @@ export function InlineUploadArea({
   accept,
   imageLinks = false,
   clearHandedOver = false,
+  startWith,
 }: InlineUploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [link, setLink] = useState("");
@@ -596,6 +602,14 @@ export function InlineUploadArea({
       setFileStatuses((prev) => prev.filter((f) => f.status !== "done"));
     }
   };
+
+  // Host-chosen files start once, on mount (Camera / Photos tiles).
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current || !startWith?.length) return;
+    started.current = true;
+    void handleFiles(startWith.map(candidateFromFile));
+  }, [startWith, handleFiles]);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
