@@ -1,7 +1,7 @@
 {
   "note": "UI drift per rule × file: `counts` is how many sites each `rule|file` had when recorded. A count may only go DOWN — fix sites, then `node scripts/ui-drift/check-ui-drift.mjs --update` (it lowers counts and drops fixed keys; it never raises one). A key above its count is NEW and names its new sites, diffed against the file at `sha`. `ids` are keys accepted with a reason (`pnpm findings accept ui-drift <rule|file> --reason …`): that rule is allowed in that file at any count. See scripts/ui-drift/check-ui-drift.mjs.",
   "updated": "2026-10-03",
-  "sha": "4f069f655be3e1702f9689436ed986294ea8e778",
+  "sha": "a094113c509325b058b9eb5763ced514b66f9443",
   "sites": 44708,
   "count": 0,
   "ids": [],
