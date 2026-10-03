@@ -26,7 +26,7 @@ import {
 } from "./conversation-list.slice";
 import { CONVERSATION_LIST_PAGE_SIZE } from "./conversation-list.types";
 import { HIDDEN_CONVERSATION_LANE } from "../conversation-history/lanes";
-import { getUserId } from "../../../host/identity";
+import { getUserId, hasBrowserSession } from "../../../host/identity";
 
 type GetAgentConversationsReturns =
   Database["public"]["Functions"]["get_agent_conversations"]["Returns"];
@@ -258,6 +258,11 @@ export const fetchGlobalConversations = createAsyncThunk<
     // RLS ownership arm short-circuits without per-row has_access (measured
     // 178 ms -> 21 ms on the sibling history query, 2026-08-22).
     const viewerId = getUserId();
+    // Signed out: no conversations — never an anon read the database refuses.
+    if (!viewerId && !(await hasBrowserSession())) {
+      dispatch(setGlobalListSuccess({ items: [], hasMore: false, replace }));
+      return { items: [], hasMore: false };
+    }
     let listQuery = supabase
       .schema("chat").from("conversation")
       .select(

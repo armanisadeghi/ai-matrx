@@ -34,7 +34,7 @@ import {
   type SourceFacet,
 } from "./types";
 import { readListRpc } from "@host/lib/entity-list/readListRpc";
-import { getUserId } from "../../../host/identity";
+import { getUserId, hasBrowserSession } from "../../../host/identity";
 
 export interface FetchConversationHistoryArgs {
   scopeId: string;
@@ -160,6 +160,14 @@ export const fetchConversationHistory = createAsyncThunk<
     // has_access arm runs per candidate row (~1,000+ kernel calls for a
     // 50-row panel; measured 178 ms vs 21 ms scoped, 2026-08-22).
     const viewerId = getUserId();
+    // A signed-out visitor has no history: an empty page, never an anon read
+    // that the database refuses ("permission denied for table conversation").
+    if (!viewerId && !(await hasBrowserSession())) {
+      dispatch(
+        setScopePageSuccess({ scopeId: args.scopeId, items: [], hasMore: false, replace, nextOffset: 0 }),
+      );
+      return { scopeId: args.scopeId, items: [], hasMore: false, nextOffset: 0, replace };
+    }
     let query = supabase
       .schema("chat").from("conversation")
       .select(HISTORY_COLUMNS)
@@ -337,6 +345,12 @@ export const fetchSourceFacets = createAsyncThunk<
       Date.now() - sourceFacetsLastFetchedAt < SOURCE_FACETS_TTL_MS;
     if (!force && (sourceFacetsStatus === "loading" || fresh)) {
       return sourceFacets;
+    }
+
+    // Signed out: no conversations, so no facets — the RPC refuses anon.
+    if (!getUserId() && !(await hasBrowserSession())) {
+      dispatch(setSourceFacets({ facets: [] }));
+      return [];
     }
 
     dispatch(setSourceFacetsStatus({ status: "loading", error: null }));
