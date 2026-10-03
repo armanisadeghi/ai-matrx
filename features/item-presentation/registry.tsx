@@ -1174,6 +1174,22 @@ const ITEM_TYPE_BY_ENTITY_TOKEN: ReadonlyMap<string, KnownItemType> = (() => {
   return map;
 })();
 
+/** The item type that opens an entity token's records in place, or null. */
+export function itemTypeForEntityToken(token: string | null | undefined): KnownItemType | null {
+  if (typeof token !== "string" || !token) return null;
+  return ITEM_TYPE_BY_ENTITY_TOKEN.get(token) ?? null;
+}
+
+/**
+ * True when the type opens in its OWN bespoke window (the Notes window, the
+ * agent runner, file preview …) — not the Detail primitive. Such a type has
+ * no docked (`record-peek`) presentation of its own: docking it would show the
+ * generic row instead of the record.
+ */
+export function opensBespokeWindow(config: ItemTypeConfig): boolean {
+  return !!config.open && OWN_WINDOW_OPEN_KINDS.has(config.open.kind);
+}
+
 /** What a `record_table` stamp resolves to — both legs of R35, or null. */
 export interface RecordTableTarget {
   /** The registered entity token backing that table. */

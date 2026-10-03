@@ -68,6 +68,8 @@ export function EntityCard({
 }) {
   const hasBody = Boolean(children);
   const controlled = onToggleExpanded != null;
+  const only = actions.length === 1 ? actions[0]! : null;
+  const OnlyIcon = only?.icon;
   const [internalOpen, setInternalOpen] = useState(true);
   const open = !hasBody ? true : controlled ? expanded ?? true : internalOpen;
   const toggle = controlled
@@ -153,7 +155,26 @@ export function EntityCard({
           />
         ) : null}
 
-        {actions.length ? (
+        {only ? (
+          // ONE CHOICE IS A BUTTON, NOT A MENU (2026-10-03). A shared-with-you
+          // card drew "Open ▾" over a one-item menu whose only row was "Open":
+          // two clicks and a menu to reach the single thing it could do.
+          <div onClick={(e) => e.stopPropagation()}>
+            {only.href ? (
+              <Button variant="outline" size="sm" className="shrink-0 gap-1.5" asChild>
+                <a href={only.href} target="_blank" rel="noopener noreferrer">
+                  {OnlyIcon ? <OnlyIcon className="h-3.5 w-3.5 opacity-80" /> : null}
+                  {only.label}
+                </a>
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={only.onSelect}>
+                {OnlyIcon ? <OnlyIcon className="h-3.5 w-3.5 opacity-80" /> : null}
+                {only.label}
+              </Button>
+            )}
+          </div>
+        ) : actions.length ? (
           <div onClick={(e) => e.stopPropagation()}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
