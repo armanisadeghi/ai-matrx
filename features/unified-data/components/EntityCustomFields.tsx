@@ -111,6 +111,18 @@ let announcedFallback = false;
 let announcedAbsent = false;
 let announcedUnreadable = false;
 
+/** Said once per tab: the home door is not on this database yet (and what the section does instead). */
+function announceDoorAbsent(withPageOrganization: boolean): void {
+  if (withPageOrganization ? announcedFallback : announcedAbsent) return;
+  if (withPageOrganization) announcedFallback = true;
+  else announcedAbsent = true;
+  console.warn(
+    withPageOrganization
+      ? "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); using the organization the page holds for the record."
+      : "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); surfaces without a page organization show no custom-fields section until it is.",
+  );
+}
+
 type Readable = "checking" | "ok" | "absent" | "error";
 
 /**
@@ -199,23 +211,13 @@ function useRecordHome(
   if (answer.kind === "home") return { home: { state: "home", organizationId: answer.organizationId }, retry };
   if (answer.kind === "refused") return { home: { state: "refused", sentence: answer.sentence, reason: answer.reason }, retry };
   if (pageOrganizationId) {
-    if (!announcedFallback) {
-      announcedFallback = true;
-      console.warn(
-        "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); using the organization the page holds for the record.",
-      );
-    }
+    announceDoorAbsent(true);
     return { home: { state: "home", organizationId: pageOrganizationId }, retry };
   }
   // No door yet and no page organization (Detail window, /detail, a peek): these surfaces never had
   // a section before this door, so the section is ABSENT — never a box blaming the person's record
   // for a door we have not applied.
-  if (!announcedAbsent) {
-    announcedAbsent = true;
-    console.warn(
-      "[EntityCustomFields] custom.entity_record_home is not on this database yet (lane7w5 SQL, chair's apply); surfaces without a page organization show no custom-fields section until it is.",
-    );
-  }
+  announceDoorAbsent(false);
   return { home: { state: "absent" }, retry };
 }
 
