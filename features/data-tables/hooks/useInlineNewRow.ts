@@ -42,6 +42,31 @@ export function splitHeldKeys(held: readonly Held[]): { seed: string; rest: Held
   return { seed, rest: held.slice(i) };
 }
 
+/** The open cell's text box, when its editor is one (text, number, date, a choice's search). */
+function editorTextBox(container: HTMLElement | null | undefined): HTMLInputElement | HTMLTextAreaElement | null {
+  const active = document.activeElement;
+  if (
+    (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) &&
+    (container?.contains(active) || active.closest("[data-matrx-cell-editor]") || active.closest("[cmdk-root]"))
+  ) {
+    return active;
+  }
+  return container?.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+    "[data-matrx-cell-editor] textarea, [data-matrx-cell-editor] input[type=text], [data-matrx-cell-editor] input:not([type])",
+  ) ?? null;
+}
+
+/** Insert one character at the caret the way a key would, so React's onChange sees it. */
+function typeInto(box: HTMLInputElement | HTMLTextAreaElement, ch: string) {
+  const proto = box instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+  const setValue = Object.getOwnPropertyDescriptor(proto, "value")?.set;
+  const start = box.selectionStart ?? box.value.length;
+  const end = box.selectionEnd ?? box.value.length;
+  setValue?.call(box, box.value.slice(0, start) + ch + box.value.slice(end));
+  box.setSelectionRange?.(start + ch.length, start + ch.length);
+  box.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 export function useInlineNewRow(options: {
   /** The grid's own focus target; held keys are handed to it. */
   containerRef: RefObject<HTMLElement | null>;
@@ -69,9 +94,10 @@ export function useInlineNewRow(options: {
     busy.current = true;
     setAdding(true);
     const held: Held[] = [];
+    const ours = new WeakSet<Event>();
     const hold = (e: KeyboardEvent) => {
       // A key we hand to the grid ourselves is not held again.
-      if (!e.isTrusted || !isHeldKey(e)) return;
+      if (ours.has(e) || !isHeldKey(e)) return;
       const target = e.target instanceof Element ? e.target : null;
       // Typing into another field (a search box, a dialog) is that field's.
       if (target && target.closest("input, textarea, [contenteditable=true]") && !target.closest("[data-grid-type-catcher]")) {
@@ -110,14 +136,39 @@ export function useInlineNewRow(options: {
         release();
         return;
       }
+      // Each key waits for the grid to have answered the one before — a Tab has closed its cell, a
+      // letter has opened one — however slow the machine. A fixed gap was measured losing every key
+      // after the first Tab on a loaded preview (the next letter reached a grid still mid-commit).
+      const container = () => latest.current.containerRef.current;
+      const editorOpen = () => Boolean(container()?.querySelector("[data-matrx-cell-editor]"));
+      const until = async (done: () => boolean) => {
+        for (let i = 0; i < 100 && !done(); i++) await new Promise((r) => setTimeout(r, 30));
+      };
+      await until(editorOpen);
       for (;;) {
-        await new Promise((r) => setTimeout(r, 60));
         if (held.length > 0) queue.push(...held.splice(0, held.length));
         const next = queue.shift();
-        if (!next) break;
-        latest.current.containerRef.current?.dispatchEvent(
-          new KeyboardEvent("keydown", { key: next.key, shiftKey: next.shiftKey, bubbles: true, cancelable: true }),
-        );
+        if (!next) {
+          // A key typed while the last one was handed over still belongs here.
+          await new Promise((r) => setTimeout(r, 60));
+          if (held.length === 0) break;
+          continue;
+        }
+        const wasOpen = editorOpen();
+        // A character for an open cell goes INTO its text box, as typing would (the grid's own key path
+        // drops a lone space, measured: "Belt checked" landed as "Beltchecked"). Everything else — a key
+        // that opens a cell, Tab, Enter — goes to the grid.
+        const box = next.key.length === 1 && wasOpen ? editorTextBox(container()) : null;
+        if (box) {
+          typeInto(box, next.key);
+        } else {
+          const event = new KeyboardEvent("keydown", { key: next.key, shiftKey: next.shiftKey, bubbles: true, cancelable: true });
+          ours.add(event);
+          container()?.dispatchEvent(event);
+        }
+        if (next.key === "Tab" || next.key === "Enter") await until(() => !editorOpen());
+        else if (!wasOpen) await until(editorOpen);
+        else await new Promise((r) => setTimeout(r, 15));
       }
       release();
     } catch (err) {
