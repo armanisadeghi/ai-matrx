@@ -19,8 +19,8 @@ import CardFaceContent from "@/components/mardown-display/blocks/flashcards/Card
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Loader2, AlertCircle, BookOpen, Network, Search, X } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { Loader2, AlertCircle, BookOpen, Search, X } from "lucide-react";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
 import type { TrustEnvelope } from "@/features/education/trust/types";
@@ -92,7 +92,7 @@ function seedForNode(node: DiagramNode): { title: string; material: string } {
   };
 }
 
-/** The side panel shown when a node is clicked — source card (if linked) + tutor. */
+/** The canvas tab shown when a node is clicked — source card (if linked) + tutor. */
 function NodePanel({
   node,
   mapTrust,
@@ -106,21 +106,11 @@ function NodePanel({
 }) {
   const card = nodeCard(node);
   const seed = seedForNode(node);
+  // The node's detail is the page's canvas tab (one per map view); a click on
+  // another node renames the tab and brings it forward.
   return (
-    <MatrxDynamicPanelHost
-      open
-      onOpenChange={(o) => !o && onClose()}
-      title={
-        <span className="flex items-center gap-2 text-base">
-          <Network className="h-4 w-4 text-primary" aria-hidden />
-          {node.label}
-        </span>
-      }
-      position="right"
-      defaultSize={30}
-      minSize={22}
-      contentClassName="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4"
-    >
+    <CanvasPagePanel panelKey="mind-map-node" title={node.label} onClose={onClose}>
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
           {node.description && (
             <p className="text-sm text-muted-foreground">{node.description}</p>
@@ -161,7 +151,8 @@ function NodePanel({
             className="w-full justify-center text-sm"
           />
         </div>
-    </MatrxDynamicPanelHost>
+      </div>
+    </CanvasPagePanel>
   );
 }
 

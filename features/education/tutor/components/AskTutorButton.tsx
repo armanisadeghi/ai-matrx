@@ -5,18 +5,18 @@
 // The shared "I'm confused — ask my tutor" entry primitive (P2, VISION §4:
 // "no re-explaining, no context switching"). Drop it on ANY study surface
 // (flashcard study, quiz results, notes) and it opens the full AI Tutor in a
-// side panel, pre-loaded with the local context you pass as `seed` — so the
+// canvas tab, pre-loaded with the local context you pass as `seed` — so the
 // tutor already knows the exact card/item/set the learner is stuck on, on top
 // of their cross-session memory.
 //
 // Reuses EducationTutorClient in `embedded` mode (own focus scope, no URL
-// promotion). The conversation still persists under the education-tutor
+// promotion), as the page's canvas tab. The conversation still persists under the education-tutor
 // source_feature, so a learner can reopen it later from /education/tutor.
 
 import { useState } from "react";
 import { GraduationCap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { cn } from "@/lib/utils";
 import type { TutorGroundingSeed } from "../grounding";
 import { EducationTutorClient } from "./EducationTutorClient";
@@ -48,7 +48,9 @@ export function AskTutorButton({
         variant={variant}
         size={size}
         className={cn("gap-1.5 text-xs", className)}
-        onClick={() => setOpen(true)}
+        // Toggles the tutor's canvas tab; pressed while it is open.
+        onClick={() => setOpen((current) => !current)}
+        aria-pressed={open}
         aria-label={label}
         title={label}
       >
@@ -61,7 +63,7 @@ export function AskTutorButton({
 }
 
 /**
- * The tutor side panel on its own, for a surface that opens it from an action
+ * The tutor canvas tab on its own, for a surface that opens it from an action
  * rather than a button (the study guide's selection toolbar: the toolbar
  * closes, the panel stays).
  */
@@ -74,16 +76,14 @@ export function AskTutorPanel({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  if (!open) return null;
+  // The page's canvas tab — the seed is the page's live context — one tutor
+  // per page; the study surface stays visible beside it.
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      title={
-        <span className="flex items-center gap-2 text-base">
-          <GraduationCap className="h-4 w-4 text-primary" aria-hidden />
-          AI Tutor
-        </span>
-      }
+    <CanvasPagePanel
+      panelKey="education-tutor"
+      title="AI Tutor"
+      onClose={() => onOpenChange(false)}
       headerActions={
         <a
           href="/education/tutor"
@@ -95,13 +95,10 @@ export function AskTutorPanel({
           <ExternalLink className="h-3 w-3" aria-hidden />
         </a>
       }
-      position="right"
-      defaultSize={34}
-      minSize={24}
-      initialFocus
-      contentClassName="flex min-h-0 flex-1 flex-col px-3 pb-3"
     >
-      {open && <EducationTutorClient embedded seed={seed} hideLanding />}
-    </MatrxDynamicPanelHost>
+      <div className="flex min-h-0 flex-1 flex-col px-3 pb-3">
+        <EducationTutorClient embedded seed={seed} hideLanding />
+      </div>
+    </CanvasPagePanel>
   );
 }

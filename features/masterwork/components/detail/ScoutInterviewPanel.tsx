@@ -19,12 +19,9 @@ import Link from "next/link";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { AgentCredit } from "../AgentCredit";
 import { AGENT_ICON_NAME } from "@/components/icons/domain-icons";
-import {
-  ExternalLink,
-  MessagesSquare,
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { VoiceRelayBar } from "@ai-matrx/chat/voice-agent/relay/VoiceRelayBar";
 import { InterviewOpening } from "../../record/InterviewOpening";
@@ -951,20 +948,16 @@ export function ScoutInterviewPanel({
     };
   }, [open, rulebookId, onRulebookChanged]);
 
+  if (!open) return null;
+  // The interview is the page's canvas tab (its props are the page's live
+  // state), one per Rulebook; the Rulebook stays visible beside it.
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      position="right"
-      defaultSize={42}
-      minSize={30}
-      maxSize={80}
-      expandButtonLabel="Interview"
-      initialFocus
-      title={
-        <span className="inline-flex min-w-0 items-center gap-2">
-          <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
-          <span className="truncate">Interview</span>
+    <CanvasPagePanel
+      panelKey={`masterwork-interview:${rulebookId}`}
+      title="Interview"
+      onClose={() => onOpenChange(false)}
+      headerActions={
+        <span className="inline-flex items-center gap-1.5">
           <AgentCredit mandate={MANDATE_KEYS.masterwork__scout} agent="masterwork_scout" />
           <IntelligenceIndicator
             feature="masterwork"
@@ -972,39 +965,34 @@ export function ScoutInterviewPanel({
             context={{ rulebookId }}
             label="The interviewer"
           />
+          {/* THE DOOR LAW — the interview has its own URL. */}
+          <Link
+            href={`/masterwork/${rulebookId}/interview${
+              initialConversationId
+                ? `?conversation=${initialConversationId}`
+                : ""
+            }`}
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-normal text-muted-foreground hover:bg-accent hover:text-foreground"
+            title="Open the interview as its own page"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Full page
+          </Link>
         </span>
       }
-      headerActions={
-        // THE DOOR LAW — the interview has its own URL.
-        <Link
-          href={`/masterwork/${rulebookId}/interview${
-            initialConversationId
-              ? `?conversation=${initialConversationId}`
-              : ""
-          }`}
-          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-normal text-muted-foreground hover:bg-accent hover:text-foreground"
-          title="Open the interview as its own page"
-           target="_blank"
-           rel="noopener noreferrer"
-         >
-          <ExternalLink className="h-3 w-3" />
-          Full page
-        </Link>
-      }
-      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
-      {open ? (
-        <ScoutInterviewContent
-          // Remount when the target changes so Continue-on-another-row and
-          // repeated "New interview" both actually switch conversations.
-          key={`${initialConversationId ?? "-"}:${startNewNonce ?? 0}`}
-          rulebookId={rulebookId}
-          rulebookName={rulebookName}
-          seedText={seedText}
-          initialConversationId={initialConversationId}
-          startNew={(startNewNonce ?? 0) > 0}
-        />
-      ) : null}
-    </MatrxDynamicPanelHost>
+      <ScoutInterviewContent
+        // Remount when the target changes so Continue-on-another-row and
+        // repeated "New interview" both actually switch conversations.
+        key={`${initialConversationId ?? "-"}:${startNewNonce ?? 0}`}
+        rulebookId={rulebookId}
+        rulebookName={rulebookName}
+        seedText={seedText}
+        initialConversationId={initialConversationId}
+        startNew={(startNewNonce ?? 0) > 0}
+      />
+    </CanvasPagePanel>
   );
 }

@@ -19,7 +19,7 @@ import { ConfidenceBadge } from "@/features/education/trust/components/Confidenc
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { MadeFromSource } from "@/features/education/convert/MadeFromSource";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -344,7 +344,9 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
                 variant="outline"
                 size="sm"
                 className="shrink-0 gap-2"
-                onClick={() => setSourcesOpen(true)}
+                // Toggles the sources tab; pressed while it is open.
+                onClick={() => setSourcesOpen((current) => !current)}
+                aria-pressed={sourcesOpen}
               >
                 <ConfidenceBadge confidence={trust.confidence} />
                 <span className="hidden sm:inline">Sources</span>
@@ -358,23 +360,18 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
           <MadeFromSource entityType="study_media" entityId={media.id} />
         )}
 
-        {trust && (
-          <MatrxDynamicPanelHost
-            open={sourcesOpen}
-            onOpenChange={setSourcesOpen}
-            title={
-              <span className="flex items-center gap-2">
-                Sources
-                <ConfidenceBadge confidence={trust.confidence} />
-              </span>
-            }
-            position="right"
-            defaultSize={32}
-            minSize={24}
-            contentClassName="flex min-h-0 flex-1 flex-col p-4"
+        {trust && sourcesOpen && (
+          // The map's sources are the page's canvas tab; the map stays beside it.
+          <CanvasPagePanel
+            panelKey={`mind-map-sources:${media?.id ?? "map"}`}
+            title="Sources"
+            onClose={() => setSourcesOpen(false)}
+            headerActions={<ConfidenceBadge confidence={trust.confidence} />}
           >
-            <SourceCitations trust={trust} label={null} />
-          </MatrxDynamicPanelHost>
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+              <SourceCitations trust={trust} label={null} />
+            </div>
+          </CanvasPagePanel>
         )}
       </div>
     </SurfaceRuntimeProvider>

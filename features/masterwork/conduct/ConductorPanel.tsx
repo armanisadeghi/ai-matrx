@@ -44,9 +44,9 @@ import {
   Plus,
   Workflow,
 } from "lucide-react";
-import { AGENT_ICON, AGENT_ICON_NAME } from "@/components/icons/domain-icons";
+import { AGENT_ICON_NAME } from "@/components/icons/domain-icons";
 import { Button } from "@/components/ui/button";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@ai-matrx/chat/agents/components/chat/ChatRoomSkeleton";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -698,7 +698,7 @@ export interface ConductorPanelProps extends ConductorContentProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** The Conductor as a side panel — the Rulebook stays visible behind it. */
+/** The Conductor as the page's canvas tab — the Rulebook stays visible beside it. */
 export function ConductorPanel({
   open,
   onOpenChange,
@@ -708,20 +708,16 @@ export function ConductorPanel({
   initialConversationId,
   startNew,
 }: ConductorPanelProps) {
+  if (!open) return null;
+  // The Rulebook stays visible beside it: the Conductor is the page's canvas
+  // tab (its props are the page's live state), one per Rulebook.
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
-      position="right"
-      defaultSize={44}
-      minSize={30}
-      maxSize={80}
-      expandButtonLabel="Masterwork"
-      initialFocus
-      title={
-        <span className="inline-flex min-w-0 items-center gap-2">
-          <AGENT_ICON className="h-4 w-4 text-primary" aria-hidden />
-          <span className="truncate">Build it with me</span>
+    <CanvasPagePanel
+      panelKey={`masterwork-conductor:${rulebookId}`}
+      title="Build it with me"
+      onClose={() => onOpenChange(false)}
+      headerActions={
+        <span className="inline-flex items-center gap-1.5">
           <AgentCredit
             mandate={MANDATE_KEYS.masterwork__conductor}
             agent="masterwork_conductor"
@@ -732,40 +728,30 @@ export function ConductorPanel({
             context={{ rulebookId }}
             label="The AI that builds it with you"
           />
+          {/* THE DOOR LAW — the build has its own URL. */}
+          <Link
+            href={`/masterwork/${rulebookId}/conduct${
+              initialConversationId
+                ? `?conversation=${initialConversationId}`
+                : ""
+            }`}
+            className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground hover:text-foreground"
+          >
+            Full page
+          </Link>
         </span>
       }
-      headerActions={
-        // THE DOOR LAW — the build has its own URL.
-        <Link
-          href={`/masterwork/${rulebookId}/conduct${
-            initialConversationId
-              ? `?conversation=${initialConversationId}`
-              : ""
-          }`}
-          className="inline-flex h-6 items-center text-xs leading-none text-muted-foreground hover:text-foreground"
-        >
-          Full page
-        </Link>
-      }
-      // THE SCROLL CHAIN. `flex-1 min-h-0` inside the conversation column only
-      // bounds anything if EVERY ancestor is a full-height flex column — without
-      // this the panel body sits at height:auto, the message list collapses to
-      // nothing, and the composer floats at the top of an empty panel while the
-      // run streams invisibly behind it.
-      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
-      {open ? (
-        <ConductorContent
-          // Remount when the target changes so Continue-on-another-row and a
-          // repeated "start a new one" both actually switch conversations.
-          key={`${initialConversationId ?? "-"}:${startNew ? "new" : ""}`}
-          rulebookId={rulebookId}
-          rulebookName={rulebookName}
-          attachments={attachments}
-          initialConversationId={initialConversationId}
-          startNew={startNew}
-        />
-      ) : null}
-    </MatrxDynamicPanelHost>
+      <ConductorContent
+        // Remount when the target changes so Continue-on-another-row and a
+        // repeated "start a new one" both actually switch conversations.
+        key={`${initialConversationId ?? "-"}:${startNew ? "new" : ""}`}
+        rulebookId={rulebookId}
+        rulebookName={rulebookName}
+        attachments={attachments}
+        initialConversationId={initialConversationId}
+        startNew={startNew}
+      />
+    </CanvasPagePanel>
   );
 }
