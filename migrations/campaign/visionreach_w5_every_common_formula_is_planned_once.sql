@@ -6,7 +6,7 @@
 --   custom.agg_field_kind(uuid, uuid, text) (what kind of value a column holds) — EXECUTE to
 --   postgres only, as the store's event trigger leaves every new custom function, and REPLACES four
 --   bodies, each declared below with the body it was written against. custom.formula_eval, every
---   _fx_* function, custom.visible_set and custom.visible_predicate_sql are NOT touched. No table,
+--   _fx_* function, custom.visible_set and custom.listed_predicate_sql are NOT touched. No table,
 --   column, index, trigger, policy, grant or row of anybody's data is touched.
 --   Locks: pg_proc row locks only.
 --   Inverse: migrations/inverse/visionreach_w5_every_common_formula_is_planned_once_down.sql
@@ -15,7 +15,7 @@
 -- lane: VISION-REACH
 -- based-on: custom.formula_compile_sql(uuid, jsonb, text) 4e86c988f7c4824816547e54c529d5e14c57215339f19da93860e290c93376b2
 -- based-on: custom.agg_field_value_sql(uuid, uuid, text) 2913f67eb9f0f9dfe4e622a87844d34e27eee4eb7672fad2f0de6f43c00bdcaf
--- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 6ffb66bb2c9ab5ead25366c494769674b4f8c4ff17db54d3e75da05e4cb92694
+-- based-on: custom.agg_sql(uuid, uuid, jsonb, jsonb, jsonb, jsonb, integer, text, jsonb) 5e8b41d823bb1e7991419f371b3ec1e2a4a8c60f9b8bd25e451a2f983c842c1b
 -- based-on: custom.record_aggregate_as_of(uuid, uuid, timestamp with time zone, text, text, text, jsonb) 1545cb1bd29c9abd16739212885198a2b504cf781d3f39029bac18769fd0eccc
 --
 -- LANE 5 VISION-REACH, WAVE 5 — EVERY COMMON FORMULA IS WORKED OUT ONCE PER QUESTION, A DATE
@@ -127,6 +127,50 @@ begin
   end if;
   v_a := p_vals[1];
   v_b := p_vals[2];
+
+  -- ── Rule nodes (custom.rule_eval's own branches; custom._fxc_rule_sql plans them) ──────────
+  -- No conversion at all: an empty side is an empty answer, = and != compare the JSON values
+  -- themselves, and arithmetic or < > take two JSON numbers or refuse.
+  if p_op in ('rule.add', 'rule.sub', 'rule.mul', 'rule.div', 'rule.lt', 'rule.lte', 'rule.gt', 'rule.gte',
+              'rule.eq', 'rule.ne') then
+    if jsonb_typeof(v_a) = 'null' or jsonb_typeof(v_b) = 'null' then
+      return 'null'::jsonb;
+    end if;
+    if p_op = 'rule.eq' then
+      return to_jsonb(v_a = v_b);
+    elsif p_op = 'rule.ne' then
+      return to_jsonb(v_a <> v_b);
+    end if;
+    if jsonb_typeof(v_a) <> 'number' or jsonb_typeof(v_b) <> 'number' then
+      return null;   -- 'this rule compares numbers, and it was given …' (22023) in rule_eval
+    end if;
+    v_x := (v_a #>> '{}')::numeric;
+    v_y := (v_b #>> '{}')::numeric;
+    return case p_op
+      when 'rule.lt'  then to_jsonb(v_x <  v_y)
+      when 'rule.lte' then to_jsonb(v_x <= v_y)
+      when 'rule.gt'  then to_jsonb(v_x >  v_y)
+      when 'rule.gte' then to_jsonb(v_x >= v_y)
+      when 'rule.add' then to_jsonb(v_x + v_y)
+      when 'rule.sub' then to_jsonb(v_x - v_y)
+      when 'rule.mul' then to_jsonb(v_x * v_y)
+      -- 'this rule divides by nothing' (22012) in rule_eval
+      else case when v_y = 0 then null else to_jsonb(v_x / v_y) end
+    end;
+  elsif p_op = 'rule.concat' then
+    -- the first value is the separator; each part is already the words a person reads
+    -- (custom._fxc_rule_sql asks custom.field_words for a column); empty parts are skipped
+    v_t := v_a #>> '{}';
+    v_s := null;
+    for v_i in 2 .. v_n loop
+      v_one := p_vals[v_i];
+      continue when jsonb_typeof(v_one) = 'null';
+      v_u := v_one #>> '{}';
+      continue when nullif(btrim(v_u), '') is null;
+      v_s := case when v_s is null then v_u else v_s || v_t || v_u end;
+    end loop;
+    return to_jsonb(coalesce(v_s, ''));
+  end if;
 
   -- ── numbers: + − × ÷ % and unary minus ───────────────────────────────────────────────────
   -- custom._fx_num(v) is custom._fx_loose(v) or a refusal: JSON null and "" read 0, a number is
@@ -369,6 +413,151 @@ exception
 end;
 $function$;
 
+create function custom._fxc_rule_eval(p_organization_id uuid, p_expr jsonb, p_values jsonb)
+ returns jsonb
+ language plpgsql
+ stable
+ set search_path to 'pg_catalog'
+as $function$
+begin
+  -- ONE RULE NODE OF A PLANNED FORMULA THAT IS NOT PLANNED (AND, OR, present, length, matches),
+  -- worked out by custom.rule_eval itself from the row's values — the twin of custom._fxc_eval for
+  -- the Rules' evaluator (VISION-REACH W5, 2026-10-03). Only nodes that read nothing of the record
+  -- but its values reach it (custom._fxc_context_free). What rule_eval raises is an empty answer,
+  -- as custom.derived_value makes it.
+  return coalesce(custom.rule_eval(p_organization_id, p_expr, p_values, '{}'::jsonb), 'null'::jsonb);
+exception
+  when insufficient_privilege or query_canceled then
+    raise;
+  when others then
+    return null;
+end;
+$function$;
+
+create function custom._fxc_rule_sql(p_organization_id uuid, p_expr jsonb, p_values_sql text)
+ returns text
+ language plpgsql
+ stable
+ set search_path to 'pg_catalog'
+as $function$
+declare
+  v_keys  text[];
+  v_op    text;
+  v_args  jsonb;
+  v_n     integer;
+  v_key   text;
+  v_type  text;
+  v_raw   text;
+  v_words text;
+  v_one   jsonb;
+  v_part  text;
+  v_parts text[] := '{}';
+  v_a     text;
+  v_b     text;
+begin
+  -- A RULE NODE INSIDE A FORMULA, PLANNED ONCE (VISION-REACH W5, 2026-10-03). Most formulas
+  -- written before the formula language — "Balance" = {"op": "sub"}, a label = {"op": "concat"} —
+  -- are Rule nodes, which custom.formula_eval hands to custom.rule_eval whole. This writes ONE SQL
+  -- expression with rule_eval's own meaning, branch for branch:
+  --   a constant is itself; a column is its stored value, untouched (no words, no text);
+  --   + − × ÷ < <= > >= = != are custom._fxc_apply('rule.<op>') over the first two arguments;
+  --   concat joins each part's words (custom.field_words for a column, as rule_eval asks it);
+  --   a formula-language node inside is custom.formula_compile_sql's (rule_eval hands it back);
+  --   AND, OR, present, length and matches are handed to rule_eval itself (custom._fxc_rule_eval).
+  -- Answers: the SQL text, 'NULL::jsonb' where rule_eval would raise on every record (a column
+  -- by name, or one that is gone — an empty column, as custom.derived_value makes it), or SQL NULL
+  -- when this part cannot be planned (the caller keeps custom.derived_value for the formula).
+  if p_expr is null or jsonb_typeof(p_expr) <> 'object' then
+    return 'NULL::jsonb';
+  end if;
+  if p_expr ?| array['field_name', 'field_key', 'field_label'] then
+    return 'NULL::jsonb';
+  end if;
+  v_op := p_expr ->> 'op';
+  if left(coalesce(v_op, ''), 3) = 'fx.' then
+    return custom.formula_compile_sql(p_organization_id, p_expr, p_values_sql);
+  end if;
+  select array_agg(k order by k) into v_keys from jsonb_object_keys(p_expr) k;
+
+  if v_keys = array['const'] then
+    return format('%L::jsonb', (p_expr -> 'const')::text);
+  end if;
+  if v_keys = array['field'] then
+    if jsonb_typeof(p_expr -> 'field') <> 'string'
+       or (p_expr ->> 'field') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      return 'NULL::jsonb';
+    end if;
+    v_key := custom.rule_field_key(p_organization_id, (p_expr ->> 'field')::uuid);
+    if v_key is null then
+      return 'NULL::jsonb';
+    end if;
+    -- an absent key reads as no value; every Rule node below treats SQL NULL and JSON null alike
+    return format('coalesce((%s -> %L), ''null''::jsonb)', p_values_sql, v_key);
+  end if;
+
+  v_args := p_expr -> 'args';
+  if v_op is null or jsonb_typeof(v_args) is distinct from 'array' then
+    return null;
+  end if;
+  v_n := jsonb_array_length(v_args);
+
+  if v_op in ('add', 'sub', 'mul', 'div', 'lt', 'lte', 'gt', 'gte', 'eq', 'ne') and v_keys = array['args', 'op'] then
+    if v_n < 2 then
+      return 'NULL::jsonb';   -- rule_eval reads a missing second value and refuses
+    end if;
+    v_a := custom._fxc_rule_sql(p_organization_id, v_args -> 0, p_values_sql);
+    v_b := custom._fxc_rule_sql(p_organization_id, v_args -> 1, p_values_sql);
+    if v_a is null or v_b is null then
+      return null;
+    end if;
+    return format('custom._fxc_apply(%L, array[%s, %s]::jsonb[])', 'rule.' || v_op, v_a, v_b);
+  end if;
+
+  if v_op = 'concat' and v_keys in (array['args', 'op'], array['args', 'op', 'separator']) then
+    for v_one in select e from jsonb_array_elements(v_args) e loop
+      if jsonb_typeof(v_one) = 'object' and (v_one ? 'field' or v_one ? 'parent_field') then
+        if (select array_agg(k order by k) from jsonb_object_keys(v_one) k) is distinct from array['field'] then
+          return null;
+        end if;
+        v_raw := custom._fxc_rule_sql(p_organization_id, v_one, p_values_sql);
+        if v_raw = 'NULL::jsonb' then
+          v_parts := v_parts || v_raw;
+          continue;
+        end if;
+        -- custom.field_words, asked only where it can answer anything but the value's own text:
+        -- a choice or a relation column, a column that is gone, or a list of values
+        select f.data ->> 'type' into v_type
+          from custom.record f
+         where f.organization_id = p_organization_id and f.id = (v_one ->> 'field')::uuid
+           and f.table_id = custom.field_kernel_id() and f.deleted_at is null;
+        v_words := case
+          when v_type is null or v_type in ('list', 'relation')
+            then format('custom.field_words(%L::uuid, %L::uuid, %s)', p_organization_id, v_one ->> 'field', v_raw)
+          else format('(case when jsonb_typeof(%1$s) = ''array'' then custom.field_words(%2$L::uuid, %3$L::uuid, %1$s) '
+                      'else %1$s #>> ''{}'' end)', v_raw, p_organization_id, v_one ->> 'field') end;
+        v_parts := v_parts || format(
+          '(case when jsonb_typeof(%1$s) = ''null'' then ''null''::jsonb else to_jsonb(coalesce(%2$s, %1$s #>> ''{}'')) end)',
+          v_raw, v_words);
+      else
+        v_part := custom._fxc_rule_sql(p_organization_id, v_one, p_values_sql);
+        if v_part is null then
+          return null;
+        end if;
+        v_parts := v_parts || v_part;
+      end if;
+    end loop;
+    return format('custom._fxc_apply(''rule.concat'', array[%L::jsonb%s]::jsonb[])',
+                  to_jsonb(coalesce(p_expr ->> 'separator', ''))::text,
+                  (select coalesce(string_agg(', ' || x, '' order by o), '') from unnest(v_parts) with ordinality u(x, o)));
+  end if;
+
+  if v_op in ('and', 'or', 'present', 'length', 'matches') and v_keys = array['args', 'op'] then
+    return format('custom._fxc_rule_eval(%L::uuid, %L::jsonb, %s)', p_organization_id, p_expr::text, p_values_sql);
+  end if;
+  return null;
+end;
+$function$;
+
 CREATE OR REPLACE FUNCTION custom.formula_compile_sql(p_organization_id uuid, p_expr jsonb, p_values_sql text)
  RETURNS text
  LANGUAGE plpgsql
@@ -446,6 +635,13 @@ begin
                   'else coalesce(%1$s, ''null''::jsonb) end)', v_leaf);
   end if;
 
+  -- A Rule node ({"op": "sub"}, {"op": "concat"} — what most formulas written before the formula
+  -- language still are): formula_eval hands every node that is not its own to custom.rule_eval,
+  -- so it is planned with rule_eval's own meaning (custom._fxc_rule_sql), not the formula's.
+  if left(coalesce(p_expr ->> 'op', ''), 3) <> 'fx.' then
+    return custom._fxc_rule_sql(p_organization_id, p_expr, p_values_sql);
+  end if;
+
   v_op := p_expr ->> 'op';
   if not (v_keys = array['args', 'op'] or v_keys = array['op'])
      or v_op not in (
@@ -504,12 +700,21 @@ as $function$
       from n, jsonb_array_elements(case when jsonb_typeof(n.e) = 'object' and jsonb_typeof(n.e -> 'args') = 'array'
                                         then n.e -> 'args' else '[]'::jsonb end) a
   )
+  -- The Rule nodes that read nothing but the values (custom.rule_eval): arithmetic and comparisons,
+  -- joining words, AND / OR, present, length, matches. NOT is left out: its answer for an unknown
+  -- depends on why the Rule is asked (p_context.purpose).
   select coalesce(bool_and(
            jsonb_typeof(n.e) = 'object'
            and ((select array_agg(k order by k) from jsonb_object_keys(n.e) k) in (array['const'], array['field'])
                 or (left(coalesce(n.e ->> 'op', ''), 3) = 'fx.'
                     and (n.e ->> 'op') not in ('fx.autonumber', 'fx.created_time', 'fx.modified_time')
-                    and (select array_agg(k order by k) from jsonb_object_keys(n.e) k) in (array['op'], array['args', 'op'])))), false)
+                    and (select array_agg(k order by k) from jsonb_object_keys(n.e) k) in (array['op'], array['args', 'op']))
+                or ((n.e ->> 'op') in ('add', 'sub', 'mul', 'div', 'lt', 'lte', 'gt', 'gte', 'eq', 'ne',
+                                       'and', 'or', 'present', 'length', 'matches')
+                    and (select array_agg(k order by k) from jsonb_object_keys(n.e) k) = array['args', 'op'])
+                or ((n.e ->> 'op') = 'concat'
+                    and (select array_agg(k order by k) from jsonb_object_keys(n.e) k)
+                        in (array['args', 'op'], array['args', 'op', 'separator'])))), false)
     from n;
 $function$;
 
@@ -554,6 +759,13 @@ begin
     v_b := case when jsonb_array_length(p_expr -> 'args') > 2
                 then custom.formula_result_kind(p_organization_id, p_expr -> 'args' -> 2) else v_a end;
     return case when v_a = v_b then v_a end;
+  end if;
+  -- a Rule node (custom.rule_eval): arithmetic is a number, joined words are text, a test is yes/no
+  if left(coalesce(p_expr ->> 'op', ''), 3) <> 'fx.' then
+    return case when p_expr ->> 'op' in ('add', 'sub', 'mul', 'div', 'length') then 'number'
+                when p_expr ->> 'op' = 'concat' then 'text'
+                when p_expr ->> 'op' in ('lt', 'lte', 'gt', 'gte', 'eq', 'ne', 'and', 'or', 'not', 'present', 'matches')
+                  then 'boolean' end;
   end if;
   select k.result into v_res from custom.formula_node_kinds() k where k.node = p_expr ->> 'op';
   return case when v_res in ('number', 'date', 'text', 'boolean') then v_res end;
@@ -946,7 +1158,7 @@ begin
               (select string_agg(v_lat_expr[i] || ' as v' || i, ', ') from generate_subscripts(v_lat_expr, 1) i) ||
               ' offset 0) w' end,
     p_organization_id, p_table_id,
-    custom.visible_predicate_sql(custom.query_principal(), p_organization_id, p_table_id,
+    custom.listed_predicate_sql(custom.query_principal(), p_organization_id, p_table_id,
                                  p_required::public.permission_level, 'r'),
     -- S2-PRIME FILTER-GROUPS: the one fragment, in either shape (flat map or Rule expression).
     custom.record_filter_sql(p_organization_id, p_table_id, p_filter),
@@ -1045,10 +1257,14 @@ begin
   -- version at or before the moment there, so its answer is the same. Only a record with no
   -- version there (none is expected; one imported with a later creation stamp could be) is sought
   -- in the whole history (`far`), exactly as before.
+  -- The earliest creation of ANY record of this Table (archived ones included) is at or before
+  -- that of every record read, so the range can only be wider than needed, never narrower; it is
+  -- one index-only read (organization, table, created_at), where asking it of the 5,000 ids probed
+  -- every partition of custom.record 5,000 times (170 ms).
   select min(r.created_at) into v_from
     from custom.record r
    where r.organization_id = p_organization_id
-     and r.id = any (v_ids);
+     and r.table_id = p_table_id;
 
   return query
   with near as materialized (

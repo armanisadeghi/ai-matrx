@@ -7,7 +7,8 @@
 -- planned node treats specially — JSON null and "", numbers as text ("1,234", "$5", "1e3",
 -- " 7 "), text with no digit ("$", "abc"), booleans, zero divisors, negative and huge numbers,
 -- date-only and timestamped dates, a date that does not exist, a bad unit — and a formula for
--- every planned node (and for the short-circuits: an IF / AND / OR whose untaken side fails).
+-- every planned node (and for the short-circuits: an IF / AND / OR whose untaken side fails),
+-- plus the Rule nodes (custom.rule_eval's sub / concat / eq …) most older formulas are written in.
 -- For every formula and every record:
 --   · the planned JSON (custom.formula_compile_sql) as text equals custom.derived_value's, and
 --   · the door's text (custom.agg_field_value_sql) equals custom.agg_value_text of it;
@@ -89,6 +90,30 @@ declare
     array['f_note_dd',  'DATEDIFF({Note}, {Start}, "minutes")', 'yes'],
     array['f_switch',   'SWITCH({Note}, "abc", "letters", "12", "twelve", "other")', 'no'],
     array['f_find',     'FIND("b", {Note})', 'no']];
+  -- RULE NODES (custom.rule_eval's language — what most formulas written before the formula
+  -- language are): key, expression with @column@ standing for {"field": "<that column's id>"}.
+  -- Every one must be planned too, with rule_eval's meaning: no conversion, = on the JSON value,
+  -- a number refused when it is text, words joined skipping empties.
+  c_rx text[][] := array[
+    array['r_sub',        '{"op":"sub","args":[@copay@,@adjustment@]}'],
+    array['r_add_text',   '{"op":"add","args":[@note@,@copay@]}'],
+    array['r_mul',        '{"op":"mul","args":[@copay@,@sessions@]}'],
+    array['r_div',        '{"op":"div","args":[@copay@,@sessions@]}'],
+    array['r_div_const',  '{"op":"div","args":[@copay@,{"const":3}]}'],
+    array['r_eq_text',    '{"op":"eq","args":[@note@,{"const":"abc"}]}'],
+    array['r_eq_num',     '{"op":"eq","args":[@copay@,{"const":35}]}'],
+    array['r_ne_flag',    '{"op":"ne","args":[@flag@,{"const":true}]}'],
+    array['r_gt',         '{"op":"gt","args":[@copay@,{"const":35}]}'],
+    array['r_lte_text',   '{"op":"lte","args":[@note@,@copay@]}'],
+    array['r_one_arg',    '{"op":"sub","args":[@copay@]}'],
+    array['r_concat',     '{"op":"concat","args":[@note@,{"const":" — "},@copay@,@flag@,@start@]}'],
+    array['r_concat_sep', '{"op":"concat","separator":" · ","args":[@note@,@copay@,{"const":"  "},@adjustment@,@flag@]}'],
+    array['r_concat_none','{"op":"concat","args":[{"const":"  "}]}'],
+    array['r_fx_inside',  '{"op":"sub","args":[{"op":"fx.round","args":[@copay@,{"const":1}]},@sessions@]}'],
+    array['r_in_fx_if',   '{"op":"fx.if","args":[{"op":"gt","args":[@copay@,{"const":35}]},{"op":"concat","args":[@note@]},{"const":"low"}]}'],
+    array['r_in_fx_add',  '{"op":"fx.add","args":[{"op":"mul","args":[@copay@,@sessions@]},@adjustment@]}'],
+    array['r_and',        '{"op":"and","args":[{"op":"gt","args":[@copay@,{"const":30}]},@flag@]}']];
+  v_ids jsonb := '{}';
   v_home uuid; v_t uuid; i int; f record; v_sql text; v_door text; v_n bigint; v_bad text;
   v_fail text[] := '{}'; v_planned int := 0; v_rows bigint := 0; v_m jsonb;
 begin
@@ -117,6 +142,20 @@ begin
       raise notice 'not declared here: % (%): %', c_fx[i][1], c_fx[i][2], left(sqlerrm, 120);
     end;
   end loop;
+  perform set_config('role', 'postgres', true);
+  select jsonb_object_agg(fr.data ->> 'key', jsonb_build_object('field', fr.id::text)) into v_ids
+    from custom.record fr
+   where fr.table_id = custom.field_kernel_id() and fr.deleted_at is null
+     and (fr.data ->> 'entity_definition_id')::uuid = v_t;
+  perform set_config('role', 'authenticated', true);
+  for i in 1 .. array_length(c_rx, 1) loop
+    v_sql := c_rx[i][2];
+    for f in select key, value from jsonb_each(v_ids) loop
+      v_sql := replace(v_sql, '@' || f.key || '@', f.value::text);
+    end loop;
+    perform custom.field_declare(c_org, v_t, jsonb_build_object('key', c_rx[i][1], 'label', c_rx[i][1],
+      'type', 'formula', 'config', jsonb_build_object('expr', v_sql::jsonb)));
+  end loop;
   perform custom.record_write_many(c_org, v_t, array[
     '{"name":"Initial evaluation — Okafor","copay":35,"sessions":12,"adjustment":-5.25,"note":"12","start":"2026-09-01","end":"2026-09-29","flag":true}',
     '{"name":"Re-evaluation — Albright","copay":35,"sessions":0,"adjustment":0,"note":"abc","flag":false}',
@@ -141,7 +180,8 @@ begin
     v_door := custom.agg_field_value_sql(c_org, v_t, f.k);
     v_sql := custom.formula_compile_sql(c_org, f.data -> 'config' -> 'expr', c_values);
     if v_sql is null or v_door like '%custom.derived_value(%' then
-      if exists (select 1 from generate_subscripts(c_fx, 1) i where c_fx[i][1] = f.k and c_fx[i][3] = 'yes') then
+      if exists (select 1 from generate_subscripts(c_fx, 1) i where c_fx[i][1] = f.k and c_fx[i][3] = 'yes')
+         or exists (select 1 from generate_subscripts(c_rx, 1) i where c_rx[i][1] = f.k) then
         v_fail := v_fail || format('%s [%s] is on the planned list and was NOT planned', f.k, f.txt);
       end if;
       continue;
@@ -187,7 +227,7 @@ begin
   end;
 
   raise notice 'formulas planned and compared: %; records compared: %', v_planned, v_rows;
-  if v_planned < 30 or v_rows = 0 then
+  if v_planned < 60 or v_rows = 0 then
     raise exception 'RED — only % formulas planned over % records; the suite proves too little', v_planned, v_rows;
   end if;
   if cardinality(v_fail) > 0 then
