@@ -573,7 +573,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       name: "StartHero (Universal Ingest)",
       filePath: "features/education/onboard/components/StartHero.tsx",
       description:
-        "P9 — the upload-hero flow: input picker (file/paste/link) → kit target picker → live per-target board → linked artifacts. Driven by useKitGeneration + useIngest.",
+        "P9 — the study-kit front door: the one Source input → kit target picker → live per-target board → linked artifacts. Driven by useKitGeneration + useIngest.",
       tier: "official",
     },
     {

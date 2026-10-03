@@ -15,48 +15,47 @@ material), **metered** (P8 `education.ingest_document`), and **lineage-linked**:
 gets a `source` association edge to a durable `cld_files` anchor, so "the kit" is simply the
 source file's associations — no new table.
 
-## 🚨 Material the learner already has is PICKED, never re-uploaded
+## 🚨 Material comes in through THE one Source input
 
-The front door has four inputs: **My files** · Upload · Paste · Link. **My files** opens THE one
-file picker (`openFilePicker` → the canonical `FilePickerWindow`/`FilesResourcePicker`; never a
-second picker) and hands `useIngest` a `{ kind: "stored", stored: { fileId, fileName, mimeType } }`
-input. Nothing is uploaded: the kit anchors on that exact `files.files` id, so every artifact's
-`source` edge (the registered `<artifact> -> file` lineage pairs, written by
-`convert/recordSourceLineage.ts` through the association RPCs) points at the file the person
-already owns, and a later run over the same file MERGES into the same kit (`/education/kits/<fileId>`).
+`/education/start` (and `/education/kits/new`) take material only through the unified Source input
+(`features/resource-manager/source-input`, the same input as `/education/flashcards/new`): Add new =
+Upload · Paste text · Web page · YouTube · Recording · Image; Use existing = the organization page's
+Sources + Sources & Outputs kinds; cards with version/parts; review above the knob; picks kept
+across a reload (`wizardDraft`, key `source-input:education:start` / `source-input:education:kits:new`).
+"Topic" is not offered — a kit is grounded in material; the focus line carries a topic. Delivery
+is `["direct"]` (the generators read the resolved text only, like flashcards). There is no local
+input UI here and no client-side reader: every way new material becomes a Source is the Source
+input's.
 
-When the file is already a **Knowledge Source** (`files.files.canonical_processed_document_id`,
-resolved by the shared `resolveCanonicalProcessedDocumentId`), its text (`clean_content`, else
-`content`) is read directly and nothing is extracted a second time; `ref.processedDocumentId` and
-`meta.extractionMethod = "knowledge source"` record it. Otherwise the file is read by id through the
-SAME per-kind readers an upload uses (`extractFileText` — PDF/Office/audio/video by `file_id`;
-image OCR and plain text download the bytes via `fileHandler`, never re-send them). The chosen
-file opens in place (`openFilePreview`) and the panel says whether it is already a Source.
+The picks travel as ONE `SourceSet` and are read by `POST /sources/resolve`
+(`useSourceSet().resolve()`), passed into `useKitGeneration.run(resolve, …)` → `useIngest().normalizeSources`.
+`kitSources.ts` (pure, `__tests__/kit-sources.test.ts`) turns the answer into the kit's text (every
+Source's `### Chunk` text joined in pick order — the deck generator's join) and its anchor:
 
-**The door has ONE address:** `startRoutes.ts` (`EDU_STUDY_MY_FILES_HREF` =
-`/education/start?from=files`; the page passes `initialMode="files"` to `StartHero`). The Education
-home (`/education/overview`) links it as **Study a file you have** in the Recently-created header,
-beside "Your library" — never a second flow. Guard:
-`__tests__/stored-file-ingest.test.tsx` drives the real stored branch + the real
-`recordSourceLineage` and fails if the path uploads, re-anchors on another id, or drops the edge
-(proven red against both sabotages on 2026-09-26).
+- **ONE Source with a stored file behind it** (a picked/uploaded file, or a Source read from one) →
+  the kit anchors on THAT `files.files` id, so a later run over the same file MERGES into the same
+  kit (`/education/kits/<fileId>`). Nothing is uploaded again.
+- **Anything else** (several Sources, a web page, pasted text, a transcript) → the joined text is
+  kept as one `.md` file the person owns (`anchorText`, which never sinks the run — a storage
+  failure degrades to no lineage, loudly to us).
 
-Before 2026-09-26 the hero offered only Upload / Paste / Link, so a learner whose PDF was already
-in their files (and already a Knowledge Source) had to upload the same bytes again to study it —
-a private duplicate with its own processing bill.
+Every artifact's `source` edge (written by `convert/recordSourceLineage.ts`) points at the anchor.
+A Source the server left out, or read raw, is listed on the kit board (`meta.notes`).
+
+`/education/start` has ONE address (`startRoutes.ts` `EDU_START_HREF`); the Education home's
+**Study a file you have** link opens it — Use existing sits beside every Add new door, so there is
+no tab to open.
 
 ## Architecture (the load-bearing split)
 
 ```
-input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGeneration──▶ convertContent × N
- (file/paste/url)      (ingest owns raw→text)              (converter owns text→artifact)
+Source input ─SourceSet─▶ POST /sources/resolve ─useIngest─▶ { text, title, anchor } ─useKitGeneration─▶ convertContent × N
+                          (server owns raw→text)                                      (converter owns text→artifact)
 ```
 
-- **`useIngest`** (`useIngest.ts`) normalizes raw input → extracted text + a durable file anchor.
-  PDF via the pdf-extractor stream, text/markdown read inline, a generic URL via the scraper, a
-  YouTube link via the real spoken-transcript endpoint (`fetchYouTubeTranscript`); every input is ALSO
-  uploaded through `fileHandler` so the user owns it (and lineage is uniform).
-- **`useKitGeneration`** (`useKitGeneration.ts`) sequences ingest → **naming** → the converter
+- **`useIngest`** (`useIngest.ts`) reads the resolved Sources into text + a durable file anchor
+  (`kitSources.ts`), clamps to the `max_source_chars` knob, and reports progress.
+- **`useKitGeneration`** (`useKitGeneration.ts`) sequences resolve → **naming** → the converter
   fan-out (`convertMany`), exposing live per-target state (pending → running → success/error).
 - **`kitTitle.ts`** names the kit ONCE, between ingest and fan-out, and that one value is what
   every generator receives as `source.title`. This is load-bearing, not cosmetic: each generator
@@ -77,7 +76,7 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 | Route | What |
 |---|---|
-| `/education/start` | The Upload Hero flow (`StartHero`) — My files / Upload / Paste / Link. Hub landing leads with it. |
+| `/education/start` | The study-kit front door (`StartHero`) — the one Source input, then what to make. Hub landing leads with it. |
 | `/education/data` | Your data: export/import + ownership pledge (`DataOwnershipPage`). |
 | `/education/summaries/[id]` | Grounded study-summary viewer (`SummaryDetail`). |
 
@@ -111,21 +110,10 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 ## The cleaned document — what every path produces before anything is generated
 
-**Ingest's product is ONE clean markdown/text blob**, and the whole kit is generated from it.
-Where that cleaned text is DURABLE differs by path, and the difference is load-bearing:
-
-| Path | Durable clean copy |
-|---|---|
-| PDF · Office (docx/pptx/xlsx) | `docproc.processed_documents` (the platform extracts on upload) |
-| Paste · URL · YouTube transcript | the `.md` anchor IS the clean copy |
-| Image OCR · audio/video transcript | a sibling `<title> (extracted).md` written by `keepCleanCopy` |
-
-🚨 **Extraction output is never thrown away.** Image OCR and transcription used to keep only the
-original bytes, so the readable version existed solely in the tab that ran the ingest — nothing
-could show it to the student or re-read it. `keepCleanCopy` writes the sibling and edges it back to
-the anchor (`file -> file`, `role='source'`, `metadata.targetKind='clean_copy'`), so it travels with
-the original, appears as a chip under `MadeFromSource`, and
-[`convert/reopenSource.ts`](../convert/reopenSource.ts) finds it from the anchor id alone.
+**The kit is generated from ONE text: the resolved Sources' text** (the form each card chose —
+Clean text by default — narrowed to the picked parts). Its durable copy is the Sources themselves
+(`docproc.processed_documents`, made by the Source input's doors) plus the kit's anchor: the picked
+file, or the `.md` copy `anchorText` keeps for anything else.
 
 Because the material is already clean before any model runs, **`notes` is ON by default** —
 organizing material we already hold is the last artifact that should need opting into.
@@ -170,93 +158,12 @@ organizing material we already hold is the last artifact that should need opting
   reachable solely when a user picks an `.apkg`. A static import chain to it eagerly compiles the
   emscripten module and hangs the page build — do not re-introduce one. (`code-splitting` skill.)
 
-## Format coverage (the honest matrix)
+## Format coverage
 
-**ONE source of truth: `formatSupport.ts`.** `classifyIngestFile` / `describeIngestSupport` /
-`INGEST_ACCEPT` decide what the front door reads for FILES; `classifyIngestUrl` / `describeUrlSupport`
-do the same for URLs (generic page vs YouTube). Together they decide what the front door reads, how it
-reads it, and the exact honest line the UI shows and the ingest throws. `useIngest` (the engine) and
-`StartHero` (the picker `accept`, the drop-zone hint, the per-file `FileSupportNote`, and the link
-note) BOTH read it, so the advertised set and the readable set can never drift. Every supported kind
-routes to an **existing** platform pipeline — we wire, we don't build extractors.
-
-| Input | Status | Pipeline (all existing) |
-|---|---|---|
-| PDF | ✅ | pdf-extractor stream (`streamPdfExtractText`) — native text + Tesseract OCR for scans |
-| Image (png/jpg/jpeg/webp/gif/bmp/tiff) | ✅ | **same** pdf-extractor stream (it accepts images) — Tesseract OCR |
-| Audio (mp3/wav/m4a/aac/ogg/flac/opus) | ✅ | Catalog STT via `transcribeSignedUrl` → aidream `/audio/transcribe-url` |
-| Video (mp4/mov/webm/m4v) | ✅ | **same** Groq-Whisper URL route (it demuxes the container) |
-| Text / Markdown / CSV / TSV / JSON / HTML / RTF | ✅ | read inline |
-| Paste | ✅ | anchored as a durable `.md` |
-| URL (generic web page) | ✅ | scraper (`useScraperApi.scrapeUrl`) |
-| YouTube URL | ✅ real spoken transcript | aidream `POST /media/youtube/transcript` (agent `0cd86da2`, Gemini) via `fetchYouTubeTranscript`; captionless video → honest fail |
-| Word / PowerPoint / Excel (docx/pptx/xlsx, +.docm/.pptm/.xlsm) | ✅ | aidream content-processing (`extractOfficeText`) — see below |
-| Legacy Office (.doc/.ppt/.xls) / ODF / Apple (odt/odp/ods/pages/key/numbers) | ❌ gated | no LibreOffice on the app server; codec is pure-python OpenXML-only — save as .docx/.pptx/.xlsx or export to PDF |
-| HEIC / HEIF photo | ❌ gated | backend OCR rejects HEIC; user exports JPG/PNG |
-
-Every file kind is uploaded through `fileHandler` first (durable ownership) and that upload's
-`cld_files` id is the lineage anchor for image/audio/video exactly as it is for PDF. Extraction
-runs on the branch its kind selects; the result is `{ text, ref.fileId }` — the unchanged converter
-contract. `meta.extractionMethod` records the path (`native` / `ocr` / `transcript`).
-
-### YouTube → real transcript (shipped 2026-07-14)
-
-The YouTube branch now calls aidream's **`POST /media/youtube/transcript`** (bare mount `/media`;
-router `aidream/api/routers/youtube_transcript.py`) via `fetchYouTubeTranscript`. The endpoint reuses
-the existing "YouTube Video Transcription Analysis" agent (Gemini, `youtube_url` variable; resolved
-server-side inside aidream, no id in this repo) through the shared `run_youtube_transcription` service primitive — the
-SAME quiet (`store=False`, no chat clutter) path the in-agent-run media resolver uses. The transcript
-streams back as chunk text (`consumeStream` → `accumulatedText`); a captionless/speechless video
-yields a non-fatal warning + empty text, so `useIngest` fails honestly ("try a link with captions, or
-paste the transcript") rather than faking a transcript from scraped page HTML. `meta.extractionMethod`
-= `"transcript"`. **Deploy note:** the endpoint ships with the next aidream release; until it is live,
-the FE call 404s (honest error) — the wiring is correct and lights up on deploy.
-
-### Office documents (DOCX / PPTX / XLSX) — shipped 2026-07-14
-
-**Contract (two steps — compute then read, not one endpoint):**
-
-1. **Compute** — `useIngest`'s `office` branch calls `extractOfficeText` (`officeExtract.ts`), which
-   `POST`s `ENDPOINTS.contentProcessing.process(fileId)` → aidream bare route
-   `/content-processing/{cld_file_id}` (public `/api/content-processing/{cld_file_id}`) with
-   `{ content_type: "office", file_name }`. This is aidream's **content-processing orchestrator**
-   (`aidream/services/content_processing/`) — the SAME pipeline PDFs get automatically on upload,
-   triggered here interactively instead. Its `office` source adapter
-   (`aidream/services/content_processing/sources/office.py`) calls
-   `matrx_files.specific_handlers.office.extract_office` (pure python-docx/python-pptx/openpyxl —
-   no LibreOffice, no OCR, no network) and persists clean markdown portions (one per slide/sheet;
-   docx is one section) to `docproc.processed_documents` + `processed_document_pages`. Because the
-   codec's output is already clean markdown, the orchestrator's LLM `clean` stage is SKIPPED
-   (`content_already_clean=True` — saves a paid call per document); chunk/embed/NER still run so the
-   doc is fully searchable. The stream is NDJSON; we consume it only for the terminal `data` event
-   (`ContentProcessingResult`, `signature: "ContentProcessingResult"`) — `status` +
-   `processed_document_id`. **The extracted text itself does NOT travel in the stream.**
-2. **Read** — once the run reports `processed_document_id`, `extractOfficeText` reads
-   `docproc.processed_documents.content` **directly via Supabase**
-   (`docprocDb(supabase).from("processed_documents").select("content, total_pages")...`) — the exact
-   canonical direct-DB-read path `features/pdf/scanner/processing.ts` already uses for this table
-   (per the platform rule: Python for compute, direct Supabase for data reads). `content` is the
-   portions joined with `"\n\n"` — already the full document text, no per-page fan-out fetch needed.
-
-**Coverage is OpenXML-only, by design, and honestly gated at the edge.** `matrx_files`'s
-`extract_office` reads `.docx`/`.pptx`/`.xlsx` (+ macro variants `.docm`/`.pptm`/`.xlsm`) directly;
-a legacy binary container (`.doc`/`.ppt`/`.xls`, OLE/CFB magic bytes) needs a LibreOffice conversion
-step (`LegacyBinaryOfficeError` if `soffice` isn't on the host) the app server doesn't run. ODF
-(`.odt`/`.odp`/`.ods`) and Apple iWork (`.pages`/`.key`/`.numbers`) have no reader at all.
-`formatSupport.ts` therefore splits what used to be one `"office"` kind into two: `"office"` (real
-OpenXML — `OFFICE_EXT` + the three `application/vnd.openxmlformats-officedocument.*` MIME strings,
-checked FIRST) → supported, routes to `extractOfficeText`; `"office-legacy"` (the broader
-`OFFICE_LEGACY_EXT` pattern, checked only after `office` misses) → still honestly gated, same
-"aren't supported yet" treatment HEIC gets. **`INGEST_ACCEPT` only advertises the three real OpenXML
-extensions/MIMEs** — legacy variants are deliberately left off the picker's `accept` so the OS dialog
-doesn't imply support that doesn't exist; a user who drags one anyway still gets the honest gate.
-
-A failed extract (legacy format hits the app server without LibreOffice, corrupt/encrypted file,
-empty document) surfaces the server's own `ErrorInfo.message` (or a clear fallback) as a thrown
-`Error` — never a fake success and never a silent empty kit.
-
-When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT`) and the matching
-`useIngest` branch together — never one without the other.
+What the front door reads is what the Source input reads — its doors and the server's file
+adapters (`features/resource-manager/source-input/FEATURE.md` § How new material lands). The
+former client-side readers here (`formatSupport.ts`, `officeExtract.ts`, the per-kind `useIngest`
+branches and `stored-file-ingest.test.tsx`) were deleted on 2026-10-02 when the page moved onto it.
 
 ## 🚨 Open decision for Arman — per-target cost on the kit flow
 
@@ -292,6 +199,12 @@ with the stated vision.
 
 ## Change log
 
+- **2026-10-02** — `/education/start` and `/education/kits/new` take material through the one
+  Source input (`SourceInput`), replacing the local My files / Upload / Paste / Link pills and the
+  creator's single file picker. Picks → `SourceSet` → `POST /sources/resolve` → `kitSources.ts`
+  (text + anchor; test red 9 → green 11). Deleted the client-side readers. Agent fills
+  (`kit_request_draft`) now ADD Sources (`input_mode` removed); the kits creator emits
+  `kit_sources` and anchors `create_kits` on the picked material.
 - **2026-09-29** — The study kit's organization is resolved AT THE BUTTON, never inside the run.
   `useKitGeneration` called `ensureOrgId` after ingest, so a learner with no workspace selected got a
   blocking "Which organization is this for?" dialog mid-run. `StartHero` now holds the press when no
