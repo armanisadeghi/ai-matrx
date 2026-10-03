@@ -25,6 +25,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +60,12 @@ export interface SettingControlInputProps {
   onChange: (value: unknown) => void;
   disabled?: boolean;
   id?: string;
+  /**
+   * "dense" (default) = the builder's in-row controls. "comfortable" = menu
+   * sizing for the composer's Model panel and the Chat Options window: 36px
+   * controls (44px on touch), text-sm, and a Switch for booleans.
+   */
+  size?: "dense" | "comfortable";
 }
 
 /** Flatten `{ type: "x" }` → "x" for enum display (response_format shape). */
@@ -83,8 +90,10 @@ export function SettingControlInput({
   onChange,
   disabled = false,
   id,
+  size = "dense",
 }: SettingControlInputProps) {
   const inputId = id ?? `setting-control-${settingKey}`;
+  const comfortable = size === "comfortable";
 
   // ── enum ──────────────────────────────────────────────────────────────────
   if (control.type === "enum" && control.enum?.length) {
@@ -135,7 +144,14 @@ export function SettingControlInput({
           >
             {/* Inline trigger — borderless/transparent, matching the
               ModelListDropdown trigger style for in-row dense controls. */}
-            <SelectTrigger className="h-7 flex-1 border-0 bg-transparent px-1 text-xs font-medium text-foreground/80 shadow-none hover:bg-transparent hover:text-foreground focus:ring-0 [&_svg]:h-3 [&_svg]:w-3">
+            <SelectTrigger
+              id={inputId}
+              className={
+                comfortable
+                  ? "h-9 flex-1 rounded-lg border-border bg-background px-2.5 text-sm text-foreground shadow-none focus:ring-0 pointer-coarse:h-11 [&_svg]:h-4 [&_svg]:w-4"
+                  : "h-7 flex-1 border-0 bg-transparent px-1 text-xs font-medium text-foreground/80 shadow-none hover:bg-transparent hover:text-foreground focus:ring-0 [&_svg]:h-3 [&_svg]:w-3"
+              }
+            >
               <SelectValue
                 placeholder={
                   isValueMismatch
@@ -146,12 +162,12 @@ export function SettingControlInput({
                 }
               />
             </SelectTrigger>
-            <SelectContent className="text-xs">
+            <SelectContent className={comfortable ? "text-sm" : "text-xs"}>
               {control.enum.map((option) => (
                 <SelectItem
                   key={option}
                   value={option}
-                  className="py-1 text-xs"
+                  className={comfortable ? "text-sm" : "py-1 text-xs"}
                 >
                   {option === ENUM_OFF_VALUE
                     ? "Off"
@@ -184,6 +200,18 @@ export function SettingControlInput({
 
   // ── boolean ───────────────────────────────────────────────────────────────
   if (control.type === "boolean") {
+    // The switch carries the state; its row label names it (htmlFor).
+    if (comfortable && !explicitState)
+      return (
+        <div className="flex flex-1 justify-end">
+          <Switch
+            id={inputId}
+            checked={value === true}
+            onCheckedChange={(next) => onChange(next)}
+            disabled={disabled}
+          />
+        </div>
+      );
     return (
       <div className="flex items-center gap-2">
         <Checkbox
@@ -245,6 +273,7 @@ export function SettingControlInput({
         isInteger={control.type === "integer"}
         disabled={disabled}
         withSlider={hasRange}
+        size={size}
       />
     );
   }
@@ -292,7 +321,11 @@ export function SettingControlInput({
       value={value === undefined || value === null ? "" : String(value)}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="h-7 w-full px-2 text-base sm:text-xs"
+      className={
+        comfortable
+          ? "h-9 w-full px-2.5 text-sm pointer-coarse:h-11"
+          : "h-7 w-full px-2 text-base sm:text-xs"
+      }
     />
   );
 }

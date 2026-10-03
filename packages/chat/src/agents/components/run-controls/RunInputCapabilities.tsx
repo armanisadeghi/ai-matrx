@@ -53,10 +53,11 @@ export function RunInputCapabilities({
       overriddenKeys={overriddenKeys}
       onReset={resetCapability}
       idPrefix={`run-ui-gate-${conversationId}`}
-      title="Input Capabilities"
+      title="Input capabilities"
+      variant="menu"
     />
     {entry?.persistence === "error" ? (
-      <p className="mt-1 text-[10px] text-destructive" role="alert">
+      <p className="px-3 pb-2 text-xs text-destructive" role="alert">
         Capability changes could not be saved. Try again.
         <ErrorAlchemyMenu className="ml-auto" />
       </p>

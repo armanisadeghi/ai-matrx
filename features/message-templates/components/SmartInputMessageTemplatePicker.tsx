@@ -8,8 +8,11 @@
  */
 
 import { useEffect, useState } from "react";
-import { FileText, Loader2, RefreshCcw, Search } from "lucide-react";
-import { ProInput } from "@/components/official/ProInput";
+import { FileText, Loader2, RefreshCcw } from "lucide-react";
+import {
+  PickerEmpty,
+  PickerSearchField,
+} from "@/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { fetchMessageTemplates } from "@/features/message-templates/services/message-templates-service";
 import type { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
@@ -60,17 +63,12 @@ export function SmartInputMessageTemplatePicker({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-border px-2 py-1.5">
-        <ProInput
-          enableCleanup={false}
+      <div className="shrink-0 border-b border-border p-1.5">
+        <PickerSearchField
+          type="search"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search message templates…"
-          startIcon={<Search className="h-3.5 w-3.5" />}
-          clearable
-          onClear={() => setSearch("")}
-          enableVoice={false}
-          className="h-7"
+          onChange={setSearch}
+          placeholder="Search templates"
         />
       </div>
 
@@ -81,25 +79,25 @@ export function SmartInputMessageTemplatePicker({
           </div>
         ) : status === "error" ? (
           <div className="flex h-32 flex-col items-center justify-center gap-2 text-center">
-            <p className="text-xs text-destructive">
+            <p className="text-sm text-destructive">
               Message templates couldn&apos;t be loaded.
               <ErrorAlchemyMenu />
             </p>
             <button
               type="button"
               onClick={retry}
-              className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground pointer-coarse:h-11"
             >
-              <RefreshCcw className="h-3.5 w-3.5" />
+              <RefreshCcw className="h-4 w-4" />
               Try again
             </button>
           </div>
         ) : visible.length === 0 ? (
-          <p className="px-3 py-8 text-center text-xs text-muted-foreground">
+          <PickerEmpty>
             {templates.length === 0
-              ? "You don't have any user message templates yet."
-              : "No message templates match your search."}
-          </p>
+              ? "No message templates yet"
+              : "No matching templates"}
+          </PickerEmpty>
         ) : (
           <div className="flex flex-col gap-0.5">
             {visible.map((template) => (
@@ -114,18 +112,20 @@ export function SmartInputMessageTemplatePicker({
                     onSelect(template.content ?? "");
                   }
                 }}
-                className="group flex cursor-pointer items-start gap-2 rounded-md px-2 py-2 outline-none transition-colors hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg px-1.5 py-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:min-h-14"
               >
-                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                  <FileText className="h-4 w-4 text-primary" />
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-foreground">
+                  <p className="truncate text-sm text-foreground">
                     {template.label || "Untitled template"}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+                  <p className="mt-0.5 line-clamp-2 text-xs leading-4 text-muted-foreground">
                     {template.content}
                   </p>
                   {template.tags && template.tags.length > 0 ? (
-                    <p className="mt-1 truncate text-[10px] text-muted-foreground/70">
+                    <p className="mt-1 truncate text-xs text-muted-foreground/70">
                       {template.tags.join(" · ")}
                     </p>
                   ) : null}
