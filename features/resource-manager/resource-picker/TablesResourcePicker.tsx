@@ -466,6 +466,7 @@ export function TablesResourcePicker({
             placeholder={searchPlaceholder}
             value={searchQuery}
             loading={loadingDetails}
+            disabled={loadingDetails}
             onChange={setSearchQuery}
           />
         }

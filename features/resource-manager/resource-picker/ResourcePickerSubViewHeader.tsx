@@ -72,8 +72,12 @@ export const PickerSearchField = forwardRef<
     loading?: boolean;
     onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
     type?: "text" | "url" | "search";
+    disabled?: boolean;
   }
->(function PickerSearchField({ value, onChange, placeholder, loading, onKeyDown, type = "text" }, ref) {
+>(function PickerSearchField(
+  { value, onChange, placeholder, loading, onKeyDown, type = "text", disabled },
+  ref,
+) {
   return (
     <div className="relative">
       {loading ? (
@@ -88,7 +92,8 @@ export const PickerSearchField = forwardRef<
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
-        className="h-9 w-full rounded-lg border border-border bg-muted/40 pl-8 pr-8 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40 focus:bg-background pointer-coarse:h-11"
+        disabled={disabled}
+        className="h-9 w-full disabled:opacity-60 rounded-lg border border-border bg-muted/40 pl-8 pr-8 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary/40 focus:bg-background pointer-coarse:h-11"
       />
       {value ? (
         <button
