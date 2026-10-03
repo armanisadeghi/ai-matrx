@@ -126,6 +126,8 @@ export const MAKE_FLOW_PARAM = "make";
 /** The URL parameters a flow's step 1 answer rides in once chosen. */
 export const MAKE_TABLE_PARAM = "table";
 export const MAKE_ORG_PARAM = "org";
+/** The made thing's id, once made: a reload reopens it instead of making another (wave 1b). */
+export const MAKE_ID_PARAM = "id";
 
 export function tileFor(flow: string | null | undefined): MakeTile | null {
   return MAKE_TILES.find((t) => t.flow === flow) ?? null;

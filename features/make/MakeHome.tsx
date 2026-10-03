@@ -61,6 +61,7 @@ import { cn } from "@/lib/utils";
 
 import {
   MAKE_FLOW_PARAM,
+  MAKE_ID_PARAM,
   MAKE_ORG_PARAM,
   MAKE_TABLE_PARAM,
   MAKE_TILES,
@@ -165,9 +166,17 @@ export default function MakeHome() {
   };
   const open = (tile: MakeTile) => {
     if (tile.href) router.push(tile.href);
-    else go({ [MAKE_FLOW_PARAM]: tile.flow, [MAKE_TABLE_PARAM]: null, [MAKE_ORG_PARAM]: null });
+    else go({ [MAKE_FLOW_PARAM]: tile.flow, [MAKE_TABLE_PARAM]: null, [MAKE_ORG_PARAM]: null, [MAKE_ID_PARAM]: null });
   };
-  const close = () => go({ [MAKE_FLOW_PARAM]: null, [MAKE_TABLE_PARAM]: null, [MAKE_ORG_PARAM]: null });
+  const close = () =>
+    go({ [MAKE_FLOW_PARAM]: null, [MAKE_TABLE_PARAM]: null, [MAKE_ORG_PARAM]: null, [MAKE_ID_PARAM]: null });
+  // THE MADE THING'S ID GOES INTO THE ADDRESS, REPLACING IT (wave 1b): a reload reopens it.
+  const remember = (id: string) => {
+    if (params.get(MAKE_ID_PARAM) === id) return;
+    const q = new URLSearchParams(params.toString());
+    q.set(MAKE_ID_PARAM, id);
+    router.replace(`${pathname}?${q.toString()}`, { scroll: false });
+  };
 
   return (
     <>
@@ -226,6 +235,8 @@ export default function MakeHome() {
               activeState={active.organizationState}
               tableId={params.get(MAKE_TABLE_PARAM)}
               organizationId={params.get(MAKE_ORG_PARAM)}
+              madeId={params.get(MAKE_ID_PARAM)}
+              onMade={remember}
               onChoose={(tableId, organizationId) =>
                 go({ [MAKE_TABLE_PARAM]: tableId, [MAKE_ORG_PARAM]: organizationId })
               }
@@ -375,6 +386,10 @@ export interface MakeFlowSheetProps {
   activeState: ReturnType<typeof useOrganizationRequired>["organizationState"];
   tableId: string | null;
   organizationId: string | null;
+  /** The thing this flow already made (the address's `id`): reopened, never made again. */
+  madeId?: string | null;
+  /** Told the id of the thing the flow just made, so the address can name it. */
+  onMade?: (id: string) => void;
   onChoose: (tableId: string, organizationId: string) => void;
   onBack: () => void;
   onClose: () => void;
@@ -403,9 +418,13 @@ export function MakeFlowSheet(props: MakeFlowSheetProps) {
 }
 
 function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organizationId: string } | null }) {
-  const { tile, chosen, activeOrganizationId, activeState, onLand } = props;
+  const { tile, chosen, activeOrganizationId, activeState, onLand, madeId, onMade } = props;
   if (tile.asksForTable && !chosen) return <TableChoice {...props} />;
-  if (chosen) return <BuilderFor flow={tile.flow} {...chosen} onLand={onLand} />;
+  if (chosen) {
+    return (
+      <BuilderFor flow={tile.flow} {...chosen} madeId={madeId ?? null} onMade={onMade ?? (() => undefined)} onLand={onLand} />
+    );
+  }
   // A table is made where new things are saved; the one New table body asks for it when none is chosen.
   if (tile.flow === "table") return <NewTableBody />;
   // A portal is made where new things are saved: with none chosen, ask for it (A3).
@@ -529,37 +548,63 @@ function BuilderFor({
   flow,
   tableId,
   organizationId,
+  madeId,
+  onMade,
   onLand,
 }: {
   flow: MakeFlow;
   tableId: string;
   organizationId: string;
+  madeId: string | null;
+  onMade: (id: string) => void;
   onLand: (href: string) => void;
 }) {
-  const [made, setMade] = useState<{ href: string | null; label: string } | null>(null);
   const tableHref = `/data-v2/${tableId}`;
+  // Reopened from the address: its link is there from the first paint.
+  const [made, setMade] = useState<{ href: string | null; label: string } | null>(() =>
+    !madeId
+      ? null
+      : flow === "dashboard"
+        ? { href: `${tableHref}?dashboard=${madeId}`, label: "Open dashboard" }
+        : flow === "booking"
+          ? { href: bookingPath(madeId), label: "Booking link" }
+          : null,
+  );
   let builder: ReactNode = null;
   switch (flow) {
     case "form":
       builder = (
         <FormBuilder
           tableId={tableId}
-          createOnMount
-          onActiveForm={(form) =>
-            setMade(form.state === "draft" ? { href: null, label: "" } : { href: publicFormPath(form.id), label: "Public link" })
-          }
+          {...(madeId ? { activeFormId: madeId } : { createOnMount: true })}
+          onActiveForm={(form) => {
+            onMade(form.id);
+            setMade(form.state === "draft" ? { href: null, label: "" } : { href: publicFormPath(form.id), label: "Public link" });
+          }}
         />
       );
       break;
     case "booking":
-      builder = <BookingBuilder tableId={tableId} startNew onSaved={(page) => setMade({ href: bookingPath(page.form_id), label: "Booking link" })} />;
+      builder = (
+        <BookingBuilder
+          tableId={tableId}
+          {...(madeId ? { bookingId: madeId } : { startNew: true })}
+          onSaved={(page) => {
+            onMade(page.form_id);
+            setMade({ href: bookingPath(page.form_id), label: "Booking link" });
+          }}
+        />
+      );
       break;
     case "dashboard":
       builder = (
         <DashboardCanvas
           tableId={tableId}
-          createOnMount
-          onCreated={(id) => setMade({ href: `${tableHref}?dashboard=${id}`, label: "Open dashboard" })}
+          {...(madeId ? { activeDashboardId: madeId } : { createOnMount: true })}
+          onCreated={(id) => {
+            onMade(id);
+            setMade({ href: `${tableHref}?dashboard=${id}`, label: "Open dashboard" });
+          }}
         />
       );
       break;
