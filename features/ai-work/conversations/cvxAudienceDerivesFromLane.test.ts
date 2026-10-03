@@ -26,20 +26,26 @@
  *
  * SEAM: the live database, read as the owner. The RED proof is in the suite: a
  * perturbed cvx_audience is installed inside a transaction that is ALWAYS rolled
- * back, and check 1 must report violations against it. A guard nobody has seen fail
- * is not a guard.
+ * back, and check 1 must report violations against it. Installing it is DDL, so
+ * the RED proof is rehearsal-only: it runs against CLONE_DATABASE_URL when this
+ * run's environment carries it, and is skipped by name otherwise (owner ruling
+ * 2026-10-03: tests on live, the clone only for DDL rehearsal).
  *
  * No credentials → the suite FAILS (unmeasured is not a pass).
  */
 import { resolve } from "node:path";
 import pg from "pg";
 
-import { testDbEnvFrom } from "@/scripts/lib/direct-db-env";
+import { type DbEnv, rehearsalDbEnvFrom, testDbEnvFrom } from "@/scripts/lib/direct-db-env";
 
-function loadEnv(): pg.ClientConfig {
-  // THE ONE DOOR for a live test (scripts/lib/direct-db-env.ts): never the live database by
-  // accident — repointed to MATRX_TEST_DATABASE_URL / SUPABASE_BRANCH_DATABASE_URL, or refused.
-  const db = testDbEnvFrom(resolve(__dirname, "../../.."));
+/** The RED proof's database: a rehearsal target given for this run, or none (then it is skipped). */
+const REHEARSAL = rehearsalDbEnvFrom();
+const RED_SKIP = REHEARSAL ? "" : "the RED proof installs a mutant function (DDL): rehearsal only, set CLONE_DATABASE_URL for this run";
+if (RED_SKIP) console.warn(`[cvx-audience] RED PROOF SKIPPED: ${RED_SKIP}`);
+
+function loadEnv(target?: DbEnv): pg.ClientConfig {
+  // THE ONE DOOR for a live test (scripts/lib/direct-db-env.ts): the live database.
+  const db = target ?? testDbEnvFrom(resolve(__dirname, "../../.."));
   return {
     host: db.host,
     port: db.port,
@@ -181,13 +187,20 @@ beforeAll(async () => {
             and p.proname in ('cvx_list_scoped', 'cvx_list_facets')`,
       )
     ).rows;
-
-    // THE RED PROOF. A cvx_audience that stops being the documented function of
-    // the lane — here, one that files subagents under a person's chats, the exact
+  } finally {
+    await client.end();
+  }
+  if (!REHEARSAL) return;
+  const rehearsal = new pg.Client(loadEnv(REHEARSAL));
+  await rehearsal.connect();
+  try {
+    await rehearsal.query("set statement_timeout = '120s'");
+    // THE RED PROOF, on the rehearsal target. A cvx_audience that stops being the documented
+    // function of the lane — here, one that files subagents under a person's chats, the exact
     // class of drift this guard exists for. Rolled back, never committed.
-    await client.query("begin");
+    await rehearsal.query("begin");
     try {
-      await client.query(`
+      await rehearsal.query(`
         create or replace function public.cvx_audience(
           p_provider text, p_source_app text, p_source_feature text,
           p_origin_class text, p_conversation_type text
@@ -204,12 +217,12 @@ beforeAll(async () => {
           end
         $mutant$
       `);
-      perturbed = (await client.query<Row>(DISAGREEMENTS)).rows;
+      perturbed = (await rehearsal.query<Row>(DISAGREEMENTS)).rows;
     } finally {
-      await client.query("rollback");
+      await rehearsal.query("rollback");
     }
   } finally {
-    await client.end();
+    await rehearsal.end();
   }
 }, 180_000);
 
@@ -239,7 +252,7 @@ describe("public.cvx_audience is exactly the documented function of chat.convers
     expect(def).toMatch(/cvx_audience\([^)]*source_feature[^)]*\)/);
   });
 
-  it("RED PROOF: reports the drift when cvx_audience stops deriving", () => {
+  (RED_SKIP ? it.skip : it)("RED PROOF: reports the drift when cvx_audience stops deriving", () => {
     expect(perturbed.length).toBeGreaterThan(0);
     expect(perturbed.every((r) => r.lane === "subagent" && r.audience === "chat")).toBe(true);
   });

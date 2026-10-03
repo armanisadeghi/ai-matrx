@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * LIVE, DEV CLONE ONLY. A PROMPT'S @table / @table_row / @table_cell REFERENCE READS THE
+ * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). A PROMPT'S @table / @table_row / @table_cell REFERENCE READS THE
  * RECORD STORE (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 row F10).
  *
  * The real use case: Rincon Plumbing's dispatcher writes a prompt that names the "Service
@@ -12,20 +12,25 @@
  *
  * The edit is put back when the suite ends.
  */
+import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, "../../../.env"), override: false });
-dotenv.config({ path: path.resolve(__dirname, "../../../../aidream/.env"), override: false });
+// The real values, read from the files: jest.setup.ts seeds a dummy localhost Supabase URL into
+// process.env for unit tests, so process.env cannot be trusted for a live suite.
+function envFile(rel: string): Record<string, string> {
+  const file = path.resolve(__dirname, rel);
+  return fs.existsSync(file) ? dotenv.parse(fs.readFileSync(file)) : {};
+}
+const ENV = { ...envFile("../../../../aidream/.env"), ...envFile("../../../.env"), ...envFile("../../../.env.local") };
 
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const URL_ = process.env.GRID_PORT_SUPABASE_URL ?? "";
-const KEY = process.env.GRID_PORT_SUPABASE_PUBLISHABLE_KEY ?? "";
-const EMAIL = process.env.AI_ADMIN_USERNAME ?? "";
-const PASSWORD = process.env.AI_ADMIN_PASSWORD ?? "";
-const CLONE_REF = "jxhgzalwckuarngvsdyq";
-const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace on the clone
+const URL_ = ENV.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
+const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
+const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace
 const SERVICE_CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598"; // "Rincon Plumbing — Service Calls"
 const WO_4471 = "cfc72430-2dbf-40d6-980d-f6e5efdeab3d";
 const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
@@ -52,7 +57,7 @@ import { forgetAllTablePlacements, placeTableInRecordStore } from "@/features/da
 const describeLive = READY ? describe : describe.skip;
 if (!READY) {
   // eslint-disable-next-line no-console
-  console.warn("[a-reference-to-a-moved-table-reads-the-store] SKIPPED: set GRID_PORT_SUPABASE_URL and GRID_PORT_SUPABASE_PUBLISHABLE_KEY (the dev clone).");
+  console.warn("[a-reference-to-a-moved-table-reads-the-store] SKIPPED: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (the live database).");
 }
 
 async function resolve(type: string, ref: Record<string, string>): Promise<string | null | undefined> {
@@ -73,7 +78,6 @@ describeLive("a reference to a moved table reads the record store", () => {
   let before = "";
 
   beforeAll(async () => {
-    if (!URL_.includes(CLONE_REF)) throw new Error(`refusing to run: ${URL_} is not the dev clone`);
     client = createSupabaseClient(URL_, KEY, { auth: { persistSession: false } });
     const signed = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
     if (signed.error || !signed.data.user) throw new Error(`sign-in failed: ${signed.error?.message}`);

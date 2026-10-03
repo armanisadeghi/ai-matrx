@@ -25,7 +25,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { testDbEnvFrom } from "../lib/direct-db-env";
+import { requireRehearsalDbEnv } from "../lib/direct-db-env";
 
 const ROOT = resolve(__dirname, "..", "..");
 const UP = resolve(ROOT, "migrations/campaign/chairdoors3a_a_archived_rows_are_counted_in_one_call.sql");
@@ -69,7 +69,7 @@ async function main() {
   const plantAt = process.argv.indexOf("--plant");
   const plant = plantAt > 0 ? process.argv[plantAt + 1] : null;
   const plantBody = plant ? planted(plant) : null;
-  const env = testDbEnvFrom(ROOT);
+  const env = requireRehearsalDbEnv("chairdoors3a_archived_count_same_answer installs function bodies");
   const client = new pg.Client({
     user: env.user, password: env.password, host: env.host, database: env.database, port: 5432,
     ssl: { rejectUnauthorized: false },

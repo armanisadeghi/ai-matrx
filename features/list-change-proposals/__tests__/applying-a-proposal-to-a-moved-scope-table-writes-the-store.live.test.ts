@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  *
- * LIVE, DEV CLONE ONLY. AN ACCEPTED LIST CHANGE ON A MOVED SCOPE TABLE LANDS IN THE RECORD STORE
+ * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). AN ACCEPTED LIST CHANGE ON A MOVED SCOPE TABLE LANDS IN THE RECORD STORE
  * (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 row F8).
  *
  * The real use case: the repository scope "matrx-frontend (LCP test)" keeps its known-defects list
@@ -10,19 +10,24 @@
  * (same id), so the accepted row must be a record of that Table, found by the seam with no
  * placement handed in.
  */
+import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, "../../../.env.local"), override: false });
-dotenv.config({ path: path.resolve(__dirname, "../../../../aidream/.env"), override: false });
+// The real values, read from the files: jest.setup.ts seeds a dummy localhost Supabase URL into
+// process.env for unit tests, so process.env cannot be trusted for a live suite.
+function envFile(rel: string): Record<string, string> {
+  const file = path.resolve(__dirname, rel);
+  return fs.existsSync(file) ? dotenv.parse(fs.readFileSync(file)) : {};
+}
+const ENV = { ...envFile("../../../../aidream/.env"), ...envFile("../../../.env"), ...envFile("../../../.env.local") };
 
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const URL_ = process.env.GRID_PORT_SUPABASE_URL ?? "";
-const KEY = process.env.GRID_PORT_SUPABASE_PUBLISHABLE_KEY ?? "";
-const EMAIL = process.env.AI_ADMIN_USERNAME ?? "";
-const PASSWORD = process.env.AI_ADMIN_PASSWORD ?? "";
-const CLONE_REF = "jxhgzalwckuarngvsdyq";
+const URL_ = ENV.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
+const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
 const ITEM = "f2acc6cd-c4f0-42ac-9cbc-3ceaeed34c40"; // context item "known_defects" (template-backed table)
 const SCOPE = "cc6a9ba2-fb83-4ea7-bb56-96b9e4ef4d91"; // scope "matrx-frontend (LCP test)", admin's Workspace
 const MOVED_TABLE = "8c67a085-197d-44c0-b2bb-ceeea9555303"; // its instance, moved with the same id
@@ -52,7 +57,7 @@ function db(): SupabaseClient {
 
 const describeLive = READY ? describe : describe.skip;
 if (!READY) {
-  console.warn("[applying-a-proposal-to-a-moved-scope-table] SKIPPED: set GRID_PORT_SUPABASE_URL and GRID_PORT_SUPABASE_PUBLISHABLE_KEY (the dev clone).");
+  console.warn("[applying-a-proposal-to-a-moved-scope-table] SKIPPED: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (the live database).");
 }
 
 const target: ListChangeTarget = {
@@ -66,7 +71,6 @@ describeLive("an accepted list change on a moved scope table lands in the record
   let written: string | null = null;
 
   beforeAll(async () => {
-    if (!URL_.includes(CLONE_REF)) throw new Error(`refusing to run: ${URL_} is not the dev clone`);
     holder.client = createSupabaseClient(URL_, KEY, { auth: { persistSession: false } });
     const signed = await holder.client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
     if (signed.error || !signed.data.user) throw new Error(`sign-in failed: ${signed.error?.message}`);

@@ -1,7 +1,8 @@
 /**
  * @jest-environment node
  *
- * LIVE, DEV CLONE ONLY (no pg_net, no active cron there: nothing is delivered anywhere).
+ * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). The webhook
+ * targets a reserved `.example` host, so a delivery attempt reaches nobody.
  * A RECORD-STORE TABLE'S CHANGES ARE SUBSCRIBED FROM THE WEBHOOKS SCREEN (lane INTEG-CLIENTS,
  * CUTOVER-PLAN rev 3 row F19; the door is GRID-PRIMITIVES G4).
  *
@@ -11,19 +12,24 @@
  * screen declares a webhook for the TABLE, and a change to one of its records becomes exactly the
  * activity row the dispatcher delivers.
  */
+import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, "../../../../.env"), override: false });
-dotenv.config({ path: path.resolve(__dirname, "../../../../../aidream/.env"), override: false });
+// The real values, read from the files: jest.setup.ts seeds a dummy localhost Supabase URL into
+// process.env for unit tests, so process.env cannot be trusted for a live suite.
+function envFile(rel: string): Record<string, string> {
+  const file = path.resolve(__dirname, rel);
+  return fs.existsSync(file) ? dotenv.parse(fs.readFileSync(file)) : {};
+}
+const ENV = { ...envFile("../../../../../aidream/.env"), ...envFile("../../../../.env"), ...envFile("../../../../.env.local") };
 
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const URL_ = process.env.GRID_PORT_SUPABASE_URL ?? "";
-const KEY = process.env.GRID_PORT_SUPABASE_PUBLISHABLE_KEY ?? "";
-const EMAIL = process.env.AI_ADMIN_USERNAME ?? "";
-const PASSWORD = process.env.AI_ADMIN_PASSWORD ?? "";
-const CLONE_REF = "jxhgzalwckuarngvsdyq";
+const URL_ = ENV.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
+const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
 const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f";
 const SERVICE_CALLS = "dbc7cd48-7b46-4402-ac9d-e459a95f4598";
 const WO_4471 = "cfc72430-2dbf-40d6-980d-f6e5efdeab3d";
@@ -43,7 +49,6 @@ describeLive("a record-store table's changes reach the webhook declared for it",
   let webhookId = "";
 
   beforeAll(async () => {
-    if (!URL_.includes(CLONE_REF)) throw new Error(`refusing to run: ${URL_} is not the dev clone`);
     client = createSupabaseClient(URL_, KEY, { auth: { persistSession: false } });
     const signed = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
     if (signed.error || !signed.data.user) throw new Error(`sign-in failed: ${signed.error?.message}`);

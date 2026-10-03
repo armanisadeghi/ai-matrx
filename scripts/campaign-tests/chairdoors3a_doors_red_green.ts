@@ -25,7 +25,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { testDbEnvFrom } from "../lib/direct-db-env";
+import { requireRehearsalDbEnv } from "../lib/direct-db-env";
 
 const ROOT = resolve(__dirname, "..", "..");
 const INV = (name: string) => resolve(ROOT, "migrations/inverse", `${name}_down.sql`);
@@ -54,7 +54,7 @@ function bodies(file: string, only?: string): string[] {
 type Answer = { ok: true; rows: Record<string, unknown>[] } | { ok: false; code: string; message: string };
 
 async function main() {
-  const env = testDbEnvFrom(ROOT);
+  const env = requireRehearsalDbEnv("chairdoors3a_doors_red_green installs function bodies");
   const client = new pg.Client({
     user: env.user, password: env.password, host: env.host, database: env.database, port: 5432,
     ssl: { rejectUnauthorized: false },

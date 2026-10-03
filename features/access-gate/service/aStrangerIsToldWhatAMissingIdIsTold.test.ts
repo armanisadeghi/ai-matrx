@@ -15,14 +15,16 @@
  * campaign body: the two payloads are identical, the owner still reads the full answer, and the
  * blind ask files one request + one in-app notice for the real note and nothing for the random id.
  *
- * SEAM: the test database (scripts/lib/direct-db-env.ts — the dev clone, never live), ONE
- * transaction, always rolled back. No credentials → the suite FAILS (unmeasured is not a pass).
+ * SEAM: the live database (scripts/lib/direct-db-env.ts; owner ruling 2026-10-03), ONE
+ * transaction, always rolled back. Installing a body (a database that predates the campaign, or
+ * the RED run with V24_RESOLVER_FILE) is DDL: rehearsal only — it needs CLONE_DATABASE_URL in this
+ * run's environment and is skipped otherwise. No credentials → the suite FAILS.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 
-import { testDbEnvFrom } from "@/scripts/lib/direct-db-env";
+import { isLiveConnection, rehearsalDbEnvFrom, testDbEnvFrom } from "@/scripts/lib/direct-db-env";
 
 const MIGRATION = resolve(
   __dirname,
@@ -74,8 +76,14 @@ const seen: {
   notices?: number;
 } = {};
 
+/** The RED run installs a prior body (DDL): it runs only on a rehearsal target, never on live. */
+const RED_RUN = Boolean(process.env.V24_RESOLVER_FILE);
+const REHEARSAL = RED_RUN ? rehearsalDbEnvFrom() : null;
+const SKIP_REASON = RED_RUN && !REHEARSAL ? "the V24_RESOLVER_FILE RED run installs a function (DDL): rehearsal only, set CLONE_DATABASE_URL for this run" : "";
+if (SKIP_REASON) console.warn(`[a-stranger-is-told] SKIPPED: ${SKIP_REASON}`);
+
 function loadEnv(): pg.ClientConfig {
-  const db = testDbEnvFrom(resolve(__dirname, "../../.."));
+  const db = REHEARSAL ?? testDbEnvFrom(resolve(__dirname, "../../.."));
   return {
     host: db.host,
     port: db.port,
@@ -97,6 +105,7 @@ async function as(client: pg.Client, uid: string) {
 }
 
 beforeAll(async () => {
+  if (SKIP_REASON) return;
   const client = new pg.Client(loadEnv());
   await client.connect();
   try {
@@ -116,6 +125,9 @@ beforeAll(async () => {
             where n.nspname = 'public' and p.proname = 'access_request_blind'`,
         )
       ).rows[0]!.n > 0;
+    if (!carriesCampaign && isLiveConnection(String(client.user ?? ""), String(client.host ?? ""))) {
+      throw new Error("REHEARSAL ONLY: this database predates the campaign, and installing it is DDL. Nothing was run on live.");
+    }
     if (process.env.V24_RESOLVER_FILE || !carriesCampaign) await client.query(resolverBody());
     if (!process.env.V24_RESOLVER_FILE && !carriesCampaign) {
       await client.query(blindAskBody());
@@ -188,7 +200,7 @@ beforeAll(async () => {
   }
 }, 120_000);
 
-describe("a stranger is told what a missing id is told", () => {
+(SKIP_REASON ? describe.skip : describe)("a stranger is told what a missing id is told", () => {
   it("the stranger's answer about a real unshared note equals the answer about a random id", () => {
     expect(seen.real).toEqual(seen.random);
     expect(seen.real).not.toHaveProperty("owner");

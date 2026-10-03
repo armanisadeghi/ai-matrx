@@ -15,10 +15,10 @@
  * nothing. A super admin has no standing read of a person's private data
  * (Data Doctrine access DECISIONS 2026-09-12); the gate must say so.
  *
- * SEAM: the test database (scripts/lib/direct-db-env.ts: the dev clone, never
- * the live one). Inside ONE transaction that is ALWAYS rolled back: the
- * resolver's CURRENT body is executed (the newest migration that defines it),
- * the world the ruling is about is built — admin@admin.com as a platform
+ * SEAM: the live database (scripts/lib/direct-db-env.ts; owner ruling 2026-10-03).
+ * Inside ONE transaction that is ALWAYS rolled back: on a database that predates
+ * the resolver's CURRENT body (rehearsal only — that is DDL, never run on live)
+ * it is installed from the newest migration that defines it; then the world the ruling is about is built — admin@admin.com as a platform
  * admin, and test@test.com's own rows in an organization the admin is not in —
  * and the resolver is called as the admin under the `authenticated` role,
  * beside a real RLS read of the same row. Nothing is committed. Expected
@@ -38,12 +38,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
 
-import { testDbEnvFrom } from "@/scripts/lib/direct-db-env";
+import { isLiveConnection, testDbEnvFrom } from "@/scripts/lib/direct-db-env";
 
 /**
  * The resolver's CURRENT body: the newest migration that defines it (V24-TAILS, 2026-09-25: the
  * stranger's answer is the missing answer). Only its CREATE FUNCTION statement is executed — the
- * file also declares the blind ask's door and notice kind, which the clone already holds.
+ * file also declares the blind ask's door and notice kind, which live already holds.
  */
 const MIGRATION = resolve(
   __dirname,
@@ -100,8 +100,7 @@ const CASES = [
 ] as const;
 
 function loadEnv(): pg.ClientConfig {
-  // THE ONE DOOR for a live test (scripts/lib/direct-db-env.ts): never the live database by
-  // accident — repointed to MATRX_TEST_DATABASE_URL / SUPABASE_BRANCH_DATABASE_URL, or refused.
+  // THE ONE DOOR for a live test (scripts/lib/direct-db-env.ts): the live database.
   const db = testDbEnvFrom(resolve(__dirname, "../../.."));
   return {
     host: db.host,
@@ -152,7 +151,13 @@ beforeAll(async () => {
             where n.nspname = 'public' and p.proname = 'access_request_blind'`,
         )
       ).rows[0]!.n > 0;
-    if (!carriesResolverFile) await client.query(resolverBody());
+    if (!carriesResolverFile) {
+      // Installing a function body is DDL: rehearsal only, never on live.
+      if (isLiveConnection(String(client.user ?? ""), String(client.host ?? ""))) {
+        throw new Error("REHEARSAL ONLY: this database predates the resolver file, and installing it is DDL. Nothing was run on live.");
+      }
+      await client.query(resolverBody());
+    }
 
     // The world, built as the table owner, inside the same rolled-back transaction.
     await client.query(

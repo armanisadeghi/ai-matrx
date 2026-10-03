@@ -38,7 +38,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { testDbEnvFrom } from "../lib/direct-db-env";
+import { requireRehearsalDbEnv } from "../lib/direct-db-env";
 
 const ROOT = resolve(__dirname, "..", "..");
 const INVERSE = resolve(ROOT, "migrations/inverse/scopesi_the_archived_scope_types_ask_the_ladder_once_down.sql");
@@ -61,7 +61,7 @@ function bodyAs(name: string): string {
 }
 
 async function main() {
-  const env = testDbEnvFrom(ROOT);
+  const env = requireRehearsalDbEnv("scopesi_archived_types_timing installs function bodies");
   const client = new pg.Client({
     user: env.user, password: env.password, host: env.host, database: env.database,
     port: 5432, // the session pooler: the pg_temp copy and every call share one backend

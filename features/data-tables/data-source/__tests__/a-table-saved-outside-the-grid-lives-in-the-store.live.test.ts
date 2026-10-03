@@ -1,34 +1,39 @@
 /**
  * @jest-environment node
  *
- * LIVE, DEV CLONE ONLY. EVERY "SAVE THIS AS A TABLE" AND "APPEND TO A TABLE" OUTSIDE THE
+ * LIVE (owner ruling 2026-10-03: tests run on live as admin@admin.com). EVERY "SAVE THIS AS A TABLE" AND "APPEND TO A TABLE" OUTSIDE THE
  * GRID REACHES THE RECORD STORE (lane INTEG-CLIENTS, CUTOVER-PLAN rev 3 rows F4, F5, F6).
  *
- * The real use case: Rincon Plumbing (admin's Workspace on the clone) asks the chat what parts
+ * The real use case: Rincon Plumbing (admin's Workspace) asks the chat what parts
  * came in this week, then clicks "Save as table" on the answer — and, the next morning, appends
  * two more deliveries to the "Parts on order" table it already keeps.
  *
  * The table is born a record-store Table, its rows are readable through the seam, and the
  * appended rows are records of "Parts on order", found by the seam with no placement handed in.
  *
- * Needs GRID_PORT_SUPABASE_URL + GRID_PORT_SUPABASE_PUBLISHABLE_KEY (the clone — the
- * suite refuses any other project) and AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD. Without them
+ * Needs NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (the live database)
+ * and AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD. Without them
  * it is SKIPPED, loudly. Everything it writes it archives again (never deletes).
  */
+import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(__dirname, "../../../../.env"), override: false });
-dotenv.config({ path: path.resolve(__dirname, "../../../../../aidream/.env"), override: false });
+// The real values, read from the files: jest.setup.ts seeds a dummy localhost Supabase URL into
+// process.env for unit tests, so process.env cannot be trusted for a live suite.
+function envFile(rel: string): Record<string, string> {
+  const file = path.resolve(__dirname, rel);
+  return fs.existsSync(file) ? dotenv.parse(fs.readFileSync(file)) : {};
+}
+const ENV = { ...envFile("../../../../../aidream/.env"), ...envFile("../../../../.env"), ...envFile("../../../../.env.local") };
 
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const URL_ = process.env.GRID_PORT_SUPABASE_URL ?? "";
-const KEY = process.env.GRID_PORT_SUPABASE_PUBLISHABLE_KEY ?? "";
-const EMAIL = process.env.AI_ADMIN_USERNAME ?? "";
-const PASSWORD = process.env.AI_ADMIN_PASSWORD ?? "";
-const CLONE_REF = "jxhgzalwckuarngvsdyq";
-const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace — moved on the clone
+const URL_ = ENV.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const KEY = ENV.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+const EMAIL = ENV.AI_ADMIN_USERNAME ?? process.env.AI_ADMIN_USERNAME ?? "";
+const PASSWORD = ENV.AI_ADMIN_PASSWORD ?? process.env.AI_ADMIN_PASSWORD ?? "";
+const ORG = "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f"; // admin's Workspace
 const PARTS_ON_ORDER = "00d6e9a2-45c4-4e45-af46-431bccb3c51a"; // "Rincon Plumbing — Parts on order", moved
 const READY = Boolean(URL_ && KEY && EMAIL && PASSWORD);
 
@@ -58,7 +63,7 @@ const describeLive = READY ? describe : describe.skip;
 if (!READY) {
   // eslint-disable-next-line no-console
   console.warn(
-    "[a-table-saved-outside-the-grid-lives-in-the-store] SKIPPED: set GRID_PORT_SUPABASE_URL, GRID_PORT_SUPABASE_PUBLISHABLE_KEY, AI_ADMIN_USERNAME and AI_ADMIN_PASSWORD to run it against the dev clone.",
+    "[a-table-saved-outside-the-grid-lives-in-the-store] SKIPPED: set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, AI_ADMIN_USERNAME and AI_ADMIN_PASSWORD to run it.",
   );
 }
 
@@ -100,7 +105,6 @@ describeLive("a table saved or appended to outside the grid lives in its organiz
   const made: string[] = [];
 
   beforeAll(async () => {
-    if (!URL_.includes(CLONE_REF)) throw new Error(`refusing to run: ${URL_} is not the dev clone (${CLONE_REF})`);
     client = createSupabaseClient(URL_, KEY, { auth: { persistSession: false } });
     const signed = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
     if (signed.error || !signed.data.user) throw new Error(`sign-in failed: ${signed.error?.message}`);

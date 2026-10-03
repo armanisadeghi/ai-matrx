@@ -30,7 +30,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import pg from "pg";
-import { testDbEnvFrom } from "../lib/direct-db-env";
+import { requireRehearsalDbEnv } from "../lib/direct-db-env";
 
 const ROOT = resolve(__dirname, "..", "..");
 const UP = resolve(ROOT, "migrations/campaign/scopesi_the_archived_scope_types_ask_the_ladder_once.sql");
@@ -70,7 +70,7 @@ async function main() {
   const plantAt = process.argv.indexOf("--plant");
   const plant = plantAt > 0 ? process.argv[plantAt + 1] : null;
   const plantBody = plant ? planted(plant) : null;
-  const env = testDbEnvFrom(ROOT);
+  const env = requireRehearsalDbEnv("scopesi_archived_types_same_answer installs function bodies");
   const client = new pg.Client({
     user: env.user, password: env.password, host: env.host, database: env.database, port: 5432,
     ssl: { rejectUnauthorized: false },
