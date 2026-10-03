@@ -50,6 +50,7 @@ export function SavedCanvasItems() {
     items,
     isLoading,
     loadError,
+    isCompleting,
     load,
     update,
     remove,
@@ -206,9 +207,15 @@ export function SavedCanvasItems() {
         {/* Stats */}
         <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
           <span>
-            <UntrustedCount value={activeItems.length} read={readOf({ isLoading, error: loadError })} label="Items" /> item
+            <UntrustedCount value={activeItems.length} read={readOf({ isLoading: isLoading || isCompleting, error: loadError })} label="Items" /> item
             {activeItems.length !== 1 ? 's' : ''}
           </span>
+          {isCompleting && items.length > 0 && (
+            <span className="inline-flex items-center gap-1" data-saved-completing="">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              Loading team items
+            </span>
+          )}
           {typeFilter !== "all" && (
             <Badge variant="secondary">{getCanvasTypeLabel(typeFilter)}</Badge>
           )}

@@ -41,14 +41,30 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
   // Latest read wins: a search fires one read per keystroke, and an older,
   // slower answer must never overwrite a newer one.
   const loadSeq = useRef(0);
+  /** True while the organization's items are still arriving after the person's own appeared. */
+  const [isCompleting, setIsCompleting] = useState(false);
   const load = useCallback(async (customFilters?: CanvasItemFilters) => {
     const seq = ++loadSeq.current;
     setIsLoading(true);
     setError(null);
 
     const activeFilters = customFilters || filters;
-    const { data, error: loadError } = await canvasItemsService.list(activeFilters);
+    // The organization list waits on `platform.shown_to_context` (~1.5 s for a
+    // person in ~50 organizations) before its own read can even be built. The
+    // person's OWN items pass that rule always, so they are read now, with no
+    // context call, and appear as soon as they return; the full list replaces
+    // them when it lands (a superset, so nothing the person sees disappears).
+    const full = canvasItemsService.list(activeFilters);
+    setIsCompleting(true);
+    void canvasItemsService.list(activeFilters, "mine").then(({ data: own, error: ownError }) => {
+      if (seq !== loadSeq.current || ownError || !own) return;
+      // Only the first paint: a refresh or a new filter keeps what is on screen until the full list lands.
+      setItems((prev) => (prev.length === 0 ? own : prev));
+      setIsLoading(false);
+    });
+    const { data, error: loadError } = await full;
     if (seq !== loadSeq.current) return { data, error: loadError };
+    setIsCompleting(false);
 
     if (loadError) {
       setError(loadError);
@@ -271,6 +287,7 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
     isLoading,
     error,
     loadError,
+    isCompleting,
     filters,
     
     // Actions
