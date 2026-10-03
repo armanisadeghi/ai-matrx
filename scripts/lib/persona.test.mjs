@@ -13,6 +13,7 @@ import {
   createFixtureUser,
   liveTarget,
   makePersona,
+  testTarget,
 } from "./persona.mjs";
 
 const SHAPE = /^[a-z]+\.[a-z]+\.[0-9a-f]{6}@fixtures\.aimatrx\.com$/;
@@ -72,4 +73,10 @@ test("the account is created through the GoTrue admin door with the tag and no p
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+test("tests make their personas on the live database (owner ruling 2026-10-03), never by a clone wiring", () => {
+  const env = { NEXT_PUBLIC_SUPABASE_URL: "https://db.matrxserver.com", SUPABASE_SECRET_KEY: "k" };
+  assert.deepEqual(testTarget(env), { url: "https://db.matrxserver.com", secretKey: "k", label: "live (tests)" });
+  assert.throws(() => testTarget({}), PersonaFactoryRefusal);
 });

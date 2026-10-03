@@ -16,8 +16,8 @@
 // null MX + SPF -all make it undeliverable to any person), phone null.
 //
 // Usage:
-//   import { withFixtureUser, cloneTarget } from "../lib/persona.mjs";
-//   await withFixtureUser(cloneTarget(), { suite: "portal/sign-in", purpose: "invited client" }, async (user) => {
+//   import { withFixtureUser, testTarget } from "../lib/persona.mjs";
+//   await withFixtureUser(testTarget(), { suite: "portal/sign-in", purpose: "invited client" }, async (user) => {
 //     // user.id, user.email, user.fullName, user.company
 //   });   // teardown ran in `finally`; the sweeper is the net if the process died first
 
@@ -40,35 +40,27 @@ export class PersonaFactoryRefusal extends Error {}
 /** @typedef {{ url: string, secretKey: string, label: string }} FixtureTarget */
 
 /**
- * The proven nightly clone. A process is wired to it by `eval "$(uv run python scripts/clone/server_env.py --shell)"`
- * in aidream, which exports SUPABASE_MATRIX_URL + SUPABASE_MATRIX_SECRET_KEY + MATRX_CLONE_REF_SERVED.
+ * Where tests and proofs make their personas: the LIVE database (owner ruling 2026-10-03 — tests run
+ * on live as admin@admin.com; the nightly clone is only for rehearsing destructive migrations). Every
+ * account is tagged and expires, and the sweeper removes it even when teardown never ran.
  * @returns {FixtureTarget}
  */
-export function cloneTarget(env = process.env) {
-  const ref = env.MATRX_CLONE_REF_SERVED;
-  const url = env.SUPABASE_MATRIX_URL;
-  const secretKey = env.SUPABASE_MATRIX_SECRET_KEY;
-  if (!ref || !url || !secretKey || !url.includes(ref)) {
-    throw new PersonaFactoryRefusal(
-      "cloneTarget: this process is not wired to the clone. In aidream run " +
-        '`eval "$(uv run python scripts/clone/server_env.py --shell)"` first (it proves the clone and exports its URL and key).',
-    );
-  }
-  return { url, secretKey, label: `clone:${ref}` };
+export function testTarget(env = process.env) {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL;
+  const secretKey = env.SUPABASE_SECRET_KEY;
+  if (!url || !secretKey) throw new PersonaFactoryRefusal("NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY are not set.");
+  return { url, secretKey, label: "live (tests)" };
 }
 
 /**
- * The LIVE database. Only for a named demo persona the owner asked for; tests and proofs use cloneTarget().
+ * The LIVE database for a named demo persona the owner asked for (the reason is recorded in the label).
  * @returns {FixtureTarget}
  */
 export function liveTarget({ reason }, env = process.env) {
   if (!reason || reason.trim().length < 12) {
     throw new PersonaFactoryRefusal("liveTarget needs a real reason (who asked for this and why).");
   }
-  const url = env.NEXT_PUBLIC_SUPABASE_URL;
-  const secretKey = env.SUPABASE_SECRET_KEY;
-  if (!url || !secretKey) throw new PersonaFactoryRefusal("NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY are not set.");
-  return { url, secretKey, label: `live (${reason.trim()})` };
+  return { ...testTarget(env), label: `live (${reason.trim()})` };
 }
 
 /** Companies come from the real use-case templates; never invented here. */
