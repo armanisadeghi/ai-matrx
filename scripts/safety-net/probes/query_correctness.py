@@ -29,8 +29,11 @@ top-N by a measure), and wherever the door itself is wrong.
 
 WHAT THIS DOES NOT COVER (said plainly): it does not run the language model. It proves the tool and the
 doors can give the right number; whether a model PICKS that call is not deterministic and is not graded
-here. `SN_QC_LLM=1` adds one real agent run of Q1 (through the server, as the admin seat, against the
-agent that carries only `records`) whose answer is printed as INFO, never graded.
+here. `SN_QC_LLM=1` adds one real agent run of Q1 (through the server, as the MEMBER seat, against the
+agent a member on a table page actually gets — whatever `ambient.page_guidance` resolves to for her; override
+with SN_QC_AGENT). Graded: that agent's run reaches the `records` tool (red when the agent loses the tool —
+2026-10-02, the earlier default 517d0d6e, admin's "Untitled Agent", lost it to the INTEGRATION lane's
+records_only_the_agents_that_chose_it_carry_it and the leg answered without it). The answer is INFO.
 
 Seat: test@test.com (a MEMBER of Cedar Ridge Physical Therapy) asks; admin@admin.com (owner) builds the
 disposable tables, hides one visit from members ("Only me") and restricts one column, then archives both
@@ -80,7 +83,9 @@ STAMP = os.environ.get("SN_STAMP") or datetime.now(ZoneInfo("America/Los_Angeles
 LLM = os.environ.get("SN_QC_LLM") == "1"
 
 ORG = "0a54df90-eab8-4d07-ab29-81a45fb41e04"  # Cedar Ridge Physical Therapy
-RECORDS_AGENT = os.environ.get("SN_QC_AGENT", "517d0d6e-fa38-4cd7-8df9-9abdd925c236")  # admin's agent carrying only `records`
+#: The chat agent for the LLM leg: an explicit override, else the one the PRODUCT gives a member on a table page.
+RECORDS_AGENT = os.environ.get("SN_QC_AGENT") or None
+TABLE_PAGE_MANDATE = "ambient.page_guidance"  # /data-v2/<table> is not a mapped module, so the system ambient rung answers
 FORBIDDEN = ("3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7")
 UA = {"user-agent": "matrx-safety-net-query-correctness/1.0"}
 
@@ -571,20 +576,35 @@ def rollup_door_refuses(member: Seat, fx: dict) -> tuple[bool, str]:
     return ok, f"{s} {json.dumps(b, default=str)[:300]}"
 
 
-# ── OPTIONAL: one real chat run of Q1 (INFO only — a model's choice is not graded) ─────────────────────────
-def llm_q1(admin: Seat, fx: dict) -> str:
+# ── OPTIONAL: one real chat run of Q1 by the member, on the agent the product gives her ───────────────────
+def table_page_agent(seat: Seat) -> tuple[str | None, str]:
+    """The agent a person on a table page gets: SN_QC_AGENT, else the mandate's resolution for this seat."""
+    if RECORDS_AGENT:
+        return RECORDS_AGENT, "SN_QC_AGENT override"
+    s, body = http("GET", f"{SERVER}/mandates/{TABLE_PAGE_MANDATE}/resolution", None,
+                   {"authorization": f"Bearer {seat.jwt}", "x-organization-id": ORG})
+    if s != 200 or not isinstance(body, dict) or not body.get("agent_id"):
+        return None, f"{TABLE_PAGE_MANDATE} did not resolve to an agent: {s} {json.dumps(body, default=str)[:300]}"
+    return str(body["agent_id"]), f"{TABLE_PAGE_MANDATE} -> {body['agent_id']} ({body.get('provenance')})"
+
+
+def llm_q1(seat: Seat, fx: dict) -> tuple[bool, str, str]:
+    """(reached `records`, how the agent was chosen + the tools it called, the answer)."""
+    agent, how = table_page_agent(seat)
+    if not agent:
+        return False, how, ""
     body = {"user_input": f"In the table with id {fx['visits']} (Cedar Ridge Physical Therapy), what is the sum of the "
                           f"Expected copay total column across all records?", "organization_id": ORG, "stream": True,
             "conversation_id": str(uuid.uuid4()), "is_new": True, "store": True}
-    req = urllib.request.Request(f"{SERVER}/ai/agents/{RECORDS_AGENT}", data=json.dumps(body).encode(), method="POST",
-                                 headers={"content-type": "application/json", "authorization": f"Bearer {admin.jwt}", "x-organization-id": ORG, **UA})
+    req = urllib.request.Request(f"{SERVER}/ai/agents/{agent}", data=json.dumps(body).encode(), method="POST",
+                                 headers={"content-type": "application/json", "authorization": f"Bearer {seat.jwt}", "x-organization-id": ORG, **UA})
     try:
         with urllib.request.urlopen(req, timeout=600) as r:  # noqa: S310
             raw = r.read().decode(errors="replace")
     except urllib.error.HTTPError as e:
         raw = e.read().decode(errors="replace")
     (OUT / "query-correctness-llm-q1.ndjson").write_text(redact(raw))
-    text = ""
+    text, tools = "", []
     for line in raw.splitlines():
         try:
             e = json.loads(line)
@@ -593,8 +613,11 @@ def llm_q1(admin: Seat, fx: dict) -> str:
         d = e.get("data") if isinstance(e, dict) else None
         if isinstance(d, dict) and e.get("event") == "completion":
             text = str((d.get("result") or {}).get("output") or "")
-    # The admin (owner) also sees the "Only me" visit: 3162 + 30 × 6.
-    return f"conversation {body['conversation_id']}; owner's truth {TRUTH['Q1'] + 180}; answer: {text.strip()[:500]}"
+        if isinstance(d, dict) and e.get("event") == "tool_event" and d.get("event") == "tool_started":
+            tools.append(f"{d.get('tool_name')}:{((d.get('data') or {}).get('arguments') or {}).get('action', '')}")
+    detail = f"{how}; conversation {body['conversation_id']}; tools {tools}"
+    # The member does not see the "Only me" visit: her truth is TRUTH['Q1'].
+    return any(t.startswith("records:") for t in tools), detail, f"member's truth {TRUTH['Q1']}; answer: {text.strip()[:500]}"
 
 
 def archive(admin: Seat, table: str) -> tuple[bool, str]:
@@ -692,7 +715,9 @@ def main() -> int:
                 s, _ = member.rpc("personal_api_key_revoke", {"p_id": key_id}, schema="iam")
                 step([], "cleanup: revoke test@test.com's personal key", s == 200, f"{s}")
         if LLM:
-            step([], "INFO real chat run of Q1 (not graded)", None, llm_q1(admin, fx))
+            reached, how, said = llm_q1(member, fx)
+            step(["Q01"], "the agent a member gets on a table page answers Q1 through the records tool", reached, how)
+            step([], "INFO the model's Q1 answer (not graded)", None, said)
     finally:
         for t in reversed(fx.get("tables", [])):
             ok, said = archive(admin, t)
