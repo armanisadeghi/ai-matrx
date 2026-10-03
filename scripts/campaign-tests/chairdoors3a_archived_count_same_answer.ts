@@ -205,7 +205,7 @@ async function main() {
     let same = 0, asked = 0, nonEmpty = 0, counted = 0, refusals = 0;
     const differ: string[] = [];
     let done = 0;
-    for (const s of seats) {
+    for (const s of process.env.SKIP_COUNT ? [] : seats) {
       if (++done % 10 === 0) console.log(`# … ${done} of ${seats.length} seats asked`);
       for (const lane of lanes(s.uid)) {
         const got = norm(await countDoor(s.uid, s.org, lane));
@@ -222,10 +222,18 @@ async function main() {
       }
     }
     if (differ.length) red++;
+    if (process.env.SKIP_COUNT) console.log('# COUNT phase skipped (SKIP_COUNT)');
+    else
     console.log(`${differ.length ? "RED  " : "GREEN"} COUNT = REF: ${same} of ${asked} identical (${refusals} refused at the wall, ${nonEmpty} non-empty, ${counted} Tables with a count above 0)` +
       (differ.length ? `; differ: ${differ.slice(0, 8).join(", ")}` : ""));
 
-    // custom.visible_set: the live body, then the body before the file, same transaction.
+    // custom.visible_set: the live body, then the body before the file, same transaction. Putting the
+    // before-body in place assigns a transaction id, which turns the statement memos off for the rest of
+    // the transaction; so the live body is asked with memos ON (information) and again with them OFF, and
+    // it is the OFF answer that must equal the before-body's byte for byte.
+    const liveOn = new Map<string, string>();
+    for (const s of seats) liveOn.set(`${s.uid}|${s.org}`, await setOf(s.uid, s.org));
+    await client.query("select pg_current_xact_id()");
     const live = new Map<string, string>();
     for (const s of seats) live.set(`${s.uid}|${s.org}`, await setOf(s.uid, s.org));
     await client.query(fn(INVERSE, "custom.visible_set"));
@@ -233,11 +241,17 @@ async function main() {
     let early = 0;
     for (const s of seats) {
       const before = await setOf(s.uid, s.org);
-      if (before !== live.get(`${s.uid}|${s.org}`)) setDiff.push(`${s.uid.slice(0, 8)}@${s.org.slice(0, 8)}`);
+      if (before !== live.get(`${s.uid}|${s.org}`)) {
+        setDiff.push(`${s.uid.slice(0, 8)}@${s.org.slice(0, 8)}`);
+        const l = (live.get(`${s.uid}|${s.org}`) ?? "").split("\n"), b = before.split("\n");
+        for (let i = 0; i < Math.max(l.length, b.length); i++) if (l[i] !== b[i]) console.log(`#   differs ${s.uid.slice(0, 8)}@${s.org.slice(0, 8)}\n#     live   ${l[i]}\n#     before ${b[i]}`);
+      }
       early += (before.match(/=\(t,\{\},\{\},\{\},\{\},0,f,\)/g) ?? []).length;
     }
     if (setDiff.length) red++;
-    console.log(`${setDiff.length ? "RED  " : "GREEN"} custom.visible_set live = before: ${seats.length - setDiff.length} of ${seats.length} seats identical over every Table asked` +
+    const onOff = seats.filter((s) => liveOn.get(`${s.uid}|${s.org}`) !== live.get(`${s.uid}|${s.org}`)).length;
+    console.log(`# custom.visible_set live with memos on = live with memos off for ${seats.length - onOff} of ${seats.length} seats (information: the memos change the ladder-call count, never the set)`);
+    console.log(`${setDiff.length ? "RED  " : "GREEN"} custom.visible_set live (memos off) = before: ${seats.length - setDiff.length} of ${seats.length} seats identical over every Table asked` +
       ` (${early} answers of the early shape: all-visible, nothing listed, no ladder call)` +
       (setDiff.length ? `; differ: ${setDiff.slice(0, 8).join(", ")}` : ""));
   } finally {

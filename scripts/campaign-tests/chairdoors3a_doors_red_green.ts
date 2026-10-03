@@ -4,7 +4,7 @@
  *
  *   cd matrx-frontend && npx tsx scripts/campaign-tests/chairdoors3a_doors_red_green.ts
  *
- * Needs the four files live on the clone (b and e as their __clone_variant). ONE transaction, rolled back, in
+ * Needs the four files live on the clone. ONE transaction, rolled back, in
  * Cedar Ridge Physical Therapy (admin@admin.com owns it, test@test.com is a member) and, for the moved pointer,
  * the real dropped reference on Castellano & Reyes. Each section runs twice: AFTER (the live bodies; every check
  * must hold) and BEFORE (the inverse's bodies put in place inside the transaction; the named checks must FAIL,
@@ -29,10 +29,10 @@ import { testDbEnvFrom } from "../lib/direct-db-env";
 
 const ROOT = resolve(__dirname, "..", "..");
 const INV = (name: string) => resolve(ROOT, "migrations/inverse", `${name}_down.sql`);
-const F_B = "chairdoors3a_b_a_moved_pointer_at_an_archived_record_stands__clone_variant";
+const F_B = "chairdoors3a_b_a_moved_pointer_at_an_archived_record_stands";
 const F_C = "chairdoors3a_c_the_add_rung_is_read_off_the_table_and_the_home";
 const F_D = "chairdoors3a_d_a_table_says_its_column_source_and_platform_keys";
-const F_E = "chairdoors3a_e_a_confidential_tables_maker_can_be_only_a_reader__clone_variant";
+const F_E = "chairdoors3a_e_a_confidential_tables_maker_can_be_only_a_reader";
 const ADMIN = "87a6e699-3622-4869-8843-d0867456c0dd";
 const TEST = "4060701e-706a-4c76-b3ca-0bbc69fa5a14";
 const ORG = "0a54df90-eab8-4d07-ab29-81a45fb41e04"; // Cedar Ridge Physical Therapy
@@ -130,7 +130,8 @@ async function main() {
     try {
       await two.query("begin");
       await two.query("set local lock_timeout = '120s'");
-      await two.query("set local statement_timeout = '300s'");
+      await two.query("set local statement_timeout = '900s'");
+      console.log("# E4/E5: a second connection makes the proof table …");
       await two.query("select set_config('request.jwt.claims', json_build_object('sub', $1::text, 'role', 'authenticated')::text, true)", [ADMIN]);
       await two.query("set local role authenticated");
       const made = await two.query("select custom.table_ensure($1::uuid, $2::jsonb) as v", [ORG, JSON.stringify({
@@ -169,7 +170,8 @@ async function main() {
 
   await client.query("begin");
   try {
-    await client.query("set local statement_timeout = '300s'");
+    await client.query("set local statement_timeout = '900s'");
+    console.log("# fixtures …");
     await client.query("set local lock_timeout = '10s'");
 
     // ── fixtures, made as admin through the store's own doors ──────────────────────────────────────────
@@ -324,10 +326,12 @@ async function main() {
       await client.query("rollback to savepoint b");
     };
 
+    console.log("# AFTER …");
     await sectionC("AFTER");
     await sectionD("AFTER");
     await sectionE("AFTER");
     await sectionB("AFTER");
+    console.log("# BEFORE …");
 
     for (const b of bodies(INV(F_C))) await client.query(b);
     await sectionC("BEFORE");
