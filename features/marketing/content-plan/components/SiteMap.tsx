@@ -58,6 +58,7 @@ import type { PlanNodeRow, PlanNodeTreeItem } from "../types";
 import { buildPlanTree } from "../types";
 import { planNodeKeyFields, planNodeSummary } from "../format";
 import { collapseVisible, filterWithAncestors } from "../lib/tree-view";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface SiteMapProps {
   nodes: PlanNodeRow[];
@@ -714,6 +715,7 @@ export function SiteMap({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
+            <DragCursorMonitor />
             {/* CSS zoom (not transform) so layout size shrinks with the
               content and the scrollbars stay honest. */}
             <div className="min-w-max p-6" style={{ zoom }}>

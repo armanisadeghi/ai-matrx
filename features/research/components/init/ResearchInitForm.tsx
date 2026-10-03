@@ -244,6 +244,7 @@ function parseStringArray(buffer: string, fieldName: string): string[] {
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { guardedSave } from "@/lib/save/guardedSave";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 // ── Step dots ─────────────────────────────────────────────────────────────────
 
@@ -570,6 +571,7 @@ function KeywordEditor({
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
+        <DragCursorMonitor />
         <SortableContext
           items={rows.map((r) => r.localId)}
           strategy={verticalListSortingStrategy}

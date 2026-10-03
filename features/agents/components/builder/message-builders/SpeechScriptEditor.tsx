@@ -72,6 +72,7 @@ import {
   type ScriptCompatibility,
   type SpeechTurnSpec,
 } from "@ai-matrx/chat/agents/speech-script/types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const SETTING_VOICE = "__setting__";
 const VARIABLE_VOICE = "__variable__";
@@ -372,6 +373,7 @@ export function SpeechScriptEditor({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
+          <DragCursorMonitor />
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
               {turns.map((turn, index) => (

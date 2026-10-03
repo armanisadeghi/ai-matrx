@@ -42,6 +42,7 @@ import { ModelColumn } from "./ModelColumn";
 import { ModelToolbar } from "./ModelToolbar";
 import { ModelBattleSurfaceRuntime } from "./ModelBattleSurfaceRuntime";
 import type { ModelColumn as ModelColumnType } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const RUNS_WINDOW_ID = "agent-comparison-model-runs";
 
@@ -103,6 +104,7 @@ export function ModelBattlePage({ setId = null }: { setId?: string | null }) {
             />
           ) : (
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <DragCursorMonitor />
               <SortableContext
                 items={columnIds}
                 strategy={horizontalListSortingStrategy}

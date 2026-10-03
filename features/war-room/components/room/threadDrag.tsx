@@ -33,6 +33,7 @@ import {
   type SortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 /** The handle props a tile spreads on its drag grip. */
 export interface ThreadDragHandle {
@@ -84,6 +85,7 @@ export function ThreadSortable({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
+      <DragCursorMonitor />
       <SortableContext items={ids} strategy={sortStrategy}>
         {children}
       </SortableContext>

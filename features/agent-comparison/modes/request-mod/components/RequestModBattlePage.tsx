@@ -47,6 +47,7 @@ import { LockedAgentSection } from "./LockedAgentSection";
 import { RequestModColumn } from "./RequestModColumn";
 import { RequestModToolbar } from "./RequestModToolbar";
 import type { RequestModColumn as RequestModColumnType } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const RUNS_WINDOW_ID = "agent-comparison-request-mod-runs";
 
@@ -107,6 +108,7 @@ export function RequestModBattlePage({
           />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DragCursorMonitor />
             <SortableContext
               items={columnIds}
               strategy={horizontalListSortingStrategy}

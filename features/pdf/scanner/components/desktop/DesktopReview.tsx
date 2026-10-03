@@ -48,6 +48,7 @@ import { ENHANCE_LABELS } from "../../enhance";
 import type { ScanItem } from "../../types";
 import type { UseScanSessionResult } from "../../useScanSession";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface DesktopReviewProps {
   session: UseScanSessionResult;
@@ -246,6 +247,7 @@ export function DesktopReview({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
+            <DragCursorMonitor />
             <SortableContext
               items={session.items.map((i) => i.itemId)}
               strategy={verticalListSortingStrategy}

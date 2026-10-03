@@ -32,6 +32,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface OptionsEditorProps {
   options: string[];
@@ -208,6 +209,7 @@ export function OptionsEditor({
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
+        <DragCursorMonitor />
         <SortableContext
           items={rows.map((r) => r.id)}
           strategy={verticalListSortingStrategy}

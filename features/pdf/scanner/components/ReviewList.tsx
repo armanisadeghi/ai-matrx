@@ -39,6 +39,7 @@ import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { useMediaResolution } from "@ai-matrx/media/core";
 
 import type { ScanItem } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface ReviewListProps {
   items: ScanItem[];
@@ -76,6 +77,7 @@ export function ReviewList({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
+      <DragCursorMonitor />
       <SortableContext
         items={items.map((i) => i.itemId)}
         strategy={rectSortingStrategy}

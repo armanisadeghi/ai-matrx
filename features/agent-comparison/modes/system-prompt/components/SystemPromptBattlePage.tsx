@@ -55,6 +55,7 @@ import { LockedInputSection } from "./LockedInputSection";
 import { SystemPromptColumn } from "./SystemPromptColumn";
 import { SystemPromptToolbar } from "./SystemPromptToolbar";
 import type { SystemPromptColumn as SystemPromptColumnType } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const RUNS_WINDOW_ID = "agent-comparison-system-prompt-runs";
 
@@ -115,6 +116,7 @@ export function SystemPromptBattlePage({
           />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DragCursorMonitor />
             <SortableContext
               items={columnIds}
               strategy={horizontalListSortingStrategy}

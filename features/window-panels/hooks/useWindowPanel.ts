@@ -43,6 +43,7 @@ import {
   type DragOutState,
 } from "../popout/popoutDragDetector";
 import { safeViewportDims } from "../utils/rectClamp";
+import { holdDragCursor, type DragCursor } from "@ai-matrx/design-system";
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,18 @@ export type ResizeEdge =
   | "n" // top
   | "ne" // top-right
   | "nw"; // top-left
+
+/** The cursor each resize edge holds for the whole resize (THE CURSOR LAW). */
+const RESIZE_CURSOR: Record<ResizeEdge, DragCursor> = {
+  e: "ew-resize",
+  w: "ew-resize",
+  n: "ns-resize",
+  s: "ns-resize",
+  se: "nwse-resize",
+  nw: "nwse-resize",
+  ne: "nesw-resize",
+  sw: "nesw-resize",
+};
 
 /** Where to place the window when it first opens. */
 export type WindowPosition =
@@ -376,6 +389,9 @@ export function useWindowPanel(
         wy: entry.windowed.y,
       };
       setIsInteracting(true);
+      // THE CURSOR LAW: `grabbing` on <html> for the whole drag, so it never
+      // flickers as the pointer outruns the header.
+      const releaseCursor = holdDragCursor();
 
       // Per-drag local state for drag-out detection. Only allocated/used
       // when popout is enabled for this window.
@@ -419,6 +435,7 @@ export function useWindowPanel(
         const dragOrigin = dragStart.current;
         dragStart.current = null;
         setIsInteracting(false);
+        releaseCursor();
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
         document.removeEventListener("pointercancel", onUp);
@@ -481,6 +498,8 @@ export function useWindowPanel(
       const startMy = e.clientY;
       const { x, y, width, height } = entry.windowed;
       setIsInteracting(true);
+      // THE CURSOR LAW: the edge's resize cursor holds on <html> until release.
+      const releaseCursor = holdDragCursor(RESIZE_CURSOR[edge]);
 
       const onMove = (ev: PointerEvent) => {
         const dx = ev.clientX - startMx;
@@ -513,6 +532,7 @@ export function useWindowPanel(
 
       const onUp = () => {
         setIsInteracting(false);
+        releaseCursor();
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
         document.removeEventListener("pointercancel", onUp);

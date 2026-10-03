@@ -53,6 +53,7 @@ import {
   setActiveFileId,
   setActiveFolderId,
 } from "@/features/files/redux/slice";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 export type CloudFilesWindowTab =
   "browse" | "search" | "upload" | "recent" | "shared" | "trash";
@@ -87,6 +88,7 @@ export function WindowPanelShell({
     // stream of drag events, which is fine. FileList renders its own inner
     // DndContext for the file-row dragging that surface already supports.
     <DndContext>
+      <DragCursorMonitor />
       <div
         className={cn("flex h-full w-full flex-col overflow-hidden", className)}
       >

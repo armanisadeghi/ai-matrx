@@ -59,6 +59,7 @@ import { DecisionComparisonWindow } from "./DecisionComparisonWindow";
 import { SharedRunSettingsWindow } from "./SharedRunSettingsWindow";
 import { MasterInputWindow } from "./MasterInputWindow";
 import type { BattleColumn as BattleColumnType } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const SHARED_CONTEXT_WINDOW_ID = "agent-comparison-shared-context";
 const SHARED_RUNS_WINDOW_ID = "agent-comparison-shared-runs";
@@ -133,6 +134,7 @@ export function BattlePage({ setId = null }: { setId?: string | null }) {
 
       <div className="flex-1 min-h-0 flex">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <DragCursorMonitor />
           <SortableContext
             items={columnIds}
             strategy={horizontalListSortingStrategy}

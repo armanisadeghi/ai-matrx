@@ -30,6 +30,7 @@ import { FileListRow } from "./FileListRow";
 import { FileListGridCell } from "./FileListGridCell";
 import type { SortBy } from "@/features/files/types";
 import { FilesTreeErrorState, FilesTreeLoadingState } from "@/features/files/components/surfaces/FilesTreeState";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 export interface FileListProps {
   /** The folder whose contents to list. null = root. */
@@ -156,6 +157,7 @@ export function FileList({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
+      <DragCursorMonitor />
       <div
         className={cn("flex h-full w-full flex-col overflow-hidden", className)}
       >

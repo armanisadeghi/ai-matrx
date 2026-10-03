@@ -165,6 +165,7 @@ import type { CloudFilesSection } from "./desktop/section";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { FilesTreeErrorState, FilesTreeLoadingState } from "./FilesTreeState";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 export interface PageShellProps {
   /** Initial selection (for deep-linked routes). */
@@ -848,6 +849,7 @@ function PageShellDesktop({
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
+          <DragCursorMonitor />
           <div
             ref={shortcutRootRef}
             {...{ [KEY_SCOPE_ATTR]: "" }}

@@ -60,6 +60,7 @@ import { VariationsToolbar } from "./VariationsToolbar";
 import { VariationsEditorWindow } from "./VariationsEditorWindow";
 import type { VariationColumn as VariationColumnType } from "../types";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const RUNS_WINDOW_ID = "agent-comparison-variations-runs";
 const EDITOR_WINDOW_ID = "agent-comparison-variations-editor";
@@ -136,6 +137,7 @@ export function VariationsBattlePage({
           <EmptyState sourceAgentReady={!!sourceAgentId} />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DragCursorMonitor />
             <SortableContext
               items={columnIds}
               strategy={horizontalListSortingStrategy}

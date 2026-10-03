@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 export interface ReorderItem {
   id: string;
@@ -119,6 +120,7 @@ export function ReorderDialog({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
+            <DragCursorMonitor />
             <SortableContext
               items={order.map((i) => i.id)}
               strategy={verticalListSortingStrategy}

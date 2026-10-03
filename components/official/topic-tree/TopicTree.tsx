@@ -37,6 +37,7 @@ import {
 import type { TopicTreeProps, TopicTreeRow } from "./types";
 import { TOPIC_TREE_ROOT_DROP_ID, useTopicTreeDnd } from "./useTopicTreeDnd";
 import { useTopicTreeKeyboard } from "./useTopicTreeKeyboard";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 export type { TopicTreeProps, TopicTreeRow };
 export { TOPIC_TREE_HOVER_DELAY_MS, TOPIC_TREE_INDENT_PX, TOPIC_TREE_ROW_HEIGHT };
@@ -248,6 +249,7 @@ export function TopicTree({
       onDragEnd={dnd.onDragEnd}
       onDragCancel={dnd.onDragCancel}
     >
+      <DragCursorMonitor />
       {tree}
       <DragOverlay>
         {dnd.activeRow ? (

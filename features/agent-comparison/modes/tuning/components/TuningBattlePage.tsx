@@ -49,6 +49,7 @@ import { LockedInputSection } from "./LockedInputSection";
 import { TuningColumn } from "./TuningColumn";
 import { TuningToolbar } from "./TuningToolbar";
 import type { TuningColumn as TuningColumnType } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const RUNS_WINDOW_ID = "agent-comparison-tuning-runs";
 
@@ -105,6 +106,7 @@ export function TuningBattlePage({ setId = null }: { setId?: string | null }) {
           />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DragCursorMonitor />
             <SortableContext
               items={columnIds}
               strategy={horizontalListSortingStrategy}

@@ -695,6 +695,8 @@
     "check:page-wide-has:self-test": "node scripts/check-page-wide-has.mjs --self-test",
     "check:motion-standard": "node scripts/check-motion-standard.mjs",
     "check:motion-standard:self-test": "node scripts/check-motion-standard.mjs --self-test",
+    "check:cursor-law": "node scripts/check-cursor-law.mjs",
+    "check:cursor-law:self-test": "node scripts/check-cursor-law.mjs --self-test",
     "preview:start": "bash scripts/agent-dev-server.sh start",
     "preview:stop": "bash scripts/agent-dev-server.sh stop",
     "preview:status": "bash scripts/agent-dev-server.sh status",

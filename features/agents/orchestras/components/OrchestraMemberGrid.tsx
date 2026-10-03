@@ -36,6 +36,7 @@ import { useMemberRunState } from "../run/OrchestraRunStatusContext";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
 import type { OrchestraMember } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 // The hub tile — the Grid twin of the canvas ConductorNode. NOT a member and
 // NOT sortable: it renders above the sortable list, outside the DndContext.
@@ -219,6 +220,7 @@ export function OrchestraMemberGrid({
         onOpen={onOpenConductor}
       />
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DragCursorMonitor />
         <SortableContext items={members.map((m) => m.agentId)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {members.map((m, i) => (

@@ -39,6 +39,7 @@ import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
 import { setActiveFileId, setActiveFolderId } from "@/features/files/redux/slice";
 import { selectTreeStatus } from "@/features/files/redux/selectors";
 import { useOpenCloudFile } from "../../hooks/useOpenCloudFile";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface CloudFilesExplorerProps {
   className?: string;
@@ -168,6 +169,7 @@ function CloudFilesTree({
 
   return (
     <DndContext sensors={sensors}>
+      <DragCursorMonitor />
       <FileTree
         className={className}
         readOnly

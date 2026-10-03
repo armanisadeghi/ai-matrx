@@ -810,6 +810,11 @@ if $STRICT; then
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # THE CURSOR LAW — the cursor tells the truth; a disabled state never turns
+        # pointer events off (it swallows not-allowed). Arman, 2026-10-03 — common-docs
+        # policies/cursor-law.md. Baseline ratchet: exits 1 only on a NEW site; advisory here.
+        "Disabled state turns pointer events off (swallows the cursor)|pnpm check:cursor-law"
+        "Cursor law guard self-test|pnpm check:cursor-law:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.
@@ -1437,6 +1442,11 @@ else
         # policies/motion-standard.md). Zero findings today; advisory here.
         "Panel slide off THE panel motion (literal duration or curve)|pnpm check:motion-standard"
         "Motion standard guard self-test|pnpm check:motion-standard:self-test"
+        # THE CURSOR LAW — the cursor tells the truth; a disabled state never turns
+        # pointer events off (it swallows not-allowed). Arman, 2026-10-03 — common-docs
+        # policies/cursor-law.md. Baseline ratchet: exits 1 only on a NEW site; advisory here.
+        "Disabled state turns pointer events off (swallows the cursor)|pnpm check:cursor-law"
+        "Cursor law guard self-test|pnpm check:cursor-law:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.

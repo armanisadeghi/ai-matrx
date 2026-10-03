@@ -75,6 +75,7 @@ import {
   uniqueQuestionName,
 } from "@/features/agents/decision-questions/name";
 import type { PartCompatibility } from "@/features/agents/decision-questions/compatibility";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const TYPE_LABELS: Record<DecisionQuestionType, string> = {
   noul: "Yes/No",
@@ -414,6 +415,7 @@ function ScoreCriteria({
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
+        <DragCursorMonitor />
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           {levels.map((level, i) => (
             <ScoreLevelRow
@@ -974,6 +976,7 @@ export function DecisionQuestionsEditor({
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
+          <DragCursorMonitor />
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
               {questions.map((question, index) => (

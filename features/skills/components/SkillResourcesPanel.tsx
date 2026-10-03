@@ -56,6 +56,7 @@ import {
 import type { ResourceRow } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface SkillResourcesPanelProps {
   skillId: string;
@@ -176,6 +177,7 @@ export function SkillResourcesPanel({
           collisionDetection={closestCenter}
           onDragEnd={onDragEnd}
         >
+          <DragCursorMonitor />
           <SortableContext
             items={resources.map((r) => r.id)}
             strategy={verticalListSortingStrategy}

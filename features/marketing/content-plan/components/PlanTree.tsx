@@ -67,6 +67,7 @@ import type { NodePipelineProgress } from "../lib/pipeline-progress";
 import { NodeMeasureDoor } from "./NodeMeasureDoor";
 import { PipelineProgressBadge } from "./PipelineProgressBadge";
 import { PlanTreeToolbar, type TreeStatusOption } from "./PlanTreeToolbar";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface FlatRow {
   node: PlanNodeRow;
@@ -304,6 +305,7 @@ export function PlanTree({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      <DragCursorMonitor />
       <div data-surface-value="plan_tree" className="flex h-full flex-col">
         <PlanTreeToolbar
           search={search}

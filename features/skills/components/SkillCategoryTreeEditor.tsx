@@ -79,6 +79,7 @@ import {
 } from "../redux/skillsThunks";
 import type { CategoryRow } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface SkillCategoryTreeEditorProps {
   onBack: () => void;
@@ -326,6 +327,7 @@ export function SkillCategoryTreeEditor({
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
           >
+            <DragCursorMonitor />
             <SortableContext
               items={flatNodes.map((n) => n.id)}
               strategy={verticalListSortingStrategy}

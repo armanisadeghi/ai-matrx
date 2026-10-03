@@ -47,6 +47,7 @@ import { LockedInputSection } from "./LockedInputSection";
 import { ToolsColumn } from "./ToolsColumn";
 import { ToolsToolbar } from "./ToolsToolbar";
 import type { ToolsColumn as ToolsColumnType } from "../types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 const RUNS_WINDOW_ID = "agent-comparison-tools-runs";
 
@@ -103,6 +104,7 @@ export function ToolsBattlePage({ setId = null }: { setId?: string | null }) {
           />
         ) : (
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <DragCursorMonitor />
             <SortableContext
               items={columnIds}
               strategy={horizontalListSortingStrategy}

@@ -38,6 +38,7 @@ import type { UserLike } from "@/components/user/UserIdentity";
 import { moveDealToStage } from "../../deals/service";
 import type { DealListRow, DealPipeline, DealStage } from "../../deals/types";
 import { effectiveProbability, formatDealAmount } from "../../deals/types";
+import { DragCursorMonitor } from "@ai-matrx/design-system";
 
 interface Props {
   pipeline: DealPipeline;
@@ -296,6 +297,7 @@ export function DealsBoard({
         onDragEnd={onDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
+        <DragCursorMonitor />
         <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto pb-2">
           {pipeline.stages.map((stage) => (
             <StageColumn
