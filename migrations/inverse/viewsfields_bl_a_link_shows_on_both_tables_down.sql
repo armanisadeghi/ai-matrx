@@ -1,7 +1,7 @@
 -- chair-step: this puts custom.field_declare back to the body viewsfields_bl_a_link_shows_on_both_tables.sql was written against (a new relation is no longer given an inverse_key it did not ask for; any inverse_key already stamped on a Field stays, as a caller-named one would), revokes and DROPs the two client doors that file added (custom.reverse_links_many, custom.reverse_columns) with their platform.client_callable_door rows, DROPs its two helpers (custom._inverse_key_default, custom._may_know_table) and archives nothing else. The knob row custom.back_links is deleted with its overrides (nothing else reads it once these bodies are gone).
 -- lane: VIEWS-AND-FIELDS
 -- guard: custom/system_enabled
--- based-on: custom.field_declare(uuid, uuid, jsonb) ec9f8d5eebb9e52c2ef1a2e4b1c819460659e36fdb73299f3d7ec91428550dd5
+-- based-on: custom.field_declare(uuid, uuid, jsonb) 9ad5692be23c1a7baa36fbe3ce841fcdcb2bec1848326bff8f599a51284e847e
 
 CREATE OR REPLACE FUNCTION custom.field_declare(p_organization_id uuid, p_table_id uuid, p_spec jsonb)
  RETURNS uuid
@@ -24,11 +24,15 @@ declare
 begin
   -- THE DECISION FIRST, BEFORE ANYTHING IS READ OR WRITTEN: the organization's
   -- own off switch, then the organization wall, then the right to change the
-  -- SHAPE of this table, which is an admin's right and not an editor's.
+  -- SHAPE of this table, which is an admin's right and not an editor's -
+  -- EXCEPT on a Table the app keeps for agent outputs (CHAIR-ACCESS a, NC-12): there a
+  -- column is born the way a row is, by the first member whose output carries it (a newer
+  -- kind version, a new data_table column), so a field add asks the Table's ADD rung
+  -- (custom.table_add_rung: viewer, every member who may see it), never admin.
   perform custom.assert_store_door(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_change(p_organization_id, p_table_id, 'custom.field_declare',
-                                          'admin'::public.permission_level, 'table');
+                                          custom.field_add_rung(p_organization_id, p_table_id), 'table');
   -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
   perform custom._agent_change_gate(p_organization_id, p_table_id, 'custom.field_declare');
 

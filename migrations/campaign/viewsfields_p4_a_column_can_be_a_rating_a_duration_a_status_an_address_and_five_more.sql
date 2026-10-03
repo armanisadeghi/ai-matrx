@@ -1,5 +1,4 @@
--- target: branch,production
--- additive: yes
+-- chair-step: lane 10 VIEWS-AND-FIELDS P4 — a column can be a rating, a duration, a status, an address and five more kinds; applied by the chair (CHAIR-APPLY-3), so the header is a chair-step rather than `target`/`additive`/`guard` (the guard's knob custom/system_enabled is retired).
 --   It ADDS thirteen helpers (custom.field_kind_of, custom.status_groups_of, custom._status_group_word,
 --   custom.status_groups_keyed, custom._entity_decoded, custom._rich_text_problem,
 --   custom._duration_seconds_of, custom._kind_value_fit, custom.barcode_symbologies,
@@ -8,17 +7,17 @@
 --   it was written against. No table, column, trigger, policy or row of anybody's data is touched; every
 --   existing column's document reads back exactly as before (custom.parity_type is unchanged).
 --   The inverse is `migrations/inverse/viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more_down.sql`.
--- guard: custom/system_enabled
 -- lock: custom
 -- lane: VIEWS-AND-FIELDS
 -- based-on: custom.field_kinds() 43c79568fd861d61a9a1179691f2edf1dff94b2b5f0e0dedfa5bd2e5c8327202
 -- based-on: custom.display_format_ids() b331d86e56821c552322619db053b4f85447f255928ec85c6fa61fb9d25832d2
 -- based-on: custom._field_document_for(uuid, uuid, jsonb) 4e0c161a0f04f51866eae683376936ddab94739b319feec105c3eaba38312d0b
--- based-on: custom._field_type_parity_guard() 1d087b44d2f8333e84511691c05454c42cc1b52276dfc31866a472f8c55377fa
+-- based-on: custom._field_type_parity_guard() 6e67b8dc29758d9bbded64cd80ca333354484285b2ad94cf61607bd33f6199e4
 -- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 4f5f5735ceafd5ab9d1f4cad537c9139164ba40e9fb9e1ad674df4e427054012
 -- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 3603e71be2dc6fc80f59dd2e4eb621426a4681e241f729ac12cadecad917dc44
--- based-on: custom.field_update(uuid, uuid, jsonb) 016ac79c0e9a7a2e1bf0bd3d9d7288461c434c2e6ae0486bed2b04102db345d3
+-- based-on: custom.field_update(uuid, uuid, jsonb) 8d089d20b16b531ba5260c5dc1031902c080c578f53f2d5d1efd186b7b9bfee9
 -- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) 77ed55ac156d3f496b5b8be6ce6d9ea8b946946693e071f4092a3152c9723a56
+-- RE-BASED 2026-10-03 (CHAIR-APPLY-3) on production's live bodies: custom._field_type_parity_guard carries CHAIR-ALWAYS-ON's arm (v_store_on := custom.store_is_open only, the knob read gone); custom.field_update carries VISION-REACH W4 (a2)'s custom._agent_change_gate call. This file's changes are otherwise unchanged; its inverse restores those live bodies. The `-- guard: custom/system_enabled` line is removed: CHAIR-ALWAYS-ON retired that knob (custom.store_is_open is always true), so it can no longer hold this file OFF, and the merged guard body no longer reads it.
 --
 -- LANE 10 VIEWS-AND-FIELDS, sublane P4 — NINE MORE KINDS OF COLUMN (champions: Airtable's field
 -- types and SmartSuite's). Lane 8's templates wait on the first of them.
@@ -1573,9 +1572,9 @@ begin
   -- organization born after 2026-09-21 01:30:44+00, which has the store on with no override
   -- row to resolve, and a guard that went quiet for every new organization would be worse
   -- than the defect.
-  v_store_on := custom.store_is_open(new.organization_id)
-                or coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean,
-                            false);
+  -- CHAIR-ALWAYS-ON 2026-10-03: the per-organization store switch is retired and custom.store_is_open answers
+  -- true for every organization, so the by-name knob read beside it is gone with the knob.
+  v_store_on := custom.store_is_open(new.organization_id);
 
   if v_declared = 'formula' and v_store_on then
     for v_leaf in
@@ -2289,6 +2288,8 @@ declare
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.field_update');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_update');
+  -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
+  perform custom._agent_change_gate(p_organization_id, null, 'custom.field_update', p_field_id);
 
   -- ── IMPORT-2: STORED OR REFUSED BY NAME, NEVER IGNORED. ─────────────────────────────────
   -- `custom.field_update(field, {"expr": …})` answered with the field id and changed nothing,

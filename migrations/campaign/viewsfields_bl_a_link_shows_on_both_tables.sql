@@ -24,7 +24,8 @@
 -- guard: custom/system_enabled
 -- lock: custom
 -- lane: VIEWS-AND-FIELDS
--- based-on: custom.field_declare(uuid, uuid, jsonb) 626483477f27f64ae786aee9cfd520db828360b5c915cf046a3a2f46a7da4b9f
+-- based-on: custom.field_declare(uuid, uuid, jsonb) 4b249edffafca52fd33041197e0f7bede5da09d92a421410c949ba0e93d39c02
+-- RE-BASED 2026-10-03 (CHAIR-APPLY-3) on production's live custom.field_declare: carries CHAIR-ACCESS (a)'s arm (a field add asks custom.field_add_rung, not admin, on a Table kept for agent outputs). This file's changes are otherwise unchanged; its inverse restores that live body.
 --
 -- LANE 10 VIEWS-AND-FIELDS, SUBLANE BL — A LINK SHOWS ON BOTH TABLES (Airtable's reverse column).
 --
@@ -194,11 +195,15 @@ declare
 begin
   -- THE DECISION FIRST, BEFORE ANYTHING IS READ OR WRITTEN: the organization's
   -- own off switch, then the organization wall, then the right to change the
-  -- SHAPE of this table, which is an admin's right and not an editor's.
+  -- SHAPE of this table, which is an admin's right and not an editor's -
+  -- EXCEPT on a Table the app keeps for agent outputs (CHAIR-ACCESS a, NC-12): there a
+  -- column is born the way a row is, by the first member whose output carries it (a newer
+  -- kind version, a new data_table column), so a field add asks the Table's ADD rung
+  -- (custom.table_add_rung: viewer, every member who may see it), never admin.
   perform custom.assert_store_door(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_declare');
   perform custom.assert_client_may_change(p_organization_id, p_table_id, 'custom.field_declare',
-                                          'admin'::public.permission_level, 'table');
+                                          custom.field_add_rung(p_organization_id, p_table_id), 'table');
   -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
   perform custom._agent_change_gate(p_organization_id, p_table_id, 'custom.field_declare');
 

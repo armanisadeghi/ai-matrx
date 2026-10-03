@@ -4,7 +4,7 @@
 -- based-on: custom._entity_decoded(text) 04c788810b3760ecfc59f4711913b022672d42be36ad196f8a6cc439dabc724f
 -- based-on: custom._field_document_for(uuid, uuid, jsonb) fca1ff470b45414214e20cc39a0f41c4c1e12e2edceeadc6a4a8d4ecb7fe9682
 -- based-on: custom._field_kind_shape_ok(jsonb, text) 8ca01d8184666edf1c93c79d7e3c3865d0558967b228d2515448279c7bc0aaf6
--- based-on: custom._field_type_parity_guard() 2c582acb994aa075200ebc0f01b01fe45b365add06621ee4d877f89a70fea696
+-- based-on: custom._field_type_parity_guard() 9c8700dbbcbc6d4e3ba5d70bc3dac26b3357141faefec3e1376066178367781e
 -- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) dc46bffd9149bec7f8514b175b1d01227d4fa84c98c86fc6a9e7507da5b47463
 -- based-on: custom._field_type_converts_values() 6cd18db356180f2b7fed51fce06179fb92867f439cabf423cde4d1fbe7ffa82f
 -- based-on: custom._field_value_carry_base(uuid, jsonb, jsonb, jsonb) e18630e6e2eea59e8e5835f8b47c709400f84bd03286810ed315871cb8cd9f11
@@ -17,7 +17,7 @@
 -- based-on: custom.display_format_ids() 6155275908c787eedf65fc1de0edb709ff9b90967314797ba8255f4a03da90f2
 -- based-on: custom.field_kind_of(jsonb) 2e36c9a9b8280794d1f36a709633cfb5a1430294a08ed8948e4e2b272fc59fdb
 -- based-on: custom.field_kinds() 5e6cfdbdb1b6d88744b824fc784b0fc1f3fc4ea7b7378e082b3abd5f9a4bbf1f
--- based-on: custom.field_update(uuid, uuid, jsonb) 661d137d60355368543bc3528e75f8058a2f6db91e4787773108dadda3e16802
+-- based-on: custom.field_update(uuid, uuid, jsonb) 9964844a37193adfc8e5ff939620014b5fa81a2542a41f0efcb9686a1dcaffc9
 -- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 2182120bdf047f2b0564c779a335afd2a8af508348e0e42b28c83db2d5244fb6
 -- based-on: custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text) f7c7b83f591bddd0d2ef6e2543ca61d9f95e7b48d72972afe1743794c8fbe156
 -- based-on: custom.status_groups_of(jsonb) d018d97be86764da71615461c63bc11a4a70dfc7cbc58e4d5919d8316b17e020
@@ -661,9 +661,9 @@ begin
   -- organization born after 2026-09-21 01:30:44+00, which has the store on with no override
   -- row to resolve, and a guard that went quiet for every new organization would be worse
   -- than the defect.
-  v_store_on := custom.store_is_open(new.organization_id)
-                or coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean,
-                            false);
+  -- CHAIR-ALWAYS-ON 2026-10-03: the per-organization store switch is retired and custom.store_is_open answers
+  -- true for every organization, so the by-name knob read beside it is gone with the knob.
+  v_store_on := custom.store_is_open(new.organization_id);
 
   if v_declared = 'formula' and v_store_on then
     for v_leaf in
@@ -1306,6 +1306,8 @@ declare
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.field_update');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_update');
+  -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
+  perform custom._agent_change_gate(p_organization_id, null, 'custom.field_update', p_field_id);
 
   -- ── IMPORT-2: STORED OR REFUSED BY NAME, NEVER IGNORED. ─────────────────────────────────
   -- `custom.field_update(field, {"expr": …})` answered with the field id and changed nothing,

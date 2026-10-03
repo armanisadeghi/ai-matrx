@@ -23,6 +23,7 @@ import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { isJsonObject } from "@/types/json";
 import { filesDb } from "@/features/files/filesDb";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { isRestDeadlineError } from "@/utils/supabase/restDeadline";
 
 const DEVICE_FRESHNESS_WINDOW_MS = 10 * 60 * 1000;
 
@@ -95,6 +96,21 @@ export async function GET() {
       .eq("user_id", user.id),
     resolveMaxSandboxes(supabase, user.id),
   ]);
+
+  // A failed read is never an empty list: "you have no computers" while the
+  // database is down is a lie the picker would render as truth.
+  const readError = sandboxResult.error ?? appInstanceResult.error ?? tierLimit.error;
+  if (readError) {
+    const unavailable = isRestDeadlineError(readError);
+    console.error(`[GET /api/compute-targets] read failed: ${readError.message}`);
+    return NextResponse.json(
+      {
+        error: unavailable ? "database_unavailable" : "read_failed",
+        message: unavailable ? "The database did not answer in time." : readError.message,
+      },
+      { status: unavailable ? 503 : 500 },
+    );
+  }
 
   const sandboxes: ComputeTarget[] = [];
   for (const row of sandboxResult.data ?? []) {
@@ -175,7 +191,7 @@ export async function GET() {
 
   const response: ComputeTargetListResponse = {
     targets: [...computers, ...sandboxes],
-    max_sandboxes: tierLimit,
+    max_sandboxes: tierLimit.value,
     sandbox_count: sandboxes.length,
   };
   return NextResponse.json(response);
@@ -184,8 +200,8 @@ export async function GET() {
 async function resolveMaxSandboxes(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
-): Promise<number> {
-  const { data: account } = await filesDb(supabase)
+): Promise<{ value: number; error: { message: string } | null }> {
+  const { data: account, error: accountError } = await filesDb(supabase)
     .from("user_account")
     .select("tier_id, custom_limits")
     .eq("user_id", userId)
@@ -197,10 +213,11 @@ async function resolveMaxSandboxes(
     typeof customLimits.max_sandboxes === "number" &&
     customLimits.max_sandboxes >= 0
   ) {
-    return customLimits.max_sandboxes;
+    return { value: customLimits.max_sandboxes, error: null };
   }
+  if (accountError) return { value: 0, error: accountError };
   const tierId = account?.tier_id ?? "free";
-  const { data: tier } = await filesDb(supabase)
+  const { data: tier, error: tierError } = await filesDb(supabase)
     .from("account_tiers")
     .select("features")
     // DD-173 (B-103): the tier slug moved off `id` to `tier_key` when
@@ -216,7 +233,8 @@ async function resolveMaxSandboxes(
     typeof features.max_sandboxes === "number" &&
     features.max_sandboxes >= 0
   ) {
-    return features.max_sandboxes;
+    return { value: features.max_sandboxes, error: null };
   }
-  return 1;
+  if (tierError) return { value: 0, error: tierError };
+  return { value: 1, error: null };
 }

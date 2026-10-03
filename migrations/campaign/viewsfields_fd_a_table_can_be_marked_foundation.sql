@@ -2,12 +2,13 @@
 -- lane: VIEWS-AND-FIELDS
 -- lock: custom
 -- window-class: function bodies, one appended view column, one function re-made in place; no DDL on any table.
--- based-on: custom._table_shape_guard() 213f692a33aa8b8772bb343c4fc0e311dd411c2037d962b982ba37c3b12377e6
+-- based-on: custom._table_shape_guard() 1238461c4372d987b57dbbd962b3e8c107a9fa3bc931c2883b3d64c4de35a7d2
 -- based-on: custom.table_placement(uuid, uuid, jsonb, boolean) 2eb597a4e56381e9e43ba6856587eb4126357924ee8132a54a6e0f00707f4601
 -- based-on: custom.data_home(uuid, text, boolean) af08a0d43f1c5441476a9a06666f1493136bcd857f0e444406aa50451f6fc3e2
 -- based-on: custom.table_facts(uuid) 79da6657ffd8e65ab9fc7f575474334ff1cae893393bbe5f15fddb582274aaa1
 -- based-on: custom.record_headers(uuid, uuid[]) 405c9720b4ccff2def0353737c0cdd69bdbf349fab4e50543cdc20090ccb1952
 -- based-on: custom.table_from_example(uuid, uuid, jsonb) 57aaeb8e5e203e05fb6b683e051f4826c9da51e6f24c4aa98828bff1d395f834
+-- RE-BASED 2026-10-03 (CHAIR-APPLY-3) on production's live custom._table_shape_guard: carries CHAIR-ALWAYS-ON's arm (the store switch test is custom.store_is_open, not the system_enabled knob); this file's changes are otherwise unchanged. Its inverse restores that live body.
 --
 -- THE USE CASE (Arman, 2026-09-25): "it's sort of like the data that you set up on day one because you are
 -- going to build your business on it, as opposed to just stuff you need to store later." Cedar Ridge Physical
@@ -254,7 +255,8 @@ begin
   -- Each is judged only when present; absent is the default (custom.table_placement).
   -- Judged only while the organization's store is switched on (custom/system_enabled), exactly
   -- like the rest of the store's own shape rules; switched off, the document is stored as written.
-  if coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean, false) then
+  -- CHAIR-ALWAYS-ON 2026-10-03: the store switch is retired; custom.store_is_open answers true for every organization.
+  if custom.store_is_open(new.organization_id) then
     if d ? 'kept_by_the_app' and jsonb_typeof(d -> 'kept_by_the_app') is distinct from 'boolean' then
       v_bad := array_append(v_bad, format('a table says yes or no to being kept by the app'));
         v_bad_hints := array_append(v_bad_hints, ('SC-1: kept_by_the_app is true or false.')::text);

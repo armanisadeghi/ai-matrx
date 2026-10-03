@@ -28,6 +28,7 @@ import type { ComposerPresentation } from "./composer/composer-types";
 import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import { selectViewerCanReply } from "../../../redux/execution-system/conversations/conversations.selectors";
 import { ViewOnlyComposerBar } from "./ViewOnlyComposerBar";
+import { selectHasUserInput } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 
 export interface SmartAgentInputSurfaceValueAnchors {
   variables?: string;
@@ -125,6 +126,17 @@ export function SmartAgentInput({
       );
     }
   }, [dispatch, conversationId, variablesPanelStyle, sliceStyle]);
+  // THE PAGE ASSISTANT ANSWERS WHAT THE PERSON SAYS. Its dock rises under a
+  // cursor resting at the bottom of the page, and its live Send arrow on an
+  // empty box sent an empty first turn (2026-10-03, conversation d6c14d03:
+  // an empty user row + "messages: at least one message is required").
+  // Ambient Send is live only when the box holds something.
+  const ambientHasNothingToSend = useAppSelector((state) =>
+    isAmbient && conversationId
+      ? !selectHasUserInput(conversationId)(state)
+      : false,
+  );
+  const sendDisabled = disableSend || ambientHasNothingToSend;
   const viewerCanReply = useAppSelector((state) =>
     conversationId ? selectViewerCanReply(conversationId)(state) : true,
   );
@@ -163,7 +175,7 @@ export function SmartAgentInput({
           showVariableIcon={variableIconShown}
           surfaceKey={surfaceKey}
           draftAlias={draftAlias}
-          disableSend={disableSend}
+          disableSend={sendDisabled}
           variablesPanelStyle={variablesPanelStyle}
           contextRailPresentation={contextRailPresentation}
           contextRailAttachedItems={contextRailAttachedItems}
@@ -191,7 +203,7 @@ export function SmartAgentInput({
         showVariableIcon={variableIconShown}
         surfaceKey={surfaceKey}
           draftAlias={draftAlias}
-        disableSend={disableSend}
+        disableSend={sendDisabled}
         variablesPanelStyle={variablesPanelStyle}
         contextRailPresentation={contextRailPresentation}
         contextRailAttachedItems={contextRailAttachedItems}

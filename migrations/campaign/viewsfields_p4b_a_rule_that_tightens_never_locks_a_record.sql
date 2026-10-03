@@ -1,12 +1,10 @@
--- target: branch,production
--- additive: yes
+-- chair-step: lane 10 VIEWS-AND-FIELDS P4b — a rule that tightens never locks a record; applied by the chair (CHAIR-APPLY-3), so the header is a chair-step rather than `target`/`additive`/`guard` (the guard's knob custom/system_enabled is retired).
 --   It ADDS three helpers (custom._value_fits_field, custom._retire_values_the_field_refuses,
 --   custom._html_element_names) and REPLACES twelve bodies — ten of them as
 --   viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more.sql leaves
 --   them, so THIS FILE APPLIES AFTER THAT ONE — each declared below with the body it was written
 --   against. No table, column, trigger, policy, grant or row of anybody's data is touched. The
 --   inverse is `migrations/inverse/viewsfields_p4b_a_rule_that_tightens_never_locks_a_record_down.sql`.
--- guard: custom/system_enabled
 -- lock: custom
 -- lane: VIEWS-AND-FIELDS
 -- based-on: custom._kind_value_ok(jsonb, text, jsonb) bb35d5cf6039c63b542fbf95498f2e4a597082885be6b0bab67ffdbbdacc47f8
@@ -15,12 +13,13 @@
 -- based-on: custom.status_groups_of(jsonb) d018d97be86764da71615461c63bc11a4a70dfc7cbc58e4d5919d8316b17e020
 -- based-on: custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text) f7c7b83f591bddd0d2ef6e2543ca61d9f95e7b48d72972afe1743794c8fbe156
 -- based-on: custom._field_document_for(uuid, uuid, jsonb) fca1ff470b45414214e20cc39a0f41c4c1e12e2edceeadc6a4a8d4ecb7fe9682
--- based-on: custom.field_update(uuid, uuid, jsonb) 661d137d60355368543bc3528e75f8058a2f6db91e4787773108dadda3e16802
+-- based-on: custom.field_update(uuid, uuid, jsonb) 9964844a37193adfc8e5ff939620014b5fa81a2542a41f0efcb9686a1dcaffc9
 -- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 2182120bdf047f2b0564c779a335afd2a8af508348e0e42b28c83db2d5244fb6
 -- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 2d13a3252cd5478299ffd7b2f42552c52fffd29b54c6e1f8979b161de0706730
 -- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) dc46bffd9149bec7f8514b175b1d01227d4fa84c98c86fc6a9e7507da5b47463
 -- based-on: custom._field_type_converts_values() 6cd18db356180f2b7fed51fce06179fb92867f439cabf423cde4d1fbe7ffa82f
--- based-on: custom._value_envelope() 52643f906b25684b2b77515d5ee41b498ba0af3c9ed5bcc309f3380ebb75b9af
+-- based-on: custom._value_envelope() 27dd5567479d7bde96c4d2d1e05166df7112884982496a445639bebe41beaae7
+-- RE-BASED 2026-10-03 (CHAIR-APPLY-3) on production's live bodies: custom.field_update carries VISION-REACH W4 (a2)'s custom._agent_change_gate call (as re-based P4 left it); custom._value_envelope carries CHAIR-ALWAYS-ON's arm (no exit on the retired store switch). This file's changes are otherwise unchanged; its inverse restores those live bodies.
 --
 -- LANE 10 VIEWS-AND-FIELDS, sublane P4, round 3 (independent verifier V11). Applied after P4:
 --   1. A RULE THAT TIGHTENS NEVER LOCKS A RECORD: lowering a rating's top star, adding a max, a
@@ -1236,6 +1235,8 @@ declare
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.field_update');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_update');
+  -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
+  perform custom._agent_change_gate(p_organization_id, null, 'custom.field_update', p_field_id);
 
   -- ── IMPORT-2: STORED OR REFUSED BY NAME, NEVER IGNORED. ─────────────────────────────────
   -- `custom.field_update(field, {"expr": …})` answered with the field id and changed nothing,
@@ -2885,7 +2886,7 @@ begin
     loop
       -- Held OFF by the store's own switch (custom/system_enabled): an organization whose store
       -- is not on keeps the refusal below, exactly as before this file.
-      exit when not coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean, false);
+      -- CHAIR-ALWAYS-ON 2026-10-03: the store switch is retired; the store is always on, so no exit here.
       v_whole := v_whole || jsonb_build_object(v_key, v_text);
       v_data := jsonb_set(v_data, array[v_key], to_jsonb(custom.whole_value_head(v_text)));
     end loop;

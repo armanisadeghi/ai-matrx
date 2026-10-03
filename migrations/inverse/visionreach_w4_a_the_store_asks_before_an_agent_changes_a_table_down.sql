@@ -9,6 +9,12 @@
 -- based-on: custom.table_declare(uuid, jsonb) 560581a71a3549096f202338234abbb962bf304f2210d3eb022a4640283c9a07
 -- based-on: custom._agent_change_gate(uuid, uuid, text, uuid) abc729e9e6d586ed440170bfb36ea62ef4888ce40ef5fc410e0ccdc62203647c
 -- based-on: custom.declared_conversation() b50ac6d59d1a3eec9d44c92b1c33ea7a92a1dbcc12a8234bb8ae3bc2834e4251
+--
+-- ground-standing-ok: d
+--   custom._agent_change_gate is adopted outside this file by custom.field_update (visionreach_w4_a2 and, since the
+--   2026-10-03 re-base by CHAIR-APPLY-3, viewsfields_p4_a / p4b). This inverse leaves it standing with a no-op body
+--   instead of dropping it, so the undo removes the refusal without breaking field updates. custom.declared_conversation
+--   is called only by the gate's own (replaced) body and is still dropped.
 
 CREATE OR REPLACE FUNCTION custom.record_write(p_organization_id uuid, p_table_id uuid, p_data jsonb)
  RETURNS uuid
@@ -1010,5 +1016,16 @@ begin
 end;
 $function$;
 
-DROP FUNCTION custom._agent_change_gate(uuid, uuid, text, uuid);
+-- custom._agent_change_gate stays standing, neutered: custom.field_update (visionreach_w4_a2, and lane 10's P4 / P4b
+-- that carry its call) still performs it, so dropping it would break every field update. Its behaviour (the refusal)
+-- is what this inverse undoes; a no-op body does that.
+CREATE OR REPLACE FUNCTION custom._agent_change_gate(p_organization_id uuid, p_table_id uuid, p_door text, p_record_id uuid DEFAULT NULL::uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SET search_path TO 'pg_catalog'
+AS $function$
+begin
+  return;
+end;
+$function$;
 DROP FUNCTION custom.declared_conversation();

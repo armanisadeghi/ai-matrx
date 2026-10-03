@@ -10,6 +10,7 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   DEFAULT_REST_DEADLINE_MS,
+  deadlineFetch,
   installRestDeadline,
   isRestDeadlineError,
   restDeadlineMs,
@@ -69,6 +70,24 @@ describe("installRestDeadline", () => {
     expect(Date.now() - started).toBeLessThan(40);
     expect(isRestDeadlineError(second.error)).toBe(true);
     expect(calls()).toBe(1);
+  });
+
+  it("the fail-fast window ends: a long-lived client tries the socket again after it", async () => {
+    let clock = 1_000;
+    let calls = 0;
+    const hanging = (_i: RequestInfo | URL, init?: RequestInit) => {
+      calls += 1;
+      return new Promise<Response>((_r, reject) =>
+        init?.signal?.addEventListener("abort", () => reject(init.signal?.reason)),
+      );
+    };
+    const f = deadlineFetch(hanging, 30, () => clock);
+    await expect(f("http://x/rest/v1/a")).rejects.toThrow(/server deadline/);
+    await expect(f("http://x/rest/v1/a")).rejects.toThrow(/failing fast/);
+    expect(calls).toBe(1);
+    clock += 31;
+    await expect(f("http://x/rest/v1/a")).rejects.toThrow(/within the 30ms/);
+    expect(calls).toBe(2);
   });
 
   it("covers every PostgREST door (.schema().from())", async () => {

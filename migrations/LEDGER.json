@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T22:43:34.090Z",
+  "generated_at": "2026-10-03T23:07:58.295Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -709,6 +709,12 @@
       "filename": "chairmath_d_a_price_is_read_as_money.sql",
       "checksum": "32ba00a41ec27be637f388af71bf067ee079bafefe8b64fa59ad01b5a71b6f8e",
       "applied_at": "2026-10-03 14:32:40.04162+00"
+    },
+    "migrations/campaign/chairperf2_a_the_data_home_asks_who_changed_a_table_once.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairperf2_a_the_data_home_asks_who_changed_a_table_once.sql",
+      "checksum": "8fd0ea281f61560c65cfa230d3c99583914b910ea3942ffc1e139223470bb4ae",
+      "applied_at": "2026-10-03 23:07:57.086705+00"
     },
     "migrations/campaign/chairrc_a_record_changed_carries_its_change.sql": {
       "source": "matrx-frontend",
@@ -7244,11 +7250,35 @@
       "checksum": "9fbb6ddae3676878b9ab811a7bc3689b981f98e96b2a2a3ba613bad5efa7d8af",
       "applied_at": "2026-09-25 19:19:06.239241+00"
     },
+    "migrations/campaign/viewsfields_bl_a_link_shows_on_both_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "viewsfields_bl_a_link_shows_on_both_tables.sql",
+      "checksum": "d05cb972f836f1504b1e731e16f7f5ceae8683ed777eacdf7fd67038fd0e6606",
+      "applied_at": "2026-10-03 23:06:39.869615+00"
+    },
     "migrations/campaign/viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql": {
       "source": "matrx-frontend",
       "filename": "viewsfields_f4_a_formula_speaks_seven_more_airtable_functions.sql",
       "checksum": "3e944761ba507bae62c2174edd3dfe0edd4c6e891de3ee59cc1c9b3e40f60914",
       "applied_at": "2026-10-03 02:05:55.228+00"
+    },
+    "migrations/campaign/viewsfields_fd_a_table_can_be_marked_foundation.sql": {
+      "source": "matrx-frontend",
+      "filename": "viewsfields_fd_a_table_can_be_marked_foundation.sql",
+      "checksum": "8f701c475726f9d7c354ce3643cf1ae08ceb9187fbb9d29b281e1ec8eeaa474f",
+      "applied_at": "2026-10-03 22:53:54.653176+00"
+    },
+    "migrations/campaign/viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more.sql": {
+      "source": "matrx-frontend",
+      "filename": "viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more.sql",
+      "checksum": "6b2730c559087d44b78e9f1b849ea161e9d6e335b6639e9ea309d3c96ad7e9cb",
+      "applied_at": "2026-10-03 22:59:07.573413+00"
+    },
+    "migrations/campaign/viewsfields_p4b_a_rule_that_tightens_never_locks_a_record.sql": {
+      "source": "matrx-frontend",
+      "filename": "viewsfields_p4b_a_rule_that_tightens_never_locks_a_record.sql",
+      "checksum": "4d4dbd0a98b8e930dce32fe77302a9af3d6e180b541627d02543cab255bfbc62",
+      "applied_at": "2026-10-03 23:02:01.54118+00"
     },
     "migrations/campaign/viewswitch_a_look_at_a_table_never_changes_how_it_opens.sql": {
       "source": "campaign",
@@ -7369,6 +7399,18 @@
       "filename": "visionreach_w4_b_an_approved_agent_change_is_the_agents.sql",
       "checksum": "c39d41a6528da258453664379819d8dd9e73f52e596810456de29b2f9ce32096",
       "applied_at": "2026-10-03 22:43:32.459232+00"
+    },
+    "migrations/campaign/visionreach_w4_c_every_kind_an_agent_files_can_be_applied.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w4_c_every_kind_an_agent_files_can_be_applied.sql",
+      "checksum": "6ea1d0a8b9f0a11bd081d6ae679914c84b674dff205c689a26f50c4846a4a404",
+      "applied_at": "2026-10-03 22:46:41.853243+00"
+    },
+    "migrations/campaign/visionreach_w4_d_only_an_agent_files_as_an_agent.sql": {
+      "source": "matrx-frontend",
+      "filename": "visionreach_w4_d_only_an_agent_files_as_an_agent.sql",
+      "checksum": "be8789f70f566a4c75370e5122139341e8b8b1a5c8c0e0d73e23484282e69c6a",
+      "applied_at": "2026-10-03 22:48:28.78014+00"
     },
     "migrations/campaign/visionreach_w5_every_common_formula_is_planned_once.sql": {
       "source": "matrx-frontend",

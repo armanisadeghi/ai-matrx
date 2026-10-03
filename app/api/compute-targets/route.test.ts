@@ -11,6 +11,7 @@ const SANDBOX_ID = "9aa2f6a6-7a27-43fb-ad0e-56e4e6222c78";
 
 let sandboxRows: Array<Record<string, unknown>> = [];
 let sandboxSelect = "";
+let sandboxError: { message: string } | null = null;
 
 function selectedSandboxRows(columns: string) {
   const fields = columns.split(",").map((field) => field.trim());
@@ -30,7 +31,10 @@ function sandboxQuery() {
       return {
         eq: () => ({
           is: () => ({
-            order: async () => ({ data: selectedSandboxRows(columns), error: null }),
+            order: async () =>
+              sandboxError
+                ? { data: null, error: sandboxError }
+                : { data: selectedSandboxRows(columns), error: null },
           }),
         }),
       };
@@ -94,6 +98,26 @@ async function getTargets() {
 beforeEach(() => {
   sandboxSelect = "";
   sandboxRows = [];
+  sandboxError = null;
+});
+
+test("a stalled database answers 503, never an empty list of computers", async () => {
+  // The exact `{ error }` supabase-js hands back when utils/supabase/restDeadline aborts a call.
+  sandboxError = {
+    message:
+      "AbortError: database did not answer within the 9000ms server deadline (http://db/rest/v1/sandbox_instances)",
+  };
+  const { response, body } = await getTargets();
+  expect(response.status).toBe(503);
+  expect(body.error).toBe("database_unavailable");
+  expect(body.targets).toBeUndefined();
+});
+
+test("any other read failure is a 500 that names it, never an empty list", async () => {
+  sandboxError = { message: "permission denied for table sandbox_instances" };
+  const { response, body } = await getTargets();
+  expect(response.status).toBe(500);
+  expect(body.message).toContain("permission denied");
 });
 
 test.each([

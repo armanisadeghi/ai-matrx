@@ -20,7 +20,10 @@
 // back into the 504). The route then answers with an honest error while it
 // still has time to.
 //
-// Browser clients are untouched: they are not inside a 15s function.
+// Installed on the per-request session client (utils/supabase/server.ts) and
+// the publishable-key script client (utils/supabase/getScriptClient.ts — the
+// sitemap and public SEO reads). Browser clients are untouched: they are not
+// inside a 15s function.
 // Knob: SUPABASE_SERVER_REST_DEADLINE_MS (positive integer, milliseconds).
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -28,7 +31,13 @@ type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Respo
 /** statement_timeout (8s) for `authenticated` plus one second of transport. */
 export const DEFAULT_REST_DEADLINE_MS = 9_000;
 
-export const REST_DEADLINE_ERROR_NAME = "RestDeadlineError";
+/**
+ * Named `AbortError` on purpose: postgrest-js retries a rejected GET three
+ * times with 1s/2s/4s backoff UNLESS the rejection is an abort — and a retry
+ * of a stalled database is exactly the wait this deadline exists to end.
+ */
+const REST_DEADLINE_ERROR_NAME = "AbortError";
+const REST_DEADLINE_MARK = "server deadline";
 
 const INSTALLED = Symbol.for("matrx.restDeadline.installed");
 
@@ -42,8 +51,8 @@ export function restDeadlineMs(env: Record<string, string | undefined> = process
 function deadlineError(ms: number, url: string, stalledEarlier: boolean): Error {
   const err = new Error(
     stalledEarlier
-      ? `database did not answer: an earlier call on this request stalled past the ${ms}ms deadline; failing fast (${url})`
-      : `database did not answer within the ${ms}ms server deadline (${url})`,
+      ? `database did not answer: an earlier call on this request stalled past the ${ms}ms ${REST_DEADLINE_MARK}; failing fast (${url})`
+      : `database did not answer within the ${ms}ms ${REST_DEADLINE_MARK} (${url})`,
   );
   err.name = REST_DEADLINE_ERROR_NAME;
   return err;
@@ -56,21 +65,23 @@ function urlOf(input: RequestInfo | URL): string {
 }
 
 /**
- * Returns a fetch that aborts each call after `ms` and, after the first
- * stall, refuses every later call immediately.
+ * Returns a fetch that aborts each call after `ms` and, for `ms` after a
+ * stall, refuses every later call immediately. The refusal window is bounded
+ * so a client that outlives one request (a module-scope script client) is
+ * never poisoned for good — it tries the socket again once the window passes.
  */
-export function deadlineFetch(inner: FetchLike, ms: number): FetchLike {
-  let stalled = false;
+export function deadlineFetch(inner: FetchLike, ms: number, now: () => number = Date.now): FetchLike {
+  let stalledUntil = 0;
   return async (input, init) => {
     const url = urlOf(input).split("?")[0];
-    if (stalled) throw deadlineError(ms, url, true);
+    if (now() < stalledUntil) throw deadlineError(ms, url, true);
     const timer = AbortSignal.timeout(ms);
     const signal = init?.signal ? AbortSignal.any([init.signal, timer]) : timer;
     try {
       return await inner(input, { ...init, signal });
     } catch (cause) {
       if (timer.aborted && !init?.signal?.aborted) {
-        stalled = true;
+        stalledUntil = now() + ms;
         console.error(`[restDeadline] ${deadlineError(ms, url, false).message}`);
         throw deadlineError(ms, url, false);
       }
@@ -103,6 +114,5 @@ export function installRestDeadline<T>(client: T, ms: number = restDeadlineMs())
 
 /** True when a supabase-js `{ error }` came from this deadline. */
 export function isRestDeadlineError(error: { message?: string | null } | null | undefined): boolean {
-  const message = error?.message ?? "";
-  return message.includes(REST_DEADLINE_ERROR_NAME) || message.includes("server deadline") || message.includes("stalled past the");
+  return (error?.message ?? "").includes(REST_DEADLINE_MARK);
 }

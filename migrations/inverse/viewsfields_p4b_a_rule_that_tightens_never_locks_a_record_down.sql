@@ -8,9 +8,9 @@
 -- based-on: custom._kind_value_ok(jsonb, text, jsonb) 872bedf659b745e4e2a25da5a636ddc82d18588793166de9c33cb3c65c7cbb8c
 -- based-on: custom._retire_values_the_field_refuses(uuid, uuid, jsonb, jsonb) 535bd20a360ac1d03d1af4d7b893b653d063a67faa8b7a1b134f633b6488d2fa
 -- based-on: custom._rich_text_problem(text) c837299e2aa1e6ec2ab1038e7788715c1836860ef3f17e6e5fd735fda8523d69
--- based-on: custom._value_envelope() 99a9181b98da0e252cd4068bfb2d762643e998a14fd4476df71021439d8c6419
+-- based-on: custom._value_envelope() 49a987ff8f0fde9f3711e3ef88f60b66e212b82507ea3be383642b33d4275723
 -- based-on: custom._value_fits_field(uuid, uuid, jsonb, jsonb) c248e129ab1b7118a7ec8e82376c06b9741f42b8c0cac9f361167c4400598574
--- based-on: custom.field_update(uuid, uuid, jsonb) a5851b11aa40ef47268435ac15d9e2f9adf497a3292849222874242611d2c671
+-- based-on: custom.field_update(uuid, uuid, jsonb) 93bfedb5985e1347a12661966f3f7f30755251210092a34e345e4815f565b87f
 -- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) a37a3d5d71bff2011ba099b6a022a184885e7999b6f792a278217ddeb46af9b8
 -- based-on: custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text) d0fa5104a246144cbaffa2b2f52c69723e9484c48328cd9c05cb668da063f3cf
 -- based-on: custom.status_groups_of(jsonb) 466e15b026afd54ad19529aaef763ea2bbacee803d2d40c55b43cc43711e1a7d
@@ -957,6 +957,8 @@ declare
 begin
   perform custom.assert_store_door(p_organization_id, 'custom.field_update');
   perform custom.assert_client_may_reach(p_organization_id, 'custom.field_update');
+  -- VISION-REACH W4 (a): the organization's "Agent changes" setting, enforced here (custom._agent_change_gate).
+  perform custom._agent_change_gate(p_organization_id, null, 'custom.field_update', p_field_id);
 
   -- ── IMPORT-2: STORED OR REFUSED BY NAME, NEVER IGNORED. ─────────────────────────────────
   -- `custom.field_update(field, {"expr": …})` answered with the field id and changed nothing,
@@ -2498,7 +2500,7 @@ begin
     loop
       -- Held OFF by the store's own switch (custom/system_enabled): an organization whose store
       -- is not on keeps the refusal below, exactly as before this file.
-      exit when not coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean, false);
+      -- CHAIR-ALWAYS-ON 2026-10-03: the store switch is retired; the store is always on, so no exit here.
       v_whole := v_whole || jsonb_build_object(v_key, v_text);
       v_data := jsonb_set(v_data, array[v_key], to_jsonb(custom.whole_value_head(v_text)));
     end loop;

@@ -2,7 +2,7 @@
 -- lane: VIEWS-AND-FIELDS
 -- lock: custom
 -- window-class: function bodies, one view re-made, one function re-made in place; no DDL on any table.
--- based-on: custom._table_shape_guard() 188f2bdcaab20d4d009f5f3f3329735fe452ccbbeb9c4aed6dbb717b8266d63e
+-- based-on: custom._table_shape_guard() bdfe878acc619ef1cd9f0c48f1ca099a98860fa0c39bbf6a6805702e5175054e
 -- based-on: custom.table_placement(uuid, uuid, jsonb, boolean) 9c5211b9fb5638371b22f7b4ea472bd3043b0cd879cdc730bb34b67d276741ff
 -- based-on: custom.data_home(uuid, text, boolean) ab5b6e2984f6203160d7e1c73f11550de1cb3a551637c1c85290ba86428ec511
 -- based-on: custom.table_facts(uuid) 758939e4401e1ec86e1f89a773beaf1c6ba2d79760dc819d6df12021a69ec92f
@@ -216,7 +216,8 @@ begin
   -- Each is judged only when present; absent is the default (custom.table_placement).
   -- Judged only while the organization's store is switched on (custom/system_enabled), exactly
   -- like the rest of the store's own shape rules; switched off, the document is stored as written.
-  if coalesce((platform.knob_resolve('custom', 'system_enabled', new.organization_id) #>> '{}')::boolean, false) then
+  -- CHAIR-ALWAYS-ON 2026-10-03: the store switch is retired; custom.store_is_open answers true for every organization.
+  if custom.store_is_open(new.organization_id) then
     if d ? 'kept_by_the_app' and jsonb_typeof(d -> 'kept_by_the_app') is distinct from 'boolean' then
       v_bad := array_append(v_bad, format('a table says yes or no to being kept by the app'));
         v_bad_hints := array_append(v_bad_hints, ('SC-1: kept_by_the_app is true or false.')::text);
