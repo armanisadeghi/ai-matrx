@@ -1,4 +1,4 @@
--- INVERSE of migrations/campaign/kindsglue_w4_1_relation_and_pick_list_have_their_compiled_component.sql (lane
+-- INVERSE of migrations/campaign/kindsglue_w4s1_relation_and_pick_list_have_their_compiled_component.sql (lane
 -- KINDS-GLUE): the two component rows that file seeded are archived (soft-deleted, never removed), so `relation` and
 -- `pick_list` again have no live web output component.
 -- lane: KINDS-GLUE

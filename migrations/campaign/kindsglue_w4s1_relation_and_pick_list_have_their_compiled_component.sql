@@ -2,7 +2,7 @@
 -- component, so content_ir.evaluate_kind_activation can activate them. The INSERT is the lane's READY SQL verbatim
 -- (board KINDS-GLUE.md, "READY SQL (wave 4.1"): one row per kind in the AI Matrx platform organization, only where no
 -- live web output component exists. Applied by the chair (CHAIR-APPLY-3).
--- Inverse: migrations/inverse/kindsglue_w4_1_relation_and_pick_list_have_their_compiled_component_down.sql
+-- Inverse: migrations/inverse/kindsglue_w4s1_relation_and_pick_list_have_their_compiled_component_down.sql
 -- lane: KINDS-GLUE
 
 insert into content_ir.kind_component (kind_definition_id, component_key, platform, role, source, is_active, is_default, sort_order, semver, version, config, metadata, custom_fields, organization_id, created_by, notes)
