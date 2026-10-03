@@ -368,6 +368,7 @@ export function ComposerSubmenu({
   panelClassName,
   open: controlledOpen,
   onOpenChange,
+  drillInPlace,
 }: {
   row: Omit<ComposerMenuRowProps, "onClick" | "chevron" | "active">;
   children: ReactNode | ((close: () => void) => ReactNode);
@@ -375,6 +376,12 @@ export function ComposerSubmenu({
   panelClassName?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Rows inside this panel open IN the panel (with the view's own Back)
+   * instead of a third cascade — a third column has no room and flips over
+   * the menu. The phone sheet pushes pages either way.
+   */
+  drillInPlace?: boolean;
 }) {
   const id = useId();
   const level = useContext(ComposerMenuLevelContext);
@@ -392,7 +399,7 @@ export function ComposerSubmenu({
   const closeAll = useContext(ComposerMenuCloseAllContext);
   const presentation = useContext(ComposerMenuPresentationContext);
   const sheetNav = useContext(ComposerSheetNavContext);
-  if (presentation === "sheet" && sheetNav) {
+  if (sheetNav) {
     // The phone sheet: the cascade's panel becomes a pushed page.
     return (
       <ComposerMenuRow
@@ -457,9 +464,28 @@ export function ComposerSubmenu({
         )}
       >
         <ComposerMenuLevel>
-          {typeof children === "function" ? children(close) : children}
+          {drillInPlace ? (
+            <InPlaceNav>{typeof children === "function" ? children(close) : children}</InPlaceNav>
+          ) : (
+            typeof children === "function" ? children(close) : children
+          )}
         </ComposerMenuLevel>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/** A panel's own page stack (drillInPlace): a row replaces the panel's body. */
+function InPlaceNav({ children }: { children: ReactNode }) {
+  const [stack, setStack] = useState<ComposerSheetPage[]>([]);
+  const top = stack[stack.length - 1];
+  const nav = {
+    push: (page: ComposerSheetPage) => setStack((current) => [...current, page]),
+    pop: () => setStack((current) => current.slice(0, -1)),
+  };
+  return (
+    <ComposerSheetNavContext.Provider value={nav}>
+      {top ? <div className="flex h-full min-h-0 flex-col">{top.render()}</div> : children}
+    </ComposerSheetNavContext.Provider>
   );
 }

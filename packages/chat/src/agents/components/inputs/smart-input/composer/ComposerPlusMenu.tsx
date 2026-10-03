@@ -221,17 +221,19 @@ export function ComposerPlusMenu({
         <ComposerSubmenu row={{ icon: Link2, label: "Add a link" }} panelClassName={PICKER_PANEL}>
           {(closeCascade) => picker("webpage", closeCascade)}
         </ComposerSubmenu>
-        <ComposerSubmenu row={{ icon: Boxes, label: "From your workspace" }} panelClassName="w-64">
-          <ComposerMenuLabel>Attach from AI Matrx</ComposerMenuLabel>
-          {WORKSPACE_ROWS.map((row) => (
-            <ComposerSubmenu
-              key={row.view}
-              row={{ icon: row.icon, label: row.label }}
-              panelClassName={PICKER_PANEL}
-            >
-              {(closeCascade) => picker(row.view, closeCascade)}
-            </ComposerSubmenu>
-          ))}
+        <ComposerSubmenu
+          row={{ icon: Boxes, label: "From your workspace" }}
+          panelClassName={PICKER_PANEL}
+          drillInPlace
+        >
+          <div className="flex flex-col p-1.5">
+            <ComposerMenuLabel>Attach from AI Matrx</ComposerMenuLabel>
+            {WORKSPACE_ROWS.map((row) => (
+              <ComposerSubmenu key={row.view} row={{ icon: row.icon, label: row.label }}>
+                {(back) => picker(row.view, back)}
+              </ComposerSubmenu>
+            ))}
+          </div>
         </ComposerSubmenu>
         <ComposerSubmenu
           row={{ icon: CONTEXT_VALUES_ITEM.icon, label: CONTEXT_VALUES_ITEM.label }}
