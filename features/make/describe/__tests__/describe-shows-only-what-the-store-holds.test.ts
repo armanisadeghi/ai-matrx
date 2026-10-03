@@ -102,4 +102,18 @@ describe("the describe box shows only what the sentence made", () => {
     expect(made.publicHref).toBeUndefined();
     expect(made.href).toBe("/data-v2/t-new?rail=forms&item=f-draft");
   });
+
+  it("a rule that tells someone the moment an answer arrives reads as a Notification, a weekly one as a Digest", () => {
+    const sub = (id: string, cadence: string): DataHomeItemRow => ({
+      kind: "digest",
+      organization_id: CEDAR,
+      organization_name: "Cedar Ridge Physical Therapy",
+      item_id: id,
+      table_id: "t-new",
+      table_name: "New Patients",
+      item_row: { rule_id: id, table_id: "t-new", name: `Rule ${id}`, cadence },
+    });
+    const made = madeSince(before, { tables: [], items: [sub("r-now", "instant"), sub("r-week", "weekly")] }, CEDAR);
+    expect(made.map((m) => m.word ?? "Digest")).toEqual(["Notification", "Digest"]);
+  });
 });

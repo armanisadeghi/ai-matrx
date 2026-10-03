@@ -24,6 +24,12 @@ export interface MadeThing {
   href: string;
   /** Where a stranger opens it, for a published form or booking page. */
   publicHref?: string;
+  /**
+   * The kind in a person's words when the store's kind word is too broad: the items door lists every
+   * subscription as "digest", and one that tells somebody the moment an answer arrives is a
+   * Notification, not a Digest (the same cadence test the workflow presets use).
+   */
+  word?: string;
 }
 
 /** Everything one organization holds at one moment, by id — the "before" of a describe run. */
@@ -93,7 +99,9 @@ export function madeSince(
         ...(published ? { publicHref: `/b/${id}` } : {}),
       });
     } else {
+      const instant = i.kind === "digest" && ["", "instant", "immediate"].includes(String(row.cadence ?? ""));
       made.push({
+        ...(instant ? { word: "Notification" } : {}),
         kind: i.kind as MadeKind,
         id: i.item_id,
         title,

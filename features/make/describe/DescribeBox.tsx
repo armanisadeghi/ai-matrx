@@ -258,7 +258,7 @@ function MadeList({ made }: { made: MadeThing[] }) {
           <KindIcon kind={thing.kind} className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-2">
             <span className="truncate text-sm text-foreground">{thing.title}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">{KIND_WORD[thing.kind]}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{thing.word ?? KIND_WORD[thing.kind]}</span>
           </span>
           <Link href={thing.href} className="shrink-0 text-sm text-primary underline-offset-2 hover:underline" data-make-made-open="">
             Open
