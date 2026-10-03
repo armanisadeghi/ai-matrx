@@ -12,7 +12,8 @@
  * `matrx-user/notes` agent surface itself), the note's chip (`NoteTabItem`,
  * standalone: title rename, mic, the "…" menu), the metadata bar (folder,
  * context, tags — `NoteMetadataBar`), the save/stats strip
- * (`NoteStatsFooter`) and version history (`NoteVersionHistory`). Only the
+ * (`NoteStatsFooter`); the versions button opens the note's history as a
+ * canvas tab beside it. Only the
  * app's navigation — the note sidebar and the tab strip of OTHER notes — is
  * left out.
  *
@@ -24,7 +25,6 @@
  */
 
 import { useEffect, type KeyboardEvent } from "react";
-import dynamic from "next/dynamic";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -33,18 +33,13 @@ import {
   removeInstanceTab,
   registerInstance,
   setInstanceActiveTab,
-  setInstanceHistoryOpen,
   unregisterInstance,
 } from "../redux/slice";
 import {
   fetchNotesList,
   fetchSharedNotesList,
-  refetchNoteContent,
 } from "../redux/thunks";
-import {
-  selectInstanceHistoryOpen,
-  selectNotesListStatus,
-} from "../redux/selectors";
+import { selectNotesListStatus } from "../redux/selectors";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { handleNoteShortcut } from "../utils/noteShortcuts";
 import { NoteContentEditor } from "./NoteContentEditor";
@@ -54,10 +49,6 @@ import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteRecordTools } from "./NoteRecordTools";
 import { NoteStatsFooter } from "./NoteStatsFooter";
 import { NoteTabItem } from "./NoteTabItem";
-const NoteVersionHistory = dynamic(
-  () => import("./NoteVersionHistory").then((mod) => ({ default: mod.NoteVersionHistory })),
-  { ssr: false },
-);
 
 export interface NoteWorkspaceProps {
   /** The notes instance this host shows the note in — unique per host. */
@@ -94,9 +85,6 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
     void dispatch(fetchSharedNotesList());
   }, [dispatch, listStatus]);
 
-  const historyOpen = useAppSelector(selectInstanceHistoryOpen(instanceId));
-  const setHistoryOpen = (open: boolean) =>
-    dispatch(setInstanceHistoryOpen({ instanceId, open }));
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (
@@ -125,8 +113,6 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
             <NoteRecordTools
               instanceId={instanceId}
               noteId={noteId}
-              historyOpen={historyOpen}
-              onToggleHistory={() => setHistoryOpen(!historyOpen)}
             />
           </TapTargetButtonGroup>
         </div>
@@ -147,14 +133,6 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
         <NoteMetadataBar noteId={noteId} />
         <NoteStatsFooter noteId={noteId} standalone />
       </div>
-      {historyOpen ? (
-        <NoteVersionHistory
-          noteId={noteId}
-          open={historyOpen}
-          onOpenChange={setHistoryOpen}
-          onVersionRestored={() => void dispatch(refetchNoteContent(noteId))}
-        />
-      ) : null}
     </NotesInstanceProvider>
   );
 }

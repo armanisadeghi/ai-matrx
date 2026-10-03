@@ -11,20 +11,19 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setInstanceOutlineOpen } from "../redux/slice";
 import { selectInstanceOutlineOpen } from "../redux/selectors";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
+import { useNoteHistoryTab } from "../canvas/noteHistoryKind";
 
 export interface NoteRecordToolsProps {
   instanceId: string;
   noteId: string;
-  historyOpen: boolean;
-  onToggleHistory: () => void;
 }
 
 export function NoteRecordTools({
   instanceId,
   noteId,
-  historyOpen,
-  onToggleHistory,
 }: NoteRecordToolsProps) {
+  // Version history is a canvas tab beside the note; pressed while in front.
+  const history = useNoteHistoryTab(noteId);
   const dispatch = useAppDispatch();
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
   const toggleOutline = useCallback(() => {
@@ -42,10 +41,10 @@ export function NoteRecordTools({
       />
       <HistoryTapButton
         variant="group"
-        onClick={onToggleHistory}
+        onClick={history.toggle}
         ariaLabel="Versions"
         tooltip="Version history"
-        className={historyOpen ? "text-primary" : undefined}
+        className={history.isVisible ? "text-primary" : undefined}
       />
       <NoteCleanupButton noteId={noteId} asTapGroup />
     </>

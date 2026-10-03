@@ -245,8 +245,6 @@ export interface NotesInstance {
    * mount / URL hydration), so auto-move stays disabled.
    */
   tabInteractionAt: number | null;
-  /** Version-history side panel open in THIS instance (per-instance, persistable). */
-  historyOpen: boolean;
   /** Floating outline panel open in THIS instance. */
   outlineOpen: boolean;
   /**

@@ -35,10 +35,11 @@ import {
   updateNoteLabel,
   updateNoteContent,
   markTabInteraction,
-  setInstanceHistoryOpen,
   toggleInstanceTabPinned,
   moveInstanceTab,
 } from "../redux/slice";
+import { useToolOpener } from "@/features/canvas/host/toolCanvas";
+import { noteHistoryInput } from "../canvas/noteHistoryKind";
 import { setNoteLabelEditing } from "../utils/labelEditing";
 import {
   selectNoteLabel,
@@ -110,6 +111,8 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
 
   const openNoteInfo = useOpenNoteInfoWindow();
   const openKnowledge = useOpenNoteKnowledgePanel();
+  // "Version history" opens (or focuses) the note's history canvas tab.
+  const openHistory = useToolOpener(noteHistoryInput);
   // Only probe the active tab — avoids a Supabase query per open tab.
   const ingest = useNoteIngestStatus(isActive ? noteId : null);
 
@@ -498,7 +501,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
       knowledgeIndexed: ingest.state === "ingested",
       exportMarkdown: handleExport,
       print: () => openNotePrintStudio(noteId),
-      versionHistory: () => dispatch(setInstanceHistoryOpen({ instanceId, open: true })),
+      versionHistory: () => openHistory(noteId),
       share: () => setShareOpen(true),
       copyReference,
       about: () => openNoteInfo({ noteId, title: label }),

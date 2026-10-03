@@ -20,24 +20,20 @@ import {
   removeInstanceTab,
   markTabInteraction,
   closeSplit,
-  setInstanceHistoryOpen,
 } from "../redux/slice";
 import { fetchNoteContent, saveNote } from "../redux/thunks";
 import {
   selectInstanceActiveTab,
   selectInstanceTabs,
   selectInstanceSplitNoteId,
-  selectInstanceHistoryOpen,
   selectNoteLabel,
 } from "../redux/selectors";
 import { NotesInstanceProvider } from "../context/NotesInstanceContext";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteTabBar } from "./NoteTabBar";
 import { NotePresenceBanner } from "./NotePresenceBanner";
-import { NoteVersionHistory } from "./NoteVersionHistory";
 import { NoteMetadataBar } from "./NoteMetadataBar";
 import { FolderQuickPick } from "./FolderQuickPick";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 
 export interface NotesWindowViewProps {
@@ -55,20 +51,14 @@ export function NotesWindowView({
   className,
 }: NotesWindowViewProps) {
   const dispatch = useAppDispatch();
-  const isMobile = useIsMobile();
 
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const splitNoteId = useAppSelector(selectInstanceSplitNoteId(instanceId));
-  const historyOpen = useAppSelector(selectInstanceHistoryOpen(instanceId));
   const splitNoteLabel = useAppSelector(
     splitNoteId ? selectNoteLabel(splitNoteId) : () => undefined,
   );
 
-  const setHistoryOpen = useCallback(
-    (open: boolean) => dispatch(setInstanceHistoryOpen({ instanceId, open })),
-    [dispatch, instanceId],
-  );
 
   // ── Keyboard shortcuts (save / close tab / cycle tab) ──────────────
   // Answered only for keys pressed in THIS view (utils/keyboard-scope): a
@@ -154,17 +144,6 @@ export function NotesWindowView({
             {activeTabId && <NoteMetadataBar noteId={activeTabId} />}
           </div>
         </div>
-
-        {/* Mobile-only: version history as a Drawer (desktop uses the
-            WindowPanel secondaryPanel slot wired in NotesWindow). */}
-        {isMobile && activeTabId && (
-          <NoteVersionHistory
-            noteId={activeTabId}
-            open={historyOpen}
-            onOpenChange={setHistoryOpen}
-            onVersionRestored={() => dispatch(fetchNoteContent(activeTabId))}
-          />
-        )}
       </div>
     </NotesInstanceProvider>
   );

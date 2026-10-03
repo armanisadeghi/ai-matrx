@@ -28,11 +28,12 @@ import { useCallback } from "react";
 import type { RefObject } from "react";
 
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { selectCanvasKindVisibility } from "@ai-matrx/canvas";
+import { NOTE_HISTORY_KIND } from "@/features/notes/canvas/noteHistoryKind";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import {
   selectAllFolders,
   selectFindReplaceState,
-  selectInstanceHistoryOpen,
   selectInstanceSplitNoteId,
   selectInstanceTabs,
   selectNoteById,
@@ -116,7 +117,9 @@ export function useNotesSurfaceScope(
         scope_name: a.scope_name,
         scope_type: a.scope_type,
       }));
-    const historyOpen = selectInstanceHistoryOpen(instanceKey)(state);
+    // The note's version history is its canvas tab; "open" = in front.
+    const historyOpen =
+      selectCanvasKindVisibility(state.canvasHost, NOTE_HISTORY_KIND, noteId) === "visible";
     const fr = selectFindReplaceState(instanceKey)(state);
     const findReplace: NotesEditorFindReplace | null =
       fr && fr.isOpen
@@ -160,7 +163,7 @@ export function useNotesSurfaceScope(
       notesMap,
       sharedAccess,
       scopeAssignments,
-      historyOpen: historyOpen ?? false,
+      historyOpen,
       findReplace,
     }) as SurfaceScopePayload;
   }, [

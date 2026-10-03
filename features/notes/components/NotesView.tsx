@@ -62,13 +62,7 @@ const MobileNotesView = dynamic(() => import("./mobile/MobileNotesView"), {
   ssr: false,
 });
 
-const NoteVersionHistory = dynamic(
-  () =>
-    import("@/features/notes/components/NoteVersionHistory").then((mod) => ({
-      default: mod.NoteVersionHistory,
-    })),
-  { ssr: false },
-);
+import { useNoteHistoryTab } from "@/features/notes/canvas/noteHistoryKind";
 import {
   registerInstance,
   unregisterInstance,
@@ -168,7 +162,6 @@ export function NotesView({
   const showTabs = config?.showTabs ?? true;
   const hidePageHeader = config?.hidePageHeader ?? false;
   const syncUrl = config?.syncUrl ?? !hidePageHeader;
-  const [showHistory, setShowHistory] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const singleNote = config?.singleNote ?? null;
 
@@ -442,6 +435,8 @@ export function NotesView({
   // long as the bundle and the note load took. The note the URL names is known
   // on the server, so the header draws for it at once.
   const headerNoteId = activeTabId ?? initialActiveTab ?? null;
+  // Version history is a canvas tab beside the note (one per note).
+  const history = useNoteHistoryTab(headerNoteId);
   const editorMode = useNoteEditorMode(headerNoteId);
 
   // A mode click changes only this note (its mode and the mode it reopens in) —
@@ -775,10 +770,10 @@ export function NotesView({
               />
               <HistoryTapButton
                 variant="group"
-                onClick={() => setShowHistory((v) => !v)}
+                onClick={history.toggle}
                 ariaLabel="Versions"
                 tooltip="Version history"
-                className={showHistory ? "text-primary" : undefined}
+                className={history.isVisible ? "text-primary" : undefined}
               />
               <NoteCleanupButton noteId={activeTabId} asTapGroup />
             </>
@@ -857,10 +852,10 @@ export function NotesView({
                       />
                       <HistoryTapButton
                         variant="group"
-                        onClick={() => setShowHistory((v) => !v)}
+                        onClick={history.toggle}
                         ariaLabel="Versions"
                         tooltip="Version history"
-                        className={showHistory ? "text-primary" : undefined}
+                        className={history.isVisible ? "text-primary" : undefined}
                       />
                       <NoteCleanupButton noteId={headerNoteId} asTapGroup />
                     </>
@@ -940,17 +935,6 @@ export function NotesView({
             mainArea
           )}
 
-          {/* Version history — resizable MatrxDynamic panel (desktop) / Drawer (mobile) */}
-          {activeTabId && (
-            <NoteVersionHistory
-              noteId={activeTabId}
-              open={showHistory}
-              onOpenChange={setShowHistory}
-              onVersionRestored={() => {
-                dispatch(fetchNoteContent(activeTabId));
-              }}
-            />
-          )}
         </div>
       )}
     </NotesInstanceProvider>

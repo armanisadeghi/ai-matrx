@@ -24,15 +24,12 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  setInstanceHistoryOpen,
-  setInstanceOutlineOpen,
-} from "../redux/slice";
+import { setInstanceOutlineOpen } from "../redux/slice";
 import {
   selectInstanceActiveTab,
-  selectInstanceHistoryOpen,
   selectInstanceOutlineOpen,
 } from "../redux/selectors";
+import { useNoteHistoryTab } from "../canvas/noteHistoryKind";
 import { cn } from "@/lib/utils";
 import { NoteCleanupButton } from "./cleanup/NoteCleanupButton";
 import { useNoteEditorMode, useSelectNoteMode } from "../hooks/usePreferredDefaultEditorMode";
@@ -72,7 +69,6 @@ export function NoteViewControls({
 }: NoteViewControlsProps) {
   const dispatch = useAppDispatch();
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));
-  const historyOpen = useAppSelector(selectInstanceHistoryOpen(instanceId));
   const outlineOpen = useAppSelector(selectInstanceOutlineOpen(instanceId));
   const editorMode = useNoteEditorMode(activeTabId);
 
@@ -81,9 +77,8 @@ export function NoteViewControls({
     if (activeTabId) selectNoteMode(activeTabId, mode);
   };
 
-  const toggleHistory = useCallback(() => {
-    dispatch(setInstanceHistoryOpen({ instanceId, open: !historyOpen }));
-  }, [dispatch, instanceId, historyOpen]);
+  // Version history is a canvas tab beside the note; pressed while in front.
+  const history = useNoteHistoryTab(activeTabId ?? null);
 
   const toggleOutline = useCallback(() => {
     dispatch(setInstanceOutlineOpen({ instanceId, open: !outlineOpen }));
@@ -148,11 +143,11 @@ export function NoteViewControls({
 
       <button
         type="button"
-        onClick={toggleHistory}
+        onClick={history.toggle}
         title="Versions"
         className={cn(
           "flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
-          historyOpen
+          history.isVisible
             ? "bg-accent text-foreground"
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}

@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import {
   fetchVersions,
   restoreVersion,
@@ -73,7 +74,9 @@ export function NoteVersionHistoryPanel({
   const [currentNoteReadError, setCurrentNoteReadError] = useState<unknown>(null);
   const isEmbedded = variant === "embedded";
   const isMobile = useIsMobile();
-  const useStackedLayout = isMobile;
+  // A narrow canvas pane stacks the compare columns the way a phone does.
+  const isNarrowPane = useCanvasPresentation()?.isNarrow ?? false;
+  const useStackedLayout = isMobile || isNarrowPane;
 
   // The RIGHT side of the default comparison is the live note, which this
   // panel reads out of the notes slice. Every host used to be responsible for

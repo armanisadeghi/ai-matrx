@@ -12,15 +12,12 @@ import { Link } from "../../../../host/navigation";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@host/features/notes/components/NoteContentEditor";
 import { NoteViewControls } from "@host/features/notes/components/NoteViewControls";
-import { NoteVersionHistory } from "@host/features/notes/components/NoteVersionHistory";
 import { NotesInstanceProvider } from "@host/features/notes/context/NotesInstanceContext";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
   selectNoteById,
   selectNoteContentLoadStatus,
-  selectInstanceHistoryOpen,
 } from "@host/features/notes/redux/selectors";
-import { setInstanceHistoryOpen } from "@host/features/notes/redux/slice";
 import { useEmbeddedNoteInstance } from "@host/features/notes/hooks/useEmbeddedNoteInstance";
 import { fetchNoteContent } from "@host/features/notes/redux/thunks";
 import {
@@ -57,9 +54,6 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
   const snapshot = item.refs.resourceSnapshot;
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
-  );
-  const historyOpen = useAppSelector(
-    noteId ? selectInstanceHistoryOpen(instanceId) : () => false,
   );
   const contentLoadStatus = useAppSelector(
     noteId ? selectNoteContentLoadStatus(noteId) : () => "idle" as const,
@@ -113,14 +107,6 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
       <div className="flex h-full min-h-0 flex-col">
         <NoteContentEditor noteId={noteId} embedded />
       </div>
-      <NoteVersionHistory
-        noteId={noteId}
-        open={historyOpen}
-        onOpenChange={(open) =>
-          dispatch(setInstanceHistoryOpen({ instanceId, open }))
-        }
-        onVersionRestored={() => dispatch(fetchNoteContent(noteId))}
-      />
     </NotesInstanceProvider>
   );
 }

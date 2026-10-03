@@ -58,7 +58,6 @@ jest.mock("../components/NoteSidebarBulkBar", () => ({ NoteSidebarBulkBar: () =>
 jest.mock("@/features/window-panels/WindowPanel", () => ({ WindowPanel: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock("../components/NoteViewControls", () => ({ NoteViewControls: () => null }));
 jest.mock("../components/NoteStatsFooter", () => ({ NoteStatsFooter: () => null }));
-jest.mock("../components/NoteHistoryPane", () => ({ NoteHistoryPane: () => null }));
 jest.mock("../components/NotesWindowView", () => ({ NotesWindowView: () => null }));
 jest.mock("../components/NoteEditorCore", () => ({
   NoteEditorCore: ({ content, onChange }: { content: string; onChange: (value: string) => void }) => <textarea aria-label="Note editor" value={content} onChange={(event) => onChange(event.target.value)} />,
