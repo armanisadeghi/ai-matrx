@@ -26,7 +26,8 @@ create or replace function pg_temp.w2w_side_effects(p_org uuid, p_id uuid, p_typ
     'sweep', (select jsonb_agg(jsonb_build_object('change_type', q.change_type, 'entity_id', q.entity_id,
                                                   'scope_type_id', q.scope_type_id, 'organization_id', q.organization_id,
                                                   'created_by', q.created_by, 'status', q.status)
-                               order by (q.entity_id = p_id) desc, q.change_type, q.entity_id::text)
+                               order by (q.entity_id = p_id) desc, q.change_type,
+                                        (select f.data ->> 'key' from custom.record f where f.organization_id = p_org and f.id = q.entity_id), q.entity_id::text)
                 from rag.kg_sweep_queue q
                where q.created_at >= now() and (q.entity_id = p_id or q.entity_id in (select id from made))),
     'search', (select to_jsonb(si) - 'title_tsv' - 'projected_at' from platform.search_item si where si.entity_id = p_id),

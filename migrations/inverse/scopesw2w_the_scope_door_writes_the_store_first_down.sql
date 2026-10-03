@@ -1,6 +1,6 @@
 -- chair-step: the inverse of scopesw2w_the_scope_door_writes_the_store_first.sql — restores the body of custom.context_scope_write as it stood on production and the clone 2026-10-03 04:10Z, in which the door decides and writes through public.create_scope / public.update_scope and the store follows.
 -- lane: SCOPES-ON-THE-STORE
--- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) cc5a7fdd1d4daf53928e932ed17b0e37c3b16a2851338795de1d723755330de2
+-- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) 89c811a38c7461196d28097c590dc624acc9204a9b471d983ca05f9a5eb92a9c
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom.context_scope_write(p_organization_id uuid, p_scope_id uuid, p_type_id uuid, p_spec jsonb)

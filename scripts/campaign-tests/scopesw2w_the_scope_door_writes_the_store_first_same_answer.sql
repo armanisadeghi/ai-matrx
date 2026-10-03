@@ -183,10 +183,14 @@ begin
     elsif r.o_ok is distinct from r.n_ok or r.o_state is distinct from r.n_state or r.o_msg is distinct from r.n_msg then
       v_fails := v_fails || format('%s / %s RED (answer): old %s %s "%s" — new %s %s "%s"', r.seat, r.name,
                                    r.o_ok, coalesce(r.o_state, ''), coalesce(r.o_msg, ''), r.n_ok, coalesce(r.n_state, ''), coalesce(r.n_msg, ''));
-    elsif r.o_ans is distinct from r.n_ans then
-      v_fails := v_fails || format(E'%s / %s RED (answer JSON):\n old %s\n new %s', r.seat, r.name, r.o_ans, r.n_ans);
-    elsif r.o_eff is distinct from r.n_eff then
-      v_fails := v_fails || format(E'%s / %s RED (effect):\n old %s\n new %s', r.seat, r.name, r.o_eff, r.n_eff);
+    elsif r.o_ans is distinct from r.n_ans or r.o_eff is distinct from r.n_eff then
+      -- the answer and the effect are each reported, so one difference never hides the other
+      if r.o_ans is distinct from r.n_ans then
+        v_fails := v_fails || format(E'%s / %s RED (answer JSON):\n old %s\n new %s', r.seat, r.name, r.o_ans, r.n_ans);
+      end if;
+      if r.o_eff is distinct from r.n_eff then
+        v_fails := v_fails || format(E'%s / %s RED (effect):\n old %s\n new %s', r.seat, r.name, r.o_eff, r.n_eff);
+      end if;
     else
       raise notice '% / % SAME (%)', r.seat, r.name, case when r.n_ok then 'accepted' else 'refused ' || r.n_state || ' "' || r.n_msg || '"' end;
     end if;

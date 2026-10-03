@@ -155,9 +155,13 @@ begin
     end if;
     perform set_config('custom.context_door_row', coalesce(v_id, p_scope_id)::text, true);
     perform custom._ctx_store_scope(v_org, v_type, coalesce(v_id, p_scope_id), v_spec);
-    perform set_config('custom.context_door_row', '', true);
     perform set_config('app.actor_system', v_actor, true);
   end if;
+  -- The scope-door mark covers the store write only: the old row's own triggers may write other old rows (a
+  -- provisioned value) that the follow must carry as before. The door's own image row stays named in
+  -- custom.context_door_row through step 2, so the follow and the twin leave that one row to this door.
+  perform custom._ctx_mark(v_was);
+  perform set_config('custom.context_door_row', coalesce(v_id, p_scope_id)::text, true);
 
   -- 2. THE IMAGE: the old row, written with today's statements, so every old trigger and reader sees it.
   if p_scope_id is null then
@@ -191,6 +195,8 @@ begin
   if v_actor = '' then
     perform set_config('app.actor_system', 'custom.context_write_through', true);
   end if;
+  perform set_config('custom.context_door_row', '', true);
+  v_was := custom._ctx_mark('door');
   v_did := custom._ctx_store_scope(v_org, v_type, v_row.id, to_jsonb(v_row)) ->> 'did';
   perform custom._ctx_mark(v_was);
   -- 4. THE STORE'S OWN SIDE EFFECTS, AFTER THE OLD ROW'S (the order of the days the old row was the writer):

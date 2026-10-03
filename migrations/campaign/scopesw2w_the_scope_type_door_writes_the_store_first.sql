@@ -1,8 +1,9 @@
 -- draft: claude-w2w H1-H6 fixes in clone proof
--- chair-step: it REPLACES the body of one lane-9 scope door, custom.context_type_write (signature, SECURITY DEFINER, search_path and grants unchanged). The door no longer calls public.create_scope_type / public.update_scope_type and no longer reads context.scope_types to decide anything: the organization, the parent type, the descendants and the current words come from the store Table (custom.scope_type_row_of); the access predicates are the old functions' own, word for word (no move to the store ladder, chair item CA1). The store Table is written FIRST through the lane-9 store half custom._ctx_store_type (marked as a scope door, and named in custom.context_door_row so the store's side-effect twin holds this row back); the old context.scope_types row is then written as the IMAGE with the store's words, so its own triggers queue the suggestion sweep, sync the search index and provision exactly as before; the store half is handed the image row once more (in steady state it changes nothing); and the twin then runs for the row, after the old triggers, as it did when the old row was the writer — one sweep, one notification. A word sent as JSON null keeps the word; a type only the store holds answers "active scope type … not found" as before. It also REPLACES custom._context_side_effects (the lane-9 twin of the old tables' side effects) so it skips the one row a store-first door names; the scope door (scopesw2w_the_scope_door_writes_the_store_first.sql) relies on it, so this file goes first. No new door, no grant, no change to the chair's record doors or the access ladder.
+-- chair-step: it REPLACES the body of one lane-9 scope door, custom.context_type_write (signature, SECURITY DEFINER, search_path and grants unchanged). The door no longer calls public.create_scope_type / public.update_scope_type and no longer reads context.scope_types to decide anything: the organization, the parent type, the descendants and the current words come from the store Table (custom.scope_type_row_of); the access predicates are the old functions' own, word for word (no move to the store ladder, chair item CA1). The store Table is written FIRST through the lane-9 store half custom._ctx_store_type (marked as a scope door, and named in custom.context_door_row so the store's side-effect twin holds this row back); the old context.scope_types row is then written as the IMAGE with the store's words, so its own triggers queue the suggestion sweep, sync the search index and provision exactly as before; the store half is handed the image row once more (in steady state it changes nothing); and the twin then runs for the row, after the old triggers, as it did when the old row was the writer — one sweep, one notification. A word sent as JSON null keeps the word; a type only the store holds answers "active scope type … not found" as before. It also REPLACES custom._context_side_effects (the lane-9 twin of the old tables' side effects) and context._follow_to_the_copy (the old tables' follow) so each skips the one row a store-first door names in custom.context_door_row, and nothing else; the scope door (scopesw2w_the_scope_door_writes_the_store_first.sql) relies on it, so this file goes first. No new door, no grant, no change to the chair's record doors or the access ladder.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom.context_type_write(uuid, uuid, jsonb) d1e11f9ced7a5ac3d98eee5f73e2f01e03ec703a1afc9c56f2cb56006dc9e08c
 -- based-on: custom._context_side_effects(jsonb) b4d564356117d6de7d985cef7a8c1d1db6178d8c9826ccd4c4ad49b14a701652
+-- based-on: context._follow_to_the_copy() 8687906f5fe8d796bd5586b76e601f1a771f7eab258985bb142e258d05a3c147
 -- lock: custom
 --
 -- Inverse: migrations/inverse/scopesw2w_the_scope_type_door_writes_the_store_first_down.sql.
@@ -129,8 +130,10 @@ begin
   end if;
   perform set_config('custom.context_door_row', coalesce(v_id, p_type_id)::text, true);
   perform custom._ctx_store_type(v_org, coalesce(v_id, p_type_id), v_spec);
-  perform set_config('custom.context_door_row', '', true);
   perform set_config('app.actor_system', v_actor, true);
+  -- The scope-door mark covers the store write only; the image row stays named in custom.context_door_row
+  -- through step 2, so the follow and the twin leave that one row to this door and carry every other.
+  perform custom._ctx_mark(v_was);
 
   -- 2. THE IMAGE: the old row with the store's words.
   if p_type_id is null then
@@ -165,6 +168,8 @@ begin
   if v_actor = '' then
     perform set_config('app.actor_system', 'custom.context_write_through', true);
   end if;
+  perform set_config('custom.context_door_row', '', true);
+  v_was := custom._ctx_mark('door');
   v_did := custom._ctx_store_type(v_org, v_img.id, to_jsonb(v_img)) ->> 'did';
   perform custom._ctx_mark(v_was);
   -- 4. THE STORE'S OWN SIDE EFFECTS, AFTER THE OLD ROW'S (the order of the days the old row was the writer):
@@ -313,4 +318,104 @@ begin
     end if;
   end loop;
 end
+$function$;
+
+CREATE OR REPLACE FUNCTION context._follow_to_the_copy()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_row  jsonb := case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;
+  v_id   uuid  := (v_row ->> 'id')::uuid;
+  v_org  uuid;
+  v_type uuid;
+  v_on   boolean;
+begin
+  -- WHICH ORGANIZATION AND WHICH SCOPE TYPE (the copy's Table) this row belongs to.
+  if tg_table_name = 'scope_types' then
+    v_org  := (v_row ->> 'organization_id')::uuid;
+    v_type := v_id;
+  elsif tg_table_name = 'scopes' then
+    v_org  := (v_row ->> 'organization_id')::uuid;
+    v_type := (v_row ->> 'scope_type_id')::uuid;
+  elsif tg_table_name = 'context_items' then
+    v_type := (v_row ->> 'scope_type_id')::uuid;
+    select t.organization_id into v_org from context.scope_types t where t.id = v_type;
+  elsif tg_table_name = 'context_item_values' then
+    select s.organization_id, s.scope_type_id into v_org, v_type
+      from context.scopes s where s.id = (v_row ->> 'scope_id')::uuid;
+  end if;
+  if v_org is null then
+    return null;
+  end if;
+
+  -- SCOPES-WRITE-THROUGH: IN AN ORGANIZATION WHOSE STORE IS THE WRITER, the record store is written
+  -- in this same statement and its rules govern — a store refusal refuses the write. OUTSIDE the
+  -- exception handler below on purpose: swallowing a refusal here would commit the old row and leave
+  -- the store behind, silently. A scope door has already written the store for its own rows (marked).
+  if custom.context_writer(v_org) = 'store' then
+    -- LANE 9 W2-W: a store-first scope door has already written the store for the ONE row it names in
+    -- custom.context_door_row (its image); every other row the old triggers write meanwhile (a provisioned
+    -- value) is still carried here, as before.
+    if not custom._ctx_marked()
+       and v_id is distinct from nullif(current_setting('custom.context_door_row', true), '')::uuid then
+      perform custom._ctx_bridge(tg_table_name, tg_op, v_row, v_org, v_type);
+    end if;
+    return null;
+  end if;
+
+  begin
+    v_on := coalesce((platform.knob_resolve('custom', 'context_copy_following', v_org) #>> '{}')::boolean, true);
+    if not v_on then
+      return null;
+    end if;
+
+    insert into custom.io_outbox (event_key, record_id, table_id, operation, dedupe_key, organization_id, actor)
+    values ('context.follow', v_id, v_type,
+            case tg_op when 'INSERT' then 'created' when 'DELETE' then 'deleted' else 'updated' end,
+            'context.follow:' || tg_table_name || ':' || v_id::text,
+            v_org,
+            jsonb_build_object('declared', 'context.' || tg_table_name, 'user_id', auth.uid()))
+    on conflict (organization_id, dedupe_key) where deleted_at is null
+    do update set consumed_at = null,
+                  consumer    = null,
+                  operation   = excluded.operation,
+                  actor       = excluded.actor;
+    -- RE-ARMED FOR EVERY CONSUMER (CHAIR-RECORD-CHANGED): once each consumer keeps its own
+    -- consumption, a re-armed row is news again only when those rows go too.
+    if custom.io_outbox_per_consumer() then
+      perform custom.io_outbox_rearm(v_org, 'context.follow:' || tg_table_name || ':' || v_id::text);
+    end if;
+    -- A RE-ARMED ROW IS NEWS TOO. custom.io_outbox_announce fires on INSERT only, so the second
+    -- edit of the same old row (an update of the outbox row) would wake nobody; say it here, in the
+    -- announce's own shape (a pointer, never the row). The follow debounces, so a duplicate on the
+    -- first insert costs nothing.
+    perform pg_notify('records_changed',
+                      jsonb_build_object('organization_id', v_org, 'record_id', v_id, 'table_id', v_type,
+                                         'operation', 'updated', 'event_key', 'context.follow')::text);
+  exception when others then
+    -- NEVER FAIL THE OLD SIDE'S EDIT, NEVER FAIL IN SILENCE. The current screens are the writer;
+    -- an edit there must land whether or not the copy could be told. The miss is recorded with its
+    -- remedy, and the next change to the same organization (or any follow drain run for it)
+    -- re-plans the whole organization, so nothing is lost for good.
+    begin
+      perform ops.record_system_error(jsonb_build_object(
+      'kind', 'context_follow_enqueue_failure',
+      'organization_id', v_org,
+      'source_app', 'database',
+      'source_feature', 'context-follow',
+      'route', 'context._follow_to_the_copy',
+      'error_type', sqlstate,
+      'error_text', sqlerrm,
+      'context', jsonb_build_object('table', 'context.' || tg_table_name, 'row_id', v_id, 'operation', tg_op,
+                                 'remedy', 'run the follow for this organization: python -m matrx_records.movers.runner --follow-context --organization <id> --apply --i-know-this-writes')));
+    exception when others then
+      raise warning 'context._follow_to_the_copy: could not tell the copy about %.% (%), and could not record it: %',
+        'context', tg_table_name, v_id, sqlerrm;
+    end;
+  end;
+  return null;
+end;
 $function$;
