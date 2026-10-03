@@ -244,7 +244,9 @@ const REPORT_CSS = `
   .rc table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 6px; break-inside: avoid; }
   .rc th, .rc td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; text-align: right; }
   .rc th:first-child, .rc td:first-child { text-align: left; }
-  .rc thead th { background: #f3f4f6; font-weight: 600; }
+  .rc thead th { background: #f3f4f6; color: #111827; font-weight: 600; border: none; border-bottom: 1px solid #d1d5db; }
+  .rc td { border-left: none; border-right: none; border-top: none; }
+  @media print { .rc thead th, .rc .best, .rc .place { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
   .rc td.num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
   .rc .best { color: #047857; font-weight: 700; background: #ecfdf5; }
   .rc .worst { color: #be123c; font-weight: 600; }
@@ -290,7 +292,9 @@ function sectionHtml(section: MetricSection, stats: ColumnStats[], costUnit: Cos
 function standingsHtml(ranking: RunsRanking): string {
   if (!ranking.standings.some((s) => s.ranked > 0)) return "";
   const grid = standingsGrid(ranking);
-  const head = `<tr>${grid.headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>`;
+  const head = `<tr>${grid.headers
+    .map((h, i) => `<th${i <= 1 ? ' style="text-align:left"' : ""}>${esc(h)}</th>`)
+    .join("")}</tr>`;
   const body = ranking.standings
     .map(
       (s) =>
