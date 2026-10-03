@@ -14,6 +14,16 @@ export interface CapturedSelection {
   text: string;
   selection: Selection | null;
   range: Range | null;
+  /**
+   * A text field's offsets AT CAPTURE (mousedown). The browser's default action
+   * for that mousedown can move the caret afterwards, so the field's live
+   * selectionStart/End no longer say what the menu opened on.
+   */
+  editable?: {
+    element: HTMLTextAreaElement | HTMLInputElement;
+    start: number;
+    end: number;
+  };
 }
 
 export interface EditableSelectionRange {
@@ -74,6 +84,7 @@ export function captureTextareaSelection(
     text,
     selection: null,
     range: null,
+    editable: { element: target, start, end },
   };
 }
 
