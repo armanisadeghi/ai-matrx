@@ -126,6 +126,30 @@ async function luisOpensTheSheet(rs: Seam) {
   return page.data.rows;
 }
 
+describe("Cedar Ridge PT · Patient Visits · one person typing fast across a row is never their own colleague", () => {
+  it("two cells of one row saved back to back both land — the second waits for the first's version (grids review 3)", async () => {
+    const rs: Seam = await import(SEAM);
+    await luisOpensTheSheet(rs);
+    // Tab-typing: the second save leaves while the first is still in flight.
+    const [first, second] = await Promise.all([
+      rs.upsertCell(HOME, { tableId: TABLE, rowId: MAYA, fieldName: "visit_day", value: "Thursday" }),
+      rs.upsertCell(HOME, { tableId: TABLE, rowId: MAYA, fieldName: "desk_notes", value: "Bring the knee brace" }),
+    ]);
+    expect(first.success).toBe(true);
+    expect(second.success).toBe(true);
+    expect(store.rows.get(MAYA)!.document).toMatchObject({ visit_day: "Thursday", desk_notes: "Bring the knee brace" });
+    expect(store.sentWithoutVersion).toBe(0);
+  });
+
+  it("a colleague's change between them is still refused", async () => {
+    const rs: Seam = await import(SEAM);
+    await luisOpensTheSheet(rs);
+    colleagueWrites(MAYA, { visit_day: "Friday" });
+    const saved = await rs.upsertCell(HOME, { tableId: TABLE, rowId: MAYA, fieldName: "desk_notes", value: "Running late" });
+    expect(saved.success).toBe(false);
+  });
+});
+
 describe("Cedar Ridge PT · Patient Visits · a stale edit never overwrites a colleague", () => {
   it("a cell edit over a colleague's change is refused 'Changed by someone else' and her change stays", async () => {
     const rs: Seam = await import(SEAM);
