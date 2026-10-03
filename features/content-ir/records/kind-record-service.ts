@@ -25,6 +25,16 @@ import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
+  createRecordsClient,
+  landingOutcomesFor,
+  outcomeForBlock,
+  type BlockOutcome,
+  type Landing,
+  type LandingOutcomes,
+  type RecordsClient,
+} from "@ai-matrx/records/core";
+import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import {
   storeKindRecord,
   PRODUCED_BY_LABEL as STORE_PRODUCED_BY_LABEL,
   MESSAGE_SOURCE_TYPE as STORE_MESSAGE_SOURCE_TYPE,
@@ -56,7 +66,13 @@ export {
   type KindRecordsChangedListener,
 } from "./record-change-bus";
 
-import { notifyKindRecordsChanged } from "./record-change-bus";
+import {
+  notifyKindRecordsChanged,
+  subscribeToKindRecordChanges as onKindRecordsChanged,
+} from "./record-change-bus";
+
+// Any record write anywhere drops the per-message landing reads, so the next strip reads fresh.
+onKindRecordsChanged(() => forgetMessageLandings());
 
 export interface KindRecord {
   id: string;
@@ -644,5 +660,231 @@ export async function fetchRecordsForAnchor(
     };
   } catch (error) {
     return fail(`fetchRecordsForAnchor(${anchor.type})`, error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// KINDS-GLUE wave 2 slice 3: where a message's outputs LANDED (§7.2, §7.3)
+// ---------------------------------------------------------------------------
+//
+// Two sources during the transition. The RECORD STORE answers through `@ai-matrx/records`'
+// `landingOutcomesFor` — every output the server lander wrote, matched to a block by
+// (message, kind, fingerprint), never by block id. The RETIRED KIND STORE
+// (`content_ir.kind_instance`) is read HERE and only here, by `fetchLegacyLandings`, so its old
+// rows keep their old card and their old doors until wave 5 drains them; the records package
+// never reaches it (the old-system-unreachable guard holds that).
+//
+// 🚨 A STORE RECORD IS NEVER HANDED A KIND-STORE DOOR. Confirm, Archive and the count of a
+// `store: "record"` landing go through the record store's own verbs below
+// (`keepStoreOutput`, `archiveStoreOutput`, `countStoreOutputs`); `confirmKindRecords`,
+// `archiveKindRecords` and `countKindRecords` serve `store: "kind_instance"` landings only.
+// Guard: `features/content-ir/__tests__/kind-record-chrome-store-doors.test.tsx`.
+
+/** The old kind store's rows this message produced, as landings (all kinds). */
+export async function fetchLegacyLandings(
+  messageId: string,
+): Promise<RecordResult<Landing[]>> {
+  if (durableRecordId(messageId) === null) return { ok: true, value: [] };
+  try {
+    const { data: edges, error: edgeError } = await supabase
+      .schema("platform")
+      .from("associations")
+      .select("target_id")
+      .eq("source_type", MESSAGE_SOURCE_TYPE)
+      .eq("source_id", messageId)
+      .eq("target_type", KIND_INSTANCE_TARGET_TYPE)
+      .eq("label", PRODUCED_BY_LABEL)
+      .is("deleted_at", null);
+    if (edgeError) return fail(`fetchLegacyLandings(${messageId})`, edgeError);
+    const ids = (edges ?? []).map((row) => row.target_id).filter(Boolean);
+
+    const LEGACY_COLUMNS =
+      "id,title,confirmation,archived_at,created_at,kind_definition_id,organization_id,metadata" as const;
+    type LegacyRow = RawInstanceRow & { organization_id: string | null; metadata: unknown };
+    const fingerprintOf = (row: LegacyRow): string | null => {
+      const source = (row.metadata as { source?: { fingerprint?: unknown } } | null)?.source;
+      return typeof source?.fingerprint === "string" && source.fingerprint ? source.fingerprint : null;
+    };
+    const byId = new Map<string, LegacyRow>();
+    if (ids.length > 0) {
+      const { data, error } = await supabase
+        .schema("content_ir")
+        .from("kind_instance")
+        .select(LEGACY_COLUMNS)
+        .in("id", ids)
+        .is("deleted_at", null);
+      if (error) return fail(`fetchLegacyLandings(${messageId})`, error);
+      for (const row of (data ?? []) as unknown as LegacyRow[]) byId.set(row.id, row);
+    }
+    // Both old stores also wrote `metadata.source.message_id`; an edge can be missing.
+    const homed = await supabase
+      .schema("content_ir")
+      .from("kind_instance")
+      .select(LEGACY_COLUMNS)
+      .eq("metadata->source->>message_id", messageId)
+      .is("deleted_at", null);
+    if (homed.error) return fail(`fetchLegacyLandings(${messageId})`, homed.error);
+    for (const row of (homed.data ?? []) as unknown as LegacyRow[]) byId.set(row.id, row);
+    if (byId.size === 0) return { ok: true, value: [] };
+
+    const slugs = await resolveKindSlugs([
+      ...new Set([...byId.values()].map((r) => r.kind_definition_id)),
+    ]);
+    if (!slugs.ok) return slugs;
+    return {
+      ok: true,
+      value: [...byId.values()].map((row) => ({
+        store: "kind_instance" as const,
+        recordId: row.id,
+        organizationId: row.organization_id,
+        kind: slugs.value.get(row.kind_definition_id) ?? null,
+        fingerprint: fingerprintOf(row),
+        ordinal: null,
+        blockId: null,
+        tableId: null,
+        state: row.archived_at ? ("archived" as const) : ("saved" as const),
+        title: row.title,
+        unconfirmed: normalizeConfirmation(row.confirmation) !== "confirmed",
+        archivedAt: row.archived_at,
+        createdAt: row.created_at,
+        refusal: null,
+        fromSource: false,
+      })),
+    };
+  } catch (error) {
+    return fail(`fetchLegacyLandings(${messageId})`, error);
+  }
+}
+
+/** One read per message, shared by every strip of that message; dropped on any record change. */
+const landingReads = new Map<string, Promise<RecordResult<LandingOutcomes>>>();
+
+/** Forget every cached landing read (the record bus calls this on any change). */
+export function forgetMessageLandings(): void {
+  landingReads.clear();
+}
+
+/**
+ * Every output this message produced, in BOTH stores: the record store through
+ * `landingOutcomesFor`, the old kind store through `fetchLegacyLandings`.
+ */
+export function fetchMessageLandings(
+  messageId: string,
+  conversationId?: string | null,
+): Promise<RecordResult<LandingOutcomes>> {
+  const key = `${messageId}|${conversationId ?? ""}`;
+  const cached = landingReads.get(key);
+  if (cached) return cached;
+  const read = (async (): Promise<RecordResult<LandingOutcomes>> => {
+    if (durableRecordId(messageId) === null) {
+      return { ok: true, value: { messageId, landings: [] } };
+    }
+    const [store, legacy] = await Promise.all([
+      landingOutcomesFor(supabase, messageId, { conversationId: conversationId ?? null }),
+      fetchLegacyLandings(messageId),
+    ]);
+    if (!store.ok) {
+      return fail(`fetchMessageLandings(${messageId})`, store.error);
+    }
+    if (!legacy.ok) return legacy;
+    // An older installed package still answered kind-store rows itself: one row, one landing.
+    const seen = new Set<string>();
+    const landings = [...store.data.landings, ...legacy.value].filter((l) => {
+      const id = `${l.store}:${l.recordId}`;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    landings.sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
+    return { ok: true, value: { messageId, landings } };
+  })();
+  landingReads.set(key, read);
+  void read.then((answer) => {
+    if (!answer.ok) landingReads.delete(key);
+  });
+  return read;
+}
+
+/** The outcome for one block of a message. Matched by (kind, fingerprint, ordinal) only. */
+export function landingForBlock(
+  outcomes: LandingOutcomes,
+  block: { kind: string; fingerprint: string | null | undefined; ordinal?: number | null },
+): BlockOutcome {
+  return outcomeForBlock(outcomes, block);
+}
+
+async function storeClientFor(organizationId: string): Promise<RecordsClient> {
+  const { data } = await supabase.auth.getSession();
+  return createRecordsClient({
+    dataSource: recordsDataSource(supabase),
+    actor: personActor(data.session?.user?.id ?? null),
+    organizationId,
+  });
+}
+
+function storeFail(where: string, landing: Landing, message: string): { ok: false; message: string } {
+  return fail(`${where}(${landing.recordId})`, new Error(message));
+}
+
+/**
+ * The output table Field its owner sets to keep an output; Keep confirms (design §5.2–5.3).
+ * `@ai-matrx/records` ≥0.68 exports it as `OUTPUT_KEPT_KEY`.
+ */
+const OUTPUT_KEPT = "output_kept";
+
+/** Confirm a record-store output: its owner keeps it (`output_kept`), which confirms it. */
+export async function keepStoreOutput(landing: Landing): Promise<RecordResult<true>> {
+  if (landing.store !== "record" || !landing.organizationId) {
+    return { ok: false, message: "This output is not in your tables, so it cannot be confirmed here." };
+  }
+  try {
+    const client = await storeClientFor(landing.organizationId);
+    const written = await client.recordUpdate({
+      record_id: landing.recordId,
+      patch: { [OUTPUT_KEPT]: true },
+    });
+    if (!written.ok) return storeFail("keepStoreOutput", landing, written.error.message);
+    forgetMessageLandings();
+    notifyKindRecordsChanged(landing.kind);
+    return { ok: true, value: true };
+  } catch (error) {
+    return fail(`keepStoreOutput(${landing.recordId})`, error);
+  }
+}
+
+/** Archive (or restore) a record-store output through the store's own soft archive. */
+export async function archiveStoreOutput(
+  landing: Landing,
+  archived: boolean,
+): Promise<RecordResult<true>> {
+  if (landing.store !== "record" || !landing.organizationId) {
+    return { ok: false, message: "This output is not in your tables, so it cannot be archived here." };
+  }
+  try {
+    const client = await storeClientFor(landing.organizationId);
+    const answer = archived
+      ? await client.recordDelete({ record_id: landing.recordId })
+      : await client.recordRestore({ record_id: landing.recordId });
+    if (!answer.ok) return storeFail("archiveStoreOutput", landing, answer.error.message);
+    forgetMessageLandings();
+    notifyKindRecordsChanged(landing.kind);
+    return { ok: true, value: true };
+  } catch (error) {
+    return fail(`archiveStoreOutput(${landing.recordId})`, error);
+  }
+}
+
+/** How many rows of this output's table the reader can see (the "All N" link). */
+export async function countStoreOutputs(landing: Landing): Promise<RecordResult<number>> {
+  if (landing.store !== "record" || !landing.tableId || !landing.organizationId) {
+    return { ok: false, message: "This output's table is not known, so it cannot be counted." };
+  }
+  try {
+    const client = await storeClientFor(landing.organizationId);
+    const counted = await client.tableRowCounts({ table_ids: [landing.tableId] });
+    if (!counted.ok) return storeFail("countStoreOutputs", landing, counted.error.message);
+    return { ok: true, value: counted.data[0]?.visible_rows ?? 0 };
+  } catch (error) {
+    return fail(`countStoreOutputs(${landing.recordId})`, error);
   }
 }

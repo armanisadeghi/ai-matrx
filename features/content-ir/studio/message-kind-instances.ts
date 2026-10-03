@@ -94,6 +94,25 @@ export async function extractRegisteredKindBlocks(
   return out;
 }
 
+/** The blocks whose output is NOT already a record-store row of this message. */
+async function withoutStoreLanded(
+  blocks: ExtractedKindBlock[],
+  messageId: string | null,
+): Promise<ExtractedKindBlock[]> {
+  if (!messageId) return blocks;
+  const { fetchMessageLandings, landingForBlock } = await import(
+    "../records/kind-record-service"
+  );
+  const read = await fetchMessageLandings(messageId);
+  if (!read.ok) throw new Error(read.message);
+  return blocks.filter((block) => {
+    const outcome = landingForBlock(read.value, { kind: block.kind, fingerprint: block.fingerprint });
+    const landings =
+      outcome.state === "landed" ? [outcome.landing] : outcome.state === "several" ? outcome.landings : [];
+    return !landings.some((landing) => landing.store === "record");
+  });
+}
+
 export interface SavedMessageInstance extends KindInstanceWriteResult {
   kind: string;
   label: string;
@@ -114,11 +133,17 @@ export async function saveKindInstancesFromMessage(args: {
   /** `chat.message.id` — the provenance anchor and the `produced_by` edge. */
   messageId?: string | null;
 }): Promise<SavedMessageInstance[]> {
-  const blocks = await extractRegisteredKindBlocks(args.text);
-  if (blocks.length === 0) {
+  const found = await extractRegisteredKindBlocks(args.text);
+  if (found.length === 0) {
     throw new Error(
       "No registered shape block found in this message — the __kind marker did not resolve to a known kind.",
     );
+  }
+  // KINDS-GLUE wave 2 §7.3: a block the server already landed in the record store is SAVED —
+  // its card says so — and this action never copies it into the retired kind store beside it.
+  const blocks = await withoutStoreLanded(found, args.messageId ?? null);
+  if (blocks.length === 0) {
+    throw new Error("Every shape in this message is already saved.");
   }
 
   const slugs = [...new Set(blocks.map((b) => b.kind))];

@@ -2,96 +2,98 @@
 
 /**
  * KindRecordChrome — the chrome a HOST draws under a rendered kind block whose
- * kind declares the `record` disposition.
+ * output was SAVED, or whose kind declares the `record` disposition.
  *
  * ## Why this is chrome and not part of any component
  *
  * THE WRAPPER LAW (`components/mardown-display/blocks/markdown/MarkdownKindBlock.tsx`):
- * a kind component renders BARE and the host draws the frame. So the badge, the
- * count link and the two transition doors live here, keyed off the registry, and
- * `wine_tasting`'s component knows nothing about any of it. The day a second
- * kind declares itself a record it inherits this whole strip untouched.
+ * a kind component renders BARE and the host draws the frame. So the label, the
+ * count link and the transition doors live here, and no kind component knows.
  *
- * ## The button says what is actually true, and it is not always the same thing
+ * ## Two stores during the transition (KINDS-GLUE wave 2 §7.3)
  *
- * When the record EXISTS the button is "go look at it": the badge, the link to
- * the row, and the two transition doors.
+ * The strip reads the message's landings ONCE (`fetchMessageLandings`) and picks
+ * this block's by (kind, fingerprint) — never by block id:
  *
- * When it does NOT exist the button SAVES it, from the client, through the one
- * studio write contract. That is the case TODAY for every wine tasting written
- * in a chat: aidream's block detector claims no ordinary `__kind` body and
- * `wine_tasting` is not in its closed `BLOCK_KIND_MAP`, so the server never sees
- * a verified block and writes no row (proved against the real code, 2026-09-12).
- * The strip therefore never assumes; it LOOKS, and then says what it found.
+ *  - a RECORD-STORE output (the server lander's row in the kind's outputs table)
+ *    says "Saved", and its Confirm, Archive and count go through the record
+ *    store's own verbs (`keepStoreOutput`, `archiveStoreOutput`,
+ *    `countStoreOutputs`). It never touches a `content_ir.kind_instance` door.
+ *  - an OLD kind-store row keeps its old card and its old doors until wave 5.
+ *  - neither: the strip says it was not saved. There is no Save here — the
+ *    retired store takes no new rows, and the person's Save door (door 5,
+ *    `POST /kind-outputs/save`) shows only once the message records that saving
+ *    was off for it (slice 6's `kind_outputs` entry).
  *
  * ## Never absent, never dead, never a false sentence
  *
- * There is no disabled button here and no greyed-out state. While the read is in
- * flight the strip says it is checking. If the read fails, the strip says what
- * went wrong in a sentence and offers to try again. If the row genuinely is not
- * there, it says THAT — it does not draw a Confirm button that would do nothing.
+ * While the read is in flight the strip says it is checking. If the read fails,
+ * it says what went wrong and offers to try again.
  */
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  Archive,
-  ArchiveRestore,
-  Check,
-  ExternalLink,
-  RotateCw,
-  Save,
-} from "lucide-react";
+import { Archive, ArchiveRestore, Check, ExternalLink, RotateCw } from "lucide-react";
+import type { BlockOutcome, Landing } from "@ai-matrx/records/core";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
   shapeInstancePermalink,
   shapeRecordsTableHref,
 } from "@/features/content-ir/studio/constants";
+import { tableHref as storeTableHref } from "@/features/records-tool-display/readRecordsAnswer";
 import { ConfirmationBadge } from "./ConfirmationBadge";
 import { resolveKindRecordDisposition } from "./kind-record-registry";
 import "./record-kinds";
 import {
   archiveKindRecords,
+  archiveStoreOutput,
   confirmKindRecords,
   countKindRecords,
-  fetchRecordsProducedByMessage,
+  countStoreOutputs,
+  fetchMessageLandings,
+  keepStoreOutput,
+  landingForBlock,
   notifyKindRecordsChanged,
-  saveRecordFromBlock,
   subscribeToKindRecordChanges,
-  type KindRecord,
 } from "./kind-record-service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
- * True when the host should draw the strip at all. Exported so the host can ask
- * the cheap question (a Map lookup) before mounting anything.
+ * True when the host should draw the strip for a kind with no saved output to
+ * look for — a declared record kind. A block whose message has a durable id is
+ * mounted regardless, and the strip draws only when that message's read names it.
  */
 export function kindHasRecordChrome(kind: string | null | undefined): boolean {
   const disposition = resolveKindRecordDisposition(kind);
-  // A table kind's records are rows of its Table; the strip's kind-store reads would show a
-  // wrong count and a Save that writes the wrong place. Absent until wave 2's landing read
-  // exists (KINDS-GLUE wave 3 §5.3, A6) — a control is absent, never dead.
+  // A table kind's rows are only ever found through the landing read; with no message to read
+  // there is nothing honest to show for it.
   return disposition !== null && disposition.storage !== "table";
+}
+
+/** "flashcard_set" → "Flashcard Set". */
+function humanize(kind: string): string {
+  return kind
+    .replace(/^table:.*/, "record")
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 interface LoadState {
   status: "loading" | "ready" | "error";
-  /** The ACTIVE count of this kind's records across every organization the person can reach. */
+  outcome: BlockOutcome;
+  /** The count beside the "All N" link: the output's table for a store row, the kind store otherwise. */
   count: number | null;
-  /** Records this message produced of this kind. */
-  records: KindRecord[];
-  /** A reader-facing sentence, present only when something actually failed. */
   message: string | null;
 }
 
 const INITIAL: LoadState = {
   status: "loading",
+  outcome: { state: "none" },
   count: null,
-  records: [],
   message: null,
 };
 
@@ -99,370 +101,249 @@ export function KindRecordChrome({
   kind,
   durableMessageId,
   conversationId,
-  value,
+  value: _value,
   fingerprint,
   className,
 }: {
   kind: string;
-  /**
-   * `chat.message.id` — the provenance anchor, DATABASE id only (the seam's
-   * `durableRecordId`). Absent outside a conversation and while the answer has
-   * no durable row (incognito, reservation gap).
-   */
+  /** `chat.message.id` — DATABASE id only. Absent outside a conversation. */
   durableMessageId?: string;
-  /** `chat.conversation.id` — the HOME a saved record is filed under. */
+  /** `chat.conversation.id` — a fork's copied outputs answer read-only. */
   conversationId?: string;
-  /**
-   * The block's reconstructed instance value. Present whenever the host could
-   * read the region; absent means the block never parsed, and the strip says so
-   * rather than offering a Save that would write nothing.
-   */
+  /** The block's reconstructed value (kept for hosts; the strip reads the stores, not the block). */
   value?: Record<string, unknown> | null;
-  /**
-   * The block envelope's own fingerprint (`CanonicalBlockIR.fingerprint`) —
-   * stored as `metadata.source.fingerprint`, the same key the server store
-   * writes. Absent when the block carried no envelope, and then the key is
-   * simply not written rather than invented.
-   */
+  /** The block envelope's fingerprint — what an output is matched by. */
   fingerprint?: string | null;
   className?: string;
 }) {
   const disposition = resolveKindRecordDisposition(kind);
-  // The EXPLICIT active org — the DESTINATION of a Save only. With none, a Save
-  // refuses through `saveKindInstance` with its own sentence — never a record
-  // quietly filed into the user's own organization. The count reads no org.
-  const organizationId = useAppSelector(selectOrganizationId);
+  /** A kind-store count exists only for a declared, kind-store record kind. */
+  const countsInKindStore = disposition !== null && disposition.storage !== "table";
+  const label = disposition?.label ?? humanize(kind);
+  const labelPlural = disposition?.labelPlural ?? `${label}s`;
   const [state, setState] = useState<LoadState>(INITIAL);
   const [busy, setBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  /**
-   * A record this STRIP itself just saved, kept alongside (not instead of)
-   * `state.records` — see the onSave save-state fix below.
-   */
-  const [savedRecord, setSavedRecord] = useState<KindRecord | null>(null);
-  /**
-   * Record ids this strip has already announced on the bus, so a repeated
-   * reload of the SAME record never re-announces (that would be an infinite
-   * reload loop across every strip of the kind).
-   */
+  /** Record ids this strip already announced on the bus, so a re-read never re-announces. */
   const announcedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!disposition) return;
     let cancelled = false;
     setState(INITIAL);
     void (async () => {
-      const [countResult, recordsResult] = await Promise.all([
-        // Every organization the person can reach — the selected one is only
-        // the DESTINATION of a Save below, never what the count reads.
-        countKindRecords({ kind }),
-        durableMessageId
-          ? fetchRecordsProducedByMessage({ kind, messageId: durableMessageId })
-          : Promise.resolve({ ok: true as const, value: [] as KindRecord[] }),
-      ]);
+      const read = durableMessageId
+        ? await fetchMessageLandings(durableMessageId, conversationId ?? null)
+        : { ok: true as const, value: { messageId: "", landings: [] as Landing[] } };
       if (cancelled) return;
-      const message = !countResult.ok
-        ? countResult.message
-        : !recordsResult.ok
-          ? recordsResult.message
-          : null;
+      if (!read.ok) {
+        setState({ ...INITIAL, status: "error", message: read.message });
+        return;
+      }
+      const outcome = landingForBlock(read.value, { kind, fingerprint });
+      const one = outcome.state === "landed" ? outcome.landing : null;
+      const counted = one?.store === "record"
+        ? await countStoreOutputs(one)
+        : one?.store === "kind_instance" || countsInKindStore
+          ? await countKindRecords({ kind })
+          : ({ ok: true, value: 0 } as const);
+      if (cancelled) return;
       setState({
-        status: message ? "error" : "ready",
-        count: countResult.ok ? countResult.value : null,
-        records: recordsResult.ok ? recordsResult.value : [],
-        message,
+        status: "ready",
+        outcome,
+        count: counted.ok ? counted.value : null,
+        message: null,
       });
       /**
-       * 🚨 AN EMISSION ANNOUNCES ITSELF TOO, NOT ONLY A CLIENT SAVE.
-       *
-       * The server's own chat store (`chat_kind_emission`) writes the row
-       * directly — no client `storeKindRecord()` call happens, so the record
-       * bus never heard about it, and an EARLIER block already on screen kept
-       * printing a stale org-wide count until a full reload (V-45 §3.1, the
-       * emission half of V-42 §3.1). This strip's own per-message read is the
-       * one place a NEW server-written record is ever discovered client-side,
-       * so it is also the one place that discovery must be announced — once
-       * per record id, never on a re-read of the same id.
+       * 🚨 A DISCOVERED OUTPUT ANNOUNCES ITSELF (V-45 §3.1): the server wrote it, so no client
+       * write told the bus, and an earlier strip of the same kind would keep a stale count.
+       * Once per record id, never on a re-read.
        */
-      if (recordsResult.ok) {
-        for (const rec of recordsResult.value) {
-          if (!announcedRef.current.has(rec.id)) {
-            announcedRef.current.add(rec.id);
-            notifyKindRecordsChanged(kind);
-          }
+      const found = outcome.state === "landed" ? [outcome.landing] : outcome.state === "several" ? outcome.landings : [];
+      for (const landing of found) {
+        if (!announcedRef.current.has(landing.recordId)) {
+          announcedRef.current.add(landing.recordId);
+          notifyKindRecordsChanged(kind);
         }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [disposition, kind, durableMessageId, reloadKey]);
+  }, [kind, durableMessageId, conversationId, fingerprint, reloadKey, countsInKindStore]);
 
   const reload = () => setReloadKey((n) => n + 1);
 
-  /**
-   * 🚨 THE SIBLING-COUNT RULE. Two blocks of the same kind in one conversation
-   * draw two of these strips, each holding its own copy of the organization's
-   * count. Saving the first one used to leave the SECOND reading "Save this as
-   * the first one" — false at the moment it was on screen, and only a full page
-   * reload fixed it (V-42 §3.1). Every write announces itself on the record
-   * bus; every strip listens, including the one that did the writing.
-   */
+  /** THE SIBLING-COUNT RULE (V-42 §3.1): every strip re-reads on every record write. */
   useEffect(() => {
     return subscribeToKindRecordChanges((changed) => {
       if (changed === null || changed === kind) reload();
     });
   }, [kind]);
 
-  if (!disposition) return null;
+  const outcome = state.outcome;
+  // Nothing landed and the kind declares nothing: this block is not a record at all.
+  if (state.status === "ready" && outcome.state === "none" && !disposition) return null;
+  if (state.status === "loading" && !disposition) return null;
 
-  const tableHref = shapeRecordsTableHref(kind);
-  /**
-   * "All 1 Wine Tastings" is a small lie about English that makes a careful
-   * screen look careless. One record takes the singular noun.
-   */
-  const allLabel = (count: number) =>
-    `All ${count} ${count === 1 ? disposition.label : disposition.labelPlural}`;
-  // A single produced record is the case the chrome is FOR: one block, one row.
-  // `savedRecord` covers the strip that has NO `messageId` to re-query by (the
-  // Shape Studio's live-preview chrome, e.g. the Test tab's "Fill with AI"
-  // run) — its own save is the only way it will ever learn the record exists,
-  // so a successful save must flip THIS branch directly (V-45 §3.4), not wait
-  // on a re-fetch that has nothing to key on.
-  const record =
-    state.records.length === 1
-      ? state.records[0]
-      : state.records.length === 0
-        ? savedRecord
-        : null;
+  const landing: Landing | null = outcome.state === "landed" ? outcome.landing : null;
+  const allLabel = (count: number) => `All ${count} ${count === 1 ? label : labelPlural}`;
 
   const onConfirm = async () => {
-    if (!record) return;
+    if (!landing) return;
     setBusy(true);
-    const result = await confirmKindRecords([record.id]);
+    const result =
+      landing.store === "record"
+        ? await keepStoreOutput(landing)
+        : await confirmKindRecords([landing.recordId]);
     setBusy(false);
     if (!result.ok) {
-      toast.error(`Could not confirm this ${disposition.label}`, {
-        description: result.message,
-      });
+      toast.error(`Could not confirm this ${label}`, { description: result.message });
       return;
     }
-    // Keep the no-`messageId` fallback honest too — see `savedRecord` above.
-    setSavedRecord({ ...record, confirmation: "confirmed" });
-    toast.success(`${disposition.label} confirmed`);
+    toast.success(`${label} confirmed`);
+    reload();
   };
 
   const onArchive = async () => {
-    if (!record) return;
-    const archiving = record.archivedAt === null;
+    if (!landing) return;
+    const archiving = landing.state !== "archived";
     if (archiving) {
       const ok = await confirm({
-        title: `Archive this ${disposition.label}?`,
-        description: `It stops appearing in your ${disposition.labelPlural} and stops counting toward the total. Nothing is deleted — you can bring it back from the archive at any time.`,
+        title: `Archive this ${label}?`,
+        description: `It leaves your ${labelPlural} and their count. You can bring it back from the archive.`,
         confirmLabel: "Archive it",
       });
       if (!ok) return;
     }
     setBusy(true);
-    const result = await archiveKindRecords([record.id], archiving);
+    const result =
+      landing.store === "record"
+        ? await archiveStoreOutput(landing, archiving)
+        : await archiveKindRecords([landing.recordId], archiving);
     setBusy(false);
     if (!result.ok) {
-      toast.error(
-        `Could not ${archiving ? "archive" : "restore"} this ${disposition.label}`,
-        { description: result.message },
-      );
-      return;
-    }
-    // Keep the no-`messageId` fallback honest too — see `savedRecord` above.
-    setSavedRecord({
-      ...record,
-      archivedAt: archiving ? new Date().toISOString() : null,
-    });
-    toast.success(
-      archiving
-        ? `${disposition.label} archived`
-        : `${disposition.label} restored`,
-    );
-  };
-
-  const onSave = async () => {
-    if (!value) return;
-    setBusy(true);
-    const result = await saveRecordFromBlock({
-      kind,
-      value,
-      organizationId,
-      conversationId,
-      messageId: durableMessageId,
-      fingerprint: fingerprint ?? undefined,
-    });
-    setBusy(false);
-    if (!result.ok) {
-      toast.error(`Could not save this ${disposition.label}`, {
+      toast.error(`Could not ${archiving ? "archive" : "restore"} this ${label}`, {
         description: result.message,
       });
       return;
     }
-    // Flip the affordance NOW, from the row this call just wrote — never wait
-    // on a re-query, which for a strip with no `messageId` would never find
-    // it (V-45 §3.4). `storeKindRecord` already announced the write on the
-    // bus, so every SIBLING strip re-reads too.
-    const { provenanceWarning: _provenanceWarning, ...savedAsRecord } =
-      result.value;
-    setSavedRecord(savedAsRecord);
-    const standing =
-      result.value.confirmation === "confirmed"
-        ? "You saved it yourself, so it is already confirmed."
-        : "It is waiting for someone to confirm it.";
-    if (result.value.provenanceWarning) {
-      // The row landed but its link back to this message did not. Never
-      // silent: the record exists, and the reader is told what is missing.
-      toast.warning(`${disposition.label} saved`, {
-        description: `${standing} ${result.value.provenanceWarning}`,
-      });
-    } else {
-      toast.success(`${disposition.label} saved`, { description: standing });
-    }
+    toast.success(archiving ? `${label} archived` : `${label} restored`);
+    reload();
   };
+
+  const countHref =
+    landing?.store === "record" && landing.tableId
+      ? storeTableHref(landing.tableId)
+      : shapeRecordsTableHref(kind);
+  const recordHref =
+    landing?.store === "record"
+      ? landing.tableId
+        ? storeTableHref(landing.tableId, landing.recordId)
+        : null
+      : landing
+        ? shapeInstancePermalink(landing.recordId)
+        : null;
+  const countLink =
+    state.count !== null ? (
+      <Link
+        href={countHref}
+        className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+      >
+        {allLabel(state.count)}
+      </Link>
+    ) : null;
+  const doorButton =
+    "inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-foreground hover:bg-accent";
 
   return (
     <div
       data-kind-record-chrome={kind}
+      data-landing-store={landing?.store ?? "none"}
       className={cn(
         "mt-2 flex flex-wrap items-center gap-2 rounded-md border border-border bg-card/60 px-2.5 py-1.5 text-xs",
         className,
       )}
     >
       {state.status === "loading" && (
-        <span className="text-muted-foreground">
-          Checking your {disposition.labelPlural}…
-        </span>
+        <span className="text-muted-foreground">Checking your {labelPlural}…</span>
       )}
 
       {state.status === "error" && (
         <>
           <span className="text-muted-foreground">
-            {state.message ??
-              `Your ${disposition.labelPlural} could not be read.`}
+            {state.message ?? `Your ${labelPlural} could not be read.`}
             <ErrorAlchemyMenu />
           </span>
-          <button
-            type="button"
-            onClick={reload}
-            className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-foreground hover:bg-accent"
-          >
+          <button type="button" onClick={reload} className={doorButton}>
             <RotateCw className="h-3 w-3" aria-hidden />
             Try again
           </button>
         </>
       )}
 
-      {state.status === "ready" && (
+      {state.status === "ready" && landing && landing.state === "unreadable" && (
+        <span className="text-muted-foreground">
+          {landing.refusal ?? `This ${label} could not be read.`}
+        </span>
+      )}
+
+      {state.status === "ready" && landing && landing.state !== "unreadable" && (
         <>
-          {record ? (
-            <>
-              <Link
-                href={shapeInstancePermalink(record.id)}
-                className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
-                 target="_blank"
-                 rel="noopener noreferrer"
-               >
-                {record.title?.trim() || `This ${disposition.label}`}
-                <ExternalLink className="h-3 w-3" aria-hidden />
-              </Link>
-              <ConfirmationBadge confirmation={record.confirmation} />
-              {record.archivedAt && (
-                <span className="text-muted-foreground">Archived</span>
-              )}
-              <Link
-                href={tableHref}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-              >
-                {allLabel(state.count ?? 0)}
-              </Link>
-              <span className="ml-auto flex items-center gap-1">
-                {record.confirmation === "unconfirmed" && (
-                  <button
-                    type="button"
-                    onClick={onConfirm}
-                    disabled={busy}
-                    className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-foreground hover:bg-accent"
-                  >
-                    <Check className="h-3 w-3" aria-hidden />
-                    {busy ? "Working…" : "Confirm"}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={onArchive}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-medium text-foreground hover:bg-accent"
-                >
-                  {record.archivedAt ? (
-                    <ArchiveRestore className="h-3 w-3" aria-hidden />
-                  ) : (
-                    <Archive className="h-3 w-3" aria-hidden />
-                  )}
-                  {busy ? "Working…" : record.archivedAt ? "Restore" : "Archive"}
-                </button>
-              </span>
-            </>
-          ) : state.records.length > 1 ? (
-            <>
-              <span className="text-muted-foreground">
-                This message produced {state.records.length}{" "}
-                {disposition.labelPlural} — open them to confirm each one.
-              </span>
-              <Link
-                href={tableHref}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-              >
-                {allLabel(state.count ?? 0)}
-              </Link>
-            </>
-          ) : value ? (
-            <>
-              {/* NOT saved yet — so the control SAVES it. The first-one wording
-                  is the honest one when the organization holds none: there is
-                  no list to send anybody to yet. */}
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={busy}
-                className="inline-flex items-center gap-1 rounded border border-primary/40 bg-primary/10 px-2 py-0.5 font-medium text-primary hover:bg-primary/20"
-              >
-                <Save className="h-3 w-3" aria-hidden />
-                {busy
-                  ? "Saving…"
-                  : state.count === 0
-                    ? "Save this as the first one"
-                    : `Save this ${disposition.label}`}
-              </button>
-              {state.count !== null && state.count > 0 && (
-                <Link
-                  href={tableHref}
-                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-                >
-                  {allLabel(state.count)}
-                </Link>
-              )}
-            </>
+          {recordHref ? (
+            <Link
+              href={recordHref}
+              className="inline-flex items-center gap-1 font-medium text-foreground hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {landing.title?.trim() || `This ${label}`}
+              <ExternalLink className="h-3 w-3" aria-hidden />
+            </Link>
           ) : (
-            <>
-              <span className="text-muted-foreground">
-                This block&apos;s data could not be read, so there is nothing to
-                save from it. Open the message&apos;s raw view to see what
-                arrived.
-                <ErrorAlchemyMenu />
-              </span>
-              <Link
-                href={tableHref}
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-              >
-                {allLabel(state.count ?? 0)}
-              </Link>
-            </>
+            <span className="font-medium text-foreground">{landing.title?.trim() || `This ${label}`}</span>
           )}
+          {landing.store === "record" ? (
+            <span className="text-muted-foreground">Saved</span>
+          ) : (
+            <ConfirmationBadge confirmation={landing.unconfirmed ? "unconfirmed" : "confirmed"} />
+          )}
+          {landing.state === "archived" && <span className="text-muted-foreground">Archived</span>}
+          {landing.fromSource && <span className="text-muted-foreground">From the original</span>}
+          {countLink}
+          {!landing.fromSource && (
+            <span className="ml-auto flex items-center gap-1">
+              {landing.unconfirmed === true && landing.state === "saved" && (
+                <button type="button" onClick={onConfirm} disabled={busy} className={doorButton}>
+                  <Check className="h-3 w-3" aria-hidden />
+                  {busy ? "Working…" : "Confirm"}
+                </button>
+              )}
+              <button type="button" onClick={onArchive} disabled={busy} className={doorButton}>
+                {landing.state === "archived" ? (
+                  <ArchiveRestore className="h-3 w-3" aria-hidden />
+                ) : (
+                  <Archive className="h-3 w-3" aria-hidden />
+                )}
+                {busy ? "Working…" : landing.state === "archived" ? "Restore" : "Archive"}
+              </button>
+            </span>
+          )}
+        </>
+      )}
+
+      {state.status === "ready" && outcome.state === "several" && (
+        <>
+          <span className="text-muted-foreground">
+            This message produced {outcome.landings.length} {labelPlural} — open them to confirm each one.
+          </span>
+          {countLink}
+        </>
+      )}
+
+      {state.status === "ready" && outcome.state === "none" && (
+        <>
+          <span className="text-muted-foreground">Not saved</span>
+          {countLink}
         </>
       )}
     </div>

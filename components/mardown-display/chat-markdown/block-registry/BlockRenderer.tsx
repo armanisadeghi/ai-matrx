@@ -559,8 +559,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
    * server has not finished writing the row, so a strip then would be a
    * promise the database has not kept yet.
    */
+  // KINDS-GLUE wave 2 §7.3: the gate also opens for ANY kind block of a durable message — the
+  // strip reads where that message's outputs landed and draws only when the read names this
+  // block (one read per message, shared by its blocks).
   const recordChromeKind =
-    envelopeKind && !suppressLoadingGate && kindHasRecordChrome(envelopeKind)
+    envelopeKind &&
+    !suppressLoadingGate &&
+    (kindHasRecordChrome(envelopeKind) || Boolean(durableMessageId))
       ? envelopeKind
       : null;
   const withRecordChrome = <T extends React.ReactElement | null>(

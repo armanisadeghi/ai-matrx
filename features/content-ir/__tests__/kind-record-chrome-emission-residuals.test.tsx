@@ -35,10 +35,12 @@ jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
 
 const serviceMock = {
   countKindRecords: jest.fn(),
-  fetchRecordsProducedByMessage: jest.fn(),
-  saveRecordFromBlock: jest.fn(),
+  fetchMessageLandings: jest.fn(),
   confirmKindRecords: jest.fn(),
   archiveKindRecords: jest.fn(),
+  keepStoreOutput: jest.fn(),
+  archiveStoreOutput: jest.fn(),
+  countStoreOutputs: jest.fn(),
 };
 
 // The REAL bus — the whole point of these tests is that the bus fan-out
@@ -50,6 +52,7 @@ import {
 
 jest.mock("@/features/content-ir/records/kind-record-service", () => ({
   ...serviceMock,
+  landingForBlock: jest.requireActual("@ai-matrx/records/core").outcomeForBlock,
   subscribeToKindRecordChanges:
     jest.requireActual("@/features/content-ir/records/record-change-bus")
       .subscribeToKindRecordChanges,
@@ -99,25 +102,37 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
       ok: true,
       value: orgCount,
     }));
-    serviceMock.fetchRecordsProducedByMessage.mockImplementation(
-      async ({ messageId }: { messageId: string }) => {
-        if (messageId === "3c1e5a7b-9d2f-4e6a-8b0c-1d2e3f4a5b6c") return { ok: true, value: [] };
-        // Block B's own message already has a server-written row.
-        return {
-          ok: true,
-          value: [
+    serviceMock.fetchMessageLandings.mockImplementation(async (messageId: string) => {
+      if (messageId === "3c1e5a7b-9d2f-4e6a-8b0c-1d2e3f4a5b6c") {
+        return { ok: true, value: { messageId, landings: [] } };
+      }
+      // Block B's own message already has a server-written (old kind-store) row.
+      return {
+        ok: true,
+        value: {
+          messageId,
+          landings: [
             {
-              id: "rec-b",
-              title: "V45 Chablis",
+              store: "kind_instance" as const,
+              recordId: "rec-b",
+              organizationId: "org-1",
               kind: "wine_tasting",
-              confirmation: "unconfirmed" as const,
+              fingerprint: null,
+              ordinal: null,
+              blockId: null,
+              tableId: null,
+              state: "saved" as const,
+              title: "V45 Chablis",
+              unconfirmed: true,
               archivedAt: null,
               createdAt: new Date().toISOString(),
+              refusal: null,
+              fromSource: false,
             },
           ],
-        };
-      },
-    );
+        },
+      };
+    });
 
     mount(
       <KindRecordChrome kind="wine_tasting" durableMessageId="3c1e5a7b-9d2f-4e6a-8b0c-1d2e3f4a5b6c" value={{}} />,
@@ -151,45 +166,18 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     containerB.remove();
   });
 
-  it("§3.4 RED-then-GREEN: a successful save flips the strip to the saved state with no re-query available", async () => {
-    // No `messageId` — the Shape Studio's live-preview chrome (e.g. the Test
-    // tab's "Fill with AI" run), which has no `chat.message.id` to re-query
-    // records by. Before the fix, `onSave` had no way to learn its own write
-    // existed and kept offering "Save this Wine Tasting" forever.
+  it("§3.4 retired with the kind store: a strip with no message offers no Save into it (KINDS-GLUE §7.3)", async () => {
+    // The Shape Studio's live-preview chrome has no `chat.message.id`. Its Save used to write the
+    // retired `content_ir.kind_instance`; the store takes no new rows, so the strip says the
+    // truth — not saved — and offers no control that would write there.
     serviceMock.countKindRecords.mockResolvedValue({ ok: true, value: 6 });
-    serviceMock.saveRecordFromBlock.mockResolvedValue({
-      ok: true,
-      value: {
-        id: "rec-new",
-        title: "V45 Person Save Two",
-        kind: "wine_tasting",
-        confirmation: "confirmed" as const,
-        archivedAt: null,
-        createdAt: new Date().toISOString(),
-        provenanceWarning: null,
-      },
-    });
 
     mount(<KindRecordChrome kind="wine_tasting" value={{ vintage: 2018 }} />);
     await flush();
+    await flush();
 
-    expect(container.textContent).toContain("Save this Wine Tasting");
-
-    const saveButton = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Save this Wine Tasting"),
-    );
-    expect(saveButton).toBeTruthy();
-    await act(async () => {
-      saveButton!.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true }),
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    // The affordance must flip to the record-bound state — same branch the
-    // chat block draws once a record exists — not keep offering to save.
-    expect(container.textContent).not.toContain("Save this Wine Tasting");
-    expect(container.textContent).toContain("V45 Person Save Two");
+    expect(container.textContent).toContain("Not saved");
+    expect(container.querySelectorAll("button").length).toBe(0);
+    expect(serviceMock.fetchMessageLandings).not.toHaveBeenCalled();
   });
 });
