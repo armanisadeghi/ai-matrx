@@ -51,7 +51,8 @@ import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "@/features/unified-data/hub/doors";
 import { buildDataHomeRows, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
-import { fetchAccessibleKits } from "@/features/kits/service";
+import { fetchAccessibleKits, fetchKits } from "@/features/kits/service";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { KitCard } from "@/features/kits/components/KitCard";
 import type { KitEntry } from "@/features/kits/types";
 import { createClient } from "@/utils/supabase/client";
@@ -137,13 +138,7 @@ function useTablesRead(userId: string | null) {
 // The page.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface MakeHomeProps {
-  /** The platform's own kits, read on the server (features/kits/service.ts fetchKits). */
-  platformKits: KitEntry[];
-  platformOrganizationId: string | null;
-}
-
-export default function MakeHome({ platformKits, platformOrganizationId }: MakeHomeProps) {
+export default function MakeHome() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -215,8 +210,6 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
 
           <TemplatesSection
             activeOrganizationId={active.organizationState === "ready" ? active.organizationId : null}
-            platformKits={platformKits}
-            platformOrganizationId={platformOrganizationId}
             onOpenTable={(id) => router.push(`/data-v2/${id}`)}
           />
         </div>
@@ -304,34 +297,43 @@ function whenWords(at: string | null): string {
   return d < 30 ? `${d}d ago` : new Date(at).toLocaleDateString();
 }
 
-function useOrganizationKits(platformOrganizationId: string | null) {
+/**
+ * The kits the person can reach: the platform's own (the system organization's, `fetchKits`) and
+ * every kit her organizations saved (`fetchAccessibleKits`) — the kits service's own doors, read in
+ * the browser so the page never waits on them. A failed read shows no kits row, never an error wall.
+ */
+function useKits() {
   const [kits, setKits] = useState<KitEntry[] | null>(null);
   useEffect(() => {
     let alive = true;
-    void fetchAccessibleKits(createClient(), platformOrganizationId).then((r) => {
-      if (alive) setKits(r.error ? [] : r.kits);
-    });
+    void (async () => {
+      const client = createClient();
+      // org-fallback-deliberate: the platform's own kits are read from the platform's organization by name, not a stand-in for the person's
+      const platformOrganizationId = await resolveSystemOrgId(client).catch(() => null);
+      const [platform, mine] = await Promise.all([
+        platformOrganizationId ? fetchKits(client, platformOrganizationId) : Promise.resolve({ kits: [], error: null }),
+        fetchAccessibleKits(client, platformOrganizationId),
+      ]);
+      if (platform.error) console.error("[/make] platform kits read failed:", platform.error);
+      if (mine.error) console.error("[/make] organization kits read failed:", mine.error);
+      if (alive) setKits([...mine.kits, ...platform.kits]);
+    })();
     return () => {
       alive = false;
     };
-  }, [platformOrganizationId]);
+  }, []);
   return kits;
 }
 
 function TemplatesSection({
   activeOrganizationId,
-  platformKits,
-  platformOrganizationId,
   onOpenTable,
 }: {
   activeOrganizationId: string | null;
-  platformKits: KitEntry[];
-  platformOrganizationId: string | null;
   onOpenTable: (tableId: string) => void;
 }) {
-  const orgKits = useOrganizationKits(platformOrganizationId);
+  const kits = useKits() ?? [];
   const [examples, setExamples] = useState(true);
-  const kits = [...(orgKits ?? []), ...platformKits];
   return (
     <section className="flex flex-col gap-3" aria-labelledby="make-templates">
       <h2 id="make-templates" className="text-sm font-medium text-muted-foreground">

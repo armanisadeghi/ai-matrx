@@ -83,7 +83,11 @@ jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ creat
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn() }));
 jest.mock("@/features/unified-data/home/dataHomeColumns", () => ({ KindIcon: () => <i /> }));
-jest.mock("@/features/kits/service", () => ({ fetchAccessibleKits: async () => ({ kits: [], error: null }) }));
+jest.mock("@/features/kits/service", () => ({
+  fetchAccessibleKits: async () => ({ kits: [], error: null }),
+  fetchKits: async () => ({ kits: [], error: null }),
+}));
+jest.mock("@/lib/organizations/systemOrg", () => ({ resolveSystemOrgId: async () => "39c38960-d30c-4840-b0c1-c9960de95582" }));
 jest.mock("@/features/kits/components/KitCard", () => ({ KitCard: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
