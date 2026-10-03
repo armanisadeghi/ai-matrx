@@ -2,34 +2,27 @@
 
 // features/war-room/components/room/RoomHeader.tsx
 //
-// Mission control for one War Room, injected into the SHELL header via
-// <PageHeader> (core-route-headers conformance — no in-body <header>, no
-// avatar-collision padding: controls live in the bounded center zone).
+// Mission control for one War Room, on the shell's shared RouteHeader:
 //
-//   ← · [icon] Title · live meter ┊ STAGE⇄GRID ┊ search · copy-for-AI ·
-//     context chip · Room Agent · ⋯
+//   [← · icon · Title · live meter] ┊ Stage⇄Grid⇄Board ┊ copy · copy-for-AI ·
+//     context chip · search · Room Agent · ⋯
 //
-// Secondary room controls (instrument projector, density dial, room details,
-// resources, project, delete) collapse into the ONE "⋯" overflow menu; the
-// primaries stay inline (Stage⇄Grid⇄Board, Room Agent, working-context chip). The
-// row is its own `@container`, so the label-hiding behavior the old in-body
-// header used (@max-xl labels, @2xl meter) keys off the real injected width.
+// RouteHeader measures the MAIN COLUMN (the canvas and the chat panel narrow
+// it): actions fold into "…" lowest priority first, the ⋯ menu stays, and the
+// mode switch steps down full → icons → one trigger. Secondary room controls
+// (projector, density, details, resources, project, delete) live in the ⋯.
 //
-// Mobile (<sm): back + title + search + context chip + ONE "⋯" tap target →
-// bottom sheet holding everything else (modes, agent, density, projector,
-// details, resources, project, delete) — per the core-route-headers mobile
-// doctrine. Search and the lens chip stay INLINE rather than moving into the
-// sheet: search must show the rail filtering as you type, and the chip is
-// rendered at every breakpoint on /chat and opens its own ContextSheet on
-// mobile, so sheet-nesting it would stack sheet-on-sheet.
+// Phone: back + title + search in the row; everything else is drawn straight
+// into the shell's ⋮ sheet ("This page") — modes and room actions as rows.
 //
 // Every control here acts on the WHOLE room (cockpit rule) — the one
 // deliberate exception is ActiveContextLensChip, which is global by design.
 
-import { createElement, useState, useTransition } from "react";
+import { createElement, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
+  ChevronDown,
   Circle,
   EyeOff,
   FolderKanban,
@@ -48,8 +41,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { HeaderActionsSlot } from "@/features/shell/components/header/HeaderActionsSlot";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { useCenterControlFit } from "@/features/shell/components/header/useCenterControlFit";
 import { usePhonePageActions } from "@/features/shell/components/header/phone-page-actions";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
@@ -312,248 +305,150 @@ export function RoomHeader({
   // the room header steps aside entirely, same as the old `hidden` toggle.
   if (threadDetailOpen) return null;
 
+  const projectLabel =
+    projectMode === "room" && roomProjectName
+      ? `Project: ${roomProjectName}`
+      : projectMode === "per-thread"
+        ? "Project: per-thread"
+        : "Link a project…";
+
+  // ON THE SHARED ROUTE HEADER (2026-10-03). This row was a hand-built flex
+  // row whose right side could only squeeze and whose labels hid by a
+  // breakpoint — with the canvas open (main column ~500px) the title ran under
+  // Stage · Grid · Board and showed "Ac". RouteHeader measures the MAIN
+  // COLUMN: actions fold into "…" lowest priority first, the mode switch steps
+  // down full → icons → one trigger (useCenterControlFit), and on a phone the
+  // actions move into the shell's ⋮ sheet.
+  const right = !session ? null : inShellSheet ? (
+    <>
+      {/* On a phone the room's rows are drawn straight into the shell's ⋮
+          ("This page"): modes, agent, density, projector, room actions. */}
+      <div className="flex w-full flex-col" data-war-room-sheet-rows>
+        {sheetRows}
+      </div>
+      {ready ? <RoomCopyControls sessionId={sessionId} /> : null}
+      <RoomProjectCopyForAiButton sessionId={sessionId} />
+      <ActiveContextLensChip align="end" className="min-w-0" />
+      {/* The phone row keeps search: the rail must filter as you type. */}
+      {ready ? <ThreadSearchBox /> : null}
+    </>
+  ) : (
+    <>
+      {ready ? <RoomCopyControls sessionId={sessionId} /> : null}
+      <RoomProjectCopyForAiButton sessionId={sessionId} />
+      {/* Same working-context control as /chat — writes appContextSlice
+          (Surface A). Global by design. */}
+      <ActiveContextLensChip align="end" className="min-w-0" />
+      {ready ? <ThreadSearchBox /> : null}
+      <RoomAgentToggle open={roomAgentOpen} onToggle={onToggleRoomAgent} />
+      {isPhone ? (
+        <TapTargetButton
+          icon={<MoreHorizontal className="h-4 w-4" />}
+          ariaLabel="War Room options"
+          onClick={() => setSheetOpen(true)}
+        />
+      ) : (
+        <RoomOptionsMenu
+          mode={mode}
+          setMode={setMode}
+          projectedTab={projectedTab}
+          setProjectedTab={setProjectedTab}
+          density={density}
+          setDensity={setDensity}
+          resourceCount={resourceCount}
+          projectLabel={projectLabel}
+          deletePending={deletePending}
+          onIdentity={() => openAfterMenu(setIdentityOpen)}
+          onResources={openRoomResources}
+          onProject={() => openAfterMenu(setProjectOpen)}
+          onDelete={() => void handleDeleteRoom()}
+        />
+      )}
+    </>
+  );
+
   return (
     <>
-      <PageHeader>
-        {/* No gap on this row: tap buttons space themselves, and the
-            non-tap items carry their own spacing in the inner groups. */}
-        <div className="@container flex w-full min-w-0 items-center">
-          <ChevronLeftTapButton href="/war-room/all" ariaLabel="Back" />
-          <div className="flex min-w-0 items-center gap-1.5">
-          {/* Decorative identity mark — hidden on a phone-width header so the
-              TITLE (which actually names the room) keeps the space. */}
-          <span
-            className={cn(
-              "hidden sm:grid place-items-center size-7 shrink-0 rounded-lg",
-              roomColor.tint,
-              roomColor.text,
-            )}
+      <RouteHeader
+        left={
+          // ALL GLASS OR NONE (tap-target placement rule 2): the back button
+          // and the room's identity share ONE glass capsule instead of a
+          // glass circle beside bare text. The back button is the group
+          // variant (its pill inset in the capsule), so the title adds the
+          // half-gap on the side facing it (rule 3).
+          <div
+            data-matrx-glass
+            className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-[var(--matrx-tap-wide-size)] items-center rounded-full"
           >
-            {roomIcon}
-          </span>
-
-          {session ? (
-            <span className="min-w-0 overflow-hidden">
-              <EditableTitle
-                value={session.title}
-                onSave={(next) => dispatch(renameSession(sessionId, next))}
-                placeholder="Untitled War Room"
-                className="text-sm font-semibold max-w-[24ch]"
-                inputClassName="text-sm font-semibold"
-              />
-            </span>
-          ) : (
-            <h1 className="text-sm font-semibold text-foreground truncate">
-              War Room
-            </h1>
-          )}
-
-          {session && ready ? <LiveMeter sessionId={sessionId} /> : null}
-          </div>
-
-          <div className="flex-1 min-w-1.5" />
-
-          {session ? (
-            <div className="hidden sm:block shrink-0">
-              <ModeSwitch />
-            </div>
-          ) : null}
-
-          <div className="flex-1 min-w-1.5" />
-
-          {session ? (
-            <>
-              {/* Primaries that stay inline at EVERY width. Each one is either
-                  useless in a sheet (search — you must see the rail filter as
-                  you type) or already mobile-aware and canonical elsewhere
-                  (the lens chip renders at all breakpoints on /chat and opens
-                  its own ContextSheet on mobile, so nesting it in our sheet
-                  would stack sheet-on-sheet). Copy-for-AI only renders when
-                  the room has a project. */}
-              <div className="mr-1.5 flex min-w-0 items-center gap-1.5">
-                {ready ? <ThreadSearchBox /> : null}
-                {/* Same working-context control as /chat — writes
-                    appContextSlice (Surface A). Global by design. */}
-                <ActiveContextLensChip align="end" className="min-w-0" />
-              </div>
-
-              {/* THE SHEET CONTRACT (page-pass shared defects, 2026-09-27):
-                  on a phone these fold into the shell's one ⋮ ("This page"),
-                  so the room's title keeps the row and there is no second
-                  overflow button beside the shell's. Desktop is unchanged. */}
-              <HeaderActionsSlot className="flex shrink-0 items-center">
-                {/* Whole-room copy + Groomer. The anchored-project export
-                    below is unchanged and still renders when the room has a
-                    project — this pair works for every room, project or not. */}
-                {ready ? <RoomCopyControls sessionId={sessionId} /> : null}
-                <RoomProjectCopyForAiButton sessionId={sessionId} />
-
-              {/* Desktop-only: everything else lives in the "⋯" menu. */}
-              <div className="hidden sm:flex items-center shrink-0">
-                <RoomAgentToggle
-                  open={roomAgentOpen}
-                  onToggle={onToggleRoomAgent}
+            <ChevronLeftTapButton variant="group" href="/war-room/all" ariaLabel="Back" />
+            <div data-matrx-glass className="flex min-w-0 items-center gap-1.5 ps-1 pe-2">
+              {/* The room's mark opens its details (icon, color, purpose).
+                  Drawn only when the header's own row is roomy, so on a
+                  phone or beside the canvas the TITLE keeps the space. */}
+              <button
+                type="button"
+                onClick={() => setIdentityOpen(true)}
+                disabled={!session}
+                aria-label="Room details"
+                title="Room details"
+                className={cn(
+                  "hidden @min-[36rem]/shell-header:grid place-items-center size-6 shrink-0 rounded-md transition-opacity hover:opacity-80",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  roomColor.tint,
+                  roomColor.text,
+                )}
+              >
+                {roomIcon}
+              </button>
+              {session ? (
+                <EditableTitle
+                  value={session.title}
+                  onSave={(next) => dispatch(renameSession(sessionId, next))}
+                  placeholder="Untitled War Room"
+                  className="text-sm font-semibold"
+                  inputClassName="text-sm font-semibold"
                 />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <TapTargetButton
-                      icon={<MoreHorizontal className="h-4 w-4" />}
-                      ariaLabel="War Room options"
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-60">
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>
-                        <Presentation className="size-3.5 mr-2 text-muted-foreground" />
-                        Project all to one view
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuRadioGroup
-                          value={projectedTab ?? PROJECT_OWN}
-                          onValueChange={(v) =>
-                            setProjectedTab(
-                              v === PROJECT_OWN ? null : (v as ThreadTab),
-                            )
-                          }
-                        >
-                          <DropdownMenuRadioItem value={PROJECT_OWN}>
-                            <Layers className="size-3.5 mr-2 text-muted-foreground" />
-                            Each thread&apos;s own view
-                          </DropdownMenuRadioItem>
-                          {THREAD_KIND_ORDER.map((id) => {
-                            const k = threadKindOf(id);
-                            return (
-                              <DropdownMenuRadioItem key={id} value={id}>
-                                <k.Icon
-                                  className={cn("size-3.5 mr-2", k.text)}
-                                />
-                                {k.label}
-                              </DropdownMenuRadioItem>
-                            );
-                          })}
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>
-                        <Minimize2 className="size-3.5 mr-2 text-muted-foreground" />
-                        Tile density
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuRadioGroup
-                          value={density}
-                          onValueChange={(v) => setDensity(v as Density)}
-                        >
-                          <DropdownMenuRadioItem value="comfortable">
-                            <Maximize2 className="size-3.5 mr-2 text-muted-foreground" />
-                            Comfortable
-                          </DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="compact">
-                            <Minimize2 className="size-3.5 mr-2 text-muted-foreground" />
-                            Compact
-                          </DropdownMenuRadioItem>
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => openAfterMenu(setIdentityOpen)}
-                    >
-                      <Pencil className="size-3.5 mr-2 text-muted-foreground" />
-                      Room details…
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={openRoomResources}
-                    >
-                      <Paperclip className="size-3.5 mr-2 text-muted-foreground" />
-                      Room resources…
-                      {resourceCount > 0 ? (
-                        <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
-                          {resourceCount}
-                        </span>
-                      ) : null}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => openAfterMenu(setProjectOpen)}
-                    >
-                      <FolderKanban className="size-3.5 mr-2 text-muted-foreground" />
-                      <span className="truncate">
-                        {projectMode === "room" && roomProjectName
-                          ? `Project: ${roomProjectName}`
-                          : projectMode === "per-thread"
-                            ? "Project: per-thread"
-                            : "Link a project…"}
-                      </span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      disabled={deletePending}
-                      onSelect={(e) => {
-                        // Keep the menu's selection from closing before confirm
-                        // runs; the handler owns the async flow + click guard.
-                        e.preventDefault();
-                        void handleDeleteRoom();
-                      }}
-                    >
-                      {deletePending ? (
-                        <Loader2 className="size-3.5 mr-2 animate-spin" />
-                      ) : (
-                        <Trash2 className="size-3.5 mr-2" />
-                      )}
-                      Delete War Room
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Mobile — in the shell's ⋮ the rows themselves (one step);
-                  otherwise ONE trigger for the room's own sheet. */}
-              {inShellSheet ? (
-                <div className="flex w-full flex-col" data-war-room-sheet-rows>
-                  {sheetRows}
-                </div>
               ) : (
-                <div className="sm:hidden shrink-0">
-                  <TapTargetButton
-                    icon={<MoreHorizontal className="h-4 w-4" />}
-                    ariaLabel="War Room options"
-                    onClick={() => setSheetOpen(true)}
-                  />
-                </div>
+                <h1 className="truncate text-sm font-semibold text-foreground">War Room</h1>
               )}
-              </HeaderActionsSlot>
+              {session && ready ? <LiveMeter sessionId={sessionId} /> : null}
+            </div>
+          </div>
+        }
+        center={session && !inShellSheet ? <ModeSwitch /> : undefined}
+        right={right}
+      />
 
-              {/* Zero-size anchors for the overflow-launched popovers — the
-                  content aligns to the end of the header row on any viewport. */}
-              <Popover open={identityOpen} onOpenChange={setIdentityOpen}>
-                <PopoverAnchor className="size-0" />
-                <PopoverContent sizing="content" align="end">
-                  <RoomIdentityEditor
-                    sessionId={sessionId}
-                    title={session.title}
-                    description={session.description}
-                    iconName={session.icon}
-                    colorToken={roomColor.id}
-                  />
-                </PopoverContent>
-              </Popover>
-              <Popover open={projectOpen} onOpenChange={setProjectOpen}>
-                <PopoverAnchor className="size-0" />
-                <PopoverContent sizing="content" align="end">
-                  <RoomProjectPickerBody
-                    sessionId={sessionId}
-                    roomProjectId={roomProjectId}
-                    mode={projectMode}
-                  />
-                </PopoverContent>
-              </Popover>
-            </>
-          ) : null}
-        </div>
-      </PageHeader>
+      {session ? (
+        <>
+          {/* Zero-size anchors for the overflow-launched popovers, pinned
+              under the header's end edge on any viewport. */}
+          <Popover open={identityOpen} onOpenChange={setIdentityOpen}>
+            <PopoverAnchor className="fixed right-4 top-[var(--shell-header-h)] size-0" />
+            <PopoverContent sizing="content" align="end">
+              <RoomIdentityEditor
+                sessionId={sessionId}
+                title={session.title}
+                description={session.description}
+                iconName={session.icon}
+                colorToken={roomColor.id}
+              />
+            </PopoverContent>
+          </Popover>
+          <Popover open={projectOpen} onOpenChange={setProjectOpen}>
+            <PopoverAnchor className="fixed right-4 top-[var(--shell-header-h)] size-0" />
+            <PopoverContent sizing="content" align="end">
+              <RoomProjectPickerBody
+                sessionId={sessionId}
+                roomProjectId={roomProjectId}
+                mode={projectMode}
+              />
+            </PopoverContent>
+          </Popover>
+        </>
+      ) : null}
 
-      {/* Mobile bottom sheet — modes AND actions, per the mobile doctrine. */}
+      {/* Phone without the shell's ⋮ — the room's own bottom sheet. */}
       {session && !inShellSheet ? (
         <BottomSheet
           open={sheetOpen}
@@ -577,6 +472,161 @@ export function RoomHeader({
     </>
   );
 }
+
+// ── The room's "⋯" menu (desktop) — everything that is not a primary ────────
+function RoomOptionsMenu({
+  mode,
+  setMode,
+  projectedTab,
+  setProjectedTab,
+  density,
+  setDensity,
+  resourceCount,
+  projectLabel,
+  deletePending,
+  onIdentity,
+  onResources,
+  onProject,
+  onDelete,
+}: {
+  mode: RoomMode;
+  setMode: (mode: RoomMode) => void;
+  projectedTab: ThreadTab | null;
+  setProjectedTab: (tab: ThreadTab | null) => void;
+  density: Density;
+  setDensity: (d: Density) => void;
+  resourceCount: number;
+  projectLabel: string;
+  deletePending: boolean;
+  onIdentity: () => void;
+  onResources: () => void;
+  onProject: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <TapTargetButton
+          icon={<MoreHorizontal className="h-4 w-4" />}
+          ariaLabel="War Room options"
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60">
+        {/* The room's view, always reachable here too — on a narrow column
+            the header's switch can have no room to draw at all. */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <LayoutPanelLeft className="size-3.5 mr-2 text-muted-foreground" />
+            Room view
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup
+              value={mode}
+              onValueChange={(v) => {
+                const next = MODE_ITEMS.find((m) => m.id === v);
+                if (next) setMode(next.id);
+              }}
+            >
+              {MODE_ITEMS.map(({ id, label, Icon }) => (
+                <DropdownMenuRadioItem key={id} value={id}>
+                  <Icon className="size-3.5 mr-2 text-muted-foreground" />
+                  {label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Presentation className="size-3.5 mr-2 text-muted-foreground" />
+            Project all to one view
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup
+              value={projectedTab ?? PROJECT_OWN}
+              onValueChange={(v) =>
+                setProjectedTab(v === PROJECT_OWN ? null : (v as ThreadTab))
+              }
+            >
+              <DropdownMenuRadioItem value={PROJECT_OWN}>
+                <Layers className="size-3.5 mr-2 text-muted-foreground" />
+                Each thread&apos;s own view
+              </DropdownMenuRadioItem>
+              {THREAD_KIND_ORDER.map((id) => {
+                const k = threadKindOf(id);
+                return (
+                  <DropdownMenuRadioItem key={id} value={id}>
+                    <k.Icon className={cn("size-3.5 mr-2", k.text)} />
+                    {k.label}
+                  </DropdownMenuRadioItem>
+                );
+              })}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Minimize2 className="size-3.5 mr-2 text-muted-foreground" />
+            Tile density
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup
+              value={density}
+              onValueChange={(v) => setDensity(v as Density)}
+            >
+              <DropdownMenuRadioItem value="comfortable">
+                <Maximize2 className="size-3.5 mr-2 text-muted-foreground" />
+                Comfortable
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="compact">
+                <Minimize2 className="size-3.5 mr-2 text-muted-foreground" />
+                Compact
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onIdentity}>
+          <Pencil className="size-3.5 mr-2 text-muted-foreground" />
+          Room details…
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onResources}>
+          <Paperclip className="size-3.5 mr-2 text-muted-foreground" />
+          Room resources…
+          {resourceCount > 0 ? (
+            <span className="ml-auto text-[11px] tabular-nums text-muted-foreground">
+              {resourceCount}
+            </span>
+          ) : null}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onProject}>
+          <FolderKanban className="size-3.5 mr-2 text-muted-foreground" />
+          <span className="truncate">{projectLabel}</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          disabled={deletePending}
+          onSelect={(e) => {
+            // Keep the menu's selection from closing before confirm runs; the
+            // handler owns the async flow + click guard.
+            e.preventDefault();
+            onDelete();
+          }}
+        >
+          {deletePending ? (
+            <Loader2 className="size-3.5 mr-2 animate-spin" />
+          ) : (
+            <Trash2 className="size-3.5 mr-2" />
+          )}
+          Delete War Room
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+// A page's own menu: on a phone it is never the row's primary (RouteHeader).
+RoomOptionsMenu.routeHeaderMenu = true as const;
 
 // ── Room Agent toggle — the room-wide agent, active state visible ───────────
 function RoomAgentToggle({
@@ -612,7 +662,7 @@ function LiveMeter({ sessionId }: { sessionId: string }) {
   const hidden = useAppSelector(selectHiddenThreads(sessionId));
   const pinnedCount = useAppSelector(selectPinnedThreadCount(sessionId));
   return (
-    <div className="hidden @3xl:flex items-center gap-2 pl-2 ml-0.5 border-l border-border/60 text-[11px] tabular-nums text-muted-foreground shrink-0">
+    <div className="hidden @3xl/shell-header:flex items-center gap-2 pl-2 ml-0.5 border-l border-border/60 text-[11px] tabular-nums text-muted-foreground shrink-0">
       <span
         className="inline-flex items-center gap-1"
         title={`${visibleIds.length} active thread${visibleIds.length === 1 ? "" : "s"}`}
@@ -643,37 +693,118 @@ function LiveMeter({ sessionId }: { sessionId: string }) {
 }
 
 // ── Stage ⇄ Grid ⇄ Board switch (reimagine) — the room's ONE primary mode control ───
+// MEASURED on the header's own row (useCenterControlFit), never read from a
+// breakpoint: full (icon + label) → icons → one trigger naming the mode.
+const MODE_ITEMS: { id: RoomMode; label: string; Icon: typeof LayoutGrid }[] = [
+  { id: "stage", label: "Stage", Icon: LayoutPanelLeft },
+  { id: "grid", label: "Grid", Icon: LayoutGrid },
+  { id: "board", label: "Board", Icon: Frame },
+];
+const noopSubscribe = () => () => {};
+
 function ModeSwitch() {
   const { mode, setMode } = useRoomView();
-  const items: { id: RoomMode; label: string; Icon: typeof LayoutGrid }[] = [
-    { id: "stage", label: "Stage", Icon: LayoutPanelLeft },
-    { id: "grid", label: "Grid", Icon: LayoutGrid },
-    { id: "board", label: "Board", Icon: Frame },
-  ];
-  return (
-    <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-      {items.map(({ id, label, Icon }) => {
-        const active = mode === id;
+  const cellRef = useRef<HTMLDivElement>(null);
+  const fullRef = useRef<HTMLDivElement>(null);
+  const iconsRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const fit = useCenterControlFit(cellRef, [fullRef, iconsRef, triggerRef], mode);
+  // False in the server HTML and during hydration; measured before the first
+  // client paint after that.
+  const measured = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const active = MODE_ITEMS.find((m) => m.id === mode) ?? MODE_ITEMS[0]!;
+
+  const segments = (withLabels: boolean, interactive: boolean) => (
+    <div
+      role={interactive ? "group" : undefined}
+      aria-label={interactive ? "Room view" : undefined}
+      className={cn(
+        "inline-flex shrink-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5",
+        !interactive && "w-max max-w-none",
+      )}
+    >
+      {MODE_ITEMS.map(({ id, label, Icon }) => {
+        const on = mode === id;
         return (
           <button
             key={id}
             type="button"
-            onClick={() => setMode(id)}
-            aria-pressed={active}
+            onClick={interactive ? () => setMode(id) : undefined}
+            tabIndex={interactive ? undefined : -1}
+            aria-pressed={interactive ? on : undefined}
+            aria-label={withLabels ? undefined : `${label} view`}
             title={`${label} view`}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-md h-7 px-2 text-xs font-medium transition-all",
+              "inline-flex items-center gap-1.5 rounded-md h-7 px-2 text-xs font-medium whitespace-nowrap transition-all",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              active
+              on
                 ? "bg-card text-primary shadow-[var(--elevation-1)]"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Icon className="size-3.5" />
-            <span className="@max-2xl:hidden">{label}</span>
+            {withLabels ? <span>{label}</span> : null}
           </button>
         );
       })}
+    </div>
+  );
+  const triggerClass =
+    "inline-flex h-7 shrink-0 items-center gap-1 rounded-lg bg-muted/60 px-2 text-xs font-medium text-primary";
+  const triggerFace = (
+    <>
+      <active.Icon className="size-3.5" />
+      <ChevronDown className="size-3 text-muted-foreground" aria-hidden="true" />
+    </>
+  );
+
+  return (
+    <div
+      ref={cellRef}
+      className="relative flex w-full min-w-0 justify-center"
+      data-route-nav-inflow={fit.inflow ? "" : undefined}
+    >
+      {/* Hidden measurers at natural width (`w-max max-w-none`: the global
+          `* { max-width: 100% }` would cap them at this cell). */}
+      <div aria-hidden className="pointer-events-none invisible absolute left-0 top-0">
+        <div ref={fullRef} className="w-max max-w-none">{segments(true, false)}</div>
+        <div ref={iconsRef} className="w-max max-w-none">{segments(false, false)}</div>
+        <span ref={triggerRef} data-route-nav-min className={cn(triggerClass, "w-max max-w-none")}>
+          {triggerFace}
+        </span>
+      </div>
+      {!measured || fit.index === 0 ? segments(true, true) : null}
+      {measured && fit.index === 1 ? segments(false, true) : null}
+      {measured && fit.index === 2 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Room view: ${active.label}`}
+              title={`${active.label} view`}
+              className={triggerClass}
+            >
+              {triggerFace}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center">
+            <DropdownMenuRadioGroup
+              value={mode}
+              onValueChange={(v) => {
+                const next = MODE_ITEMS.find((m) => m.id === v);
+                if (next) setMode(next.id);
+              }}
+            >
+              {MODE_ITEMS.map(({ id, label, Icon }) => (
+                <DropdownMenuRadioItem key={id} value={id}>
+                  <Icon className="size-3.5 mr-2 text-muted-foreground" />
+                  {label} view
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
     </div>
   );
 }
@@ -697,13 +828,13 @@ function SheetRow({
       type="button"
       onClick={onPress}
       className={cn(
-        "flex items-center w-full px-5 min-h-[52px] active:bg-accent/50 transition-colors border-b border-border last:border-0",
+        "flex items-center gap-3 w-full px-5 min-h-[52px] active:bg-accent/50 transition-colors border-b border-border last:border-0",
         destructive ? "text-destructive" : "text-foreground",
       )}
     >
       <Icon
         className={cn(
-          "w-4 h-4 mr-3 shrink-0",
+          "w-4 h-4 shrink-0",
           destructive
             ? "text-destructive"
             : active

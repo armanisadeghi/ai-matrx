@@ -126,6 +126,22 @@ export function centerSlotWidth(
   return Math.max(0, total - 2 * Math.max(leftWidth, rightWidth));
 }
 
+/**
+ * The cap on the title that leaves the center nav its smallest trigger, or
+ * null (no cap) when there is no nav, or when even a title at its floor leaves
+ * too little for that trigger — the nav cannot draw, so the title keeps the room.
+ */
+export function titleMaxWidth(
+  total: number,
+  rightWidth: number,
+  navMin: number,
+  floor: number,
+): number | null {
+  if (navMin <= 0) return null;
+  const cap = total - rightWidth - navMin - CENTER_INFLOW_GUTTER;
+  return cap >= floor ? cap : null;
+}
+
 /** The left region's natural (unclipped) width, read without a paint. */
 function naturalWidth(el: HTMLElement): number {
   // `maxWidth` too: the global `* { max-width: 100% }` would cap the probe at
@@ -339,13 +355,13 @@ export default function RouteHeader({
       const rightWidth = rightEl?.offsetWidth ?? 0;
       const pad = { left: Math.max(0, rightWidth - leftWidth), right: Math.max(0, leftWidth - rightWidth) };
       setCenterPad((prev) => (prev?.left === pad.left && prev.right === pad.right ? prev : pad));
-      // Room for the nav's smallest trigger comes out of the title, down to its floor.
+      // Room for the nav's smallest trigger comes out of the title, down to its
+      // floor. When even the floor leaves too little for that trigger, the nav
+      // cannot draw at all — so the title keeps its room instead of yielding it
+      // to an empty center (2026-10-03: /war-room/<id> beside the canvas drew
+      // "Acme…" at 42px beside a blank 56px gap).
       const navMin = root.querySelector<HTMLElement>("[data-route-nav-min]")?.scrollWidth ?? 0;
-      setLeftMax(
-        navMin > 0
-          ? Math.max(floor, root.clientWidth - rightWidth - navMin - CENTER_INFLOW_GUTTER)
-          : null,
-      );
+      setLeftMax(titleMaxWidth(root.clientWidth, rightWidth, navMin, floor));
     };
 
     measure();
