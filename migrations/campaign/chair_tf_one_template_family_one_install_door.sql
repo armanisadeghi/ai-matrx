@@ -156,7 +156,7 @@ create or replace function custom._template_doors()
  immutable
  set search_path to 'pg_catalog'
 as $function$
-  select array['person_kernel_id', 'file_kernel_id', 'record_write', 'record_write_many',
+  select array['person_kernel_id', 'file_kernel_id', 'record_write', 'record_write_many', 'record_change_many',
                'table_from_example', 'table_declare', 'field_declare', 'applicable_fields',
                'table_dimensions_set', 'view_declare', 'form_declare', 'booking_declare',
                'dashboard_declare', 'pipeline_declare', 'doc_template_save', 'action_declare',
