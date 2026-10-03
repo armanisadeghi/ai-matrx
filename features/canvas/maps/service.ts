@@ -38,7 +38,8 @@ import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 
 /** Columns the list needs. `content` comes along for the box/arrow counts. */
 const LIST_COLUMNS =
-  "id,title,description,content,tags,is_favorited,is_archived,published_to_web,created_at,updated_at";
+  // organization_id + custom_fields: the list's custom-field columns (lane 7 W5) read them.
+  "id,title,description,content,tags,is_favorited,is_archived,published_to_web,created_at,updated_at,organization_id,custom_fields";
 
 const SORTABLE: Record<string, string> = {
   title: "title",
