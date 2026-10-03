@@ -13,7 +13,7 @@
 // writes. The list below comes from the door `platform.secure_delivery_sent` — the sender's own
 // rows only; the delivery table itself is closed to signed-in clients (aidream 1350g).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Mail, MessageSquare, ShieldCheck } from "lucide-react";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -27,6 +27,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { VaultRevealReauthDialog } from "@/features/secrets/components/SecretValue";
 
 import {
+  fetchRecipientPhoneOnFile,
   fetchSecureDeliveryOptions,
   listSentSecureDeliveries,
   revokeSecureDelivery,
@@ -99,6 +100,46 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
     };
   }, [dispatch, resourceType, resourceId, refreshSent]);
 
+  // Pre-fill the mobile when the recipient is an existing user whose phone on file has agreed to
+  // texts. Never over a number the sender typed; a pre-filled number is cleared when the email
+  // stops matching anyone, so the both-by-email warning stays honest.
+  const [phoneTyped, setPhoneTyped] = useState(false);
+  const phonePrefilled = useRef(false);
+  useEffect(() => {
+    if (phoneTyped) return;
+    const address = email.trim();
+    const clearPrefill = () => {
+      if (phonePrefilled.current) {
+        setPhone("");
+        phonePrefilled.current = false;
+      }
+    };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+      clearPrefill();
+      return;
+    }
+    let live = true;
+    const timer = setTimeout(() => {
+      fetchRecipientPhoneOnFile(address)
+        .then((onFile) => {
+          if (!live) return;
+          if (onFile) {
+            setPhone(onFile);
+            phonePrefilled.current = true;
+          } else {
+            clearPrefill();
+          }
+        })
+        .catch(() => {
+          if (live) clearPrefill();
+        });
+    }, 400);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+  }, [email, phoneTyped]);
+
   const hasBoth = email.trim() !== "" && phone.trim() !== "";
   const canSend = email.trim() !== "" && !sending;
 
@@ -118,6 +159,8 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
       setResult({ tone: receipt.same_channel ? "warn" : "ok", text: receipt.sentence });
       setEmail("");
       setPhone("");
+      setPhoneTyped(false);
+      phonePrefilled.current = false;
       setNote("");
       setFields([]);
       refreshSent();
@@ -184,7 +227,11 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
             type="tel"
             autoComplete="off"
             value={phone}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setPhone(e.target.value);
+              setPhoneTyped(true);
+              phonePrefilled.current = false;
+            }}
             placeholder="+1 310 555 0123"
           />
         </div>

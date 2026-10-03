@@ -138,6 +138,20 @@ export async function listSentSecureDeliveries(
   return (data ?? []) as SentSecureDelivery[];
 }
 
+/**
+ * The mobile on file for an existing user with this email — only when that number has agreed to
+ * texts (the send path's own gate) and the caller is that person or shares an organization with
+ * them. Anyone else, or no consent, is null, and the dialog keeps its both-by-email warning.
+ */
+export async function fetchRecipientPhoneOnFile(email: string): Promise<string | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .rpc("secure_delivery_recipient_phone", { p_email: email });
+  if (error) throw new Error(error.message);
+  return typeof data === "string" && data !== "" ? data : null;
+}
+
 // ─── recipient — no sign-in ──────────────────────────────────────────────────
 async function recipientCall(
   dispatch: AppDispatch,
