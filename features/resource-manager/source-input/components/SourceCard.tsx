@@ -497,7 +497,7 @@ function PartsChooser({
  * own fallback, said on the card); the person may choose to wait for the clean
  * version. Stage progress comes from `useStagesStatus`, re-read while it runs.
  */
-function ProcessingLine({
+export function ProcessingLine({
   card,
   entry,
   job,
