@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
         const { error: consentError } = await adminSupabase
           .schema("communication")
           .from("sms_consent")
-          .upsert(consentRows, { onConflict: "phone_number,consent_type" });
+          .upsert(consentRows, { onConflict: "organization_id,phone_number,consent_type" });
 
         if (consentError) {
           console.error("Failed to record verified SMS consent:", consentError);
