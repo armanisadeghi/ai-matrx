@@ -67,6 +67,7 @@ create or replace function pg_temp.w2p_run(p_body text) returns void language pl
 declare
   f jsonb := (select jsonb_object_agg(k, v) from w2p_fx);
   c record; v_out jsonb; v_state text; v_msg text; v_eff text; v_ans text; v_ids uuid[]; v_new text[]; v_i int;
+  v_flds text[]; v_j int;
 begin
   for c in
     select * from (values
@@ -120,6 +121,14 @@ begin
                    custom._ctx_id('scope-column-field', v_new[v_i], 'description')::text, '<col-description-' || v_i || '>'),
                    custom._ctx_id('scope-column-field', v_new[v_i], 'slug')::text, '<col-slug-' || v_i || '>'),
                    custom._ctx_id('scope-column-field', v_new[v_i], 'sort_order')::text, '<col-sort_order-' || v_i || '>');
+      end loop;
+      -- every Field of a Table this case made (its column and settings Fields, ids derived from the Table's)
+      for v_i in 1 .. coalesce(array_length(v_new, 1), 0) loop
+        select coalesce(array_agg(fd.id::text || chr(31) || coalesce(fd.data ->> 'key', '')), '{}') into v_flds
+          from custom.record fd where fd.table_id = custom.field_kernel_id() and fd.data ->> 'entity_definition_id' = v_new[v_i];
+        for v_j in 1 .. coalesce(array_length(v_flds, 1), 0) loop
+          v_eff := replace(v_eff, split_part(v_flds[v_j], chr(31), 1), '<field-' || v_i || '-' || split_part(v_flds[v_j], chr(31), 2) || '>');
+        end loop;
       end loop;
       if c.act = 'join_rotate' and v_out ->> 'code' is not null then
         v_eff := replace(v_eff, v_out ->> 'code', '<code>');

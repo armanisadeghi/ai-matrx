@@ -1,4 +1,3 @@
--- draft: claude-w2w clone-proven only; production apply waits on the lane manager (W2-W round 2)
 -- chair-step: it REPLACES the bodies of two lane-9 scope helpers (no door, no grant, no change to the chair's record doors or the access ladder). custom._ctx_store_type — the write-through half that copies a scope type into its store Table — now carries the old row's parent_type_id into the Table's document, the key custom._ctx_scope_parent_holds already reads for the type-level parent rule; until now it dropped it, so the store refused every scope of an inner type filed under a scope of its parent type ("Cross-type nesting is not allowed for this type") although the old tables accepted it. custom.scope_type_row_of reports that parent instead of a hard-coded null.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom._ctx_store_type(uuid, uuid, jsonb) 3f32377da3012543367381843fa070391b2d41aa11010560fe0a6f399e67a694
