@@ -9,9 +9,6 @@
 -- for table files" — custom.entity_record_read (SECURITY INVOKER) selected to_jsonb(x), every column,
 -- and authenticated may select 36 of files.files' 37 columns.
 
--- (lane7w5b2 supersedes lane7w5b, never applied to production: lane7w5b's bodies had lost blank
--- lines and its inverse was not byte-for-byte; these are built from production's exact body.)
-
 set local lock_timeout = '3s';
 
 CREATE OR REPLACE FUNCTION custom.entity_record_read(p_organization_id uuid, p_token text, p_record_id uuid)
