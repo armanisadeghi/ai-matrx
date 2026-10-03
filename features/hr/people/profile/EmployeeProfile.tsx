@@ -43,6 +43,7 @@ import {
   isHostedTab,
 } from "./tabs/SimpleTabs";
 import { CustomTab } from "./tabs/CustomTab";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 /** The knob that names the tab a profile opens on. Org-overridable (D13). */
 export const HR_PROFILE_DEFAULT_TAB_KEY = "hr.employees.profile_default_tab";
@@ -221,13 +222,25 @@ function ProfileBody({
             </p>
           </div>
         ) : (
-          <TabBody
-            profile={profile}
-            tab={tab}
-            org={org}
-            assignmentParam={assignmentParam}
-            onChanged={onChanged}
-          />
+          <>
+            <TabBody
+              profile={profile}
+              tab={tab}
+              org={org}
+              assignmentParam={assignmentParam}
+              onChanged={onChanged}
+            />
+            {/* Everything linked to this employee, both ways (W1.4) — under the default tab. */}
+            {tab === "personal" ? (
+              <div className="p-3 sm:p-4">
+                <LinkedRecordsSection
+                  token="hr_employee"
+                  id={employeeId}
+                  title={profile.header.display_name ?? ""}
+                />
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>

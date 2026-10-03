@@ -38,6 +38,7 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -94,10 +95,16 @@ export interface RecordsUiHostArgs {
 function recordSectionsPort(organizationId: string | null): {
   recordSections?: (target: { tableId: string; recordId: string }) => ReactNode;
 } {
-  if (!organizationId) return {};
   return {
     recordSections: ({ recordId }) => (
-      <RecordRunsSection key={recordId} organizationId={organizationId} recordId={recordId} />
+      <>
+        {organizationId ? (
+          <RecordRunsSection key={recordId} organizationId={organizationId} recordId={recordId} />
+        ) : null}
+        {/* Everything linked to this record, both ways — its own references and every
+            "Link a record…" made from the other end (W1.4). */}
+        <LinkedRecordsSection key={`linked:${recordId}`} token="record" id={recordId} title="" />
+      </>
     ),
   };
 }

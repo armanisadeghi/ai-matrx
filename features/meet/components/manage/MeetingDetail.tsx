@@ -108,6 +108,7 @@ import {
   formatTimeRange,
   zoneLabel,
 } from "@/features/meet/lib/zoned-time";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 type Section = "details" | "guests" | "occurrences" | "settings" | "record";
 
@@ -547,6 +548,8 @@ export function MeetingDetail({
           ) : null}
           {/* The organization's own fields on this meeting (lane 7 W5). */}
           {section === "details" ? <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} className="mt-6" /> : null}
+          {/* Everything linked to this meeting, both ways (W1.4). */}
+          {section === "details" ? <LinkedRecordsSection token="meet_meeting" id={meeting.id} title={meeting.title} className="mt-6 flex flex-col gap-1.5" /> : null}
 
           {section === "guests" ? (
             <MeetingGuests

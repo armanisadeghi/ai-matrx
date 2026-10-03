@@ -52,6 +52,7 @@ import {
   noteRecordSummary,
   type NoteRecordView,
 } from "@/features/notes/format";
+import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
 
 interface NoteMetadataBarProps {
   noteId: string;
@@ -219,6 +220,8 @@ export function NoteMetadataBar({
             organizationId={note?.organization_id ?? null}
             className="py-2"
           />
+          {/* Everything linked to this note, both ways (W1.4). */}
+          <LinkedRecordsSection token="note" id={noteId} title={note?.label ?? ""} className="flex flex-col gap-1.5 pb-2" />
         </div>
       )}
 
