@@ -172,7 +172,7 @@ describe("the composer's values show the companion canvas before the first send"
         await Promise.resolve();
       });
     };
-    let offCanvas: (() => void) | null = null;
+    const canvas: { off: (() => void) | null } = { off: null };
     try {
       await act(async () => {
         root.render(
@@ -186,7 +186,7 @@ describe("the composer's values show the companion canvas before the first send"
 
       // The canvas opens beside the chat: its values show before any send.
       await act(async () => {
-        offCanvas = mountCanvas();
+        canvas.off = mountCanvas();
       });
       await settle();
       expect(chainOf(s, OWN)?.[0].values.current_canvas_item.value).toEqual(LAB);
@@ -201,13 +201,13 @@ describe("the composer's values show the companion canvas before the first send"
 
       // The canvas goes away: its values go with it.
       await act(async () => {
-        offCanvas?.();
-        offCanvas = null;
+        canvas.off?.();
+        canvas.off = null;
       });
       await settle();
       expect(chainOf(s, OWN) ?? []).toEqual([]);
     } finally {
-      offCanvas?.();
+      canvas.off?.();
       await act(async () => root.unmount());
       offPage();
       jest.useRealTimers();
