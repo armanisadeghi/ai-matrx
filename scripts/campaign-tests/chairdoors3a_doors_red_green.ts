@@ -112,13 +112,15 @@ async function main() {
     const want = phase === "AFTER" ? true : !changes;
     const good = holds === want;
     if (!good) red++;
-    results.push(`${good ? "ok  " : "FAIL"} ${phase.padEnd(6)} ${id.padEnd(4)} ${detail}`);
+    const line = `${good ? "ok  " : "FAIL"} ${phase.padEnd(6)} ${id.padEnd(4)} ${detail}`;
+    results.push(line);
+    console.log(line);   // printed as it happens, so a lock timeout later still leaves the evidence
   };
 
   // E4/E5 run BEFORE the one transaction: the guard honours an approval recorded in the same transaction, so
   // a SECOND connection commits a Confidential Table with maker_is_reader (clone only, archived again below) and
   // a later transaction tries the change without the door.
-  const fields = [{ key: "item", label: "Item", type: "text" }, { key: "checked_on", label: "Checked on", type: "text" }];
+  const fields = [{ name: "item", key: "item", label: "Item", type: "text" }, { name: "checked_on", key: "checked_on", label: "Checked on", type: "text" }];
   const later = await (async () => {
     // The approval the door recorded lives in THIS transaction and the guard honours an approval of the same
     // transaction, so the two "without the door" checks run on a SECOND connection: one committed transaction
@@ -134,12 +136,13 @@ async function main() {
       console.log("# E4/E5: a second connection makes the proof table …");
       await two.query("select set_config('request.jwt.claims', json_build_object('sub', $1::text, 'role', 'authenticated')::text, true)", [ADMIN]);
       await two.query("set local role authenticated");
-      const made = await two.query("select custom.table_ensure($1::uuid, $2::jsonb) as v", [ORG, JSON.stringify({
-        name: "Peer review submissions (clone proof)", slug: "cd3a_peer_review_proof", fields, members_add_rows: true,
+      const home = (await two.query("select custom.record_write($1::uuid, $2::uuid, $3::jsonb)::text as id", [ORG, HOME_KERNEL, JSON.stringify({ name: "Peer review (clone proof) Home" })])).rows[0].id as string;
+      const made = await two.query("select custom.table_declare($1::uuid, $2::jsonb)::text as v", [ORG, JSON.stringify({
+        name: "Peer review submissions (clone proof)", slug: "cd3a_peer_review_proof", fields, members_add_rows: true, parent_id: home,
         type: "entity", label_singular: "Peer review submission", label_plural: "Peer review submissions", display: "list", weight: "light",
         ordered: false, row_order: "manual", title_field: "item", retention_days: 365, agent_writable: true, default_sort: [{ field: "item", direction: "asc" }],
       })]);
-      proofTable = (made.rows[0].v as { table_id: string }).table_id;
+      proofTable = made.rows[0].v as string;
       await two.query("reset role");
       await two.query("select custom.set_table_confidential_arman_explicitly_approved($1::uuid, null, $2, current_date, true)",
         [proofTable, "CLONE PROOF ONLY - not Arman's words: a clone-only table, archived by the same proof"]);
@@ -172,7 +175,7 @@ async function main() {
   try {
     await client.query("set local statement_timeout = '900s'");
     console.log("# fixtures …");
-    await client.query("set local lock_timeout = '10s'");
+    await client.query("set local lock_timeout = '120s'");
 
     // ── fixtures, made as admin through the store's own doors ──────────────────────────────────────────
     const scopeType = must(await ask(null,
@@ -187,13 +190,14 @@ async function main() {
       `select r.id::text as id from custom.record r where r.organization_id = $1::uuid and r.table_id = $2::uuid
           and r.deleted_at is null and r.created_by is distinct from $3::uuid order by r.created_at limit 1`,
       [ORG, scopeType, TEST]), "a scope somebody else made")[0].id as string;
-    // The Table's whole declaration, as @ai-matrx/records' ensureTable sends it (core/declareTable.ts tableSpecFor).
+    // The Table's whole declaration, as @ai-matrx/records' declareTable sends it (core/declareTable.ts tableSpecFor).
     const ensure = async (spec: Record<string, unknown>) =>
-      (must(await ask(ADMIN, "select custom.table_ensure($1::uuid, $2::jsonb) as v", [ORG, JSON.stringify({
+      ({ table_id: must(await ask(ADMIN, "select custom.table_declare($1::uuid, $2::jsonb)::text as v", [ORG, JSON.stringify({
+        parent_id: must(await ask(ADMIN, "select custom.record_write($1::uuid, $2::uuid, $3::jsonb)::text as id", [ORG, HOME_KERNEL, JSON.stringify({ name: `${spec.name} Home` })]), "a Home")[0].id,
         type: "entity", label_singular: spec.name, label_plural: spec.name, display: "list", weight: "light", ordered: false,
         row_order: "manual", title_field: "item", retention_days: 365, agent_writable: true,
         default_sort: [{ field: "item", direction: "asc" }], ...spec,
-      })]), `table_ensure ${spec.name}`)[0].v as { table_id: string });
+      })]), `table_declare ${spec.name}`)[0].v as string });
     const ordinary = (await ensure({ name: "Treatment room equipment checks", slug: "cd3a_equipment_checks", fields })).table_id;
     const ownRows = (await ensure({ name: "Shift handover notes", slug: "cd3a_shift_handover_notes", fields, members_add_rows: true })).table_id;
     const reviews = (await ensure({ name: "Peer review submissions", slug: "cd3a_peer_review_submissions", fields, members_add_rows: true })).table_id;
@@ -327,6 +331,32 @@ async function main() {
     };
 
     console.log("# AFTER …");
+    // ── A: the count door keeps the "Only me" list rule (the nolist plant has no data to bite on in the
+    //      organizations the count harness samples, so the row is planted here). Admin's archived "Only me"
+    //      row: the member's count is 0 and the archive door shows her 0; admin's count is 1. With the count-only
+    //      answer's list rule taken out (the plant), the member's count becomes 1 while the archive door still
+    //      shows her 0.
+    must(await ask(ADMIN, "select custom.table_row_defaults_set($1::uuid, $2::uuid, $3::jsonb)", [ORG, ownRows, JSON.stringify({ shown_to: "only_me" })]), "row defaults only_me");
+    const privateRow = must(await ask(ADMIN, "select custom.record_write($1::uuid, $2::uuid, $3::jsonb)::text as id",
+      [ORG, ownRows, JSON.stringify({ item: "Night shift: alarm panel reset", checked_on: "2026-10-02" })]), "admin's Only-me row")[0].id as string;
+    must(await ask(ADMIN, "select custom.record_delete($1::uuid, $2::uuid)", [ORG, privateRow]), "archiving admin's row");
+    const countOf = async (uid: string) => {
+      const c = must(await ask(uid, "select coalesce((select n from custom.count_records_archived($1::uuid, array[$2::uuid], 'org')), -1)::int as n", [ORG, ownRows]), "count door")[0].n as number;
+      const d = must(await ask(uid, "select count(*)::int as n from custom.read_records_archived($1::uuid, $2::uuid, 'org', false, 200, 0)", [ORG, ownRows]), "archive door")[0].n as number;
+      return { c, d };
+    };
+    const asMember = await countOf(TEST), asAdmin = await countOf(ADMIN);
+    check("AFTER", "A1", asMember.c === 0 && asMember.d === 0, `the member: count door ${asMember.c}, archive door ${asMember.d} (admin's Only-me archived row stays his)`);
+    check("AFTER", "A2", asAdmin.c === 1 && asAdmin.d === 1, `admin: count door ${asAdmin.c}, archive door ${asAdmin.d}`, false);
+    const upA = readFileSync(resolve(ROOT, "migrations/campaign/chairdoors3a_a_archived_rows_are_counted_in_one_call.sql"), "utf8");
+    const archiveBody = (() => { const at = upA.indexOf("CREATE OR REPLACE FUNCTION custom.read_records_archived("); return upA.slice(at, upA.indexOf("$function$;", at) + 11); })();
+    const noList = "|| format(' and platform.shown_to_lists(r.shown_to, r.visibility, r.created_by, r.organization_id, %L::uuid, %L::jsonb)',\n                v_me, custom._record_shown_to_ctx(array[p_organization_id], p_table_id)),\n      case when v_lane = 'mine'";
+    if (!archiveBody.includes(noList)) throw new Error("UNMEASURED: the nolist plant found nothing to change");
+    await client.query(archiveBody.replace(noList, ",\n      case when v_lane = 'mine'"));
+    const planted = await countOf(TEST);
+    check("BEFORE", "A1", planted.c === 0 && planted.d === 0, `PLANT nolist — the member: count door ${planted.c}, archive door ${planted.d}`);
+    await client.query(archiveBody);
+
     await sectionC("AFTER");
     await sectionD("AFTER");
     await sectionE("AFTER");
@@ -345,7 +375,6 @@ async function main() {
     await client.query("rollback").catch(() => {});
     await client.end();
   }
-  for (const r of results) console.log(r);
   console.log(red ? `RED (${red})` : "GREEN — every check holds on the live bodies, and every check the files change fails on the bodies before them");
   process.exit(red ? 1 : 0);
 }
