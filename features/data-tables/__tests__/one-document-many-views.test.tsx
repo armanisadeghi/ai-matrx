@@ -141,14 +141,14 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import documentSessionsReducer from "../redux/documentSessionsSlice";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import DocumentEditor from "../components/DocumentEditor";
 import { openDocumentModelIds } from "../document-model/documentModels";
 
 const DOC = "7e1f0c2a-4b5d-4e6f-8a9b-0c1d2e3f4a5b";
 
 function makeStore() {
-  return configureStore({ reducer: { documentSessions: documentSessionsReducer } });
+  return configureStore({ reducer: { workingCopies: workingCopiesReducer } });
 }
 
 async function settle() {

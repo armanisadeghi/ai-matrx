@@ -1,5 +1,5 @@
 /**
- * THE DOCUMENT MODEL — one in-memory model per cloud document per tab.
+ * THE DOCUMENT MODEL — the engine of one cloud document per tab.
  *
  * Before this, the document lived only inside each `DocumentEditor`'s Univer
  * instance. A remount (a board tile waking, a tile removed and undone, a route
@@ -8,29 +8,26 @@
  * editors, each saving full snapshots of its own copy (last write wins), each
  * with its own realtime channel and its own collab room.
  *
- * Now every `DocumentEditor` is a VIEW of this model:
+ * The document is a record on THE one working-copy primitive
+ * (`lib/working-copy/workingCopyKind.ts`, kind `udt_document`,
+ * `./documentModels.ts`): its save status, dirty and view count are Redux state
+ * (`workingCopies["udt_document:<id>"]`), its one coalesced save is the kind's.
+ * What Redux cannot hold — Univer's body — is this engine, registered on the
+ * record's session under the same key:
  *
- *  - BODY. Univer owns the body (its snapshot and command stream). Every local
- *    mutation in one view is replayed into every other view of the document
- *    (the same mutation stream collab sends between machines), so two views
- *    show one document. A new view boots from the model's latest state — a
- *    live view's snapshot, or the snapshot the last view left behind — never
- *    the stale server copy while the model is alive.
- *  - SAVE. ONE coalesced, serialized save per document
- *    (`lib/working-copy/coalescedCommit.ts`), never one per view. The last view
- *    leaving flushes it; the model stays alive until that save lands, and a
- *    view that comes back meanwhile re-attaches to it.
+ *  - BODY. Every local mutation in one view is replayed into every other view
+ *    of the document (the same mutation stream collab sends between machines),
+ *    so two views show one document. A new view boots from the engine's latest
+ *    state — a live view's snapshot, or the snapshot the last view left behind
+ *    — never the stale server copy while the record's session is alive.
  *  - SIDE EFFECTS, ONCE. The snapshot realtime channel, the collab room, and
  *    the pagehide / visibility / beforeunload flush are opened once per
- *    document and closed once (`lib/working-copy/recordSessions.ts`).
- *  - STATUS. Save status lives in Redux (`documentSessions`, keyed by id), so
- *    every view shows one status.
+ *    document and closed once.
  */
 
 import type { ICommandInfo, IDocumentData } from "@univerjs/core";
-import { createCoalescedCommit, type CommitReason } from "@/lib/working-copy/coalescedCommit";
-import { createRecordSessionRegistry } from "@/lib/working-copy/recordSessions";
-import type { DocumentSaveStatus, DocumentSessionMeta } from "../redux/documentSessionsSlice";
+import type { CommitReason } from "@/lib/working-copy/coalescedCommit";
+import type { WorkingCopyHandle } from "@/lib/working-copy/workingCopyKind";
 import type { AwarenessState } from "../collab/types";
 import { isSnapshotMutation } from "../utils/isSnapshotMutation";
 import type {
@@ -55,7 +52,7 @@ export interface DocumentViewPort {
   editable: () => boolean;
 }
 
-/** Everything the model reaches outside itself — injected so it is testable. */
+/** Everything the engine reaches outside itself — injected so it is testable. */
 export interface DocumentModelDeps {
   /** The newest stored snapshot (its row id + body), or null for a document never saved. */
   loadLatest: (documentId: string) => Promise<{ id: string; snapshot: DocumentSnapshotData } | null>;
@@ -64,8 +61,6 @@ export interface DocumentModelDeps {
     snapshot: DocumentSnapshotData;
     origin: "autosave" | "manual";
   }) => Promise<{ id: string; createdBy: string | null }>;
-  reportStatus: (documentId: string, patch: Partial<DocumentSessionMeta> | null) => void;
-  onSaveFailed: (documentId: string, message: string) => void;
   onSaved?: (documentId: string, origin: "autosave" | "manual") => void;
   /** Window-level listeners (pagehide, visibilitychange, beforeunload). */
   listenToPage?: (handlers: { flush: () => void; hasUnsaved: () => boolean }) => () => void;
@@ -99,14 +94,13 @@ let viewIds = 0;
 export class DocumentModel {
   readonly documentId: string;
   private readonly deps: DocumentModelDeps;
+  private readonly handle: WorkingCopyHandle;
   private readonly views = new Map<number, AttachedView>();
   private lastEditedView: number | null = null;
   /** The document as the last view left it, or as last loaded / saved. */
   private stored: DocumentSnapshotData | null = null;
   private loading: Promise<DocumentSnapshotData | null> | null = null;
   private relaying = false;
-  private status: DocumentSaveStatus = "idle";
-  private savedTimer: ReturnType<typeof setTimeout> | null = null;
   /** Snapshot rows this tab already holds (loaded or written) — never re-applied. */
   private readonly knownSnapshots = new Set<string>();
   private readonly collabListeners = new Set<(info: CollabMutationInfo) => void>();
@@ -116,18 +110,11 @@ export class DocumentModel {
   private readonly awarenessListeners = new Set<() => void>();
   private realtimeClose: (() => void) | null = null;
   private pageClose: (() => void) | null = null;
-  private readonly commit;
 
-  constructor(documentId: string, deps: DocumentModelDeps) {
-    this.documentId = documentId;
+  constructor(handle: WorkingCopyHandle, deps: DocumentModelDeps) {
+    this.documentId = handle.id;
+    this.handle = handle;
     this.deps = deps;
-    this.commit = createCoalescedCommit<DocumentSnapshotData | null>({
-      delay: () => DOCUMENT_SAVE_DELAY_MS,
-      read: () => this.latest(),
-      run: (snapshot, reason) => this.write(snapshot, reason),
-      onError: (error) =>
-        console.error(`[document-model] saving ${documentId} failed — the edit stays pending`, error),
-    });
   }
 
   // ── body ────────────────────────────────────────────────────────────────
@@ -180,7 +167,6 @@ export class DocumentModel {
       this.onViewMutation(id, info, options),
     );
     this.views.set(id, { id, port, dispose: () => subscription.dispose() });
-    this.report({ views: this.views.size });
     let detached = false;
     return () => {
       if (detached) return;
@@ -200,7 +186,6 @@ export class DocumentModel {
       view.dispose();
       this.views.delete(id);
       if (this.lastEditedView === id) this.lastEditedView = null;
-      this.report({ views: this.views.size });
     };
   }
 
@@ -241,53 +226,42 @@ export class DocumentModel {
     }
   }
 
-  // ── save ────────────────────────────────────────────────────────────────
+  // ── save (run by the record's one coalesced save — documentModels.ts) ─
 
   private markDirty(): void {
-    this.setStatus("dirty");
-    this.commit.schedule();
+    this.handle.touch();
   }
 
-  private async write(snapshot: DocumentSnapshotData | null, reason: CommitReason): Promise<void> {
+  private saving = false;
+
+  /**
+   * Write the body as it is now. Returns false when this tab is a collab peer
+   * that does not write (the elected host writes the canonical snapshot; a
+   * peer's edits reach it through the room). An explicit Save always writes.
+   */
+  async write(reason: CommitReason): Promise<boolean> {
+    const snapshot = this.latest();
     if (!snapshot) throw new Error("There is no open document to save.");
-    // Collab: the elected host writes the canonical snapshot; a peer's edits
-    // reach it through the room. An explicit Save always writes.
-    if (this.collab && !this.collab.isHost() && reason !== "manual") {
-      this.setStatus("idle");
-      return;
-    }
+    if (this.collab && !this.collab.isHost() && reason !== "manual") return false;
     const origin = reason === "manual" ? "manual" : "autosave";
-    this.setStatus("saving");
+    this.saving = true;
     try {
       const { id } = await this.deps.save({ documentId: this.documentId, snapshot, origin });
       this.knownSnapshots.add(id);
-    } catch (error) {
-      this.setStatus("error");
-      this.deps.onSaveFailed(this.documentId, error instanceof Error ? error.message : String(error));
-      throw error;
+    } finally {
+      this.saving = false;
     }
     if (this.views.size === 0) this.stored = snapshot;
-    this.setStatus(this.commit.hasPending() ? "dirty" : "saved", { lastSavedAt: new Date().toISOString() });
     this.deps.onSaved?.(this.documentId, origin);
-    if (this.savedTimer) clearTimeout(this.savedTimer);
-    this.savedTimer = setTimeout(() => {
-      this.savedTimer = null;
-      if (this.status === "saved") this.setStatus("idle");
-    }, 1500);
+    return true;
   }
 
-  /** Save now (the toolbar's Save): a labeled snapshot even with nothing pending. */
-  saveNow(): Promise<void> {
-    return this.commit.flush("manual", true);
+  private hasUnsaved(): boolean {
+    return this.handle.hasPending();
   }
 
-  /** Write pending edits now (page hide, last view gone). */
-  flush(): Promise<void> {
-    return this.commit.flush("flush");
-  }
-
-  hasUnsaved(): boolean {
-    return this.commit.hasPending() || this.commit.isBusy();
+  hasViews(): boolean {
+    return this.views.size > 0;
   }
 
   // ── realtime (snapshot inserts) ─────────────────────────────────────────
@@ -302,7 +276,7 @@ export class DocumentModel {
   async onRemoteSnapshot(snapshotId: string): Promise<void> {
     if (this.collab) return; // the room is the live channel; snapshots are checkpoints
     if (this.knownSnapshots.has(snapshotId)) return; // ours, or already shown
-    if (this.commit.isBusy()) return; // our own save's echo, ahead of its response
+    if (this.saving) return; // our own save's echo, ahead of its response
     if (this.hasUnsaved()) {
       console.warn(
         `[document-model] ${this.documentId} changed elsewhere while this tab has unsaved edits — keeping this tab's edits; the next save writes them`,
@@ -378,63 +352,34 @@ export class DocumentModel {
     return () => this.awarenessListeners.delete(listener);
   }
 
-  // ── lifecycle (driven by the registry) ──────────────────────────────────
+  // ── lifecycle (driven by the record's session) ──────────────────────
 
-  /** A view arrived on a model with none. */
+  /** A view arrived on a document with none. */
   wake(): void {
     if (!this.pageClose && this.deps.listenToPage) {
       this.pageClose = this.deps.listenToPage({
-        flush: () => void this.flush(),
+        flush: () => void this.handle.flush(),
         hasUnsaved: () => this.hasUnsaved(),
       });
     }
   }
 
-  /** The last view left: leave the rooms, write what it held. */
-  rest(): Promise<void> {
+  /** The last view left: leave the rooms (the session then writes what it held). */
+  rest(): void {
     this.collab?.stop();
     this.collab = null;
     this.awareness = null;
     this.realtimeClose?.();
     this.realtimeClose = null;
-    return this.flush();
-  }
-
-  canDrop(): boolean {
-    return this.views.size === 0 && !this.hasUnsaved();
   }
 
   close(): void {
     this.pageClose?.();
     this.pageClose = null;
-    if (this.savedTimer) clearTimeout(this.savedTimer);
-    this.commit.cancel();
-    this.deps.reportStatus(this.documentId, null);
-  }
-
-  private setStatus(status: DocumentSaveStatus, extra?: Partial<DocumentSessionMeta>): void {
-    this.status = status;
-    this.report({ saveStatus: status, ...extra });
-  }
-
-  private report(patch: Partial<DocumentSessionMeta>): void {
-    this.deps.reportStatus(this.documentId, patch);
   }
 }
 
 /** Mutations that change what a snapshot stores (never scroll / selection) — the editors' one dirty filter. */
 function isContentMutation(info: Readonly<CollabMutationInfo>): boolean {
   return isSnapshotMutation({ id: info.id, type: info.type, params: info.params } as ICommandInfo);
-}
-
-/** The registry of open document models for one tab, given its dependencies. */
-export function createDocumentModelRegistry(deps: DocumentModelDeps) {
-  const registry = createRecordSessionRegistry<DocumentModel>({
-    open: (id) => new DocumentModel(id, deps),
-    firstViewArrived: (model) => model.wake(),
-    lastViewGone: (model) => model.rest(),
-    canDrop: (model) => model.canDrop(),
-    close: (model) => model.close(),
-  });
-  return registry;
 }

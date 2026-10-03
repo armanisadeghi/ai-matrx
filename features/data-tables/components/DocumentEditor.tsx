@@ -12,7 +12,7 @@
  *   - Save: ONE coalesced save per document (2.5s after the last edit; a new
  *     row in `udt_document_snapshots`, append-only), flushed when the last view
  *     leaves, on page hide and on Save. Status is shared (Redux
- *     `documentSessions`).
+ *     `workingCopies["udt_document:<id>"]`, lib/working-copy).
  *   - Realtime / collab: the snapshot channel and the Yjs room are opened once
  *     per document by the model, never once per view.
  * A remount (a board tile waking, a removed tile undone, Back and forward)
@@ -51,7 +51,7 @@ import { useRealtimeManager } from "@ai-matrx/realtime/react";
 
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToolToggle } from "@/features/canvas/host/toolCanvas";
@@ -73,13 +73,14 @@ import { documentHistoryToggleInput } from "../canvas/historyKinds";
 import { DocumentPageReferenceCopyButton } from "./DocumentPageReferenceCopyButton";
 import type { DocumentBodyPort } from "../document-body-text";
 import {
-  selectDocumentSaveStatus,
-  type DocumentSaveStatus,
-} from "../redux/documentSessionsSlice";
+  selectWorkingCopyStatus,
+  type WorkingCopyStatus,
+} from "@/lib/working-copy/workingCopySlice";
 import {
-  acquireDocumentModel,
   connectDocumentRealtime,
+  documentWorkingCopy,
 } from "../document-model/documentModels";
+import type { DocumentModel } from "../document-model/documentModel";
 import type {
   DocumentAwareness,
   DocumentCollabFactory,
@@ -127,7 +128,8 @@ export default function DocumentEditor({
   const apiRef = useRef<FUniver | null>(null);
   const univerRef = useRef<Univer | null>(null);
   /** The document's model while this view holds it (save, status, rooms). */
-  const modelRef = useRef<ReturnType<typeof acquireDocumentModel>["model"] | null>(null);
+  const modelRef = useRef<DocumentModel | null>(null);
+  const store = useAppStore();
   const realtimeManager = useRealtimeManager();
   const realtimeManagerRef = useRef(realtimeManager);
   useEffect(() => {
@@ -147,8 +149,10 @@ export default function DocumentEditor({
   const [unitId, setUnitId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // ONE status per document, whichever view wrote it.
-  const saveStatus: DocumentSaveStatus =
-    useAppSelector(selectDocumentSaveStatus(documentId)) ?? "idle";
+  const saveStatus: WorkingCopyStatus =
+    useAppSelector((state) =>
+      selectWorkingCopyStatus(state, documentWorkingCopy.key(documentId)),
+    ) ?? "idle";
   // Snapshot history is a canvas tab beside the editor; the button toggles it.
   const snapshotHistory = useToolToggle(documentHistoryToggleInput(documentId, editable));
 
@@ -220,7 +224,16 @@ export default function DocumentEditor({
   useEffect(() => {
     if (!containerRef.current) return undefined;
     let cancelled = false;
-    const { model, release } = acquireDocumentModel(documentId);
+    // Hold the document's working copy (Redux status + its one save) and its
+    // engine (the DocumentModel, keyed the same way).
+    const release = documentWorkingCopy.attach(documentId, store);
+    const model = documentWorkingCopy.engine(documentId);
+    if (!model) {
+      release();
+      setLoadError("The document could not be opened in this tab.");
+      setBootState("load_error");
+      return undefined;
+    }
     modelRef.current = model;
     const manager = realtimeManagerRef.current;
     if (manager && !collabRef.current) connectDocumentRealtime(model, manager);
@@ -355,7 +368,7 @@ export default function DocumentEditor({
       });
       return;
     }
-    void model.saveNow();
+    void documentWorkingCopy.flush(documentId, "manual", true);
   };
 
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
@@ -543,7 +556,7 @@ function cryptoRandomId() {
   return `doc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function statusPillFor(s: DocumentSaveStatus): {
+function statusPillFor(s: WorkingCopyStatus): {
   text: string;
   icon: React.ReactNode;
   className: string;

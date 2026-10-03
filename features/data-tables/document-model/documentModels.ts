@@ -1,25 +1,27 @@
 /**
- * The tab's open document models — the app wiring of `./documentModel.ts`.
+ * Cloud documents on THE one working-copy primitive — kind `udt_document`
+ * (`lib/working-copy/workingCopyKind.ts`). The record's status / dirty / views
+ * are Redux (`workingCopies["udt_document:<id>"]`); its engine is the
+ * `DocumentModel` (`./documentModel.ts`) registered on the record's session.
  *
- * `acquireDocumentModel(id)` is the one door: every `DocumentEditor` holds the
- * model of its document for as long as it is mounted, and every side effect a
- * document owns (the save, the snapshot channel, the collab room, the page-hide
- * flush) runs once per document here — never once per editor.
+ * `documentWorkingCopy.attach(id, store)` is the one door: every
+ * `DocumentEditor` holds its document for as long as it is mounted, and every
+ * side effect a document owns (the one save, the snapshot channel, the collab
+ * room, the page-hide flush) runs once per document — never once per editor.
  */
 "use client";
 
 import type { RealtimeManager } from "@ai-matrx/realtime";
 import { defineChannelNamespace } from "@ai-matrx/realtime";
 import { supabase } from "@/utils/supabase/client";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { defineWorkingCopyKind } from "@/lib/working-copy/workingCopyKind";
 import { openShared } from "@/lib/realtime/sharedChannel";
 import { toast } from "@/components/ui/use-toast";
 import { getLatestDocumentSnapshot, saveDocumentSnapshot } from "../document-service";
 import { isServiceFailure } from "../types";
-import { documentSessionChanged, documentSessionClosed } from "../redux/documentSessionsSlice";
 import {
-  createDocumentModelRegistry,
-  type DocumentModel,
+  DOCUMENT_SAVE_DELAY_MS,
+  DocumentModel,
   type DocumentModelDeps,
   type DocumentSnapshotData,
 } from "./documentModel";
@@ -45,14 +47,6 @@ const deps: DocumentModelDeps = {
     if (isServiceFailure(res)) throw new Error(res.error);
     // component-created-by-ok: append-only snapshot with NO updated_by column and NO parent-rewrite trigger — created_by is the author the client wrote at insert (the only person field this table has)
     return { id: res.data.id, createdBy: res.data.created_by ?? null };
-  },
-  reportStatus(documentId, patch) {
-    const store = getStoreSingleton();
-    if (!store) return;
-    store.dispatch(patch ? documentSessionChanged({ id: documentId, patch }) : documentSessionClosed(documentId));
-  },
-  onSaveFailed(_documentId, message) {
-    toast({ title: "Could not save document", description: message, variant: "destructive" });
   },
   onSaved(_documentId, origin) {
     if (origin === "manual") toast({ title: "Snapshot saved", variant: "success" });
@@ -81,13 +75,24 @@ const deps: DocumentModelDeps = {
   },
 };
 
-const registry = createDocumentModelRegistry(deps);
-
-/** Hold a document's model; call `release` when the editor unmounts. */
-export function acquireDocumentModel(documentId: string): { model: DocumentModel; release: () => void } {
-  const handle = registry.acquire(documentId);
-  return { model: handle.session, release: handle.release };
-}
+export const documentWorkingCopy = defineWorkingCopyKind<DocumentModel>({
+  entity: "udt_document",
+  delay: () => DOCUMENT_SAVE_DELAY_MS,
+  createEngine: (handle) => new DocumentModel(handle, deps),
+  firstViewArrived: (model) => model?.wake(),
+  lastViewGone: (model) => model?.rest(),
+  engineBusy: (model) => model.hasViews(),
+  close: (model) => model?.close(),
+  async save({ engine, reason }) {
+    if (!engine) throw new Error("The document is not open in this tab.");
+    const wrote = await engine.write(reason);
+    // A collab peer's edits are the host's to write: nothing to show as saved.
+    return { savedAt: wrote ? Date.now() : null };
+  },
+  onSaveFailed(_id, message) {
+    toast({ title: "Could not save document", description: message, variant: "destructive" });
+  },
+});
 
 /**
  * Open the document's snapshot-insert channel once (shared by every view).
@@ -137,7 +142,7 @@ export function connectDocumentRealtime(model: DocumentModel, manager: RealtimeM
   });
 }
 
-/** Test / diagnostics seam: the ids with a live model in this tab. */
+/** Test / diagnostics seam: the ids with a live document session in this tab. */
 export function openDocumentModelIds(): string[] {
-  return registry.ids();
+  return documentWorkingCopy.openIds();
 }
