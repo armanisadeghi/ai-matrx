@@ -130,7 +130,7 @@ function reload() {
 }
 
 beforeEach(() => {
-  window.sessionStorage.clear();
+  window.localStorage.clear();
   __discardComposerDraftWritesForTest();
   __resetComposerDraftGenerationsForTest();
   jest.spyOn(console, "warn").mockImplementation(() => undefined);
@@ -210,13 +210,13 @@ describe("the surface alias and the handoff line", () => {
       markInputSubmitted({ conversationId: LANDING_ID, userValues: {} }),
     );
     expect(
-      window.sessionStorage.getItem(composerDraftAliasKey(SURFACE)),
+      window.localStorage.getItem(composerDraftAliasKey(SURFACE)),
     ).toContain('"sent":true');
 
     // The turn started: the conversation id is real now and owns the fact.
     releaseComposerDraftAlias(LANDING_ID);
     expect(
-      window.sessionStorage.getItem(composerDraftAliasKey(SURFACE)),
+      window.localStorage.getItem(composerDraftAliasKey(SURFACE)),
     ).toBeNull();
   });
 });

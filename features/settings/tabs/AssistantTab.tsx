@@ -47,7 +47,7 @@ export default function AssistantTab() {
           <SettingsSwitch
             label="Put unsent drafts back"
             description="Restores unsent text after a reload or crash."
-            helpText="Kept per conversation in that tab. A sent message is never put back."
+            helpText="Kept per conversation on this browser. A sent message is never put back."
             checked={restoreUnsentDrafts !== false}
             onCheckedChange={setRestoreUnsentDrafts}
             last

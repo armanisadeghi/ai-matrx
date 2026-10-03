@@ -16,7 +16,7 @@
  * FORCING FUNCTION: every case drives the REAL middleware, the REAL slice, the
  * REAL storage module and the REAL restore thunk through a real Redux store.
  * A "reload" is modelled honestly: the store and every in-memory generation are
- * thrown away while `sessionStorage` — the only thing a reload keeps — is left
+ * thrown away while `localStorage` — the only thing a reload keeps — is left
  * exactly as the page left it. Deleting the middleware from the chain fails
  * case 1; deleting the generation check in the thunk fails case 4.
  */
@@ -110,7 +110,7 @@ function restoreInto(store: AnyStore) {
 }
 
 beforeEach(() => {
-  window.sessionStorage.clear();
+  window.localStorage.clear();
   __discardComposerDraftWritesForTest();
   __resetComposerDraftGenerationsForTest();
   // The slice's protection paths scream by design (loud recovery); keep the
