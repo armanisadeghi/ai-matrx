@@ -9,15 +9,14 @@
 // untouched beside it until Arman's one flip.
 //
 // The census (DATA-HOME-3-SPEC §3) items this file keeps: 1 header (Back, no "Data" word, New
-// table / Start from an example only with an active organization, bound to it), 12 the store
+// table / Start from an example always, opening the one New table dialog — G5 b), 12 the store
 // switch and its notices, 13 making a table in the ACTIVE organization, 15 the inbox, 16 the mount
 // ports. The list, lanes, organization filter, kinds and row facts are DataHomeList's.
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ActionInbox, RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
+import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
@@ -27,7 +26,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ORG_FILTER_PARAM } from "@/features/unified-data/hub/dataHomeScope";
 import { seesOnlyWhatIsShared } from "@/features/unified-data/hub/capabilities";
-import { useOrganizationRequired, type OrganizationState } from "@/features/organizations/useOrganizationRequired";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { useUserOrganizations, useUserRole } from "@/features/organizations/hooks";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -53,8 +52,6 @@ const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" 
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  // org-filter: write-target — the active organization is where New table lands; no read narrows by it.
-  const active = useOrganizationRequired();
   const searchParams = useSearchParams();
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
   // THE ORGANIZATION FILTER is the shell's (`?org_filter=`). The mount is bound to it when it names
@@ -90,7 +87,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   }, [organizationId]);
 
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
-  const makeAsked = making.asked;
 
   // Shared-only: the sentence speaks to a member of the ONE organization the filter names, never
   // to its owner or admins (UI-FIX-19).
@@ -109,7 +105,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
         {/* A NEW TABLE LANDS IN THE ACTIVE ORGANIZATION (the law's rule 4) — never the filter's. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && storeOn && active.organizationId
+          {...(organizationState === "ready" && storeOn
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
@@ -157,11 +153,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
                 sharedOnlyHere={sharedOnlyHere}
                 footer={
                   <div className="space-y-4">
-                    <MakeInActiveOrganization
-                      mountOrganizationId={organizationId}
-                      activeOrganizationId={active.organizationId}
-                      makeAsked={makeAsked}
-                    />
                     <MountWhenNear>
                       <ActionInbox
                         className="max-h-64"
@@ -182,41 +173,5 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
         )}
       </div>
     </>
-  );
-}
-
-/**
- * MAKING A TABLE CARRIES THE ACTIVE ORGANIZATION (census 13). When the filter names that same
- * organization the mount is already bound to it; otherwise the making controls get their own
- * provider bound to the active organization. With none active the header offers no New table.
- */
-function MakeInActiveOrganization({
-  mountOrganizationId,
-  activeOrganizationId,
-  makeAsked,
-}: {
-  mountOrganizationId: string | null;
-  activeOrganizationId: string | null;
-  makeAsked: { create: number; examples: number };
-}) {
-  const router = useRouter();
-  const client = useRecordsClient();
-  const open = (tableId: string, dashboardId?: string | null) =>
-    router.push(dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`);
-  if (!activeOrganizationId) {
-    return (
-      <p className="text-xs text-muted-foreground" data-hub-make-needs-organization="">
-        {/* A state, not a pointer (DATA-HOME-3E): the switcher is the sidebar's bottom button, not the
-            header, and the header's absent New table already says the rest. */}
-        No active organization
-      </p>
-    );
-  }
-  if (mountOrganizationId === activeOrganizationId) return <TablesHome makingOnly askedBy={makeAsked} onOpenTable={open} />;
-  return (
-    // org-filter: write-target the making controls file a NEW table in the active organization; nothing is listed here
-    <RecordsProvider config={{ ...client.config, organizationId: activeOrganizationId }}>
-      <TablesHome makingOnly askedBy={makeAsked} onOpenTable={open} />
-    </RecordsProvider>
   );
 }

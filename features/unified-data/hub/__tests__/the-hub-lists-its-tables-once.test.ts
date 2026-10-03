@@ -14,9 +14,10 @@ import { join } from "node:path";
 const HUB = readFileSync(join(__dirname, "..", "OrganizationHub.tsx"), "utf8");
 
 describe("the organization hub · one list of tables", () => {
-  it("mounts records-ui's TablesHome only for making a table", () => {
-    const mounts = HUB.match(/<TablesHome\b[^>]*>/gs) ?? [];
-    expect(mounts.length).toBeGreaterThan(0);
-    for (const mount of mounts) expect(mount).toMatch(/\bmakingOnly\b(?!\s*=\s*\{\s*false\s*\})/);
+  // Since G5 b (lane MAKE-HOME, 2026-10-02) making a table is the page header's New table, which opens
+  // the one New table dialog (features/make/MakeMount.tsx): the hub mounts no TablesHome at all, so it
+  // can never draw a second list of tables nor a name box under every organization's rows.
+  it("mounts no TablesHome of its own — making a table is the New table dialog", () => {
+    expect(HUB.match(/<TablesHome\b/g) ?? []).toEqual([]);
   });
 });

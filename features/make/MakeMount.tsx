@@ -1,0 +1,128 @@
+"use client";
+
+// features/make/MakeMount.tsx — LANE MAKE-HOME.
+//
+// THE TWO PIECES EVERY "MAKE" SURFACE SHARES:
+//   · `MakeMount` — the record store mounted for ONE organization through the real host
+//     (`recordsUiHostFor` + `useRecordsUiPorts`, the ports every table surface binds), behind that
+//     organization's store switch (UNIFIED_DATA_CAMPAIGN.check), with the honest switch notice
+//     when it is off.
+//   · `NewTableDialog` — THE one place a new table's name box opens (G5 b): both data homes' header
+//     "New table" / "Start from an example" and /make's Table tile. It says where the table will be
+//     saved (the active organization, changeable in place) and, with none chosen, asks for one
+//     right there — the control is never hidden for want of an organization, and none is picked
+//     for the person. Guard: __tests__/new-table-is-never-hidden-and-opens-where-pressed.test.tsx.
+
+import { useMemo, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { Building2 } from "lucide-react";
+import { RecordsMount, TablesHome, personActor } from "@ai-matrx/records-ui";
+
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
+import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
+import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
+import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
+import {
+  recordsUiHostFor,
+  useRecordsDataSource,
+  useRecordsUiPorts,
+} from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
+
+export function MakeMount({ organizationId, children }: { organizationId: string; children: ReactNode }) {
+  const userId = useAppSelector(selectUserId);
+  const dataSource = useRecordsDataSource();
+  const ports = useRecordsUiPorts({ organizationId, dataSource });
+  const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
+  const campaign = useUnifiedDataCampaign({
+    organizationId,
+    organizationState: "ready",
+    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
+  });
+  if (campaign.state !== "on") return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
+  return (
+    // org-filter: write-target the mount is where the made thing lives: the chosen table's organization, or where new things are saved
+    <RecordsMount
+      letTheStoreDecideRights
+      config={{ dataSource, actor: personActor(userId), organizationId, realtime }}
+      host={recordsUiHostFor({ ports, merged: false })}
+    >
+      {children}
+    </RecordsMount>
+  );
+}
+
+/** One line: where new things are saved, and the control that changes it (A3). */
+export function SavesTo() {
+  // org-filter: write-target this names where a NEW thing is saved; nothing is read through it
+  const active = useOrganizationRequired();
+  // org-filter: write-target its name labels where new things are saved
+  const name = useAppSelector(selectActiveOrganizationName);
+  if (active.organizationState !== "ready" && active.organizationState !== "required") return null;
+  const label =
+    active.organizationState === "ready" && name ? `New things save to ${name}` : "Choose where new things are saved";
+  return (
+    <OrganizationPickerPopover
+      align="end"
+      trigger={
+        <Button size="sm" variant="ghost" className="max-w-full gap-1.5 text-muted-foreground" data-make-saves-to={active.organizationState}>
+          <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span className="truncate">{label}</span>
+        </Button>
+      }
+    />
+  );
+}
+
+/**
+ * The ways to make a table — blank, from an example, from a file — in the organization new things
+ * are saved to; with none chosen, the organization question in its place. `what` opens the name box
+ * or the examples at once; absent, the person picks from the three.
+ */
+export function NewTableBody({ what }: { what?: "create" | "examples" | undefined }) {
+  const router = useRouter();
+  // org-filter: write-target a new table is made in the organization new things are saved to
+  const active = useOrganizationRequired();
+  if (active.organizationState !== "ready" || !active.organizationId) {
+    const state = active.organizationState === "ready" ? "required" : active.organizationState;
+    return <OrganizationContextNotice state={state} what="New tables" compact />;
+  }
+  const asked = what ? { create: what === "create" ? 1 : 0, examples: what === "examples" ? 1 : 0 } : undefined;
+  return (
+    <MakeMount organizationId={active.organizationId}>
+      <TablesHome
+        makingOnly
+        {...(asked ? { askedBy: asked } : {})}
+        onOpenTable={(tableId: string, dashboardId?: string | null) =>
+          router.push(dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`)
+        }
+      />
+    </MakeMount>
+  );
+}
+
+/** The data homes' New table / Start from an example, opened where it was pressed. */
+export function NewTableDialog({ what, onClose }: { what: "create" | "examples" | null; onClose: () => void }) {
+  return (
+    <Dialog open={what !== null} onOpenChange={(next) => (next ? undefined : onClose())}>
+      <DialogContent className="flex max-h-[90dvh] w-[min(44rem,calc(100vw-2rem))] max-w-none flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <DialogTitle className="text-base font-medium">
+            {what === "examples" ? "Start from an example" : "New table"}
+          </DialogTitle>
+          <SavesTo />
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto" data-new-table-dialog={what ?? ""}>
+          {what ? <NewTableBody what={what} /> : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -22,7 +22,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronRight, Building2 } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { createRecordsClient, supabaseDataSource } from "@ai-matrx/records/core";
 import { bookingPath, publicFormPath } from "@ai-matrx/records";
 import {
@@ -33,10 +33,7 @@ import {
   FormBuilder,
   PickOrAdd,
   PortalBuilder,
-  RecordsMount,
-  TablesHome,
   declareTable,
-  personActor,
   tokenFor,
 } from "@ai-matrx/records-ui";
 
@@ -47,20 +44,10 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
-import {
-  recordsUiHostFor,
-  useRecordsDataSource,
-  useRecordsUiPorts,
-} from "@/features/data-tables/records-ui-host/recordsUiHost";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import * as doors from "@/features/unified-data/hub/doors";
 import { buildDataHomeRows, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
 import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
@@ -81,34 +68,7 @@ import {
   type MakeTile,
 } from "./tiles";
 import { answerForRecent, isTestOrganization, recentlyChanged } from "./recent";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// The store mount for ONE organization: the real host (recordsUiHostFor + useRecordsUiPorts, the
-// same ports every table surface binds) behind the organization's store switch.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function MakeMount({ organizationId, children }: { organizationId: string; children: ReactNode }) {
-  const userId = useAppSelector(selectUserId);
-  const dataSource = useRecordsDataSource();
-  const ports = useRecordsUiPorts({ organizationId, dataSource });
-  const realtime = useMemo(() => createRecordsRealtimePort(organizationId), [organizationId]);
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    organizationState: "ready",
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
-  if (campaign.state !== "on") return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
-  return (
-    // org-filter: write-target the mount is where the made thing lives: the chosen table's organization, or where new things are saved
-    <RecordsMount
-      letTheStoreDecideRights
-      config={{ dataSource, actor: personActor(userId), organizationId, realtime }}
-      host={recordsUiHostFor({ ports, merged: false })}
-    >
-      {children}
-    </RecordsMount>
-  );
-}
+import { MakeMount, NewTableBody, SavesTo } from "./MakeMount";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The data home's one answer, read once for the page: Recent and "Which table" both come from it.
@@ -169,8 +129,6 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target the active organization is only where a NEW table, portal or example is saved; every read on this page walks all organizations
   const active = useOrganizationRequired();
-  // org-filter: write-target its name labels where new things are saved, nothing is read through it
-  const activeName = useAppSelector(selectActiveOrganizationName);
   const { organizations, loading: organizationsLoading } = useUserOrganizations();
   const testOrganizationIds = useMemo(
     () => new Set(organizations.filter((o) => isTestOrganization(o)).map((o) => o.id)),
@@ -206,7 +164,7 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
               <h1 id="make-heading" className="text-2xl font-semibold tracking-tight text-foreground">
                 What do you want to make?
               </h1>
-              <SavesTo state={active.organizationState} name={activeName ?? null} />
+              <SavesTo />
             </div>
             <ul className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4" data-make-tiles="">
               {MAKE_TILES.map((tile) => (
@@ -264,24 +222,6 @@ export default function MakeHome({ platformKits, platformOrganizationId }: MakeH
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-/** One line: where new things are saved, and the control that changes it (A3). */
-function SavesTo({ state, name }: { state: ReturnType<typeof useOrganizationRequired>["organizationState"]; name: string | null }) {
-  if (state === "resolving") return <Skeleton className="h-7 w-48" />;
-  if (state !== "ready" && state !== "required") return null;
-  const label = state === "ready" && name ? `New things save to ${name}` : "Choose where new things are saved";
-  return (
-    <OrganizationPickerPopover
-      align="end"
-      trigger={
-        <Button size="sm" variant="ghost" className="max-w-full gap-1.5 text-muted-foreground" data-make-saves-to={state}>
-          <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          <span className="truncate">{label}</span>
-        </Button>
-      }
-    />
   );
 }
 
@@ -429,16 +369,11 @@ function FlowBody(props: MakeFlowSheetProps & { chosen: { tableId: string; organ
   const { tile, chosen, activeOrganizationId, activeState, onLand } = props;
   if (tile.asksForTable && !chosen) return <TableChoice {...props} />;
   if (chosen) return <BuilderFor flow={tile.flow} {...chosen} onLand={onLand} />;
+  // A table is made where new things are saved; the one New table body asks for it when none is chosen.
+  if (tile.flow === "table") return <NewTableBody />;
   // Table and portal are made where new things are saved: with none chosen, ask for it (A3).
   if (!activeOrganizationId) {
     return <OrganizationContextNotice state={activeState === "ready" ? "required" : activeState} what="New tables" compact />;
-  }
-  if (tile.flow === "table") {
-    return (
-      <MakeMount organizationId={activeOrganizationId}>
-        <TablesHome makingOnly onOpenTable={(id) => onLand(`/data-v2/${id}`)} />
-      </MakeMount>
-    );
   }
   if (tile.flow === "portal") {
     return (

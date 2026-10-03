@@ -315,6 +315,15 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "app/(core)/data-v2/[tableId], which is already behind UNIFIED_DATA_CAMPAIGN's switch.",
   },
   {
+    id: "make-mount",
+    file: "features/make/MakeMount.tsx",
+    kind: "runtime",
+    why:
+      "Lane MAKE-HOME — MakeMount (RecordsMount through the real host ports, mounted only after " +
+      "UNIFIED_DATA_CAMPAIGN.check answers on for that organization, with the honest switch notice " +
+      "otherwise) and the one New table dialog both data homes and /make open (G5 b).",
+  },
+  {
     id: "make-home",
     file: "features/make/MakeHome.tsx",
     kind: "runtime",

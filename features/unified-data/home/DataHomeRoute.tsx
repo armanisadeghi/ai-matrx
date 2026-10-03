@@ -20,6 +20,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 
+import { NewTableDialog } from "@/features/make/MakeMount";
+
 import { DataHomeShellPage } from "./DataHomeShellPage";
 import { DATA_HOME_PREVIEW_PARAM, DATA_HOME_SHELL_KNOB, resolveDataHomeShell } from "./dataHomeKnobs";
 
@@ -44,9 +46,20 @@ export function DataHomeRoute({
   const knob = browserKnob !== undefined ? browserKnob : serverKnob;
   const preview = useSearchParams().get(DATA_HOME_PREVIEW_PARAM);
   const [asked, setAsked] = useState({ create: 0, examples: 0 });
+  // THE PRESS OPENS ONE DIALOG, WHERE IT WAS PRESSED (G5 b, lane MAKE-HOME): never a name box at the
+  // foot of the list, and never a missing button when no organization is chosen — the dialog asks.
+  const [opened, setOpened] = useState<"create" | "examples" | null>(null);
   const making: DataHomeMaking = {
     asked,
-    ask: (what) => setAsked((n) => ({ ...n, [what]: n[what] + 1 })),
+    ask: (what) => {
+      setAsked((n) => ({ ...n, [what]: n[what] + 1 }));
+      setOpened(what);
+    },
   };
-  return resolveDataHomeShell(knob, preview) ? <DataHomeShellPage making={making} /> : <>{old(making)}</>;
+  return (
+    <>
+      {resolveDataHomeShell(knob, preview) ? <DataHomeShellPage making={making} /> : old(making)}
+      <NewTableDialog what={opened} onClose={() => setOpened(null)} />
+    </>
+  );
 }

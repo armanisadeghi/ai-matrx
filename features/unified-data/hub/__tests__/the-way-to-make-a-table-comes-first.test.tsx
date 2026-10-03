@@ -98,7 +98,10 @@ afterEach(async () => {
   container.remove();
 });
 
-it("puts New table before every listing, where an owner with no tables looks first", async () => {
+// Since G5 b (lane MAKE-HOME, 2026-10-02) the way to make a table comes before everything: it is the
+// page header's New table, opening the one New table dialog. The hub itself draws no making row —
+// not at the foot, and not between the listings, under every organization's rows.
+it("draws no making row among the listings — New table is the header's, first on the page", async () => {
   role = "owner";
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -107,10 +110,7 @@ it("puts New table before every listing, where an owner with no tables looks fir
     root.render(<OrganizationHub organizationId="884d1ce8-0000-4000-8000-000000000000" dataSource={{} as never} />);
   });
   await flush();
-  const making = container.querySelector("[data-making-a-table]");
-  const firstListing = container.querySelector("[data-hub-listing]");
-  expect(making).not.toBeNull();
-  expect(firstListing).not.toBeNull();
-  // DOCUMENT_POSITION_FOLLOWING: the listing comes after the making row.
-  expect(making!.compareDocumentPosition(firstListing!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(container.querySelector("[data-hub-listing]")).not.toBeNull();
+  expect(container.querySelector("[data-making-a-table]")).toBeNull();
+  expect(container.querySelector("[data-hub-make-needs-organization]")).toBeNull();
 });

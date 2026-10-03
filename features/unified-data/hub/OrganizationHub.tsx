@@ -24,8 +24,8 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArchivedDisclosure, ArchivedPortals, TablesHome } from "@ai-matrx/records-ui";
-import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
+import { ArchivedDisclosure, ArchivedPortals } from "@ai-matrx/records-ui";
+import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { cn } from "@ai-matrx/design-system";
 
@@ -132,12 +132,6 @@ export interface OrganizationHubProps {
    */
   organizationName?: string | null | undefined;
   /**
-   * THE PAGE HEADER'S "New table" / "Start from an example", pressed (a count per button). The
-   * making row is the header's action bar now, never a row of its own on the page (merged-grid
-   * review 2, J6); `TablesHome` opens the name box or the examples when asked.
-   */
-  makeAsked?: { create: number; examples: number } | undefined;
-  /**
    * THE ORGANIZATION DROPDOWN (lane DATA-HOME-2): "all", or the id of the one organization the
    * person chose — resolved by the page from the address alone (`?org_filter=`), All organizations
    * otherwise, never remembered and never the active organization. The doors are told it.
@@ -149,16 +143,12 @@ export interface OrganizationHubProps {
 
 export function OrganizationHub({
   organizationId,
-  knobOrganizationId: knobOrganizationIdProp,
   dataSource,
   inbox,
   organizationName: namedOrganizationName,
-  makeAsked,
   organizationFilter = ALL_ORGANIZATIONS,
   onChooseOrganization,
 }: OrganizationHubProps) {
-  /** The ACTIVE organization (where a new table lands); a host that names none means the mount's. */
-  const knobOrganizationId = knobOrganizationIdProp === undefined ? organizationId : knobOrganizationIdProp;
   const oneOrganization = organizationFilter === ALL_ORGANIZATIONS ? null : organizationFilter;
   const router = useRouter();
   /**
@@ -699,47 +689,9 @@ export function OrganizationHub({
     <div data-hub-root className="space-y-4">
       {scopeRow}
 
-      {/* MAKING A TABLE, AND ONLY THAT (lane POST-PUBLISH-FE, VERIFIER-18 M3). FIRST, UNDER THE
-          STRIP (lane HANDOVER, 2026-09-27): it was the last thing on the page, below ten listings,
-          the inbox and the archive, so at 1600x900 an owner with no tables read "Make one below"
-          and saw no way to make one. The hub above
-          already lists this organization's tables, dashboards and booking pages, with what the app
-          keeps for itself behind Show everything; the package's home draws its own full lists
-          unless told otherwise, so it is told `makingOnly` and one page never lists the same tables
-          twice. */}
-      {/* MAKING A TABLE CARRIES THE ACTIVE ORGANIZATION — where a NEW record lands, and the only use
-          of it on this page (Arman, 2026-09-30: never the organization filter). When the filter
-          names that same organization the mount is already bound to it; otherwise the making
-          controls get their own provider bound to the active organization, and with none active
-          the page says how to choose one. */}
-      {organizationId && organizationId === knobOrganizationId ? (
-        <TablesHome
-          makingOnly
-          {...(makeAsked ? { askedBy: makeAsked } : {})}
-          onOpenTable={(tableId: string, dashboardId?: string | null) =>
-            router.push(
-              dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
-            )
-          }
-        />
-      ) : knobOrganizationId ? (
-        <RecordsProvider config={{ ...client.config, organizationId: knobOrganizationId }}>
-          <TablesHome
-            makingOnly
-            {...(makeAsked ? { askedBy: makeAsked } : {})}
-            onOpenTable={(tableId: string, dashboardId?: string | null) =>
-              router.push(
-                dashboardId ? `/data-v2/${tableId}?dashboard=${dashboardId}` : `/data-v2/${tableId}`,
-              )
-            }
-          />
-        </RecordsProvider>
-      ) : (
-        <p className="text-xs text-muted-foreground" data-hub-make-needs-organization="">
-          A new table is filed under one organization. Choose one in the header&rsquo;s organization menu to make one.
-        </p>
-      )}
-
+      {/* MAKING A TABLE is the page header's New table / Start from an example, which open the one
+          New table dialog (features/make/MakeMount.tsx, G5 b) — never a name box here, under every
+          organization's rows. */}
       {HUB_CAPABILITIES.filter((capability) => listingShownUnderKind(capability.id, kind)).map((capability) => (
         <HubListing
           key={capability.id}

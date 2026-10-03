@@ -139,9 +139,13 @@ describe("census items that are wiring", () => {
   const list = read("DataHomeList.tsx");
   const route = read("DataHomeRoute.tsx");
 
-  it("1 · header: Back, New table and Start from an example only with an active organization, bound to it", () => {
+  // G5 b (lane MAKE-HOME, 2026-10-02): New table is never hidden for want of an organization; the
+  // press opens the one New table dialog, which says where the table is saved and asks when none is.
+  it("1 · header: Back, New table and Start from an example whenever the store is open, opening the one dialog", () => {
     expect(page).toMatch(/back=\{goBack\}/);
-    expect(page).toMatch(/storeOn && active\.organizationId/);
+    expect(page).not.toMatch(/storeOn && active\.organizationId/);
+    expect(page).toMatch(/making\.ask\("create"\)/);
+    expect(route).toContain("<NewTableDialog");
     expect(page).toContain('"New table"');
     expect(page).toContain('"Start from an example"');
   });
@@ -157,8 +161,8 @@ describe("census items that are wiring", () => {
     for (const file of ["DataHomeList.tsx", "DataHomeArchive.tsx", "DataHomeViews.tsx", "dataHomeService.ts", "dataHomeRows.ts", "dataHomeCorpus.ts", "DataHomeRoute.tsx"]) {
       expect(read(file)).not.toMatch(/selectActiveOrganizationId|useActiveOrganization|selectOrganizationId\b|useOrganizationRequired/);
     }
-    // The active organization appears once, as the write target (the header and the making controls).
-    expect(page.match(/active\.organizationId/g)?.length).toBeGreaterThan(0);
+    // The page reads no active organization at all now: the write target is the New table dialog's.
+    expect(page).not.toMatch(/useOrganizationRequired\(|active\.organizationId/);
   });
 
   it("4 · 5 · Kind, the `?kind=` alias and the order knob are kept", () => {
@@ -174,10 +178,11 @@ describe("census items that are wiring", () => {
     expect(list).not.toMatch(/doors\.dataHome\(/);
   });
 
-  it("12 · 13 · 15 · 16 · the store switch, making in the active organization, the inbox and the mount ports", () => {
+  it("12 · 13 · 15 · 16 · the store switch, making in the active organization (the dialog), the inbox and the mount ports", () => {
     expect(page).toContain("useUnifiedDataCampaign");
     expect(page).toContain("<UnifiedDataSwitchNotice");
-    expect(page).toMatch(/<TablesHome makingOnly/);
+    // 13 · making in the active organization is the one New table dialog (features/make/MakeMount.tsx).
+    expect(route).toContain("<NewTableDialog");
     expect(page).toContain("<ActionInbox");
     for (const port of ["realtime:", "members,", "share: recordStoreShare", "chat:"]) expect(page).toContain(port);
   });

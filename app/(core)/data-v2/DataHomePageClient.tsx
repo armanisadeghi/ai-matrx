@@ -134,8 +134,6 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
    * supabase clients on one page and two ideas of who is signed in.
    */
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
-  /** How many times the header's New table / Start from an example was pressed (the route owns it). */
-  const makeAsked = making.asked;
 
   const goBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
@@ -154,7 +152,7 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
         {/* A NEW TABLE LANDS IN THE ACTIVE ORGANIZATION (the law's rule 4) — never the filter's. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && storeOn && active.organizationId
+          {...(organizationState === "ready" && storeOn
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
@@ -216,7 +214,6 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
               knobOrganizationId={active.organizationId}
               dataSource={dataSource}
               organizationName={namedOrganization?.name ?? null}
-              makeAsked={makeAsked}
               organizationFilter={organizationFilter}
               onChooseOrganization={chooseOrganization}
               /* WHAT IS WAITING ON THIS PERSON — one inbox for what they were

@@ -18,6 +18,8 @@ jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+// The one New table dialog (G5 b) has its own guard; here only the press's survival is under test.
+jest.mock("@/features/make/MakeMount", () => ({ NewTableDialog: () => null }));
 
 // The new home, reduced to what TablesHome does with `askedBy`: a count above 0 opens the name box.
 jest.mock("../DataHomeShellPage", () => {
