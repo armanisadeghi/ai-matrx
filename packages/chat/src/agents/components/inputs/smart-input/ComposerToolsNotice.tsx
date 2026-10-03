@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import type { ChatRootState } from "../../../../store/root-state";
 import { selectEffectiveAutoTools } from "../../../redux/execution-system/utils/build-tool-injection";
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { selectAgentAutoToolsDisabled } from "../../../redux/agent-definition/selectors";
 import type { ResourceBlockType } from "../../../types/instance.types";
 
 /** Attachments the agent reaches through a tool (T3 triggers). */
@@ -52,6 +53,12 @@ export function ComposerToolsNotice({ conversationId }: { conversationId: string
   const needsTools = useAppSelector((s) =>
     selectAttachmentNeedsAutoTools(s, conversationId),
   );
+  // Turning it on lands on "follow the agent" when the agent's own default is
+  // on (the same normalization as the Tools switch).
+  const agentDefaultOn = useAppSelector((s) => {
+    const agentId = s.conversations.byConversationId[conversationId]?.agentId;
+    return !(agentId ? selectAgentAutoToolsDisabled(s, agentId) : false);
+  });
   if (!needsTools) return null;
   return (
     <div className="flex items-center gap-1.5 px-1 pt-1 text-[11px] text-amber-600 dark:text-amber-500">
@@ -63,7 +70,7 @@ export function ComposerToolsNotice({ conversationId }: { conversationId: string
           dispatch(
             setBuilderAdvancedSettings({
               conversationId,
-              changes: { autoTools: true },
+              changes: { autoTools: agentDefaultOn ? null : true },
             }),
           )
         }
