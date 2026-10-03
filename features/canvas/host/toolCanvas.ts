@@ -21,6 +21,7 @@ import {
   type CanvasKindVisibility,
   type CanvasState,
 } from "@ai-matrx/canvas";
+import { useEffect } from "react";
 import { useOptionalCanvas, useOptionalCanvasState } from "@ai-matrx/canvas/react";
 import { openCanvasItem } from "./openCanvasItem";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
@@ -132,4 +133,26 @@ export function canvasHoldsKind(canvas: CanvasController | null, kind: string): 
 /** `canvasHoldsKind` as a subscription — re-renders only when the answer changes. */
 export function useCanvasHoldsKind(kind: string): boolean {
   return useOptionalCanvasState((state) => holdsKind(state, kind), false);
+}
+
+/**
+ * A tab whose title names its SUBJECT ("Note history · Q3 plan"), kept in step
+ * with that subject's live name. Two history tabs side by side must never both
+ * read "Version history". Writes only when the title actually differs.
+ */
+export function useCanvasTabTitle(
+  canvas: CanvasController,
+  item: { readonly id: CanvasItemId; readonly title?: string | null },
+  title: string,
+): void {
+  const current = item.title ?? null;
+  useEffect(() => {
+    if (title && title !== current) void canvas.update(item.id, { title });
+  }, [canvas, item.id, current, title]);
+}
+
+/** "<what> · <subject>", or just "<what>" while the subject has no name. */
+export function subjectTitle(what: string, subject: string | null | undefined): string {
+  const name = subject?.trim();
+  return name ? `${what} · ${name}` : what;
 }

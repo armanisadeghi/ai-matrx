@@ -18,7 +18,7 @@ export { WORKING_DOCUMENT_HISTORY_KIND };
 
 export const workingDocumentHistoryKind = defineCanvasKind<CanvasJson>({
   id: WORKING_DOCUMENT_HISTORY_KIND,
-  label: "Version history",
+  label: "Document history",
   icon: History,
   load: () => import("./WorkingDocumentHistoryCanvasView"),
   unavailable: (data) => (canvasText(data, "conversationId") ? null : "No document"),
