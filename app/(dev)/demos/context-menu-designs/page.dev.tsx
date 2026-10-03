@@ -167,7 +167,7 @@ function Column({
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {side === "today" ? "Today" : "Proposed"}
       </div>
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col items-start gap-3">
         {side === "proposed" ? <MenuRegroupProvider value={proposedValue(noun)}>{body}</MenuRegroupProvider> : body}
         <div ref={registerSlot} className="pointer-events-none flex items-start gap-1" />
       </div>
@@ -219,7 +219,7 @@ export default function ContextMenuDesignsPage() {
           {SURFACES.map((s) => (
             <section key={s.key} className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold">{s.title}</h2>
-              <div className="flex flex-wrap gap-8">
+              <div className="flex items-start gap-10">
                 {(["today", "proposed"] as const).map((side) => {
                   const id = `${s.key}:${side}`;
                   return (
