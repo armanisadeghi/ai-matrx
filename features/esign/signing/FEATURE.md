@@ -47,7 +47,7 @@ These are the links `esign._notify_actionable` / `esign_resend_signer` email. Ch
 - **`preview` is recorded on render** (the viewer's first drawn page), never on fetch, never again once signed; a failed record is retried by Continue.
 - **The link secret leaves the address bar on first read** (kept in this tab's `sessionStorage`), so it is not in history or in any error report's page URL.
 - **The code only goes out on a press.** Opening the page sends nothing (mail-scanner safe).
-- **The server records the signer's IP** (evidence + outsider session pin); the browser never claims its own.
+- **This surface lets the server record the signer's IP** (evidence + outsider session pin); it never sends one of its own. The doors still take `p_ip` from any direct caller (filed as an observation, 2026-10-03).
 - Typed signatures only: `drawn` needs an uploaded image file id the surface does not collect yet.
 
 ---
