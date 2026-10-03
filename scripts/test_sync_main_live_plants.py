@@ -48,6 +48,8 @@ class LivePlantsAreNeverSwept(unittest.TestCase):
         for name in ("planted.py", "other.py"):
             with open(os.path.join(self.repo, name), "w") as f:
                 f.write("x = 1\n")
+        with open(os.path.join(self.repo, ".gitignore"), "w") as f:
+            f.write(".wt/\n")
         sh(self.repo, "git", "add", "-A")
         sh(self.repo, "git", "commit", "-qm", "init")
         # every other kind of dirty file the sweep must still take
@@ -114,6 +116,29 @@ class LivePlantsAreNeverSwept(unittest.TestCase):
         self.marker(os.getpid(), os.path.join(self.repo, "planted.py"))
         self.assertEqual(self.swept(), {"other.py", "new file [1].txt"})
         self.assertIn(" M planted.py", self.dirty())
+
+    # 2026-10-03: an exclude pathspec on an ignored path makes `git add` exit 1 ("paths are
+    # ignored"), and git() dies, so nothing was pushed for the life of the plant.
+    def test_live_plant_on_an_ignored_path_never_stops_the_sweep(self):
+        os.makedirs(os.path.join(self.repo, ".wt", "lane"))
+        self.write(os.path.join(".wt", "lane", "planted.py"), "x = 99  # MUTANT\n")
+        self.marker(os.getpid(), os.path.join(self.repo, ".wt", "lane", "planted.py"))
+        self.assertEqual(self.swept(), {"planted.py", "other.py", "new file [1].txt"})
+
+    def test_live_plant_on_a_missing_path_under_an_ignored_folder_never_stops_the_sweep(self):
+        os.makedirs(os.path.join(self.repo, ".wt"))
+        self.marker(os.getpid(), os.path.join(self.repo, ".wt", "gone", "planted.py"))
+        self.assertEqual(self.swept(), {"planted.py", "other.py", "new file [1].txt"})
+
+    def test_record_naming_the_checkout_root_excludes_nothing(self):
+        self.marker(os.getpid(), self.repo)
+        self.assertEqual(self.swept(), {"planted.py", "other.py", "new file [1].txt"})
+
+    def test_pid_zero_or_negative_is_no_plant(self):
+        for pid in (0, -1):
+            self.record(os.path.join(self.repo, ".git", "matrx-live-plants", "r%d" % pid), pid,
+                        os.path.join(self.repo, "planted.py"))
+        self.assertEqual(self.swept(), {"planted.py", "other.py", "new file [1].txt"})
 
     def test_real_plant_py_is_honoured_by_the_sweep(self):
         plant = find_plant()

@@ -718,6 +718,8 @@ PLANT_MARKER_DIR = "matrx-live-plants"
 
 
 def _pid_alive(pid):
+    if pid <= 0:  # 0 and negatives signal a process group, never one plant's own process
+        return False
     try:
         os.kill(pid, 0)
         return True
@@ -728,7 +730,11 @@ def _pid_alive(pid):
 
 
 def live_plants(top, common_dir):
-    """[(repo-relative path, pid)] for every live plant inside the checkout at `top`."""
+    """[(repo-relative path, pid)] for every live plant the sweep's `git add` must exclude.
+
+    Never returned: a gitignored path (`git add -A` never stages it, and an exclude pathspec on it
+    makes `git add` fail and stop the whole sync), the checkout root, or a path inside a submodule.
+    """
     import glob
     state = os.environ.get("PLANT_STATE_DIR") or os.path.join(tempfile.gettempdir(),
                                                                 "plant-mutation-state")
@@ -736,6 +742,7 @@ def live_plants(top, common_dir):
     records += glob.glob(os.path.join(state, "locks", "*", "pid"))
     top = os.path.realpath(top)
     found = {}
+    gitlinks = None
     for rec in records:
         try:
             with open(rec) as f:
@@ -747,6 +754,17 @@ def live_plants(top, common_dir):
             continue
         rel = os.path.relpath(os.path.realpath(path.strip()), top)
         if rel == ".." or rel.startswith(".." + os.sep) or os.path.isabs(rel):
+            continue
+        if rel == ".":
+            say("PLANT RECORD IGNORED %s: it names the checkout root, not one file." % rec)
+            continue
+        if gitlinks is None:
+            _, out, _ = git("-C", top, "ls-files", "-s", "-z", check=False)
+            gitlinks = [e.split("\t", 1)[1] for e in out.split("\0")
+                        if e.startswith("160000 ") and "\t" in e]
+        if any(rel == g or rel.startswith(g + "/") for g in gitlinks):
+            continue
+        if git("-C", top, "check-ignore", "-q", "--", rel, check=False)[0] == 0:
             continue
         found[rel] = pid
     return sorted(found.items())
