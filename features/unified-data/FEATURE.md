@@ -24,7 +24,9 @@ live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.
 | `cutover/` | Switch-era clients: `seamSwitches.ts` (the one client for `platform.cutover_seams` / `cutover_seam_press`), `copyAgain.ts`, the switch cards |
 | `records*.ts(x)` at the root | Host ports handed to `@ai-matrx/records-ui`: files, file images, clean text, references and kinds, toasts |
 | `whereThisTableLives.ts`, `objectOrganization.ts` | A table's organization, read from its own id through `custom.where_id_opens` |
-| `standard-field-columns/` | Custom fields shown as columns on standard tables' lists |
+| `standard-field-columns/` | Custom fields shown as columns on standard tables' lists; `useTableCustomFieldColumns` is the table host's `useCustomFieldColumns` binding, and `EntityListPage` adds the same columns to every canonical list's picker |
+| `components/EntityCustomFields.tsx` | The custom-fields section on every record view: pages, the Detail host port (`window-panels/detail/DetailCustomFieldsSection.tsx`), peeks (`PeekDialog record={{token,id}}`) |
+| `every-record-view-has-custom-fields.test.ts` | G1: the record-view census (`scripts/record-pages/`), its generated map and shrink-only ledger (`lib/record-pages/`); live half = safety-net check `custom-fields.walk-every-record-view` |
 | `grid-agent-context/`, `page-capture/`, `record-chat/`, `row-agent-action/`, `row-change-agent/` | What a table, a row or a visible view hands to agents and chat |
 | `typedAnswers.ts` | What a stranger typed on a public door (form, booking, portal), turned into values once |
 | `test-bench/` | The try-everything screen |
@@ -41,6 +43,11 @@ Routes outside this directory: `app/(core)/data-v2/`, `app/(core)/data/page.tsx`
   in `hub/doors.ts` only, and moves into the package at its next release.
 - **A table opens in its own organization.** The store's doors are keyed (organization, id); the organization comes
   from the object's id (`custom.where_id_opens`), never from the active organization or a caller.
+- **The custom-fields section reads the ROW's organization itself** (`custom.entity_record_home(token, id)`, invoker,
+  through `hub/doors.ts`), never a prop and never the active organization; a record that cannot show fields says why
+  in one line (`data-section="custom-fields"` + `data-state` on every state).
+- **Every record view declares its token in its own file** (`<EntityCustomFields entityToken="…">` or a
+  `// record-view:` line); regenerate with `pnpm tsx scripts/record-pages/generate.ts --shrink`.
 - **A package change ships package first.** Publish `@ai-matrx/records` / `records-ui` before any consumer code that
   needs it lands on main; until npm has it, `:3001` and the release build break on the missing export.
 
