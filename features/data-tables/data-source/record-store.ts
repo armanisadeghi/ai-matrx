@@ -189,8 +189,30 @@ async function versionFor(rowId: string, own: number | null | undefined): Promis
   return own !== undefined ? own : versions.seen(rowId);
 }
 
+/**
+ * A CALL THE STORE CUT OFF AT ITS CLOCK CHANGED NOTHING, AND SAYS SO (lane CHAIR-STORE-PERF, 2026-10-03).
+ *
+ * Postgres cancels the whole statement at the authenticated clock (8 s), so a door that timed out
+ * wrote nothing — a fact, for a create, a column add and a page read alike. The store's own words for
+ * it are a machine's ("canceling statement due to statement timeout"), and the package's fallback
+ * remedy for the code was written for a page read ("Try a smaller page") — which is what a person
+ * adding ONE row to a three-row table read on the clone walk. Measured there, the clock was hit by a
+ * lock another lane's rehearsal held on auth.users, not by the door's own work (field_declare 180-500
+ * ms, record_write 150-200 ms when the lock is free). So the seam says what is true in a person's
+ * sentence, and hands the remedy as the HINT — the slot records-ui prints as the one remedy.
+ */
+function clockSentence(error: RecordsError): RecordsError {
+  if (error.code !== "timed_out") return error;
+  return {
+    ...error,
+    message: "The store took too long to answer, so nothing was changed.",
+    hint: "Try again in a moment.",
+  };
+}
+
 function refused(error: RecordsError): ServiceErr {
-  return { success: false, error: error.message, refusal: error };
+  const said = clockSentence(error);
+  return { success: false, error: said.message, refusal: said };
 }
 
 function plainFailure(message: string): ServiceErr {
@@ -1864,7 +1886,16 @@ export async function addColumn(
     } as never,
   });
   invalidateRecordStoreTable(args.tableId);
-  if (!made.ok) return { success: false, error: made.error.message };
+  if (!made.ok) {
+    // A column the clock cut off does not exist, and the dialog says so in as many words — never a
+    // machine's line a person reads as "maybe it landed" (clone walk, 2026-10-03: "fieldDeclare:
+    // timed_out — canceling statement…" twice, and the person re-added the column to find out).
+    const said = refused(made.error);
+    return {
+      success: false,
+      error: made.error.code === "timed_out" ? `The column was not added. ${said.error} ${said.refusal?.hint ?? ""}`.trim() : said.error,
+    };
+  }
   return { success: true, columnId: made.data };
 }
 
