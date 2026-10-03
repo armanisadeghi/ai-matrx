@@ -1,6 +1,6 @@
 -- chair-step: inverse of migrations/campaign/chairperf2_a_the_data_home_asks_who_changed_a_table_once.sql — puts back the custom.data_home body it replaced (signature, grants unchanged).
 -- lane: CHAIR-STORE-PERF
--- based-on: custom.data_home(uuid, text, boolean) ee37f940e4f1810c9da06a4ecdccb23b1824abcc09a9040a5f2b59341ca894e2
+-- based-on: custom.data_home(uuid, text, boolean) a57f3265103a0a14eadb7599c0c1ccfdf8c1c628cda3fe3be5f18884c6f9161a
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom.data_home(p_organization_id uuid DEFAULT NULL::uuid, p_search text DEFAULT NULL::text, p_include_app_tables boolean DEFAULT false)
