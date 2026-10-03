@@ -958,6 +958,13 @@ const SurfaceAgentBindWindow = lazyOverlay(
     ),
   { ssr: false },
 );
+const LinkRecordOverlay = lazyOverlay(
+  () =>
+    import("@/features/rich-document/annotations/LinkRecordOverlay").then(
+      (m) => ({ default: m.LinkRecordOverlay }),
+    ),
+  { ssr: false },
+);
 const ContextAssignmentWindow = lazyOverlay(
   () =>
     import("@/features/scopes/components/context-assignment/ContextAssignmentWindow").then(
@@ -1405,6 +1412,9 @@ export default function OverlayController() {
     contextAssignment: useAppSelector((s) =>
       selectIsOverlayOpen(s, "contextAssignment"),
     ),
+    linkRecordSheet: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "linkRecordSheet"),
+    ),
     contextSwitcherWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "contextSwitcherWindow"),
     ),
@@ -1851,6 +1861,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     contextAssignment: useAppSelector((s) =>
       selectOverlayData(s, "contextAssignment"),
+    ) as Record<string, unknown> | null,
+    linkRecordSheet: useAppSelector((s) =>
+      selectOverlayData(s, "linkRecordSheet"),
     ) as Record<string, unknown> | null,
     contextSwitcherWindow: useAppSelector((s) =>
       selectOverlayData(s, "contextSwitcherWindow"),
@@ -7123,6 +7136,29 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* linkRecordSheet — "Link a record…" from any record's right-click menu */}
+      {(() => {
+        if (!isOpenById.linkRecordSheet) return null;
+        const data = dataById.linkRecordSheet;
+        const raw =
+          data?.target && typeof data.target === "object"
+            ? (data.target as Record<string, unknown>)
+            : null;
+        if (!raw || typeof raw.token !== "string" || typeof raw.id !== "string") return null;
+        return (
+          <LinkRecordOverlay
+            target={{
+              token: raw.token,
+              id: raw.id,
+              title: typeof raw.title === "string" ? raw.title : "",
+            }}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "linkRecordSheet" }))
+            }
+          />
+        );
+      })()}
 
       {/* contextAssignment */}
       {(() => {

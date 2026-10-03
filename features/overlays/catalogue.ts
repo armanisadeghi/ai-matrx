@@ -458,6 +458,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // "Link a record…" from any record's right-click menu (LinkRecordOverlay).
+  linkRecordSheet: {
+    label: "Link a record",
+    instanceMode: "singleton",
+    isWindow: false,
+    closesOnNavigation: true,
+  },
   contextAssignment: {
     label: "Attach To",
     instanceMode: "singleton",

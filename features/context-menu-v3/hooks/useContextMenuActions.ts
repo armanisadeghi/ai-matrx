@@ -68,6 +68,7 @@ import { useOpenFindReplace } from "@/features/overlays/openers/findReplace";
 import { useOpenReferencePicker } from "@/features/overlays/openers/referencePicker";
 import type { ReferencePick } from "@/features/matrx-envelope/components/reference-picker/referencePickerTypes";
 import { useOpenContextAssignment } from "@/features/overlays/openers/contextAssignment";
+import { useOpenLinkRecordSheet } from "@/features/overlays/openers/linkRecordSheet";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";
 import { useOpenStateViewerOverlay } from "@/features/overlays/openers/adminStateAnalyzer";
 import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
@@ -297,6 +298,8 @@ export interface ContextMenuActions {
   /** "Insert reference…" (editable) / "Copy reference…" (read-only). */
   handleInsertReference: () => void;
   handleAttach: () => void;
+  /** "Link a record…" — the ONE record picker pointed at this menu's entity. */
+  handleLinkRecord: () => void;
   handleShare: () => void;
   handleInspectValues: () => void;
   handleInspectState: () => void;
@@ -479,6 +482,7 @@ export function useContextMenuActions(
   const openFindReplace = useOpenFindReplace();
   const openReferencePicker = useOpenReferencePicker();
   const openContextAssignment = useOpenContextAssignment();
+  const openLinkRecordSheet = useOpenLinkRecordSheet();
   const openShareModalWindow = useOpenShareModalWindow();
   const openStateViewer = useOpenStateViewerOverlay();
   const openSurfaceInspector = useOpenSurfaceContextInspector();
@@ -1064,6 +1068,11 @@ export function useContextMenuActions(
     });
   };
 
+  const handleLinkRecord = () => {
+    if (!entity) return;
+    openLinkRecordSheet({ target: { token: entity.type, id: entity.id, title: entity.title } });
+  };
+
   const handleShare = () => {
     if (!entity?.resourceType) return;
     openShareModalWindow({
@@ -1296,6 +1305,7 @@ export function useContextMenuActions(
     handleFind,
     handleInsertReference,
     handleAttach,
+    handleLinkRecord,
     handleShare,
     handleInspectValues,
     handleInspectState,

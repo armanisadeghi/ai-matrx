@@ -11,7 +11,7 @@
 
 import { UniversalAssociationPicker } from "@ai-matrx/associations/react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@ai-matrx/design-system";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import { useSidecar } from "./AnnotationSidecar";
@@ -35,7 +35,43 @@ export function LinkRecordSheet({
   attachedKeys?: Set<string>;
 }) {
   const { source } = useSidecar();
-  // null = still asking; string = the reason it could not be asked (said, never hidden).
+  return (
+    <LinkRecordPickerSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      targetToken={source.token}
+      title={passage ? "Link to this passage" : "Link to this document"}
+      description={passage ? <span className="line-clamp-3">“<PassageQuote exact={passage.exact} />”</span> : undefined}
+      onLink={onLink}
+      attachedKeys={attachedKeys}
+    />
+  );
+}
+
+/**
+ * The same ONE picker, pointed at any registered record — the right-click "Link a record…" verb
+ * (features/overlays/openers/linkRecordSheet.tsx) opens it on whatever entity the menu targets.
+ * No sidecar needed: the target's token decides which kinds are offered.
+ */
+export function LinkRecordPickerSheet({
+  open,
+  onOpenChange,
+  targetToken,
+  title,
+  description,
+  onLink,
+  attachedKeys,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Registered entity token of the record links attach TO. */
+  targetToken: string;
+  title: string;
+  /** Replaces the default one-line description. */
+  description?: ReactNode;
+  onLink: (token: string, id: string, title: string) => Promise<boolean>;
+  attachedKeys?: Set<string>;
+}) {
   const [kinds, setKinds] = useState<EntityTypeToken[] | null>(null);
   const [kindsError, setKindsError] = useState<string | null>(null);
   useEffect(() => {
@@ -43,7 +79,7 @@ export function LinkRecordSheet({
     let live = true;
     setKinds(null);
     setKindsError(null);
-    linkableKinds(source.token)
+    linkableKinds(targetToken)
       .then((tokens) => {
         // Registered pair AND a lister that exists — the SAME check the picker uses to list
         // candidates (registry.listableTokens: pickable + a title column or a host lister). A
@@ -54,18 +90,14 @@ export function LinkRecordSheet({
       })
       .catch((e: unknown) => { if (live) setKindsError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
-  }, [open, source.token]);
+  }, [open, targetToken]);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{passage ? "Link to this passage" : "Link to this document"}</SheetTitle>
+          <SheetTitle className="truncate">{title}</SheetTitle>
           <SheetDescription>
-            {passage ? (
-              <span className="line-clamp-3">“<PassageQuote exact={passage.exact} />”</span>
-            ) : (
-              "Pick a record to attach it here — only the kinds that can be linked to this are offered."
-            )}
+            {description ?? "Pick a record to link here. Only kinds that can link to this are offered."}
           </SheetDescription>
         </SheetHeader>
         {open && kindsError && (

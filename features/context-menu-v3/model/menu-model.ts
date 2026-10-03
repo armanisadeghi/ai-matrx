@@ -43,6 +43,7 @@ import {
   Replace,
   Search,
   Share2,
+  Link,
   Link2,
   AtSign,
   Bug,
@@ -238,6 +239,8 @@ export interface MenuRoles {
   exportMenu: MenuSubmenuNode | null;
   convert: MenuSubmenuNode | null;
   attach: MenuItemNode | null;
+  /** "Link a record…" — present on EVERY menu that targets a record (guard: every-record-menu-links-a-record). */
+  linkRecord: MenuItemNode | null;
   share: MenuItemNode | null;
   placements: MenuSubmenuNode[];
   /**
@@ -851,6 +854,19 @@ export function buildMenuModel(
         onSelect: m.handleAttach,
       }
     : null;
+  // THE OBJECT VERB "Link a record…" — bound once here, so every menu that targets a record
+  // (an `entity` prop, a per-row entity, a `data-entity-*` sniff, or a record-menu-registry row)
+  // inherits it; no module adds its own. Opens the ONE picker (LinkRecordOverlay).
+  const linkRecord: MenuItemNode | null = entity
+    ? {
+        kind: "item",
+        id: "link-record",
+        label: "Link a record…",
+        icon: Link,
+        iconClassName: "text-sky-500",
+        onSelect: m.handleLinkRecord,
+      }
+    : null;
   const share: MenuItemNode | null = entity?.resourceType
     ? {
         kind: "item",
@@ -1005,8 +1021,8 @@ export function buildMenuModel(
     if (recordHasDocument && (exportMenu || convert)) {
       recordSections.push({ id: "document-out", group: "document", nodes: compactNodes([exportMenu, convert]) });
     }
-    if (attach || share) {
-      recordSections.push({ id: "share", group: "share", nodes: compactNodes([attach, share]) });
+    if (attach || linkRecord || share) {
+      recordSections.push({ id: "share", group: "share", nodes: compactNodes([attach, linkRecord, share]) });
     }
     recordSections.push(...extras["after-compare"]);
     recordSections.push(...extras["after-placements"]);
@@ -1018,7 +1034,7 @@ export function buildMenuModel(
       sections: liftPrimarySections(recordSections),
       roles: {
         copy, speak, listen: null, copyAs, json, cut, paste, selectAll, find, insertReference, chat,
-        undo, redo, viewHistory, compare: null, exportMenu, convert, attach, share,
+        undo, redo, viewHistory, compare: null, exportMenu, convert, attach, linkRecord, share,
         placements: [], registry, quickActions: null, save, del, admin, extras, surfaceInfo,
       },
     };
@@ -1057,8 +1073,8 @@ export function buildMenuModel(
   if (exportMenu || convert) {
     sections.push({ id: "document-out", group: "document", nodes: compactNodes([exportMenu, convert]) });
   }
-  if (attach || share) {
-    sections.push({ id: "share", group: "share", nodes: compactNodes([attach, share]) });
+  if (attach || linkRecord || share) {
+    sections.push({ id: "share", group: "share", nodes: compactNodes([attach, linkRecord, share]) });
   }
   sections.push(...extras["after-compare"]);
   if (placements.length > 0) sections.push({ id: "placements", group: "ai", nodes: placements });
@@ -1103,6 +1119,7 @@ export function buildMenuModel(
       exportMenu,
       convert,
       attach,
+      linkRecord,
       share,
       placements,
       registry,
