@@ -27,7 +27,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remark-handles";
 import CommentReplyRenderer from "@/features/matrx-envelope/directives/commentReply/CommentReplyRenderer";
 import { DirectiveFenceProvider } from "@/features/matrx-envelope/directiveFence";
-import DirectiveReceiptBlock from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
+import DirectiveReceiptBlock, { readThreadLink } from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { COMMENT_THREAD_CANVAS_KIND } from "@/features/rich-document/annotations/canvas/commentThreadKind";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -126,18 +126,35 @@ describe("the fence in the answer", () => {
 });
 
 describe("the receipt", () => {
-  it("is the server's sentence and an Open thread door", () => {
+  it("is the server's sentence and an Open thread door, focused on the reply that landed", () => {
+    // The exact `directive_apply.item` receipt the server sends (ThreadLink, THREADS R3).
     render(
       <DirectiveReceiptBlock
         directive={SLUG}
         outcome="applied"
-        message="Replied in thread"
-        thread={{ entity_type: "message", entity_id: "answer-1", root_id: "root-7" }}
+        message="Replied in the thread on c4."
+        resourceKind="comment"
+        resourceIds={["reply-9"]}
+        thread={{ entity_type: "message", entity_id: "answer-1", root_id: "root-7", reply_id: "reply-9", handle: "c4" }}
       />,
     );
-    expect(host.textContent).toBe("Replied in threadOpen thread");
+    expect(host.textContent).toBe("Replied in the thread on c4.Open thread");
     act(() => host.querySelector("button")!.click());
     expect(Object.keys(items())).toEqual(["comment-thread::message:answer-1"]);
+    const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } };
+    expect(tab.data.focus).toBe("reply-9");
+  });
+
+  it("a thread link missing its root is no door (the old entity/id spelling is not read)", () => {
+    expect(readThreadLink({ entity_type: "message", entity_id: "answer-1" })).toBeNull();
+    expect(readThreadLink({ entity: "message", id: "answer-1", comment_id: "root-7" })).toBeNull();
+    expect(readThreadLink({ entity_type: "message", entity_id: "a", root_id: "r" })).toEqual({
+      entity: "message",
+      id: "a",
+      rootId: "r",
+      replyId: null,
+      handle: null,
+    });
   });
 
   it("a failed reply says why, with no door", () => {

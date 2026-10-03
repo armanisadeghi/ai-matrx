@@ -51,27 +51,31 @@ export interface DirectiveReceiptBlockProps {
   /** Carried for linking/diagnostics — NEVER counted into a sentence. */
   resourceKind?: string;
   resourceIds?: string[];
-  /** A `comment_reply` receipt's thread, as the server sent it: the line opens it. */
+  /** A `comment_reply` receipt's `thread` (`ThreadLink`), as the server sent it: the line opens it. */
   thread?: unknown;
 }
 
 /** The agent's reply into a comment thread (`directive_v1_action_comment_reply`). */
 const COMMENT_REPLY_SLUG = /_action_comment_reply$/;
 
+/** The receipt's `thread` (server `ThreadLink`): the record, the root, and the reply that landed. */
 interface ThreadLink {
   entity: string;
   id: string;
-  rootId: string | null;
+  rootId: string;
+  replyId: string | null;
+  handle: string | null;
 }
 
-function readThreadLink(value: unknown): ThreadLink | null {
+export function readThreadLink(value: unknown): ThreadLink | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
-  const entity = v.entity_type ?? v.entity;
-  const id = v.entity_id ?? v.id;
-  const root = v.root_id ?? v.comment_id;
-  if (typeof entity !== "string" || !entity || typeof id !== "string" || !id) return null;
-  return { entity, id, rootId: typeof root === "string" && root ? root : null };
+  const text = (x: unknown) => (typeof x === "string" && x ? x : null);
+  const entity = text(v.entity_type);
+  const id = text(v.entity_id);
+  const rootId = text(v.root_id);
+  if (!entity || !id || !rootId) return null;
+  return { entity, id, rootId, replyId: text(v.reply_id), handle: text(v.handle) };
 }
 
 /**
@@ -93,7 +97,8 @@ function CommentReplyReceipt({ directive, outcome, message, thread }: DirectiveR
         <button
           type="button"
           className="shrink-0 text-primary hover:underline"
-          onClick={() => openCommentThread(canvas, { entity: link.entity, id: link.id, title: "Comments", focus: link.rootId })}
+          // Focus the reply that landed; the thread view resolves a reply to its root's card.
+          onClick={() => openCommentThread(canvas, { entity: link.entity, id: link.id, title: "Comments", focus: link.replyId ?? link.rootId })}
         >
           Open thread
         </button>

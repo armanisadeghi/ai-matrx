@@ -32,6 +32,17 @@ export function remarkToWire(item: RemarkItem): WireRemark | null {
         ...(quote ? { quote } : {}),
         ...(body ? { body } : {}),
         ...(item.commentId ? { comment_id: item.commentId } : {}),
+        // "Continue in new chat": the thread so far, so the agent reads the whole conversation.
+        ...(item.thread?.length
+          ? {
+              thread: item.thread.map((t) => ({
+                author_name: t.authorName,
+                author_kind: t.authorKind,
+                body: t.body,
+                ...(t.createdAt ? { created_at: t.createdAt } : {}),
+              })),
+            }
+          : {}),
       };
     }
     case "choice": {
@@ -77,7 +88,8 @@ export function remarksWirePart(resources: readonly ManagedResource[]): RemarksI
   const items = resources.flatMap((resource) => {
     const source = remarkSourceOf(resource);
     const wire = source ? remarkToWire(source.remark) : null;
-    return wire ? [wire] : [];
+    // The remark's stable id (its resource id): the agent's thread roots key on it, never on the handle.
+    return wire ? [{ ...wire, id: resource.resourceId }] : [];
   });
   return items.length ? ({ type: REMARKS_BLOCK_TYPE, items } as RemarksInputPart) : null;
 }

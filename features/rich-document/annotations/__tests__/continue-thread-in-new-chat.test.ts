@@ -38,9 +38,9 @@ it("reads the root, its passage and every reply with its author", () => {
     quote: "Weigh every inbound load",
     body: "Truck scale or floor scale?",
     replies: [
-      { author: "Scrap Intake Advisor", body: "The truck scale." },
-      { author: "You", body: "Even for small loads?" },
-      { author: "Sam Ortiz", body: "Yes — the floor scale drifts." },
+      { authorName: "Scrap Intake Advisor", authorKind: "agent", body: "The truck scale.", createdAt: "2026-10-03T10:01:00Z" },
+      { authorName: "You", authorKind: "person", body: "Even for small loads?", createdAt: "2026-10-03T10:02:00Z" },
+      { authorName: "Sam Ortiz", authorKind: "person", body: "Yes — the floor scale drifts.", createdAt: "2026-10-03T10:03:00Z" },
     ],
   });
 });

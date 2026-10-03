@@ -28,7 +28,7 @@ const THREAD: NewChatThread = {
   conversationId: "conv-intake",
   quote: "Weigh every inbound load of scrap aluminum",
   body: "Truck scale or floor scale?",
-  replies: [{ author: "Scrap Intake Advisor", body: "The truck scale." }],
+  replies: [{ authorName: "Scrap Intake Advisor", authorKind: "agent", body: "The truck scale.", createdAt: "2026-10-03T10:01:00Z" }],
 };
 
 beforeEach(() => window.sessionStorage.clear());
@@ -57,7 +57,15 @@ it("hands the thread to the agent that replied, as one root comment remark, and 
     thread: THREAD.replies,
   });
   // On the wire it is the ROOT comment — the agent's replies land in the original thread.
-  expect(remarkToWire(remarks[0]!.item)).toMatchObject({ kind: "comment", comment_id: "root-7", target: { message_id: "answer-1" } });
+  // The thread rides in the server's RemarkThreadEntry shape, oldest first.
+  expect(remarkToWire(remarks[0]!.item)).toEqual({
+    kind: "comment",
+    comment_id: "root-7",
+    target: { message_id: "answer-1" },
+    quote: THREAD.quote,
+    body: THREAD.body,
+    thread: [{ author_name: "Scrap Intake Advisor", author_kind: "agent", body: "The truck scale.", created_at: "2026-10-03T10:01:00Z" }],
+  });
 });
 
 it("with no agent named, the default new-chat agent takes it", async () => {

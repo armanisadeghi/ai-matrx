@@ -747,7 +747,7 @@ export const COMMENT_COLLAPSED_LINES = 8;
 function AuthorName({ author }: { author: ResolvedItem["author"] }) {
   if (!author.agent) return <>{author.name}</>;
   return (
-    <span className="inline-flex items-center gap-0.5 font-medium text-foreground" data-agent-author={author.agent.id}>
+    <span className="inline-flex items-center gap-0.5 font-medium text-foreground" data-agent-author={author.agent.id ?? ""}>
       <AGENT_ICON className="h-3 w-3 shrink-0 text-primary" aria-label="Agent" />
       {author.agent.name}
     </span>

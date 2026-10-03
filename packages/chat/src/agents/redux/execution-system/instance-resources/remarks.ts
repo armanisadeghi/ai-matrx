@@ -73,10 +73,13 @@ export interface CommentRemark {
   thread?: RemarkThreadEntry[];
 }
 
+/** One thread message, in the server's `RemarkThreadEntry` shape (camel-cased). */
 export interface RemarkThreadEntry {
   /** "You", a person's name, or the agent's name. */
-  author: string;
+  authorName: string;
+  authorKind: "person" | "agent";
   body: string;
+  createdAt?: string | null;
 }
 
 export interface ChoiceRemark {

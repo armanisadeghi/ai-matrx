@@ -33,8 +33,10 @@ export function threadOfItem(item: ResolvedItem, source: AnnotationSource): NewC
     quote: item.anchor?.exact ?? null,
     body: item.body,
     replies: item.replies.map((reply) => ({
-      author: reply.author.agent ? reply.author.agent.name : reply.mine ? "You" : reply.author.name,
+      authorName: reply.author.agent ? reply.author.agent.name : reply.mine ? "You" : reply.author.name,
+      authorKind: reply.author.agent ? ("agent" as const) : ("person" as const),
       body: reply.body,
+      createdAt: reply.createdAt,
     })),
   };
 }
@@ -42,8 +44,8 @@ export function threadOfItem(item: ResolvedItem, source: AnnotationSource): NewC
 /** The agent that replied last in the thread, else null. */
 export function replyingAgentOf(item: ResolvedItem): string | null {
   for (let i = item.replies.length - 1; i >= 0; i -= 1) {
-    const agent = item.replies[i]?.author.agent;
-    if (agent) return agent.id;
+    const agentId = item.replies[i]?.author.agent?.id;
+    if (agentId) return agentId;
   }
   return item.author.agent?.id ?? null;
 }

@@ -20,12 +20,23 @@ it("a person's row names the person", () => {
 });
 
 it("an agent-written row names the agent, never the person it was filed under", () => {
-  const author = authorOf({ ...PERSON, created_by_agent_id: "agent-intake", author_agent_name: "Scrap Intake Advisor" });
+  const author = authorOf({ ...PERSON, created_by_tier: "agent", author_agent_id: "agent-intake", author_agent_name: "Scrap Intake Advisor" });
   expect(author.name).toBe("Scrap Intake Advisor");
   expect(author.agent).toEqual({ id: "agent-intake", name: "Scrap Intake Advisor" });
   expect(author.avatarUrl).toBeNull();
 });
 
-it("reads either column spelling the server ships, and never shows a blank name", () => {
+it("an agent row with no name or id yet still reads as an agent, never as the person", () => {
+  expect(authorOf({ ...PERSON, created_by_tier: "agent" })).toEqual({
+    id: "user-dana",
+    name: "Agent",
+    avatarUrl: null,
+    agent: { id: null, name: "Agent" },
+  });
   expect(authorOf({ ...PERSON, author_agent_id: "agent-intake" }).agent).toEqual({ id: "agent-intake", name: "Agent" });
+});
+
+it("before the server returns the new columns, every row is a person (degrades cleanly)", () => {
+  expect(authorOf({ ...PERSON, created_by_tier: "user" }).agent).toBeUndefined();
+  expect(authorOf({ ...PERSON, created_by_tier: null, author_agent_id: null }).agent).toBeUndefined();
 });

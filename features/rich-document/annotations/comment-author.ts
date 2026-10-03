@@ -12,17 +12,16 @@ export interface CommentAuthorRow {
   author_display_name: string | null;
   author_email: string | null;
   author_avatar_url: string | null;
-  /** The agent that wrote the row (cmt_list; threads ruling R5). Absent until the server returns it. */
-  created_by_agent_id?: string | null;
+  /** cmt_list (threads ruling R5): who wrote the row. Absent until the server returns it. */
+  created_by_tier?: string | null;
   author_agent_id?: string | null;
   author_agent_name?: string | null;
-  created_by_agent_name?: string | null;
 }
 
 export function authorOf(row: CommentAuthorRow): AnnotationAuthor {
-  const agentId = row.created_by_agent_id ?? row.author_agent_id ?? null;
-  if (agentId) {
-    const name = row.author_agent_name || row.created_by_agent_name || "Agent";
+  const agentId = row.author_agent_id || null;
+  if (agentId || row.created_by_tier === "agent") {
+    const name = row.author_agent_name || "Agent";
     return { id: row.created_by, name, avatarUrl: null, agent: { id: agentId, name } };
   }
   return {
