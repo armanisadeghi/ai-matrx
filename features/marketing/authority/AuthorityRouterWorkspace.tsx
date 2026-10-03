@@ -376,7 +376,8 @@ function summarize(result: AuthorityRouterResult | null) {
   return {
     entryPages: result.pages.filter((page) => page.active_backlinks > 0).length,
     traps: result.pages.filter(
-      (page) => (page.link_score ?? 0) >= 50 && page.outbound_links <= 1,
+      (page) =>
+        page.outbound_links <= 1 && (page.link_score ?? 0) >= 50,
     ).length,
   };
 }

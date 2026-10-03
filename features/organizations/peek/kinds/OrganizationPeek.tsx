@@ -65,9 +65,9 @@ export default function OrganizationPeek({ id, open, onClose }: PeekProps) {
         <>
           {row.slug ? (
             <PeekField label="Slug">
-              <span className="font-mono text-xs text-muted-foreground">
+              <code className="font-mono text-xs text-muted-foreground">
                 {row.slug}
-              </span>
+              </code>
             </PeekField>
           ) : null}
           <PeekField label="Description">

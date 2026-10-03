@@ -65,9 +65,6 @@ export function MapTopicTreeList({ mapId }: { mapId: string }) {
               onClick={() => dispatch(selectTopic({ mapId, slug: row.slug }))}
             >
               <span className={row.selected ? "font-semibold" : ""}>{row.name}</span>
-              <span className="ml-2 font-mono text-xs text-muted-foreground">
-                {row.slug}
-              </span>
             </button>
             {row.topic.status && row.topic.status !== "active" ? (
               <span className="shrink-0 rounded border border-border px-1.5 py-0.5 text-xs text-muted-foreground">

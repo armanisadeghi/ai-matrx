@@ -14,6 +14,7 @@
  */
 
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { ListChecks, Loader2, Tags } from "lucide-react";
 
@@ -255,7 +256,7 @@ function AssignTopicsCard() {
               <div className="flex flex-wrap gap-1.5">
                 {result.topics_created.map((slug) => (
                   <Badge key={slug} variant="secondary" className="text-[10px]">
-                    {slug}
+                    {humanizeIdentifier(slug)}
                   </Badge>
                 ))}
               </div>

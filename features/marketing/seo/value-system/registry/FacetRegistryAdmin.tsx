@@ -267,8 +267,9 @@ function AddValueForm({
           value={value}
           disabled={add.isPending}
           onChange={(event) => setValue(event.target.value)}
-          placeholder="value_written_by_the_classifier"
           className="h-7 min-w-[14rem] flex-1 font-mono text-[11px]"
+          data-identifier
+          placeholder="value_written_by_the_classifier"
         />
         <Input
           value={label}

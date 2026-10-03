@@ -267,9 +267,9 @@ export function WatchlistTab({
                 ? "text-muted-foreground"
                 : "text-foreground",
             )}
-            title={row.key}
+            title={String(row.key)}
           >
-            {row.key}
+            {String(row.key)}
           </span>
           {/*
             THE DOOR LAW: a watched PAGE is a canonical page record — its

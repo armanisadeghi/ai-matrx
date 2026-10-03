@@ -8,6 +8,7 @@
  */
 
 import { useRouter } from "next/navigation";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useMemo, useState } from "react";
 import { Check, CircleAlert, Loader2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -350,7 +351,7 @@ export default function ShapeOwnerEditor({
                   .filter((slug) => slug !== "generic")
                   .map((slug) => (
                     <option key={slug} value={slug}>
-                      {slug}
+                      {humanizeIdentifier(slug)}
                     </option>
                   ))}
               </select>

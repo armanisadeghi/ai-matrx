@@ -177,7 +177,6 @@ export function RejectPolicyPicker({
                       onClick={() => onChange(`merge_into:${hit.slug}`)}
                     >
                       <span className="truncate">{hit.name}</span>
-                      <span className="shrink-0 font-mono text-muted-foreground">{hit.slug}</span>
                     </button>
                   </li>
                 ))}

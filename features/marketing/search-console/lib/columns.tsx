@@ -184,7 +184,7 @@ export function buildGscKeyColumn<T extends { key: string }>(
                 ? undefined
                 : { maxWidth: `${Math.max(width - 28, 120)}px` }
             }
-            title={row.key}
+            title={String(row.key)}
           >
             {label}
           </span>

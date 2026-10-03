@@ -107,9 +107,6 @@ export function IdentitySection({
               {topic.name}
             </h2>
           )}
-          <p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground" title={slug}>
-            {slug}
-          </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {readOnly ? (

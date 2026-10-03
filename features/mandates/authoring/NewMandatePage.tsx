@@ -321,8 +321,9 @@ export function NewMandatePage() {
                 // on screen — it goes with it.
                 setServerError(null);
               }}
-              placeholder="feature.specific_job"
               className="h-8 w-72 font-mono text-[12.5px]"
+              data-identifier
+              placeholder="feature.specific_job"
               aria-label="Mandate key"
             />
             <span className="text-[11px] text-muted-foreground/70">

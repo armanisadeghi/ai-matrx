@@ -364,7 +364,6 @@ function HistoryList({
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span className="truncate font-medium">{entry.name}</span>
-                    <span className="font-mono text-xs text-muted-foreground">{entry.slug}</span>
                     <TopicStatusMark status={entry.status} />
                     {entry.parent_slug ? (
                       <span className="text-xs text-muted-foreground">

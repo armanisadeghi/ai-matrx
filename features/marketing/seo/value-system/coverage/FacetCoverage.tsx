@@ -479,7 +479,7 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
             icon={ShieldAlert}
             value={formatCount(row.queue_deferred)}
             label={`held back below ${minImpressions} impressions`}
-            title="Under the demand floor: not classified, and not counted as done. An admin raises or lowers the floor on the seo.keyword_classification knob."
+            title="Under the demand floor: not classified, and not counted as done. An admin can change the floor in settings."
           />
         ) : null}
         {row.queue_failed > 0 ? (

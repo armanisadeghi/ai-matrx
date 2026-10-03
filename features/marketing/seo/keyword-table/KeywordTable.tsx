@@ -832,7 +832,7 @@ export function KeywordTable({
               id={headingId}
               className="break-words text-sm font-semibold text-foreground"
             >
-              {row.key}
+              {String(row.key)}
             </h2>
           </div>
         </div>

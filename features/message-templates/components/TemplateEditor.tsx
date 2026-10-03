@@ -358,7 +358,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
           <AutoTextarea
             value={content}
             onChange={setContent}
-            placeholder="Write the message. Example: Hi {{party.display_name}}..."
+            placeholder="Write the message..."
           />
           <p className="text-xs text-muted-foreground">
             Merge fields are filled from a real record at preview time. Missing

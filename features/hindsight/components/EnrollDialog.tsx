@@ -569,17 +569,17 @@ export function EnrollDialog({
                 An environment is a conversation selector — fill at least one.
               </p>
               <Input
-                placeholder="conversation_type (e.g. sandbox)"
+                placeholder="Conversation type (e.g. sandbox)"
                 value={envType}
                 onChange={(e) => setEnvType(e.target.value)}
               />
               <Input
-                placeholder="source_app (e.g. matrx-local, matrx-extend)"
+                placeholder="App (e.g. matrx-local, matrx-extend)"
                 value={envApp}
                 onChange={(e) => setEnvApp(e.target.value)}
               />
               <Input
-                placeholder="source_feature"
+                placeholder="Feature"
                 value={envFeature}
                 onChange={(e) => setEnvFeature(e.target.value)}
               />

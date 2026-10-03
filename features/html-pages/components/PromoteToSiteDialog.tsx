@@ -153,9 +153,9 @@ export function PromoteToSiteDialog({
               {result.reused
                 ? "This page was already promoted to the selected site."
                 : "Draft created."}{" "}
-              <span className="font-mono text-xs text-muted-foreground">
+              <code className="font-mono text-xs text-muted-foreground">
                 {result.page.slug}
-              </span>
+              </code>
             </p>
             {result.conversionWarnings.length > 0 && (
               <div className="rounded-md border border-border bg-muted/50 p-2 space-y-1">

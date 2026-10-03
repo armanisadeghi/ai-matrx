@@ -247,9 +247,6 @@ function ValueRow({
           <span className="text-xs font-semibold text-foreground">
             {value.label}
           </span>
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {value.key}
-          </span>
         </div>
         {value.description ? (
           <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
@@ -556,9 +553,6 @@ export function DimensionCard({
             <h3 className="text-sm font-semibold text-foreground">
               {dimension.label}
             </h3>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {dimension.slug}
-            </span>
             {owned ? (
               <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
                 Yours

@@ -20,6 +20,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import dynamic from "next/dynamic";
 import { CircleAlert, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -245,7 +246,7 @@ function ScaffoldForm({
               {value.name}
             </code>
             <Badge variant="outline" className="text-[10px] font-mono">
-              {value.kind}
+              {humanizeIdentifier(value.kind)}
             </Badge>
             {!value.guaranteed && (
               <Badge variant="outline" className="text-[10px] text-muted-foreground">

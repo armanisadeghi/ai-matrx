@@ -333,9 +333,6 @@ function RetirementPlan({
               />
               <label htmlFor={id} className="min-w-0 cursor-pointer">
                 <span className="font-medium">{branch.name}</span>{" "}
-                <span className="font-mono text-muted-foreground">
-                  {branch.slug}
-                </span>
                 <span className="block text-muted-foreground">
                   {branch.pages} page(s) ·{" "}
                   {branch.pages_with_no_other_topic} would end on no topic

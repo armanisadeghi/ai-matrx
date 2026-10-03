@@ -109,9 +109,6 @@ export function HrFieldsPanel() {
           <span className="block text-sm font-medium text-foreground">
             {row.display_name}
           </span>
-          <span className="block font-mono text-[0.6875rem] text-muted-foreground">
-            {row.field_key}
-          </span>
         </span>
       ),
     },

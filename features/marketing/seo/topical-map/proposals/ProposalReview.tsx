@@ -132,7 +132,6 @@ export function ProposalReview({ mapId, host, readOnly, className }: ProposalRev
     meta: (
       <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
         <TopicStatusMark status="proposed" />
-        <span className="font-mono">{topic.slug}</span>
       </span>
     ),
   }));

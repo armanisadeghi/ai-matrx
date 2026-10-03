@@ -103,9 +103,6 @@ function FormatOption({
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium text-foreground">{format.label}</span>
-        <span className="font-mono text-xs text-muted-foreground">
-          {format.key}
-        </span>
         {format.delivery.includes("api") ? (
           <Badge variant="info" className="text-[10px]">
             Direct connection available

@@ -262,7 +262,6 @@ function BranchRow({
       )}
     >
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="font-mono text-xs">{branch.key}</span>
         <span className="text-xs font-medium">{branch.label}</span>
         <span className="text-[11px] text-muted-foreground">
           {branch.size ?? 0} page{branch.size === 1 ? "" : "s"} ·{" "}
@@ -429,7 +428,7 @@ export function AgentPayloadSheet({
               <p className="text-[11px] leading-snug text-muted-foreground">
                 Every block below is printed byte-for-byte as the server sends
                 it — these are the values the{" "}
-                <span className="font-mono">content_plan.family</span> provision
+                content plan family provision
                 offers at this call site. Which of them a given agent actually
                 interpolates is a property of the agent, not of this payload:
                 an offered value that the bound agent never reads is invisible
@@ -478,9 +477,6 @@ export function AgentPayloadSheet({
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <span className="text-xs font-semibold">
                     {activeShape.title}
-                  </span>
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    {activeShape.key}
                   </span>
                   {!activeShape.guaranteed ? (
                     <span className="text-[11px] text-muted-foreground">

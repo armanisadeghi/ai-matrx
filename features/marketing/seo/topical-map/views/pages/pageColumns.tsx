@@ -212,7 +212,7 @@ export function pageColumns({
               <a
                 href={links.topic(mapId, topic.slug)}
                 onClick={(event) => event.stopPropagation()}
-                title={topic.slug}
+                title={topic.name}
                 className="truncate hover:underline"
               >
                 {topic.name}

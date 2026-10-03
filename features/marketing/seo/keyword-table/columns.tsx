@@ -146,7 +146,7 @@ export function buildKeywordColumns({
       // NEVER truncated — a keyword you cannot read is a row you cannot judge.
       cell: (row) => (
         <span className="block break-words text-xs text-foreground">
-          {row.key}
+          {String(row.key)}
         </span>
       ),
     });

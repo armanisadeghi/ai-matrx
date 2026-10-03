@@ -660,9 +660,7 @@ export default function PressRoomWorkspace({
                 , a stand-in business, and is here to show what this surface
                 looks like with work in it. Most of its angles are still
                 gathering proof, which is what a healthy account looks like.
-                Your own analysis writes to{" "}
-                <span className="font-mono text-[10px]">seo.story_angle</span>{" "}
-                and replaces all of it.
+                Your own analysis replaces all of it.
               </Banner>
             ) : null}
 

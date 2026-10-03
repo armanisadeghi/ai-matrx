@@ -12,6 +12,7 @@
 // no second grid in this feature.
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { AlertTriangle, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -128,7 +129,7 @@ export function AdvancedMandateCrud() {
     accessorFn: (row) => renderValue(row[column.name]),
     header: (
       <span className="whitespace-nowrap">
-        {column.name}
+        {humanizeIdentifier(column.name)}
         <span className="ml-1 text-[10px] text-muted-foreground">{column.dataType}</span>
       </span>
     ),
@@ -344,7 +345,7 @@ export function AdvancedMandateCrud() {
                     variant="ghost"
                     className="text-destructive"
                     onClick={() => doDelete(row)}
-                    title="Move to Trash (sets deleted_at; restorable)"
+                    title="Move to Trash (restorable)"
                     aria-label="Move to Trash"
                   >
                     <Trash2 className="h-3 w-3" />

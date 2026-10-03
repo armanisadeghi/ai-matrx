@@ -188,7 +188,7 @@ export const INITIATIVE_COLUMNS: EntityColumnSpec<InitiativeListRow>[] = [
       accessorKey: "budget_currency",
       header: "Currency",
       filter: "select",
-      cell: (r) => r.budget_currency ?? <Muted>—</Muted>,
+      cell: (r) => (r.budget_currency ?? <Muted>—</Muted>),
     },
   },
   {

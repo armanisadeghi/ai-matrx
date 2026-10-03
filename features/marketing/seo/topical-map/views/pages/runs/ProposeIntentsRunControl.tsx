@@ -19,6 +19,7 @@
 // trusted or policed.
 
 import { useState } from "react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { X } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
 
@@ -288,7 +289,7 @@ function TopicPicker({
                 className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 font-mono hover:bg-muted"
                 aria-label={`Remove ${slug}`}
               >
-                {slug}
+                {humanizeIdentifier(slug)}
                 <X className="h-3 w-3" aria-hidden />
               </button>
             </li>

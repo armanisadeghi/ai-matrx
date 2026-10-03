@@ -140,7 +140,7 @@ export function CoverageWon({
                     ) : (
                       <span
                         className="shrink-0 text-muted-foreground/80"
-                        title="coverage_mention has no foreign key to story_angle; the tie lives in metadata.story_angle_id and this piece records none."
+                        title="Coverage is not linked to a story angle by a record, and this piece names none."
                       >
                         No angle recorded for this piece
                       </span>

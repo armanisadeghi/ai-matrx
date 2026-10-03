@@ -1,5 +1,7 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+
 // features/marketing/seo/topical-map/views/pages/runs/knobChips.tsx
 //
 // THE SETTINGS A RUN OBEYS AND THIS SCREEN DOES NOT SET. Every ceiling, floor,
@@ -35,7 +37,7 @@ export function KnobChips({
             key={chip.key}
             className="rounded border border-border bg-muted/40 px-1.5 py-0.5 text-muted-foreground"
           >
-            <span className="font-mono">{chip.key}</span>
+            <span>{humanizeIdentifier(chip.key)}</span>
             <span className="mx-1 text-border">·</span>
             <span className="text-foreground">{chip.value}</span>
           </li>

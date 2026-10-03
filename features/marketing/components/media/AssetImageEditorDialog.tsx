@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import dynamic from "next/dynamic";
 import { Check, Loader2, Ruler } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
@@ -309,7 +310,7 @@ function AssetEditorBody({
                     ) : done ? (
                       <Check className="h-3.5 w-3.5 text-emerald-500" />
                     ) : null}
-                    {slot.name}
+                    {humanizeIdentifier(slot.name)}
                     <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
                       {slot.width}×{slot.height}
                     </span>
