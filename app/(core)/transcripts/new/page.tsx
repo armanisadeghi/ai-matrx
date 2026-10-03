@@ -76,9 +76,7 @@ export default async function NewTranscriptPage() {
 
   return (
     <>
-      <PageHeader>
-        <TranscriptsListHeader />
-      </PageHeader>
+      <TranscriptsListHeader />
       <div className="h-full w-full overflow-y-auto bg-background pt-[var(--shell-header-h)]">
         <div className="w-full px-4 sm:px-6 py-6">
           <div className="mb-5">

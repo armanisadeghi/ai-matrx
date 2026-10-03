@@ -164,9 +164,7 @@ export function StudioLayout({
 
   return (
     <>
-      <PageHeader>
-        <TranscriptsListHeader />
-      </PageHeader>
+      <TranscriptsListHeader />
       <div
         className={cn(
           "flex h-full min-h-0 w-full overflow-hidden pt-[var(--shell-header-h)]",

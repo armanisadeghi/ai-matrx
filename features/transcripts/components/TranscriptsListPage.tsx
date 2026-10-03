@@ -70,9 +70,7 @@ export function TranscriptsListPage() {
 
   return (
     <>
-      <PageHeader>
-        <TranscriptsListHeader />
-      </PageHeader>
+      <TranscriptsListHeader />
       <EntityListPage
         config={transcriptListConfig}
         headerActions={headerActions}
