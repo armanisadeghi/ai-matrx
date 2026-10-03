@@ -40,8 +40,25 @@ interface Answered {
   state: ResultSchemaState;
 }
 
+/**
+ * Ready answers, per store, keyed by workflow (THE REMOUNT LAW, 2026-10-02): a
+ * woken or remounted run surface paints its promise at once and asks the
+ * server nothing. A failed read is not kept — the next mount asks again.
+ */
+const readyByStore = new WeakMap<object, Map<string, DeclaredResultSchema>>();
+
+function readyFor(dispatch: object): Map<string, DeclaredResultSchema> {
+  let ready = readyByStore.get(dispatch);
+  if (!ready) {
+    ready = new Map();
+    readyByStore.set(dispatch, ready);
+  }
+  return ready;
+}
+
 export function useResultSchema(definitionId: string): ResultSchemaState {
   const dispatch = useAppDispatch();
+  const known = readyFor(dispatch).get(definitionId);
   /**
    * 🚨 THE HYDRATION RACE, and why this dependency is load-bearing.
    * Every backend transport calls `requireSelectedOrgId()`, which THROWS
@@ -62,10 +79,11 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
   // dependency only so a read refreshes when one arrives.
   const [answered, setAnswered] = useState<Answered>({
     forId: definitionId,
-    state: { status: "loading" },
+    state: known ? { status: "ready", schema: known } : { status: "loading" },
   });
 
   useEffect(() => {
+    if (readyFor(dispatch).has(definitionId)) return undefined;
     let live = true;
     void (async () => {
       const result = await dispatch(
@@ -75,6 +93,9 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
           pathParams: { definition_id: definitionId },
         }),
       );
+      if (!result.error) {
+        readyFor(dispatch).set(definitionId, parseResultSchema(result.data));
+      }
       if (!live) return;
       setAnswered({
         forId: definitionId,
@@ -93,9 +114,8 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
     };
   }, [dispatch, definitionId, organizationId]);
 
-  return answered.forId === definitionId
-    ? answered.state
-    : { status: "loading" };
+  if (answered.forId === definitionId) return answered.state;
+  return known ? { status: "ready", schema: known } : { status: "loading" };
 }
 
 /** The schema when it is ready, else null — for the common read-or-degrade. */

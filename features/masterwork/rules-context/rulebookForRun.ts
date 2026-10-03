@@ -21,8 +21,41 @@ function rulebookIdFromMetadata(metadata: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
+/**
+ * Lookups already answered this page, by id (a woken or remounted run surface
+ * re-reads nothing — THE REMOUNT LAW, 2026-10-02). A failed read is dropped so
+ * the next ask tries again; a Masterwork's origin never changes.
+ */
+const rulebookByMasterwork = new Map<string, Promise<string | null>>();
+const rulebookByRun = new Map<string, Promise<string | null>>();
+
+function remembered(
+  cache: Map<string, Promise<string | null>>,
+  id: string,
+  read: () => Promise<string | null>,
+): Promise<string | null> {
+  const known = cache.get(id);
+  if (known) return known;
+  // A refusal still answers null (enrichment never throws at a renderer); it
+  // is just not remembered.
+  const pending = read().catch(() => {
+    cache.delete(id);
+    return null;
+  });
+  cache.set(id, pending);
+  return pending;
+}
+
 /** The Rulebook a Masterwork (a `workflow.definition`) was built from. */
-export async function rulebookIdForMasterwork(
+export function rulebookIdForMasterwork(
+  masterworkId: string,
+): Promise<string | null> {
+  return remembered(rulebookByMasterwork, masterworkId, () =>
+    readRulebookIdForMasterwork(masterworkId),
+  );
+}
+
+async function readRulebookIdForMasterwork(
   masterworkId: string,
 ): Promise<string | null> {
   const { data, error } = await supabase
@@ -31,18 +64,24 @@ export async function rulebookIdForMasterwork(
     .select("metadata")
     .eq("id", masterworkId)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) throw error;
+  if (!data) return null;
   return rulebookIdFromMetadata(data.metadata);
 }
 
 /** The Rulebook behind one run — its definition's, one hop further out. */
-export async function rulebookIdForRun(runId: string): Promise<string | null> {
+export function rulebookIdForRun(runId: string): Promise<string | null> {
+  return remembered(rulebookByRun, runId, () => readRulebookIdForRun(runId));
+}
+
+async function readRulebookIdForRun(runId: string): Promise<string | null> {
   const { data, error } = await supabase
     .schema("workflow")
     .from("run")
     .select("definition_id")
     .eq("id", runId)
     .maybeSingle();
-  if (error || !data?.definition_id) return null;
+  if (error) throw error;
+  if (!data?.definition_id) return null;
   return rulebookIdForMasterwork(String(data.definition_id));
 }

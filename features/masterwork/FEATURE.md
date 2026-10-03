@@ -479,6 +479,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-10-03 — `rulebookIdForMasterwork` / `rulebookIdForRun` remember their answers per id for the page (a refusal still answers null and is not remembered), so a remounted run surface re-reads no `workflow.definition`.
 - 2026-10-02 — `MasterworkRulesProvider` remembers what each leg answered for, so an effect re-run with the same inputs (a woken board tile) re-reads neither the run's definition nor the Rulebook; the board's workflow-run tile passes `masterworkId` (it already holds the definition) instead of `runId`.
 - 2026-09-30 — Claude (Opus): **A Masterwork run is priced before the click** (cold walk 23, defect F). `TryMasterworkBox` shows `Last run` + `CostBadge` beside Run it, from `runPrice.tsx`, which asks the Bench's own `last_run_cost_usd` question (newest of the last three finished, non-archived runs with summed node cost > 0) and re-reads when a run ends. Guard: `components/masterworks/__tests__/a-run-is-priced-before-the-click.test.tsx`.
 
