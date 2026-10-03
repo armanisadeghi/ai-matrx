@@ -112,9 +112,34 @@ export interface DedupScanResult {
   pending_candidates: number;
 }
 
+/**
+ * A contact's confidential facts (tax ID for a company, date of birth for a person), read through
+ * `crm_party_confidential_read` — never from `crm.party`, whose two columns stay blank. `withheld`
+ * means the person may not read them (the organization's knob `crm/party_confidential_readers`
+ * names who may); `shown` carries the values (null = not recorded).
+ */
+export type PartyConfidential =
+  | {
+      party_id: string;
+      state: "shown";
+      level: "viewer" | "commenter" | "editor";
+      may_edit: boolean;
+      tax_id: string | null;
+      date_of_birth: string | null;
+    }
+  | {
+      party_id: string;
+      state: "withheld";
+      level: null;
+      may_edit: false;
+      fields: ("tax_id" | "date_of_birth")[];
+    };
+
 /** Everything the record page needs, loaded in one parallel batch. */
 export interface PartyDetail {
   party: PartyListRow;
+  /** `null` = the confidential read failed or has not answered; the page says so, it never guesses. */
+  confidential: PartyConfidential | null;
   contactPoints: ContactPoint[];
   addresses: AddressRow[];
   /** Person side: where this person works / worked. */

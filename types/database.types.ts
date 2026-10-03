@@ -97485,6 +97485,14 @@ export type Database = {
         }
         Returns: string
       }
+      crm_party_confidential_read: {
+        Args: { p_party_ids: string[] }
+        Returns: Json
+      }
+      crm_party_confidential_write: {
+        Args: { p_party_id: string; p_values: Json }
+        Returns: Json
+      }
       crm_party_purge: { Args: { p_party: string }; Returns: undefined }
       crm_resume_sending_identity: {
         Args: { p_identity_id: string; p_note?: string }

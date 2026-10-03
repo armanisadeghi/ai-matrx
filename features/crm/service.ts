@@ -36,6 +36,7 @@ import type {
   InteractionChannel,
   InteractionDirection,
   InteractionRow,
+  PartyConfidential,
   PartyDetail,
   PartyKind,
   PartyListQuery,
@@ -1080,7 +1081,7 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
 
   const crm = supabase.schema("crm");
 
-  const [party, points, addresses, affiliations, members, interactions] =
+  const [party, points, addresses, affiliations, members, interactions, confidential] =
     await Promise.all([
       // Same `.returns<>` rationale as fetchPartyPage (column-as-target embed).
       // `maybeSingle`, NOT `single`: under RLS a party the caller may not read
@@ -1131,6 +1132,9 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
         .order("occurred_at", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(200),
+      // The confidential facts (tax ID / date of birth) live beside the row, read only by the
+      // people the organization names; everyone else gets `withheld`, never a value.
+      fetchPartyConfidential([partyId]),
     ]);
 
   if (party.error) throw pgError(party.error);
@@ -1156,7 +1160,44 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
     affiliations: affiliations.data ?? [],
     members: members.data ?? [],
     interactions: interactions.data ?? [],
+    confidential: confidential.get(partyId) ?? null,
   };
+}
+
+/**
+ * A contact's confidential facts, through the one read door. A failed read is LOUD (console.error)
+ * and answers an empty map, so the record still opens and its confidential slot says "unavailable"
+ * rather than inventing "not recorded".
+ */
+export async function fetchPartyConfidential(
+  partyIds: string[],
+): Promise<Map<string, PartyConfidential>> {
+  const out = new Map<string, PartyConfidential>();
+  if (partyIds.length === 0) return out;
+  const { data, error } = await supabase.rpc("crm_party_confidential_read", {
+    p_party_ids: partyIds,
+  });
+  if (error) {
+    console.error("[crm] the confidential facts could not be read", error);
+    return out;
+  }
+  for (const entry of (Array.isArray(data) ? data : []) as unknown as PartyConfidential[]) {
+    out.set(entry.party_id, entry);
+  }
+  return out;
+}
+
+/** Save a contact's tax ID and/or date of birth (null clears). Editors only; the door refuses others in a sentence. */
+export async function savePartyConfidential(
+  partyId: string,
+  values: { tax_id?: string | null; date_of_birth?: string | null },
+): Promise<PartyConfidential> {
+  const { data, error } = await supabase.rpc("crm_party_confidential_write", {
+    p_party_id: partyId,
+    p_values: values,
+  });
+  if (error) throw pgError(error);
+  return data as unknown as PartyConfidential;
 }
 
 // ── Contact points (medium find-or-create, then link) ───────────────────────
