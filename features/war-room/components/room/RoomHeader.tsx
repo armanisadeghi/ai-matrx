@@ -137,7 +137,7 @@ export function RoomHeader({
   const [projectOpen, setProjectOpen] = useState(false);
   // Room resources open as the room's canvas tab, beside the room.
   const canvas = useOptionalCanvas();
-  const openRoomResources = () => void openToolInCanvas(canvas, roomResourcesOpenInput(sessionId));
+  const openRoomResources = () => void openToolInCanvas(canvas, roomResourcesOpenInput(sessionId, session?.title));
 
   const roomProjectId = useAppSelector(selectSessionProjectId(sessionId));
   const projectMode = useAppSelector(selectSessionProjectMode(sessionId));

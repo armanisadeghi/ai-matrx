@@ -132,7 +132,7 @@ export default function WorkbookEditor({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   // Snapshot history is a canvas tab beside the editor; the button toggles it.
-  const snapshotHistory = useToolToggle(workbookHistoryToggleInput(workbookId, editable));
+  const snapshotHistory = useToolToggle(workbookHistoryToggleInput(workbookId, editable, workbookName));
 
   // Univer boots ONCE per workbookId (see boot effect). `editable`, `collab`,
   // and the collab host-election flag can change AFTER boot, so we read them

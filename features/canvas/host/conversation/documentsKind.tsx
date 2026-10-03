@@ -18,12 +18,18 @@ import {
   canvasRecord,
   canvasText,
   openToolInCanvas,
+  subjectTitle,
   useToolOpener,
   type ToolOpenInput,
 } from "@/features/canvas/host/toolCanvas";
 
 export { CONVERSATION_DOCUMENTS_KIND };
 const TITLE = "Documents";
+
+/** "Documents · <chat title>" (just "Documents" while the chat is untitled). */
+export function documentsTabTitle(chatTitle: string | null | undefined): string {
+  return subjectTitle(TITLE, chatTitle);
+}
 
 export interface DocumentsTabData {
   conversationId: string;

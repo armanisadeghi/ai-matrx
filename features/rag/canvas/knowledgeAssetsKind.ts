@@ -11,7 +11,7 @@
 import { Wand2 } from "lucide-react";
 import type { CanvasJson } from "@ai-matrx/canvas";
 import { defineCanvasKind, type AnyCanvasKind } from "@ai-matrx/canvas/react";
-import { canvasRecord, canvasText, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
+import { canvasRecord, canvasText, type ToolOpenInput, subjectTitle } from "@/features/canvas/host/toolCanvas";
 import type { KnowledgeAssetDoc } from "@/features/rag/components/library/KnowledgeAssetPanel";
 
 export const KNOWLEDGE_ASSETS_KIND = "knowledge-assets";
@@ -29,7 +29,8 @@ export function knowledgeAssetsInput(doc: KnowledgeAssetDoc | null): ToolOpenInp
   return {
     kind: KNOWLEDGE_ASSETS_KIND,
     key: doc?.id ?? "",
-    title: LABEL,
+    // Names its document — two documents' tabs never share a title.
+    title: subjectTitle(LABEL, doc?.name),
     data: { id: doc?.id ?? null, name: doc?.name ?? null, totalPages: doc?.totalPages ?? null },
   };
 }

@@ -159,7 +159,7 @@ export default function DocumentEditor({
       selectWorkingCopyStatus(state, documentWorkingCopy.key(documentId)),
     ) ?? "idle";
   // Snapshot history is a canvas tab beside the editor; the button toggles it.
-  const snapshotHistory = useToolToggle(documentHistoryToggleInput(documentId, editable));
+  const snapshotHistory = useToolToggle(documentHistoryToggleInput(documentId, editable, documentName));
 
   // Univer boots ONCE per documentId (see boot effect). `editable` and
   // `collab` can change AFTER boot, so the model reads them through refs —

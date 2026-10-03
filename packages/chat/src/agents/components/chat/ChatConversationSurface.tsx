@@ -16,7 +16,7 @@
  */
 
 import type { ReactNode } from "react";
-import { useAppDispatch, useAppStore } from "../../../store/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hooks";
 import { useCanvasLauncherEntry } from "@ai-matrx/canvas/react";
 import { CONVERSATION_DOCUMENTS_KIND } from "../../../host/canvas-tabs";
 import { waitForConversationPersisted } from "../../redux/execution-system/conversations/conversation-persistence";
@@ -118,11 +118,14 @@ export function ChatConversationSurface({
 
   // The canvas "New tab" launcher offers THIS chat's documents while a chat is
   // mounted — and only then (generic canvas machinery; no host port needed).
+  // The entry (and so the tab it opens) names its chat: two chats' Documents
+  // tabs never share a title.
+  const chatTitle = useAppSelector(selectConversationTitle(conversationId))?.trim();
   useCanvasLauncherEntry({
     kind: CONVERSATION_DOCUMENTS_KIND,
     key: conversationId,
     data: { conversationId, initialKind: "working" },
-    title: "This chat's documents",
+    title: chatTitle ? `Documents · ${chatTitle}` : "This chat's documents",
   });
 
   // Header Agents chrome — live Run scope from Redux at click time (draft +

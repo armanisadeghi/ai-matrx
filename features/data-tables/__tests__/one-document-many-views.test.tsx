@@ -101,7 +101,10 @@ jest.mock("@ai-matrx/realtime/react", () => ({ useRealtimeManager: () => null, u
 jest.mock("@ai-matrx/realtime", () => ({
   defineChannelNamespace: () => ({ topic: () => "udt-document-snapshots:x" }),
 }));
-jest.mock("@/features/canvas/host/toolCanvas", () => ({ useToolToggle: () => ({ isVisible: false, toggle: () => {} }) }));
+jest.mock("@/features/canvas/host/toolCanvas", () => ({
+  ...jest.requireActual<typeof import("@/features/canvas/host/toolCanvas")>("@/features/canvas/host/toolCanvas"),
+  useToolToggle: () => ({ isVisible: false, toggle: () => {} }),
+}));
 jest.mock("../hooks/useUniverDarkModeSync", () => ({ useUniverDarkModeSync: () => {} }));
 jest.mock("../hooks/useUniverDocSurfaceTheme", () => ({ useUniverDocSurfaceTheme: () => {} }));
 jest.mock("../univer-doc-canvas-colors", () => ({ renderDocumentCanvasColorsVerbatim: () => ({ applied: true }) }));
