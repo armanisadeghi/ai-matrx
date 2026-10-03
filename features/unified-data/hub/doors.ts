@@ -20,7 +20,6 @@
 
 import type { RecordsDataSource } from "@ai-matrx/records";
 
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 
 export interface DoorFailure {
   /** The store's own words. Never rewritten, never swallowed. */
@@ -45,46 +44,12 @@ export function doorFailureLine(failure: DoorFailure): string {
   return failure.message;
 }
 
-/**
- * THE SWITCH, READ ONCE PER ORGANIZATION AND CHECKED ON EVERY CALL THAT READS
- * ONE ORGANIZATION'S STORE.
- *
- * The hub's own component reads it too, and the page above that is already
- * behind it — this is the layer that cannot be walked past, because it is
- * inside the only file that can send these three doors at all. Asking per call
- * would be an extra round trip per row on the page, so the answer is held for
- * the lifetime of the tab, keyed by organization; the switch is one
- * organization's decision, set once, on a screen that reloads the app.
- *
- * `off` and `could not check` are different sentences and both are returned as
- * a refusal, never as an empty list.
- */
-const switchAnswers = new Map<string, Promise<{ on: boolean; why: string }>>();
-
-function storeIsOpen(organizationId: string): Promise<{ on: boolean; why: string }> {
-  const held = switchAnswers.get(organizationId);
-  if (held) return held;
-  const asked = UNIFIED_DATA_CAMPAIGN.check(organizationId).then((answer) => ({
-    on: answer.state === "on",
-    why:
-      answer.state === "unavailable"
-        ? `The record store's switch could not be read, so nothing was read — this is not an answer about the organization. ${answer.cause}`
-        : "This organization does not keep its data in the record store, so nothing was read.",
-  }));
-  switchAnswers.set(organizationId, asked);
-  return asked;
-}
-
+/** One store door, asked as the signed-in person. No store switch is asked first — the store is never off. */
 async function call<T>(
   dataSource: RecordsDataSource,
   fn: string,
   args: Record<string, unknown>,
-  organizationId?: string,
 ): Promise<DoorAnswer<T>> {
-  if (organizationId) {
-    const gate = await storeIsOpen(organizationId);
-    if (!gate.on) return { ok: false, error: { message: gate.why } };
-  }
   const answered = await dataSource.rpc(fn, args, { schema: "custom" });
   if (answered.error) {
     return {
@@ -158,7 +123,7 @@ export function pipelines(
   dataSource: RecordsDataSource,
   organizationId: string,
 ): Promise<DoorAnswer<PipelineRow[]>> {
-  return call<PipelineRow[]>(dataSource, "pipelines", { p_organization_id: organizationId }, organizationId);
+  return call<PipelineRow[]>(dataSource, "pipelines", { p_organization_id: organizationId });
 }
 
 export interface ShareOutsideRow {
@@ -184,9 +149,7 @@ export function sharesOutside(
   return call<ShareOutsideRow[]>(
     dataSource,
     "shares_outside",
-    { p_organization_id: organizationId },
-    organizationId,
-  );
+    { p_organization_id: organizationId });
 }
 
 export interface ShareInboundRow {
@@ -277,7 +240,7 @@ export function tableFacts(
   dataSource: RecordsDataSource,
   organizationId: string,
 ): Promise<DoorAnswer<TableFactRow[]>> {
-  return call<TableFactRow[]>(dataSource, "table_facts", { p_organization_id: organizationId }, organizationId);
+  return call<TableFactRow[]>(dataSource, "table_facts", { p_organization_id: organizationId });
 }
 
 /** The three kinds `custom.hub_changed_by` knows. Closed, and it refuses a fourth. */
@@ -306,9 +269,7 @@ export function changedBy(
   return call<ChangedByRow[]>(
     dataSource,
     "hub_changed_by",
-    { p_organization_id: organizationId, p_kind: kind, p_ids: ids.slice(0, 500) },
-    organizationId,
-  );
+    { p_organization_id: organizationId, p_kind: kind, p_ids: ids.slice(0, 500) });
 }
 
 export interface DataHomeTableRow {

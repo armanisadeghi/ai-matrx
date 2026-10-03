@@ -27,7 +27,6 @@ const SECOND_MEETING = "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f";
 const doors = {
   home: jest.fn(async () => ({ ok: true, data: { organization_id: CEDAR_RIDGE } }) as unknown),
   readable: jest.fn(async () => ({ ok: true, data: null }) as unknown),
-  storeSwitch: jest.fn(async () => ({ state: "on" }) as const),
 };
 
 jest.mock("@ai-matrx/records-ui", () => ({
@@ -39,12 +38,6 @@ jest.mock("@ai-matrx/records-ui", () => ({
 jest.mock("@/features/unified-data/hub/doors", () => ({
   entityRecordHome: (...args: unknown[]) => (doors.home as (...a: unknown[]) => unknown)(...args),
   entityRecordReadable: (...args: unknown[]) => (doors.readable as (...a: unknown[]) => unknown)(...args),
-}));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { check: (org: string) => (doors.storeSwitch as (o: string) => unknown)(org) },
-  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE: "off",
-  UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE: "unavailable",
-  forgetStoreSwitchAnswers: () => undefined,
 }));
 jest.mock("@/features/organizations/organizationsIAmIn", () => ({ mayReadAsMember: async () => true }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => CEDAR_RIDGE }));
@@ -105,12 +98,12 @@ describe("a record's custom-fields section reads once per record per tab", () =>
     });
     for (let i = 0; i < 10; i += 1) await act(async () => void (await Promise.resolve()));
   }
-  const counts = () => [doors.home.mock.calls.length, doors.readable.mock.calls.length, doors.storeSwitch.mock.calls.length];
+  const counts = () => [doors.home.mock.calls.length, doors.readable.mock.calls.length];
 
   it("a wake a minute later, and a second view, ask nothing", async () => {
     await show(<EntityCustomFields entityToken="meet_meeting" recordId={MEETING} />);
     expect(host.querySelector("[data-test-section]")).not.toBeNull();
-    expect(counts()).toEqual([1, 1, 1]);
+    expect(counts()).toEqual([1, 1]);
 
     // Asleep for a minute (past the switch's old 30 s freshness), then woken: a remount.
     now += 60_000;
@@ -123,11 +116,11 @@ describe("a record's custom-fields section reads once per record per tab", () =>
       </>,
     );
     expect(host.querySelectorAll("[data-test-section]")).toHaveLength(2);
-    expect(counts()).toEqual([1, 1, 1]);
+    expect(counts()).toEqual([1, 1]);
 
     // A DIFFERENT record is its own question.
     await show(<EntityCustomFields entityToken="meet_meeting" recordId={SECOND_MEETING} />);
-    expect(counts()).toEqual([2, 2, 1]);
+    expect(counts()).toEqual([2, 2]);
   });
 
   it("a failed home read is never kept: Retry asks again", async () => {

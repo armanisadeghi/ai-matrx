@@ -64,3 +64,18 @@ export const RESUME_RETRY_SCHEDULED_ERROR_NAME = "ResumeRetryScheduled";
 export function isScheduledRetryErrorName(name: unknown): boolean {
   return name === RESUME_RETRY_SCHEDULED_ERROR_NAME;
 }
+
+/**
+ * `resumeInstance` refused because ANOTHER resume of the same user_request
+ * already holds the single-flight claim — parallel delegated calls each post a
+ * result and each may get `continuation_needed`. The claim holder carries the
+ * turn, so this refusal hands it on too (2026-10-02, board chat: a reconnect
+ * follower read it as a failure and showed "The agent paused without a visible
+ * question" while the agent was working).
+ */
+export const RESUME_ALREADY_CLAIMED_ERROR_NAME = "ResumeAlreadyClaimed";
+
+/** A refusal that hands the turn on to a resume already carrying it. */
+export function isHandedOnErrorName(name: unknown): boolean {
+  return name === RESUME_RETRY_SCHEDULED_ERROR_NAME || name === RESUME_ALREADY_CLAIMED_ERROR_NAME;
+}

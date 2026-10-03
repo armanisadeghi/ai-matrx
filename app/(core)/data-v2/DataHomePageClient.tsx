@@ -8,10 +8,7 @@
 // belongs in the package, where /data-v2, a portal, an embed and an agent's
 // link all inherit it at once.
 //
-// The switch: ONE per organization. `UNIFIED_DATA_CAMPAIGN.enabled(org)` asks
-// the store's own member-readable door whether THIS organization keeps its data
-// here, which is what the unified data ramp screen sets, once, for everybody.
-// The per-person `custom.code_paths_enabled` half is gone (lane NAV-FIX).
+// No switch: the record store is never off (CHAIR-ALWAYS-ON, 2026-10-03).
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -38,9 +35,6 @@ import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { DataHomeRoute, type DataHomeMaking } from "@/features/unified-data/home/DataHomeRoute";
@@ -97,18 +91,6 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
     },
     [router, searchParams],
   );
-  // ONE SWITCH: does THIS organization keep its data in the record store? Set
-  // once, for everybody, on the unified data ramp screen. There is no second,
-  // per-person switch any more (lane NAV-FIX, 19 September).
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
-
-  /** ALL ORGS reads through the person's doors, not one organization's store switch (that switch is per organization). */
-  const storeOn = acrossAll || campaign.state === "on";
-
   /** The same membership port the table page binds — see its comment. */
   const members = useCallback(async () => {
     if (!organizationId) return [];
@@ -152,7 +134,7 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
         {/* A NEW TABLE LANDS IN THE ACTIVE ORGANIZATION (the law's rule 4) — never the filter's. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && storeOn
+          {...(organizationState === "ready"
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
@@ -172,12 +154,6 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
             it). The mount waits for the person exactly as it waits for the organization. */}
         {organizationState !== "ready" || !userId ? (
           <OrganizationContextNotice state={userId ? organizationState : "resolving"} what="Data records" />
-        ) : !storeOn ? (
-          /* THE ONE NOTICE. Resolving, could-not-check and genuinely-off are
-             three different things and this says which — a failed check is
-             "could not check, try again", never a claim about the organization
-             (lane SHARE-OUT, item 3). */
-          <UnifiedDataSwitchNotice gate={campaign} what="Data records" />
         ) : (
           <RecordsMount
             letTheStoreDecideRights
@@ -187,8 +163,8 @@ function UnifiedDataPage({ making }: { making: DataHomeMaking }) {
               organizationId,
               // LIVE UPDATES. The grid's "Not live: this host bound no realtime port" banner
               // was naming exactly this seam. The port joins the private topic the database
-              // broadcasts a NOTICE on and re-reads through the read door; `undefined` when
-              // the store's switch is off, and the honest banner comes back.
+              // broadcasts a NOTICE on and re-reads through the read door; `undefined` with no
+              // organization named, and the honest banner comes back.
               realtime: organizationId ? createRecordsRealtimePort(organizationId) : undefined,
             }}
             host={{

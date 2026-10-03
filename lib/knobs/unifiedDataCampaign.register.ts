@@ -535,18 +535,6 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "/data/<id> is the table page itself: it mounts the /data-v2/<id> route (records-ui TablePage), whose doors call custom.assert_store_door, which reads custom/system_enabled — with the switch off they refuse in words. The older viewer and its older-store read are deleted (lane OLD-READERS-REMOVAL).",
     },
     {
-        id: "shell-nav-gates",
-        file: "features/shell/navigation/useShellNavGates.ts",
-        kind: "runtime",
-        why: "The sidebar's Data group carries a `Records` child pointing at /data-v2, and it appears only where this campaign's switch is on. This hook is the one place the sidebar resolves that switch, for this person in this organization, so a gated destination is dropped everywhere the nav is drawn. Served to every signed-in user on every page, so an unanswered switch counts as OFF and the child simply is not there.",
-    },
-    {
-        id: "shell-nav-gates-red-twin",
-        file: "features/shell/navigation/useShellNavGates.red.test.tsx",
-        kind: "red_twin",
-        why: "Lane NAV-FIX's RED TWIN for the sidebar gate: it wires the gate the OLD way (a synchronous Redux read inside useEffect(…, [])) and FAILS, which is what proves the real hook's four green clauses are load-bearing. It is excluded from `pnpm test` by jest.config.ts and serves no request, so it is tooling and must not be gated — a red twin held behind the campaign switch would go quiet exactly when the campaign is off, which is when a regression would land unseen. Registered by lane APPROVAL-KNOB, which found `check:campaign-entry-points` exiting 1 on origin/main for this one unregistered file.",
-    },
-    {
         id: "kit-install",
         file: "features/kits/hooks/useKitInstall.ts",
         kind: "runtime",

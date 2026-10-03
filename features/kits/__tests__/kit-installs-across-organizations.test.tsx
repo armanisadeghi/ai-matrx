@@ -12,9 +12,6 @@ const storeCheck = jest.fn();
 
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "user-1" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { check: (org: string) => storeCheck(org) },
-}));
 jest.mock("../installer", () => ({
   kitRecordsClient: (org: string) => ({ org }),
   readInstall: (client: { org: string }, org: string, key: string) => readInstall(client.org, org, key),

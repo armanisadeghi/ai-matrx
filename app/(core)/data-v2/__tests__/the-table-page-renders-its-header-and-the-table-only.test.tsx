@@ -121,9 +121,6 @@ jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [{ id: ITS_ORG, name: "Arman's Org" }, { id: ACTIVE_ORG, name: "AI Matrx" }], loading: false }),
 }));
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { check: jest.fn() } }));
-jest.mock("@/lib/knobs/useUnifiedDataCampaignGate", () => ({ useUnifiedDataCampaign: () => ({ state: "on" }) }));
-jest.mock("@/features/unified-data/components/UnifiedDataSwitchNotice", () => ({ UnifiedDataSwitchNotice: () => null }));
 jest.mock("@/features/data-tables/components/SheetLayout", () => ({ SheetLayout: () => null }));
 jest.mock("@/features/unified-data/row-agent-action/rowAgentAction", () => ({ runRowAgentAction: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));

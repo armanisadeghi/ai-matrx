@@ -33,7 +33,7 @@ import type { Middleware } from "@reduxjs/toolkit";
 import { captureError, getSnapshot } from "@/lib/diagnostics/errorCaptureStore";
 import {
   isPersonCancellationErrorName,
-  isScheduledRetryErrorName,
+  isHandedOnErrorName,
   type ExecutionRejectionMeta,
 } from "./executionRejectionMeta";
 
@@ -139,11 +139,12 @@ export const reduxErrorCaptureMiddleware: Middleware =
         ) {
           return result;
         }
-        // A rejection whose own retry is already scheduled hands the turn on;
-        // only the final, unrecovered rejection (no marker) is a failure.
+        // A rejection that hands the turn on (its own retry is scheduled, or
+        // another resume already holds the claim) is control flow; only the
+        // final, unrecovered rejection (no marker) is a failure.
         if (
-          isScheduledRetryErrorName(a.meta?.originalErrorName) ||
-          isScheduledRetryErrorName(a.error?.originalErrorName)
+          isHandedOnErrorName(a.meta?.originalErrorName) ||
+          isHandedOnErrorName(a.error?.originalErrorName)
         ) {
           return result;
         }

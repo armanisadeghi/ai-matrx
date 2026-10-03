@@ -21,8 +21,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 import { ApprovalCard } from "@ai-matrx/chat/agents/ui-first-tools/ui/ApprovalCard";
 import type { PendingAsk } from "@ai-matrx/chat/agents/ui-first-tools/redux/pending-asks.slice";
@@ -110,10 +108,6 @@ export function RecordChangeApprovalCard({
       : null);
   const organizationKnown =
     Boolean(objectOrganizationId) || object.state !== "resolving";
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
-  });
 
   const [decision, setDecision] = useState<Decision>({ state: "open" });
   // THE ROW'S OWN STANDING. The tool result says "held" forever; the queue row says whether
@@ -200,14 +194,7 @@ export function RecordChangeApprovalCard({
       </p>
     );
   }
-  if (!organizationKnown || campaign.on === null) return null;
-  if (!campaign.on) {
-    return (
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        {wait.notDone} {campaign.because}
-      </p>
-    );
-  }
+  if (!organizationKnown) return null;
 
   // NOTHING WAS QUEUED — so no decision is offered, and the reason is on screen.
   // This is the `always_ask` table case: a table that does not exist yet has no

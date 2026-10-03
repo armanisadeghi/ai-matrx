@@ -1,5 +1,6 @@
 import {
   executionRejectionMeta,
+  RESUME_ALREADY_CLAIMED_ERROR_NAME,
   RESUME_RETRY_SCHEDULED_ERROR_NAME,
   type ExecutionRejectionMeta,
 } from "./execution-rejection-meta";
@@ -133,6 +134,7 @@ export const resumeInstance = createAsyncThunk<
     if (!claimResume(userRequestId)) {
       return rejectWithValue(
         "Resume skipped — already claimed for this user_request",
+        RESUME_ALREADY_CLAIMED_ERROR_NAME,
       );
     }
 

@@ -41,9 +41,6 @@ jest.mock("@ai-matrx/records-ui", () => {
     TablesHome: () => <div data-making-a-table>New table</div>,
   };
 });
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) },
-}));
 jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({
   useEffectiveKnob: () => "shared_only",
 }));

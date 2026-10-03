@@ -21,8 +21,6 @@ const CEDAR_RIDGE = "0a54df90-eab8-4d07-ab29-81a45fb41e04";
 const ELM_STREET = "5b1d7c2e-3f40-4a8b-9c6d-7e8f9a0b1c2d";
 const MARISOL = "82a25af4-27cb-4e94-a2de-155eae7c8992";
 
-type SwitchAnswer = { state: "on" } | { state: "off" } | { state: "unavailable"; cause: string };
-let switchAnswer: SwitchAnswer = { state: "on" };
 let activeOrganization: string | null = ELM_STREET;
 const dispatched: unknown[] = [];
 const sectionProps: Array<Record<string, unknown>> = [];
@@ -58,15 +56,6 @@ jest.mock("@/lib/redux/store-reads/useStoreRead", () => {
     },
   };
 });
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: {
-    check: async () => switchAnswer,
-    // `enabled` is the yes/no reading: anything but "on" is false.
-    enabled: async () => switchAnswer.state === "on",
-  },
-  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE: "off",
-  UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE: "unavailable",
-}));
 jest.mock("@/features/organizations/organizationsIAmIn", () => ({ mayReadAsMember: async () => true }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "active" }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user" }));
@@ -123,7 +112,6 @@ describe("a record page's custom fields say why, and offer her own table", () =>
   beforeEach(() => {
     // The switch's answer is kept per organization for the session; each case is a new session.
     forgetAllKeptAnswers();
-    switchAnswer = { state: "on" };
     activeOrganization = ELM_STREET;
     dispatched.length = 0;
     sectionProps.length = 0;
@@ -146,21 +134,6 @@ describe("a record page's custom fields say why, and offer her own table", () =>
       });
     }
   }
-
-  it("item 13: a switch that answers off is said, never a silent absence", async () => {
-    switchAnswer = { state: "off" };
-    await show();
-    expect(host.textContent).toContain("Custom fields");
-    expect(host.textContent).toContain("Off for this organization");
-  });
-
-  it("item 13: a switch that could not be read is said as such, with Retry — never as off", async () => {
-    switchAnswer = { state: "unavailable", cause: "schema cache reloading" };
-    await show();
-    expect(host.textContent).toContain("Couldn't check this organization");
-    expect(host.textContent).not.toContain("Off for this organization");
-    expect([...host.querySelectorAll("button")].some((b) => b.textContent === "Retry")).toBe(true);
-  });
 
   it("T1.2: the section reads the app's word for the table and carries the own-table offer", async () => {
     await show();

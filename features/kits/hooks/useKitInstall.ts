@@ -3,7 +3,7 @@
 // useKitInstall — the install state of ONE kit in the organization the person SET.
 //
 // It reads the organization through `useOrganizationRequired` (never a default,
-// never the personal org), asks the record store's switch before anything else,
+// never the personal org)
 // and reads this kit's install record from the organization's "Kit installs" table.
 // `runInstall()` captures the organization AT THE CLICK and hands that one id to
 // every writer; a second tab (or person) racing it is refused by the store and this
@@ -13,8 +13,6 @@ import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import {
   InstallBusyError,
   installRunningElsewhere,
@@ -51,11 +49,6 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
   const pinnedOrganizationId = targetOrganizationId || null;
   const organizationState = pinnedOrganizationId ? "ready" : org.organizationState;
   const organizationId = pinnedOrganizationId ?? (org.organizationState === "ready" ? org.organizationId : null);
-  const store = useUnifiedDataCampaign({
-    organizationId,
-    organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
 
   const [runId] = useState(newRunId);
   const [install, setInstall] = useState<KitInstallRecord | null>(null);
@@ -70,7 +63,7 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!organizationId || store.state !== "on") return;
+    if (!organizationId) return;
     let cancelled = false;
     setPhase((p) => (p === "installing" || p === "removing" ? p : "loading"));
     setReadError(null);
@@ -99,7 +92,7 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
     return () => {
       cancelled = true;
     };
-  }, [organizationId, store.state, userId, manifest, runId, attempt]);
+  }, [organizationId, userId, manifest, runId, attempt]);
 
   // While attached to somebody else's run, re-read until it settles.
   // The interval is the `kits.attached_poll_ms` knob.
@@ -191,7 +184,6 @@ export function useKitInstall(manifest: KitManifest, targetOrganizationId?: stri
     organizationId,
     organizationPinned: pinnedOrganizationId !== null,
     organizationState,
-    store,
     install,
     steps,
     phase,

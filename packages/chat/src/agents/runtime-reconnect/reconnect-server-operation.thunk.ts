@@ -64,7 +64,7 @@ import type {
   RuntimeOperationView,
   ServerOperationState,
 } from "./types";
-import { decideWaitingInputRecovery } from "./waiting-input-recovery";
+import { decideAfterContinueRefused, decideWaitingInputRecovery } from "./waiting-input-recovery";
 import { countOpenAsksForConversation } from "./parked-on-person";
 
 export interface ReconnectServerOperationArgs {
@@ -307,12 +307,17 @@ export const reconnectServerOperation = createAsyncThunk<
           }),
         ).then((action) => {
           if (!resumeInstance.rejected.match(action)) return;
-          const reason = String(action.payload ?? action.error.message ?? "");
-          if (reason.includes("retry") && reason.includes("scheduled")) return;
           const current =
             getState().conversations.byConversationId[conversationId]
               ?.serverOperation;
-          if (current?.executionId === op.execution_id) {
+          if (current?.executionId !== op.execution_id) return;
+          const next = decideAfterContinueRefused({
+            originalErrorName: action.meta.originalErrorName,
+            liveStream: hasAbortController(conversationId),
+          });
+          if (next === "clear") {
+            dispatch(patchConversation({ conversationId, serverOperation: null }));
+          } else if (next === "needs_action") {
             stampOperation("waiting_input", true, "needs_action");
           }
         });

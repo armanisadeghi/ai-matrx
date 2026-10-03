@@ -49,6 +49,7 @@ import {
   type ContextMenuEntityRef,
 } from "./types";
 import {
+  joinRowAndSurfaceContext,
   mergeResolvedContextData,
   resolveEffectiveEntity,
   sniffEntityFromDom,
@@ -331,6 +332,8 @@ export function ContextMenuV3({
     useState<ResolvedContextMenuContext | null>(null);
   const [resolvedExtraSections, setResolvedExtraSections] =
     useState<typeof extraSections>(undefined);
+  /** This open is on a table row whose surface draws its own row sections (see resolvePerTargetContext). */
+  const [rowJoinsSurfaceSections, setRowJoinsSurfaceSections] = useState(false);
   /**
    * The entity read straight off the right-clicked element's `data-entity-*`
    * attributes (Phase 0, 2026-08-25). State for the same reason as
@@ -479,8 +482,13 @@ export function ContextMenuV3({
   // is idempotent and keeps lazy configs fresh.
   const resolvePerTargetContext = (target: HTMLElement | null) => {
     const rowMenu = resolveTableRowMenuDescriptor(target);
-    const answered =
-      rowMenu?.context ?? (resolveContextOnOpen ? resolveContextOnOpen(target) : null);
+    // A table row has two owners: the table's descriptor names the row's values, the surface
+    // names which RECORD the row is (and builds its own row doors from that same call). Both
+    // are asked, always — `rowMenu?.context ?? surface` skipped the surface on every table row.
+    const answered = joinRowAndSurfaceContext(
+      rowMenu?.context,
+      resolveContextOnOpen ? resolveContextOnOpen(target) : null,
+    );
     // A record the content belongs to names the header when the target
     // names nothing itself (record-menu-registry.ts `heading`) — read at
     // RENDER from this target (`recordHeadingAt`), so a rename while the menu
@@ -490,6 +498,10 @@ export function ContextMenuV3({
     const surfaceSections = resolveExtraSectionsOnOpen?.(target);
     // Several owners, one menu: joined so a row id is drawn once (utils/join-extra-sections.ts).
     const ownSections = joinExtraSections(rowMenu?.extraSections, surfaceSections);
+    // A surface that resolves per target draws its row's doors through the `extraSections` PROP
+    // (rebuilt from the state its resolver just set), so on a table row they join the table's
+    // own at RENDER, when the prop is fresh — never from this closure's previous row.
+    setRowJoinsSurfaceSections(!!rowMenu && !!resolveContextOnOpen && !surfaceSections);
     // The record whose content this is (a note's tab rows, drawn apart from its
     // content): its rows join THIS menu, so the record's ⋯ and a right-click on
     // its content are one menu (record-menu-registry.ts, R26). The content's own
@@ -755,7 +767,11 @@ export function ContextMenuV3({
     placementMode,
     scope,
     scopeId,
-    extraSections: resolvedExtraSections ?? extraSections,
+    extraSections: resolvedExtraSections
+      ? rowJoinsSurfaceSections
+        ? joinExtraSections(resolvedExtraSections, extraSections)
+        : resolvedExtraSections
+      : extraSections,
     menuLayout,
     menuDensity,
     isEditable,

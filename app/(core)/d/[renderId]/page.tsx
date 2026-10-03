@@ -38,9 +38,6 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { createClient } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 
@@ -69,13 +66,6 @@ export default function RenderedDocumentRoute({
     // Set when the read failed: its raw error, or `error: null` for a zero-row
     // answer. Null while the document is opening or has opened.
     const [refusal, setRefusal] = useState<{ error: unknown } | null>(null);
-
-    // ONE SWITCH, asked about the organization the DOCUMENT lives in.
-    const campaign = useUnifiedDataCampaign({
-        organizationId: document?.organization_id ?? null,
-        organizationState: document ? "ready" : "resolving",
-        storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-    });
 
     useEffect(() => {
         let stopped = false;
@@ -127,10 +117,6 @@ export default function RenderedDocumentRoute({
                     />
                 ) : document === null ? (
                     <p className="text-sm text-muted-foreground">Opening this document…</p>
-                ) : campaign.state !== "on" ? (
-                    /* THE ONE NOTICE — resolving, could-not-check and off are three
-                       different things (lane SHARE-OUT, item 3). */
-                    <UnifiedDataSwitchNotice gate={campaign} what="Documents" />
                 ) : (
                     <div className="mx-auto max-w-3xl space-y-3">
                         <p className="text-xs text-muted-foreground">

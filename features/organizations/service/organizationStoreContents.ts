@@ -27,7 +27,6 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 
 /**
  * Schema `custom` is served by PostgREST (it is in `pgrst.db_schemas`) and its
@@ -88,8 +87,6 @@ function messageOf(error: unknown): string {
 export async function organizationStoreContents(
   organizationId: string,
 ): Promise<OrganizationStoreContents | null> {
-  if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) return null;
-
   const { data, error } = await storeClient()
     .schema(STORE_SCHEMA)
     .rpc("organization_contents", { p_organization_id: organizationId });
@@ -122,13 +119,6 @@ export async function clearOrganizationStore(
   organizationId: string,
   confirmName: string,
 ): Promise<OrganizationClearOutcome> {
-  if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
-    return {
-      isEmpty: true,
-      sentence: "The record store is switched off for this organization, so it holds nothing to remove.",
-    };
-  }
-
   const { data, error } = await storeClient()
     .schema(STORE_SCHEMA)
     .rpc("organization_clear", {

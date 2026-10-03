@@ -232,7 +232,6 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
           role: "data",
           value: {
             table_opens: object.state,
-            record_store_switch: mount.campaign.state,
             says: pageSays ?? "The table is open.",
           },
         },

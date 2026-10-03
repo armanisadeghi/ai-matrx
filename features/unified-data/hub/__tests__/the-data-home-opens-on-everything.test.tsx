@@ -251,9 +251,6 @@ jest.mock("@ai-matrx/records-ui", () => {
     TablesHome: () => null,
   };
 });
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) },
-}));
 /** The knob answers per key: the two default knobs are what the test sets; nothing else is set. */
 let defaultScopeKnob: unknown = undefined;
 let defaultKindKnob: unknown = undefined;

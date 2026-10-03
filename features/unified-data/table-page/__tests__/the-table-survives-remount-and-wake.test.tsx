@@ -32,7 +32,6 @@ const whereIdOpens = jest.fn(async () => ({
   data: { kind: "table", organization_id: ITS_ORG, path: `/data-v2/${TABLE}`, live: true, resolved_id: TABLE },
   error: null,
 }));
-const storeSwitch = jest.fn(async () => ({ state: "on" as const }));
 const sharedWithMe = jest.fn(async () => ({ ok: true as const, data: [] }));
 
 jest.mock("next/navigation", () => ({
@@ -66,12 +65,6 @@ jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [{ id: ITS_ORG, name: "Cedar Ridge Physical Therapy" }], loading: false }),
 }));
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { check: (...args: unknown[]) => storeSwitch(...(args as [])) },
-  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE: "off",
-  UNIFIED_DATA_CAMPAIGN_UNAVAILABLE_SENTENCE: "unavailable",
-}));
-jest.mock("@/features/unified-data/components/UnifiedDataSwitchNotice", () => ({ UnifiedDataSwitchNotice: () => null }));
 jest.mock("@/features/data-tables/components/SheetLayout", () => ({ SheetLayout: () => null }));
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   recordsUiHostFor: () => ({}),
@@ -154,8 +147,8 @@ it("a wake keeps the grid mounted with its work, and asks no door again", async 
   await draw({ awake: true, onBoard: true });
   expect(host.querySelector("[data-grid]")).not.toBeNull();
   expect(gridMounts).toBe(1);
-  const asked = { where: whereIdOpens.mock.calls.length, store: storeSwitch.mock.calls.length, share: sharedWithMe.mock.calls.length };
-  expect(asked).toEqual({ where: 1, store: 1, share: 1 });
+  const asked = { where: whereIdOpens.mock.calls.length, share: sharedWithMe.mock.calls.length };
+  expect(asked).toEqual({ where: 1, share: 1 });
 
   act(() => setDraft("Cedar Ridge — follow-up Tuesday"));
   commits.length = 0;
@@ -166,12 +159,11 @@ it("a wake keeps the grid mounted with its work, and asks no door again", async 
   expect(gridMounts).toBe(1);
   expect(host.querySelector("[data-grid]")?.textContent).toBe("Cedar Ridge — follow-up Tuesday");
   expect(whereIdOpens.mock.calls.length).toBe(asked.where);
-  expect(storeSwitch.mock.calls.length).toBe(asked.store);
   expect(sharedWithMe.mock.calls.length).toBe(asked.share);
 });
 
 it("a remount (removed, then Undo) draws the grid on its first commit and asks no door again", async () => {
-  const before = { where: whereIdOpens.mock.calls.length, store: storeSwitch.mock.calls.length, share: sharedWithMe.mock.calls.length };
+  const before = { where: whereIdOpens.mock.calls.length, share: sharedWithMe.mock.calls.length };
   commits.length = 0;
   await draw({ awake: true, onBoard: false });
   await act(async () => {
@@ -184,7 +176,6 @@ it("a remount (removed, then Undo) draws the grid on its first commit and asks n
     await new Promise((r) => setTimeout(r, 0));
   });
   expect(whereIdOpens.mock.calls.length).toBe(before.where);
-  expect(storeSwitch.mock.calls.length).toBe(before.store);
   expect(sharedWithMe.mock.calls.length).toBe(before.share);
 });
 

@@ -3,20 +3,9 @@
 // THE RAMP — the one place a consumer of the unified data store asks whether it
 // may read the unified store yet, for this organization and this person.
 //
-// WHY THIS IS NOT `unifiedDataCampaign.ts`. That module is THE SWITCH: does
-// this ORGANIZATION keep its data in the unified record store at all
-// (`custom/system_enabled`, set once on the unified data ramp screen)? This
-// module is the RAMP: CUT-3's law that existing data moves CONSUMER BY CONSUMER
-// and that Test 1 gates each consumer's switch. Those are different questions
-// and they compose:
-//
-//     a consumer reads the unified store  ⟺  the organization is on the store
-//                                          ∧  that consumer's knob resolves true
-//                                             for this organization / person
-//
-// The AND is the point. Turning the store on does not move anybody; every
-// consumer knob still resolves false, so every path keeps reading its old table
-// until someone switches that one consumer for that one organization.
+// The record store itself is never off (CHAIR-ALWAYS-ON, 2026-10-03); this module is only the
+// RAMP: CUT-3's law that existing data moves CONSUMER BY CONSUMER. A consumer reads the unified
+// store when that consumer's knob resolves true for this organization / person.
 //
 // THE LADDER IS THE PLATFORM'S OWN. Each consumer is a row in
 // `platform.feature_knob` under feature `custom`, key
@@ -38,7 +27,6 @@
 // variable is a value, never a toggle
 // (`common-docs/policies/env-vars-are-values-not-toggles.md`).
 
-import { UNIFIED_DATA_CAMPAIGN } from "./unifiedDataCampaign";
 import {
   RAMP_CONSUMER_IDS,
   rampKnobKey,
@@ -58,13 +46,6 @@ export interface ConsumerStoreDecision {
    */
   because: string;
 }
-
-// STORE-ON 2026-09-23 (owner ruling): the store is ON by default, so an organization reading
-// off has been switched off on purpose — the sentence names that act, not a missing one.
-const OFF_BECAUSE_KILL_SWITCH =
-  "This organization has its record store switched off, so no consumer of it reads the unified " +
-  "store, whatever that consumer's own knob says. An owner or an administrator turns it back on " +
-  "for the organization on the unified data ramp screen. Reading the old table.";
 
 /**
  * THE ONE CALL every client and server read path makes.
@@ -87,31 +68,8 @@ export async function resolveConsumerStore(args: {
 }): Promise<ConsumerStoreDecision> {
   const { consumerId, organizationId, userId = null, resolveKnob } = args;
 
-  // THE ONE SWITCH, asked FIRST: does this organization keep its data in the
-  // record store at all? Until 19 September this asked a platform-wide kill
-  // switch with a per-person rung on it (lane NAV-FIX); one organization, one
-  // answer, and a consumer knob only ever narrows it further.
-  // 🚨 AND IT SAYS WHICH ANSWER IT GOT (lane SHARE-OUT, item 3). `enabled()` used to
-  // collapse "switched off" and "the read failed" into one `false`, so `because` — which
-  // is the sentence a person or an engineer reads when they ask why they are on the old
-  // table — claimed the organization had not switched the store on when in fact nobody
-  // could look. The store choice is identical either way (a ramp never moves anybody
-  // because a read failed); only the sentence differs, and only one of them is true.
-  const kill = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
-  if (kill.state === "unavailable") {
-    return {
-      store: "legacy",
-      because:
-        `Could not read whether organization ${organizationId ?? "(none)"} keeps its data in the ` +
-        "unified record store, so this consumer stays on the old table — a ramp never moves " +
-        "anybody because a read failed. This is NOT a statement that the store is switched off; " +
-        `nobody could look. Remedy: retry. Cause: ${kill.cause}`,
-    };
-  }
-  if (kill.state !== "on") {
-    return { store: "legacy", because: OFF_BECAUSE_KILL_SWITCH };
-  }
-
+  // No store switch is asked first: the record store is never off (CHAIR-ALWAYS-ON, 2026-10-03).
+  // Only the consumer's own knob decides.
   if (!organizationId) {
     return {
       store: "legacy",

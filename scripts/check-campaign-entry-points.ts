@@ -25,9 +25,12 @@
  * `ENTRY_POINTS` in `lib/knobs/unifiedDataCampaign.ts`, with a `kind` and a
  * reason. The kind then decides what else is demanded:
  *
- *   runtime     → MUST import the flag module and call
- *                 `UNIFIED_DATA_CAMPAIGN.enabled()`. It ships to users.
- *   tooling     → MUST NOT call the gate. `scripts/**`, run by a human;
+ *   (2026-10-03, lane CHAIR-ALWAYS-ON: the record store is never off, so NO kind is asked to
+ *   call a switch any more. The kinds below still describe what a file is; the lines about
+ *   "the gate" are history. The guard proves the census: reach ⇒ registered.)
+ *
+ *   runtime     → code the app serves to users.
+ *   tooling     → `scripts/**`, run by a human;
  *                 gating the campaign's own migration runner on the campaign
  *                 switch would stop the campaign preparing itself.
  *   preexisting → MUST NOT call the gate. It read those tables before the
@@ -103,34 +106,29 @@ const FIXTURES = "scripts/fixtures/campaign-entry-points";
 
 /**
  * PROVE THE GUARD CAN FAIL. Committed fixtures, never a real file weakened:
- * one stray importer that is not on the register (must be caught), one
- * registered-and-gated runtime file (must be clean), and one registered
- * runtime file with no gate (must be caught).
+ * one stray importer that is not on the register (must be caught) and one
+ * registered runtime file (must be clean).
  */
 export function selfTest(): boolean {
     const stray = `${FIXTURES}/stray-campaign-importer.ts`;
     const gated = `${FIXTURES}/registered-gated-runtime.ts`;
-    const ungated = `${FIXTURES}/registered-ungated-runtime.ts`;
-    for (const f of [stray, gated, ungated]) {
+    for (const f of [stray, gated]) {
         if (!existsSync(path.resolve(REPO_ROOT, f))) {
             console.error(`check:campaign-entry-points SELF-TEST FAILED: missing fixture ${f}`);
             return false;
         }
     }
-    const reaches = scanFiles([stray, gated, ungated], REPO_ROOT);
+    const reaches = scanFiles([stray, gated], REPO_ROOT);
     const register: CampaignEntryPoint[] = [
-        { id: "fixture-gated", file: gated, kind: "runtime", why: "fixture: registered and gated, must be clean" },
-        { id: "fixture-ungated", file: ungated, kind: "runtime", why: "fixture: registered but never gated, must be caught" },
+        { id: "fixture-gated", file: gated, kind: "runtime", why: "fixture: registered runtime, must be clean" },
     ];
     const violations = judge(reaches, register, REPO_ROOT, new Set());
 
     const cases: Array<[string, boolean]> = [
         ["the stray importer is caught as unregistered",
             violations.some((v) => v.file === stray && v.message.includes("NOT in ENTRY_POINTS"))],
-        ["the registered+gated runtime file is clean",
+        ["the registered runtime file is clean",
             !violations.some((v) => v.file === gated)],
-        ["the registered-but-ungated runtime file is caught",
-            violations.some((v) => v.file === ungated && v.message.includes("never calls"))],
         ["the store read in the stray fixture is seen",
             reaches.some((r) => r.file === stray && r.how === "store")],
     ];
@@ -147,8 +145,8 @@ export function selfTest(): boolean {
     }
     console.log(
         `check:campaign-entry-points self-test: ${cases.length} planted cases — an unregistered ` +
-        `campaign importer, an unregistered store read and a registered-but-ungated runtime file ` +
-        `are all caught, and a correctly registered gated file is not. The guard can fail.`,
+        `campaign importer and an unregistered store read are caught, and a correctly registered ` +
+        `file is not. The guard can fail.`,
     );
     return true;
 }
@@ -167,10 +165,7 @@ function main(): void {
         console.log(
             `check:campaign-entry-points: ${files.length} tracked files scanned, ` +
             `${reaches.length} campaign reach(es) found, all ${ENTRY_POINTS.length} registered. ` +
-            `${runtime} runtime entry point(s) behind the switch` +
-            (runtime === 0
-                ? " — ZERO: no campaign code is served to a user yet, which is the register's stated state, not an unchecked one."
-                : " — each proven to call UNIFIED_DATA_CAMPAIGN.enabled() or .check()."),
+            `${runtime} runtime entry point(s). No switch is demanded: the record store is never off.`,
         );
         return;
     }

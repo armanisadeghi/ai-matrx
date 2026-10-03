@@ -19,9 +19,6 @@ jest.mock("@ai-matrx/realtime", () => ({
     return () => stopped.push(index);
   },
 }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { enabled: async () => true },
-}));
 jest.mock("@ai-matrx/records", () => ({
   isOwnOp: (id: unknown) => id === "mine-op",
 }));

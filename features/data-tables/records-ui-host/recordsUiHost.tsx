@@ -40,6 +40,7 @@ import { recordStoreShare } from "@/features/sharing/components/RecordStoreShare
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
 import { RecordRunsSection } from "@/features/workflow-runtime/simple-builder/RecordRunsSection";
 import { LinkedRecordsSection } from "@/features/scopes/components/linked-records/LinkedRecordsSection";
+import { useOpenLinkRecordSheet } from "@/features/overlays/openers/linkRecordSheet";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
@@ -73,6 +74,8 @@ export interface RecordsUiPorts {
   runAgentAction: (target: RowAgentActionTarget) => void;
   /** The table's organization — the record chat files its conversation there. */
   organizationId: string | null;
+  /** "Link a record…" on a store record: the one record picker, pointed at that record. */
+  linkRecord?: (target: { tableId: string; recordId: string; name: string }) => void;
 }
 
 export interface RecordsUiHostArgs {
@@ -143,6 +146,10 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).
     // Spread as its own object: a records-ui build before the port ignores the key.
     ...recordSectionsPort(ports.organizationId),
+    // "Link a record…" on a card's menu and a grid row's (records-ui `linkRecord`): the ONE picker
+    // (LinkRecordOverlay), the same anchored_to edge every other record menu writes. Spread as its
+    // own object: a records-ui build before the port ignores the key.
+    ...(ports.linkRecord ? { linkRecord: ports.linkRecord } : {}),
     ...(layouts && layouts.length > 0 ? { layouts } : {}),
     ...(rights ? { rights } : {}),
   };
@@ -208,6 +215,13 @@ export function useRecordsUiPorts({
   const userId = useAppSelector(selectUserId);
   const { organizations: myOrganizations, loading: myOrganizationsLoading } = useUserOrganizations();
   const { launchMandate } = useAgentLauncher();
+  const openLinkRecordSheet = useOpenLinkRecordSheet();
+  const linkRecord = useCallback(
+    (target: { tableId: string; recordId: string; name: string }) => {
+      openLinkRecordSheet({ target: { token: "record", id: target.recordId, title: target.name } });
+    },
+    [openLinkRecordSheet],
+  );
 
   /** WHO IS IN THIS ORGANIZATION — the package's `members` port (FLD-11). */
   const members = useCallback(async () => {
@@ -292,7 +306,7 @@ export function useRecordsUiPorts({
     [dataSource, launchMandate, organizationId, userId],
   );
 
-  return { members, onAskForOne, openRecords, runAgentAction, organizationId };
+  return { members, onAskForOne, openRecords, runAgentAction, organizationId, linkRecord };
 }
 
 /** One data seam per mount, carrying the person's session. */

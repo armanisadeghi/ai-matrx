@@ -29,7 +29,6 @@ import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, Table } from "@ai-matrx/records";
 import { Checkbox, cn } from "@ai-matrx/design-system";
 
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -344,29 +343,6 @@ export function OrganizationHub({
       Object.fromEntries(HUB_CAPABILITIES.map((c) => [c.id, { phase: "reading" } as HubListingState])),
     );
     void (async () => {
-      // THE SWITCH, READ HERE TOO AND NOT ONLY BY THE PAGE ABOVE. The mount is
-      // already behind it, so this is belt and braces on purpose: a hub that
-      // read ten doors because a host forgot its gate would be the campaign's
-      // code running for an organization that never turned the store on. `off`
-      // and `could not check` are different sentences and both are said.
-      // ALL ORGS has no one organization's switch to read; the person's own doors decide.
-      const gate = organizationId ? await UNIFIED_DATA_CAMPAIGN.check(organizationId) : ({ state: "on" } as const);
-      if (!alive) return;
-      if (gate.state !== "on") {
-        const message =
-          gate.state === "unavailable"
-            ? `The store's switch could not be read, so nothing was read — this is not an answer about the organization. ${gate.cause}`
-            : "This organization does not keep its data in the record store, so nothing was read.";
-        setStates(
-          Object.fromEntries(
-            HUB_CAPABILITIES.map((c) => [
-              c.id,
-              { phase: "refused", error: { message } } as HubListingState,
-            ]),
-          ),
-        );
-        return;
-      }
       for (const capability of HUB_CAPABILITIES) {
         void (async () => {
           const answered = await capability.read(ctx);

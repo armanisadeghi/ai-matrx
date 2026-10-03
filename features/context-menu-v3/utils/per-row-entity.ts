@@ -78,6 +78,44 @@ export function mergeResolvedContextData(
 }
 
 // ---------------------------------------------------------------------------
+// A TABLE ROW HAS TWO OWNERS — the table and the surface that mounted it
+// ---------------------------------------------------------------------------
+
+/**
+ * The context for ONE open on a table row: the table's own row descriptor
+ * (table-row-context-registry.ts) JOINED with the surface's `resolveContextOnOpen` answer.
+ *
+ * 🚨 WHY (2026-10-03, CHAIR-REACH). The shell used to read `rowMenu?.context ?? surface(target)`:
+ * once a canonical table registered its default row descriptor — which every MatrxDataTable does,
+ * with `__entity: null` — the surface's resolver was never called on a row. So a list that names
+ * its row's record there (CRM `useCrmRowMenu`, the keyword tables) lost Attach To, Share and
+ * "Link a record…" on every row, and its own row doors with them (they are built from the state
+ * that resolver sets).
+ *
+ *   · The row descriptor still owns the row's VALUES (content, heading, the full row): on a key
+ *     both name, the descriptor stands (the 2026-09-26/27 heading rulings are unchanged).
+ *   · The ENTITY is the surface's to name when the descriptor names none: the table knows a row,
+ *     only the surface knows which record that row is. A descriptor that names its own entity
+ *     keeps it.
+ *   · Anything only the surface says is kept.
+ */
+export function joinRowAndSurfaceContext(
+  row: ResolvedContextMenuContext | null | undefined,
+  surface: ResolvedContextMenuContext | null | undefined,
+): ResolvedContextMenuContext | null {
+  if (!row) return surface ?? null;
+  if (!surface) return row;
+  const rowNamesEntity = row[CONTEXT_MENU_ENTITY_KEY] !== null && row[CONTEXT_MENU_ENTITY_KEY] !== undefined;
+  return {
+    ...surface,
+    ...row,
+    ...(!rowNamesEntity && CONTEXT_MENU_ENTITY_KEY in surface
+      ? { [CONTEXT_MENU_ENTITY_KEY]: surface[CONTEXT_MENU_ENTITY_KEY] }
+      : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // THE DOM SNIFFER — per-row identity with no resolver code
 // ---------------------------------------------------------------------------
 

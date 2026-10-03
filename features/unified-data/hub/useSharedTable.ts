@@ -46,7 +46,6 @@
 import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "./doors";
 
 export type SharedTableContext =
@@ -93,21 +92,6 @@ export async function askSharedTable(
     return { state: "none" };
   }
   if (!share.opens) return { state: "not-shared", why: share.say };
-  // 🚨 THE SWITCH, ASKED OF THE ORGANIZATION WHOSE STORE WE ARE ABOUT TO
-  // READ, and asked here rather than only by the route above — this hook is
-  // the only thing that can open another organization's store on this page,
-  // so the gate belongs inside it and cannot be walked past by a host that
-  // forgot its own. `off` and `could not check` are different sentences.
-  const gate = await UNIFIED_DATA_CAMPAIGN.check(askedOrganizationId);
-  if (gate.state !== "on") {
-    return {
-      state: "not-shared",
-      why:
-        gate.state === "unavailable"
-          ? `${share.organization} shared ${share.table_name} with you, and whether its record store is on could not be read, so nothing was read — this is not an answer about your access. ${gate.cause}`
-          : `${share.organization} shared ${share.table_name} with you, and does not keep its data in the record store right now, so there is nothing to show yet.`,
-    };
-  }
   return {
     state: "shared",
     organizationId: share.organization_id,

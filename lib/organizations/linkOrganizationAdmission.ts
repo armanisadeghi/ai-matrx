@@ -22,14 +22,9 @@
 // A failed read answers `false` — the ordinary refusal stands, exactly as before.
 
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 
 export async function admittedToOrganizationByAShare(organizationId: string): Promise<boolean> {
   try {
-    // The store's own switch, for the organization being asked about. Off or
-    // unreadable means the share cannot open anything there, so it admits nothing.
-    const gate = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
-    if (gate.state !== "on") return false;
     // `custom` is not in the generated `Database` type (the record store's doors
     // are reached through `@ai-matrx/records`' own seam everywhere else), so the
     // one call is typed here, narrowly, rather than by widening the client.

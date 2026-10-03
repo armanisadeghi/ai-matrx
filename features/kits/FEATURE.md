@@ -23,7 +23,7 @@ The product word lives ONLY in `constants.ts` (`KIT_WORD`) — "Kits" is a worki
 - Nav: `features/shell/constants/nav-data.ts` → Data → Kits (gate `unified-data-campaign`, same as Records).
 
 **Hooks**
-- `hooks/useKitInstall.ts` — org (via `useOrganizationRequired`, never a default) + record-store switch (`UNIFIED_DATA_CAMPAIGN.check`) + this kit's install record; `runInstall()` / `remove()`.
+- `hooks/useKitInstall.ts` — org (via `useOrganizationRequired`, never a default) + this kit's install record (the record store is never off — no switch is asked, 2026-10-03); `runInstall()` / `remove()`.
 
 **Services**
 - `service.ts` — `fetchKits` / `fetchKit` (catalog read, defensive manifest parse that SCREAMS and skips a bad row), `fetchSourceAgents`, `fetchRefNames` (AI model names for entity refs).

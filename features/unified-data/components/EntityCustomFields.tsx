@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 // features/unified-data/components/EntityCustomFields.tsx
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
@@ -52,8 +52,6 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { mayReadAsMember } from "@/features/organizations/organizationsIAmIn";
 import {
   CUSTOM_FIELDS_VALUE_NAME,
@@ -289,23 +287,21 @@ export function EntityCustomFields({
   }));
   const organizationId = home.state === "home" ? home.organizationId : null;
   const { readable, retry: retryRead } = useRecordReadable(entityToken, recordId, organizationId);
-  // Whether she is a member of the ROW's organization: `null` until asked.
-  const [member, setMember] = useState<boolean | null>(null);
-  // ONE switch: does this organization keep its data in the record store? Set
-  // once, for everybody, on the unified data ramp screen (lane NAV-FIX).
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    // Member-only door: a record shared from an organization she is not in is
-    // not asked about (it was a 403 on every load), and that answer is kept apart
-    // from "switched off" so the section never claims a switch nobody read.
-    storeSwitch: async (organization) => {
-      const isMember = organization ? await mayReadAsMember(organization) : true;
-      setMember(isMember);
-      // `check`, never `enabled`: `enabled` folds "could not read" into "off", and this section
-      // says those two differently.
-      return isMember ? UNIFIED_DATA_CAMPAIGN.check(organization) : false;
-    },
-  });
+  // Whether she is a member of the ROW's organization: `null` until asked. A record shared from
+  // an organization she is not in shows that organization's fields as not hers (no store switch
+  // is asked any more — the record store is never off, CHAIR-ALWAYS-ON 2026-10-03).
+  const [membership, setMembership] = useState<{ organizationId: string; isMember: boolean } | null>(null);
+  useEffect(() => {
+    if (!organizationId) return undefined;
+    let live = true;
+    void mayReadAsMember(organizationId).then((isMember) => {
+      if (live) setMembership({ organizationId, isMember });
+    });
+    return () => {
+      live = false;
+    };
+  }, [organizationId]);
+  const member = membership && membership.organizationId === organizationId ? membership.isMember : null;
   if (home.state === "absent") return null;
   if (home.state === "refused" && absentWhenNotApplicable && home.reason === "no_table") return null;
   if (home.state === "refused") {
@@ -336,24 +332,7 @@ export function EntityCustomFields({
       </SectionLine>
     );
   }
-  // 🚨 ITEM 13 (lane 7 STANDARD-TABLES): the section never silently vanishes because the
-  // organization's store switch is off or could not be read — it says which, in one line.
-  // (Retiring the switch itself is lane 6's.)
-  if (campaign.state === "off" || campaign.state === "unavailable") {
-    return (
-      <SectionLine state={campaign.state} title={title} className={className}>
-        <span className="text-muted-foreground">
-          {campaign.state === "off" ? "Off for this organization" : "Couldn't check this organization"}
-        </span>
-        {campaign.state === "unavailable" ? (
-          <Button size="sm" variant="ghost" className="ml-auto" onClick={campaign.retry}>
-            Retry
-          </Button>
-        ) : null}
-      </SectionLine>
-    );
-  }
-  if (!campaign.on) return null;
+  if (member === null) return null;
   if (readable === "absent" || readable === "checking") return null;
   if (readable === "error") {
     return (

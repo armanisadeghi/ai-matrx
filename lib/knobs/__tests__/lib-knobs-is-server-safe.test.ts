@@ -19,8 +19,8 @@
  * for — small, pure-looking config and feature-knob readers — so a file here
  * that quietly grows a React import is a defect this repo will keep making
  * unless something is watching the directory itself, not just the one file
- * that broke this time (lane RSC-FIX, 19 September: the hook now lives in
- * its own `"use client"` file, `useUnifiedDataCampaignGate.ts`).
+ * that broke this time (lane RSC-FIX, 19 September). The hook that caused it
+ * was deleted on 2026-10-03 with the store switch itself; the rule stays.
  *
  * THE RULE: any file directly under `lib/knobs/` (its `__tests__/` and any
  * other nested directory are exempt — nothing there is imported by a page or
@@ -69,24 +69,6 @@ describe("lib/knobs/ is server-safe: no file here imports react without opting i
             if (importsReact(source)) offenders.push(name);
         }
         expect(offenders).toEqual([]);
-    });
-
-    it("the client-only gate hook DOES reach react, and DOES declare 'use client'", () => {
-        const file = path.join(KNOBS_DIR, "useUnifiedDataCampaignGate.ts");
-        expect(fs.existsSync(file)).toBe(true);
-        const source = fs.readFileSync(file, "utf8");
-        expect(isUseClient(source)).toBe(true);
-        // Since lane REMOUNT-SAFETY (2026-10-02) the hook keeps its answer in the kept-answer
-        // store, which is where React is imported — itself a 'use client' module.
-        const keptAnswer = path.join(KNOBS_DIR, "..", "kept-answer", "keptAnswer.ts");
-        const viaKeptAnswer = /from\s+["']@\/lib\/kept-answer\/keptAnswer["']/.test(source);
-        if (viaKeptAnswer) {
-            const store = fs.readFileSync(keptAnswer, "utf8");
-            expect(isUseClient(store)).toBe(true);
-            expect(importsReact(store)).toBe(true);
-        } else {
-            expect(importsReact(source)).toBe(true);
-        }
     });
 
     it("RED: the guard catches a react import planted in a non-'use client' knob file", () => {

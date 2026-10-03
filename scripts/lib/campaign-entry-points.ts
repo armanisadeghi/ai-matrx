@@ -48,7 +48,6 @@ export const GUARDS_AND_TESTS = new Set([
     // alone — not a consumer of it — so it is exempt the same way its sibling
     // is, and every real consumer still registers itself the way it always
     // has (this file gates nothing on its own).
-    "lib/knobs/useUnifiedDataCampaignGate.ts",
     "scripts/check-campaign-entry-points.ts",
     "scripts/lib/campaign-entry-points.ts",
 ]);
@@ -167,8 +166,7 @@ export function judge(
             message:
                 `reaches campaign code but is NOT in ENTRY_POINTS (${detail}). ` +
                 `Register it in lib/knobs/unifiedDataCampaign.ts with a kind and a reason — ` +
-                `and if it is code the app serves, kind "runtime", which must also call ` +
-                `UNIFIED_DATA_CAMPAIGN.enabled() or .check().`,
+                `and if it is code the app serves, kind "runtime".`,
         });
     }
 
@@ -182,27 +180,12 @@ export function judge(
         if (!entry.why || entry.why.trim().length < 10) {
             violations.push({ file: entry.file, message: `${entry.id}: registered with no reason.` });
         }
-        const src = readFileSync(abs, "utf8");
-        // 🚨 TWO SPELLINGS OF ONE READ (lane SHARE-OUT, item 3, 21 September).
-        // `UNIFIED_DATA_CAMPAIGN.check()` is the SAME switch read as `.enabled()` —
-        // `enabled()` is now literally `(await check(org)).state === "on"`. `check()`
-        // exists because a surface that SAYS something to a person has to tell "off"
-        // from "the read failed", and a boolean cannot. A guard that only knew the
-        // older spelling would have reported every honest surface as ungated.
-        const gated = /UNIFIED_DATA_CAMPAIGN\.(enabled|check)\s*\(/.test(src);
-        if (entry.kind === "runtime" && !gated) {
-            violations.push({
-                file: entry.file,
-                message:
-                    `${entry.id}: kind "runtime" but never calls UNIFIED_DATA_CAMPAIGN.enabled() or .check() — ` +
-                    `this code ships to users on any lane's release commit with the switch bypassed.`,
-            });
-        }
-        // A RED TWIN is the one non-runtime kind that MAY call the gate: wiring the
-        // gate wrongly on purpose is the whole of what it does. It is held to its
-        // name instead — a file that does not end `.red.test.ts(x)` cannot claim the
-        // word, so "red_twin" can never be used to walk served code past the
-        // `runtime` rule above.
+        // NO GATE IS DEMANDED OF ANY KIND (lane CHAIR-ALWAYS-ON, 2026-10-03). The record store is
+        // never off — Arman: "EVERYTHING IS ON by default and things can only be TURNED OFF" — so a
+        // `runtime` entry no longer has to call a switch, and a tooling entry that still calls the
+        // always-on reader is not a lie. What this guard still proves is the CENSUS: every file
+        // that reaches the campaign store or imports a campaign module is on the register with a
+        // kind and a reason.
         // DOOR-GATED code is served to people with NO ACCOUNT, so it cannot call
         // a switch that needs a person and an organization to resolve. The switch
         // is read one layer down, inside the door, for the organization the
@@ -214,9 +197,8 @@ export function judge(
                 file: entry.file,
                 message:
                     `${entry.id}: registered "door_gated" but its reason names no door. ` +
-                    `Say which custom.* door reads custom/system_enabled for this code — ` +
-                    `that sentence is what keeps this kind from becoming a way to ship ` +
-                    `code that reads no switch anywhere.`,
+                    `Say which custom.* door this code goes through — that sentence is what ` +
+                    `keeps the kind honest.`,
             });
         }
         if (entry.kind === "red_twin" && !/\.red\.test\.tsx?$/.test(entry.file)) {
@@ -227,15 +209,6 @@ export function judge(
                     `A red twin's file must end ".red.test.ts" or ".red.test.tsx" — that ` +
                     `name is what keeps this kind from becoming a way to ship ungated ` +
                     `runtime code.`,
-            });
-        }
-        if (entry.kind !== "runtime" && entry.kind !== "red_twin" && entry.kind !== "door_gated" && gated) {
-            violations.push({
-                file: entry.file,
-                message:
-                    `${entry.id}: registered "${entry.kind}" but calls the gate. ` +
-                    `Either it is runtime code (change the kind), or it is a deliberately ` +
-                    `wrong-wired test (kind "red_twin"), or the gate does not belong here.`,
             });
         }
     }

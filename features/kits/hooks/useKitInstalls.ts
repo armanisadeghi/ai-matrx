@@ -11,7 +11,6 @@
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { kitRecordsClient, readInstall } from "../installer";
 import type { KitInstallRecord } from "../types";
 
@@ -48,12 +47,6 @@ export function useKitInstalls(kitKey: string, organizationIds: readonly string[
       const results = await Promise.all(
         ids.map(async (organizationId) => {
           try {
-            const store = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
-            // An organization whose record store is off cannot hold an install: nothing to list.
-            if (store.state === "off") return { organizationId, install: null, message: null };
-            if (store.state !== "on") {
-              return { organizationId, install: null, message: "We could not check this organization's data switch." };
-            }
             const install = await readInstall(kitRecordsClient(organizationId, userId), organizationId, kitKey);
             return { organizationId, install, message: null };
           } catch (err) {

@@ -19,7 +19,6 @@ jest.mock("@/utils/supabase/client", () => ({}));
 jest.mock("@/lib/redux/store-singleton", () => ({}));
 jest.mock("@/features/unified-data/objectOrganization", () => ({}));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({}));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({}));
 
 import { fcService } from "@/features/flashcards/data/fcService";
 import { readListChangeProposal } from "@/features/content-ir/kinds/list-change-proposal";

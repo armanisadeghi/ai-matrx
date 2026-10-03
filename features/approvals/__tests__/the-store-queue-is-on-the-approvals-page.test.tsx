@@ -189,13 +189,6 @@ jest.mock("@ai-matrx/records-ui", () => ({
     schema: () => ({ from: () => mockTable([]) }),
   }),
 }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  ...jest.requireActual("@/lib/knobs/unifiedDataCampaign"),
-  UNIFIED_DATA_CAMPAIGN: {
-    ...jest.requireActual("@/lib/knobs/unifiedDataCampaign").UNIFIED_DATA_CAMPAIGN,
-    enabled: async () => true,
-  },
-}));
 // The assists ledger answers an empty page: this suite is about the store's rows.
 jest.mock("../data", () => ({
   APPROVAL_SURFACE: "matrx-user/approval-queue",

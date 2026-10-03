@@ -50,8 +50,8 @@ const READERS = [
 const SENTENCE_FILES = [
   "lib/knobs/unifiedDataCampaign.ts",
   "lib/knobs/unifiedDataCampaignRamp.ts",
-  "lib/knobs/useUnifiedDataCampaignGate.ts",
-  "features/unified-data/components/UnifiedDataSwitchNotice.tsx",
+  // (2026-10-03, lane CHAIR-ALWAYS-ON: the gate hook and the switch notice are deleted — the record
+  // store is never off, so no file states a negative fact about an organization's store any more.)
 ];
 
 /**

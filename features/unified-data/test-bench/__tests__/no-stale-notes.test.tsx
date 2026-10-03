@@ -183,10 +183,6 @@ jest.mock("@/lib/scoped-config/service", () => ({
 // `"organization"`, a value `custom.member_default_visibility` has never
 // allowed — the same invented token the choices fix was written to kill.
 jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => "all_records" }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { enabled: () => true } }));
-jest.mock("@/lib/knobs/useUnifiedDataCampaignGate", () => ({
-    useUnifiedDataCampaign: () => ({ on: true, because: "" }),
-}));
 jest.mock("../savedViewsPort", () => ({ organizationSavedViews: async () => [] }));
 
 jest.mock("@ai-matrx/records/react", () => {

@@ -15,9 +15,6 @@ jest.mock("@ai-matrx/realtime", () => ({
   defineChannelNamespace: () => ({ topic: () => "topic" }),
   subscribeToRealtimeManager: () => () => undefined,
 }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: { enabled: async () => true },
-}));
 
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 

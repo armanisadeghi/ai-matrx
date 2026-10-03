@@ -31,9 +31,6 @@ import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
@@ -56,13 +53,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   const acrossAll = !addressPick || (!myOrganizationsLoading && !namedOrganization);
   const organizationState: OrganizationState =
     namedOrganization || acrossAll ? "ready" : myOrganizationsLoading ? "resolving" : "ready";
-
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
-  const storeOn = acrossAll || campaign.state === "on";
 
   const members = useCallback(async () => {
     if (!organizationId) return [];
@@ -93,7 +83,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
         {/* A NEW TABLE LANDS IN THE ACTIVE ORGANIZATION (the law's rule 4) — never the filter's. */}
         <HeaderStructured
           back={goBack}
-          {...(organizationState === "ready" && storeOn
+          {...(organizationState === "ready"
             ? {
                 actions: [
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
@@ -112,10 +102,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
         {organizationState !== "ready" || !userId ? (
           <div className="p-4">
             <OrganizationContextNotice state={userId ? organizationState : "resolving"} what="Data records" />
-          </div>
-        ) : !storeOn ? (
-          <div className="p-4">
-            <UnifiedDataSwitchNotice gate={campaign} what="Data records" />
           </div>
         ) : (
           <RecordsMount

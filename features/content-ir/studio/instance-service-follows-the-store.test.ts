@@ -145,13 +145,6 @@ jest.mock("@/lib/list-scope", () => ({
   }),
 }));
 
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({
-  UNIFIED_DATA_CAMPAIGN: {
-    // Both organizations have the switch ON: the legacy one differs only in having no
-    // `kind_instance` Table — the per-source ramp, not the switch, decides it.
-    enabled: async (org: string) => org === STORE_ORG || org === LEGACY_ORG,
-  },
-}));
 
 jest.mock("@ai-matrx/records-ui", () => ({
   personActor: (id: string) => ({ kind: "person", id }),

@@ -39,9 +39,6 @@ import { useObjectOrganization } from "@/features/unified-data/objectOrganizatio
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
 import { recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
@@ -143,12 +140,6 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
   // A shared viewer reads no organization's settings (lane HANDOVER): an outsider gets the platform's value.
   const knobMergedGrid = useMergedGridKnob(readsAsMember ? readingOrganizationId : null);
   const mergedGrid = address.gridForced || knobMergedGrid;
-  // ONE SWITCH: does THIS organization keep its data in the record store (lane NAV-FIX).
-  const campaign = useUnifiedDataCampaign({
-    organizationId: readingOrganizationId,
-    organizationState: readingState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
   /** The ports records-ui asks this app for — the ONE host binding every record-store table shares. */
   const ports = useRecordsUiPorts({ organizationId: readingOrganizationId, dataSource, readsAsMember });
 
@@ -156,7 +147,7 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
   const rowChangeOffer = useRowChangeAgentOffer({
     tableId,
     tableName: null,
-    organizationId: campaign.state === "on" && object.state === "found" ? object.organizationId : null,
+    organizationId: object.state === "found" ? object.organizationId : null,
     userId: userId ?? null,
   });
   /** Where this table lives (records-ui's `WhereItLives`, with Move), and the share level for an outsider. */
@@ -258,16 +249,13 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
           ? "You have not been given this table."
           : object.state === "unavailable"
             ? `We could not find out where this table is. ${object.why}`
-            : campaign.state !== "on"
-              ? `The record store is not on for this organization (${campaign.state}).`
-              : null;
+            : null;
 
-  /** The table itself is on screen (the store answered, the switch is on). */
+  /** The table itself is on screen (the store answered). */
   const mountsTheTable =
     object.state !== "resolving" &&
     object.state !== "not-given" &&
-    object.state !== "unavailable" &&
-    campaign.state === "on";
+    object.state !== "unavailable";
 
   /**
    * THE MOUNT'S CONFIG AND HOST, EACH ITS OWN VALUE (lane RENDER-AUDIT): as their own statements
@@ -321,7 +309,6 @@ export function useUnifiedTable({ tableId, address }: { tableId: string; address
     pendingInvitation,
     knownOrganizationName,
     readingOrganizationId,
-    campaign,
     mergedGrid,
     gridContext,
     whereItLives,
@@ -361,7 +348,7 @@ export function UnifiedTableBody({
   onShownViewChange?: (shown: ShownViewLike) => void;
 }) {
   const router = useRouter();
-  const { tableId, address, object, shared, pendingInvitation, campaign } = mount;
+  const { tableId, address, object, shared, pendingInvitation } = mount;
   // Passed as named objects: `onShownViewChange` and `header` ride newer records-ui builds; an
   // installed build without them ignores the key.
   const shownViewReport: { onShownViewChange?: (shown: ShownViewLike) => void } = onShownViewChange
@@ -431,8 +418,8 @@ export function UnifiedTableBody({
       </div>
     );
   }
-  if (campaign.state !== "on" || !mount.recordsConfig) {
-    return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
+  if (!mount.recordsConfig) {
+    return <p className="text-sm text-muted-foreground">Opening the table&hellip;</p>;
   }
   return (
     // The table page's right-click is the proposed menu (`DataMenuProvider`); its ⋯ is the action list.

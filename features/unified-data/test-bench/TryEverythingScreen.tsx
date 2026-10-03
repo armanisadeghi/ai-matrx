@@ -89,8 +89,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
 import {
     Aside,
@@ -325,14 +323,6 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
     // org-filter: write-target ONLY — the bench creates its disposable table and runs its writes in the organization the person works in; every list/read below ignores it (work_inbox asks for all organizations)
     const { organizationId, organizationState } = useOrganizationRequired();
 
-    // ONE SWITCH, the same one `/data-v2` reads: does THIS organization keep
-    // its data in the record store?
-    const campaign = useUnifiedDataCampaign({
-        organizationId,
-        organizationState,
-        storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
-    });
-
     /** The membership port the sibling pages bind — a person field must offer people. */
     const members = useCallback(async () => {
         if (!organizationId) return [];
@@ -353,14 +343,6 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
 
     if (organizationState !== "ready") {
         return <OrganizationContextNotice state={organizationState} what="the record store" />;
-    }
-    if (campaign.on === null) return null;
-    if (!campaign.on) {
-        return (
-            <div className="mx-auto max-w-3xl">
-                <p className="text-sm leading-relaxed opacity-80">{campaign.because}</p>
-            </div>
-        );
     }
 
     return (

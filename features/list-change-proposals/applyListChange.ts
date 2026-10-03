@@ -50,10 +50,6 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import {
-  UNIFIED_DATA_CAMPAIGN,
-  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
-} from "@/lib/knobs/unifiedDataCampaign";
 
 import type {
   ListChangeProposalItem,
@@ -211,17 +207,6 @@ const scopeDatasetStore: ListStore<
  * same redux slice a component would, via the store singleton, because this
  * file is a plain module and not a hook.
  */
-/**
- * THE switch, and there is only one: does this ORGANIZATION keep its data in
- * the unified record store? Until 19 September this resolved a per-PERSON
- * ladder as well, which is how an admin could be switched on personally while
- * everybody they work with stayed refused (lane NAV-FIX). One organization, one
- * answer, set once on the unified data ramp screen.
- */
-async function unifiedDataCampaignOn(organizationId: string | null): Promise<boolean> {
-  return UNIFIED_DATA_CAMPAIGN.enabled(organizationId);
-}
-
 async function recordsClientOrRefusal(tableId: string): Promise<{ client: RecordsClient } | { refused: string }> {
   const state = getStoreSingleton()?.getState();
   const userId = state ? selectUserId(state) : null;
@@ -236,9 +221,6 @@ async function recordsClientOrRefusal(tableId: string): Promise<{ client: Record
     return { refused: `Could not ask the record store where this table lives, so nothing was changed. ${own.why}` };
   }
   const organizationId = own.organizationId;
-  if (!(await unifiedDataCampaignOn(organizationId))) {
-    return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
-  }
   return {
     client: createRecordsClient({
       dataSource,

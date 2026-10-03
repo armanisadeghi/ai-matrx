@@ -37,7 +37,7 @@ jest.mock("../AnnotationSidecar", () => ({ useSidecar: () => ({ source: { token:
 const linkableKinds = jest.fn();
 jest.mock("../service", () => ({ linkableKinds: (...a: unknown[]) => linkableKinds(...a) }));
 
-import { LinkRecordSheet } from "../LinkRecordSheet";
+import { LinkRecordPickerSheet, LinkRecordSheet } from "../LinkRecordSheet";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -77,4 +77,28 @@ it("says nothing can be linked when no pair is registered", async () => {
   await render();
   expect(pickerProps).toHaveLength(0);
   expect(container.textContent).toContain("Nothing can be linked to this yet");
+});
+
+/**
+ * STORE RECORDS (CHAIR-REACH, 2026-10-03): "Unit 4B" in a Units table could not be found from a
+ * CRM person's "Link a record…" — `listableTokens()` hides the `record` kind although it lists
+ * through `custom.records_search`. The right-click picker (LinkRecordOverlay) offers it; the
+ * annotation sidecar, which cannot read that link back, still does not; and a store record is
+ * never offered on a store record (record ↔ record is the store's relation columns).
+ */
+async function renderPicker(targetToken: string, storeRecords: boolean) {
+  await act(async () => {
+    root.render(
+      <LinkRecordPickerSheet open onOpenChange={() => {}} targetToken={targetToken} title="Link to Dana Whitcomb" onLink={async () => true} storeRecords={storeRecords} />,
+    );
+  });
+  for (let i = 0; i < 4; i++) await act(async () => { await Promise.resolve(); });
+}
+
+it("offers store records where the host asks for them, and nowhere else", async () => {
+  linkableKinds.mockResolvedValue(["note", "party", "record"]);
+  await renderPicker("party", true);
+  expect(pickerProps.at(-1)?.tokens).toEqual(["note", "record"]);
+  await renderPicker("party", false);
+  expect(pickerProps.at(-1)?.tokens).toEqual(["note"]);
 });

@@ -38,9 +38,6 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { uploadCaptureFile } from "@/features/capture/uploadCaptureFile";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -55,15 +52,6 @@ export default function CrewCaptureRoute({
   const sheet = useObjectOrganization(dataSource, sheetId);
   const organizationId: string | null = sheet.state === "found" ? sheet.organizationId : null;
   const organizationState: OrganizationState = organizationId ? "ready" : "resolving";
-  // ONE SWITCH, the same one every other unified-data screen reads: does THIS
-  // organization keep its data in the record store? A crew member arriving on a link
-  // from an organization that has not turned it on is told in one sentence, not shown a
-  // camera that would be refused at the door.
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
 
   return (
     <main className="min-h-dvh bg-background">
@@ -91,12 +79,6 @@ export default function CrewCaptureRoute({
       ) : organizationState !== "ready" ? (
         <div className="p-4">
           <OrganizationContextNotice state={organizationState} what="Capture" />
-        </div>
-      ) : campaign.state !== "on" ? (
-        /* THE ONE NOTICE — resolving, could-not-check and off are three
-           different things (lane SHARE-OUT, item 3). */
-        <div className="p-4">
-          <UnifiedDataSwitchNotice gate={campaign} what="Capture" />
         </div>
       ) : (
         <RecordsMount

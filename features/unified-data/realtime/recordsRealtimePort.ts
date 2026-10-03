@@ -49,7 +49,6 @@ import {
 } from "@ai-matrx/realtime";
 import { isOwnOp, type RecordsRealtimePort, type Uuid } from "@ai-matrx/records";
 
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 
 /**
  * The topic is a CONTRACT WITH THE DATABASE, not a name this client is free to choose — a
@@ -184,31 +183,9 @@ function buildRecordsRealtimePort(organizationId: string): RecordsRealtimePort {
       },
     });
 
-    // THE ONE SWITCH THE STORE'S SCREENS READ, asked here too. It is an async door, so the
-    // join happens when it answers; `cancelled` covers the last listener leaving before it.
-    void UNIFIED_DATA_CAMPAIGN.enabled(organizationId)
-      .then((on) => {
-        if (channel.cancelled) return;
-        if (!on) {
-          // NOTHING FAILS SILENTLY. The mount already refuses to render with the store off,
-          // so reaching here means the switch moved under an open page — say which, and
-          // what to do, instead of leaving a screen labelled "Live" that hears nothing.
-          console.warn(
-            "[records/realtime] The record store is switched off for this organization, so this " +
-              `table is not live. Nothing was subscribed for ${tableId}. Reload the page — the ` +
-              "screen will say so itself once it re-reads the switch.",
-          );
-          return;
-        }
-        channel.stop = subscribeToRealtimeManager(spec);
-      })
-      .catch((error: unknown) => {
-        console.warn(
-          "[records/realtime] Could not read the record store's switch, so this table is not " +
-            `live and nothing was subscribed for ${tableId}. Reload the page to try again.`,
-          error,
-        );
-      });
+    // No store switch is asked before the join: the record store is never off
+    // (CHAIR-ALWAYS-ON, 2026-10-03).
+    channel.stop = subscribeToRealtimeManager(spec);
     return channel;
   };
 

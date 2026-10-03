@@ -8,20 +8,16 @@
  * server path asks it. The browser reads and writes the database directly (platform law),
  * so it asks the SAME question here, built from the SAME two facts — never a second rule:
  *
- *   1. the organization's record-store switch — `platform.unified_data_store_on`, read
- *      through `UNIFIED_DATA_CAMPAIGN.enabled` (the gateway's `store_is_on`); and
+ *   1. the record store is on for every organization (it is never off, 2026-10-03); and
  *   2. whether the source is ADOPTED in that organization — a Table this person can see
  *      whose slug (or name) is `kind_instance`, the gateway's `slug_for` convention, read
  *      through the store's own `tableList` door (the gateway's `_slug_map`).
  *
  * Both yes → the record store; anything else → today's table, which is its live truth until
- * the day its records move. An unreadable switch reads OFF (the switch module announces it),
- * exactly as the gateway's `backend_for` does, so a database hiccup never promotes an
- * organization onto a store its rows are not in.
+ * the day its records move.
  */
 
 import type { RecordsClient } from "@ai-matrx/records/core";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { createClient } from "@/utils/supabase/client";
 
 /** The legacy relation this answer speaks for — aidream `routed.SOURCE`. */
@@ -78,12 +74,6 @@ export async function whereKindRecordsLive(
     return {
       store: "older",
       why: "no organization or no signed-in person, so there is nobody to ask the record store as",
-    };
-  }
-  if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
-    return {
-      store: "older",
-      why: "this organization has its record store switched off (or it could not be read), so its kind records live in today's table",
     };
   }
   const probe = { store: "record" as const, organizationId, userId, tableId: "", why: "" };

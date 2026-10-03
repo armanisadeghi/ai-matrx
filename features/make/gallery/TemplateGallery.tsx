@@ -14,8 +14,7 @@
 //
 // WHY THE STORE LINES ARE IN THIS ONE FILE: `pnpm check:campaign-entry-points` makes each file that
 // imports `@ai-matrx/records*` a registered runtime entry that reads the store switch. This file is
-// that one entry ("make-template-gallery"); it asks UNIFIED_DATA_CAMPAIGN.check for the organization
-// before any install or removal.
+// that one entry ("make-template-gallery"). No store switch is asked — the store is never off.
 //
 // ORGANIZATIONS (access ladder): the catalogue read is not filtered by the active organization
 // (platform cards are everyone's). The active organization only names where an install lands and
@@ -40,7 +39,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -249,11 +247,6 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       return;
     }
     setRun({ phase: "running", door, answer: null });
-    const gate = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
-    if (gate.state !== "on") {
-      setRun({ phase: "refused", door, why: "Data records are not on in this organization.", answer: null });
-      return;
-    }
     const done = await runTemplateDoor(supabaseDataSource(createClient()), door, organizationId, id, {
       maxCalls: 400,
       onCall: (answer) => setRun({ phase: "running", door, answer }),

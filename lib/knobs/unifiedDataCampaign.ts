@@ -11,14 +11,13 @@
 // `false` overrides are gone, and `custom.store_is_open` (the one answer every store door asks)
 // returns true for every organization (migrations/campaign/chairalwayson_a_the_store_is_never_off.sql).
 //
-// WHAT IS LEFT HERE, AND WHY. `UNIFIED_DATA_CAMPAIGN.enabled()` / `.check()` stay as the one
-// symbol the record store's read paths call, and they answer ON without a network call, so a
-// caller that still asks is never told "off" or "we could not check" — there is nothing to
-// check. The gate hook (`useUnifiedDataCampaignGate.ts`), the sidebar gate id
-// `"unified-data-campaign"`, the switch notice's OFF/UNAVAILABLE sentences and the ramp screen's
-// per-organization Off control are deleted, not disabled. The registry re-exports
-// (`CAMPAIGN_MODULES`, `CAMPAIGN_STORE_TABLES`, `ENTRY_POINTS`) are still the census the release
-// guard `pnpm check:campaign-entry-points` and the cutover scripts read.
+// WHAT IS LEFT HERE, AND WHY. Nothing that can be asked. The reader (`enabled()` / `check()`),
+// the client gate hook beside this file, the sidebar gate id `"unified-data-campaign"`,
+// the switch notice and its OFF/UNAVAILABLE sentences, and the ramp screen's per-organization Off
+// control are DELETED, not disabled — a reader that can only say yes is still a door somebody can
+// make say no. This module is now only the census: the registry re-exports (`CAMPAIGN_MODULES`,
+// `CAMPAIGN_STORE_TABLES`, `ENTRY_POINTS`) that `pnpm check:campaign-entry-points` and the cutover
+// scripts read. Guard: features/shell/__tests__/no-nav-row-is-gated.test.ts.
 //
 // WHERE "OFF BY DEFAULT" CAME FROM, FOR THE RECORD. This file's own header (lane NAV-FIX,
 // 19 September) declared the knob "boolean, default `false`, overridable per ORGANIZATION" and
@@ -60,29 +59,6 @@ export type {
     CampaignEntryPointKind,
 } from "./unifiedDataCampaign.register";
 
-/**
- * What the switch answers. Only `on` is left; the type keeps its name so the few callers that
- * still read `.state` compile, and the retired `off` / `unavailable` arms are not representable.
- */
-export type StoreSwitchAnswer = { state: "on" };
-
-/**
- * Does THIS ORGANIZATION keep its data in the unified record store? Yes — every organization
- * does, and so does a caller with no organization picked (that is a picker's question, never a
- * closed store). No network call; nothing can fail.
- *
- * @deprecated The store is never off. Stop asking; this stays only so no caller changes in one
- * move. New code never reads it.
- */
-async function enabled(_organizationId: string | null | undefined): Promise<boolean> {
-    return true;
-}
-
-/** @deprecated The store is never off. Always `{ state: "on" }`. */
-async function check(_organizationId: string | null | undefined): Promise<StoreSwitchAnswer> {
-    return { state: "on" };
-}
-
 /** The one obvious symbol. */
 export const UNIFIED_DATA_CAMPAIGN = {
     FEATURE: UNIFIED_DATA_CAMPAIGN_FEATURE,
@@ -92,6 +68,4 @@ export const UNIFIED_DATA_CAMPAIGN = {
     RUNTIME_ENTRY_POINTS,
     CAMPAIGN_MODULES,
     CAMPAIGN_STORE_TABLES,
-    enabled,
-    check,
 } as const;

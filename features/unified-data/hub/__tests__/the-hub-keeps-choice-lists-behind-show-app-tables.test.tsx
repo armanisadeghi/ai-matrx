@@ -80,7 +80,6 @@ jest.mock("@ai-matrx/records-ui", () => {
     ArchivedPortals: () => null,
   };
 });
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) } }));
 jest.mock("@/lib/scoped-config/effectiveKnobs.client", () => ({ useEffectiveKnob: () => undefined }));
 const ROLE = { role: "owner", loading: false };
 const MEMBERSHIPS = { organizations: [{ id: CLINIC.id, name: CLINIC.name }], loading: false };

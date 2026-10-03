@@ -133,6 +133,58 @@ try {
     prof.error ? prof.error.message : `viewer=${prof.data?.viewer} name=${prof.data?.header?.display_name}`,
   );
 
+  // ── § c (lane7conf_c): every generic door answers the facts honestly; one write path; merge carries.
+  // c1. The MCP / record door: the reader gets the value, the member gets it withheld (named).
+  const aParty = await admin.sb.schema("custom").rpc("entity_record_read", { p_organization_id: ORG, p_token: "party", p_record_id: PERSON });
+  check("c1 reader's record door carries the date of birth", aParty.data?.columns?.date_of_birth === DOB, aParty.error?.message ?? `got ${aParty.data?.columns?.date_of_birth}`);
+  const mParty = await member.sb.schema("custom").rpc("entity_record_read", { p_organization_id: ORG, p_token: "party", p_record_id: PERSON });
+  const mCols = mParty.data?.columns ?? {};
+  check("c1 member's record door names date_of_birth as withheld (no value, no silent null)",
+    !mParty.error && !("date_of_birth" in mCols) && (mCols._withheld ?? []).includes("date_of_birth"),
+    mParty.error?.message ?? JSON.stringify({ dob: mCols.date_of_birth, withheld: mCols._withheld }));
+  // c2. The Table API / drill rows door.
+  const drill = async (sb) => {
+    const r = await sb.rpc("drill_rows", { p_organization_id: ORG, p_source: { kind: "entity", token: "party", api: true }, p_question: { limit: 100 } });
+    return { error: r.error, row: (r.data?.rows ?? []).find((x) => x.id === COMPANY) };
+  };
+  const aDrill = await drill(admin.sb.schema("platform"));
+  check("c2 reader's Table API row carries the tax ID", aDrill.row?.tax_id === TAX, aDrill.error?.message ?? JSON.stringify(aDrill.row ?? null));
+  const mDrill = await drill(member.sb.schema("platform"));
+  check("c2 member's Table API row names tax_id as withheld", !!mDrill.row && !("tax_id" in mDrill.row) && (mDrill.row._withheld ?? []).includes("tax_id"),
+    mDrill.error?.message ?? JSON.stringify(mDrill.row ?? null));
+  // c3. A Reference's record.
+  const mRef = await member.sb.schema("custom").rpc("entity_reference_rows", { p_organization_id: ORG, p_token: "party", p_ids: [PERSON] });
+  const aRef = await admin.sb.schema("custom").rpc("entity_reference_rows", { p_organization_id: ORG, p_token: "party", p_ids: [PERSON] });
+  check("c3 reference rows: reader sees the value, member sees it withheld",
+    aRef.data?.[PERSON]?.date_of_birth === DOB && (mRef.data?.[PERSON]?._withheld ?? []).includes("date_of_birth") && !("date_of_birth" in (mRef.data?.[PERSON] ?? {})),
+    JSON.stringify({ a: aRef.error?.message ?? aRef.data?.[PERSON]?.date_of_birth, m: mRef.error?.message ?? mRef.data?.[PERSON]?._withheld }));
+  // c4. Clearing through the old column clears the kept value (one write path, no stale copy).
+  if (split) {
+    const clr = await admin.sb.schema("crm").from("party").update({ date_of_birth: null }).eq("id", PERSON);
+    const after = await admin.sb.rpc("crm_party_confidential_read", { p_party_ids: [PERSON] });
+    check("c4 writing NULL to the old column clears the date of birth", !clr.error && after.data?.[0]?.date_of_birth === null,
+      clr.error?.message ?? `still ${after.data?.[0]?.date_of_birth}`);
+    await seed(PERSON, { date_of_birth: DOB });
+  }
+  // c5. Merging carries the facts to the survivor; unmerge takes them back.
+  if (split) {
+    const WIN = "531e6866-5b65-4c04-b15b-fab70d3b484f"; // Zack Kotzer
+    const LOSE = "da6c2c09-47df-46f2-9487-c7ad9504f1d9"; // Zack Kotzer Published August (the duplicate)
+    const ZDOB = "1979-06-21";
+    await seed(LOSE, { date_of_birth: ZDOB });
+    const mg = await admin.sb.rpc("crm_merge_parties", { p_winner: WIN, p_loser: LOSE, p_method: "manual", p_reason: "lane7conf_c guard: duplicate" });
+    const w = await admin.sb.rpc("crm_party_confidential_read", { p_party_ids: [WIN] });
+    check("c5 merge carries the duplicate's date of birth to the survivor", !mg.error && w.data?.[0]?.date_of_birth === ZDOB, mg.error?.message ?? JSON.stringify(w.data));
+    if (!mg.error) {
+      const um = await admin.sb.rpc("crm_unmerge_parties", { p_merge_id: mg.data });
+      const w2 = await admin.sb.rpc("crm_party_confidential_read", { p_party_ids: [WIN, LOSE] });
+      const byId = Object.fromEntries((w2.data ?? []).map((e) => [e.party_id, e]));
+      check("c5 unmerge takes it back from the survivor and the duplicate keeps it",
+        !um.error && byId[WIN]?.date_of_birth === null && byId[LOSE]?.date_of_birth === ZDOB, um.error?.message ?? JSON.stringify(w2.data));
+    }
+    await seed(LOSE, { date_of_birth: null }).catch(() => undefined);
+  }
+
   // 8. HR — the employee herself (admin@admin.com) still reads her row.
   const aRec = await admin.sb.schema("custom").rpc("entity_record_read", { p_organization_id: ORG, p_token: "hr_employee", p_record_id: empId });
   check("the employee still reads her own row", !aRec.error && JSON.stringify(aRec.data).includes("legal_first_name"), aRec.error?.message);

@@ -33,7 +33,6 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 jest.mock("@/features/unified-data/objectOrganization", () => ({
   useObjectOrganization: () => ({ state: "found", organizationId: ORG }),
 }));
-jest.mock("@/lib/knobs/useUnifiedDataCampaignGate", () => ({ useUnifiedDataCampaign: () => ({ on: true, because: "" }) }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@ai-matrx/chat/agents/ui-first-tools/ui/ApprovalCard", () => ({
   ApprovalCard: ({ outcome }: { outcome?: React.ReactNode }) =>

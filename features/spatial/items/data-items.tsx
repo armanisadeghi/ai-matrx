@@ -32,9 +32,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { countsByOrganization, inOrganization, useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
 import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
 import { CustomDataRecordsScope } from "@/features/agents/components/variables-management/custom-data/CustomDataRecordsScope";
@@ -72,17 +69,11 @@ function WorkingOrganizationRecords({ children }: { children: ReactNode }) {
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target a new table is filed in the organization the person works in
   const active = useOrganizationRequired();
-  const campaign = useUnifiedDataCampaign({
-    organizationId: active.organizationId,
-    organizationState: active.organizationState,
-    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.check(organization),
-  });
   const dataSource = useMemo(() => recordsDataSource(createClient()), []);
   const ports = useRecordsUiPorts({ organizationId: active.organizationId, dataSource });
   if (active.organizationState !== "ready" || !active.organizationId) {
     return <OrganizationContextNotice state={active.organizationState} what="Data records" />;
   }
-  if (campaign.state !== "on") return <UnifiedDataSwitchNotice gate={campaign} what="Data records" />;
   return (
     <RecordsMount // org-filter: write-target the record store only for MAKING a table; choosing one reads across every organization
       letTheStoreDecideRights

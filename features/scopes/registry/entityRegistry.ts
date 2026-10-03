@@ -66,6 +66,7 @@ import {
   Network,
   NotebookText,
   RefreshCw,
+  Rows3,
   Sheet,
   SlidersHorizontal,
   Shapes,
@@ -91,6 +92,7 @@ import {
 import type { EntityOverlayMap, EntityTypeToken } from "@ai-matrx/associations";
 import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
 import { listHrEmployeeCandidates } from "@/features/hr/entry-points/employeeCandidates";
+import { listStoreRecordCandidates } from "@/features/unified-data/storeRecordCandidates";
 import { associationsErrorSink } from "@/features/scopes/host/errorSink";
 import { openPath } from "@/lib/deep-link/openPath";
 
@@ -532,6 +534,15 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   anon_form: {
     Icon: FilePen,
     labelPlural: "Forms",
+    hrefFor: (id) => openPath(id),
+  },
+  // A RECORD-STORE RECORD. Its name lives in its document (the table's title field), so the generic
+  // title-column read cannot list it: candidates come from the store's own search door
+  // (`custom.records_search`, every organization the person belongs to). That is what lets
+  // "Link a record…" find a store record. It opens at the one address that resolves any id.
+  record: {
+    Icon: Rows3,
+    listCandidates: listStoreRecordCandidates,
     hrefFor: (id) => openPath(id),
   },
   google_document: {

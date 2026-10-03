@@ -615,6 +615,11 @@ export interface LinkInput {
   token: string;
   id: string;
   anchor: TextAnchor | null;
+  /**
+   * The edge's own words. Set when one end is a record-store record: no client door names a
+   * store record by id, so the Linked section on the other end reads this.
+   */
+  label?: string;
 }
 
 /** Link an existing record to the source (the whole document, or one passage). Idempotent. */
@@ -629,6 +634,7 @@ export async function linkRecord(input: LinkInput): Promise<string> {
     targetId: input.source.id,
     orgId,
     role: ANCHORED_TO_ROLE,
+    ...(input.label ? { label: input.label } : {}),
     ...(input.anchor ? { payloadKind: "text_anchor", payload: input.anchor } : {}),
   });
   if (!res.ok) throw sentence("linking the record", res.error);

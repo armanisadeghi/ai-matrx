@@ -48,6 +48,9 @@ export function LinkRecordSheet({
   );
 }
 
+/** The record store's entity token (`custom.record`). */
+export const STORE_RECORD_TOKEN = "record";
+
 /**
  * The same ONE picker, pointed at any registered record — the right-click "Link a record…" verb
  * (features/overlays/openers/linkRecordSheet.tsx) opens it on whatever entity the menu targets.
@@ -61,11 +64,18 @@ export function LinkRecordPickerSheet({
   description,
   onLink,
   attachedKeys,
+  storeRecords = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Registered entity token of the record links attach TO. */
   targetToken: string;
+  /**
+   * Offer record-store records too. Only a host that writes that link from the OTHER end and
+   * reads links in both directions may ask (LinkRecordOverlay): the store refuses a free edge
+   * out of a record, so the annotation sidecar — which reads edges INTO its document — never does.
+   */
+  storeRecords?: boolean;
   title: string;
   /** Replaces the default one-line description. */
   description?: ReactNode;
@@ -83,14 +93,18 @@ export function LinkRecordPickerSheet({
       .then((tokens) => {
         // Registered pair AND a lister that exists — the SAME check the picker uses to list
         // candidates (registry.listableTokens: pickable + a title column or a host lister). A
-        // kind that can link but cannot be listed is not offered (verify RC-B11 round 3: Documents,
-        // Flashcards and Records were offered, listed nothing and showed a developer message).
+        // kind that can link but cannot be listed is not offered (verify RC-B11 round 3: Documents
+        // and Flashcards were offered, listed nothing and showed a developer message).
+        // STORE RECORDS are the one kind `listableTokens()` hides that CAN be listed (it is the
+        // reference-column "Allowed types" flag; a record lists through `custom.records_search`,
+        // entityRegistry `record.listCandidates`). They are offered only where the host asks.
         const listable = new Set<string>(listableTokens());
-        if (live) setKinds(tokens.filter((t) => listable.has(t)) as EntityTypeToken[]);
+        const canList = (t: string) => listable.has(t) || (storeRecords && t === STORE_RECORD_TOKEN);
+        if (live) setKinds(tokens.filter(canList) as EntityTypeToken[]);
       })
       .catch((e: unknown) => { if (live) setKindsError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
-  }, [open, targetToken]);
+  }, [open, targetToken, storeRecords]);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">

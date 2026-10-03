@@ -40,9 +40,7 @@ import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-i
 import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { createClient } from "@/utils/supabase/client";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
-import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
-import { askAsMember } from "@/features/organizations/organizationsIAmIn";
+import { mayReadAsMember } from "@/features/organizations/organizationsIAmIn";
 import { cn } from "@/lib/utils";
 
 /** The one door this file calls, exactly as the portals and forms services call theirs. */
@@ -76,16 +74,23 @@ export interface RecordScopedChatProps {
 }
 
 export function RecordScopedChat({ ctx, organizationId, className }: RecordScopedChatProps) {
-  // ONE SWITCH, read HERE rather than inherited: this file reaches the store on its own
-  // (it binds the conversation through custom.conversation_scope_bind), so it asks the same
-  // question its host page asks, and `pnpm check:campaign-entry-points` can see it ask.
-  const campaign = useUnifiedDataCampaign({
-    organizationId,
-    // Member-only door, keyed by the RECORD's organization: not a member → OFF, no request.
-    storeSwitch: (organization) =>
-      askAsMember(organization, () => UNIFIED_DATA_CAMPAIGN.enabled(organization), false),
-  });
-  const campaignOn = campaign.on === true;
+  // MEMBER-ONLY, keyed by the RECORD's organization: this file binds the conversation through
+  // custom.conversation_scope_bind, a member's door. No store switch is asked — the record store
+  // is never off (CHAIR-ALWAYS-ON, 2026-10-03).
+  const [membership, setMembership] = useState<{ organizationId: string; isMember: boolean } | null>(null);
+  useEffect(() => {
+    if (!organizationId) return undefined;
+    let live = true;
+    void mayReadAsMember(organizationId).then((isMember) => {
+      if (live) setMembership({ organizationId, isMember });
+    });
+    return () => {
+      live = false;
+    };
+  }, [organizationId]);
+  const member =
+    !organizationId ? true : membership && membership.organizationId === organizationId ? membership.isMember : null;
+  const memberHere = member === true;
   /**
    * THE MANDATE DOOR, NOT A UUID. `launchMandate` resolves who answers on the server
    * (system default → organization binding → user binding), so a rebind changes the agent
@@ -102,7 +107,7 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
   const openedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!campaignOn || openedFor.current === ctx.surfaceKey) return;
+    if (!memberHere || openedFor.current === ctx.surfaceKey) return;
     openedFor.current = ctx.surfaceKey;
     let cancelled = false;
     void launchMandate(DEFAULT_NEW_CHAT_MANDATE_KEY, {
@@ -116,13 +121,13 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
     return () => {
       cancelled = true;
     };
-  }, [campaignOn, ctx.surfaceKey, launchMandate]);
+  }, [memberHere, ctx.surfaceKey, launchMandate]);
 
   const [bound, setBound] = useState<"pending" | "bound" | { refused: string }>("pending");
   const boundFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!campaignOn || !conversationId || !organizationId) return;
+    if (!memberHere || !conversationId || !organizationId) return;
     const key = `${conversationId}:${ctx.recordId}`;
     if (boundFor.current === key) return;
     boundFor.current = key;
@@ -140,7 +145,7 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
     return () => {
       cancelled = true;
     };
-  }, [campaignOn, conversationId, organizationId, ctx.recordId]);
+  }, [memberHere, conversationId, organizationId, ctx.recordId]);
 
   /**
    * THE SENTENCE THE STORE ALREADY WROTE. The published `RecordChatWithheld` carries the
@@ -157,18 +162,12 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
     );
   }, [ctx.withheld]);
 
-  if (campaign.on === null) {
-    return (
-      <p className={cn("px-2 py-1 text-xs text-muted-foreground", className)}>
-        Checking whether this organization keeps its data in the record store…
-      </p>
-    );
-  }
+  if (member === null) return null;
 
-  if (!campaignOn) {
+  if (!memberHere) {
     return (
       <p className={cn("rounded border border-dashed px-2 py-1 text-xs text-muted-foreground", className)}>
-        {campaign.because}
+        Chat is for members of this record&apos;s organization
       </p>
     );
   }

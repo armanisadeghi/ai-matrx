@@ -178,9 +178,9 @@ describe("census items that are wiring", () => {
     expect(list).not.toMatch(/doors\.dataHome\(/);
   });
 
-  it("12 · 13 · 15 · 16 · the store switch, making in the active organization (the dialog), the inbox and the mount ports", () => {
-    expect(page).toContain("useUnifiedDataCampaign");
-    expect(page).toContain("<UnifiedDataSwitchNotice");
+  it("12 · 13 · 15 · 16 · no store switch (the store is never off), making in the active organization (the dialog), the inbox and the mount ports", () => {
+    // 12 · the page asks no store switch and shows no switch notice (CHAIR-ALWAYS-ON, 2026-10-03).
+    expect(page).not.toMatch(/SwitchNotice|storeSwitch/);
     // 13 · making in the active organization is the one New table dialog (features/make/MakeMount.tsx).
     expect(route).toContain("<NewTableDialog");
     expect(page).toContain("<ActionInbox");

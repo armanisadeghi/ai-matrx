@@ -61,9 +61,6 @@ jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () =
 jest.mock("@/features/organizations/components/OrganizationPickerPopover", () => ({
   OrganizationPickerPopover: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</>,
 }));
-jest.mock("@/lib/knobs/unifiedDataCampaign", () => ({ UNIFIED_DATA_CAMPAIGN: { check: async () => ({ state: "on" }) } }));
-jest.mock("@/lib/knobs/useUnifiedDataCampaignGate", () => ({ useUnifiedDataCampaign: () => ({ state: "on", on: true }) }));
-jest.mock("@/features/unified-data/components/UnifiedDataSwitchNotice", () => ({ UnifiedDataSwitchNotice: () => null }));
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   recordsUiHostFor: () => ({}),
   useRecordsDataSource: () => ({}),

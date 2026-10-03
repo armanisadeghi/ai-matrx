@@ -41,10 +41,6 @@ import { recordsDataSource } from "@ai-matrx/records-ui";
 
 import { createClient } from "@/utils/supabase/client";
 import { resolveObjectOrganization } from "@/features/unified-data/objectOrganization";
-import {
-  UNIFIED_DATA_CAMPAIGN,
-  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
-} from "@/lib/knobs/unifiedDataCampaign";
 
 import type { RecordChangeWait } from "./recordChangeApproval";
 
@@ -93,9 +89,6 @@ async function reachOrRefusal(objectId: string): Promise<
     return { refused: `Could not ask the record store where this change lives, so nothing was done. ${own.why}` };
   }
   const organizationId = own.organizationId;
-  if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
-    return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
-  }
   // THE DOOR IS CALLED DIRECTLY RATHER THAN THROUGH `createRecordsClient`, and
   // that is deliberate rather than a shortcut: the package checks every call
   // against the door list GENERATED at its last publish, and `work_approval_*`

@@ -34,7 +34,6 @@ import { getUserOrganizations } from "@/features/organizations/service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
-import { forgetUnifiedDataCampaignAnswers } from "@/lib/knobs/useUnifiedDataCampaignGate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface RampConsumer {
@@ -54,13 +53,6 @@ interface RampConsumer {
   gate_ran_at: string | null;
   gate_lost: number | null;
   gate_gained: number | null;
-}
-
-interface StoreSwitch {
-  knob_key: string;
-  switched_on: boolean;
-  has_organization_override: boolean;
-  why: string;
 }
 
 interface DualEngineExit {
@@ -94,7 +86,6 @@ export function UnifiedDataRampScreen() {
   const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([]);
   const [consumers, setConsumers] = useState<RampConsumer[] | null>(null);
   const [exits, setExits] = useState<DualEngineExit[]>([]);
-  const [storeSwitch, setStoreSwitch] = useState<StoreSwitch | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,20 +118,16 @@ export function UnifiedDataRampScreen() {
       // decide `iam.has_org_admin` before they read anything, which is the
       // ladder the rest of the platform uses.
       const supabase = createClient().schema("platform");
-      const [ramp, store, exit] = await Promise.all([
+      const [ramp, exit] = await Promise.all([
         supabase.rpc("unified_data_ramp_state", { p_organization_id: orgId }),
-        supabase.rpc("unified_data_store_state", { p_organization_id: orgId }),
         supabase.rpc("unified_data_ramp_exit", { p_organization_id: orgId }),
       ]);
       if (ramp.error) throw new Error(ramp.error.message);
-      if (store.error) throw new Error(store.error.message);
       if (exit.error) throw new Error(exit.error.message);
       setConsumers((ramp.data ?? []) as RampConsumer[]);
-      setStoreSwitch((store.data ?? null) as StoreSwitch | null);
       setExits((exit.data ?? []) as DualEngineExit[]);
     } catch (e) {
       setConsumers(null);
-      setStoreSwitch(null);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
@@ -173,41 +160,8 @@ export function UnifiedDataRampScreen() {
     [organizationId, load],
   );
 
-  // THE STORE'S OWN SWITCH. Not a consumer, and deliberately not gated by Test 1: turning the
-  // store on for an organization moves no data — every consumer knob below is separate and
-  // stays where it is. What it does change is that this organization can reach the store's
-  // doors at all, and can promote a field (defect B1).
-  const setStore = useCallback(
-    async (on: boolean) => {
-      setBusy("__store__");
-      try {
-        // The same door, from this person's session, so `auth.uid()` is a real
-        // person and the override is stamped with the person who made it.
-        const { error: refused } = await createClient()
-          .schema("platform")
-          .rpc("unified_data_store_set", { p_organization_id: organizationId, p_on: on });
-        if (refused) throw new Error(refused.message);
-        // Every screen in this tab keeps the switch's answer for the session: it must hear this.
-        forgetUnifiedDataCampaignAnswers();
-        // NAMED, NOT "this organization". The picker at the top of this screen
-        // and the app's own active organization are two different choices, and
-        // on 19 September a person flipped the switch here and opened a
-        // DIFFERENT organization's tables without a word anywhere saying so.
-        // Every sentence this switch says now carries the name it acted on.
-        toast.success(
-          on
-            ? `${nameOf(organizationId)} is on the unified record store. No consumer moved — every consumer switch below is where you left it.`
-            : `${nameOf(organizationId)} is off the unified record store. Its doors take writes only from the role that owns the store.`,
-        );
-        await load(organizationId);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : String(e), { duration: 12000 });
-      } finally {
-        setBusy(null);
-      }
-    },
-    [organizationId, load],
-  );
+  // NO STORE SWITCH HERE (Arman, 2026-10-03): the record store is on for every organization and
+  // cannot be turned off, so this screen offers only the consumer ramp below.
 
   /** The name of the organization this screen is acting on, for every sentence it says. */
   const nameOf = useCallback(
@@ -326,42 +280,18 @@ export function UnifiedDataRampScreen() {
         </div>
       </header>
 
-      {storeSwitch && (
-        <div className="rounded-md border border-border p-3 text-sm">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-medium">The record store itself</span>
-            <span className="text-xs text-muted-foreground">
-              Where {nameOf(organizationId)}&apos;s tables, fields and records are kept
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                {storeSwitch.switched_on
-                  ? `On for ${nameOf(organizationId)}`
-                  : `Off for ${nameOf(organizationId)}`}
-              </span>
-              <Switch
-                checked={storeSwitch.switched_on}
-                disabled={busy === "__store__" || !organizationId}
-                onCheckedChange={(on: boolean) => void setStore(on)}
-                aria-label="The record store, for this organization"
-              />
-            </div>
-          </div>
-          <div className="mt-1 text-muted-foreground">{storeSwitch.why}</div>
-          {storeSwitch.switched_on ? (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={openTables}>
-                <Table2 className="size-4" />
-                Open {nameOf(organizationId)}&apos;s tables
-              </Button>
-              <Button variant="outline" size="sm" onClick={openTryEverything}>
-                <Compass className="size-4" />
-                Try everything it can do
-              </Button>
-            </div>
-          ) : null}
+      {organizationId ? (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={openTables}>
+            <Table2 className="size-4" />
+            Open {nameOf(organizationId)}&apos;s tables
+          </Button>
+          <Button variant="outline" size="sm" onClick={openTryEverything}>
+            <Compass className="size-4" />
+            Try everything it can do
+          </Button>
         </div>
-      )}
+      ) : null}
 
       {exits.map((exit) => {
         const overdue = exit.status === "open" && new Date(exit.exit_date) < new Date();

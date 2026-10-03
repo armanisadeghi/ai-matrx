@@ -34,7 +34,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "@/features/unified-data/hub/doors";
 import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
 import { createClient } from "@/utils/supabase/client";
@@ -104,11 +103,6 @@ export function DescribeBox() {
       return;
     }
     setAskOrganization(false);
-    const gate = await UNIFIED_DATA_CAMPAIGN.check(organizationId);
-    if (gate.state !== "on") {
-      setRun({ phase: "failed", why: "Data records are not on in this organization.", made: [] });
-      return;
-    }
     const before = await readStore(organizationId);
     if (!before.ok) {
       setRun({ phase: "failed", why: before.why, made: [] });

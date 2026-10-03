@@ -28,7 +28,6 @@ import { ErrorNotice } from "./ErrorNotice";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useUserOrganizations } from "@/features/organizations/hooks";
-import { UnifiedDataSwitchNotice } from "@/features/unified-data/components/UnifiedDataSwitchNotice";
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
 import { KIT_INSTALLS_TABLE, KIT_ROUTES, KIT_WORD } from "../constants";
@@ -210,8 +209,6 @@ export function InstallPanel({ manifest, api }: { manifest: KitManifest; api: Ki
             description=""
             compact
           />
-        ) : api.store.state !== "on" ? (
-          <UnifiedDataSwitchNotice gate={api.store} what="Data records" />
         ) : phase === "loading" ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground" aria-busy="true">
             <Loader2 className="h-4 w-4 animate-spin" />
