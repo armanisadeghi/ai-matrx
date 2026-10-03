@@ -27,11 +27,18 @@ is a layout change, not a slide).
   `publishWidthAs?` (a CSS custom property set on the parent to the width the panel takes now — written to the
   DOM, no re-render), `onWidthChange?`, `onPointerEnter/Leave?` (the whole panel, handle included; not reported
   while dragging), `aria-label`, `className` (the body), `outerClassName` (the panel box — e.g. `max-lg:hidden`).
+- `ListDetailSplit.tsx` — a list with its record's detail docked right: desktop = this panel (slide, resize,
+  remembered width, closed = mounted + `inert`), and it HOLDS the last detail while closing so a host that clears
+  its selection on close still slides its content out; each opening starts the detail fresh (`key` per opening).
+  Phone = list → detail full-screen (navigation, not a panel). Props: `panelId`, `open`, `list`, `detail`,
+  `aria-label`, `sizes?` (default 640 / 380 / 1100), `maxShare?`, `initialWidth?`, `onCollapse?`, class slots.
 - `side-panel-width.ts` — `SidePanelSizes`, `clampSidePanelWidth`, `parseSidePanelWidth`, `writeSidePanelWidth`,
   cookie `side-panel:<panelId>:width`.
 - `side-panel-width.server.ts` — `readSidePanelWidth(panelId, sizes)` for the first paint.
 
-**Consumers:** `packages/chat/src/canvas/workspace/ChatCanvasWorkspace.tsx` (nav, docked chat, properties).
+**Consumers:** `packages/chat/src/canvas/workspace/ChatCanvasWorkspace.tsx` (nav, docked chat, properties);
+`features/pdf-extractor/studio/PdfStudioShell.tsx` (sidebar + inspector rails). Via `ListDetailSplit`: the
+ai-models Providers, Settings, Offerings, Endpoints and APIs screens, and the podcasts admin list.
 
 ---
 
@@ -65,4 +72,6 @@ is a layout change, not a slide).
   hover reported for the whole panel.
 - **2026-09-27** — 600ms shell-sidebar pace; `onCollapse` (drag past the minimum closes). The shell chat dock was
   removed (Arman rejected a right-side dock under the app header).
+- **2026-10-02** — `ListDetailSplit` added; the six list|detail splits that squeezed their content
+  (`w-1/2` ↔ `w-full`) and the PDF studio rails that unmounted on close moved onto this panel.
 - **2026-10-02** — Pace reads the motion-standard tokens (`PANEL_MOTION_CLASS`, `lib/motion/panel-motion.ts`) instead of literal 600ms / cubic-bezier.
