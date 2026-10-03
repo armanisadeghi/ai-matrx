@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T19:24:19.040Z",
+  "generated_at": "2026-10-03T19:31:53.019Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3751,6 +3751,12 @@
       "filename": "lane12_f_an_ensured_table_finds_its_kept_for_and_takes_a_home.sql",
       "checksum": "abbf1e27ed50b630bf066b7e3f0c8f264fe868c4b7aee2977d8b904c55935e3f",
       "applied_at": "2026-10-03 19:01:28.8654+00"
+    },
+    "migrations/campaign/lane12_g_an_outputs_home_is_landed_in_at_the_add_rung.sql": {
+      "source": "matrx-frontend",
+      "filename": "lane12_g_an_outputs_home_is_landed_in_at_the_add_rung.sql",
+      "checksum": "e3b7e9890da88b89c87c55b7eac956c51aec20a981f5b18ba824a18f9c8c2a14",
+      "applied_at": "2026-10-03 19:31:51.702478+00"
     },
     "migrations/campaign/lane12_one_table_is_found_by_its_slug.sql": {
       "source": "matrx-frontend",
