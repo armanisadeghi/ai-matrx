@@ -158,6 +158,26 @@ export function isCompanionSurface(surfaceName: string | null | undefined): bool
   return Boolean(surfaceName && getManifest(surfaceName)?.companion);
 }
 
+/**
+ * A surface whose live scope changed without re-registering (the canvas
+ * switched tab, opened or closed an item) announces it here, so a view that
+ * shows what the next turn will carry — the composer's value list before the
+ * first send — re-reads it. Registration changes are the registry's own
+ * `subscribe`; this covers the values behind an unchanged registration.
+ */
+const scopeChangeListeners = new Set<() => void>();
+
+export function announceSurfaceScopeChange(): void {
+  for (const listener of [...scopeChangeListeners]) listener();
+}
+
+export function subscribeSurfaceScopeChanges(listener: () => void): () => void {
+  scopeChangeListeners.add(listener);
+  return () => {
+    scopeChangeListeners.delete(listener);
+  };
+}
+
 /** True when a companion pane (the canvas) is mounted right now. */
 export function companionSurfaceOpen(): boolean {
   return getSurfaceRuntimeStack().some((runtime) => isCompanionSurface(runtime.surfaceName));

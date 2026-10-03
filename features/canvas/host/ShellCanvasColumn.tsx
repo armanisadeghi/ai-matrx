@@ -16,6 +16,7 @@ import "./canvas-host.css";
 import { useEffect } from "react";
 import { CanvasColumn, useCanvas, useCanvasColumnWidth } from "@ai-matrx/canvas/react";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { announceSurfaceScopeChange } from "@ai-matrx/chat/surfaces/runtime/surface-chain";
 import { CANVAS_SURFACE_NAME } from "@/features/surfaces/manifests/canvas.manifest";
 import { useCanvasSurfaceScope } from "./canvasSurfaceScope";
 import { canvasWriteHandlers } from "./canvasWriteHandlers";
@@ -39,6 +40,20 @@ export function ShellCanvasColumn() {
     }
     root.toggleAttribute("data-canvas-open", width !== 0);
   }, [width]);
+
+  // The canvas's values change without re-registering (a tab switched, an item
+  // opened or saved): say so, so the composer's value list re-reads them
+  // before the first send. Only a NEW canvas state announces — the store is
+  // the app's Redux store, which notifies on every action.
+  useEffect(() => {
+    let last = canvas.getState();
+    return canvas.store.subscribe(() => {
+      const next = canvas.getState();
+      if (next === last) return;
+      last = next;
+      announceSurfaceScopeChange();
+    });
+  }, [canvas]);
 
   useEffect(
     () => () => {

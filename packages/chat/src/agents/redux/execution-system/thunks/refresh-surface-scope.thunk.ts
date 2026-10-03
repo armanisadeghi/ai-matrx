@@ -67,8 +67,14 @@ async function refreshCompanionScope(
   conversationId: string,
   state: ChatRootState,
   dispatch: ChatDispatch,
+  { preview = false }: { preview?: boolean } = {},
 ): Promise<RefreshSurfaceScopeResult> {
   const scope = await companionSurfaceScope();
+  // A preview that outlived the page's ownership (a route swap mid-read)
+  // writes nothing: the conversation now follows whatever page holds it.
+  if (preview && !isPageOwnConversation(conversationId)) {
+    return { refreshed: false, reason: "no_surface" };
+  }
   const agentId = state.conversations.byConversationId[conversationId]?.agentId;
   const agent = agentId ? state.agentDefinition.agents?.[agentId] : undefined;
   const result = mapScopeToInstanceWithSurface(
@@ -88,6 +94,29 @@ async function refreshCompanionScope(
     contextCount: result.contextEntries.length,
   };
 }
+
+/**
+ * THE SCREEN SHOWS WHAT WILL BE SENT — before the first send too. A page's
+ * own conversation receives its companion panes (the canvas) only at submit
+ * (`refreshCompanionScope` above), so its composer's value list (chip,
+ * popover, full view) was empty until the first turn left. This writes the
+ * SAME entries the submit writes, whenever the companion opens, closes or
+ * changes (`useCompanionValuesPreview`), and never anything else: a
+ * conversation that is not the page's own is untouched (its values follow its
+ * page at submit), and the page itself is never written.
+ */
+export const previewCompanionScope = createAsyncThunk<
+  RefreshSurfaceScopeResult,
+  { conversationId: string },
+  { state: ChatRootState; dispatch: ChatDispatch }
+>("instances/previewCompanionScope", async ({ conversationId }, { getState, dispatch }) => {
+  const state = getState();
+  if (!state.conversations.byConversationId[conversationId]) {
+    return { refreshed: false, reason: "no_conversation" };
+  }
+  if (!isPageOwnConversation(conversationId)) return { refreshed: false, reason: "no_surface" };
+  return refreshCompanionScope(conversationId, state, dispatch, { preview: true });
+});
 
 export const refreshSurfaceScope = createAsyncThunk<
   RefreshSurfaceScopeResult,

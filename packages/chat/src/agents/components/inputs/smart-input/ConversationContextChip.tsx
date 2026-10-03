@@ -39,6 +39,7 @@ import { selectPageContextOff } from "../../../redux/execution-system/instance-u
 import { setPageContextEnabled } from "../../../redux/execution-system/thunks/page-context.thunk";
 import { getSurfaceDisplayLabel } from "../../../../surfaces/utils/surface-display";
 import { useConversationDisplayRows } from "./useConversationDisplayRows";
+import { useCompanionValuesPreview } from "./useCompanionValuesPreview";
 import { useIsPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   agentContextLayerKnown,
@@ -178,6 +179,10 @@ export function useConversationContextHierarchy(conversationId: string): Context
  * E). Creator mode still shows it: see shared/transcript-audience.tsx.
  */
 export function useConversationContextChipShown(conversationId: string): boolean {
+  // Every composer that may show the chip asks this first, so this is where a
+  // page's own conversation keeps its companion (canvas) values current before
+  // the first send — the chip, popover and full view then show what is sent.
+  useCompanionValuesPreview(conversationId);
   const machineFramesVisible = useMachineFramesVisible();
   const mandateKey = useAppSelector(
     (state) => state.conversations.byConversationId[conversationId]?.mandateKey ?? null,
