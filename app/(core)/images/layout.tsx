@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { BrowseImageProvider } from "@/features/image-manager/browse/BrowseImageProvider";
 import {
   findImagesRoute,
@@ -58,9 +57,7 @@ export default async function ImagesLayout({
 
   return (
     <BrowseImageProvider>
-      <PageHeader>
-        <ImagesListHeader />
-      </PageHeader>
+      <ImagesListHeader />
       <div className="flex h-full min-h-0 overflow-hidden bg-textured">
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)] max-md:pb-24">
           {children}

@@ -3006,9 +3006,7 @@ export default function CleanupPad({
   );
 
   const shellHeader = (
-    <PageHeader>
-      <TranscriptsListHeader />
-    </PageHeader>
+    <TranscriptsListHeader />
   );
 
   /**

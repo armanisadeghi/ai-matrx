@@ -2,7 +2,7 @@
 
 import { cloneElement, isValidElement } from "react";
 
-import { TapTargetButton, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { TapTargetButtonSolid, TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import type { TableToolbarActionProps } from "@ai-matrx/design-system/data-table/host";
 
 type TableToolbarActionWithActiveProps = TableToolbarActionProps & { active?: boolean };
@@ -39,7 +39,12 @@ function tableActionContent(children: TableToolbarActionProps["children"]) {
   });
 }
 
-/** The application implementation of the shared table toolbar action port. */
+/**
+ * The application implementation of the shared table toolbar action port.
+ * A table toolbar and its pager sit on a solid surface, never a floating bar,
+ * so no state here is glass (tap placement rule 1): rest is transparent and
+ * the current page is the solid primary fill.
+ */
 export function TableToolbarAction({
   ariaLabel,
   tooltip,
@@ -52,7 +57,8 @@ export function TableToolbarAction({
   const icon = tableActionContent(children);
   return (
     active ? (
-      <TapTargetButton
+      <TapTargetButtonSolid
+        tone="primary"
         ariaLabel={ariaLabel}
         tooltip={tooltip ?? ariaLabel}
         disabled={disabled}

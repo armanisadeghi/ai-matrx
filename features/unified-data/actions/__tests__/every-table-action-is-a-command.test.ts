@@ -7,7 +7,7 @@
  * The break this names: an action dropped from the command list (or given a second `run`), or a
  * chord the menu shows that the command does not.
  */
-import { tableActions, type TableActionHost } from "@ai-matrx/records-ui/object-actions";
+import { TABLE_ACTION_KEYS, tableActions, type TableActionHost } from "@ai-matrx/records-ui/object-actions";
 import { whatYouMayDo } from "@ai-matrx/records-ui";
 import { pageCommands, registerPageCommands } from "@/features/knowledge/command-bar/commands";
 import { itemMenuToCommands, toKnowledgeCommands } from "../tableActionCommands";
@@ -35,8 +35,8 @@ describe.each(["admin", "viewer"] as const)("a %s", (seat) => {
       expect(c.shortcut).toBe(a.shortcut);
       expect(c.disabledReason).toBe(a.disabledReason);
     }
-    expect(commands.find((c) => c.id === "table-action:share")?.shortcut).toBe("⌥⇧S");
-    expect(commands.find((c) => c.id === "table-action:archive")?.shortcut).toBe("⌥⇧⌫");
+    expect(commands.find((c) => c.id === "table-action:share")?.shortcut).toBe(TABLE_ACTION_KEYS["share"]!.label);
+    expect(commands.find((c) => c.id === "table-action:archive")?.shortcut).toBe(TABLE_ACTION_KEYS["archive"]!.label);
   });
 });
 

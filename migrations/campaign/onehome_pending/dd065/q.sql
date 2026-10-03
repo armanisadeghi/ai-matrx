@@ -1,0 +1,1 @@
+select pg_get_functiondef('platform._t13_allowlist'::regproc) is not null as is_fn, (select string_agg(column_name,',') from information_schema.columns where table_schema='platform' and table_name='_t13_allowlist') cols, (select relkind from pg_class where oid=to_regclass('platform._t13_allowlist')) kind

@@ -47,4 +47,19 @@ describe("TableToolbarAction production TapTarget integration", () => {
     expect(label?.className).toContain("text-[11px]");
     expect(label?.className).toContain("tabular-nums");
   });
+
+  it("draws no glass in any state — a table toolbar sits on a solid surface (tap placement rule 1)", () => {
+    act(() => {
+      root.render(
+        <TooltipProvider>
+          <TableToolbarAction ariaLabel="Page 1" active onClick={() => undefined}><span>1</span></TableToolbarAction>
+          <TableToolbarAction ariaLabel="Page 2" onClick={() => undefined}><span>2</span></TableToolbarAction>
+        </TooltipProvider>,
+      );
+    });
+
+    const current = host.querySelector<HTMLButtonElement>("button[aria-label='Page 1']");
+    expect(current?.getAttribute("aria-current")).toBe("page");
+    expect(host.querySelector(".matrx-glass-thin-border, .matrx-glass-interactive")).toBeNull();
+  });
 });

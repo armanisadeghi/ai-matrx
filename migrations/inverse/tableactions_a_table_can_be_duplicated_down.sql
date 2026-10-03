@@ -1,4 +1,4 @@
--- chair-step: this puts back the nine peer bodies tableactions_a_table_can_be_duplicated.sql replaced — custom.has_visibility, custom.visible_set, custom.table_kept_out_of_lists, custom.tables_at_home, custom.assert_may_know_table, custom.assert_client_may_open, custom.assert_client_may_change, custom._field_reads_what_it_reads and custom.trg_associations_bump_visibility — byte for byte what pg_get_functiondef answered on the dev clone (exerfbdiksdjilwerpda, a copy of production) on 2026-10-03 before it ran; REVOKEs EXECUTE on custom.table_duplicate(uuid, boolean, text, uuid), custom.table_duplicate_continue(uuid) and custom.table_copies_in_progress() from `authenticated`, closes their platform.client_callable_door rows and DROPs the twelve functions the file added. Copies already handed over stay: they are ordinary Tables. A copy left half-made stays as it is (kept_for copying, out of every list); after this it is an ordinary kept table its maker can archive. The schema-wide door-reopen sweep is held off for this transaction only, as in the up file.
+-- chair-step: this puts back the ten peer bodies tableactions_a_table_can_be_duplicated.sql replaced — custom._ctx_answer, custom.has_visibility, custom.visible_set, custom.table_kept_out_of_lists, custom.tables_at_home, custom.assert_may_know_table, custom.assert_client_may_open, custom.assert_client_may_change, custom._field_reads_what_it_reads and custom.trg_associations_bump_visibility — byte for byte what pg_get_functiondef answered on the dev clone (exerfbdiksdjilwerpda, a copy of production) on 2026-10-03 before it ran; REVOKEs EXECUTE on custom.table_duplicate(uuid, boolean, text, uuid), custom.table_duplicate_continue(uuid) and custom.table_copies_in_progress() from `authenticated`, closes their platform.client_callable_door rows and DROPs the twelve functions the file added. Copies already handed over stay: they are ordinary Tables. A copy left half-made stays as it is (kept_for copying, out of every list); after this it is an ordinary kept table its maker can archive. The schema-wide door-reopen sweep is held off for this transaction only, as in the up file.
 -- lane: TABLE-ACTIONS
 -- lock: custom
 -- based-on: custom.table_kept_out_of_lists(text) a9c57ea71bae062f257cedf6a69931a975f8de65e5209fe9c7d52b5e7dd4f2df
@@ -10,6 +10,7 @@
 -- based-on: custom.tables_at_home(uuid, uuid[]) 5117705bd62869fe41c83d3a2645cdc0a1b0227cbd01fa112b8f76fc2063172e
 -- based-on: custom.has_visibility(uuid, text, uuid, permission_level) f006e6c4c7a0f8a1cb1556dace61b4cd2334a0baa96846323cef0af59db78bb2
 -- based-on: custom.visible_set(uuid, uuid, uuid, permission_level) e112904932a463533367019b2ecc59aa8e87fa75e45d20e87fd24a837f9acdea
+-- based-on: custom._ctx_answer(uuid, uuid, jsonb) 07a74f5e43298b648b203630c576884110b8c05d2e66ed348215c6a70bbeb802
 --
 -- The door register hands a declared signed-in door its grant straight back
 -- (platform.reopen_declared_doors), so the rows are closed first, with the reason, then the
@@ -17,7 +18,7 @@
 
 select set_config('platform.closed_schema_sweep', '1', true);
 
--- THE NINE PEER BODIES, PUT BACK FIRST (they call custom._copy_in_progress_guard, dropped below).
+-- THE TEN PEER BODIES, PUT BACK FIRST (they call custom._copy_in_progress_guard, dropped below).
 CREATE OR REPLACE FUNCTION custom.has_visibility(p_user_id uuid, p_type text, p_id uuid, p_required permission_level DEFAULT 'viewer'::permission_level)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -416,6 +417,34 @@ begin
                         and r.deleted_at is null
                         and not (r.visibility = any (o_true_visibility)));
   return;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom._ctx_answer(p_org uuid, p_id uuid, p_row jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+begin
+  -- WHO IS ASKING, DECIDED (VERIFIER-27): the store's one ladder, as every door into custom does. A
+  -- caller who may not reach the organization learns nothing about it, not even which system writes it.
+  if p_org is null then
+    return jsonb_build_object('ok', true, 'writer', 'old', 'row', p_row, 'store', null);
+  end if;
+  perform custom.assert_client_may_reach(p_org, 'custom._ctx_answer');
+  return (
+  -- The store row's facts are answered only to a member of its organization (or the server).
+    select jsonb_build_object(
+      'ok', true,
+      'writer', custom.context_writer(p_org),
+      'row', p_row,
+      'store', (select jsonb_build_object('id', r.id, 'table_id', r.table_id, 'data_class', r.data_class,
+                                          'version', r.version, 'archived', r.deleted_at is not null)
+                  from custom.record r
+                 where r.organization_id = p_org and r.id = p_id
+                   and (auth.uid() is null or iam.is_org_member(auth.uid(), p_org))))
+  );
 end;
 $function$;
 

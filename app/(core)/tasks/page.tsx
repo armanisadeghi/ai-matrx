@@ -5,7 +5,6 @@
 // served the full `<TasksLanding />` directly with zero workspace code shipped;
 // authed users get the workspace shell with zero marketing code shipped.
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { PanelControlProvider } from "@/features/resizable-panels/PanelControlProvider";
 import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
 import { TasksHeaderControls } from "@/features/tasks/components/TasksHeaderControls";
@@ -29,9 +28,7 @@ export default async function TasksPage() {
   return (
     <PanelControlProvider initialLayouts={[defaultLayout]}>
       <TasksListSurfaceRuntime>
-        <PageHeader>
-          <TasksHeaderControls />
-        </PageHeader>
+        <TasksHeaderControls />
         <TaskUrlSync />
         <div className="h-full overflow-hidden" data-surface-value="task_list">
           <TasksDesktopShell

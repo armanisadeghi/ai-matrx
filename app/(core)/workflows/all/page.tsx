@@ -21,9 +21,7 @@ export default async function WorkflowsListRoute() {
 
   return (
     <>
-      <PageHeader>
-        <WorkflowsListHeader />
-      </PageHeader>
+      <WorkflowsListHeader />
       <WorkflowBrowsePage />
     </>
   );

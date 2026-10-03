@@ -38,6 +38,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 
+/** How many organizations' store switches are asked at once while looking for one that is on. */
+const STORE_SWITCH_BATCH = 4;
+
 export function useShellNavGates(): ShellNavGates {
   // A DOOR IS OPEN IF ANY OF THE PERSON'S ORGANIZATIONS HAS IT (active-org law,
   // rule 1: the active organization never decides what a person sees). The
@@ -56,13 +59,23 @@ export function useShellNavGates(): ShellNavGates {
       return undefined;
     }
     let cancelled = false;
-    void Promise.all(
-      idsKey
-        .split(",")
-        .map((id) => UNIFIED_DATA_CAMPAIGN.enabled(id).catch(() => false)),
-    ).then((answers) => {
-      if (!cancelled) setOn(answers.some(Boolean));
-    });
+    // ONE "YES" IS THE ANSWER (lane TABLE-ACTIONS T5.3): a person in 52 organizations paid 52
+    // `unified_data_store_on` calls on EVERY page load to learn one boolean. Asked a few at a time,
+    // stopping at the first organization that has the store on; only a person whose every
+    // organization is off asks them all, as before.
+    void (async () => {
+      const ids = idsKey.split(",");
+      for (let at = 0; at < ids.length && !cancelled; at += STORE_SWITCH_BATCH) {
+        const answers = await Promise.all(
+          ids.slice(at, at + STORE_SWITCH_BATCH).map((id) => UNIFIED_DATA_CAMPAIGN.enabled(id).catch(() => false)),
+        );
+        if (answers.some(Boolean)) {
+          if (!cancelled) setOn(true);
+          return;
+        }
+      }
+      if (!cancelled) setOn(false);
+    })();
     return () => {
       cancelled = true;
     };

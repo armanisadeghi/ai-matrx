@@ -159,4 +159,28 @@ describe("the Records entry in the sidebar", () => {
         expect(records!.href).toBe("/data-v2");
         expect(records!.gate).toBe("unified-data-campaign");
     });
+
+    // T5.3: ONE "YES" IS THE ANSWER. A person in a dozen organizations, the first of which keeps
+    // its data in the store, asks a handful of switches, not all twelve. THE BREAK: asking every
+    // membership on every page load (52 calls for admin@admin.com on one table open).
+    it("stops asking once one organization has the store on", async () => {
+        const store = makeStore();
+        mount(store, gatesToEntry());
+        const others = Array.from({ length: 11 }, (_, i) => `33333333-3333-3333-3333-${String(i).padStart(12, "0")}`);
+        memberOf(store, ORG_ON, ...others);
+        for (let i = 0; i < 6; i += 1) await settle();
+        expect(recordsEntry()).not.toBeNull();
+        expect(rpc.mock.calls.length).toBeGreaterThan(0);
+        expect(rpc.mock.calls.length).toBeLessThanOrEqual(4);
+    });
+
+    it("asks every organization when none has the store on, and shows no entry", async () => {
+        const store = makeStore();
+        mount(store, gatesToEntry());
+        const offs = Array.from({ length: 9 }, (_, i) => `44444444-4444-4444-4444-${String(i).padStart(12, "0")}`);
+        memberOf(store, ...offs);
+        for (let i = 0; i < 8; i += 1) await settle();
+        expect(recordsEntry()).toBeNull();
+        expect(rpc.mock.calls.length).toBe(9);
+    });
 });

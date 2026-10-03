@@ -101,6 +101,18 @@ jest.mock("@/features/tasks/redux/taskUiSlice", () => ({
 jest.mock("@/features/resizable-panels/PanelControlProvider", () => ({
   usePanelControls: () => ({ toggle: () => {}, isCollapsed: () => false }),
 }));
+// RouteHeader portals into the shell's header slot, which this suite has none
+// of: draw its regions in place so the controls themselves are under test.
+jest.mock("@/features/shell/components/header/RouteHeader", () => ({
+  __esModule: true,
+  default: ({ left, right }: { left?: React.ReactNode; right?: React.ReactNode }) => (
+    <div>
+      {left}
+      {right}
+    </div>
+  ),
+}));
+
 jest.mock("@/features/tasks/components/TasksAssistStrip", () => ({
   TasksAssistStrip: () => null,
 }));
