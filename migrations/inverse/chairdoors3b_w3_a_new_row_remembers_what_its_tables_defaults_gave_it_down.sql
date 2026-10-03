@@ -1,6 +1,6 @@
 -- chair-step: undo chairdoors3b_w3_a_new_row_remembers_what_its_tables_defaults_gave_it.sql: restores custom._record_row_defaults() exactly as the window file chairdoors2_j_store_rows created it (no marker on insert). Rows already carrying the marker keep it; custom.table_row_defaults_apply keeps working, and rows born after this revert read as set by hand once the default changes.
 -- lane: CHAIR-DOORS-3B
--- based-on: custom._record_row_defaults() INVERSE_HASH
+-- based-on: custom._record_row_defaults() 6e7140c797032cabc077a526ebe3b3e79be593b8b61e03a33b59c7db08334ef1
 -- lock: custom
 
 CREATE OR REPLACE FUNCTION custom._record_row_defaults()
