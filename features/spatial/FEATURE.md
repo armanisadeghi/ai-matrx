@@ -391,6 +391,7 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 
 ## Change Log
 
+- 2026-10-03 — The board's document item sleeps. A document is one working copy per tab (lib/working-copy, kind udt_document), kept warm after its last view; a wake or a removed-and-undone tile reads and writes nothing (remount harness udt_document + :quiet green; browser: slept, woke with its text, zero requests).
 - 2026-10-03 — Table and record tiles read nothing on wake or Undo. The record store's data layer
   (`@ai-matrx/records` 0.65.0) owns every answer and the realtime subscription; the tiles' `Keep`
   (`RecordsTileKeep`, `useRecordsHold(tileId)`) holds them open while the body sleeps, and the body
