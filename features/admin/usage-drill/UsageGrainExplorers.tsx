@@ -22,6 +22,7 @@ import { usageNameResolvers } from "./useUsageDrill";
 type GrainProps = { siblings?: readonly DrillSibling[]; groupLabel?: string; surfaceName?: string };
 
 export function AiCallsExplorer({ siblings, groupLabel, surfaceName }: GrainProps = {}) {
+  // org-fallback-deliberate: an admin platform-lane explorer reads the platform's own organization by name
   const organizationId = SYSTEM_ORGANIZATION_ID;
   return (
     <DrillExplorer
@@ -44,6 +45,7 @@ export function AiCallsExplorer({ siblings, groupLabel, surfaceName }: GrainProp
 }
 
 export function AiUsageExecutionsExplorer({ siblings, groupLabel, surfaceName }: GrainProps = {}) {
+  // org-fallback-deliberate: an admin platform-lane explorer reads the platform's own organization by name
   const organizationId = SYSTEM_ORGANIZATION_ID;
   return (
     <DrillExplorer

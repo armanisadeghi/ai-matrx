@@ -39,6 +39,7 @@ import type { AppThunk } from "@/lib/redux/store";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import type { HostedBilling } from "@/features/ai-work/lib/ownPlan";
 
 /** See THE TWO-HOMES RULE. The one url for a hosted turn. */
 export const HOSTED_STREAM_PATH = "/coding-sessions/claude/stream" as const;
@@ -46,8 +47,13 @@ export const HOSTED_STREAM_PATH = "/coding-sessions/claude/stream" as const;
 export const HOSTED_CANCEL_PATH =
   "/coding-sessions/claude/runtimes/{runtime_id}/cancel" as const;
 
-/** Default folder inside the sandbox. The server default, stated here too. */
-export const HOSTED_WORKSPACE_ROOT = "/home/agent";
+/**
+ * Default folder inside the sandbox. Never `/home/agent` itself: once the
+ * person has an own-plan sign-in in their box (it lives under the home), the
+ * server refuses ANY hosted run rooted there, whoever pays. So every hosted
+ * run works one level down.
+ */
+export const HOSTED_WORKSPACE_ROOT = "/home/agent/projects";
 
 export interface HostedRunRequest {
   /** The conversation id the caller minted with `crypto.randomUUID()`. */
@@ -60,6 +66,11 @@ export interface HostedRunRequest {
   agentId?: string | null;
   mandateKey?: AnyMandateKey | null;
   permissionMode?: "acceptEdits" | "plan";
+  /**
+   * Who pays: AI Matrx credits (`platform`, the default) or the person's own
+   * signed-in vendor plan (`own_plan`).
+   */
+  billing?: HostedBilling;
 }
 
 export interface HostedRunHandle {
@@ -126,6 +137,7 @@ export function startHostedRun(
     const abortController = new AbortController();
     let requestId: string | null = null;
     let runtimeId: string | null = null;
+    const billing: HostedBilling = request.billing ?? "platform";
 
     const consumeStream = dispatch(
       adoptForeignStream({
@@ -166,6 +178,7 @@ export function startHostedRun(
           agent_id: request.agentId ?? null,
           mandate_key: request.mandateKey ?? null,
           permission_mode: request.permissionMode ?? "acceptEdits",
+          billing,
         },
       }),
     );
