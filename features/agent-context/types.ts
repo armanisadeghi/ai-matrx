@@ -38,12 +38,12 @@ export type ContextValueType =
   | "array"
   | "document"
   | "reference";
-export type ContextFetchHint =
-  | "always"
-  | "on_demand"
-  | "batch_related"
-  | "lazy"
-  | "never";
+// THE THREE WORDS THE RECORD STORE KEEPS (custom context_policy include / on_request / exclude).
+// Lane 9 SCOPES-ON-THE-STORE, chair ruling 3 (2026-10-02): the old "lazy" is "on_demand" and the old
+// "batch_related" is "always" — the store folded them on the copy (custom._ctx_word 'policy'), so a
+// screen that offered either showed a word that was never kept. Old rows are read through
+// `canonicalFetchHint` (constants.ts).
+export type ContextFetchHint = "always" | "on_demand" | "never";
 export type ContextSensitivity =
   | "public"
   | "internal"

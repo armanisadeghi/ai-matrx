@@ -41,6 +41,7 @@
 
 "use client";
 
+import { canonicalFetchHint } from "@/features/agent-context/constants";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
@@ -114,6 +115,16 @@ import type {
   UpdateScopeTypeParams,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+
+
+/**
+ * AN OLD ROW'S FETCH HINT IN THE STORE'S WORDS (lane 9 chair ruling 3, 2026-10-02). The old table still
+ * holds "lazy" (and could hold "batch_related"); the store keeps three words and folded those two on the
+ * copy, so the old path names the word the store path names.
+ */
+function withStoreFetchHints<T extends { fetch_hint?: string | null }>(rows: T[]): T[] {
+  return rows.map((r) => (r.fetch_hint == null ? r : ({ ...r, fetch_hint: canonicalFetchHint(r.fetch_hint) } as T)));
+}
 
 // One denormalized scope row for tags: which entity, which scope, plus the
 // scope's name and its type's singular label (sidebar grouping).
@@ -686,7 +697,7 @@ export const scopesService = {
           .is("deleted_at", null)
           .eq("is_active", true);
         if (error) return err(...mapPgErrorPair(error));
-        return ok({ items: data ?? [] });
+        return ok({ items: withStoreFetchHints(data ?? []) });
       }
       // The type's Fields, from the store (lane SCOPES-READS-WEB).
       const res = await readContextItems([scopeTypeId]);
@@ -721,7 +732,7 @@ export const scopesService = {
                 .range(from, to),
           { label: "context.context_items (active, by scope type)" },
         );
-        return ok({ items });
+        return ok({ items: withStoreFetchHints(items) });
       }
       // Every item of every listed type, from the store, in batches (lane SCOPES-READS-WEB).
       const res = await readContextItems(scopeTypeIds);
