@@ -1119,14 +1119,14 @@
       ]
     },
     "store-on-no-organization-is-dark-by-omission-clone": {
-      "label": "STORE-ON: no organization is dark by omission (clone)",
+      "label": "STORE-ON: no organization is dark by omission (live)",
       "class": "live-db",
       "cmd": "pnpm check:store-on-by-default",
       "reason": "reaches code that can open the live database",
       "evidence": [
         {
           "file": "scripts/check-store-on-by-default.sh",
-          "signal": "nightly dev clone connection"
+          "signal": "SUPABASE_MATRIX_* direct Postgres credentials"
         }
       ]
     },
