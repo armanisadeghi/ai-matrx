@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { useCanvasArtifactUrlState } from "@/features/canvas/hooks/useCanvasArtifactUrlState";
+import { useArtifactCanvas } from "@/features/canvas/host/useArtifactCanvas";
+import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import {
   fetchUserArtifactsThunk,
   archiveArtifactThunk,
@@ -208,15 +210,52 @@ export function CmsArtifactList() {
    * pane's own "Open full page"), because it is where an artifact's metadata
    * and destructive actions live.
    *
-   * Rows with no `canvasItemId` (external-system artifacts such as html_page)
-   * have no canvas row to point at, so they still navigate.
+   * An HTML page has no canvas row: its truth is the `html_pages` record
+   * (`externalId`). It opens as the canvas's html kind, keyed to its source
+   * message — the same tab the chat that made it opens, so the inline
+   * preview's publish updates that one page in place, never a copy.
    */
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const { openContent } = useArtifactCanvas();
+  const openHtmlPage = async (artifact: CxArtifactRecord, pageId: string) => {
+    if (openingId) return;
+    setOpeningId(artifact.id);
+    try {
+      const page = (await HTMLPageService.getPage(pageId)) as {
+        html_content?: string | null;
+        meta_title?: string | null;
+      };
+      const html = page?.html_content ?? "";
+      if (!html.trim()) {
+        toast.error("This page has no content to show");
+        return;
+      }
+      openContent({
+        type: "html",
+        data: html,
+        metadata: {
+          title: artifact.title?.trim() || page.meta_title?.trim() || "Untitled",
+          ...(artifact.messageId ? { sourceMessageId: artifact.messageId, messageId: artifact.messageId } : {}),
+          ...(artifact.conversationId ? { conversationId: artifact.conversationId } : {}),
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not open this page");
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
   const handleOpen = (artifact: CxArtifactRecord) => {
     if (artifact.canvasItemId) {
       void openItem({
         artifactId: artifact.canvasItemId,
         title: artifact.title,
       });
+      return;
+    }
+    if (artifact.artifactType === "html_page" && artifact.externalId) {
+      void openHtmlPage(artifact, artifact.externalId);
       return;
     }
     handleNavigate(artifact.id);
@@ -243,10 +282,12 @@ export function CmsArtifactList() {
     }
   };
 
+  // The page's real editor — the html_pages record `externalId` names.
   const handleOpenEditor = (artifact: CxArtifactRecord) => {
-    if (artifact.artifactType === "html_page" && artifact.externalId) {
-      handleNavigate(artifact.id);
-    }
+    if (artifact.artifactType !== "html_page" || !artifact.externalId) return;
+    if (navigatingId) return;
+    setNavigatingId(artifact.id);
+    startTransition(() => router.push(`/cms/html-pages/${artifact.externalId}`));
   };
 
   /**
@@ -346,8 +387,10 @@ export function CmsArtifactList() {
         };
       }}
     >
-    <div className="flex flex-col gap-3" data-surface-value="visible_artifacts">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+    {/* The library answers ITS OWN width, never the window's: beside the
+        canvas a 1440px window leaves it ~280px. */}
+    <div className="@container/artifacts flex flex-col gap-3" data-surface-value="visible_artifacts">
+      <div className="flex flex-col gap-2 @3xl/artifacts:flex-row @3xl/artifacts:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-b border-border scrollbar-none">
           {TYPE_FILTERS.map((f) => (
             <button
@@ -367,7 +410,7 @@ export function CmsArtifactList() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
+          <div className="relative min-w-0 flex-1 @3xl/artifacts:w-64 @3xl/artifacts:flex-none">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search"
@@ -453,7 +496,35 @@ export function CmsArtifactList() {
         <MatrxDataTable<CxArtifactRecord>
           tableId="artifacts/content-library"
           data={filtered}
-          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button></div> }]}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (artifact) => {
+            const busy = navigatingId === artifact.id || openingId === artifact.id;
+            const canEdit = artifact.artifactType === "html_page" && Boolean(artifact.externalId);
+            return (
+              <div className="flex items-center gap-0.5">
+                {busy && <Loader2 className="size-4 animate-spin text-primary" />}
+                {/* A roomy library shows the four doors inline; a narrow one
+                    (canvas open, phone) keeps the name and folds them into ⋯. */}
+                <div className="hidden items-center gap-0.5 @2xl/artifacts:flex">
+                  <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button>
+                  <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !canEdit} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>
+                  {artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}
+                  <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="size-7 @2xl/artifacts:hidden" disabled={navigationPending} title="Artifact actions" aria-label="Artifact actions"><MoreHorizontal className="size-3.5" /></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onSelect={() => handleNavigate(artifact.id)}><FileText className="mr-2 size-3.5" />Open full page</DropdownMenuItem>
+                    {canEdit && <DropdownMenuItem onSelect={() => handleOpenEditor(artifact)}><Pencil className="mr-2 size-3.5" />Edit content</DropdownMenuItem>}
+                    {artifact.externalUrl && <DropdownMenuItem asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 size-3.5" />View live</a></DropdownMenuItem>}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => void handleArchive(artifact)}><ArchiveIcon className="mr-2 size-3.5" />Move to Trash</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            );
+          } }]}
           getRowId={(artifact) => artifact.id}
           isLoading={isLoading}
           density="condensed"

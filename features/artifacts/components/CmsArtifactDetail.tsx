@@ -39,6 +39,10 @@ import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-r
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { useOrganizationLabel } from "@/features/organizations/hooks/useOrganizationLabel";
+import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
+import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ARTIFACTS_SURFACE_NAME } from "@/features/surfaces/manifests/artifacts.manifest";
@@ -141,6 +145,95 @@ function CanvasItemPreview({
       {renderer}
     </div>
   ) : renderer;
+}
+
+// ── HtmlPagePreview ──────────────────────────────────────────────────────────
+
+/**
+ * An HTML page's own content, read from the `html_pages` record the artifact
+ * names (`externalId`). Shown when there is no live URL to frame — a page
+ * that was saved but never published still has its content.
+ */
+function HtmlPagePreview({
+  pageId,
+  title,
+  onContent,
+}: {
+  pageId: string;
+  title: string;
+  onContent: (snapshot: ArtifactContentSnapshot | null) => void;
+}) {
+  const [state, setState] = useState<
+    { pageId: string; html: string | null; error: string | null } | null
+  >(null);
+  useEffect(() => {
+    let active = true;
+    HTMLPageService.getPage(pageId)
+      .then((page: { html_content?: string | null }) => {
+        if (active) setState({ pageId, html: page?.html_content ?? "", error: null });
+      })
+      .catch((err: unknown) => {
+        if (active) setState({ pageId, html: null, error: err instanceof Error ? err.message : String(err) });
+      });
+    return () => {
+      active = false;
+    };
+  }, [pageId]);
+  const current = state?.pageId === pageId ? state : null;
+  useEffect(() => {
+    if (!current?.html) {
+      onContent(null);
+      return;
+    }
+    onContent({ canvasItemId: null, canvasType: "html", data: current.html });
+  }, [current?.html, onContent]);
+  useEffect(() => () => onContent(null), [onContent]);
+
+  if (!current) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (current.error) {
+    // The page lives in the HTML pages store, which the access resolver does
+    // not cover — say what the store answered.
+    return (
+      <p className="py-6 text-center text-xs text-destructive" title={current.error}>
+        Could not load this page: {current.error}
+      </p>
+    );
+  }
+  if (!current.html?.trim()) {
+    return <p className="py-6 text-center text-xs text-muted-foreground">This page has no content yet</p>;
+  }
+  // A web page that sets no background draws on the browser's white, never
+  // on the app's theme: in dark mode its dark text would sit on a dark card.
+  return (
+    <SandboxedHtml
+      html={current.html}
+      title={title}
+      height={480}
+      className="rounded-md border border-border bg-white"
+    />
+  );
+}
+
+/** The artifact's organization by NAME, opening the organization. */
+function OrganizationMetaRow({ organizationId }: { organizationId: string }) {
+  const label = useOrganizationLabel(organizationId);
+  return (
+    <div className="flex items-start gap-2.5 py-2">
+      <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium mb-0.5">
+          Organization
+        </p>
+        <EntityRef token="organization" id={organizationId} name={label?.name ?? null} showIcon={false} className="text-sm" />
+      </div>
+    </div>
+  );
 }
 
 const STATUS_VARIANT: Record<
@@ -405,9 +498,13 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
         entityLabel={artifact.title ?? "Untitled"}
         actions={headerActions}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* The page answers ITS OWN width, never the window's: beside the
+          canvas a 1440px window leaves it ~280px, where a side column of
+          metadata wraps a word per line. */}
+      <div className="@container/artifact">
+      <div className="grid grid-cols-1 @3xl/artifact:grid-cols-3 gap-6">
       {/* Main content */}
-      <div className="lg:col-span-2 space-y-6">
+      <div className="@3xl/artifact:col-span-2 space-y-6 min-w-0">
         {artifact.description && (
           <p className="text-sm text-muted-foreground">
             {artifact.description}
@@ -436,6 +533,29 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
             </CardContent>
           </Card>
         )}
+
+        {/* An HTML page with no canvas row and no live URL: its own content. */}
+        {artifact.artifactType === "html_page" &&
+          artifact.externalId &&
+          !artifact.canvasItemId &&
+          !artifact.externalUrl && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Content Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div data-surface-value="content">
+                  <HtmlPagePreview
+                    pageId={artifact.externalId}
+                    title={artifact.title ?? "Untitled"}
+                    onContent={publishContent}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
         {/* External link preview (HTML pages) */}
         {artifact.externalUrl && artifact.artifactType === "html_page" && (
@@ -565,15 +685,14 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="divide-y divide-border/50">
-              <MetaRow
-                icon={Building2}
-                label="Organization"
-                value={artifact.organizationId}
-              />
+              {artifact.organizationId ? (
+                <OrganizationMetaRow organizationId={artifact.organizationId} />
+              ) : null}
               <MetaRow
                 icon={CheckSquare}
                 label="Task"
                 value={artifact.taskId}
+                href={artifact.taskId ? `/tasks/${artifact.taskId}` : null}
               />
             </CardContent>
           </Card>
@@ -594,6 +713,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
       </div>
     </>,

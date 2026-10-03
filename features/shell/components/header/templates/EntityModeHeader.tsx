@@ -316,14 +316,23 @@ export function EntityModeHeader({
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton href={resolvedBackHref} ariaLabel="Back" />
+            {/* ALL GLASS OR NONE (tap-target placement rule 2): the back
+                button and the entity's name share ONE glass capsule instead of
+                a glass circle beside bare text (CrumbTrailHeader's shape). The
+                back button is the group variant; the name adds the half-gap. */}
+            <div
+              data-matrx-glass
+              className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-0 items-center rounded-full"
+            >
+            <ChevronLeftTapButton variant="group" href={resolvedBackHref} ariaLabel="Back" />
             {entityOptions && entityOptions.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     aria-label="Switch"
-                    className="flex items-center gap-0.5 min-w-0 rounded-full px-1.5 py-0.5 hover:bg-[var(--matrx-glass-bg-active)] transition-colors"
+                    data-matrx-glass
+                    className="flex items-center gap-0.5 min-w-0 rounded-full ms-1 me-1 px-1.5 py-0.5 hover:bg-[var(--matrx-glass-bg-active)] transition-colors"
                   >
                     {label}
                     <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -357,8 +366,9 @@ export function EntityModeHeader({
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <span className="flex min-w-0 items-center px-1.5">{label}</span>
+              <span data-matrx-glass className="flex min-w-0 items-center ps-1 pe-2.5">{label}</span>
             )}
+            </div>
             {isPhone &&
               modeSwitchOnPhone &&
               modes

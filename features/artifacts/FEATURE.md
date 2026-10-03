@@ -43,6 +43,14 @@ the node's `STATE.md` in the same session.
 
 ## Change log
 
+- 2026-10-03 — **An HTML page opens in the canvas; the library answers its own width.** A row with no
+  canvas row but an `html_pages` record (`externalId`) navigated away to `/artifacts/<id>`; it now
+  reads the page (`HTMLPageService.getPage`) and opens the canvas's html kind keyed to its source
+  message. "Edit content" goes to the real editor `/cms/html-pages/<externalId>`. The filter bar and
+  the four row doors follow `@container/artifacts` (narrow: one ⋯ menu), not `lg:`. The detail page
+  shows an unpublished page's own content (`HtmlPagePreview`, white page in both themes), names the
+  organization (`useOrganizationLabel` + `EntityRef`, opens the organization), links the task, and
+  splits its columns on `@container/artifact`.
 - 2026-10-03 — **The row-stability plumbing is gone: the table owns it.** `@ai-matrx/design-system` 0.59.0
   no longer redraws rows when a host hands new inline functions (rows compare what they draw; handlers
   trampoline to the latest), so `CmsArtifactList` writes its actions column, `rowClassName` and `getRowId`
