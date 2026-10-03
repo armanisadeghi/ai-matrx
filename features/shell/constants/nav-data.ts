@@ -1724,6 +1724,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       { label: "Connected Sources", href: "/connected-sources", iconName: "Link2", guestHidden: true },
       { label: "Connect a Computer", href: "/connect-computer", iconName: "Laptop", guestHidden: true },
+      { label: "My Devices", href: "/local", iconName: "Laptop", guestHidden: true },
     ],
   },
   {
