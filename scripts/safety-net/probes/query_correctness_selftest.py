@@ -96,7 +96,30 @@ def main() -> int:
     ok = sound.get("fixture") != "FAIL" and all(sound.get(i) == "PASS" for i in [*probe.ITEM_IDS, "Q11", "Q12"])
     verdicts.append(("sound code, pages of 5: Q01–Q12 PASS", ok, str(sound)))
 
-    paged = _run("2", [(RecordStore, "_read_limits", _small_pages), (RecordStore, "_call", one_page_only)])
+    # Since VISION-REACH W3 (2026-10-02) the as-of answer is ONE statement in the store
+    # (custom.record_aggregate_as_of), so no paged door is left on its path for `one_page_only` to cut.
+    # The break it stands for is planted where it now could happen: the as-of measure answered from the
+    # FIRST PAGE of the as-of read door, added up here (the pre-W3 code with its page loop removed).
+    from decimal import Decimal
+
+    from matrx_records.principal import acting_as
+
+    async def as_of_one_page(self, *, table_id, recorded_at, measure="count", field_key=None, group_by=None,
+                             match=None, limit=None, order=None):
+        from datetime import datetime
+
+        moment = datetime.fromisoformat(str(recorded_at).replace("Z", "+00:00"))
+        async with acting_as(self.principal):
+            rows = await real_call(self, "query_table_as_of", self.principal.organization_id, table_id, moment,
+                                   None, PAGE, 0, "viewer", mode="rows")
+        data = [dict((r.get("data") if isinstance(r, dict) else dict(r).get("data")) or {}) for r in (rows or [])]
+        total = sum(Decimal(str(d.get(field_key) or 0)) for d in data) if field_key else len(data)
+        name = "count" if measure == "count" else f"{measure}_{field_key}"
+        return [{"bucket": None, "groups": {}, "measure": {name: float(total)}, "row_count": len(data),
+                 "as_of": str(recorded_at)}]
+
+    paged = _run("2", [(RecordStore, "_read_limits", _small_pages), (RecordStore, "_call", one_page_only),
+                       (RecordStore, "aggregate_as_of", as_of_one_page)])
     ok = paged.get("fixture") != "FAIL" and paged.get("Q04") == "FAIL"
     verdicts.append(("planted one-page total: Q04 goes RED", ok, str(paged)))
 
