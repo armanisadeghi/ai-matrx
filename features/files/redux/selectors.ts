@@ -26,7 +26,6 @@ import type {
   CloudFolder,
   CloudFolderRecord,
   CloudShareLink,
-  FileWorkingCopy,
   PermissionLevel,
   RagStatus,
   TreeChildren,
@@ -67,44 +66,11 @@ export const selectFileById = createSelector(
   (map, id): CloudFileRecord | undefined => map[id],
 );
 
-// ---------------------------------------------------------------------------
-// Working copies — the one editable copy of a text file (see FileWorkingCopy)
-// ---------------------------------------------------------------------------
-
-const selectWorkingCopiesMap = (state: StateWithCloudFiles) =>
-  state.cloudFiles.workingCopies;
-
-/** The file's working copy, or undefined before its bytes were first read. */
-export const selectFileWorkingCopy = createSelector(
-  [selectWorkingCopiesMap, (_state: StateWithCloudFiles, id: string) => id],
-  (map, id): FileWorkingCopy | undefined => map[id],
-);
-
-/** The working copy's text — undefined before the bytes were first read. */
-export const selectFileWorkingText = createSelector(
-  [selectFileWorkingCopy],
-  (copy): string | undefined => copy?.text,
-);
-
-/** True when the working copy holds text that is not saved. */
-export const selectFileWorkingCopyDirty = createSelector(
-  [selectFileWorkingCopy],
-  (copy): boolean => copy !== undefined && copy.text !== copy.baseText,
-);
-
 /** The file's current version number (undefined when the row is not loaded). */
 export const selectFileCurrentVersion = createSelector(
   [selectAllFilesMap, (_state: StateWithCloudFiles, id: string) => id],
   (map, id): number | undefined => map[id]?.currentVersion,
 );
-
-/** Imperative — middleware / thunks. */
-export function getFileWorkingCopyFromState(
-  state: StateWithCloudFiles,
-  id: string,
-): FileWorkingCopy | undefined {
-  return state.cloudFiles.workingCopies[id];
-}
 
 /** Imperative — middleware / thunks. */
 export function getFileFromState(

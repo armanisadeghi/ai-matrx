@@ -1,10 +1,11 @@
 /**
  * features/files/hooks/useFileWorkingCopy.ts
  *
- * The working copy of one text file, from the store (`CloudFilesState.
- * workingCopies`). Any number of editor views call this for the same file
- * and get the same copy; a remount or a wake from `<Activity>` reads the
- * copy back instead of re-reading bytes, so nothing typed is lost.
+ * This editor is a VIEW of the file's one working copy — THE working-copy
+ * primitive (`lib/working-copy`, kind `file`, `workingCopies["file:<id>"]` in
+ * Redux). Any number of editor views hold the same copy; a remount or a wake
+ * from `<Activity>` reads it back instead of re-reading bytes, so nothing
+ * typed is lost; the last view leaving saves an unsaved copy once.
  *
  * The copy is filled from the file's bytes (`useFileBlob`, cached per file
  * id + version) the first time, and again only when NEW bytes arrive (a new
@@ -16,11 +17,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectFileWorkingCopy } from "@/features/files/redux/selectors";
-import { workingCopyLoaded } from "@/features/files/redux/slice";
-import { clearFileDraft, readFileDraft } from "@/features/files/redux/working-copy";
-import type { FileWorkingCopy } from "@/features/files/types";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { selectWorkingCopy, type WorkingCopyEntry } from "@/lib/working-copy/workingCopySlice";
+import { clearFileDraft, fileWorkingCopy, readFileDraft } from "@/features/files/redux/working-copy";
 import { useFileBlob } from "./useFileBlob";
 
 /**
@@ -31,17 +30,21 @@ import { useFileBlob } from "./useFileBlob";
 const blobsInWorkingCopy = new WeakMap<Blob, string>();
 
 export interface UseFileWorkingCopyResult {
-  /** Undefined until the file's bytes were first read. */
-  copy: FileWorkingCopy | undefined;
+  /** Undefined until the file's bytes were first read (`value` is the text). */
+  copy: WorkingCopyEntry | undefined;
   loading: boolean;
   error: string | null;
 }
 
 export function useFileWorkingCopy(fileId: string): UseFileWorkingCopyResult {
-  const dispatch = useAppDispatch();
-  const copy = useAppSelector((s) => selectFileWorkingCopy(s, fileId));
+  const store = useAppStore();
+  const entry = useAppSelector((s) => selectWorkingCopy(s, fileWorkingCopy.key(fileId)));
+  const copy = entry?.value === undefined ? undefined : entry;
   const { blob, error, version } = useFileBlob(fileId);
   const hasCopy = copy !== undefined;
+
+  // This view holds the file's working copy while it is mounted / awake.
+  useEffect(() => fileWorkingCopy.attach(fileId, store), [fileId, store]);
 
   useEffect(() => {
     if (!blob) return undefined;
@@ -52,19 +55,15 @@ export function useFileWorkingCopy(fileId: string): UseFileWorkingCopyResult {
       blobsInWorkingCopy.set(blob, fileId);
       const draft = readFileDraft(fileId);
       if (draft && draft.text === text) clearFileDraft(fileId);
-      dispatch(
-        workingCopyLoaded({
-          fileId,
-          text,
-          version,
-          draft: draft && draft.text !== text ? draft.text : null,
-        }),
-      );
+      fileWorkingCopy.load(fileId, text, {
+        version,
+        draft: draft && draft.text !== text ? draft.text : null,
+      });
     });
     return () => {
       cancelled = true;
     };
-  }, [blob, fileId, hasCopy, version, dispatch]);
+  }, [blob, fileId, hasCopy, version]);
 
   return {
     copy,

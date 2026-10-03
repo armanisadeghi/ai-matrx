@@ -1,11 +1,15 @@
 /**
  * features/files/redux/working-copy.ts
  *
- * The ONE save path for a text file's working copy (`CloudFilesState.
- * workingCopies`, reducers in ./slice.ts). Every editor view of a file — a
- * board tile, the Files page, a canvas tab — saves through
- * `saveFileWorkingCopy`, so two views never race two uploads and a flush on
- * hide / unmount / pagehide is one save, not one per view.
+ * A text file being edited is a record on THE one working-copy primitive
+ * (`lib/working-copy/workingCopyKind.ts`, kind `file`): its text, base text,
+ * version, dirty and save status live in Redux
+ * (`workingCopies["file:<id>"]`), one entry per file, and every editor view of
+ * the file — a board tile, the Files page, a canvas tab — is a view of it.
+ * `fileWorkingCopy.flush(id, "manual")` is the Save button; the last view
+ * leaving (unmount, a sleeping tile, a switch to another file) saves an unsaved
+ * copy once. A save is the file's NEXT VERSION, so files do not autosave on a
+ * timer (`autosave: false`).
  *
  * Also keeps unsaved text across a reload: on `pagehide` the editor stores a
  * dirty copy in sessionStorage (`storeFileDraft`); the next load of that file
@@ -14,96 +18,42 @@
  */
 
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
-import { extractErrorMessage } from "@/utils/errors";
 import { toast } from "@/lib/toast";
+import { defineWorkingCopyKind } from "@/lib/working-copy/workingCopyKind";
+import { getWorkingCopy, type WithWorkingCopies } from "@/lib/working-copy/workingCopySlice";
 import type { CloudFilesState } from "@/features/files/types";
 import { saveFileNewVersion } from "./thunks";
-import { getFileWorkingCopyFromState } from "./selectors";
-import {
-  workingCopySaved,
-  workingCopySaveFailed,
-  workingCopySaveStarted,
-} from "./slice";
 
-type StateWithCloudFiles = { cloudFiles: CloudFilesState };
-type Dispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
+type Dispatch = ThunkDispatch<{ cloudFiles: CloudFilesState }, unknown, UnknownAction>;
 
-export type WorkingCopySaveOutcome = "saved" | "clean" | "skipped" | "failed";
-
-export interface SaveFileWorkingCopyArg {
-  fileId: string;
-  changeSummary?: string;
-  /**
-   * A flush nobody clicked (hide, unmount, pagehide): it does not retry a
-   * save that just failed, and says so in a toast since no editor may be on
-   * screen to show the error.
-   */
-  auto?: boolean;
-}
-
-/** One save per file at a time; a second request waits, then saves what is left. */
-const inflightSaves = new Map<string, Promise<WorkingCopySaveOutcome>>();
-
-export function saveFileWorkingCopy(arg: SaveFileWorkingCopyArg) {
-  return async (
-    dispatch: Dispatch,
-    getState: () => StateWithCloudFiles,
-  ): Promise<WorkingCopySaveOutcome> => {
-    const { fileId, auto = false } = arg;
-    const running = inflightSaves.get(fileId);
-    if (running) {
-      await running;
-      // Anything typed while that save ran is still unsaved — save it now
-      // (a no-op when nothing changed).
-      return dispatch(saveFileWorkingCopy(arg));
-    }
-    const copy = getFileWorkingCopyFromState(getState(), fileId);
-    if (!copy || copy.text === copy.baseText) return "clean";
-    if (auto && copy.saveError) return "skipped";
-
-    const text = copy.text;
-    dispatch(workingCopySaveStarted({ fileId }));
-    const save = (async (): Promise<WorkingCopySaveOutcome> => {
-      try {
-        // A save is the NEXT VERSION of this same file — never an upload
-        // (an upload of a taken name becomes "name (1).ext", a second file).
-        const result = await dispatch(
-          saveFileNewVersion({
-            fileId,
-            content: text,
-            changeSummary:
-              arg.changeSummary ??
-              (auto ? "Edited in place (auto-save)" : "Edited in place"),
-          }),
-        ).unwrap();
-        dispatch(
-          workingCopySaved({
-            fileId,
-            text,
-            version: result.versionNumber,
-            savedAt: Date.now(),
-          }),
-        );
-        const after = getFileWorkingCopyFromState(getState(), fileId);
-        if (!after || after.text === after.baseText) clearFileDraft(fileId);
-        return "saved";
-      } catch (err) {
-        const message = extractErrorMessage(err);
-        dispatch(workingCopySaveFailed({ fileId, error: message }));
-        if (auto) {
-          toast.error("Couldn't save your last edits", { description: message });
-        }
-        return "failed";
-      }
-    })();
-    inflightSaves.set(fileId, save);
-    try {
-      return await save;
-    } finally {
-      if (inflightSaves.get(fileId) === save) inflightSaves.delete(fileId);
-    }
-  };
-}
+export const fileWorkingCopy = defineWorkingCopyKind({
+  entity: "file",
+  autosave: false,
+  delay: () => 0,
+  async save({ id, key, entry, reason, store }) {
+    const text = entry.value;
+    if (text === undefined) return { savedAt: null };
+    // A flush nobody clicked (hide, unmount) does not retry a save that just
+    // failed — the person sees the error on screen and retries with Save.
+    if (reason !== "manual" && entry.saveError) throw new Error(entry.saveError);
+    // A save is the NEXT VERSION of this same file — never an upload (an
+    // upload of a taken name becomes "name (1).ext", a second file).
+    const result = await (store.dispatch as unknown as Dispatch)(
+      saveFileNewVersion({
+        fileId: id,
+        content: text,
+        changeSummary: reason === "manual" ? "Edited in place" : "Edited in place (auto-save)",
+      }),
+    ).unwrap();
+    const after = getWorkingCopy(store.getState() as WithWorkingCopies, key);
+    if (!after || after.value === text) clearFileDraft(id);
+    return { value: text, version: result.versionNumber };
+  },
+  onSaveFailed(_id, message, reason) {
+    // No editor may be on screen to show a failed save nobody clicked.
+    if (reason !== "manual") toast.error("Couldn't save your last edits", { description: message });
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Unsaved text across a reload (sessionStorage, this tab only)

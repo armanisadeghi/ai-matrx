@@ -57,13 +57,14 @@ in the same change.
    `Files.uploadNewVersion`), which uploads to the file's exact stored `file_path` (the service
    version-bumps that row) and throws when the answer names another row or `is_new`. Guard:
    `redux/save-file-new-version.test.ts`.
-7b. **A text file being edited has ONE working copy, in the store.** `cloudFiles.workingCopies[fileId]`
-   (`FileWorkingCopy`: text, baseText, baseVersion, saving, savedAt, saveError; dirty = text ≠ baseText)
+7b. **A text file being edited has ONE working copy, in the store — THE platform working copy.** The
+   `file` kind of `lib/working-copy` (`redux/working-copy.ts` → `fileWorkingCopy`): Redux
+   `workingCopies["file:<id>"]` (value, base, baseVersion, dirty, status, saveError, savedAt, views)
    is what every editor view shows and writes — the Edit tab, a board tile, the `cloud-file-editor`
-   canvas tab. `useFileWorkingCopy` fills it from the bytes once (and again only for new bytes: a
-   clean copy follows them, a dirty one keeps the person's text); `saveFileWorkingCopy`
-   (`redux/working-copy.ts`) is the only save path — one save per file at a time, a second request
-   waits then saves what is left, a leaving flush (hide / unmount / pagehide) never saves twice.
+   canvas tab. `useFileWorkingCopy` attaches the view and fills it from the bytes once (and again only
+   for new bytes: a clean copy follows them, a dirty one keeps the person's text); the kind's save
+   (`saveFileNewVersion`, `autosave: false`) is the only save path — Save (`flush(id, "manual")`) or
+   the last view leaving; never two saves at once, a request mid-save runs once after it.
    `pagehide` also keeps an unsaved copy in sessionStorage for a reload. Never hold the text in
    component state. The Monaco wrapper renders `<Editor>` only while its effects are attached
    (`useEffectsAttached`) and keeps the model per path (`keepModel`), so a hidden-then-shown editor
@@ -161,6 +162,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-10-03 — The file working copy runs on the one platform primitive.** `cloudFiles.workingCopies`, its six reducers, `FileWorkingCopy` and the `saveFileWorkingCopy` thunk are deleted; the `file` kind of `lib/working-copy` holds the same state in Redux `workingCopies["file:<id>"]` (one primitive for notes, files and cloud documents — owner ruling 2026-10-03). Same behaviour, same guard (`CloudFileInlineEditor.working-copy.test.tsx`, 7/7).
 - **2026-10-02 — One working copy per file; the editor survives hide / show / remount.** A board file tile's Monaco went blank after the tile slept (`@monaco-editor/react` disposes its editor when `<Activity>` detaches effects and never re-creates it), and the typed text lived in `CloudFileInlineEditor` state, so a second view showed other text and a remount mid-save showed the old bytes. Now: `cloudFiles.workingCopies` + `useFileWorkingCopy` + `saveFileWorkingCopy` (invariant 7b); `MonacoEditor` mounts `<Editor>` only while attached + `keepModel` (same gate on the direct `Editor`/`DiffEditor` users: `SmallCodeEditorImpl`, `TabDiffView`, `TripleDiffView`, `components/diff/code/CodeDiff`); blob cache keyed by version, seeded on save, realtime echo skipped (invariant 9). The board's file item now `sleeps`. Tests: the two guards in 7b (5 of 7 and 3 of 3 red on the old code).
 - **2026-10-02 — Edit opens the file's editor as a canvas tab.** A preview's Edit action opens kind `cloud-file-editor` (`canvas/cloudFileEditorKind.ts`), body = `CloudFileInlineEditor`. The Sheet `CloudFileEditor` + `CloudFileEditorHost`/`requestEdit` are deleted. Test: `__tests__/the-file-editor-opens-in-the-canvas.test.tsx`.
 - **2026-09-30 — System folders off by default too (V5-B).** "Use existing → Folders" counted 56,037 folders for the test account (system-files/variants/<id>, page-captures-<org>/<site>, coding sessions). A folder the system owns now carries `metadata.system_artifact`, stamped at aidream's one folder door (`CloudSyncDB.create_folder*`, `system_folder_marker`) and backfilled on live (7,309 folders, metadata only); `platform._inventory_filter` hides it and every `is_system` folder unless `files.show_system_files` is on, and the counts/lists (`entity_kind_counts`, `reference_search_candidates`) take the person's setting as `p_show_system_files` (resolved in the database when omitted). The browser folder rule `isSystemFolderPath` also covers variant folders. Admin folder count 56,037 → 236 (live). Test: `utils/__tests__/system-folders-listed-only-when-on.test.ts`.

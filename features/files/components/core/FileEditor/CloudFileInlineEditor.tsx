@@ -6,20 +6,19 @@
  * canvas tab (a preview's Edit action) — no Sheet/Dialog wrapper; sized to
  * its parent.
  *
- * It is a VIEW of the file's one working copy in the store
- * (`CloudFilesState.workingCopies`, `useFileWorkingCopy`): the text, the
- * dirty state, the saving/saved/error state all live there, keyed by file
- * id. So any number of views of one file (two board tiles, a tile and the
+ * It is a VIEW of the file's one working copy — THE working-copy primitive
+ * (`lib/working-copy`, `workingCopies["file:<id>"]`, `useFileWorkingCopy`):
+ * the text, the dirty state, the saving/saved/error state all live there,
+ * keyed by file id. So any number of views of one file (two board tiles, a tile and the
  * Files page) edit one copy, and a view that is hidden and shown (a sleeping
  * board tile — React `<Activity>`), remounted, or reopened shows exactly
  * what was typed. Monaco's undo history survives too: the editor keeps its
  * model (`keepModel`), keyed by the file's path, and every view shares it.
  *
  * Saving: the Save button and Cmd/Ctrl+S save the copy as the file's next
- * version (`saveFileWorkingCopy`, the one save path). Leaving — hide,
- * unmount, switching file, `pagehide` — saves an unsaved copy once (two
- * views flushing at once still make one save), and `pagehide` also keeps the
- * unsaved text for a reload of this tab.
+ * version (`fileWorkingCopy.flush(id, "manual")`, the one save path). The
+ * last view leaving — hide, unmount, switching file — saves an unsaved copy
+ * once; `pagehide` saves too and keeps the unsaved text for a reload.
  */
 
 "use client";
@@ -28,16 +27,12 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { CheckCircle2, Loader2, RotateCcw, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileWorkingCopy } from "@/features/files/hooks/useFileWorkingCopy";
 import {
-  workingCopyDiscarded,
-  workingCopyEdited,
-} from "@/features/files/redux/slice";
-import {
   clearFileDraft,
-  saveFileWorkingCopy,
+  fileWorkingCopy,
   storeFileDraft,
 } from "@/features/files/redux/working-copy";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -124,8 +119,6 @@ export function CloudFileInlineEditor({
   fileId,
   className,
 }: CloudFileInlineEditorProps) {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const { copy, loading, error: loadError } = useFileWorkingCopy(fileId);
   const controls = useFileViewerControls();
@@ -142,27 +135,19 @@ export function CloudFileInlineEditor({
     controls?.editorTabSize,
   ]);
 
-  // Leaving saves an unsaved copy once: unmount, a switch to another file,
-  // and an `<Activity>` hide all run this cleanup; `pagehide` also keeps the
-  // text for a reload. The copy is read from the store at that moment, so
-  // the save always has the LAST text typed in any view.
+  // The last view leaving saves an unsaved copy (the working copy does it).
+  // `pagehide` saves too and keeps the text for a reload of this tab.
   useEffect(() => {
-    const flush = () => {
-      void dispatch(saveFileWorkingCopy({ fileId, auto: true }));
-    };
     const onPageHide = () => {
-      const current = store.getState().cloudFiles.workingCopies[fileId];
-      if (current && current.text !== current.baseText) {
-        storeFileDraft(fileId, { text: current.text, baseVersion: current.baseVersion });
+      const current = fileWorkingCopy.entry(fileId);
+      if (current?.value !== undefined && current.dirty) {
+        storeFileDraft(fileId, { text: current.value, baseVersion: current.baseVersion });
       }
-      flush();
+      void fileWorkingCopy.flush(fileId);
     };
     window.addEventListener("pagehide", onPageHide);
-    return () => {
-      window.removeEventListener("pagehide", onPageHide);
-      flush();
-    };
-  }, [fileId, dispatch, store]);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [fileId]);
 
   if (!file) {
     return <AccessGate token="file" id={fileId} />;
@@ -183,16 +168,16 @@ export function CloudFileInlineEditor({
   }
 
   const language = languageFor(file.fileName);
-  const isDirty = copy !== undefined && copy.text !== copy.baseText;
-  const saving = copy?.saving ?? false;
+  const isDirty = copy?.dirty ?? false;
+  const saving = copy?.status === "saving";
   const saveError = copy?.saveError ?? null;
   const recentlySaved =
     copy?.savedAt != null && Date.now() - copy.savedAt < 2000 && !isDirty;
   const save = () => {
-    void dispatch(saveFileWorkingCopy({ fileId }));
+    void fileWorkingCopy.flush(fileId, "manual");
   };
   const discard = () => {
-    dispatch(workingCopyDiscarded({ fileId }));
+    fileWorkingCopy.discard(fileId);
     clearFileDraft(fileId);
   };
 
@@ -267,11 +252,11 @@ export function CloudFileInlineEditor({
           </div>
         ) : (
           <MonacoEditor
-            value={copy.text}
+            value={copy.value ?? ""}
             language={language}
             path={`cloud-file:/${fileId}`}
             keepModel
-            onChange={(next) => dispatch(workingCopyEdited({ fileId, text: next }))}
+            onChange={(next) => fileWorkingCopy.edit(fileId, next)}
             onSave={save}
             onEditorMount={(editor) => {
               editorRef.current = editor;

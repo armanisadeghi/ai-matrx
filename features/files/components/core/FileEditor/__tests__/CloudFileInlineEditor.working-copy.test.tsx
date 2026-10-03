@@ -1,9 +1,10 @@
 /**
  * The file editor is a VIEW of the file's one working copy in the store.
  *
- * SUT: the real `CloudFileInlineEditor` over the real cloudFiles slice, the
- * real `useFileWorkingCopy` / `useFileBlob` / blob cache and the real
- * `saveFileNewVersion` thunk. The stand-ins are the service boundary only —
+ * SUT: the real `CloudFileInlineEditor` over the real cloudFiles slice and THE
+ * working-copy primitive (`lib/working-copy`: the workingCopies slice, the
+ * `file` kind's one save path), the real `useFileWorkingCopy` / `useFileBlob`
+ * / blob cache and the real `saveFileNewVersion` thunk. The stand-ins are the service boundary only —
  * the files API (download / upload-new-version), the IndexedDB and
  * service-worker cache tiers — and Monaco itself (a textarea per view that
  * reports typing the way Monaco's onChange does).
@@ -109,6 +110,7 @@ jest.mock("@/features/files/components/surfaces/FileViewerControlsContext", () =
 }));
 
 import { cloudFilesReducer, upsertFile } from "@/features/files/redux/slice";
+import workingCopiesReducer from "@/lib/working-copy/workingCopySlice";
 import { CloudFileInlineEditor } from "../CloudFileInlineEditor";
 
 let objectUrls = 0;
@@ -127,7 +129,7 @@ beforeAll(() => {
 
 function makeStore(fileId: string) {
   const store = configureStore({
-    reducer: { cloudFiles: cloudFilesReducer },
+    reducer: { cloudFiles: cloudFilesReducer, workingCopies: workingCopiesReducer },
     middleware: (gdm) => gdm({ serializableCheck: false, immutableCheck: false }),
   });
   const row = server.get(fileId)!;
@@ -176,7 +178,7 @@ async function show(ui: ReactNode) {
 const shown = () =>
   Array.from(host.querySelectorAll<HTMLTextAreaElement>("[data-testid=editor-view]")).map((v) => v.value);
 const lastView = () => views[views.length - 1];
-const copyOf = (fileId: string) => store.getState().cloudFiles.workingCopies[fileId];
+const copyOf = (fileId: string) => store.getState().workingCopies.byKey[`file:${fileId}`];
 
 beforeEach(() => {
   host = document.createElement("div");
@@ -211,7 +213,7 @@ it("two views of one file edit ONE copy, from one download", async () => {
   await settle();
 
   expect(shown()).toEqual([TYPED, TYPED]);
-  expect(copyOf(fileId)?.text).toBe(TYPED);
+  expect(copyOf(fileId)?.value).toBe(TYPED);
   expect(downloads).toEqual([fileId]);
 });
 
@@ -329,6 +331,6 @@ it("a new version from elsewhere shows when nothing is unsaved, and never replac
   await settle();
   expect(shown()).toEqual([TYPED]);
   expect(host.textContent).toContain("Unsaved changes");
-  expect(copyOf(fileId)?.baseText).toBe("Changed again on the phone");
+  expect(copyOf(fileId)?.base).toBe("Changed again on the phone");
   expect(downloads).toEqual([fileId, fileId, fileId]);
 });

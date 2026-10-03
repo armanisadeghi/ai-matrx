@@ -787,31 +787,8 @@ export interface RagStatusState {
   lastFetchedAt: number | null;
 }
 
-/**
- * The ONE working copy of a text file being edited, keyed by file id in
- * `CloudFilesState.workingCopies`. Every editor view of the file (a board
- * tile, the Files page, a canvas tab) reads and writes this — so a hidden,
- * woken or remounted view shows the same text, and there is one save path
- * (`saveFileWorkingCopy` in `redux/working-copy.ts`). Dirty is derived:
- * `text !== baseText`.
- */
-export interface FileWorkingCopy {
-  /** What the person sees and edits. */
-  text: string;
-  /** The stored bytes this copy was last loaded from or saved as. */
-  baseText: string;
-  /** The file version `baseText` belongs to (null when not known). */
-  baseVersion: number | null;
-  saving: boolean;
-  /** ms timestamp of the last successful save. */
-  savedAt: number | null;
-  saveError: string | null;
-}
-
 export interface CloudFilesState {
   filesById: Record<string, CloudFileRecord>;
-  /** Text files being edited — see {@link FileWorkingCopy}. */
-  workingCopies: Record<string, FileWorkingCopy>;
   foldersById: Record<string, CloudFolderRecord>;
   versionsByFileId: Record<string, CloudFileVersion[]>;
   permissionsByResourceId: Record<string, CloudFilePermission[]>;
