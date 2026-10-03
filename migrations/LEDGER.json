@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T08:24:03.003Z",
+  "generated_at": "2026-10-03T08:45:12.849Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -517,6 +517,24 @@
       "filename": "chairdoors2_j_a_table_gives_its_new_rows_their_row_controls.sql",
       "checksum": "db4929148f79bcf58d723fdb7b91423b71868009fb272ca35640b7691d7f125a",
       "applied_at": "2026-10-02 20:14:34.01767+00"
+    },
+    "migrations/campaign/chairdoors3a_a_archived_rows_are_counted_in_one_call.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3a_a_archived_rows_are_counted_in_one_call.sql",
+      "checksum": "8154b6b8f6f4cb4bd4453622783a45ff4af6beb94fda08f121b2c1fc369c506b",
+      "applied_at": "2026-10-03 08:40:05.398498+00"
+    },
+    "migrations/campaign/chairdoors3a_c_the_add_rung_is_read_off_the_table_and_the_home.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3a_c_the_add_rung_is_read_off_the_table_and_the_home.sql",
+      "checksum": "d63c813831a63b2325b6a2eb644122b3664ae86cd703be004cf4b5d5bed83aeb",
+      "applied_at": "2026-10-03 08:40:22.271455+00"
+    },
+    "migrations/campaign/chairdoors3a_d_a_table_says_its_column_source_and_platform_keys.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairdoors3a_d_a_table_says_its_column_source_and_platform_keys.sql",
+      "checksum": "8de17fa53356c674837ae68e26caf9227ef628ee66c99d6d815f2d2086f44ef2",
+      "applied_at": "2026-10-03 08:40:37.060635+00"
     },
     "migrations/campaign/chairdoors3b_a_a_signed_in_person_never_writes_the_other_workflow_ledgers.sql": {
       "source": "matrx-frontend",
@@ -2347,6 +2365,12 @@
       "filename": "exportfix_the_export_pages_the_read_door.sql",
       "checksum": "7b49dfa430e19e781f1a70d464064d9acd2da51b73494765fa2bcb1524bf23c3",
       "applied_at": "2026-09-20 21:04:56.971501+00"
+    },
+    "migrations/campaign/fdt_a_calendar_and_a_timeline_are_placed_by_a_worked_out_date.sql": {
+      "source": "matrx-frontend",
+      "filename": "fdt_a_calendar_and_a_timeline_are_placed_by_a_worked_out_date.sql",
+      "checksum": "aaf500c5783ff9d10fd86924969eca21f710def0fb428459105c977cf93968be",
+      "applied_at": "2026-10-03 08:45:11.751774+00"
     },
     "migrations/campaign/fieldadd_a_person_can_add_a_field.sql": {
       "source": "matrx-frontend",
