@@ -47,3 +47,14 @@ export function useDataHomeMarks() {
     },
   };
 }
+
+/**
+ * "SHOW APP TABLES" IS THE PERSON'S OWN (lane 10 item 7): kept in the synced preference record
+ * (`lists.dataHomeShowAppTables`) beside the stars, so the home opens the way she left it, on any
+ * device. Off by default: a choice column's Lists and an agent's outputs wait behind the switch.
+ */
+export function useDataHomeShowAppTables(): [boolean, (on: boolean) => void] {
+  const dispatch = useAppDispatch();
+  const on = useAppSelector((s: RootState) => s.userPreferences.lists.dataHomeShowAppTables === true);
+  return [on, (next) => dispatch(setPreference({ module: "lists", preference: "dataHomeShowAppTables", value: next }))];
+}

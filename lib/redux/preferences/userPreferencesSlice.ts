@@ -538,6 +538,11 @@ export interface ListsPreferences {
   dataHomeStarred?: string[];
   /** The data home's last opened rows (`DataHomeRow.id`), newest first, at most ten. */
   dataHomeRecent?: string[];
+  /**
+   * The data home's "Show app tables" (Filters): also list the tables the app keeps — a choice
+   * column's Lists, an agent's outputs. A person's own choice; absent = off.
+   */
+  dataHomeShowAppTables?: boolean;
 }
 
 /**

@@ -4,12 +4,14 @@
 // returns them with `kept_by_the_app: true, kind: "list"`. The Messages custom-data picker mapped
 // every row straight into its options, so a clinic with five Status columns was offered "Status
 // choices" five times beside its real tables. This mounts it over that account and runs the one
-// rule (`tablePicking.ts`) over the same rows, so a picker that stops calling the rule goes red.
+// rule (`@ai-matrx/records-ui`'s `tablePickerEntries`, through `tablePicking.ts`'s adapter) over the same rows, so a picker that stops calling the rule goes red.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { tablePickerEntries, tablesToPick, pickerRow } from "../tablePicking";
+import { tablePickerEntries } from "@ai-matrx/records-ui";
+
+import { tablesToPick, pickerRow } from "../tablePicking";
 import type { DataHomeTableRow } from "../doors";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -45,7 +47,17 @@ jest.mock("@ai-matrx/records/react", () => ({
   useFields: () => ({ loading: false, error: null, reload: jest.fn(), data: [] }),
   useRecordPage: () => ({ loading: false, error: null, reload: jest.fn(), data: { rows: [], total: 0 } }),
 }));
-jest.mock("@ai-matrx/records-ui", () => ({ fieldName: (f: { key: string }) => f.key, rowNameIn: () => "" }));
+jest.mock("@ai-matrx/records-ui", () => {
+  // The one rule is the package's own; only the record-label helpers are stubbed.
+  const actual = jest.requireActual("@ai-matrx/records-ui");
+  return {
+    tablePickerEntries: actual.tablePickerEntries,
+    isValueSet: actual.isValueSet,
+    isKeptTable: actual.isKeptTable,
+    fieldName: (f: { key: string }) => f.key,
+    rowNameIn: () => "",
+  };
+});
 jest.mock("@/features/agents/components/variables-management/custom-data/CustomDataRecordsScope", () => ({
   CustomDataRecordsScope: ({ children }: { children: React.ReactNode }) => children,
 }));

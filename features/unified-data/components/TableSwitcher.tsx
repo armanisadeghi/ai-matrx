@@ -17,10 +17,9 @@ import Link from "next/link";
 import { Check, ChevronDown, LayoutGrid, Search } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { useTables } from "@ai-matrx/records/react";
-import { laneFor } from "@ai-matrx/records-ui";
+import { laneFor, tablePickerEntries } from "@ai-matrx/records-ui";
 import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { tablePickerEntries } from "@/features/unified-data/hub/tablePicking";
 
 export interface TableSwitcherProps {
   tableId: string;
