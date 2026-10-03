@@ -21,10 +21,9 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
       <div>
         {row
           ? props.columns.map((column) => (
-              <div key={column.id}>{column.cell?.(row, 0)}</div>
+              <div key={column.id}>{column.customActions ? column.customActions(row, {} as never) : column.cell?.(row, 0)}</div>
             ))
           : props.emptyState?.action}
-        {row ? props.rowActions?.(row, {} as never) : null}
       </div>
     );
   },
@@ -156,6 +155,7 @@ describe("RichMemberTable", () => {
       "embeddingsOai",
       "fileSize",
       "addedAt",
+      "custom-actions",
     ]);
     expect(
       tableProps.columns.find((column) => column.id === "embeddingsOai")

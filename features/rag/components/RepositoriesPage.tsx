@@ -354,29 +354,7 @@ export function RepositoriesPage() {
           ) : (
             <MatrxDataTable<ApiRepo>
               data={repos}
-              columns={repositoryColumns(focusRepoId)}
-              getRowId={(repo) => repo.repository_id ?? repo.name}
-              getRowHref={(repo) =>
-                repo.repository_id
-                  ? `/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`
-                  : undefined
-              }
-              onRowOpen={(repo) => {
-                if (repo.repository_id)
-                  router.push(
-                    `/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`,
-                  );
-              }}
-              detail={{ enabled: false }}
-              density="condensed"
-              pageSize={0}
-              isFetching={loading && repos.length > 0}
-              rowClassName={(repo) =>
-                repo.repository_id === focusRepoId
-                  ? "bg-accent ring-1 ring-inset ring-primary/40"
-                  : undefined
-              }
-              rowActions={(repo) => {
+              columns={[...(repositoryColumns(focusRepoId)), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (repo) => {
                 const fullyIndexed = isFullyIndexed(repo);
                 return (
                   <Button
@@ -410,7 +388,29 @@ export function RepositoriesPage() {
                     )}
                   </Button>
                 );
+              } }]}
+              getRowId={(repo) => repo.repository_id ?? repo.name}
+              getRowHref={(repo) =>
+                repo.repository_id
+                  ? `/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`
+                  : undefined
+              }
+              onRowOpen={(repo) => {
+                if (repo.repository_id)
+                  router.push(
+                    `/knowledge/repositories?repo=${encodeURIComponent(repo.repository_id)}`,
+                  );
               }}
+              detail={{ enabled: false }}
+              density="condensed"
+              pageSize={0}
+              isFetching={loading && repos.length > 0}
+              rowClassName={(repo) =>
+                repo.repository_id === focusRepoId
+                  ? "bg-accent ring-1 ring-inset ring-primary/40"
+                  : undefined
+              }
+
               toolbar={{
                 title: "Repositories",
                 search: true,

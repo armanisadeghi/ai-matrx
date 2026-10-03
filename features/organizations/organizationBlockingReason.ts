@@ -67,7 +67,7 @@ export function organizationBlockingReason(
       // here verbatim).
       return `We could not check which workspace you are working in, so ${act} is not available right now. Reload the page to try again.`;
     case "required":
-      return `Choose a workspace before ${act} — pick one from the menu under your avatar.`;
+      return `Choose a workspace before ${act} — use the sidebar's organization switcher.`;
     case "signed_out":
       // 🚨 THE FIFTH STATE (FIX-10C, 2026-09-22). Nobody is signed in, so
       // "choose a workspace" names a question this person cannot be asked —

@@ -631,28 +631,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
             // Edit tab reuses detail.render (RuleEditorForm) via MatrxDataTable
             // fallback. View tab = DataRowInspector.
           }}
-          rowActions={(rule) => (
-            <>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                title="Edit rule"
-                onClick={() => openEditInSidePanel(rule)}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                title="Delete rule"
-                onClick={() => setDeleteTarget(rule)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+          rowActions={(rule) => [...[{ id: "edit", icon: Pencil, label: "Edit rule", onClick: () => openEditInSidePanel(rule), variant: "ghost" as const, tooltip: "Edit rule" }], ...[{ id: "delete", icon: Trash2, tone: "destructive" as const, label: "Delete rule", onClick: () => setDeleteTarget(rule), variant: "ghost" as const, tooltip: "Delete rule" }]]}
         />
         </NonEditableContextMenu>
       </div>

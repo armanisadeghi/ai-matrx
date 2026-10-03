@@ -701,19 +701,7 @@ export function QualityView({
           detail={{ enabled: false }}
           window={{ enabled: false }}
           data={summaryRows}
-          columns={summaryColumns}
-          getRowId={(row) => row.traffic_class}
-          isLoading={summary.isLoading}
-          pageSize={10}
-          selectedId={trafficClass}
-          onRowOpen={(row) =>
-            setTrafficClass((current) =>
-              current === row.traffic_class
-                ? null
-                : (row.traffic_class as GscTrafficClass),
-            )
-          }
-          rowActions={(row) => (
+          columns={[...(summaryColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <Link
               href={marketingRoutes.siteKeywordWorkbench(
                 null,
@@ -729,7 +717,19 @@ export function QualityView({
             >
               {row.traffic_class === "unclassified" ? "Classify →" : "Review →"}
             </Link>
-          )}
+          ) }]}
+          getRowId={(row) => row.traffic_class}
+          isLoading={summary.isLoading}
+          pageSize={10}
+          selectedId={trafficClass}
+          onRowOpen={(row) =>
+            setTrafficClass((current) =>
+              current === row.traffic_class
+                ? null
+                : (row.traffic_class as GscTrafficClass),
+            )
+          }
+
           emptyState={{
             title: "No traffic-class data",
             description: `No data ${describeGscWindow(periods.current)}.`,
@@ -771,7 +771,15 @@ export function QualityView({
           <MatrxDataTable<LevelRow>
             urlState={{ id: "gsc-value-summary", selectedRow: false }}
             data={levelRows}
-            columns={levelColumns}
+            columns={[...(levelColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <Link
+                href={`/marketing/sites/${siteId}/value?band=${encodeURIComponent(row.value_band)}`}
+                className="whitespace-nowrap text-[11px] text-primary hover:underline"
+                title={`Review the keywords sitting at ${levelLabel(row.value_band)}`}
+              >
+                Review →
+              </Link>
+            ) }]}
             getRowId={(row) => row.value_band}
             isLoading={valueSummary.isLoading}
             isFetching={valueSummary.isFetching}
@@ -788,15 +796,7 @@ export function QualityView({
                 current === row.value_band ? null : row.value_band,
               )
             }
-            rowActions={(row) => (
-              <Link
-                href={`/marketing/sites/${siteId}/value?band=${encodeURIComponent(row.value_band)}`}
-                className="whitespace-nowrap text-[11px] text-primary hover:underline"
-                title={`Review the keywords sitting at ${levelLabel(row.value_band)}`}
-              >
-                Review →
-              </Link>
-            )}
+
             emptyState={{
               title: "No level data",
               description: `No keyword carries a level ${describeGscWindow(periods.current)}. Give a topic worth, or rule a level directly, and this fills in.`,
@@ -1144,12 +1144,7 @@ export function ShiftsView({
         // Same law as cannibalization: the panel WRAPS the canonical component
         // instead of re-rendering a partial page list of its own.
         window={{ enabled: false }}
-        rowActions={(row) => (
-          <button
-            type="button"
-            title={`Open the pages for “${row.query}” in a window`}
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            onClick={(event) => {
+        rowActions={(row) => [{ id: "open-pages", icon: PanelTop, label: `Open the pages for “${row.query}” in a window`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
               event.stopPropagation();
               openDrilldown({
                 siteId,
@@ -1158,11 +1153,7 @@ export function ShiftsView({
                 filters: { query_eq: row.query },
                 title: `Pages for “${row.query}”`,
               });
-            }}
-          >
-            <PanelTop className="size-3.5" />
-          </button>
-        )}
+            }, tooltip: `Open the pages for “${row.query}” in a window` }]}
         onRowOpen={(row) => onDrill("query", row.query)}
         pageSize={25}
         emptyState={{

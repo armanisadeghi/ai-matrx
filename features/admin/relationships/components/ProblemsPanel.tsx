@@ -162,7 +162,43 @@ export function ProblemsPanel({
       <MatrxDataTable
         urlState={{ id: "relationship-problems", selectedRow: false }}
         data={rows}
-        columns={problemColumns}
+        columns={[...(problemColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
+          row.kind === "unregistered_pair" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() =>
+                onRegister(row.source_type, row.target_type, row.label)
+              }
+            >
+              Register as known
+            </Button>
+          ) : row.kind === "conveying_container_not_shareable" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                onRegisterShareable(
+                  row.container_side === "target"
+                    ? row.target_type
+                    : row.source_type,
+                )
+              }
+            >
+              Register as shareable
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                onEdit(row.source_type, row.target_type, row.label)
+              }
+            >
+              Open rule
+            </Button>
+          ) }]}
         getRowId={(row) => row.tableRowId}
         density="condensed"
         viewTabs={false}
@@ -222,44 +258,7 @@ export function ProblemsPanel({
             warnings: visible.filter((row) => row.severity === "warning").length,
           }),
         }}
-        rowActions={(row) =>
-          row.kind === "unregistered_pair" ? (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() =>
-                onRegister(row.source_type, row.target_type, row.label)
-              }
-            >
-              Register as known
-            </Button>
-          ) : row.kind === "conveying_container_not_shareable" ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                onRegisterShareable(
-                  row.container_side === "target"
-                    ? row.target_type
-                    : row.source_type,
-                )
-              }
-            >
-              Register as shareable
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                onEdit(row.source_type, row.target_type, row.label)
-              }
-            >
-              Open rule
-            </Button>
-          )
-        }
+
       />
     </section>
   );

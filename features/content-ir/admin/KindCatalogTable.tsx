@@ -418,11 +418,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
     <MatrxDataTable<KindBoardRow>
       urlState={{ id: "content-kinds" }}
       data={filteredRows}
-      columns={columns}
-      getRowId={(row) => row.kind}
-      detail={{ enabled: false }}
-      onRowOpen={openKind}
-      rowActions={(row) => {
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
         const href = kindDetailHref(row);
         // A row that is gone from the live DB gets no new-tab control: the
         // detail route would 404. The "gone from live DB" flag says why.
@@ -446,7 +442,11 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
             </Link>
           </Button>
         );
-      }}
+      } }]}
+      getRowId={(row) => row.kind}
+      detail={{ enabled: false }}
+      onRowOpen={openKind}
+
       toolbar={{
         searchPlaceholder: "Search kinds…",
         facets: [

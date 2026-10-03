@@ -157,7 +157,7 @@ export function ShortcutDirectory({
       toast({
         title: "Invalid ID",
         description: "Enter a valid shortcut UUID.",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       return;
     }
@@ -176,7 +176,7 @@ export function ShortcutDirectory({
       toast({
         title: "Copy failed",
         description: "Unable to copy ID",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     }
   };
@@ -379,7 +379,22 @@ export function ShortcutDirectory({
       <MatrxDataTable<ShortcutDirectoryRow>
         tableId={`agent-shortcuts/directory/${mode}`}
         data={filteredRows}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <Link
+            href={resolveShortcutEditUrl(row, mode)}
+            onClick={(event) => event.stopPropagation()}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label={`Open ${row.label}`}
+            >
+              <ExternalLink className="size-3" />
+            </Button>
+          </Link>
+        ) }]}
         getRowId={(row) => row.id}
         density="condensed"
         isLoading={isLoading && rows.length === 0}
@@ -512,22 +527,7 @@ export function ShortcutDirectory({
             });
           },
         }}
-        rowActions={(row) => (
-          <Link
-            href={resolveShortcutEditUrl(row, mode)}
-            onClick={(event) => event.stopPropagation()}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              aria-label={`Open ${row.label}`}
-            >
-              <ExternalLink className="size-3" />
-            </Button>
-          </Link>
-        )}
+
         toolbar={{
           title: hideTitleBar ? undefined : title,
           search: false,

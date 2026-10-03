@@ -93,7 +93,7 @@ export default function AnnouncementTable() {
 
     const handleDelete = async () => {
         if (!announcementToDelete) return;
-        
+
         const result = await deleteAnnouncement(announcementToDelete);
         if (result.success) {
             toast.success('Announcement moved to Trash');
@@ -179,7 +179,7 @@ export default function AnnouncementTable() {
                     Numbered pagination follows Arman's stable-footer instruction. */}
                 <MatrxDataTable
                     data={announcements}
-                    columns={columns}
+                    columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div> }]}
                     getRowId={(announcement) => announcement.id}
                     onRowOpen={handleEdit}
                     viewTabs={false}
@@ -240,7 +240,7 @@ export default function AnnouncementTable() {
                         searchPlaceholder: 'Search announcements…',
                         refresh: { onRefresh: () => loadAnnouncements(), label: 'Refresh announcements' },
                     }}
-                    rowActions={(announcement) => <div className="flex items-center gap-2"><Badge className={announcementTypeColors[announcement.announcement_type]}>{announcement.announcement_type}</Badge><Button variant="ghost" size="sm" onClick={() => handleView(announcement)} className="h-7 px-2" title="View details"><Eye className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => { setAnnouncementToDelete(announcement.id); setDeleteDialogOpen(true); }} className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20" title="Move announcement to Trash"><Trash2 className="w-4 h-4" /></Button></div>}
+
                 />
             </Card>
 

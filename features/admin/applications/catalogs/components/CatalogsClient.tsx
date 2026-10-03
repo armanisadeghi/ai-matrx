@@ -207,7 +207,7 @@ export function CatalogsClient({
       toast({
         title: "Failed to refresh catalog entries",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       return;
     }
@@ -593,18 +593,9 @@ export function CatalogsClient({
                 entries_total: appRows.length,
               }),
             }}
-            rowActions={(row) => (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
+            rowActions={(row) => [{ id: "plus", icon: Plus, label: "Entries", onClick: () => {
                   setView({ mode: "kind", kind: row.slug });
-                }}
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" /> Entries
-              </Button>
-            )}
+                }, variant: "ghost" as const }]}
           />
           </NonEditableContextMenu>
         </div>

@@ -648,7 +648,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
 
         if (error) {
             const failure = error instanceof WriteDidNotLandError ? error : operationFailed("update that sample", error);
-            toast({ title: "Update failed", description: failure.message, variant: "destructive" });
+            toast({ title: "Update failed", description: failure.message, variant: "destructive" as const });
             throw failure;
         }
 
@@ -753,7 +753,16 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                 <MatrxDataTable<ToolTestSample>
                     tableId="tool-test-samples"
                     data={filtered}
-                    columns={columns}
+                    columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (sample, controls) => (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={controls.toggleExpanded}
+                        >
+                            {controls.isExpanded ? "Collapse" : "Inspect"}
+                        </Button>
+                    ) }]}
                     getRowId={(sample) => sample.id}
                     isLoading={loading && samples.length === 0}
                     isFetching={loading && samples.length > 0}
@@ -791,16 +800,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                             />
                         ),
                     }}
-                    rowActions={(sample, controls) => (
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            onClick={controls.toggleExpanded}
-                        >
-                            {controls.isExpanded ? "Collapse" : "Inspect"}
-                        </Button>
-                    )}
+
                 />
             </div>
         </div>

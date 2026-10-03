@@ -802,32 +802,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
                 </div>
               ) : null,
           }}
-          rowActions={(row) => (
-            <>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                title="Edit entity type"
-                onClick={() => openEditInSidePanel(row)}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className={
-                  row.is_active
-                    ? "h-7 w-7 text-muted-foreground hover:text-destructive"
-                    : "h-7 w-7 text-muted-foreground hover:text-foreground"
-                }
-                title={row.is_active ? "Deactivate" : "Reactivate"}
-                onClick={() => setActiveTarget(row)}
-              >
-                <Power className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+          rowActions={(row) => [...[{ id: "edit", icon: Pencil, label: "Edit entity type", onClick: () => openEditInSidePanel(row), variant: "ghost" as const, tooltip: "Edit entity type" }], ...[{ id: "power", icon: Power, label: row.is_active ? "Deactivate" : "Reactivate", onClick: () => setActiveTarget(row), variant: "ghost" as const, tooltip: row.is_active ? "Deactivate" : "Reactivate" }]]}
         />
         </NonEditableContextMenu>
       </div>

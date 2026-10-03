@@ -266,7 +266,14 @@ export default function OfferingTable({
     <div className="flex h-full min-h-0 flex-col">
       <MatrxDataTable<AiOffering>
         data={offerings}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (offering) => (
+          <OfferingRowActions
+            offering={offering}
+            modelName={resolvedModelName(offering.model_id)}
+            endpointName={endpointName(offering.endpoint_id)}
+            onDelete={onDelete}
+          />
+        ) }]}
         getRowId={(offering) => offering.id}
         isLoading={loading && offerings.length === 0}
         isFetching={loading && offerings.length > 0}
@@ -294,14 +301,7 @@ export default function OfferingTable({
             `${modelName(offering.model_id)} via ${endpointName(offering.endpoint_id)} (${offering.provider_model_id})`,
           agentRow: (offering) => offering,
         }}
-        rowActions={(offering) => (
-          <OfferingRowActions
-            offering={offering}
-            modelName={resolvedModelName(offering.model_id)}
-            endpointName={endpointName(offering.endpoint_id)}
-            onDelete={onDelete}
-          />
-        )}
+
       />
     </div>
   );

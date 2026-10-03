@@ -20,6 +20,11 @@ import {
   type SmsInboundContextResolution,
 } from "./identity";
 import { tryWriteOne } from "@/utils/supabase/writeOne";
+import {
+  assistantBindingTargets,
+  bindingMatchesTargets,
+  successorDestinationId,
+} from "@/lib/sms/assistant-line";
 
 const RECEIPT_LEASE_MS = 60_000;
 
@@ -369,7 +374,7 @@ export async function resolveSmsInboundContext(
   const { data: destinations, error: destinationError } = await supabase
     .schema("communication")
     .from("sms_phone_numbers")
-    .select("id, organization_id, program_key, assistant_enabled, is_active")
+    .select("id, organization_id, program_key, assistant_enabled, is_active, metadata")
     .eq("provider", input.provider)
     .eq("provider_account_id", input.providerAccountId)
     .eq("phone_number", input.destination)
@@ -402,13 +407,45 @@ export async function resolveSmsInboundContext(
     destination.program_key,
   );
 
-  const { data: preferences, error: preferenceError } = await supabase
+  // A retired staff number keeps answering the people bound to its successor
+  // (lib/sms/assistant-line.ts). Read the successor row once, only when named.
+  const successorId = successorDestinationId(destination.metadata);
+  let successor: { id: string; program_key: string } | null = null;
+  if (successorId) {
+    const { data: successorRow, error: successorError } = await supabase
+      .schema("communication")
+      .from("sms_phone_numbers")
+      .select("id, program_key")
+      .eq("id", successorId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (successorError) {
+      throw new Error(
+        `Failed to resolve SMS destination successor: ${successorError.message}`,
+      );
+    }
+    successor = successorRow ?? null;
+  }
+  const bindingTargets = assistantBindingTargets(
+    {
+      id: preferenceScope.destinationIdentityId,
+      program_key: preferenceScope.programKey,
+      metadata: destination.metadata,
+    },
+    successor,
+  );
+
+  const { data: preferenceRows, error: preferenceError } = await supabase
     .schema("communication")
     .from("sms_notification_preferences")
-    .select("user_id, organization_id, ai_agent_messages")
+    .select(
+      "user_id, organization_id, ai_agent_messages, assistant_destination_id, assistant_program_key",
+    )
     .eq("phone_number", preferenceScope.phoneNumber)
-    .eq("assistant_destination_id", preferenceScope.destinationIdentityId)
-    .eq("assistant_program_key", preferenceScope.programKey)
+    .in(
+      "assistant_destination_id",
+      bindingTargets.map((target) => target.destinationId),
+    )
     .eq("sms_enabled", true)
     .is("deleted_at", null)
     .limit(3);
@@ -417,6 +454,9 @@ export async function resolveSmsInboundContext(
       `Failed to resolve verified SMS user binding: ${preferenceError.message}`,
     );
   }
+  const preferences = (preferenceRows ?? []).filter((row) =>
+    bindingMatchesTargets(row, bindingTargets),
+  );
   const preferenceSelection = selectSingleSmsPreferenceBinding(preferences);
   if (preferenceSelection.status === "not_found") {
     return {

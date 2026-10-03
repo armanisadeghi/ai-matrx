@@ -771,13 +771,7 @@ export default function BatchScrapePage() {
               <MatrxDataTable<BatchRow>
                 tableId="scraper-batch-results"
                 data={rows}
-                columns={columns}
-                getRowId={(row) => row.url}
-                isLoading={rows.length === 0 && isLoading}
-                isFetching={isLoading}
-                viewTabs={false}
-                density="condensed"
-                rowActions={(row) =>
+                columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
                   row.status === "failed" ? (
                     <Button
                       variant="ghost"
@@ -793,8 +787,13 @@ export default function BatchScrapePage() {
                       )}
                       Retry
                     </Button>
-                  ) : null
-                }
+                  ) : null }]}
+                getRowId={(row) => row.url}
+                isLoading={rows.length === 0 && isLoading}
+                isFetching={isLoading}
+                viewTabs={false}
+                density="condensed"
+
                 selection={{
                   selectedIds,
                   onSelectedIdsChange: setSelectedIds,

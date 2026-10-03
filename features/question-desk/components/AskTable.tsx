@@ -158,27 +158,7 @@ export function AskTable({
   return (
     <MatrxDataTable<DecisionQuestionRow>
       data={questions}
-      columns={columns}
-      getRowId={(question) => question.id}
-      density="condensed"
-      pageSize={25}
-      pageSizeOptions={[10, 25, 50]}
-      detail={{ enabled: false }}
-      toolbar={{
-        title: "Every question at once",
-        search: true,
-        searchPlaceholder: "Search questions and answers…",
-      }}
-      emptyState={{
-        title: "No open questions",
-        description: "Questions appear here when the desk needs your decision.",
-      }}
-      rowClassName={(question) =>
-        question.answered_at !== null && question.verdict !== null
-          ? "bg-success/5"
-          : undefined
-      }
-      rowActions={(question) => {
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (question) => {
         const line = lines[question.id];
         const writing = writingId === question.id;
         return (
@@ -265,7 +245,27 @@ export function AskTable({
             ) : null}
           </div>
         );
+      } }]}
+      getRowId={(question) => question.id}
+      density="condensed"
+      pageSize={25}
+      pageSizeOptions={[10, 25, 50]}
+      detail={{ enabled: false }}
+      toolbar={{
+        title: "Every question at once",
+        search: true,
+        searchPlaceholder: "Search questions and answers…",
       }}
+      emptyState={{
+        title: "No open questions",
+        description: "Questions appear here when the desk needs your decision.",
+      }}
+      rowClassName={(question) =>
+        question.answered_at !== null && question.verdict !== null
+          ? "bg-success/5"
+          : undefined
+      }
+
     />
   );
 }

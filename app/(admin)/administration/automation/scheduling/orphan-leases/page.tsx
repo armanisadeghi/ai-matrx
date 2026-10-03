@@ -106,7 +106,7 @@ export default function OrphanLeasesPage() {
           </span>
         ),
         confirmLabel: "Mark failed",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!ok) return;
       setBusyId(run.id);
@@ -254,20 +254,10 @@ export default function OrphanLeasesPage() {
               />
             ),
           }}
-          rowActions={(r) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
+          rowActions={(r) => [{ id: "mark-failed", icon: XCircle, tone: "destructive" as const, label: "Mark failed", onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
                 void handleKill(r);
-              }}
-              disabled={busyId === r.id}
-              className="text-destructive"
-            >
-              <XCircle className="mr-1.5 h-3.5 w-3.5" /> Mark failed
-            </Button>
-          )}
+              }, disabled: busyId === r.id, variant: "ghost" as const }]}
         />
         </NonEditableContextMenu>
       </div>

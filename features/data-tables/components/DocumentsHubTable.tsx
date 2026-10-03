@@ -1,255 +1,27 @@
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import {
-  ChevronDown,
-  ChevronUp,
-  ChevronsUpDown,
-  ListFilter,
-  Trash,
-} from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@ai-matrx/design-system";
+// features/data-tables/components/DocumentsHubTable.tsx — the /documents list.
+//
+// 🚨 ON THE CANONICAL TABLE (lane 7 STANDARD-TABLES W5, I2 queue item 1). This list hand-rolled a
+// `components/ui/table` grid with its own sort, column filters and "Column filters active" bar, so it
+// could not inherit anything the platform table gains — custom fields above all: a field an
+// organization adds to its documents never showed as a column here. It is now a `MatrxDataTable`
+// with `rowToken="udt_document"`, so the organization's own fields join its columns (hidden until
+// picked in Columns), and sort, filter, search, copy and export are the table's.
+//
+// THE DOOR LAW: the name is an `EntityRef` (cmd-click / new tab) and the row opens the document
+// through `getRowHref` — both from the ONE registry entry, which screams when it has no route.
+
+import { Trash } from "lucide-react";
+import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { cn } from "@/lib/utils";
-import {
-  compareTimestamps,
-  formatAbsoluteDate,
-  formatRelativeTime,
-  toEpochMs,
-} from "@/utils/datetime";
-import type { DocumentRow, DocumentSource } from "@/features/data-tables/types";
+import { formatAbsoluteDate, formatRelativeTime, toEpochMs } from "@/utils/datetime";
+import type { DocumentRow } from "@/features/data-tables/types";
 import { documentSourceLabel } from "@/features/data-tables/utils/documentsHubDisplay";
 
-type SortKey = "name" | "description" | "source" | "created" | "updated";
-type SortDir = "asc" | "desc";
-
-type UpdatedFilter =
-  | "any"
-  | "hour"
-  | "today"
-  | "week"
-  | "month"
-  | "quarter"
-  | "year";
-
-type SourceFilter = "any" | DocumentSource;
-
-type ColumnFilters = {
-  name: string;
-  description: string;
-  source: SourceFilter;
-  created: UpdatedFilter;
-  updated: UpdatedFilter;
-};
-
-const EMPTY_COLUMN_FILTERS: ColumnFilters = {
-  name: "",
-  description: "",
-  source: "any",
-  created: "any",
-  updated: "any",
-};
-
-const UPDATED_FILTER_OPTIONS: ReadonlyArray<{
-  value: UpdatedFilter;
-  label: string;
-}> = [
-  { value: "any", label: "Any time" },
-  { value: "hour", label: "Last hour" },
-  { value: "today", label: "Last 24 hours" },
-  { value: "week", label: "Last 7 days" },
-  { value: "month", label: "Last 30 days" },
-  { value: "quarter", label: "Last 90 days" },
-  { value: "year", label: "Last year" },
-];
-
-const SOURCE_FILTER_OPTIONS: ReadonlyArray<{
-  value: SourceFilter;
-  label: string;
-}> = [
-  { value: "any", label: "All sources" },
-  { value: "created", label: "Created" },
-  { value: "imported_docx", label: "Imported DOCX" },
-  { value: "imported_md", label: "Imported Markdown" },
-  { value: "imported_txt", label: "Imported Text" },
-];
-
-function hasActiveColumnFilters(filters: ColumnFilters): boolean {
-  return (
-    filters.name.trim().length > 0 ||
-    filters.description.trim().length > 0 ||
-    filters.source !== "any" ||
-    filters.created !== "any" ||
-    filters.updated !== "any"
-  );
-}
-
-function passesUpdatedFilter(
-  updatedAt: string,
-  filter: UpdatedFilter,
-): boolean {
-  if (filter === "any") return true;
-  const updated = toEpochMs(updatedAt);
-  if (Number.isNaN(updated)) return false;
-  const age = Date.now() - updated;
-  const hour = 60 * 60 * 1000;
-  const day = 24 * hour;
-  switch (filter) {
-    case "hour":
-      return age <= hour;
-    case "today":
-      return age <= day;
-    case "week":
-      return age <= 7 * day;
-    case "month":
-      return age <= 30 * day;
-    case "quarter":
-      return age <= 90 * day;
-    case "year":
-      return age <= 365 * day;
-    default:
-      return true;
-  }
-}
-
-function ColumnFilterButton({
-  active,
-  label,
-  children,
-  align = "start",
-}: {
-  active: boolean;
-  label: string;
-  children: React.ReactNode;
-  align?: "start" | "end";
-}) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          title={`Filter ${label}`}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "rounded p-0.5 transition-colors",
-            active
-              ? "text-primary hover:text-primary/80"
-              : "text-muted-foreground/40 hover:text-muted-foreground",
-          )}
-        >
-          <ListFilter className={cn("h-3 w-3", active && "fill-primary/20")} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        /* sizing: fixed — content already decides its own width; no fixed box to remove */
-        align={align}
-        side="bottom"
-        className="w-auto p-3"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function TextColumnFilter({
-  label,
-  value,
-  placeholder,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (next: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 w-[200px]">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Filter: {label}
-        </p>
-        {value.trim().length > 0 && (
-          <button
-            type="button"
-            className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => onChange("")}
-          >
-            clear
-          </button>
-        )}
-      </div>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="h-8 text-sm"
-      />
-    </div>
-  );
-}
-
-function OptionColumnFilter<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: ReadonlyArray<{ value: T; label: string }>;
-  onChange: (next: T) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 w-[180px]">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        Filter: {label}
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              "rounded px-2 py-1 text-left text-xs hover:bg-accent",
-              value === opt.value && "bg-accent font-medium",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * `/documents/{id}` from the ONE registry entry, with an alarm.
- *
- * The registry is the route authority (never a second inline template), but a
- * missing `hrefFor` here is not a cosmetic gap: it removes the table's only
- * remaining door. Screaming once per session makes that impossible to ship
- * unnoticed, which a bare `?.` could not.
- */
 let warnedNoDocumentRoute = false;
 function documentHref(id: string): string | undefined {
   const href = tryGetEntityInfo("udt_document")?.hrefFor?.(id);
@@ -264,59 +36,79 @@ function documentHref(id: string): string | undefined {
   return href;
 }
 
-/**
- * Hoisted to module scope: a component defined inside another is a new type each
- * render, remounting the header row and losing focus in its filter popovers.
- */
-const ColumnHead = ({
-  k,
-  children,
-  className,
-  align = "left",
-  filter,
-  sortKey,
-  sortDir,
-  onSort,
-}: {
-  k: SortKey;
-  children: React.ReactNode;
-  className?: string;
-  align?: "left" | "right";
-  filter: React.ReactNode | null;
-  sortKey: SortKey;
-  sortDir: SortDir;
-  onSort: (key: SortKey) => void;
-}) => (
-  <TableHead className={className}>
-    <div
-      className={cn(
-        "inline-flex items-center gap-0.5",
-        align === "right" && "justify-end w-full",
-      )}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(k)}
-        className={cn(
-          "inline-flex items-center gap-1 hover:text-foreground transition-colors text-xs",
-          align === "right" && "justify-end",
-        )}
-      >
-        {children}
-        {sortKey === k ? (
-          sortDir === "asc" ? (
-            <ChevronUp className="h-3 w-3" />
-          ) : (
-            <ChevronDown className="h-3 w-3" />
-          )
-        ) : (
-          <ChevronsUpDown className="h-3 w-3 opacity-40" />
-        )}
-      </button>
-      {filter}
-    </div>
-  </TableHead>
-);
+function columnsFor(onDelete: (doc: DocumentRow) => void): MatrxColumnDef<DocumentRow>[] {
+  return [
+    {
+      id: "name",
+      header: "Name",
+      accessorKey: "document_name",
+      filter: "text",
+      cell: (doc) => (
+        <EntityRef token="udt_document" id={doc.id} name={doc.document_name} showIcon={false} className="text-sm font-medium" />
+      ),
+    },
+    {
+      id: "description",
+      header: "Description",
+      accessorFn: (doc) => doc.description ?? "",
+      filter: "text",
+      cell: (doc) => (
+        <span className="line-clamp-2 break-words text-xs text-muted-foreground">{doc.description || "—"}</span>
+      ),
+    },
+    {
+      id: "source",
+      header: "Source",
+      accessorFn: (doc) => documentSourceLabel(doc.source),
+      filter: "select",
+      cell: (doc) => (
+        <Badge variant="outline" className="text-[10px] font-medium uppercase tracking-wide">
+          {documentSourceLabel(doc.source)}
+        </Badge>
+      ),
+    },
+    {
+      id: "created",
+      header: "Created",
+      accessorFn: (doc) => doc.created_at,
+      sortValue: (doc) => toEpochMs(doc.created_at),
+      filter: "date",
+      defaultSortDirection: "desc",
+      cell: (doc) => (
+        <span className="whitespace-nowrap text-xs text-muted-foreground" title={formatAbsoluteDate(doc.created_at)}>
+          {formatRelativeTime(doc.created_at, { style: "long" })}
+        </span>
+      ),
+    },
+    {
+      id: "updated",
+      header: "Updated",
+      accessorFn: (doc) => doc.updated_at,
+      sortValue: (doc) => toEpochMs(doc.updated_at),
+      filter: "date",
+      defaultSortDirection: "desc",
+      cell: (doc) => (
+        <span className="whitespace-nowrap text-xs text-muted-foreground" title={formatAbsoluteDate(doc.updated_at)}>
+          {formatRelativeTime(doc.updated_at, { style: "long" })}
+        </span>
+      ),
+    },
+    {
+      id: "delete",
+      header: "",
+      label: "Delete",
+      sortable: false,
+      filter: false,
+      cell: (doc) => (
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <Button size="sm" variant="ghost" title="Delete document" aria-label="Delete document" onClick={() => onDelete(doc)}>
+            <Trash className="h-3.5 w-3.5 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+}
 
 export function DocumentsHubTable({
   documents,
@@ -325,315 +117,16 @@ export function DocumentsHubTable({
   documents: DocumentRow[];
   onDelete: (doc: DocumentRow) => void;
 }) {
-  const router = useRouter();
-  const [sortKey, setSortKey] = React.useState<SortKey>("updated");
-  const [sortDir, setSortDir] = React.useState<SortDir>("desc");
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFilters>(EMPTY_COLUMN_FILTERS);
-
-  const patchFilters = (patch: Partial<ColumnFilters>) => {
-    setColumnFilters((prev) => ({ ...prev, ...patch }));
-  };
-
-  const passesFilters = React.useCallback(
-    (doc: DocumentRow) => {
-      const nameQ = columnFilters.name.trim().toLowerCase();
-      const descQ = columnFilters.description.trim().toLowerCase();
-      if (nameQ && !doc.document_name.toLowerCase().includes(nameQ)) {
-        return false;
-      }
-      if (descQ && !(doc.description?.toLowerCase().includes(descQ) ?? false)) {
-        return false;
-      }
-      if (
-        columnFilters.source !== "any" &&
-        doc.source !== columnFilters.source
-      ) {
-        return false;
-      }
-      if (!passesUpdatedFilter(doc.created_at, columnFilters.created)) {
-        return false;
-      }
-      if (!passesUpdatedFilter(doc.updated_at, columnFilters.updated)) {
-        return false;
-      }
-      return true;
-    },
-    [columnFilters],
-  );
-
-  const filtered = React.useMemo(
-    () => documents.filter(passesFilters),
-    [documents, passesFilters],
-  );
-
-  const sorted = React.useMemo(() => {
-    const arr = [...filtered];
-    const dir = sortDir === "asc" ? 1 : -1;
-    arr.sort((a, b) => {
-      switch (sortKey) {
-        case "name":
-          return (
-            a.document_name.localeCompare(b.document_name) * dir ||
-            compareTimestamps(a.updated_at, b.updated_at)
-          );
-        case "description":
-          return (
-            (a.description ?? "").localeCompare(b.description ?? "") * dir ||
-            a.document_name.localeCompare(b.document_name)
-          );
-        case "source":
-          return (
-            documentSourceLabel(a.source).localeCompare(
-              documentSourceLabel(b.source),
-            ) * dir || a.document_name.localeCompare(b.document_name)
-          );
-        case "created":
-          return (
-            compareTimestamps(a.created_at, b.created_at) * dir ||
-            a.document_name.localeCompare(b.document_name)
-          );
-        case "updated":
-          return (
-            compareTimestamps(a.updated_at, b.updated_at) * dir ||
-            a.document_name.localeCompare(b.document_name)
-          );
-        default:
-          return 0;
-      }
-    });
-    return arr;
-  }, [filtered, sortKey, sortDir]);
-
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    else {
-      setSortKey(key);
-      setSortDir(key === "updated" || key === "created" ? "desc" : "asc");
-    }
-  };
-
-  const filtersActive = hasActiveColumnFilters(columnFilters);
-
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      {filtersActive && (
-        <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1.5">
-          <span className="text-xs text-muted-foreground">
-            Column filters active
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
-            onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <ColumnHead
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              k="name"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.name.trim().length > 0}
-                  label="name"
-                >
-                  <TextColumnFilter
-                    label="Name"
-                    value={columnFilters.name}
-                    placeholder="Contains…"
-                    onChange={(name) => patchFilters({ name })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Name
-            </ColumnHead>
-            <ColumnHead
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              k="description"
-              className="min-w-[160px]"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.description.trim().length > 0}
-                  label="description"
-                >
-                  <TextColumnFilter
-                    label="Description"
-                    value={columnFilters.description}
-                    placeholder="Contains…"
-                    onChange={(description) => patchFilters({ description })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Description
-            </ColumnHead>
-            <ColumnHead
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              k="source"
-              className="w-36"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.source !== "any"}
-                  label="source"
-                >
-                  <OptionColumnFilter
-                    label="Source"
-                    value={columnFilters.source}
-                    options={SOURCE_FILTER_OPTIONS}
-                    onChange={(source) => patchFilters({ source })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Source
-            </ColumnHead>
-            <ColumnHead
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              k="created"
-              className="w-32"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.created !== "any"}
-                  label="created"
-                >
-                  <OptionColumnFilter
-                    label="Created"
-                    value={columnFilters.created}
-                    options={UPDATED_FILTER_OPTIONS}
-                    onChange={(created) => patchFilters({ created })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Created
-            </ColumnHead>
-            <ColumnHead
-              sortKey={sortKey}
-              sortDir={sortDir}
-              onSort={toggleSort}
-              k="updated"
-              className="w-32"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.updated !== "any"}
-                  label="updated"
-                >
-                  <OptionColumnFilter
-                    label="Updated"
-                    value={columnFilters.updated}
-                    options={UPDATED_FILTER_OPTIONS}
-                    onChange={(updated) => patchFilters({ updated })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Updated
-            </ColumnHead>
-            <TableHead className="w-24 text-right text-xs">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell
-                colSpan={6}
-                className="py-10 text-center text-sm text-muted-foreground"
-              >
-                No documents match these filters.
-              </TableCell>
-            </TableRow>
-          ) : (
-            sorted.map((doc) => {
-              // ONE route authority: the same registry entry the name's
-              // `EntityRef` resolves, not a second copy of the path.
-              //
-              // If that entry ever loses its `hrefFor`, this table has NO way
-              // left to open a document — the row click, the name, and (since
-              // the duplicate button went) every other path all hang off it.
-              // A silent version of that is the opposite of CLAUDE.md's loud
-              // recovery rule, so it screams instead of degrading quietly.
-              const href = documentHref(doc.id);
-              return (
-                <TableRow
-                  key={doc.id}
-                  className={cn(href && "cursor-pointer", "hover:bg-muted/30")}
-                  onClick={href ? () => router.push(href) : undefined}
-                >
-                  <TableCell className="py-2 max-w-[280px]">
-                    {/* THE DOOR LAW: the row already navigated here on click,
-                        but the name was a plain <span> — so cmd-click and
-                        middle-click, the two ways a user opens a document
-                        without losing this list, did nothing. `EntityRef`
-                        resolves `/documents/{id}` from the entity registry
-                        (the same route this row pushes) and adds the explicit
-                        new-tab door. */}
-                    <EntityRef
-                      token="udt_document"
-                      id={doc.id}
-                      name={doc.document_name}
-                      showIcon={false}
-                      className="text-sm font-medium"
-                    />
-                  </TableCell>
-                  <TableCell className="py-2 text-xs text-muted-foreground max-w-[240px]">
-                    <span className="line-clamp-2 break-words">
-                      {doc.description || "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-medium uppercase tracking-wide"
-                    >
-                      {documentSourceLabel(doc.source)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-2 text-xs text-muted-foreground whitespace-nowrap">
-                    <span title={formatAbsoluteDate(doc.created_at)}>
-                      {formatRelativeTime(doc.created_at, { style: "long" })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2 text-xs text-muted-foreground whitespace-nowrap">
-                    <span title={formatAbsoluteDate(doc.updated_at)}>
-                      {formatRelativeTime(doc.updated_at, { style: "long" })}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-2">
-                    <div
-                      className="flex justify-end gap-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        title="Delete document"
-                        onClick={() => onDelete(doc)}
-                      >
-                        <Trash className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <MatrxDataTable<DocumentRow>
+      tableId="documents/hub"
+      rowToken="udt_document"
+      viewTabs={false}
+      data={documents}
+      columns={columnsFor(onDelete)}
+      getRowId={(doc) => doc.id}
+      getRowHref={(doc) => documentHref(doc.id)}
+      defaultSort={{ id: "updated", direction: "desc" }}
+    />
   );
 }

@@ -532,11 +532,7 @@ function HistoryDialog({
                 <div className="rounded-md border border-border p-2">
                   <MatrxDataTable
                     data={landscapeResults}
-                    columns={landscapeColumns}
-                    getRowId={(result) => String(result.absolute_rank)}
-                    pageSize={10}
-                    pageSizeOptions={[10, 25, 50, 100]}
-                    rowActions={(result) => (
+                    columns={[...(landscapeColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (result) => (
                       <CopyButtons
                         size="xs"
                         label={`SERP result #${result.absolute_rank}`}
@@ -554,7 +550,11 @@ function HistoryDialog({
                           },
                         })}
                       />
-                    )}
+                    ) }]}
+                    getRowId={(result) => String(result.absolute_rank)}
+                    pageSize={10}
+                    pageSizeOptions={[10, 25, 50, 100]}
+
                   />
                 </div>
               </div>
@@ -1009,15 +1009,7 @@ export function RanksWorkspace() {
             <MatrxDataTable
               urlState={{ id: "rank-portfolio" }}
               data={rows}
-              columns={portfolioColumns}
-              getRowId={(item) => item.target_id}
-              pageSize={25}
-              pageSizeOptions={[10, 25, 50, 100]}
-              emptyState={{
-                title: "No tracked keywords",
-                description: "Add a keyword above to start rank tracking.",
-              }}
-              rowActions={(item) => {
+              columns={[...(portfolioColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (item) => {
                 const state = checking[item.target_id];
                 return (
                   <div className="flex max-w-72 flex-col items-end gap-1">
@@ -1100,7 +1092,15 @@ export function RanksWorkspace() {
                     ) : null}
                   </div>
                 );
+              } }]}
+              getRowId={(item) => item.target_id}
+              pageSize={25}
+              pageSizeOptions={[10, 25, 50, 100]}
+              emptyState={{
+                title: "No tracked keywords",
+                description: "Add a keyword above to start rank tracking.",
               }}
+
             />
           </div>
         </NonEditableContextMenu>

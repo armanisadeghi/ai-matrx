@@ -223,21 +223,10 @@ export function DismissedPagesTable() {
         }),
       }}
       detail={{ enabled: false }}
-      rowActions={(row) => (
-        <button
-          type="button"
-          className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
-          title="Restore this page to the registry"
-          disabled={restoreMutation.isPending}
-          onClick={(event) => {
+      rowActions={(row) => [{ id: "restore", icon: RotateCcw, label: "Restore this page to the registry", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
             event.stopPropagation();
             void restore(row);
-          }}
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          Restore
-        </button>
-      )}
+          }, disabled: restoreMutation.isPending, tooltip: "Restore this page to the registry" }]}
       emptyState={{
         icon: <EyeOff className="h-8 w-8 text-muted-foreground" />,
         title: "Nothing dismissed",

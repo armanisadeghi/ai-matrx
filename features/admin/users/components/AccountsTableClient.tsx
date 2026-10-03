@@ -858,7 +858,107 @@ export function AccountsTableClient() {
         >
         <MatrxDataTable
           data={visibleRows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  title="Actions"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel className="truncate">
+                  {row.email ?? row.id}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setResearchTarget(row)}>
+                  <UserRound className="mr-2 h-4 w-4" /> Personal notes
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    pushAppHref(router, `/administration/users/organizations?user=${row.id}`,
+                    )
+                  }
+                >
+                  <Building2 className="mr-2 h-4 w-4" /> Organizations
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => void sendAuthLink(row, "magiclink")}
+                  disabled={!row.email}
+                >
+                  <MailPlus className="mr-2 h-4 w-4" /> Send magic link
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => void sendAuthLink(row, "recovery")}
+                  disabled={!row.email}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" /> Send password reset
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    pushAppHref(router, `/administration/users/email?userId=${row.id}`)
+                  }
+                  disabled={!row.email}
+                >
+                  <Mail className="mr-2 h-4 w-4" /> Email user
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setDmTarget(row);
+                    setDmContent("");
+                  }}
+                  disabled={row.is_anonymous}
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" /> Send in-app message
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    pushAppHref(router, `/administration/users/preferences?user=${row.id}`,
+                    )
+                  }
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4" /> Preferences
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    pushAppHref(router, usagePersonHref(row.id))
+                  }
+                >
+                  <Gauge className="mr-2 h-4 w-4" /> Usage & cost
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    pushAppHref(router, `/administration/users/admins?user=${row.id}`)
+                  }
+                >
+                  <ShieldCheck className="mr-2 h-4 w-4" /> Admin level
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => void toggleMcpFullAccess(row)}
+                  disabled={Boolean(row.admin_level)}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  {row.admin_level
+                    ? "MCP access inherited from admin"
+                    : row.mcp_full_access
+                      ? "Revoke full MCP access"
+                      : "Grant full MCP access"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
+                  <UserCog className="mr-2 h-4 w-4" />
+                  {row.onboarding_completed
+                    ? "Mark as new"
+                    : "Mark as onboarded"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) }]}
           getRowId={(r) => r.id}
           isLoading={loading}
           pageSize={ROSTER_PAGE_SIZE}
@@ -999,107 +1099,7 @@ export function AccountsTableClient() {
               ...(focusedUserId ? { focused_user_id: focusedUserId } : {}),
             }),
           }}
-          rowActions={(row) => (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  title="Actions"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="truncate">
-                  {row.email ?? row.id}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setResearchTarget(row)}>
-                  <UserRound className="mr-2 h-4 w-4" /> Personal notes
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    pushAppHref(router, `/administration/users/organizations?user=${row.id}`,
-                    )
-                  }
-                >
-                  <Building2 className="mr-2 h-4 w-4" /> Organizations
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => void sendAuthLink(row, "magiclink")}
-                  disabled={!row.email}
-                >
-                  <MailPlus className="mr-2 h-4 w-4" /> Send magic link
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => void sendAuthLink(row, "recovery")}
-                  disabled={!row.email}
-                >
-                  <KeyRound className="mr-2 h-4 w-4" /> Send password reset
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    pushAppHref(router, `/administration/users/email?userId=${row.id}`)
-                  }
-                  disabled={!row.email}
-                >
-                  <Mail className="mr-2 h-4 w-4" /> Email user
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setDmTarget(row);
-                    setDmContent("");
-                  }}
-                  disabled={row.is_anonymous}
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" /> Send in-app message
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() =>
-                    pushAppHref(router, `/administration/users/preferences?user=${row.id}`,
-                    )
-                  }
-                >
-                  <SlidersHorizontal className="mr-2 h-4 w-4" /> Preferences
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    pushAppHref(router, usagePersonHref(row.id))
-                  }
-                >
-                  <Gauge className="mr-2 h-4 w-4" /> Usage & cost
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    pushAppHref(router, `/administration/users/admins?user=${row.id}`)
-                  }
-                >
-                  <ShieldCheck className="mr-2 h-4 w-4" /> Admin level
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => void toggleMcpFullAccess(row)}
-                  disabled={Boolean(row.admin_level)}
-                >
-                  <KeyRound className="mr-2 h-4 w-4" />
-                  {row.admin_level
-                    ? "MCP access inherited from admin"
-                    : row.mcp_full_access
-                      ? "Revoke full MCP access"
-                      : "Grant full MCP access"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void toggleOnboarding(row)}>
-                  <UserCog className="mr-2 h-4 w-4" />
-                  {row.onboarding_completed
-                    ? "Mark as new"
-                    : "Mark as onboarded"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+
         />
         </NonEditableContextMenu>
       </div>

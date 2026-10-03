@@ -331,7 +331,7 @@ export function OrganizationsAdminClient() {
       title: `Remove from ${selectedOrganization.name}?`,
       description: `${member.display_name ?? member.email ?? member.user_id} will lose this organization membership. The last owner cannot be removed, and neither can a person whose only organization this is.`,
       confirmLabel: "Remove member",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!approved) return;
 
@@ -734,29 +734,7 @@ export function OrganizationsAdminClient() {
             <MatrxDataTable
               urlState={{ id: "organization-members" }}
               data={members}
-              columns={memberColumns}
-              getRowId={(member) => member.id}
-              isLoading={loading}
-              detail={{ enabled: false }}
-              pageSize={50}
-              toolbar={{
-                search: true,
-                searchPlaceholder: "Search members…",
-              }}
-              copy={
-                selectedOrganization
-                  ? {
-                      label: "Organization member",
-                      listLabel: "Organization members (this view)",
-                      location: `${USERS_ADMIN_LOCATION} — ${selectedOrganization.name}`,
-                      rowKind: "organization_member",
-                      listKind: "organization_members",
-                      humanRow: (member) =>
-                        `${member.display_name ?? "Unnamed user"} <${member.email ?? "no-email"}>\nuser_id=${member.user_id}\nrole=${member.role}`,
-                    }
-                  : undefined
-              }
-              rowActions={(member) => (
+              columns={[...(memberColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (member) => (
                 <>
                   <Button
                     size="icon"
@@ -782,7 +760,29 @@ export function OrganizationsAdminClient() {
                     )}
                   </Button>
                 </>
-              )}
+              ) }]}
+              getRowId={(member) => member.id}
+              isLoading={loading}
+              detail={{ enabled: false }}
+              pageSize={50}
+              toolbar={{
+                search: true,
+                searchPlaceholder: "Search members…",
+              }}
+              copy={
+                selectedOrganization
+                  ? {
+                      label: "Organization member",
+                      listLabel: "Organization members (this view)",
+                      location: `${USERS_ADMIN_LOCATION} — ${selectedOrganization.name}`,
+                      rowKind: "organization_member",
+                      listKind: "organization_members",
+                      humanRow: (member) =>
+                        `${member.display_name ?? "Unnamed user"} <${member.email ?? "no-email"}>\nuser_id=${member.user_id}\nrole=${member.role}`,
+                    }
+                  : undefined
+              }
+
               // Members come from the same directory read: its failure is said once, by the organizations table.
               read={readOf({ loading, error: selectedOrganization ? error : null }, { what: "organization members" })}
               emptyState={{

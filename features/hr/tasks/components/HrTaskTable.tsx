@@ -240,7 +240,11 @@ export function HrTaskTable({
         >
         <MatrxDataTable<HrInboxRow>
             data={rows}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                <Button asChild size="sm" variant="ghost">
+                    <Link href={row.deep_link}>Open</Link>
+                </Button>
+            ) }]}
             getRowId={(row) => row.step_id}
             isLoading={isLoading}
             read={read}
@@ -282,11 +286,7 @@ export function HrTaskTable({
                     />
                 ),
             }}
-            rowActions={(row) => (
-                <Button asChild size="sm" variant="ghost">
-                    <Link href={row.deep_link}>Open</Link>
-                </Button>
-            )}
+
             selection={
                 selectedIds && onSelectedIdsChange
                     ? {

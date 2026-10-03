@@ -1293,7 +1293,39 @@ export function SerpProspectsTab({
         >
           <MatrxDataTable
             data={prospects.rows}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <>
+                {row.review_status === "approved" ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={prospects.reviewing}
+                    onClick={() => void prospects.review([row.id], "pending")}
+                  >
+                    Undo
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                    disabled={prospects.reviewing}
+                    onClick={() => void prospects.review([row.id], "approved")}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Approve
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={prospects.reviewing}
+                  onClick={() => void prospects.review([row.id], "rejected")}
+                >
+                  Reject
+                </Button>
+              </>
+            ) }]}
             getRowId={(row) => row.id}
             isLoading={prospects.isLoading}
             isFetching={prospects.isFetching}
@@ -1348,39 +1380,7 @@ export function SerpProspectsTab({
                 </div>
               ),
             }}
-            rowActions={(row) => (
-              <>
-                {row.review_status === "approved" ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={prospects.reviewing}
-                    onClick={() => void prospects.review([row.id], "pending")}
-                  >
-                    Undo
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1"
-                    disabled={prospects.reviewing}
-                    onClick={() => void prospects.review([row.id], "approved")}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    Approve
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={prospects.reviewing}
-                  onClick={() => void prospects.review([row.id], "rejected")}
-                >
-                  Reject
-                </Button>
-              </>
-            )}
+
             detail={{
               title: (row) => row.display_domain,
               description: (row) => mentionCountLabel(row.mention_count),

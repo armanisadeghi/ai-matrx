@@ -345,7 +345,20 @@ export default function PageListView({
       <MatrxDataTable<ClientPageSummary>
         tableId={`cms/site/${site.id}/pages`}
         data={categoryRows}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (page) => {
+          return (
+            <ItemMenu
+              align="end"
+              contentMinWidth="15rem"
+              config={() => pageMenu(page)}
+            >
+              <MoreHorizontalTapButton
+                variant="transparent"
+                ariaLabel={`Actions for ${page.title}`}
+              />
+            </ItemMenu>
+          );
+        } }]}
         getRowId={(page) => page.id}
         defaultSort={{ id: "sort_order", direction: "asc" }}
         rowCopyPlacement="menu"
@@ -401,20 +414,7 @@ export default function PageListView({
               })
             : row
         }
-        rowActions={(page) => {
-          return (
-            <ItemMenu
-              align="end"
-              contentMinWidth="15rem"
-              config={() => pageMenu(page)}
-            >
-              <MoreHorizontalTapButton
-                variant="transparent"
-                ariaLabel={`Actions for ${page.title}`}
-              />
-            </ItemMenu>
-          );
-        }}
+
         emptyState={{
           title:
             pages.length === 0 ? "No pages yet" : "No pages match your filters",

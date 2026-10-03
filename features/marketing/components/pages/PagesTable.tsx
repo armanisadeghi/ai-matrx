@@ -542,7 +542,27 @@ export function PagesTable() {
         >
         <MatrxDataTable<PageListRow>
           data={pages.data?.rows ?? []}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <>
+              <FetchPageButton
+                siteId={site.id}
+                url={row.url}
+                pageId={row.id}
+                size="icon"
+              />
+              <button
+                type="button"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Dismiss page (hide from primary views)"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDismissing(row);
+                }}
+              >
+                <EyeOff className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) }]}
           getRowId={(row) => row.id}
           isLoading={pages.isLoading}
           isFetching={pages.isFetching}
@@ -626,27 +646,7 @@ export function PagesTable() {
           onRowOpen={(row) =>
             router.push(marketingRoutes.sitePage(brandId, site.id, row.id))
           }
-          rowActions={(row) => (
-            <>
-              <FetchPageButton
-                siteId={site.id}
-                url={row.url}
-                pageId={row.id}
-                size="icon"
-              />
-              <button
-                type="button"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Dismiss page (hide from primary views)"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setDismissing(row);
-                }}
-              >
-                <EyeOff className="h-3.5 w-3.5" />
-              </button>
-            </>
-          )}
+
           emptyState={{
             icon: <FileQuestion className="h-8 w-8 text-muted-foreground" />,
             title: coverage

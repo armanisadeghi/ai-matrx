@@ -200,7 +200,7 @@ export function ShortcutList({
         title: "Update failed",
         description:
           caught instanceof Error ? caught.message : "Failed to update status",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     }
   };
@@ -375,7 +375,46 @@ export function ShortcutList({
         {/* The shortcuts read's failure is said once, by the table (read=). */}
         <MatrxDataTable<AgentShortcutRecord>
           data={filteredShortcuts}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (shortcut) => (
+            <div
+              className="flex items-center gap-1"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {onEdit && (
+                <ShortcutAction label="Edit" onClick={() => onEdit(shortcut)}>
+                  <Edit2 className="size-3" />
+                </ShortcutAction>
+              )}
+              {!readonly && onDuplicate && (
+                <ShortcutAction
+                  label="Duplicate"
+                  onClick={() => onDuplicate(shortcut)}
+                >
+                  <Copy className="size-3" />
+                </ShortcutAction>
+              )}
+              {!readonly && onPromoteToGlobal && scope !== "global" && (
+                <ShortcutAction
+                  label="Promote to Global (admin)"
+                  onClick={() => onPromoteToGlobal(shortcut)}
+                >
+                  <Globe className="size-3" />
+                </ShortcutAction>
+              )}
+              {!readonly && (
+                <ShortcutAction
+                  label={shortcut.isActive ? "Deactivate" : "Activate"}
+                  onClick={() => void handleToggleActive(shortcut)}
+                >
+                  {shortcut.isActive ? (
+                    <EyeOff className="size-3" />
+                  ) : (
+                    <Eye className="size-3" />
+                  )}
+                </ShortcutAction>
+              )}
+            </div>
+          ) }]}
           getRowId={(shortcut) => shortcut.id}
           getRowHref={(shortcut) => doorHrefFor?.(shortcut) ?? undefined}
           onRowOpen={onEdit}
@@ -591,46 +630,7 @@ export function ShortcutList({
               ],
             }),
           }}
-          rowActions={(shortcut) => (
-            <div
-              className="flex items-center gap-1"
-              onClick={(event) => event.stopPropagation()}
-            >
-              {onEdit && (
-                <ShortcutAction label="Edit" onClick={() => onEdit(shortcut)}>
-                  <Edit2 className="size-3" />
-                </ShortcutAction>
-              )}
-              {!readonly && onDuplicate && (
-                <ShortcutAction
-                  label="Duplicate"
-                  onClick={() => onDuplicate(shortcut)}
-                >
-                  <Copy className="size-3" />
-                </ShortcutAction>
-              )}
-              {!readonly && onPromoteToGlobal && scope !== "global" && (
-                <ShortcutAction
-                  label="Promote to Global (admin)"
-                  onClick={() => onPromoteToGlobal(shortcut)}
-                >
-                  <Globe className="size-3" />
-                </ShortcutAction>
-              )}
-              {!readonly && (
-                <ShortcutAction
-                  label={shortcut.isActive ? "Deactivate" : "Activate"}
-                  onClick={() => void handleToggleActive(shortcut)}
-                >
-                  {shortcut.isActive ? (
-                    <EyeOff className="size-3" />
-                  ) : (
-                    <Eye className="size-3" />
-                  )}
-                </ShortcutAction>
-              )}
-            </div>
-          )}
+
           mobileCards={(shortcut, _index, controls) => {
             const category = categoryById.get(shortcut.categoryId);
             const href = doorHrefFor?.(shortcut) ?? null;

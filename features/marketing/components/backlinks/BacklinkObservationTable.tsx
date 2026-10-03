@@ -661,7 +661,37 @@ export function BacklinkObservationTable({
       ) : (
         <MatrxDataTable<BacklinkObservationRow>
           data={rows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: onAnalyze
+              ? (row, controls) => {
+                  const running = analysisRuns[row.id]?.status === "running";
+                  const action = backlinkAnalysisDirectiveState(
+                    row.enrichment_status,
+                    running,
+                    analysisDisabled,
+                  );
+                  return (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 px-2 text-[11px]"
+                      disabled={action.disabled}
+                      title={action.title}
+                      onClick={() => {
+                        controls.openWindow();
+                        onAnalyze(row);
+                      }}
+                    >
+                      {running || action.inProgress ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <AGENT_ICON className="h-3 w-3" />
+                      )}
+                      {action.label}
+                    </Button>
+                  );
+                }
+              : undefined }]}
           getRowId={(row) => row.id}
           isLoading={backlinks.isLoading}
           isFetching={backlinks.isFetching}
@@ -714,39 +744,7 @@ export function BacklinkObservationTable({
             description: () => "Everything we know about this link",
             render: renderBacklinkDrawer,
           }}
-          rowActions={
-            onAnalyze
-              ? (row, controls) => {
-                  const running = analysisRuns[row.id]?.status === "running";
-                  const action = backlinkAnalysisDirectiveState(
-                    row.enrichment_status,
-                    running,
-                    analysisDisabled,
-                  );
-                  return (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1 px-2 text-[11px]"
-                      disabled={action.disabled}
-                      title={action.title}
-                      onClick={() => {
-                        controls.openWindow();
-                        onAnalyze(row);
-                      }}
-                    >
-                      {running || action.inProgress ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <AGENT_ICON className="h-3 w-3" />
-                      )}
-                      {action.label}
-                    </Button>
-                  );
-                }
-              : undefined
-          }
+
           window={{
             title: (row) =>
               `Link from ${row.source_domain ?? "another website"}`,

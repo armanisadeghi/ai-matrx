@@ -729,7 +729,7 @@ function TableLayout({
       <MatrxDataTable<KnowledgeHit>
         tableId="knowledge-hub"
         data={hits}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: handlers.rowMenu ? (h) => rowActions(h) : undefined }]}
         getRowId={(h) => hitKey(h)}
         density="condensed"
         viewTabs={false}
@@ -777,7 +777,7 @@ function TableLayout({
         // one button below, which can advance every section that still has a cursor.
         pageSize={0}
         copy={copy}
-        rowActions={handlers.rowMenu ? (h) => rowActions(h) : undefined}
+
       />
     </div>
   );

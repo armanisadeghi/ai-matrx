@@ -557,7 +557,7 @@ export default function KeywordResearchWorkbench() {
         description:
           "Archived keywords disappear from every list and won't be re-added by research runs. You can undo from the toast, and typing the phrase anywhere restores it.",
         confirmLabel: "Archive",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!confirmed) return;
       setArchiving(true);
@@ -878,7 +878,7 @@ export default function KeywordResearchWorkbench() {
             id: "archive",
             label: "Archive from library",
             icon: Archive,
-            tone: "destructive",
+            tone: "destructive" as const,
             onSelect: () =>
               void archiveRows([{ id: row.id, phrase: row.phrase }]),
           },
@@ -1187,7 +1187,19 @@ export default function KeywordResearchWorkbench() {
                 windowRow: false,
               }}
               data={sorted}
-              columns={columns}
+              columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
+                return (
+                  <ItemMenu config={() => keywordMenuConfig(row)}>
+                    <button
+                      type="button"
+                      aria-label={`Options for ${row.phrase}`}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </ItemMenu>
+                );
+              } }]}
               getRowId={(row) => row.id}
               mobileCards={renderMobileKeywordCard}
               isLoading={loading}
@@ -1303,19 +1315,7 @@ export default function KeywordResearchWorkbench() {
               detail={{ enabled: false }}
               window={{ enabled: false }}
               onRowOpen={(row) => openKeywordIntel({ phrase: row.phrase })}
-              rowActions={(row) => {
-                return (
-                  <ItemMenu config={() => keywordMenuConfig(row)}>
-                    <button
-                      type="button"
-                      aria-label={`Options for ${row.phrase}`}
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      <MoreVertical className="h-3.5 w-3.5" />
-                    </button>
-                  </ItemMenu>
-                );
-              }}
+
               emptyState={{
                 title: "No keywords yet",
                 description:

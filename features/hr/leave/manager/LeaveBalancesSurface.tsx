@@ -562,17 +562,7 @@ export function LeaveBalancesSurface() {
             rowActions={(row) =>
               // ABSENT, not disabled: a manager never adjusts a balance, so there is no
               // control for one to click and be refused.
-              list?.canAdjust ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setAdjusting(row)}
-                >
-                  <Pencil className="mr-1.5 h-4 w-4" />
-                  Adjust
-                </Button>
-              ) : null
+              (list?.canAdjust ? [{ id: "edit", icon: Pencil, label: "Adjust", onClick: () => setAdjusting(row), variant: "ghost" as const }] : [])
             }
           />
           </NonEditableContextMenu>

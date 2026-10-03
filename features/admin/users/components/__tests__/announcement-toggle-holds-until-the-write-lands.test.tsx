@@ -20,8 +20,8 @@ jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
   NonEditableContextMenu: (p: { children: React.ReactNode }) => <>{p.children}</>,
 }));
 jest.mock("@ai-matrx/design-system/data-table", () => ({
-  MatrxDataTable: (p: { data: Array<{ id: string }>; rowActions: (r: unknown) => React.ReactNode }) => (
-    <div>{p.data.map((r) => <div key={r.id} data-row-id={r.id}>{p.rowActions(r)}</div>)}</div>
+  MatrxDataTable: (p: { data: Array<{ id: string }>; columns: Array<{ customActions?: (r: unknown) => React.ReactNode }> }) => (
+    <div>{p.data.map((r) => <div key={r.id} data-row-id={r.id}>{p.columns.map((column) => column.customActions?.(r))}</div>)}</div>
   ),
 }));
 const getAllAnnouncements = jest.fn();

@@ -1,4 +1,4 @@
--- chair-step: lane 10 VIEWS-AND-FIELDS, sublane FD — a Table can be marked FOUNDATION: part of the business's day-one data (Patients, Therapists, Services). One optional boolean key `foundation` on the Table document. ADDS one IMMUTABLE function custom.table_is_foundation(jsonb). BODY replacements (same signatures, SECURITY and search_path; CREATE OR REPLACE keeps grants): custom._table_shape_guard (a shape arm — boolean or absent — and a rights arm — only admin on the Table, which an owner holds, changes the mark), custom.table_placement (answers `foundation`), custom.data_home (each table row carries `foundation`). REPLACES the view custom.table with one column APPENDED (`foundation`), nothing else changed. DROPS AND RE-MAKES custom.table_facts(uuid) with one result column appended (`foundation`) in the same transaction, then grants EXECUTE again to exactly the roles that held it. Its platform.client_callable_door row is unchanged (same identity). No table, index, trigger, policy or row changes. Inverse: migrations/inverse/viewsfields_fd_a_table_can_be_marked_foundation_down.sql.
+-- chair-step: lane 10 VIEWS-AND-FIELDS, sublane FD — a Table can be marked FOUNDATION: part of the business's day-one data (Patients, Therapists, Services). One optional boolean key `foundation` on the Table document. ADDS one IMMUTABLE function custom.table_is_foundation(jsonb). BODY replacements (same signatures, SECURITY and search_path; CREATE OR REPLACE keeps grants): custom._table_shape_guard (a shape arm — boolean or absent — and a rights arm — only admin on the Table, which an owner holds, changes the mark), custom.table_placement (answers `foundation`), custom.data_home (each table row carries `foundation`), custom.record_headers (a Table's own record answers its version too, so the table-settings door — record_update at the version read — can be written; rename was refused by the same gap). REPLACES the view custom.table with one column APPENDED (`foundation`), nothing else changed. DROPS AND RE-MAKES custom.table_facts(uuid) with one result column appended (`foundation`) in the same transaction, then grants EXECUTE again to exactly the roles that held it. Its platform.client_callable_door row is unchanged (same identity). No table, index, trigger, policy or row changes. Inverse: migrations/inverse/viewsfields_fd_a_table_can_be_marked_foundation_down.sql.
 -- lane: VIEWS-AND-FIELDS
 -- lock: custom
 -- window-class: function bodies, one appended view column, one function re-made in place; no DDL on any table.
@@ -6,6 +6,7 @@
 -- based-on: custom.table_placement(uuid, uuid, jsonb, boolean) 2eb597a4e56381e9e43ba6856587eb4126357924ee8132a54a6e0f00707f4601
 -- based-on: custom.data_home(uuid, text, boolean) 95c9f68104f80a88d2f97b4060106f9fb5b2f35c96738b83a07efe73ebc0c4c7
 -- based-on: custom.table_facts(uuid) 281e329d82b327b295d672fd8ad8c6a35246632b0855e536aaa85499d0223b66
+-- based-on: custom.record_headers(uuid, uuid[]) dbdb83ceed7a4eab037be08b2b80392226fcc47939cef422f25e62aed404e9b4
 --
 -- THE USE CASE (Arman, 2026-09-25): "it's sort of like the data that you set up on day one because you are
 -- going to build your business on it, as opposed to just stuff you need to store later." Cedar Ridge Physical
@@ -857,4 +858,46 @@ begin
   end if;
   return jsonb_build_object('tables', v_tables, 'items', v_items, 'changed_by', v_changed, 'search', v_q);
 end;
+$function$;
+
+-- ── 6. A TABLE'S OWN VERSION CAN BE READ, so the settings door can be written at it ──────────────
+CREATE OR REPLACE FUNCTION custom.record_headers(p_organization_id uuid, p_ids uuid[])
+ RETURNS TABLE(id uuid, table_id uuid, created_at timestamp with time zone, updated_at timestamp with time zone, version integer, deleted_at timestamp with time zone, mine boolean, created_by uuid)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me uuid := custom.query_principal();
+  v_t  uuid;
+begin
+  perform custom.assert_client_may_reach(p_organization_id, 'custom.record_headers');
+  if coalesce(cardinality(p_ids), 0) > 1000 then
+    raise exception 'One call answers at most 1000 records; this one named %.', cardinality(p_ids)
+      using errcode = '54000', hint = 'Ask for the rows a page shows. Nothing was read.';
+  end if;
+
+  for v_t in
+    select distinct r.table_id
+      from custom.record r
+     where r.organization_id = p_organization_id
+       and r.id = any(coalesce(p_ids, '{}'::uuid[]))
+       -- LANE 10 FD (2026-10-02): a TABLE's own record answers too. A Table is a record of the Table
+       -- kernel; its settings (its name, its Foundation mark) are written through record_update at the
+       -- version a person saw, and this was the only door that tells a client that version — so every
+       -- such write (rename included) refused with "latest changes could not be checked". Visibility
+       -- is unchanged: the rows below still pass custom.query_visible_ids on their own table.
+       and r.data_class in ('record', 'table') and r.deleted_at is null
+  loop
+    return query
+      select r.id, r.table_id, r.created_at, r.updated_at, r.version, r.deleted_at,
+             (v_me is not null and r.created_by = v_me),
+             case when v_me is not null and r.created_by = v_me then v_me end
+        from custom.record r
+       where r.organization_id = p_organization_id
+         and r.table_id = v_t
+         and r.id = any(p_ids)
+         and r.id in (select v from custom.query_visible_ids(p_organization_id, v_t, 'viewer') v);
+  end loop;
+end
 $function$;

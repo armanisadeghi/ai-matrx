@@ -11,7 +11,6 @@ import {
   customFieldSearchClauses,
   customFiltersToTable,
   displayCustomValue,
-  groupFilterFor,
   keyOfColumnId,
   mergeFieldDefinitions,
   parseCustomFieldFilters,
@@ -107,14 +106,6 @@ describe("every custom filter is a server predicate", () => {
     expect(calls).toEqual([{ method: "in", args: ["custom_fields->>preferred_clinic_location", ["westside"]] }]);
   });
 
-  it("a group's count asks for the RAW cell value — yes/no counts true, not 'Yes'", () => {
-    const { builder, calls } = recorder();
-    applyCustomFieldFilters(builder as never, { insurance_verified: groupFilterFor(true), home_clinic: groupFilterFor(null) });
-    expect(calls).toEqual([
-      { method: "in", args: ["custom_fields->>insurance_verified", ["true"]] },
-      { method: "is", args: ["custom_fields->>home_clinic", null] },
-    ]);
-  });
 
   it("text contains, has-no-value, numbers and yes/no", () => {
     const { builder, calls } = recorder();

@@ -447,19 +447,7 @@ export function AllItemsTable() {
       <div className="flex min-h-0 flex-1 flex-col">
       <MatrxDataTable<ItemTableRow>
         data={rows ?? []}
-        columns={columns}
-        getRowId={(row) => row.id}
-        isLoading={rows === null}
-        urlState={{
-          id: "product-capture-items",
-          defaultSort: { id: "createdAt", direction: "desc" },
-        }}
-        toolbar={{
-          search: true,
-          searchPlaceholder: "Search code or notes…",
-        }}
-        onRowOpen={openView}
-        rowActions={(row) => (
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
           <>
             <Button
               variant="ghost"
@@ -520,7 +508,19 @@ export function AllItemsTable() {
               <Trash2 className="h-4 w-4" />
             </Button>
           </>
-        )}
+        ) }]}
+        getRowId={(row) => row.id}
+        isLoading={rows === null}
+        urlState={{
+          id: "product-capture-items",
+          defaultSort: { id: "createdAt", direction: "desc" },
+        }}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search code or notes…",
+        }}
+        onRowOpen={openView}
+
       />
       </div>
       </NonEditableContextMenu>

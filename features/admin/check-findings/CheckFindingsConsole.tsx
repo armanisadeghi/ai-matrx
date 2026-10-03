@@ -544,7 +544,11 @@ function CheckBoard({
       <MatrxDataTable
         tableId="admin-check-findings-board"
         data={rows}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => (
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onOpen(r)}>
+            Findings
+          </Button>
+        ) }]}
         getRowId={(r) => r.check.id}
         isLoading={loading}
         stickyHeader
@@ -576,11 +580,7 @@ function CheckBoard({
         )}
         coverage={{ noun: "check", answeredBy: "client", total: loading ? undefined : rows.length }}
         toolbar={{ title: "Checks", search: true }}
-        rowActions={(r) => (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onOpen(r)}>
-            Findings
-          </Button>
-        )}
+
         read={read}
         emptyState={{
           icon: <Clock className="h-5 w-5" />,

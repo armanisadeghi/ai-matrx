@@ -933,12 +933,12 @@ export default function SystemJobsPage() {
           <MatrxDataTable
             urlState={{ id: "scheduling-system-jobs" }}
             data={rows}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderRowActions(r) }]}
             getRowId={(r) => r.id}
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}
-            rowActions={(r) => renderRowActions(r)}
+
             read={readOf({ loading, error: loadError }, { what: "system jobs", onRetry: () => void load() })}
             emptyState={{
               title: "No system jobs",
@@ -994,12 +994,12 @@ export default function SystemJobsPage() {
           <MatrxDataTable
             urlState={{ id: "scheduling-db-jobs" }}
             data={dbRows}
-            columns={dbColumns}
+            columns={[...(dbColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => renderDbRowActions(r) }]}
             getRowId={(r) => String(r.jobid)}
             isLoading={dbLoading}
             isFetching={dbFetching}
             pageSize={25}
-            rowActions={(r) => renderDbRowActions(r)}
+
             read={readOf({ loading: dbLoading, error: dbLoadError }, { what: "database jobs", onRetry: () => void loadDb() })}
             emptyState={{ title: "No database jobs", description: "The database has no pg_cron jobs registered." }}
             toolbar={{

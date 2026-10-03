@@ -347,7 +347,7 @@ export function ShareableRegistryPanel({
             ? `Existing and new share links for this type will resolve for anyone — no login. ${columns.length} column(s) are currently in the public allowlist and will be visible to anonymous viewers.`
             : "Existing and new share links for this type will resolve for anyone — no login. No columns are in the public allowlist yet, so links resolve but show no content until you expose columns below.",
         confirmLabel: "Enable link sharing",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!ok) return;
     }
@@ -376,7 +376,7 @@ export function ShareableRegistryPanel({
             ? `You are adding ${added.join(", ")}. ${newlyExposedSecrets.length} of these look sensitive (${newlyExposedSecrets.join(", ")}). Anyone with a share link will be able to read them. Continue?`
             : `You are adding: ${added.join(", ")}. Anyone with a share link will be able to read these columns.`,
         confirmLabel: "Expose columns",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!ok) return;
     }
@@ -585,7 +585,26 @@ export function ShareableRegistryPanel({
         <MatrxDataTable
           urlState={{ id: "shareable-resources", selectedRow: false }}
           data={registry}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => openEditInSidePanel(row)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                title="Link sharing + public columns"
+                onClick={() => openPolicy(row)}
+              >
+                <Columns3 className="mr-1 h-3.5 w-3.5" />
+                Link policy
+              </Button>
+            </>
+          ) }]}
           getRowId={(r) => r.resource_type}
           pageSize={25}
           zebra
@@ -683,26 +702,7 @@ export function ShareableRegistryPanel({
                 />
               ) : null,
           }}
-          rowActions={(row) => (
-            <>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => openEditInSidePanel(row)}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                title="Link sharing + public columns"
-                onClick={() => openPolicy(row)}
-              >
-                <Columns3 className="mr-1 h-3.5 w-3.5" />
-                Link policy
-              </Button>
-            </>
-          )}
+
         />
         </NonEditableContextMenu>
       </div>

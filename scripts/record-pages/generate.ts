@@ -52,7 +52,14 @@ async function main() {
       exemptCeiling: census.units.filter((u) => u.declaration.kind === "none" || u.declaration.kind === "pending").length,
       pending: census.units.filter((u) => u.declaration.kind === "pending").map((u) => u.key),
       tablesPending: census.tables.filter((t) => t.rowToken === "pending").map((t) => t.file),
+      listQueue: census.tables.filter((t) => t.rowToken === "noncanonical").map((t) => t.file),
     };
+    writeFileSync(join(ROOT, LEDGER), JSON.stringify(ledger, null, 1) + "\n");
+    census = buildCensus({ root: ROOT, entityTypes, ledger });
+  }
+  if (args.has("--seed-list-queue") && !ledger.listQueue) {
+    // FIRST COUNT of the I2 queue only.
+    ledger = { ...ledger, listQueue: census.tables.filter((t) => t.rowToken === "noncanonical").map((t) => t.file) };
     writeFileSync(join(ROOT, LEDGER), JSON.stringify(ledger, null, 1) + "\n");
     census = buildCensus({ root: ROOT, entityTypes, ledger });
   }
@@ -67,6 +74,9 @@ async function main() {
       ),
       pending: ledger.pending.filter((k) => pendingNow.has(k)),
       tablesPending: ledger.tablesPending.filter((f) => tablesNow.has(f)),
+      listQueue: (ledger.listQueue ?? []).filter((f) =>
+        census.tables.some((t) => t.file === f && t.rowToken === "noncanonical"),
+      ),
     };
     writeFileSync(join(ROOT, LEDGER), JSON.stringify(ledger, null, 1) + "\n");
     census = buildCensus({ root: ROOT, entityTypes, ledger });

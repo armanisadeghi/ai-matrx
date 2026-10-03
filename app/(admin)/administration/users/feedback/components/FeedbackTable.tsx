@@ -944,16 +944,7 @@ export default function FeedbackTable() {
             title: "No feedback matches this view",
             description: "Clear filters or select another pipeline stage.",
           }}
-          rowActions={(r) => (
-            <Button
-              aria-label={`Open feedback ${r.id}`}
-              variant="ghost"
-              size="icon"
-              onClick={() => open(r)}
-            >
-              <Component className="size-4" />
-            </Button>
-          )}
+          rowActions={(r) => [{ id: "open-feedback", icon: Component, label: `Open feedback ${r.id}`, onClick: () => open(r), variant: "ghost" as const }]}
         />
       </Card>
       {selected ? (

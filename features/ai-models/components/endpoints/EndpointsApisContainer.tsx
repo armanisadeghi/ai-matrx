@@ -483,7 +483,9 @@ function EndpointApiTable<T extends EndpointApiRow>({
       )}
       <MatrxDataTable<T>
         data={rows}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <RowActions row={row} onDelete={onDelete} deleteNoun={deleteNoun} />
+        ) }]}
         getRowId={(row) => row.id}
         isLoading={loading && rows.length === 0}
         isFetching={loading && rows.length > 0}
@@ -509,9 +511,7 @@ function EndpointApiTable<T extends EndpointApiRow>({
           refresh: { onRefresh: onRetry },
           add: { onAdd: onCreate },
         }}
-        rowActions={(row) => (
-          <RowActions row={row} onDelete={onDelete} deleteNoun={deleteNoun} />
-        )}
+
         mobileCards={(row, _index, controls) => (
           <article
             className={

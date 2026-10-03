@@ -21,10 +21,15 @@
 // Plant (custom-fields-section-hidden): CSS hides the section on every page → every measured step FAILS.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { openWalk, cloneRead, REPO, TARGET } from "../lib/harness.mjs";
+import { openWalk, cloneRead, bodyText, REPO, TARGET } from "../lib/harness.mjs";
 
 const MAP = JSON.parse(readFileSync(join(REPO, "lib/record-pages/record-pages.generated.json"), "utf8"));
-const HOST_TOKENS = ["project", "task", "note", "file", "agent", "meeting", "party", "crm_deal"];
+const HOST_TOKENS = ["project", "task", "note", "file", "agent", "meet_meeting", "party", "crm_deal", "transcript", "workflow"];
+// A view whose section sits behind a deep-linkable tab opens on that tab (no URL inference: the page's own
+// documented deep link).
+const VIEW_QUERY = { "route:/files/f/[fileId]": "?tab=info" };
+// Visible but broken: the section could not read what it needs. These FAIL — honest, but not working.
+const BROKEN_STATES = new Set(["error", "unavailable"]);
 const ADMIN = "87a6e699-3622-4869-8843-d0867456c0dd";
 const NEVER_ORG = "3e790542-fdaf-40b2-8bf3-658bf94fe67f";
 
@@ -59,7 +64,11 @@ for (const [key, rec] of Object.entries(MAP.records))
 
 const ctx = await openWalk("custom-fields-everywhere");
 try {
-  const page = await ctx.page("admin", { org: null });
+  let page = await ctx.page("admin", { org: null });
+  // The session is per HOST: run on your own host (SN_ORIGIN=http://<you>.localhost:3001) — on the
+  // shared safety-net host another run's sign-in evicts this one mid-walk. A page that lands signed
+  // out is re-opened once with a fresh sign-in, never counted as a missing section.
+  const signedOut = async () => /\/login|Sign in to /.test(page.url() + (await bodyText(page, 3000)));
   for (const t of targets) {
     const label = `${t.key} (${t.token})`;
     if (!t.pattern) {
@@ -71,14 +80,21 @@ try {
       await ctx.step(["CF01"], label, page, async () => ({ skip: `unmeasured: no ${t.token} row admin@admin.com can read` }));
       continue;
     }
-    const url = t.pattern.replace(/\[[^\]]+\]/, id);
+    const url = t.pattern.replace(/\[[^\]]+\]/, id) + (VIEW_QUERY[t.key] ?? "");
     await ctx.goto(page, url);
+    if (await signedOut()) {
+      page = await ctx.page("admin", { org: null, fresh: true });
+      await ctx.goto(page, url);
+    }
     await ctx.step(["CF01"], label, page, async () => {
       const el = page.locator('[data-section="custom-fields"]').first();
       const visible = await el.waitFor({ state: "visible", timeout: 45000 }).then(() => true, () => false);
       const state = visible ? await el.getAttribute("data-state") : null;
       const text = visible ? (await el.innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 140) : "";
-      return { ok: visible, detail: visible ? `${url} → ${state}: ${text}` : `${url} → no visible custom-fields section` };
+      return {
+        ok: visible && !BROKEN_STATES.has(state ?? ""),
+        detail: visible ? `${url} → ${state}: ${text}` : `${url} → no visible custom-fields section`,
+      };
     });
   }
 } finally {

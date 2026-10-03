@@ -567,7 +567,7 @@ function ExecutionsTable({
       const message =
         cause instanceof Error ? cause.message : "Failed to load executions";
       setError(message);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" as const });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -733,7 +733,7 @@ function ErrorsTable({
       const message =
         cause instanceof Error ? cause.message : "Failed to load errors";
       setError(message);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" as const });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -770,7 +770,7 @@ function ErrorsTable({
         title: "Error",
         description:
           cause instanceof Error ? cause.message : "Failed to resolve error",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     }
   };
@@ -786,7 +786,7 @@ function ErrorsTable({
         title: "Error",
         description:
           cause instanceof Error ? cause.message : "Failed to unresolve error",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     }
   };
@@ -844,7 +844,23 @@ function ErrorsTable({
               onStateChange: tableQuery.onStateChange,
             }}
             data={rows}
-            columns={errorColumns(rows.map((row) => row.error_type))}
+            columns={[...(errorColumns(rows.map((row) => row.error_type))), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <MoreHorizontalTapButton
+                      ariaLabel={`Actions for ${row.error_type}`}
+                      variant="transparent"
+                    />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => open(row)}>
+                      View and manage
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) }]}
             getRowId={(row) => row.id}
             isLoading={loading}
             isFetching={refreshing}
@@ -903,23 +919,7 @@ function ErrorsTable({
             emptyState={{ title: "No errors match the current view." }}
             onViewChange={setViewRows}
             onRowOpen={open}
-            rowActions={(row) => (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <MoreHorizontalTapButton
-                      ariaLabel={`Actions for ${row.error_type}`}
-                      variant="transparent"
-                    />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => open(row)}>
-                      View and manage
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
+
           />
         </div>
         <ErrorDialog

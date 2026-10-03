@@ -396,12 +396,7 @@ export function EndowmentPortfolioPanel({
           >
           <MatrxDataTable<RegistryMatch>
             data={matches}
-            columns={platformColumns}
-            getRowId={(match) => match.platform.domain}
-            isLoading={publishersQuery.isPending}
-            pageSize={25}
-            zebra
-            rowActions={(match) => (
+            columns={[...(platformColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (match) => (
               <PlatformAction
                 state={platformState[match.platform.domain] ?? { kind: "idle" }}
                 existingSlug={match.existing?.slug ?? null}
@@ -409,7 +404,12 @@ export function EndowmentPortfolioPanel({
                 disabled={!canWriteRegistry}
                 onAdd={() => void handleAddPlatform(match.platform)}
               />
-            )}
+            ) }]}
+            getRowId={(match) => match.platform.domain}
+            isLoading={publishersQuery.isPending}
+            pageSize={25}
+            zebra
+
             copy={{
               label: "Publishing platform",
               listLabel: "Publishing platforms",

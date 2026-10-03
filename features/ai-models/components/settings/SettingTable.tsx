@@ -246,7 +246,9 @@ export default function SettingTable({
         data={settings}
         isLoading={isLoading && settings.length === 0}
         isFetching={isLoading && settings.length > 0}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (item) => (
+          <RowActions item={item} onEdit={onEdit} onDelete={onDelete} />
+        ) }]}
         getRowId={(item) => item.id}
         pageSize={50}
         pageSizeOptions={[10, 25, 50, 100]}
@@ -276,9 +278,7 @@ export default function SettingTable({
           refresh: { onRefresh: onRetry },
           add: { onAdd: onCreate },
         }}
-        rowActions={(item) => (
-          <RowActions item={item} onEdit={onEdit} onDelete={onDelete} />
-        )}
+
         mobileCards={(item, _index, controls) => (
           <article
             className={

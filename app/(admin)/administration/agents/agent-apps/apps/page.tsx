@@ -424,7 +424,7 @@ export default function AgentAppsAdminListPage() {
       const message =
         error instanceof Error ? error.message : "Failed to load agent apps";
       setLoadError(message);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" as const });
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -463,7 +463,7 @@ export default function AgentAppsAdminListPage() {
         title: "Error",
         description:
           error instanceof Error ? error.message : "Failed to update agent app",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     }
   };
@@ -532,29 +532,7 @@ export default function AgentAppsAdminListPage() {
                 onStateChange: tableQuery.onStateChange,
               }}
               data={apps}
-              columns={AGENT_APP_COLUMNS}
-              getRowId={(app) => app.id}
-              isLoading={loading}
-              isFetching={isRefreshing}
-              toolbar={{
-                title: "Agent Apps",
-                searchPlaceholder: "Search agent apps…",
-                refresh: { onRefresh: load },
-                add: {
-                  onAdd: () => pushAppHref(router, "/agent-apps/new"),
-                },
-              }}
-              onViewChange={setViewApps}
-              detail={{ enabled: false }}
-              window={{ enabled: false }}
-              copy={agentAppsCopyConfig()}
-              getRowHref={(app) =>
-                `/administration/agents/agent-apps/edit/${app.id}`
-              }
-              onRowOpen={(app) => handleOpenEdit(app.id)}
-              read={readOf({ loading, error: loadError }, { what: "agent apps", onRetry: () => void load() })}
-              emptyState={{ title: "No agent apps found" }}
-              rowActions={(app) => (
+              columns={[...(AGENT_APP_COLUMNS), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (app) => (
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -594,7 +572,29 @@ export default function AgentAppsAdminListPage() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </>
-              )}
+              ) }]}
+              getRowId={(app) => app.id}
+              isLoading={loading}
+              isFetching={isRefreshing}
+              toolbar={{
+                title: "Agent Apps",
+                searchPlaceholder: "Search agent apps…",
+                refresh: { onRefresh: load },
+                add: {
+                  onAdd: () => pushAppHref(router, "/agent-apps/new"),
+                },
+              }}
+              onViewChange={setViewApps}
+              detail={{ enabled: false }}
+              window={{ enabled: false }}
+              copy={agentAppsCopyConfig()}
+              getRowHref={(app) =>
+                `/administration/agents/agent-apps/edit/${app.id}`
+              }
+              onRowOpen={(app) => handleOpenEdit(app.id)}
+              read={readOf({ loading, error: loadError }, { what: "agent apps", onRetry: () => void load() })}
+              emptyState={{ title: "No agent apps found" }}
+
             />
           </div>
         </div>

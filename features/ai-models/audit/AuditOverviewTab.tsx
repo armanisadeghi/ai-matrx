@@ -151,7 +151,9 @@ export default function AuditOverviewTab({
         tableId="ai-model-audit-overview"
         viewTabs={false}
         data={results}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => (
+          <OpenDetailButton onClick={() => setDetailModelId(r.model.id)} />
+        ) }]}
         getRowId={(r) => r.model.id}
         defaultSort={{ id: "issue_count", direction: "desc" }}
         toolbar={{
@@ -196,9 +198,7 @@ export default function AuditOverviewTab({
             </div>
           ),
         }}
-        rowActions={(r) => (
-          <OpenDetailButton onClick={() => setDetailModelId(r.model.id)} />
-        )}
+
       />
       <ModelDetailSheet
         modelId={detailModelId}

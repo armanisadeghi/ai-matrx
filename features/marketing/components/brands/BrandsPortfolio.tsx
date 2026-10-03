@@ -557,39 +557,14 @@ export function BrandsPortfolio({
                   onRowOpen={(row) =>
                     router.push(marketingRoutes.brand(row.id))
                   }
-                  rowActions={(row) => (
-                    <>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit ${row.name}`}
-                        title="Edit brand"
-                        className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 lg:min-w-5"
-                        onClick={(event) => {
+                  rowActions={(row) => [...[{ id: "edit", icon: Pencil, label: `Edit ${row.name}`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                           event.stopPropagation();
                           setEditing(row);
                           setEditorOpen(true);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete ${row.name}`}
-                        title="Delete brand"
-                        className="h-11 w-11 text-muted-foreground hover:bg-destructive/10 hover:text-destructive lg:h-5 lg:w-5 lg:min-w-5"
-                        onClick={(event) => {
+                        }, variant: "ghost" as const, tooltip: "Edit brand" }], ...[{ id: "delete", icon: Trash2, tone: "destructive" as const, label: `Delete ${row.name}`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                           event.stopPropagation();
                           setDeleting(row);
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </>
-                  )}
+                        }, variant: "ghost" as const, tooltip: "Delete brand" }]]}
                   emptyState={{
                     icon: (
                       <Landmark className="h-8 w-8 text-muted-foreground" />

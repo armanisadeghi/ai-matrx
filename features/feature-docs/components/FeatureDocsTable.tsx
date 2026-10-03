@@ -233,7 +233,17 @@ export default function FeatureDocsTable({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <MatrxDataTable<FeatureDocListRow>
         data={filteredRows}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <Link
+            href={featureDocViewHref(row.path)}
+            target="_blank"
+            className="inline-flex items-center gap-1 text-xs text-primary"
+          >
+            <FileText className="h-3 w-3" />
+            Open
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        ) }]}
         getRowId={(row) => row.id}
         defaultSort={{ id: "path", direction: "asc" }}
         isFetching={loading && rows.length > 0}
@@ -348,17 +358,7 @@ export default function FeatureDocsTable({
             </Button>
           ),
         }}
-        rowActions={(row) => (
-          <Link
-            href={featureDocViewHref(row.path)}
-            target="_blank"
-            className="inline-flex items-center gap-1 text-xs text-primary"
-          >
-            <FileText className="h-3 w-3" />
-            Open
-            <ExternalLink className="h-3 w-3" />
-          </Link>
-        )}
+
         mobileCards={(row, _index, controls) => (
           <article className="space-y-2 rounded-md border border-border p-3 text-sm">
             <p className="break-all font-mono text-xs">{row.path}</p>

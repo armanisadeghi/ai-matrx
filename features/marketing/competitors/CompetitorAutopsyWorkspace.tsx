@@ -1463,7 +1463,51 @@ export default function CompetitorAutopsyWorkspace({
             <MatrxDataTable
               urlState={{ id: "competitor-opportunities" }}
               data={data?.opportunities ?? []}
-              columns={opportunityColumns}
+              columns={[...(opportunityColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                <>
+                  {row.status === "open" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void mutateOpportunity(row.id, "accepted")}
+                    >
+                      Accept
+                    </Button>
+                  ) : null}
+                  {row.status === "accepted" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        void mutateOpportunity(row.id, "in_progress")
+                      }
+                    >
+                      Start
+                    </Button>
+                  ) : null}
+                  {row.status === "in_progress" ? (
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        void mutateOpportunity(row.id, "completed")
+                      }
+                    >
+                      Complete
+                    </Button>
+                  ) : null}
+                  {row.status !== "completed" && row.status !== "dismissed" ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        void mutateOpportunity(row.id, "dismissed")
+                      }
+                    >
+                      Dismiss
+                    </Button>
+                  ) : null}
+                </>
+              ) }]}
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}
@@ -1517,51 +1561,7 @@ export default function CompetitorAutopsyWorkspace({
                 openOnRowClick: true,
                 onOpen: () => {},
               }}
-              rowActions={(row) => (
-                <>
-                  {row.status === "open" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void mutateOpportunity(row.id, "accepted")}
-                    >
-                      Accept
-                    </Button>
-                  ) : null}
-                  {row.status === "accepted" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        void mutateOpportunity(row.id, "in_progress")
-                      }
-                    >
-                      Start
-                    </Button>
-                  ) : null}
-                  {row.status === "in_progress" ? (
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        void mutateOpportunity(row.id, "completed")
-                      }
-                    >
-                      Complete
-                    </Button>
-                  ) : null}
-                  {row.status !== "completed" && row.status !== "dismissed" ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        void mutateOpportunity(row.id, "dismissed")
-                      }
-                    >
-                      Dismiss
-                    </Button>
-                  ) : null}
-                </>
-              )}
+
               read={readOf(workspace, { what: "the autopsy workspace" })}
               emptyState={{
                 icon: <Target className="size-8" />,
@@ -1583,25 +1583,7 @@ export default function CompetitorAutopsyWorkspace({
             <MatrxDataTable
               urlState={{ id: "competitors" }}
               data={data?.competitors ?? []}
-              columns={competitorColumns}
-              getRowId={(row) => row.id}
-              isLoading={workspace.isLoading}
-              isFetching={workspace.isFetching}
-              // MSR-19/20: canonical WindowPanel on row click, no side drawer.
-              detail={{ enabled: false }}
-              window={{
-                title: (row) => row.display_name || row.display_domain,
-                renderView: (row) => (
-                  <div id={`competitor-review-${row.id}`}>
-                    <CompetitorClassificationEditor row={row} onSaved={refresh} />
-                  </div>
-                ),
-                enabled: true,
-                openOnRowClick: true,
-                onOpen: () => {},
-              }}
-              edit={{ enabled: true, onSave: saveClassificationEdits }}
-              rowActions={(row) =>
+              columns={[...(competitorColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
                 // "tracked" is the server's vocabulary (see autopsy-controls);
                 // this row action sent "tracking" until 2026-08-12, which the
                 // canonical RPC rejects outright.
@@ -1621,8 +1603,25 @@ export default function CompetitorAutopsyWorkspace({
                   >
                     Track
                   </Button>
-                )
-              }
+                ) }]}
+              getRowId={(row) => row.id}
+              isLoading={workspace.isLoading}
+              isFetching={workspace.isFetching}
+              // MSR-19/20: canonical WindowPanel on row click, no side drawer.
+              detail={{ enabled: false }}
+              window={{
+                title: (row) => row.display_name || row.display_domain,
+                renderView: (row) => (
+                  <div id={`competitor-review-${row.id}`}>
+                    <CompetitorClassificationEditor row={row} onSaved={refresh} />
+                  </div>
+                ),
+                enabled: true,
+                openOnRowClick: true,
+                onOpen: () => {},
+              }}
+              edit={{ enabled: true, onSave: saveClassificationEdits }}
+
               read={readOf(workspace, { what: "the autopsy workspace" })}
               emptyState={{
                 icon: <Swords className="size-8" />,

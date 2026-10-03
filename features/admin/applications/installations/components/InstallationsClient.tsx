@@ -396,7 +396,16 @@ export function InstallationsClient({
           <MatrxDataTable
             urlState={{ id: "application-installations" }}
             data={rows}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <>
+                <Cpu className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
+                <span className="max-w-40 truncate text-xs text-muted-foreground" title={row.cpu_model ?? ""}>
+                  {row.cpu_model || "—"}
+                </span>
+                <MemoryStick className="ml-2 mr-1 h-3.5 w-3.5 text-muted-foreground" />
+                <span className="font-mono text-xs text-muted-foreground">{row.ram_total_gb ?? "—"}</span>
+              </>
+            ) }]}
             getRowId={(row) => row.id}
             isFetching={refreshing}
             pageSize={50}
@@ -455,16 +464,7 @@ export function InstallationsClient({
                 min_supported_app_version: minSupportedVersion,
               }),
             }}
-            rowActions={(row) => (
-              <>
-                <Cpu className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-                <span className="max-w-40 truncate text-xs text-muted-foreground" title={row.cpu_model ?? ""}>
-                  {row.cpu_model || "—"}
-                </span>
-                <MemoryStick className="ml-2 mr-1 h-3.5 w-3.5 text-muted-foreground" />
-                <span className="font-mono text-xs text-muted-foreground">{row.ram_total_gb ?? "—"}</span>
-              </>
-            )}
+
           />
           </NonEditableContextMenu>
         </div>

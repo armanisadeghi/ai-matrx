@@ -440,7 +440,15 @@ export function SourceResultsTable({
   return (
     <MatrxDataTable<ResearchSource>
       data={sources}
-      columns={displayedColumns}
+      columns={[...(displayedColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (source) => (
+        <ExternalLinkTapButton
+          href={`/research/topics/${topicId}/sources/${source.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="transparent"
+          ariaLabel={`Open ${source.title || source.hostname || source.url} in a new tab`}
+        />
+      ) }]}
       emptyState={emptyState}
       read={read}
       getRowId={(source) => source.id}
@@ -451,15 +459,7 @@ export function SourceResultsTable({
       onRowOpen={(source) =>
         router.push(`/research/topics/${topicId}/sources/${source.id}`)
       }
-      rowActions={(source) => (
-        <ExternalLinkTapButton
-          href={`/research/topics/${topicId}/sources/${source.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          variant="transparent"
-          ariaLabel={`Open ${source.title || source.hostname || source.url} in a new tab`}
-        />
-      )}
+
       {...(interactive
         ? {
             query: {

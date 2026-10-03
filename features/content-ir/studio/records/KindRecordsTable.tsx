@@ -560,7 +560,35 @@ export default function KindRecordsTable({
 
       <MatrxDataTable<KindRecordRow>
         data={rows}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <>
+            {row.confirmation === "unconfirmed" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                disabled={busy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  confirmOne(row);
+                }}
+              >
+                <Check className="mr-1 h-3.5 w-3.5" />
+                Confirm
+              </Button>
+            ) : null}
+            <ItemMenu config={() => menuFor(row)} align="end">
+              <button
+                type="button"
+                aria-label={`Actions for ${row.title ?? "this record"}`}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </ItemMenu>
+          </>
+        ) }]}
         getRowId={(row) => row.id}
         isLoading={isLoading}
         isFetching={isFetching || busy}
@@ -706,35 +734,7 @@ export default function KindRecordsTable({
             </div>
           ),
         }}
-        rowActions={(row) => (
-          <>
-            {row.confirmation === "unconfirmed" ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-xs"
-                disabled={busy}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  confirmOne(row);
-                }}
-              >
-                <Check className="mr-1 h-3.5 w-3.5" />
-                Confirm
-              </Button>
-            ) : null}
-            <ItemMenu config={() => menuFor(row)} align="end">
-              <button
-                type="button"
-                aria-label={`Actions for ${row.title ?? "this record"}`}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </ItemMenu>
-          </>
-        )}
+
         copy={{
           label: `${label} record`,
           listLabel: `${label} records`,

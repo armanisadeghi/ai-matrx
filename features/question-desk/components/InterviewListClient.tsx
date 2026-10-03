@@ -214,7 +214,23 @@ export function InterviewListClient() {
       <MatrxDataTable<InterviewListRow>
         data={rows}
         isLoading={loading}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <button
+            type="button"
+            title={row.archived_at ? "Restore this interview" : "Archive this interview"}
+            onClick={(event) => {
+              event.stopPropagation();
+              void toggleArchive(row);
+            }}
+            className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            {row.archived_at ? (
+              <ArchiveRestore className="size-3.5" aria-hidden />
+            ) : (
+              <Archive className="size-3.5" aria-hidden />
+            )}
+          </button>
+        ) }]}
         getRowId={(row) => row.id}
         pageSize={25}
         pageSizeOptions={[10, 25, 50, 100]}
@@ -246,23 +262,7 @@ export function InterviewListClient() {
             />
           ),
         }}
-        rowActions={(row) => (
-          <button
-            type="button"
-            title={row.archived_at ? "Restore this interview" : "Archive this interview"}
-            onClick={(event) => {
-              event.stopPropagation();
-              void toggleArchive(row);
-            }}
-            className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            {row.archived_at ? (
-              <ArchiveRestore className="size-3.5" aria-hidden />
-            ) : (
-              <Archive className="size-3.5" aria-hidden />
-            )}
-          </button>
-        )}
+
       />
     </div>
   );

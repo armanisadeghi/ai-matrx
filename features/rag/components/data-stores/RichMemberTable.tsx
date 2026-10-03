@@ -308,7 +308,7 @@ export function RichMemberTable({
       <MatrxDataTable<RichMember>
         tableId="rag-data-store-members"
         data={members}
-        columns={memberColumns()}
+        columns={[...(memberColumns()), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (member) => actionsFor(member) }]}
         getRowId={memberId}
         density="condensed"
         isLoading={loading && members.length === 0}
@@ -329,7 +329,7 @@ export function RichMemberTable({
           title: "No members yet",
           description: "Drag a file onto this store, or use Add Member.",
         }}
-        rowActions={(member) => actionsFor(member)}
+
       />
       <QuickSearchDialog
         open={searchTarget !== null}

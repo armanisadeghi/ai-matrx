@@ -294,7 +294,7 @@ export function WarRoomThreadsTable({
         <MatrxDataTable<ThreadTableRow>
           urlState={{ id: "war-room-threads" }}
           data={rows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => <OpenThreadAction row={row} /> }]}
           getRowId={(row) => row.id}
           isLoading={isLoading}
           toolbar={{
@@ -347,7 +347,7 @@ export function WarRoomThreadsTable({
               }),
             ],
           }}
-          rowActions={(row) => <OpenThreadAction row={row} />}
+
           read={read}
           emptyState={{
             icon: <MessagesSquare className="size-7" />,

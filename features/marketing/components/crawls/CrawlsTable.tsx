@@ -530,35 +530,13 @@ export function CrawlsTable() {
         onRowOpen={(row) =>
           router.push(marketingRoutes.site(brandId, site.id, `/crawls/${row.id}`))
         }
-        rowActions={(row) => (
-          <>
-            {ACTIVE_STATUSES.has(row.status) ? (
-              <button
-                type="button"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-                title="Cancel crawl"
-                disabled={cancelingId === row.id}
-                onClick={(event) => {
+        rowActions={(row) => [...(ACTIVE_STATUSES.has(row.status) ? [{ id: "cancel", icon: Ban, tone: "destructive" as const, label: "Cancel crawl", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                   event.stopPropagation();
                   void requestCancel(row);
-                }}
-              >
-                <Ban className="h-3.5 w-3.5" />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              title="Delete crawl session"
-              onClick={(event) => {
+                }, disabled: cancelingId === row.id, tooltip: "Cancel crawl" }] : []), ...[{ id: "delete", icon: Trash2, tone: "destructive" as const, label: "Delete crawl session", onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
                 event.stopPropagation();
                 setDeleting(row);
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
+              }, tooltip: "Delete crawl session" }]]}
         emptyState={{
           icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,
           title: "No crawl sessions",

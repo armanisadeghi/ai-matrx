@@ -30,14 +30,11 @@ import type {
 } from "@/features/rich-document/types";
 import { currentCostUnit } from "@/components/cost/costUnit";
 import { selectActiveBattleColumns } from "../shared/activeBattleColumns";
-import {
-  battleMarkdownForPeople,
-  buildBattleSnapshot,
-} from "../shared/battleSnapshot";
-import {
-  RunsComparisonTable,
-  runsComparisonMarkdown,
-} from "./RunsComparisonTable";
+import { buildPrintDocument, printHtmlContent } from "@ai-matrx/print/core";
+import { toast } from "@/lib/toast";
+import { downloadFile, exportFilename } from "@/components/agent-copy/export";
+import { RunsComparisonTable } from "./RunsComparisonTable";
+import { runsReportHtml, runsReportMarkdown } from "./runsComparisonReport";
 
 interface SharedRunsWindowProps {
   id: string;
@@ -48,18 +45,7 @@ interface SharedRunsWindowProps {
 const REPORT_REFRESH_MS = 1000;
 
 function buildRunsReport(state: RootState): { title: string; content: string } {
-  const snap = buildBattleSnapshot(state);
-  if (!snap) return { title: "Runs comparison", content: "" };
-  const metrics = runsComparisonMarkdown(state, currentCostUnit());
-  return {
-    title: snap.battle?.name ?? snap.mode_label,
-    content: [
-      battleMarkdownForPeople(snap),
-      metrics ? `## Run metrics\n\n${metrics}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n"),
-  };
+  return runsReportMarkdown(state, currentCostUnit());
 }
 
 /** The report, rebuilt from the store at most once per REPORT_REFRESH_MS. */
@@ -102,11 +88,49 @@ function promoted(
   };
 }
 
+/**
+ * Print and Download HTML carry the comparison AS IT LOOKS — standings, the
+ * green/red highlights, every place badge — not a plain-text copy of it
+ * (Arman, 2026-10-02: the print was missing "the beautiful comparison data
+ * that is the entire point of the ui").
+ */
 const REPORT_ACTIONS: RichDocumentActionsProp = {
   exclude: ["print", "download-html", "html-preview"],
   extra: [
-    promoted("print", "Print or save as PDF", Printer, 0),
-    promoted("download-html", "Download as an HTML page", FileText, 1),
+    {
+      id: "runs-print",
+      label: "Print or save as PDF",
+      icon: Printer,
+      category: "export",
+      supportedSources: "*",
+      renderSlot: "primary",
+      order: 0,
+      run: (ctx) => {
+        const report = runsReportHtml(ctx.getState(), currentCostUnit());
+        const outcome = printHtmlContent(report.body, report.title, report.css);
+        if (outcome === "downloaded") {
+          toast.info("Pop-ups are blocked, so the report was downloaded instead");
+        }
+      },
+    },
+    {
+      id: "runs-download-html",
+      label: "Download as an HTML page",
+      icon: FileText,
+      category: "export",
+      supportedSources: "*",
+      renderSlot: "primary",
+      order: 1,
+      run: (ctx) => {
+        const report = runsReportHtml(ctx.getState(), currentCostUnit());
+        downloadFile(
+          exportFilename(report.title, "html"),
+          buildPrintDocument(report.body, report.title, report.css),
+          "text/html;charset=utf-8",
+        );
+        toast.success("HTML page downloaded");
+      },
+    },
     promoted("html-preview", "Publish as a web page", Globe, 2),
   ],
 };

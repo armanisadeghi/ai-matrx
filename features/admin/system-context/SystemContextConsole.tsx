@@ -240,7 +240,7 @@ export function SystemContextConsole() {
         description:
           "This removes the system context item and its current value. The item remains recoverable through version history.",
         confirmLabel: "Delete item",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!accepted) return;
       const response = await fetch(
@@ -524,7 +524,43 @@ export function SystemContextConsole() {
           <MatrxDataTable
             urlState={{ id: "system-context" }}
             data={rows}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
+              row.is_computed ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                  title="Computed at runtime"
+                >
+                  <Lock className="h-3 w-3" /> read-only
+                </span>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setEditing(row);
+                    }}
+                  >
+                    <Pencil className="mr-1 h-3 w-3" /> Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    title={`Delete ${row.key}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteItem(row);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              ) }]}
             getRowId={(row) => row.id}
             isLoading={loading}
             isFetching={fetching}
@@ -584,44 +620,7 @@ export function SystemContextConsole() {
               humanRow: itemSummary,
               rowAttributes: (row) => ({ id: row.id, key: row.key }),
             }}
-            rowActions={(row) =>
-              row.is_computed ? (
-                <span
-                  className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground"
-                  title="Computed at runtime"
-                >
-                  <Lock className="h-3 w-3" /> read-only
-                </span>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setEditing(row);
-                    }}
-                  >
-                    <Pencil className="mr-1 h-3 w-3" /> Edit
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    title={`Delete ${row.key}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleDeleteItem(row);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </>
-              )
-            }
+
             detail={{
               title: (row) => (
                 <code className="font-mono text-sm">{row.key}</code>

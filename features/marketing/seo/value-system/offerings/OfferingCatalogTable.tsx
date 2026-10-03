@@ -335,7 +335,10 @@ export function OfferingCatalogTable({
   const table = (
     <MatrxDataTable
       data={rows}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
+        const node = nodeOf(row.id);
+        return node ? <RowActions node={node} actions={actions} busy={busy} /> : null;
+      } }]}
       getRowId={(row) => row.id}
       searchText={(row) => row.description}
       processLocalRows={(allRows, state) => processCatalogRows(allRows, state, columns, collapsed)}
@@ -415,10 +418,7 @@ export function OfferingCatalogTable({
       selectedId={selectedId}
       onRowOpen={(row) => onSelect(row.id)}
       detail={{ enabled: false }}
-      rowActions={(row) => {
-        const node = nodeOf(row.id);
-        return node ? <RowActions node={node} actions={actions} busy={busy} /> : null;
-      }}
+
       emptyState={{
         title: "No offerings match",
         description: "Clear a filter, or add what this business sells.",

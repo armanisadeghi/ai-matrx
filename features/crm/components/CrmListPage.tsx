@@ -128,9 +128,10 @@ import {
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import { useStandardFieldColumns } from "@/features/unified-data/standard-field-columns/useStandardFieldColumns";
-import { useStandardFieldGrouping } from "@/features/unified-data/standard-field-columns/useStandardFieldGrouping";
+import { standardFieldGrouping } from "@/features/unified-data/standard-field-columns/standardFieldGrouping";
+import { standardWholeResultExport } from "@/features/unified-data/standard-field-columns/standardWholeResultExport";
 import { standardColumnState } from "@/features/unified-data/standard-field-columns/standardColumnState";
-import { countPartyList } from "../service";
+import { fetchPartyWholeResult } from "../service";
 
 const SURFACE_KEY = "crm-parties";
 
@@ -559,6 +560,11 @@ export function CrmListPage({
   // feed the list's server predicates; they lag the source by one render because
   // the source needs the list's own organizations first.
   const [partyFields, setPartyFields] = useState<readonly StandardFieldColumn[]>([]);
+  // GROUP BY a custom field: while grouped, the list reads its WHOLE result (every row the
+  // query selects, under the store's export ceiling), so the groups and their counts are the
+  // whole result's — never one page's.
+  const [groupColumnId, setGroupColumnId] = useState<string | null>(null);
+  const grouped = groupColumnId !== null;
   const list = usePartyList(
     {
       sort: prefs.sort,
@@ -566,6 +572,7 @@ export function CrmListPage({
       pageSize: prefs.pageSize,
     },
     partyFields,
+    grouped,
   );
   const customColumns = useStandardFieldColumns<PartyListRow>("party", list.ctx?.orgIds);
   useEffect(() => {
@@ -573,24 +580,26 @@ export function CrmListPage({
   }, [customColumns.fields]);
   const tableColumns = [...PARTY_COLUMNS, ...customColumns.columns];
 
-  // GROUP BY a custom field (the table's own grouping; counts are the whole result's)
-  // and the column choices kept in this list's own view prefs.
-  const grouping = useStandardFieldGrouping<PartyListRow>({
+  const grouping = standardFieldGrouping<PartyListRow>({
     source: customColumns,
-    rows: list.rows,
-    queryKey: JSON.stringify(list.query),
+    columnId: groupColumnId,
+    onColumnIdChange: (next) => {
+      setGroupColumnId(next);
+      list.setQuery({ page: 1 });
+    },
     rowNoun: "record",
-    countWith: (extra) =>
+  });
+  // EXPORT IS THE WHOLE RESULT: the table's one export menu, handed every row the list's
+  // filters, search and sort select (not the page on screen), projected onto the columns shown.
+  const exportWhole = standardWholeResultExport<PartyListRow>({
+    columns: tableColumns,
+    hidden: () => columnState.hidden,
+    order: () => columnState.order,
+    read: () =>
       list.ctx
-        ? countPartyList(
-            {
-              ...list.query,
-              filters: { ...list.query.filters, custom: { ...list.query.filters.custom, ...extra } },
-            },
-            list.ctx,
-            customColumns.fields,
-          )
+        ? fetchPartyWholeResult(list.query, { sort: prefs.sort, direction: prefs.direction, pageSize: prefs.pageSize }, list.ctx, customColumns.fields)
         : Promise.reject(new Error("The list has not loaded yet.")),
+    noun: "records",
   });
   const columnState = standardColumnState(
     tableColumns.map((c) => c.id ?? String(c.accessorKey ?? "")),
@@ -746,7 +755,7 @@ export function CrmListPage({
             description:
               "They move to trash and can be restored. Contact history is kept.",
             confirmLabel: "Move to Trash",
-            variant: "destructive",
+            variant: "destructive" as const,
           });
           if (!ok) return;
           await runBulk("Moved to Trash", (ids) => deleteParties(ids));
@@ -851,14 +860,14 @@ export function CrmListPage({
             {
               id: "delete",
               label: "Move to Trash",
-              tone: "destructive",
+              tone: "destructive" as const,
               onSelect: async () => {
                 const ok = await confirm({
                   title: `Move ${row.display_name} to Trash?`,
                   description:
                     "The record moves to trash and can be restored. Contact history is kept.",
                   confirmLabel: "Move to Trash",
-                  variant: "destructive",
+                  variant: "destructive" as const,
                 });
                 if (!ok) return;
                 try {
@@ -933,7 +942,7 @@ export function CrmListPage({
     if (nextSort !== prefs.sort || nextDir !== prefs.direction) {
       setPrefs({ sort: nextSort, direction: nextDir });
     }
-    if (next.pageSize !== prefs.pageSize) setPrefs({ pageSize: next.pageSize });
+    if (!grouped && next.pageSize !== prefs.pageSize) setPrefs({ pageSize: next.pageSize });
     list.setQuery({
       page: next.page,
       search: next.search,
@@ -1205,6 +1214,11 @@ export function CrmListPage({
               className="mt-2"
             />
           )}
+          {grouped && list.ceiling !== null && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              Grouped over the first {list.ceiling.toLocaleString()} of {list.total.toLocaleString()} records
+            </div>
+          )}
           {list.error && (
             <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
               {list.error}
@@ -1236,7 +1250,18 @@ export function CrmListPage({
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<PartyListRow>
                 data={list.rows}
-                columns={tableColumns}
+                columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                  <ItemMenu config={menuFor(row)} align="end">
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${row.display_name}`}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </ItemMenu>
+                ) }]}
                 getRowId={(row) => row.id}
                 isLoading={list.isLoading}
                 isFetching={list.isFetching}
@@ -1248,10 +1273,11 @@ export function CrmListPage({
                 )}
                 query={{
                   mode: "controlled",
-                  totalItems: list.total,
+                  // While grouped the whole result is one page (the table counts what it holds).
+                  totalItems: grouped ? list.rows.length : list.total,
                   state: {
-                    page: list.query.page,
-                    pageSize: prefs.pageSize,
+                    page: grouped ? 1 : list.query.page,
+                    pageSize: grouped ? Math.max(list.rows.length, 1) : prefs.pageSize,
                     search: list.query.search,
                     anyOf: "",
                     columnFilters: toTableFilters(list.query.filters),
@@ -1306,18 +1332,7 @@ export function CrmListPage({
                   // The trash gets its own verb (D226): restore in bulk.
                   actions: inTrash ? trashBulkActions : bulkActions,
                 }}
-                rowActions={(row) => (
-                  <ItemMenu config={menuFor(row)} align="end">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${row.display_name}`}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </ItemMenu>
-                )}
+
                 copy={{
                   label: "CRM record",
                   listLabel: "CRM records",
@@ -1327,9 +1342,10 @@ export function CrmListPage({
                   humanRow: (row) =>
                     `${row.display_name} (${row.party_kind === "person" ? "person" : "company"})${row.job_title ? ` — ${row.job_title}` : ""}${row.employer ? ` @ ${row.employer.display_name}` : ""}`,
                   showRow: false,
-                  // The toolbar's "Copy or export" — the table's own export of the
-                  // columns on screen, custom fields included (lane 7 wave 2).
+                  // The toolbar's "Copy or export" — the table's one export, over the
+                  // WHOLE result the list selects, columns on screen (lane 7 W2).
                   showToolbar: true,
+                  export: exportWhole,
                 }}
                 // read-gate-exempt: list.error swaps this for the failed-read state below and the banner above names the failure once
                 emptyState={

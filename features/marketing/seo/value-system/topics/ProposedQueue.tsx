@@ -145,7 +145,7 @@ export function ProposedQueue({
             description:
               "Every placement on this site is either your own ruling or one the assigner was sure enough about.",
           }}
-          rowActions={(row, controls) =>
+          customActions={(row, controls) =>
             row.keyword_id ? (
               <Button
                 size="sm"

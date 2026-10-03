@@ -87,7 +87,7 @@ export type WorkspaceResolution =
 const WORKSPACE_KNOB_FEATURE = "organizations.workspace";
 
 const NO_WORKSPACE =
-  "We could not tell which workspace to file this in. Pick one from the menu under your avatar, then press the button again — nothing was created.";
+  "We could not tell which workspace to file this in. Choose one in the sidebar's organization switcher, then press the button again — nothing was created.";
 
 /**
  * The same refusal when the organization could not be READ. It never tells the
@@ -153,7 +153,7 @@ export async function awaitEffectiveOrganizationId(): Promise<WorkspaceResolutio
  * remedy is the same picker.
  */
 const NO_WORKSPACE_FOR_READ =
-  "No organization is selected, so there was nothing to read this record from. Pick the one you are working in from the menu under your avatar and it will load.";
+  "No organization is selected, so there was nothing to read this record from. Choose the one you are working in with the sidebar's organization switcher and it will load.";
 
 /**
  * 🚨 THE ORGANIZATION QUESTION IS ASKED BEFORE THE RECORD READ, NOT AFTER IT

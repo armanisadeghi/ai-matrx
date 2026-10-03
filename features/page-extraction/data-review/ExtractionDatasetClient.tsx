@@ -1112,17 +1112,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                 ),
               }}
               rowActions={(row) =>
-                row.id.includes("#") ? null : (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    title="Move row to Trash"
-                    onClick={() => void deleteOneRow(row.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
-                )
+                (row.id.includes("#") ? [] : [{ id: "delete", icon: Trash2, tone: "destructive" as const, label: "Move row to Trash", onClick: () => void deleteOneRow(row.id), variant: "ghost" as const, tooltip: "Move row to Trash" }])
               }
               toolbar={{
                 search: true,

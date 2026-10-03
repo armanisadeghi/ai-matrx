@@ -274,7 +274,20 @@ export function AdvancedMandateCrud() {
         >
         <MatrxDataTable<Row>
           data={rows}
-          columns={tableColumns}
+          columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: relation?.writable && pk && relation.softDeletes
+              ? (row) => (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => doDelete(row)}
+                    title="Move to Trash (restorable)"
+                    aria-label="Move to Trash"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )
+              : undefined }]}
           getRowId={(row) => (pk ? String(row[pk]) : JSON.stringify(row))}
           isLoading={isPending && rows.length === 0}
           isFetching={isPending}
@@ -335,24 +348,7 @@ export function AdvancedMandateCrud() {
               ? { enabled: true, onSave: (edits) => onSave(edits) }
               : undefined
           }
-          rowActions={
-            // Delete means archive: only a table with the Trash column (deleted_at)
-            // gets a delete control, and it only ever sets deleted_at.
-            relation?.writable && pk && relation.softDeletes
-              ? (row) => (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive"
-                    onClick={() => doDelete(row)}
-                    title="Move to Trash (restorable)"
-                    aria-label="Move to Trash"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                )
-              : undefined
-          }
+
         />
         </NonEditableContextMenu>
       </div>

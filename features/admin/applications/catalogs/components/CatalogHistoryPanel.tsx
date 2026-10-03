@@ -91,7 +91,7 @@ export function CatalogHistoryPanel({
         toast({
           title: "Failed to load history",
           description: error.message,
-          variant: "destructive",
+          variant: "destructive" as const,
         });
         setLoaded({ key: loadKey, entries: [], error });
         return;
@@ -325,17 +325,7 @@ export function CatalogHistoryPanel({
             total: all.length,
           }),
         }}
-        rowActions={(row) => (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="shrink-0"
-            onClick={() => setRestoreTarget(row)}
-          >
-            <Undo2 className="mr-1.5 h-3.5 w-3.5" /> Restore
-          </Button>
-        )}
+        rowActions={(row) => [{ id: "undo2", icon: Undo2, label: "Restore", onClick: () => setRestoreTarget(row), variant: "outline" as const }]}
       />
       </NonEditableContextMenu>
 

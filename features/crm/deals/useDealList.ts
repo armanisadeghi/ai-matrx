@@ -8,7 +8,7 @@
 // an abandoned query can never overwrite a newer one.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchDealPage } from "./service";
+import { fetchDealPage, fetchDealWholeResult } from "./service";
 import type { CrmQueryContext } from "../types";
 import type { DealListQuery, DealListRow, DealSortOpts } from "./types";
 import { DEFAULT_DEAL_QUERY } from "./types";
@@ -30,16 +30,21 @@ export interface UseDealListResult {
   refresh: () => void;
   patchRow: (id: string, patch: Partial<DealListRow>) => void;
   removeRow: (id: string) => void;
+  /** Set when the whole-result read (`wholeResult`) stopped at the store's export ceiling. */
+  ceiling: number | null;
 }
 
 export function useDealList(
   opts: DealSortOpts,
   /** The `crm_deal` token's custom fields (the generic column source). */
   customFields: readonly StandardFieldColumn[] = NO_CUSTOM_FIELDS,
+  /** Read every row the query selects instead of one page (the grouped view). */
+  wholeResult = false,
 ): UseDealListResult {
   const [query, setQueryState] = useState<DealListQuery>(DEFAULT_DEAL_QUERY);
   const [rows, setRows] = useState<DealListRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [ceiling, setCeiling] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +64,13 @@ export function useDealList(
     }, 200);
     async function run() {
       try {
-        const page = await fetchDealPage(query, opts, resolvedCtx, customFields);
+        const page = wholeResult
+          ? await fetchDealWholeResult(query, opts, resolvedCtx, customFields)
+          : { ...(await fetchDealPage(query, opts, resolvedCtx, customFields)), ceiling: null };
         if (generationRef.current !== gen) return;
         setRows(page.rows);
         setTotal(page.total);
+        setCeiling(page.ceiling);
         setIsLoading(false);
       } catch (e) {
         if (generationRef.current !== gen) return;
@@ -75,7 +83,7 @@ export function useDealList(
       }
     }
     return () => clearTimeout(timer);
-  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation, customFields]);
+  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation, customFields, wholeResult]);
 
   const setQuery = useCallback((patch: Partial<DealListQuery>) => {
     setQueryState((prev) => ({
@@ -113,7 +121,8 @@ export function useDealList(
       refresh,
       patchRow,
       removeRow,
+      ceiling,
     }),
-    [query, setQuery, rows, total, isLoading, isFetching, error, ctx, refresh, patchRow, removeRow],
+    [query, setQuery, rows, total, isLoading, isFetching, error, ctx, refresh, patchRow, removeRow, ceiling],
   );
 }

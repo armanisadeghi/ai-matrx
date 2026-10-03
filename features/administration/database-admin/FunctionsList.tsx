@@ -113,7 +113,13 @@ export const FunctionsList = ({
       <MatrxDataTable
         tableId="administration/database/database-admin/functions"
         data={functions}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (func) => (
+          <ViewTapButton
+            variant="transparent"
+            ariaLabel={`View details for ${databaseFunctionSignature(func)}`}
+            onClick={() => onViewDetails(func)}
+          />
+        ) }]}
         getRowId={databaseFunctionSignature}
         searchText={databaseFunctionSignature}
         isLoading={loading && functions.length === 0}
@@ -131,13 +137,7 @@ export const FunctionsList = ({
         window={{ enabled: false }}
         coverage={{ noun: "database function", cap: 1000, answeredBy: "client" }}
         onRowOpen={onViewDetails}
-        rowActions={(func) => (
-          <ViewTapButton
-            variant="transparent"
-            ariaLabel={`View details for ${databaseFunctionSignature(func)}`}
-            onClick={() => onViewDetails(func)}
-          />
-        )}
+
         emptyState={{ title: "No database functions found" }}
       />
     </div>

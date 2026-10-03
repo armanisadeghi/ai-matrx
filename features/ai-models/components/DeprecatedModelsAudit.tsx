@@ -673,7 +673,47 @@ export default function DeprecatedModelsAudit({
         <MatrxDataTable<DeprecatedEntry>
           tableId="ai-models/deprecated-audit"
           data={visibleEntries}
-          columns={auditColumns}
+          columns={[...(auditColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (entry) =>
+            totalUsage(entry) > 0 && (
+              <div className="flex items-center gap-1">
+                {entry.error && (
+                  <span
+                    role="status"
+                    className="text-[11px] font-medium text-destructive"
+                  >
+                    Couldn&apos;t replace
+                    <ErrorAlchemyMenu />
+                  </span>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  disabled={
+                    !entry.replacementId || entry.replacing || entry.loading
+                  }
+                  onClick={() => handleOpenSettingsReview(entry)}
+                >
+                  <Settings className="h-3 w-3" />
+                  Review
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-6 px-2 text-[11px]"
+                  disabled={
+                    !entry.replacementId || entry.replacing || entry.loading
+                  }
+                  onClick={() => handleQuickReplace(entry)}
+                >
+                  {entry.replacing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <ArrowRightLeft className="h-3 w-3" />
+                  )}
+                  Quick
+                </Button>
+              </div>
+            ) }]}
           getRowId={(entry) => entry.model.id}
           density="condensed"
           className="min-h-0 flex-1"
@@ -889,48 +929,7 @@ export default function DeprecatedModelsAudit({
           }}
           detail={{ enabled: false }}
           window={{ enabled: false }}
-          rowActions={(entry) =>
-            totalUsage(entry) > 0 && (
-              <div className="flex items-center gap-1">
-                {entry.error && (
-                  <span
-                    role="status"
-                    className="text-[11px] font-medium text-destructive"
-                  >
-                    Couldn&apos;t replace
-                    <ErrorAlchemyMenu />
-                  </span>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 px-2 text-[11px]"
-                  disabled={
-                    !entry.replacementId || entry.replacing || entry.loading
-                  }
-                  onClick={() => handleOpenSettingsReview(entry)}
-                >
-                  <Settings className="h-3 w-3" />
-                  Review
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-6 px-2 text-[11px]"
-                  disabled={
-                    !entry.replacementId || entry.replacing || entry.loading
-                  }
-                  onClick={() => handleQuickReplace(entry)}
-                >
-                  {entry.replacing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ArrowRightLeft className="h-3 w-3" />
-                  )}
-                  Quick
-                </Button>
-              </div>
-            )
-          }
+
         />
       </div>
 

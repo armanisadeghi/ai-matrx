@@ -227,7 +227,11 @@ function UserSearchWindowInner({
       <div className="min-h-0 flex-1">
         <MatrxDataTable
           data={visibleRows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <Button size="sm" onClick={() => select(row)}>
+              Select
+            </Button>
+          ) }]}
           getRowId={(row) => row.id}
           searchText={(row) =>
             [
@@ -271,11 +275,7 @@ function UserSearchWindowInner({
                 : "Change the search or clear column filters.",
           }}
           onRowOpen={select}
-          rowActions={(row) => (
-            <Button size="sm" onClick={() => select(row)}>
-              Select
-            </Button>
-          )}
+
         />
       </div>
     </WindowPanel>

@@ -584,7 +584,46 @@ export function LeaveQueueSurface() {
           >
           <MatrxDataTable<LeaveQueueRow>
             data={focused}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDecision({ row, intent: "approve" })}
+                >
+                  <Check className="mr-1.5 h-4 w-4" />
+                  Approve
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" size="sm" variant="ghost" aria-label="More decisions">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onSelect={() => setDecision({ row, intent: "reject" })}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Deny
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => setDecision({ row, intent: "return" })}
+                    >
+                      <Undo2 className="mr-2 h-4 w-4" />
+                      Send back for changes
+                    </DropdownMenuItem>
+                    {row.organization_id ? (
+                      <DropdownMenuItem onSelect={() => setReassign(row)}>
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Reassign
+                      </DropdownMenuItem>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) }]}
             getRowId={(row) => row.step_id}
             isLoading={queue.loading}
             pageSize={25}
@@ -627,46 +666,7 @@ export function LeaveQueueSurface() {
                 </div>
               ),
             }}
-            rowActions={(row) => (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setDecision({ row, intent: "approve" })}
-                >
-                  <Check className="mr-1.5 h-4 w-4" />
-                  Approve
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" size="sm" variant="ghost" aria-label="More decisions">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() => setDecision({ row, intent: "reject" })}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Deny
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => setDecision({ row, intent: "return" })}
-                    >
-                      <Undo2 className="mr-2 h-4 w-4" />
-                      Send back for changes
-                    </DropdownMenuItem>
-                    {row.organization_id ? (
-                      <DropdownMenuItem onSelect={() => setReassign(row)}>
-                        <UserCog className="mr-2 h-4 w-4" />
-                        Reassign
-                      </DropdownMenuItem>
-                    ) : null}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            )}
+
           />
           </NonEditableContextMenu>
 

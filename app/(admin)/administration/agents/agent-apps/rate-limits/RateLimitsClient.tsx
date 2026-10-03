@@ -149,7 +149,7 @@ export function RateLimitsClient() {
       toast({
         title: "Error",
         description: "Failed to unblock rate limit",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     } finally {
       setUnblockingId(null);
@@ -375,7 +375,17 @@ export function RateLimitsClient() {
         <MatrxDataTable
           tableId={RATE_LIMITS_TABLE_ID}
           data={rateLimits}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
+            row.is_blocked ? (
+              <ShieldCheckTapButton
+                variant="transparent"
+                label="Unblock"
+                ariaLabel="Unblock rate limit"
+                tooltip="Unblock rate limit"
+                onClick={() => void handleUnblock(row)}
+                disabled={unblockingId !== null}
+              />
+            ) : null }]}
           getRowId={(row) => row.id}
           isLoading={loading && rateLimits.length === 0}
           isFetching={loading && rateLimits.length > 0}
@@ -440,18 +450,7 @@ export function RateLimitsClient() {
               ],
             }),
           }}
-          rowActions={(row) =>
-            row.is_blocked ? (
-              <ShieldCheckTapButton
-                variant="transparent"
-                label="Unblock"
-                ariaLabel="Unblock rate limit"
-                tooltip="Unblock rate limit"
-                onClick={() => void handleUnblock(row)}
-                disabled={unblockingId !== null}
-              />
-            ) : null
-          }
+
           detail={{ enabled: false }}
           window={{ enabled: false }}
           emptyState={{

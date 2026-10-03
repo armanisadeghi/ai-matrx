@@ -385,7 +385,9 @@ export default function AliasesContainer() {
           data={aliases}
           isLoading={loading && aliases.length === 0}
           isFetching={loading && aliases.length > 0}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (item) => (
+            <AliasDeleteAction item={item} onDelete={setPendingDelete} />
+          ) }]}
           getRowId={(item) => item.id}
           pageSize={25}
           pageSizeOptions={[10, 25, 50, 100]}
@@ -413,9 +415,7 @@ export default function AliasesContainer() {
             refresh: { onRefresh: () => void load() },
             add: { onAdd: startNew },
           }}
-          rowActions={(item) => (
-            <AliasDeleteAction item={item} onDelete={setPendingDelete} />
-          )}
+
           mobileCards={(item, _index, controls) => (
             <article
               className={

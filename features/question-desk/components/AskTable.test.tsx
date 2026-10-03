@@ -16,7 +16,7 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
   MatrxDataTable: (props: MatrxDataTableProps<DecisionQuestionRow>) => {
     tableProps = props;
     const row = props.data[0];
-    return row ? <div>{props.rowActions?.(row, {} as never)}</div> : null;
+    return row ? <div>{props.columns.map((column) => column.customActions?.(row, {} as never))}</div> : null;
   },
 }));
 
@@ -112,8 +112,12 @@ describe("AskTable", () => {
       "verdict",
       "status-note",
       "answer",
+      "custom-actions",
     ]);
-    for (const column of tableProps.columns) {
+    const customActions = tableProps.columns.find((column) => column.customActions);
+    expect(customActions?.filter).toBe(false);
+    expect(customActions?.accessorKey).toBeUndefined();
+    for (const column of tableProps.columns.filter((column) => !column.customActions)) {
       expect(column.filter).not.toBe(false);
       expect(column.accessorKey ?? column.accessorFn).toBeDefined();
     }

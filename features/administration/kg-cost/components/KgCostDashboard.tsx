@@ -276,7 +276,9 @@ function OrgLeaderboard({
     <MatrxDataTable
       tableId="administration/kg-cost/organizations"
       data={orgs}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: () => (
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      ) }]}
       getRowId={(row) => row.organization_id}
       isLoading={loading}
       isFetching={refreshing}
@@ -293,9 +295,7 @@ function OrgLeaderboard({
       window={{ enabled: false }}
       coverage={{ noun: "organization", total: total ?? undefined, cap: 200, answeredBy: "source" }}
       onRowOpen={(row) => onPick(row.organization_id)}
-      rowActions={() => (
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      )}
+
       emptyState={{
         title: "No organization preferences yet",
         description: "Counters fill as auto-ingest cost lands.",
@@ -409,7 +409,9 @@ function PendingBatchesTable({
     <MatrxDataTable
       tableId="administration/kg-cost/pending-batches"
       data={batches}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: () => (
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      ) }]}
       getRowId={(row) => row.id}
       read={read}
       isLoading={loading}
@@ -434,9 +436,7 @@ function PendingBatchesTable({
       window={{ enabled: false }}
       coverage={{ noun: "batch", total: total ?? undefined, cap: 100, answeredBy: "source" }}
       onRowOpen={(row) => onPick(row.id)}
-      rowActions={() => (
-        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-      )}
+
       emptyState={{
         title: "No in-flight batches",
         description:

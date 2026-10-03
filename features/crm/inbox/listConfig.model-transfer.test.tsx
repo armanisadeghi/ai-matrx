@@ -156,7 +156,8 @@ describe("CRM inbox table model-transfer seam", () => {
     // applicationScope uses the explicit model-safe hook.
     expect(inboxListConfig.getRowName(ROW)).toContain(HOSTILE);
     expect(inboxListConfig.getRowName(ROW)).toContain(HOSTILE_PARTY);
-    const rowActions = capturedTableProps?.rowActions as
+    const customColumns = capturedTableProps?.columns as Array<{ customActions?: (row: InboxRow) => ReactElement<{ children: ReactElement<{ "aria-label": string }> }> }>;
+    const rowActions = customColumns.find((column) => column.customActions)?.customActions as
       | ((row: InboxRow) => ReactElement<{ children: ReactElement<{ "aria-label": string }> }>)
       | undefined;
     const renderedAction = rowActions?.(ROW);

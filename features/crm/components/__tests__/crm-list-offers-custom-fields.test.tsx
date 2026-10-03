@@ -72,6 +72,7 @@ jest.mock("@/features/crm/service", () => ({
   },
   fetchPartyScopeCounts: async () => ({ byKind: { all: 1 }, narrow: {} }),
   countPartyList: async () => 1,
+  fetchPartyWholeResult: async () => ({ rows: [MARISOL], total: 1, ceiling: null }),
   fetchPendingCandidateCount: async () => 0,
   deleteParties: async () => {},
   deleteParty: async () => {},
@@ -82,6 +83,20 @@ jest.mock("@/features/crm/service", () => ({
 // THE STORE'S FIELD DOOR, at the edge: one org, one Choice field and its options.
 jest.mock("@ai-matrx/records/core", () => ({
   createRecordsClient: () => ({
+    // ONE read across the list's organizations: Fields with their choices.
+    entityFieldsAcross: async () => ({
+      ok: true,
+      data: {
+        fields: [
+          {
+            id: "f68a3998", organization_id: CR, key: "home_clinic", label: "Home clinic", type: "list",
+            sensitivity: "internal", config: { options_table_id: "ce3b0c0c" },
+            options: { downtown: { label: "Downtown" }, westside: { label: "Westside" }, harbor: { label: "Harbor" } },
+          },
+        ],
+        unavailable: [],
+      },
+    }),
     entityFields: async () => ({
       ok: true,
       data: [{ id: "f68a3998", key: "home_clinic", label: "Home clinic", type: "list", sensitivity: "internal", config: { options_table_id: "ce3b0c0c" } }],

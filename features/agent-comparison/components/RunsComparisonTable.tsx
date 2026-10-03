@@ -1,910 +1,50 @@
 "use client";
 
 /**
- * RunsComparisonTable
+ * RunsComparisonTable — the comparison the Runs window draws.
  *
- * Comprehensive comparison surface. Layout:
- *   - Rows = metrics
- *   - Columns = agents (one per battle column)
- *
- * Several grouped tables (Summary, Tokens, Timing, Operations, Payload,
- * Event counts, Records, Model Context). For each numeric metric row we
- * compute a min/max across the columns and highlight the winner
- * (green = lower-is-better → tokens/cost/duration) or
- * (green = higher-is-better → throughput-style fields). Ties + single-row
- * data suppress the highlight.
+ * Standings first (overall place, wins, average place, and who leads each
+ * scored metric), then every metric section with the best value green, the
+ * worst red, and each column's place on that metric. Every table carries the
+ * platform's own tools: Copy / Copy for AI / Export (Alchemy) and Save to (a
+ * custom data table, a workbook, a Google Sheet). The data and its masking
+ * come from `runsComparisonData`; the rankings from `runsRanking`; the report
+ * shapes (Markdown, rows, HTML) from `runsComparisonReport`.
  */
 
-import { createSelector } from "@reduxjs/toolkit";
+import { EyeOff, Trophy } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import type { RootState } from "@/lib/redux/store";
-import type { ActiveRequest } from "@ai-matrx/chat/agents/types/request.types";
-import { formatFileSize, type CostUnit } from "@ai-matrx/kit/format";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
-import {
-  addUsageTotals,
-  fmtCost,
-  fmtMs,
-  fmtServerSeconds,
-  fmtTokens,
-  getUserRequestResult,
-  type MutableTotals,
-} from "@ai-matrx/chat/agents/components/run-controls/panels/shared";
-import { EyeOff } from "lucide-react";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { csvExportItem } from "@/components/agent-copy/export";
+import { TableSaveToMenu } from "@/components/mardown-display/tables/TableSaveToMenu";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
+import { selectBlindActive } from "../redux/selectors";
 import {
-  selectActiveBattleColumns,
-  type BattleColumnDescriptor,
-} from "../shared/activeBattleColumns";
-import { selectBlindActive, selectBlindOrder } from "../redux/selectors";
-import { blindAnonLabel } from "../shared/blind";
-
-// =============================================================================
-// Per-column derived stats — everything we know about one column's runs
-// =============================================================================
-
-interface ColumnStats {
-  columnId: string;
-  agentId: string | null;
-  agentName: string;
-  versionLabel: string;
-  status: string;
-
-  // Feedback (from cmp_response_feedback, mirrored into the slice)
-  fbOverall: number | null;
-  fbRank: number | null;
-  fbAccuracy: number | null;
-  fbRelevance: number | null;
-  fbCompleteness: number | null;
-  fbInstructionFollowing: number | null;
-  fbReasoning: number | null;
-  fbClarity: number | null;
-  fbConciseness: number | null;
-
-  // Token usage
-  tokensInput: number | null;
-  tokensCached: number | null;
-  tokensOutput: number | null;
-  tokensTotal: number | null;
-
-  // Cost & timing (server-reported)
-  cost: number | null;
-  serverDurationTotal: number | null;
-  serverDurationApi: number | null;
-  serverDurationTool: number | null;
-
-  // Operations
-  rounds: number;
-  completedRounds: number;
-  erroredRounds: number;
-  iterations: number | null;
-  llmCalls: number | null;
-  toolCalls: number | null;
-
-  // Client metrics (last request)
-  clientTtftMs: number | null;
-  clientStreamDurationMs: number | null;
-  clientRenderDelayMs: number | null;
-  clientInternalLatencyMs: number | null;
-  clientTotalDurationMs: number | null;
-  clientAccumulatedBytes: number | null;
-  clientTotalPayloadBytes: number | null;
-
-  // Event counts (last request)
-  evTotal: number | null;
-  evChunks: number | null;
-  evReasoning: number | null;
-  evPhases: number | null;
-  evTool: number | null;
-  evRenderBlocks: number | null;
-  evInit: number | null;
-  evCompletion: number | null;
-  evData: number | null;
-  evRecordReserved: number | null;
-  evRecordUpdate: number | null;
-  evResourceChanged: number | null;
-  evWarnings: number | null;
-  evInfo: number | null;
-  evOther: number | null;
-
-  // Context state (model context tab)
-  ctxEstimatedTokens: number | null;
-  ctxFillPct: number | null;
-  ctxVisibleChars: number | null;
-  ctxVisibleMessages: number | null;
-  ctxLastReqInput: number | null;
-  ctxLastReqCached: number | null;
-  ctxLastReqOutput: number | null;
-}
-
-const NULL_STATS = (): Omit<
-  ColumnStats,
-  "columnId" | "agentId" | "agentName" | "versionLabel" | "status"
-> => ({
-  fbOverall: null,
-  fbRank: null,
-  fbAccuracy: null,
-  fbRelevance: null,
-  fbCompleteness: null,
-  fbInstructionFollowing: null,
-  fbReasoning: null,
-  fbClarity: null,
-  fbConciseness: null,
-  tokensInput: null,
-  tokensCached: null,
-  tokensOutput: null,
-  tokensTotal: null,
-  cost: null,
-  serverDurationTotal: null,
-  serverDurationApi: null,
-  serverDurationTool: null,
-  rounds: 0,
-  completedRounds: 0,
-  erroredRounds: 0,
-  iterations: null,
-  llmCalls: null,
-  toolCalls: null,
-  clientTtftMs: null,
-  clientStreamDurationMs: null,
-  clientRenderDelayMs: null,
-  clientInternalLatencyMs: null,
-  clientTotalDurationMs: null,
-  clientAccumulatedBytes: null,
-  clientTotalPayloadBytes: null,
-  evTotal: null,
-  evChunks: null,
-  evReasoning: null,
-  evPhases: null,
-  evTool: null,
-  evRenderBlocks: null,
-  evInit: null,
-  evCompletion: null,
-  evData: null,
-  evRecordReserved: null,
-  evRecordUpdate: null,
-  evResourceChanged: null,
-  evWarnings: null,
-  evInfo: null,
-  evOther: null,
-  ctxEstimatedTokens: null,
-  ctxFillPct: null,
-  ctxVisibleChars: null,
-  ctxVisibleMessages: null,
-  ctxLastReqInput: null,
-  ctxLastReqCached: null,
-  ctxLastReqOutput: null,
-});
-
-function makeEmptyTotals(): MutableTotals {
-  return { input: 0, output: 0, cached: 0, total: 0, cost: 0, requests: 0 };
-}
-
-interface ColumnStatsDeps {
-  agents: RootState["agentDefinition"]["agents"];
-  activeRequests: RootState["activeRequests"];
-  feedbackByConversation:
-    RootState["agentComparison"]["feedbackByConversation"] | undefined;
-  contextByConversation:
-    RootState["contextState"]["byConversationId"] | undefined;
-}
-
-function buildStatsForColumn(
-  col: BattleColumnDescriptor,
-  deps: ColumnStatsDeps,
-): ColumnStats {
-  const agent = col.agentId ? deps.agents?.[col.agentId] : undefined;
-  const displayName =
-    col.label && col.label.trim().length > 0
-      ? col.label
-      : (agent?.name ?? "Unconfigured");
-  const base = {
-    columnId: col.columnId,
-    agentId: col.agentId ?? null,
-    agentName: displayName,
-    versionLabel:
-      col.agentVersion == null
-        ? "—"
-        : col.agentVersion === "current"
-          ? "current"
-          : `v${col.agentVersion}`,
-    status: "—",
-    ...NULL_STATS(),
-  };
-
-  const requestIds = deps.activeRequests.byConversationId[col.conversationId];
-  const requests: ActiveRequest[] = requestIds
-    ? requestIds
-        .map((id) => deps.activeRequests.byRequestId[id])
-        .filter((r): r is ActiveRequest => Boolean(r))
-    : [];
-
-  fillFeedback(base, deps.feedbackByConversation, col.conversationId);
-
-  if (requests.length === 0) {
-    // No runs yet — still surface context-state if present (cold-start fetch).
-    fillContextState(base, deps.contextByConversation, col.conversationId);
-    return base;
-  }
-
-  const totals = makeEmptyTotals();
-  let durTotal = 0;
-  let durApi = 0;
-  let durTool = 0;
-  let toolCalls = 0;
-  let iterations = 0;
-  let completed = 0;
-  let errored = 0;
-
-  for (const req of requests) {
-    const result = getUserRequestResult(req);
-    if (result) {
-      addUsageTotals(totals, result.total_usage?.total);
-      const timing = result.timing_stats;
-      durTotal += timing?.total_duration ?? 0;
-      durApi += timing?.api_duration ?? 0;
-      durTool += timing?.tool_duration ?? 0;
-      toolCalls += result.tool_call_stats?.total_tool_calls ?? 0;
-      iterations += result.iterations ?? 0;
-    }
-    if (req.status === "complete") completed++;
-    else if (req.status === "error") errored++;
-  }
-
-  const last = requests[requests.length - 1];
-
-  base.status = last.status ?? "—";
-  base.rounds = requests.length;
-  base.completedRounds = completed;
-  base.erroredRounds = errored;
-  base.iterations = iterations || null;
-  base.llmCalls = totals.requests || null;
-  base.toolCalls = toolCalls || null;
-
-  base.tokensInput = totals.input || null;
-  base.tokensCached = totals.cached || null;
-  base.tokensOutput = totals.output || null;
-  base.tokensTotal = totals.total || null;
-  base.cost = totals.cost || null;
-  base.serverDurationTotal = durTotal || null;
-  base.serverDurationApi = durApi || null;
-  base.serverDurationTool = durTool || null;
-
-  // Client metrics — pull from the LAST request (most recent run is the
-  // most informative single-shot perf number; aggregating multi-turn TTFT
-  // would mislead).
-  const m = last.clientMetrics;
-  if (m) {
-    base.clientTtftMs = m.ttftMs ?? null;
-    base.clientStreamDurationMs = m.streamDurationMs ?? null;
-    base.clientRenderDelayMs = m.renderDelayMs ?? null;
-    base.clientInternalLatencyMs = m.internalLatencyMs ?? null;
-    base.clientTotalDurationMs = m.totalClientDurationMs ?? null;
-    base.clientAccumulatedBytes = m.accumulatedTextBytes ?? null;
-    base.clientTotalPayloadBytes = m.totalPayloadBytes ?? null;
-    base.evTotal = m.totalEvents ?? null;
-    base.evChunks = m.chunkEvents ?? null;
-    base.evReasoning = m.reasoningChunkEvents ?? null;
-    base.evPhases = m.phaseEvents ?? null;
-    base.evTool = m.toolEvents ?? null;
-    base.evRenderBlocks = m.renderBlockEvents ?? null;
-    base.evInit = m.initEvents ?? null;
-    base.evCompletion = m.completionEvents ?? null;
-    base.evData = m.dataEvents ?? null;
-    base.evRecordReserved = m.recordReservedEvents ?? null;
-    base.evRecordUpdate = m.recordUpdateEvents ?? null;
-    base.evResourceChanged = m.resourceChangedEvents ?? null;
-    base.evWarnings = m.warningEvents ?? null;
-    base.evInfo = m.infoEvents ?? null;
-    base.evOther = m.otherEvents ?? null;
-  }
-
-  fillContextState(base, deps.contextByConversation, col.conversationId);
-  return base;
-}
-
-const CHARS_PER_TOKEN_ESTIMATE = 4;
-const DEFAULT_CONTEXT_WINDOW_TOKENS = 200_000;
-
-function fillFeedback(
-  out: ColumnStats,
-  feedbackByConversation: ColumnStatsDeps["feedbackByConversation"],
-  conversationId: string,
-) {
-  const fb = feedbackByConversation?.[conversationId];
-  if (!fb) return;
-  out.fbOverall = fb.overall ?? null;
-  out.fbRank = fb.rank ?? null;
-  const s = fb.scores ?? {};
-  out.fbAccuracy = s.accuracy ?? null;
-  out.fbRelevance = s.relevance ?? null;
-  out.fbCompleteness = s.completeness ?? null;
-  out.fbInstructionFollowing = s.instruction_following ?? null;
-  out.fbReasoning = s.reasoning ?? null;
-  out.fbClarity = s.clarity ?? null;
-  out.fbConciseness = s.conciseness ?? null;
-}
-
-function fillContextState(
-  out: ColumnStats,
-  contextByConversation: ColumnStatsDeps["contextByConversation"],
-  conversationId: string,
-) {
-  const ctx = contextByConversation?.[conversationId];
-  if (!ctx) return;
-  const est =
-    ctx.lastRequestInputTokens > 0
-      ? ctx.lastRequestInputTokens + ctx.lastRequestCachedTokens
-      : Math.ceil(ctx.totalCharsVisibleToModel / CHARS_PER_TOKEN_ESTIMATE);
-  out.ctxEstimatedTokens = est || null;
-  out.ctxFillPct =
-    DEFAULT_CONTEXT_WINDOW_TOKENS > 0
-      ? Math.round((est / DEFAULT_CONTEXT_WINDOW_TOKENS) * 100)
-      : null;
-  out.ctxVisibleChars = ctx.totalCharsVisibleToModel || null;
-  out.ctxVisibleMessages = ctx.messageCountVisible || null;
-  out.ctxLastReqInput = ctx.lastRequestInputTokens || null;
-  out.ctxLastReqCached = ctx.lastRequestCachedTokens || null;
-  out.ctxLastReqOutput = ctx.lastRequestOutputTokens || null;
-}
-
-// =============================================================================
-// Metric row definitions — one place to declare the whole comparison
-// =============================================================================
-
-type Direction = "lower" | "higher" | "none";
-
-interface MetricRow {
-  label: string;
-  pick: (s: ColumnStats) => number | null;
-  /** `unit` is the viewer's cost unit — only cost rows read it. */
-  format: (v: number | null, unit: CostUnit) => string;
-  direction: Direction;
-  emphasized?: boolean;
-}
-
-interface MetricSection {
-  title: string;
-  rows: MetricRow[];
-}
-
-const fmtScore = (v: number | null) => (v == null ? "—" : `${v} / 5`);
-const fmtRank = (v: number | null) => (v == null ? "—" : `#${v}`);
-
-const SECTIONS: MetricSection[] = [
-  {
-    title: "Your evaluation",
-    rows: [
-      {
-        label: "Rank",
-        pick: (s) => s.fbRank,
-        format: fmtRank,
-        direction: "lower", // rank 1 is best
-        emphasized: true,
-      },
-      {
-        label: "Overall",
-        pick: (s) => s.fbOverall,
-        format: fmtScore,
-        direction: "higher",
-        emphasized: true,
-      },
-      {
-        label: "Accuracy",
-        pick: (s) => s.fbAccuracy,
-        format: fmtScore,
-        direction: "higher",
-      },
-      {
-        label: "Relevance",
-        pick: (s) => s.fbRelevance,
-        format: fmtScore,
-        direction: "higher",
-      },
-      {
-        label: "Completeness",
-        pick: (s) => s.fbCompleteness,
-        format: fmtScore,
-        direction: "higher",
-      },
-      {
-        label: "Instruction following",
-        pick: (s) => s.fbInstructionFollowing,
-        format: fmtScore,
-        direction: "higher",
-      },
-      {
-        label: "Reasoning",
-        pick: (s) => s.fbReasoning,
-        format: fmtScore,
-        direction: "higher",
-      },
-      {
-        label: "Clarity",
-        pick: (s) => s.fbClarity,
-        format: fmtScore,
-        direction: "higher",
-      },
-      {
-        label: "Conciseness",
-        pick: (s) => s.fbConciseness,
-        format: fmtScore,
-        direction: "higher",
-      },
-    ],
-  },
-  {
-    title: "Summary",
-    rows: [
-      {
-        label: "Total tokens",
-        pick: (s) => s.tokensTotal,
-        format: fmtTokens,
-        direction: "lower",
-        emphasized: true,
-      },
-      {
-        label: "Cost",
-        pick: (s) => s.cost,
-        format: fmtCost,
-        direction: "lower",
-        emphasized: true,
-      },
-      {
-        label: "Server total duration",
-        pick: (s) => s.serverDurationTotal,
-        format: fmtServerSeconds,
-        direction: "lower",
-        emphasized: true,
-      },
-      {
-        label: "Client TTFT",
-        pick: (s) => s.clientTtftMs,
-        format: fmtMs,
-        direction: "lower",
-        emphasized: true,
-      },
-      {
-        label: "Rounds (turns)",
-        pick: (s) => s.rounds || null,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-    ],
-  },
-  {
-    title: "Token usage",
-    rows: [
-      {
-        label: "Input tokens",
-        pick: (s) => s.tokensInput,
-        format: fmtTokens,
-        direction: "lower",
-      },
-      {
-        label: "Cached tokens",
-        pick: (s) => s.tokensCached,
-        format: fmtTokens,
-        direction: "higher",
-      },
-      {
-        label: "Output tokens",
-        pick: (s) => s.tokensOutput,
-        format: fmtTokens,
-        direction: "lower",
-      },
-      {
-        label: "Total tokens",
-        pick: (s) => s.tokensTotal,
-        format: fmtTokens,
-        direction: "lower",
-      },
-    ],
-  },
-  {
-    title: "Server timing",
-    rows: [
-      {
-        label: "Total duration",
-        pick: (s) => s.serverDurationTotal,
-        format: fmtServerSeconds,
-        direction: "lower",
-      },
-      {
-        label: "API duration",
-        pick: (s) => s.serverDurationApi,
-        format: fmtServerSeconds,
-        direction: "lower",
-      },
-      {
-        label: "Tool duration",
-        pick: (s) => s.serverDurationTool,
-        format: fmtServerSeconds,
-        direction: "lower",
-      },
-    ],
-  },
-  {
-    title: "Client timing (last run)",
-    rows: [
-      {
-        label: "TTFT",
-        pick: (s) => s.clientTtftMs,
-        format: fmtMs,
-        direction: "lower",
-      },
-      {
-        label: "Internal latency",
-        pick: (s) => s.clientInternalLatencyMs,
-        format: fmtMs,
-        direction: "lower",
-      },
-      {
-        label: "Stream duration",
-        pick: (s) => s.clientStreamDurationMs,
-        format: fmtMs,
-        direction: "lower",
-      },
-      {
-        label: "Render delay",
-        pick: (s) => s.clientRenderDelayMs,
-        format: fmtMs,
-        direction: "lower",
-      },
-      {
-        label: "Total client",
-        pick: (s) => s.clientTotalDurationMs,
-        format: fmtMs,
-        direction: "lower",
-      },
-    ],
-  },
-  {
-    title: "Operations",
-    rows: [
-      {
-        label: "LLM calls",
-        pick: (s) => s.llmCalls,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "lower",
-      },
-      {
-        label: "Tool calls",
-        pick: (s) => s.toolCalls,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "lower",
-      },
-      {
-        label: "Σ Iterations",
-        pick: (s) => s.iterations,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "lower",
-      },
-      {
-        label: "Completed rounds",
-        pick: (s) => s.completedRounds || null,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Errored rounds",
-        pick: (s) => s.erroredRounds || null,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "lower",
-      },
-    ],
-  },
-  {
-    title: "Model context (last run)",
-    rows: [
-      {
-        label: "Context fill %",
-        pick: (s) => s.ctxFillPct,
-        format: (v) => (v == null ? "—" : `${v}%`),
-        direction: "lower",
-      },
-      {
-        label: "Estimated tokens",
-        pick: (s) => s.ctxEstimatedTokens,
-        format: fmtTokens,
-        direction: "lower",
-      },
-      {
-        label: "Last input tokens",
-        pick: (s) => s.ctxLastReqInput,
-        format: fmtTokens,
-        direction: "lower",
-      },
-      {
-        label: "Last cached tokens",
-        pick: (s) => s.ctxLastReqCached,
-        format: fmtTokens,
-        direction: "higher",
-      },
-      {
-        label: "Last output tokens",
-        pick: (s) => s.ctxLastReqOutput,
-        format: fmtTokens,
-        direction: "lower",
-      },
-      {
-        label: "Visible chars",
-        pick: (s) => s.ctxVisibleChars,
-        format: fmtTokens,
-        direction: "lower",
-      },
-      {
-        label: "Visible messages",
-        pick: (s) => s.ctxVisibleMessages,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-    ],
-  },
-  {
-    title: "Payload (last run)",
-    rows: [
-      {
-        label: "Accumulated text",
-        pick: (s) => s.clientAccumulatedBytes,
-        format: (v) => formatFileSize(v),
-        direction: "lower",
-      },
-      {
-        label: "Total payload",
-        pick: (s) => s.clientTotalPayloadBytes,
-        format: (v) => formatFileSize(v),
-        direction: "lower",
-      },
-    ],
-  },
-  {
-    title: "Event counts (last run)",
-    rows: [
-      {
-        label: "Total events",
-        pick: (s) => s.evTotal,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Chunks",
-        pick: (s) => s.evChunks,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Reasoning chunks",
-        pick: (s) => s.evReasoning,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Phases",
-        pick: (s) => s.evPhases,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Tool events",
-        pick: (s) => s.evTool,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Render blocks",
-        pick: (s) => s.evRenderBlocks,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-    ],
-  },
-  {
-    title: "Records (last run)",
-    rows: [
-      {
-        label: "Init",
-        pick: (s) => s.evInit,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Completion",
-        pick: (s) => s.evCompletion,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Data",
-        pick: (s) => s.evData,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Reserved",
-        pick: (s) => s.evRecordReserved,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Updated",
-        pick: (s) => s.evRecordUpdate,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "FS changes",
-        pick: (s) => s.evResourceChanged,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Warnings",
-        pick: (s) => s.evWarnings,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "lower",
-      },
-      {
-        label: "Info",
-        pick: (s) => s.evInfo,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-      {
-        label: "Other",
-        pick: (s) => s.evOther,
-        format: (v) => (v == null ? "—" : String(v)),
-        direction: "none",
-      },
-    ],
-  },
-];
-
-// =============================================================================
-// Highlights — min/max per row given a direction
-// =============================================================================
-
-type Highlight = "best" | "worst" | null;
-
-function computeRowHighlights(
-  row: MetricRow,
-  cols: ColumnStats[],
-): Record<string, Highlight> {
-  const out: Record<string, Highlight> = {};
-  if (row.direction === "none") return out;
-  const values = cols
-    .map((c) => ({ id: c.columnId, v: row.pick(c) }))
-    .filter((x): x is { id: string; v: number } => x.v != null);
-  if (values.length < 2) return out;
-  let min = values[0];
-  let max = values[0];
-  for (const x of values.slice(1)) {
-    if (x.v < min.v) min = x;
-    if (x.v > max.v) max = x;
-  }
-  if (min.v === max.v) return out;
-  if (row.direction === "lower") {
-    out[min.id] = "best";
-    out[max.id] = "worst";
-  } else {
-    out[max.id] = "best";
-    out[min.id] = "worst";
-  }
-  return out;
-}
-
-const EMPTY_COLUMN_STATS: ColumnStats[] = [];
-
-const selectActiveRequests = (state: RootState) => state.activeRequests;
-const selectAgentDefinitionAgents = (state: RootState) =>
-  state.agentDefinition.agents;
-const selectComparisonFeedbackByConversation = (state: RootState) =>
-  state.agentComparison?.feedbackByConversation;
-const selectContextByConversation = (state: RootState) =>
-  state.contextState?.byConversationId;
-
-/** Memoized per-column stats — recomputes only when columns or run data change. */
-const selectRunsComparisonColumnStats = createSelector(
-  [
-    selectActiveBattleColumns,
-    selectActiveRequests,
-    selectAgentDefinitionAgents,
-    selectComparisonFeedbackByConversation,
-    selectContextByConversation,
-  ],
-  (
-    columns,
-    activeRequests,
-    agents,
-    feedbackByConversation,
-    contextByConversation,
-  ): ColumnStats[] => {
-    if (columns.length === 0) return EMPTY_COLUMN_STATS;
-    const deps: ColumnStatsDeps = {
-      agents,
-      activeRequests,
-      feedbackByConversation,
-      contextByConversation,
-    };
-    return columns.map((col) => buildStatsForColumn(col, deps));
-  },
-);
-
-/** Column identities and metric sections exactly as the table shows them (blind masking included). */
-const selectVisibleRunsComparison = createSelector(
-  [selectRunsComparisonColumnStats, selectBlindActive, selectBlindOrder],
-  (
-    rawStats,
-    blindActive,
-    blindOrder,
-  ): { stats: ColumnStats[]; sections: MetricSection[] } => {
-    // During a blind test, anonymize the column identity (agent name +
-    // version both leak which model ran) and show ONLY the user's own
-    // evaluation rows — every metric section (tokens, cost, timing, …)
-    // is a giveaway. The masks lift on Reveal.
-    const stats = blindActive
-      ? rawStats.map((s) => ({
-          ...s,
-          agentId: null,
-          agentName: blindAnonLabel(s.columnId, blindOrder),
-          versionLabel: "—",
-        }))
-      : rawStats;
-    const sections = blindActive
-      ? SECTIONS.filter((sec) => sec.title === "Your evaluation")
-      : SECTIONS;
-    return { stats, sections };
-  },
-);
-
-const mdCell = (text: string) => text.replace(/\|/g, "\\|").replace(/\n/g, " ");
-
-/**
- * The runs comparison as Markdown tables — what Print, the HTML page and a
- * published report carry. The best value in each row is bold, as the table
- * shows it in green.
- */
-export function runsComparisonMarkdown(
-  state: RootState,
-  costUnit: CostUnit,
-): string {
-  const { stats, sections } = selectVisibleRunsComparison(state);
-  if (stats.length === 0) return "";
-  const out: string[] = [];
-  for (const section of sections) {
-    // A published report carries only measured rows: a row with no value in
-    // any column (no ratings yet, a metric this run did not record) is noise.
-    const rows = section.rows.filter((row) =>
-      stats.some((s) => row.pick(s) != null),
-    );
-    if (rows.length === 0) continue;
-    out.push(`### ${section.title}`);
-    out.push(
-      `| Metric | ${stats.map((s) => mdCell(s.agentName)).join(" | ")} |`,
-    );
-    out.push(`|---|${stats.map(() => "---:").join("|")}|`);
-    for (const row of rows) {
-      const highlights = computeRowHighlights(row, stats);
-      const cells = stats.map((s) => {
-        const text = mdCell(row.format(row.pick(s), costUnit));
-        return highlights[s.columnId] === "best" ? `**${text}**` : text;
-      });
-      out.push(`| ${mdCell(row.label)} | ${cells.join(" | ")} |`);
-    }
-    out.push("");
-  }
-  return out.join("\n");
-}
-
-// =============================================================================
-// Component
-// =============================================================================
+  computeRowHighlights,
+  selectVisibleRunsComparison,
+  type ColumnStats,
+  type MetricSection,
+} from "./runsComparisonData";
+import { computeRanking, ordinal, rankRow, type RunsRanking } from "./runsRanking";
+import {
+  gridMarkdown,
+  gridObjects,
+  sectionDataGrid,
+  sectionGrid,
+  standingsDataGrid,
+  standingsGrid,
+  type Grid,
+} from "./runsComparisonReport";
 
 export function RunsComparisonTable() {
   const { stats, sections } = useAppSelector(selectVisibleRunsComparison);
   const blindActive = useAppSelector(selectBlindActive);
+  const { unit: costUnit } = useCostDisplay();
 
   if (stats.length === 0) return null;
+  const ranking = computeRanking(stats, sections, costUnit);
 
   return (
     <div className="space-y-3 p-3">
@@ -917,6 +57,7 @@ export function RunsComparisonTable() {
           </span>
         </div>
       )}
+      <StandingsCard ranking={ranking} />
       {sections.map((section) => (
         <SectionTable key={section.title} section={section} stats={stats} />
       ))}
@@ -930,7 +71,144 @@ function ColumnHeaderStrip({ stats }: { stats: ColumnStats[] }) {
       Comparing {stats.length} column{stats.length === 1 ? "" : "s"} ·
       <span className="ml-1 text-emerald-500 font-semibold">green</span> = best,
       {/* Best/worst is computed per row across the columns that have a value. */}
-      <span className="ml-1 text-rose-500 font-semibold">red</span> = worst
+      <span className="ml-1 text-rose-500 font-semibold">red</span> = worst ·
+      badge = place
+    </div>
+  );
+}
+
+/** Copy / AI / Export and Save to, for one table — the platform's own primitives. */
+function TableTools({
+  name,
+  grid,
+  data,
+  description,
+}: {
+  name: string;
+  /** The table as people read it (copy for a person, the AI summary). */
+  grid: Grid;
+  /** The same numbers as data (save, CSV, JSON, Sheets, the AI's data). */
+  data: Grid;
+  description: string;
+}) {
+  if (grid.rows.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1">
+      <CopyButtons
+        label={name}
+        size="xs"
+        primarySource="table"
+        human={() => gridMarkdown(grid)}
+        json={() => gridObjects(data)}
+        agent={() => ({
+          kind: "agent-battle-runs-table",
+          location: `AI Matrx — Agent Battle runs comparison, "${name}"`,
+          description,
+          summary: gridMarkdown(grid),
+          data: gridObjects(data),
+          attributes: { columns: grid.headers.length - 1, rows: grid.rows.length },
+        })}
+        export={{
+          items: [csvExportItem(() => gridObjects(data), "CSV")],
+          sheetRows: () => gridObjects(data),
+        }}
+      />
+      <TableSaveToMenu headers={data.headers} rows={data.rows} title={name} />
+    </div>
+  );
+}
+
+function PlaceBadge({ place }: { place: number | null }) {
+  if (place == null) return null;
+  return (
+    <span
+      className={cn(
+        "ml-1.5 inline-block min-w-[26px] rounded-full px-1 text-center text-[9px] font-semibold leading-4 align-middle",
+        place === 1 && "bg-amber-200 text-amber-900 dark:bg-amber-500/25 dark:text-amber-300",
+        place === 2 && "bg-slate-200 text-slate-700 dark:bg-slate-500/25 dark:text-slate-300",
+        place === 3 && "bg-orange-200 text-orange-900 dark:bg-orange-500/25 dark:text-orange-300",
+        place > 3 && "bg-muted text-muted-foreground",
+      )}
+      title={`${ordinal(place)} place on this metric`}
+    >
+      {ordinal(place)}
+    </span>
+  );
+}
+
+function StandingsCard({ ranking }: { ranking: RunsRanking }) {
+  if (!ranking.standings.some((s) => s.ranked > 0)) return null;
+  const grid = standingsGrid(ranking);
+  return (
+    <div className="border border-border rounded-md overflow-hidden">
+      <div className="flex items-center justify-between gap-2 px-3 py-1 bg-muted/40">
+        <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+          <Trophy className="w-3 h-3 text-amber-500" />
+          Standings
+        </span>
+        <TableTools
+          name="Standings"
+          grid={grid}
+          data={standingsDataGrid(ranking)}
+          description="Each column's overall place, first places and average place across your scores, tokens, cost and speed."
+        />
+      </div>
+      <table className="w-full text-[11px]">
+        <thead>
+          <tr className="border-b border-border bg-card/50">
+            {grid.headers.map((h, i) => (
+              <th
+                key={h}
+                className={cn(
+                  "px-3 py-1.5 font-semibold text-muted-foreground",
+                  i <= 1 ? "text-left" : "text-right",
+                )}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {ranking.standings.map((s) => (
+            <tr
+              key={s.columnId}
+              className={cn(
+                "border-b border-border/40 last:border-b-0",
+                s.place === 1 && "bg-emerald-500/5",
+              )}
+            >
+              <td className="px-3 py-1">
+                {s.place > 0 ? <PlaceBadge place={s.place} /> : "—"}
+              </td>
+              <td className={cn("px-3 py-1", s.place === 1 && "font-semibold text-foreground")}>
+                {s.name}
+              </td>
+              <td className="px-3 py-1 text-right font-mono">{s.wins}</td>
+              <td className="px-3 py-1 text-right font-mono">
+                {s.averagePlace != null ? s.averagePlace.toFixed(1) : "—"}
+              </td>
+              <td className="px-3 py-1 text-right font-mono">{s.ranked}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {ranking.leaders.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-3 py-2 border-t border-border/60">
+          {ranking.leaders.map((l) => (
+            <span
+              key={l.label}
+              className="rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground"
+              title={`${l.label}: ${l.leaders.join(", ")} (${l.value})`}
+            >
+              {l.label}:{" "}
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                {l.leaders.join(", ")}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -943,10 +221,19 @@ function SectionTable({
   stats: ColumnStats[];
 }) {
   const { unit: costUnit } = useCostDisplay();
+  const grid = sectionGrid(section, stats, costUnit);
   return (
     <div className="border border-border rounded-md overflow-hidden">
-      <div className="px-3 py-1.5 bg-muted/40 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-        {section.title}
+      <div className="flex items-center justify-between gap-2 px-3 py-1 bg-muted/40">
+        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+          {section.title}
+        </span>
+        <TableTools
+          name={section.title}
+          grid={grid}
+          data={sectionDataGrid(section, stats)}
+          description={`The "${section.title}" metrics for each column of an Agent Battle, side by side.`}
+        />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-[11px]">
@@ -986,6 +273,7 @@ function SectionTable({
           <tbody>
             {section.rows.map((row) => {
               const highlights = computeRowHighlights(row, stats);
+              const places = rankRow(row, stats);
               return (
                 <tr
                   key={row.label}
@@ -1006,12 +294,13 @@ function SectionTable({
                       <td
                         key={s.columnId}
                         className={cn(
-                          "px-3 py-1 text-right font-mono",
+                          "px-3 py-1 text-right font-mono whitespace-nowrap",
                           hl === "best" && "text-emerald-500 font-semibold",
                           hl === "worst" && "text-rose-500 font-semibold",
                         )}
                       >
                         {row.format(v, costUnit)}
+                        <PlaceBadge place={places[s.columnId] ?? null} />
                       </td>
                     );
                   })}

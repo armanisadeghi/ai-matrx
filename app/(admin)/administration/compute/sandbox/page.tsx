@@ -87,9 +87,9 @@ const STATUS_BADGE_MAP: Record<
   ready: { variant: "success", label: "Ready" },
   running: { variant: "success", label: "Running" },
   shutting_down: { variant: "warning", label: "Shutting Down" },
-  stopped: { variant: "secondary", label: "Stopped" },
-  failed: { variant: "destructive", label: "Failed" },
-  expired: { variant: "secondary", label: "Expired" },
+  stopped: { variant: "secondary" as const, label: "Stopped" },
+  failed: { variant: "destructive" as const, label: "Failed" },
+  expired: { variant: "secondary" as const, label: "Expired" },
 };
 
 const PAGE_LOCATION =
@@ -630,7 +630,56 @@ export default function AdminSandboxManagementPage() {
             <MatrxDataTable<SandboxInstance>
               tableId="administration/compute/sandbox"
               data={instances}
-              columns={columns}
+              columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (instance) => {
+                const busy = isLifecycleReserved(instance.id);
+                const active = ["ready", "running"].includes(instance.status);
+                return (
+                  <>
+                    {active && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRequestSsh(instance)}
+                        className="text-xs"
+                      >
+                        <KeyRound className="mr-1 h-4 w-4" />
+                        SSH
+                      </Button>
+                    )}
+                    {active && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStop(instance)}
+                        disabled={busy}
+                        className="text-xs"
+                      >
+                        {busy ? (
+                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Square className="mr-1 h-4 w-4" />
+                        )}
+                        Stop
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Delete sandbox"
+                      title="Delete sandbox"
+                      onClick={() => setDeleteTarget(instance)}
+                      disabled={busy}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </>
+                );
+              } }]}
               getRowId={(instance) => instance.id}
               density="condensed"
               isLoading={loading}
@@ -804,56 +853,7 @@ export default function AdminSandboxManagementPage() {
                   },
                 ],
               }}
-              rowActions={(instance) => {
-                const busy = isLifecycleReserved(instance.id);
-                const active = ["ready", "running"].includes(instance.status);
-                return (
-                  <>
-                    {active && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRequestSsh(instance)}
-                        className="text-xs"
-                      >
-                        <KeyRound className="mr-1 h-4 w-4" />
-                        SSH
-                      </Button>
-                    )}
-                    {active && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleStop(instance)}
-                        disabled={busy}
-                        className="text-xs"
-                      >
-                        {busy ? (
-                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Square className="mr-1 h-4 w-4" />
-                        )}
-                        Stop
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Delete sandbox"
-                      title="Delete sandbox"
-                      onClick={() => setDeleteTarget(instance)}
-                      disabled={busy}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </>
-                );
-              }}
+
               coverage={{
                 loaded: accessibleSandboxes.length,
                 matched: instances.length,

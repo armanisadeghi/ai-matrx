@@ -176,7 +176,7 @@ describe("uploadCapture", () => {
     mockAwaitWorkspace.mockResolvedValue(
       workspaceUnavailable(
         "no-selection",
-        "We could not tell which workspace to file this in. Pick one from the menu under your avatar.",
+        "We could not tell which workspace to file this in. Choose one in the sidebar's organization switcher.",
       ),
     );
     await expect(

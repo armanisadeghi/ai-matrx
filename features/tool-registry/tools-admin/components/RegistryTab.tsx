@@ -259,7 +259,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
       description:
         "The tool will no longer be runnable on this executor. The binding moves to Trash; re-adding it restores it.",
       confirmLabel: "Unbind",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!ok) return;
     try {
@@ -315,16 +315,7 @@ function BindingsSection({ toolId }: { toolId: string }) {
           getRowId={(row) => `${row.tool_id}-${row.executor_name}`}
           rowClassName={(row) => (row.is_active ? undefined : "opacity-50")}
           toolbar={{ search: true, refresh: { onRefresh: load } }}
-          rowActions={(row) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void onRemove(row)}
-              aria-label="Unbind"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
+          rowActions={(row) => [{ id: "remove", icon: X, label: "Unbind", onClick: () => void onRemove(row), variant: "ghost" as const }]}
         />
       )}
       <div className="flex flex-wrap items-end gap-2 pt-1">
@@ -433,7 +424,7 @@ function SurfacesSection({ toolId }: { toolId: string }) {
       description:
         "The tool will no longer be force-included on this surface. It may still resolve through bundle inclusions or executor bindings.",
       confirmLabel: "Remove",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!ok) return;
     try {

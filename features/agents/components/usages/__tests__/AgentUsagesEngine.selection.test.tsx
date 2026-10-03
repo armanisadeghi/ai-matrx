@@ -193,4 +193,24 @@ describe("AgentUsagesEngine selection", () => {
     );
     expect(renderToStaticMarkup(<>{mixed}</>)).not.toContain("Move 2 usages");
   });
+  it("hands the shared table icon descriptors for the mandate move and candidate actions", () => {
+    renderToStaticMarkup(<AgentUsagesEngine agentId="agent-1" mode="user" />);
+    if (!tableProps?.rowActions) throw new Error("Missing standard icon actions");
+    const eligible = tableProps.data.find((row) => row.verdict?.row_id === "eligible-mandate");
+    const immutable = tableProps.data.find((row) => row.verdict?.row_id === "immutable-mandate");
+    if (!eligible || !immutable) throw new Error("Missing mandate usage fixtures");
+    const actions = tableProps.rowActions(eligible, {} as never);
+    expect(actions.map((action) => action.id)).toEqual(expect.arrayContaining(["advance", "candidate"]));
+    expect(actions.find((action) => action.id === "candidate")?.label).toBe("Try as candidate");
+    for (const action of actions) {
+      expect(action.icon).toBeDefined();
+      expect(action.onClick).toEqual(expect.any(Function));
+      expect(action).not.toHaveProperty("children");
+      expect(action).not.toHaveProperty("render");
+    }
+    expect(tableProps.rowActions(immutable, {} as never).map((action) => action.id)).not.toContain("advance");
+  });
+
 });
+
+jest.mock("@/features/mandates/candidate-dialog/SetCandidateDialog", () => ({ SetCandidateDialog: () => null }));

@@ -419,10 +419,32 @@ export function SurfacesTable({
   return (
     <MatrxDataTable<SurfaceWithStats>
       data={rows}
-      columns={surfaceColumns(
+      columns={[...(surfaceColumns(
         navigatingName,
         !peeking || isMobile ? "off" : roomForValues ? "wide" : "narrow",
-      )}
+      )), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+        <>
+          <ViewTapButton
+            variant="transparent"
+            onClick={() => onPeek(row)}
+            ariaLabel={`Peek ${surfaceRowTitle(row)}`}
+            tooltip="Peek"
+          />
+          <PencilTapButton
+            variant="transparent"
+            disabled={row.name === navigatingName}
+            onClick={() => onEdit(row)}
+            ariaLabel={`Open editor for ${surfaceRowTitle(row)}`}
+            tooltip="Open editor"
+          />
+          <TrashTapButton
+            variant="transparent"
+            onClick={() => onDelete(row)}
+            ariaLabel={`Delete ${surfaceRowTitle(row)}`}
+            tooltip="Delete"
+          />
+        </>
+      ) }]}
       tableId="administration/ui/surfaces"
       // One view control: the saved-views menu. The working-view tab strip
       // repeated its name ("Default view" twice).
@@ -591,29 +613,7 @@ export function SurfacesTable({
           });
         },
       }}
-      rowActions={(row) => (
-        <>
-          <ViewTapButton
-            variant="transparent"
-            onClick={() => onPeek(row)}
-            ariaLabel={`Peek ${surfaceRowTitle(row)}`}
-            tooltip="Peek"
-          />
-          <PencilTapButton
-            variant="transparent"
-            disabled={row.name === navigatingName}
-            onClick={() => onEdit(row)}
-            ariaLabel={`Open editor for ${surfaceRowTitle(row)}`}
-            tooltip="Open editor"
-          />
-          <TrashTapButton
-            variant="transparent"
-            onClick={() => onDelete(row)}
-            ariaLabel={`Delete ${surfaceRowTitle(row)}`}
-            tooltip="Delete"
-          />
-        </>
-      )}
+
       mobileCards={(row) => (
         <article
           className={cn(

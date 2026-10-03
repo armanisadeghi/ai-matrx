@@ -522,7 +522,7 @@ export function TemplatesManager() {
           ? error.message
           : "Could not load research templates.";
       setLoadError(message);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: "Error", description: message, variant: "destructive" as const });
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -570,7 +570,7 @@ export function TemplatesManager() {
       toast({
         title: "Validation",
         description: "Name is required",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       return;
     }
@@ -596,7 +596,7 @@ export function TemplatesManager() {
       toast({
         title: "Error",
         description: (err as Error).message,
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     } finally {
       setSaving(false);
@@ -617,7 +617,7 @@ export function TemplatesManager() {
       toast({
         title: "Error",
         description: (err as Error).message,
-        variant: "destructive",
+        variant: "destructive" as const,
       });
     }
   };
@@ -919,8 +919,13 @@ export function TemplatesManager() {
                     />
                   ),
               },
-              ...RESEARCH_TEMPLATE_COLUMNS,
-            ]}
+              ...RESEARCH_TEMPLATE_COLUMNS, { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (template) => (
+              <TemplateRowActions
+                template={template}
+                onEdit={openEdit}
+                onDelete={setDeleteTarget}
+              />
+            ) }]}
             getRowId={(template) => template.id}
             isLoading={loading}
             isFetching={isRefreshing}
@@ -954,13 +959,7 @@ export function TemplatesManager() {
             emptyState={{
               title: "No templates yet. Create one to get started.",
             }}
-            rowActions={(template) => (
-              <TemplateRowActions
-                template={template}
-                onEdit={openEdit}
-                onDelete={setDeleteTarget}
-              />
-            )}
+
           />
         </div>
 

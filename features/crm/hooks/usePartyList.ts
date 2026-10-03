@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { EMPTY_SCOPE_COUNTS } from "@/lib/entity-list/types";
-import { fetchPartyPage, fetchPartyScopeCounts } from "../service";
+import { fetchPartyPage, fetchPartyScopeCounts, fetchPartyWholeResult } from "../service";
 import type {
   CrmQueryContext,
   PartyListQuery,
@@ -51,12 +51,19 @@ export interface UsePartyListResult {
   /** Patch one loaded row in place (post-edit, no refetch flash). */
   patchRow: (id: string, patch: Partial<PartyListRow>) => void;
   removeRow: (id: string) => void;
+  /**
+   * Set when the list read its WHOLE result (`wholeResult`) and the store's export ceiling
+   * stopped it: how many it read is `rows.length`, the true total is `total`.
+   */
+  ceiling: number | null;
 }
 
 export function usePartyList(
   opts: PartySortOpts,
   /** The party token's custom fields (the generic column source) — filters, sort and search reach them. */
   customFields: readonly StandardFieldColumn[] = NO_CUSTOM_FIELDS,
+  /** Read every row the query selects instead of one page (the grouped view). */
+  wholeResult = false,
 ): UsePartyListResult {
   // The organization filter is URL state (`?org_filter=`, absent = All
   // organizations) — never local state, never the active organization. The
@@ -71,6 +78,7 @@ export function usePartyList(
   );
   const [rows, setRows] = useState<PartyListRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [ceiling, setCeiling] = useState<number | null>(null);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -109,13 +117,17 @@ export function usePartyList(
     async function run() {
       try {
         const [page, scopeCounts] = await Promise.all([
-          fetchPartyPage(query, opts, resolvedCtx, customFields),
-          // ONE round trip, org labels included — no ctx needed (D139).
-          fetchPartyScopeCounts(query),
+          wholeResult
+            ? fetchPartyWholeResult(query, opts, resolvedCtx, customFields)
+            : fetchPartyPage(query, opts, resolvedCtx, customFields).then((p) => ({ ...p, ceiling: null })),
+          // ONE round trip, org labels included — unless the query narrows by something the
+          // counts RPC cannot see; then each lane is counted with the list's own predicates.
+          fetchPartyScopeCounts(query, resolvedCtx, customFields),
         ]);
         if (generationRef.current !== gen) return;
         setRows(page.rows);
         setTotal(page.total);
+        setCeiling(page.ceiling);
         setCounts(scopeCounts);
         setIsLoading(false);
       } catch (e) {
@@ -134,7 +146,7 @@ export function usePartyList(
       }
     }
     return () => clearTimeout(timer);
-  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation, customFields]);  
+  }, [ctx, query, opts.sort, opts.direction, opts.pageSize, generation, customFields, wholeResult]);  
 
   const setQuery = useCallback((patch: Partial<PartyListQuery>) => {
     const { orgId, ...rest } = patch;
@@ -177,6 +189,7 @@ export function usePartyList(
       refresh,
       patchRow,
       removeRow,
+      ceiling,
     }),
     [
       query,
@@ -192,6 +205,7 @@ export function usePartyList(
       refresh,
       patchRow,
       removeRow,
+      ceiling,
     ],
   );
 }

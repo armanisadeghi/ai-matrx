@@ -1,4 +1,4 @@
-import { SMS_ASSISTANT_OWNER_BETA_PROGRAM } from "@/features/sms/assistant-program";
+import { SMS_PERSONAL_STAFF_PROGRAM } from "@/features/sms/assistant-program";
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 
@@ -49,7 +49,7 @@ export async function getMySmsTaskNotificationPreference(): Promise<SmsTaskNotif
   const { data, error } = await supabase
     .schema("communication")
     .rpc("get_my_sms_task_notification_preference", {
-      p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+      p_program_key: SMS_PERSONAL_STAFF_PROGRAM,
     });
   if (error) throw error;
   return requireOnePreference(data);
@@ -63,7 +63,7 @@ export async function configureMySmsTaskNotifications(
     .schema("communication")
     .rpc("configure_my_sms_task_notifications", {
       p_enabled: enabled,
-      p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+      p_program_key: SMS_PERSONAL_STAFF_PROGRAM,
     });
   if (error) throw error;
   return requireOnePreference(data);

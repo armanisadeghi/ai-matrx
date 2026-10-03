@@ -1,4 +1,4 @@
-import { SMS_ASSISTANT_OWNER_BETA_PROGRAM } from "@/features/sms/assistant-program";
+import { SMS_PERSONAL_STAFF_PROGRAM } from "@/features/sms/assistant-program";
 import type { Database } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/client";
 
@@ -95,7 +95,7 @@ export async function enqueueMyTaskSmsReminder(
     .schema("communication")
     .rpc("enqueue_my_task_sms_reminder", {
       p_task_id: taskId,
-      p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+      p_program_key: SMS_PERSONAL_STAFF_PROGRAM,
     });
 
   if (error) {

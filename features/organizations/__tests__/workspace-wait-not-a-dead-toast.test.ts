@@ -120,7 +120,7 @@ describe("awaitEffectiveOrganizationId", () => {
     jest.useRealTimers();
     expect(result.status).toBe("unavailable");
     const reason = result.status === "unavailable" ? result.reason : "";
-    expect(reason).toMatch(/avatar/i);
+    expect(reason).toMatch(/organization switcher/i);
     expect(reason).not.toMatch(/still loading/i);
     expect(reason).not.toMatch(/in a moment/i);
   });

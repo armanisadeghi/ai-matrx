@@ -333,7 +333,7 @@ function UiClientCrud() {
             ? `${dep} surface${dep === 1 ? "" : "s"} are linked to this client. They will remain in the table but become hidden from active pickers. You can reactivate at any time.`
             : `No surfaces are currently linked. You can reactivate at any time.`,
         confirmLabel: "Deactivate",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!ok) return;
     }
@@ -354,7 +354,13 @@ function UiClientCrud() {
       {/* The read's failure is said once, by the table (read=). */}
       <MatrxDataTable<UiClientRow>
         data={rows}
-        columns={clientColumns(onToggleActive)}
+        columns={[...(clientColumns(onToggleActive)), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <PencilTapButton
+            variant="transparent"
+            ariaLabel={`Edit ${row.name}`}
+            onClick={() => setEditing(row)}
+          />
+        ) }]}
         tableId="tool-registry/lookups/clients"
         getRowId={(row) => row.name}
         isLoading={loading}
@@ -364,13 +370,7 @@ function UiClientCrud() {
           refresh: { onRefresh: load },
           add: { onAdd: () => setCreating(true) },
         }}
-        rowActions={(row) => (
-          <PencilTapButton
-            variant="transparent"
-            ariaLabel={`Edit ${row.name}`}
-            onClick={() => setEditing(row)}
-          />
-        )}
+
         read={readOf({ loading, error }, { what: "UI clients", onRetry: () => void load() })}
         emptyState={{
           title: "No clients yet",
@@ -593,7 +593,13 @@ function UiSurfaceCrud() {
         {/* The read's failure is said once, by the table (read=). */}
         <MatrxDataTable<UiSurfaceRow>
           data={visible}
-          columns={surfaceColumns(onToggleActive)}
+          columns={[...(surfaceColumns(onToggleActive)), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <PencilTapButton
+              variant="transparent"
+              ariaLabel={`Edit ${row.name}`}
+              onClick={() => setEditing(row)}
+            />
+          ) }]}
           tableId="tool-registry/lookups/surfaces"
           getRowId={(row) => row.name}
           isLoading={loading}
@@ -620,13 +626,7 @@ function UiSurfaceCrud() {
               </Select>
             ),
           }}
-          rowActions={(row) => (
-            <PencilTapButton
-              variant="transparent"
-              ariaLabel={`Edit ${row.name}`}
-              onClick={() => setEditing(row)}
-            />
-          )}
+
           read={readOf({ loading, error }, { what: "UI surfaces", onRetry: () => void load() })}
           emptyState={{ title: "No surfaces match this filter" }}
         />
@@ -860,7 +860,13 @@ function ToolExecutorCrud() {
       {/* The read's failure is said once, by the table (read=). */}
       <MatrxDataTable<ToolExecutorRow>
         data={rows}
-        columns={executorColumns(onToggleActive)}
+        columns={[...(executorColumns(onToggleActive)), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <PencilTapButton
+            variant="transparent"
+            ariaLabel={`Edit ${row.name}`}
+            onClick={() => setEditing(row)}
+          />
+        ) }]}
         tableId="tool-registry/lookups/executors"
         getRowId={(row) => row.name}
         isLoading={loading}
@@ -870,13 +876,7 @@ function ToolExecutorCrud() {
           refresh: { onRefresh: load },
           add: { onAdd: () => setCreating(true) },
         }}
-        rowActions={(row) => (
-          <PencilTapButton
-            variant="transparent"
-            ariaLabel={`Edit ${row.name}`}
-            onClick={() => setEditing(row)}
-          />
-        )}
+
         read={readOf({ loading, error }, { what: "tool executors", onRetry: () => void load() })}
         emptyState={{ title: "No tool executors" }}
       />

@@ -300,7 +300,17 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
     <MatrxDataTable<KgEnrichedSuggestionRow>
       tableId="knowledge-suggestions"
       data={rows}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row, controls) => (
+        <SuggestionActions
+          row={row}
+          expanded={controls.isExpanded ?? false}
+          onToggleExpand={() => controls.toggleExpanded?.()}
+          accept={accept}
+          reject={reject}
+          defer={defer}
+          restore={restore}
+        />
+      ) }]}
       getRowId={(r) => r.id}
       density="condensed"
       viewTabs={false}
@@ -379,17 +389,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
           </div>
         ),
       }}
-      rowActions={(row, controls) => (
-        <SuggestionActions
-          row={row}
-          expanded={controls.isExpanded ?? false}
-          onToggleExpand={() => controls.toggleExpanded?.()}
-          accept={accept}
-          reject={reject}
-          defer={defer}
-          restore={restore}
-        />
-      )}
+
       copy={copy}
       emptyState={{ title: "No suggestions match these filters." }}
       className="min-w-[72rem]"

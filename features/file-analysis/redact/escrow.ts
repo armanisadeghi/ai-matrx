@@ -62,7 +62,7 @@ export async function escrowSessionKey(
   // a workspace nobody picked.
   if (!organizationId) {
     throw new Error(
-      "Escrow write skipped: no organization is selected, so there is no organization to recover this key through. Pick one from the menu under your avatar before masking.",
+      "Escrow write skipped: no organization is selected, so there is no organization to recover this key through. Choose one in the sidebar's organization switcher before masking.",
     );
   }
   const { data: wrappingKey } = await getEscrowWrappingKey();

@@ -181,7 +181,7 @@ async function knobPrincipal(store: AlchemyIdentityStore): Promise<{ userId: str
   throw new Error(
     resolved.cause === "unreadable"
       ? resolved.reason
-      : "Your own settings are saved per organization, and none is selected. Pick the one you are working in from the menu under your avatar, then try again.",
+      : "Your own settings are saved per organization, and none is selected. Choose the one you are working in with the sidebar's organization switcher, then try again.",
   );
 }
 

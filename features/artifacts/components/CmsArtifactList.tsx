@@ -453,7 +453,7 @@ export function CmsArtifactList() {
         <MatrxDataTable<CxArtifactRecord>
           tableId="artifacts/content-library"
           data={filtered}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button></div> }]}
           getRowId={(artifact) => artifact.id}
           isLoading={isLoading}
           density="condensed"
@@ -482,7 +482,7 @@ export function CmsArtifactList() {
           onRowOpen={(artifact) => { if (!navigationPending) handleOpen(artifact); }}
           rowClassName={() => navigationPending ? "pointer-events-none opacity-60" : undefined}
           // new-tab-icon: row disables ALL row actions together while a navigation is pending (transient busy-state, not "nothing to open" — the row's <a target="_blank"> itself is correct)
-          rowActions={(artifact) => <div className="flex items-center gap-0.5">{navigatingId === artifact.id && <Loader2 className="size-4 animate-spin text-primary" />}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button><Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !(artifact.artifactType === "html_page" && artifact.externalId)} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>{artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}<Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button></div>}
+
         />
       )}
 

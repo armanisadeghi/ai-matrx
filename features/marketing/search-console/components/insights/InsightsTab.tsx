@@ -858,12 +858,7 @@ function CannibalizationTable({
         // already own. `GscDrilldownWindow` IS this page filtered to one
         // query: KPI band, chart, and the real paginated Pages table.
         window={{ enabled: false }}
-        rowActions={(row) => (
-          <button
-            type="button"
-            title={`Open the ${row.total_pages} pages for “${row.query}” in a window`}
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            onClick={(event) => {
+        rowActions={(row) => [{ id: "open-pages", icon: PanelTop, label: `Open the ${row.total_pages} pages for “${row.query}” in a window`, onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
               event.stopPropagation();
               openDrilldown({
                 siteId,
@@ -872,11 +867,7 @@ function CannibalizationTable({
                 filters: { query_eq: row.query },
                 title: `Pages for “${row.query}”`,
               });
-            }}
-          >
-            <PanelTop className="size-3.5" />
-          </button>
-        )}
+            }, tooltip: `Open the ${row.total_pages} pages for “${row.query}” in a window` }]}
         onRowOpen={(row) => onDrill("query", row.query)}
         pageSize={50}
         emptyState={{

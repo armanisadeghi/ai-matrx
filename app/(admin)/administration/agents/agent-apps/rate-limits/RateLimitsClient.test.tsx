@@ -150,7 +150,7 @@ describe("RateLimitsClient canonical table contract", () => {
     expect(host.textContent).toContain("Blocked loaded");
 
     await act(async () => {
-      const action = tableProps?.rowActions?.(row, {} as never);
+      const action = tableProps?.columns.find((column) => column.customActions)?.customActions?.(row, {} as never);
       if (!action || typeof action !== "object" || !("props" in action)) {
         throw new Error("Blocked rate limit action was not rendered");
       }

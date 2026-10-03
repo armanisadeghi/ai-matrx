@@ -268,7 +268,7 @@ export function OutreachListsPage() {
                   description:
                     "The outreach list moves to trash. Members and logged calls are kept.",
                   confirmLabel: "Delete",
-                  variant: "destructive",
+                  variant: "destructive" as const,
                 });
                 if (!ok) return;
                 try {
@@ -424,7 +424,18 @@ export function OutreachListsPage() {
                 ) : (
                 <MatrxDataTable<OutreachListWithCount>
                   data={rows}
-                  columns={columns}
+                  columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                    <ItemMenu config={menuFor(row)} align="end">
+                      <button
+                        type="button"
+                        aria-label={`Actions for ${row.name}`}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </button>
+                    </ItemMenu>
+                  ) }]}
                   getRowId={(row) => row.id}
                   isLoading={isLoading || !ctx}
                   zebra
@@ -438,18 +449,7 @@ export function OutreachListsPage() {
                     search: true,
                     searchPlaceholder: "Search outreach lists…",
                   }}
-                  rowActions={(row) => (
-                    <ItemMenu config={menuFor(row)} align="end">
-                      <button
-                        type="button"
-                        aria-label={`Actions for ${row.name}`}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </ItemMenu>
-                  )}
+
                   copy={{
                     label: "Outreach list",
                     listLabel: "Outreach Lists",

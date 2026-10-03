@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxTableIconAction, MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { recordToast, toast } from "@/lib/toast";
@@ -46,9 +46,9 @@ import {
   updateUsageToActive,
 } from "@/features/agents/redux/usages/usages.thunks";
 import {
-  makeSelectRowMutation,
   selectBulkState,
 } from "@/features/agents/redux/usages/usages.selectors";
+import { rowMutationKey } from "@/features/agents/redux/usages/usages.slice";
 import type { UsageScope } from "@/features/agents/redux/usages/usages.slice";
 import type {
   AgentUsageAggregate,
@@ -57,7 +57,7 @@ import type {
 import { VerdictDetail } from "@/features/mandates/admin/impact-cells";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
-import { TryAsCandidateButton } from "@/features/mandates/candidate-dialog/TryAsCandidateButton";
+import { SetCandidateDialog } from "@/features/mandates/candidate-dialog/SetCandidateDialog";
 import {
   rungOfImpactVerdict,
   targetOfImpactVerdict,
@@ -103,6 +103,8 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [notify, setNotify] = useState<NotifyTarget | null>(null);
   const bulk = useAppSelector(selectBulkState);
+  const rowMutations = useAppSelector((state) => state.agentUsages.rowMutations);
+  const [candidateVerdict, setCandidateVerdict] = useState<ImpactVerdict | null>(null);
   const bulkRunning = bulk.status === "running" && bulk.agentId === agentId;
   const openImpactBatchWindow = useOpenImpactBatchWindow();
 
@@ -601,26 +603,41 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
               );
             },
           }}
-          rowActions={(row) => (
-            <RowActions
-              row={row}
-              busy={advanceApi.busy !== null || bulkRunning}
-              revertable={
-                row.verdict ? revertableIds.has(rungIdentityOf(row.verdict.apply_token)) : false
-              }
-              canUpdateUsage={row.kind === "usage" && !!row.usage && usageCanUpdate(row.usage)}
-              canAdvanceMandate={row.kind === "mandate" && !!row.verdict && mandateCanAdvance(row.verdict) && isBehindLatest(row.verdict)}
-              onUpdateUsage={() => row.usage && void updateUsage(row.usage)}
-              onAdvanceMandate={() => row.verdict && void advanceMandates([row.verdict])}
-              onRevertMandate={() =>
-                latestBatch && row.verdict && void advanceApi.revert(latestBatch, row.verdict.row_id)
-              }
-              onNotify={() => openNotify(row)}
-            />
-          )}
+          rowActions={(row) => {
+            const actions: MatrxTableIconAction[] = [];
+            const busy = advanceApi.busy !== null || bulkRunning;
+            const revertable = row.verdict ? revertableIds.has(rungIdentityOf(row.verdict.apply_token)) : false;
+            const updating = row.usage ? rowMutations[rowMutationKey(row.usage.usageType, row.usage.usageId)] === "updating" : false;
+            if (revertable) actions.push({ id: "put-back", icon: Undo2, label: "Put back",
+              tooltip: "Put this pin back where it was before the last move.", disabled: busy,
+              onClick: () => { if (latestBatch && row.verdict) void advanceApi.revert(latestBatch, row.verdict.row_id); } });
+            else if (row.kind === "mandate" && row.verdict && mandateCanAdvance(row.verdict) && isBehindLatest(row.verdict)) {
+              actions.push({ id: "advance", icon: RotateCw, label: `Move to ${row.newestLabel}`,
+                tooltip: `Move this mandate's pin to ${row.newestLabel}.`, disabled: busy,
+                onClick: () => { if (row.verdict) void advanceMandates([row.verdict]); } });
+              actions.push({ id: "candidate", icon: FlaskConical, label: "Try as candidate",
+                tooltip: `Run ${row.newestLabel} beside the live one on the next real runs, then decide.`, disabled: busy,
+                onClick: () => setCandidateVerdict(row.verdict ?? null) });
+            } else if (row.kind === "usage" && row.usage && usageCanUpdate(row.usage)) {
+              actions.push({ id: "update", icon: RotateCw, label: `Move to ${row.newestLabel}`,
+                tooltip: `Re-pin this ${dimensionMeta(row.dimension).label.toLowerCase()} to ${row.newestLabel}.`, disabled: busy, loading: updating,
+                onClick: () => { if (row.usage) void updateUsage(row.usage); } });
+            }
+            const canNotify = !row.managedByCaller && ((row.usage && (row.usage.ownerUserId || row.usage.orgManagerUserIds.length > 0)) || (row.aggregate && row.aggregate.orgManagerUserIds.length > 0));
+            if (canNotify) actions.push({ id: "notify", icon: Send, label: "Notify",
+              tooltip: "Tell the owner about this drift — it is theirs to move.", onClick: () => openNotify(row) });
+            return actions;
+          }}
+
         />
       </div>
 
+      {candidateVerdict ? <SetCandidateDialog
+        mandateKey={storedMandateKey(candidateVerdict.mandate_key)}
+        mandateName={mandateDisplayName(storedMandateKey(candidateVerdict.mandate_key), null)}
+        initialTarget={targetOfImpactVerdict(candidateVerdict)} rung={rungOfImpactVerdict(candidateVerdict)}
+        onClose={() => setCandidateVerdict(null)}
+      /> : null}
       <NotifyOwnerDialog open={!!notify} target={notify} onClose={() => setNotify(null)} />
     </div>
   );
@@ -700,79 +717,6 @@ function StatusLine({
         </span>
       ))}
       <div className="ml-auto flex flex-wrap items-center gap-1.5">{actions}</div>
-    </div>
-  );
-}
-
-function RowActions({
-  row,
-  busy,
-  revertable,
-  canUpdateUsage,
-  canAdvanceMandate,
-  onUpdateUsage,
-  onAdvanceMandate,
-  onRevertMandate,
-  onNotify,
-}: {
-  row: UnifiedUsageRow;
-  busy: boolean;
-  revertable: boolean;
-  canUpdateUsage: boolean;
-  canAdvanceMandate: boolean;
-  onUpdateUsage: () => void;
-  onAdvanceMandate: () => void;
-  onRevertMandate: () => void;
-  onNotify: () => void;
-}) {
-  const selectMutation = row.usage
-    ? makeSelectRowMutation(row.usage.usageType, row.usage.usageId)
-    : () => null;
-  const mutation = useAppSelector(selectMutation);
-  const updating = mutation === "updating";
-  const canNotify =
-    !row.managedByCaller &&
-    ((row.usage && (row.usage.ownerUserId || row.usage.orgManagerUserIds.length > 0)) ||
-      (row.aggregate && row.aggregate.orgManagerUserIds.length > 0));
-
-  return (
-    <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
-      {revertable ? (
-        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={busy} onClick={onRevertMandate} title="Put this pin back where it was before the last move.">
-          <Undo2 className="h-3 w-3" />
-          Put back
-        </Button>
-      ) : canAdvanceMandate ? (
-        <>
-          <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={busy} onClick={onAdvanceMandate} title={`Move this mandate's pin to ${row.newestLabel}.`}>
-            <RotateCw className="h-3 w-3" />
-            Move to {row.newestLabel}
-          </Button>
-          {/* Try before you advance (Mandate Candidates): the same newest
-              version runs beside the live one on the next real runs. */}
-          {row.verdict ? (
-            <TryAsCandidateButton
-              mandateKey={storedMandateKey(row.verdict.mandate_key)}
-              mandateName={mandateDisplayName(storedMandateKey(row.verdict.mandate_key), null)}
-              target={targetOfImpactVerdict(row.verdict)}
-              rung={rungOfImpactVerdict(row.verdict)}
-              disabled={busy}
-              title={`Run ${row.newestLabel} beside the live one on the next real runs, then decide.`}
-            />
-          ) : null}
-        </>
-      ) : canUpdateUsage ? (
-        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={busy || updating} onClick={onUpdateUsage} title={`Re-pin this ${dimensionMeta(row.dimension).label.toLowerCase()} to ${row.newestLabel}.`}>
-          {updating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCw className="h-3 w-3" />}
-          Move to {row.newestLabel}
-        </Button>
-      ) : null}
-      {canNotify ? (
-        <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onNotify} title="Tell the owner about this drift — it is theirs to move.">
-          <Send className="h-3 w-3" />
-          Notify
-        </Button>
-      ) : null}
     </div>
   );
 }

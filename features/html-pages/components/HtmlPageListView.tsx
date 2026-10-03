@@ -406,7 +406,16 @@ export default function HtmlPageListView({
         <MatrxDataTable<HtmlPageSummary>
           tableId="cms-html-pages"
           data={filtered}
-          columns={htmlPageColumns(listReturnQuery)}
+          columns={[...(htmlPageColumns(listReturnQuery)), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (page) => (
+            <HtmlPageActions
+              page={page}
+              listReturnQuery={listReturnQuery}
+              copied={copiedId === page.id}
+              onCopy={() => void copyUrl(page)}
+              onPromote={() => setPromoteTarget(page)}
+              onDelete={() => setDeleteTarget(page)}
+            />
+          ) }]}
           getRowId={(page) => page.id}
           getRowHref={(page) =>
             `/cms/html-pages/${page.id}?ret=${encodeURIComponent(listReturnQuery)}`
@@ -516,16 +525,7 @@ export default function HtmlPageListView({
               {row}
             </HtmlPagesContextMenu>
           )}
-          rowActions={(page) => (
-            <HtmlPageActions
-              page={page}
-              listReturnQuery={listReturnQuery}
-              copied={copiedId === page.id}
-              onCopy={() => void copyUrl(page)}
-              onPromote={() => setPromoteTarget(page)}
-              onDelete={() => setDeleteTarget(page)}
-            />
-          )}
+
           emptyState={{
             title:
               pages.length === 0

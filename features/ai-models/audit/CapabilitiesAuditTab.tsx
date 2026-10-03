@@ -345,7 +345,9 @@ export default function CapabilitiesAuditTab({
         tableId="ai-model-audit-capabilities"
         viewTabs={false}
         data={displayResults}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => (
+          <OpenDetailButton onClick={() => setDetailModelId(r.model.id)} />
+        ) }]}
         getRowId={(r) => r.model.id}
         defaultSort={{ id: "model_name", direction: "asc" }}
         toolbar={{
@@ -402,9 +404,7 @@ export default function CapabilitiesAuditTab({
             />
           ),
         }}
-        rowActions={(r) => (
-          <OpenDetailButton onClick={() => setDetailModelId(r.model.id)} />
-        )}
+
       />
       <ModelDetailSheet
         modelId={detailModelId}

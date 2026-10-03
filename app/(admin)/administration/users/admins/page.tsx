@@ -353,7 +353,7 @@ function AdminsManagementPageContent() {
         title: "Revoke admin access",
         description: `Permanently revoke admin access for ${row.email ?? row.user_id}. They will no longer be able to access /administration. This is reversible — you can re-promote them later.`,
         confirmLabel: "Revoke",
-        variant: "destructive",
+        variant: "destructive" as const,
       });
       if (!ok) return;
 
@@ -673,7 +673,45 @@ function AdminsManagementPageContent() {
             <MatrxDataTable
               urlState={{ id: "admins" }}
               data={admins}
-              columns={adminColumns}
+              columns={[...(adminColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => {
+                const busy = !!rowBusy[row.user_id];
+                return (
+                  <>
+                    <Select
+                      value={row.level}
+                      onValueChange={(v) =>
+                        void handleLevelChange(row, v as AdminLevel)
+                      }
+                      disabled={busy}
+                    >
+                      <SelectTrigger className="h-7 w-[140px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEVELS.map((l) => (
+                          <SelectItem key={l} value={l} className="text-xs">
+                            {LEVEL_LABEL[l]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void handleRevoke(row)}
+                      disabled={busy}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      <span className="ml-1.5">Revoke</span>
+                    </Button>
+                  </>
+                );
+              } }]}
               getRowId={(r) => r.user_id}
               isLoading={loading}
               pageSize={25}
@@ -718,45 +756,7 @@ function AdminsManagementPageContent() {
                 description: (r) =>
                   `${LEVEL_LABEL[r.level]} · promoted ${formatDate(r.admin_created_at)}`,
               }}
-              rowActions={(row) => {
-                const busy = !!rowBusy[row.user_id];
-                return (
-                  <>
-                    <Select
-                      value={row.level}
-                      onValueChange={(v) =>
-                        void handleLevelChange(row, v as AdminLevel)
-                      }
-                      disabled={busy}
-                    >
-                      <SelectTrigger className="h-7 w-[140px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LEVELS.map((l) => (
-                          <SelectItem key={l} value={l} className="text-xs">
-                            {LEVEL_LABEL[l]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => void handleRevoke(row)}
-                      disabled={busy}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                      <span className="ml-1.5">Revoke</span>
-                    </Button>
-                  </>
-                );
-              }}
+
             />
             </NonEditableContextMenu>
           </div>

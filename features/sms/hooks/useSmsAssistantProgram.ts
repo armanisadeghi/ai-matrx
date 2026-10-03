@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   SMS_ASSISTANT_TEST_BODY,
-  SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+  SMS_PERSONAL_STAFF_PROGRAM,
   smsAssistantProgramFromRpc,
   type SmsAssistantProgramState,
   type UpdateSmsAssistantProgram,
@@ -22,7 +22,7 @@ async function readProgram(): Promise<SmsAssistantProgramState | null> {
   const { data, error } = await supabase
     .schema("communication")
     .rpc("get_my_sms_assistant_program", {
-      p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+      p_program_key: SMS_PERSONAL_STAFF_PROGRAM,
     });
   if (error) throw error;
   const row = data?.[0];
@@ -87,7 +87,7 @@ export function useSmsAssistantProgram() {
       const { data, error } = await supabase
         .schema("communication")
         .rpc("set_my_sms_assistant_enabled", {
-          p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+          p_program_key: SMS_PERSONAL_STAFF_PROGRAM,
           p_enabled: input.userAssistantEnabled,
         });
       if (error) throw error;
@@ -119,7 +119,7 @@ export function useSmsAssistantProgram() {
       const { data, error } = await supabase
         .schema("communication")
         .rpc("enqueue_my_sms_assistant_test", {
-          p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+          p_program_key: SMS_PERSONAL_STAFF_PROGRAM,
           p_body: SMS_ASSISTANT_TEST_BODY,
           p_idempotency_key: `sms-assistant-test:${crypto.randomUUID()}`,
         });

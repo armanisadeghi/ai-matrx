@@ -258,7 +258,28 @@ export default function CoreFieldsAuditTab({
         tableId="ai-model-audit-core-fields"
         viewTabs={false}
         data={displayResults}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => {
+          const model = r.model;
+          const isDirty = Object.keys(editValues[model.id] ?? {}).length > 0;
+          return (
+            <div className="flex items-center gap-1">
+              <OpenDetailButton onClick={() => setDetailModelId(model.id)} />
+              <Button
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                disabled={savingIds.has(model.id) || !isDirty}
+                onClick={() => void saveSingle(model)}
+              >
+                {savingIds.has(model.id) ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Save className="h-3 w-3" />
+                )}
+                Save
+              </Button>
+            </div>
+          );
+        } }]}
         getRowId={(r) => r.model.id}
         defaultSort={{ id: "model_name", direction: "asc" }}
         toolbar={{
@@ -317,28 +338,7 @@ export default function CoreFieldsAuditTab({
           humanRow: (result) => result.model.common_name ?? result.model.name,
           agentRow: (result) => result.model,
         }}
-        rowActions={(r) => {
-          const model = r.model;
-          const isDirty = Object.keys(editValues[model.id] ?? {}).length > 0;
-          return (
-            <div className="flex items-center gap-1">
-              <OpenDetailButton onClick={() => setDetailModelId(model.id)} />
-              <Button
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs"
-                disabled={savingIds.has(model.id) || !isDirty}
-                onClick={() => void saveSingle(model)}
-              >
-                {savingIds.has(model.id) ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Save className="h-3 w-3" />
-                )}
-                Save
-              </Button>
-            </div>
-          );
-        }}
+
       />
       <ModelDetailSheet
         modelId={detailModelId}

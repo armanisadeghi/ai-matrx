@@ -298,7 +298,12 @@ export function ExtractionCatalogClient() {
               <MatrxDataTable<ExtractionCatalogEntry>
                 tableId="knowledge-extraction-catalog"
                 data={contextFilteredEntries}
-                columns={tableColumns}
+                columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                  <CatalogRowActions
+                    jobId={row.jobId}
+                    rowCount={row.rowCount}
+                  />
+                ) }]}
                 getRowId={(row) => row.jobId}
                 defaultSort={{ id: "updated", direction: "desc" }}
                 isLoading={loading}
@@ -306,12 +311,7 @@ export function ExtractionCatalogClient() {
                 detail={{ enabled: false }}
                 getRowHref={(row) => `/knowledge/extractions/${row.jobId}`}
                 onRowOpen={(row) => open(row.jobId)}
-                rowActions={(row) => (
-                  <CatalogRowActions
-                    jobId={row.jobId}
-                    rowCount={row.rowCount}
-                  />
-                )}
+
                 toolbar={{
                   search: true,
                   searchPlaceholder: "Search datasets and sources…",

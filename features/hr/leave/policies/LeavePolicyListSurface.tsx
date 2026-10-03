@@ -265,7 +265,11 @@ export function LeavePolicyListSurface() {
         >
           <MatrxDataTable<LeavePolicy>
             data={list?.policies ?? []}
-            columns={columns}
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <Button asChild size="sm" variant="ghost">
+                <Link href={leavePolicyHref(row.id, orgRef)}>Open</Link>
+              </Button>
+            ) }]}
             getRowId={(row) => row.id}
             isLoading={loading}
             pageSize={25}
@@ -285,11 +289,7 @@ export function LeavePolicyListSurface() {
                 </Button>
               ) : undefined,
             }}
-            rowActions={(row) => (
-              <Button asChild size="sm" variant="ghost">
-                <Link href={leavePolicyHref(row.id, orgRef)}>Open</Link>
-              </Button>
-            )}
+
           />
         </NonEditableContextMenu>
       </div>

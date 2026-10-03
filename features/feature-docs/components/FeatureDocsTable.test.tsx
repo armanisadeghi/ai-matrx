@@ -105,8 +105,9 @@ describe("FeatureDocsTable", () => {
       "slug",
       "synced_at",
       "version",
+      "custom-actions",
     ]);
     expect(tableProps.mobileCards).toBeDefined();
-    expect(tableProps.rowActions).toBeDefined();
+    expect(tableProps.columns.find((column) => column.customActions)).toBeDefined();
   });
 });

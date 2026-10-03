@@ -882,7 +882,18 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<OutreachListMemberWithParty>
                 data={members}
-                columns={memberColumns}
+                columns={[...(memberColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                  <ItemMenu config={memberMenu(row)} align="end">
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </ItemMenu>
+                ) }]}
                 getRowId={(row) => row.id}
                 isLoading={isLoading}
                 isFetching={isFetching}
@@ -910,18 +921,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   onStateChange: onTableState,
                 }}
                 toolbar={{ search: true, searchPlaceholder: "Search members…" }}
-                rowActions={(row) => (
-                  <ItemMenu config={memberMenu(row)} align="end">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </ItemMenu>
-                )}
+
                 copy={{
                   label: "Outreach list member",
                   listLabel: "Outreach list members",

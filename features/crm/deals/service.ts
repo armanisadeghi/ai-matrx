@@ -23,6 +23,10 @@ import {
   type CustomFieldPredicateBuilder,
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+import {
+  readWholeResult,
+  type WholeResult,
+} from "@/features/unified-data/standard-field-columns/wholeResult";
 import { announceRecordChange } from "@/lib/records/recordChanges";
 import { supabase } from "@/utils/supabase/client";
 import { tryWriteOne, WriteDidNotLandError } from "@/utils/supabase/writeOne";
@@ -153,6 +157,28 @@ export async function fetchDealPage(
   ctx: CrmQueryContext,
   customFields: readonly StandardFieldColumn[] = [],
 ): Promise<{ rows: DealListRow[]; total: number }> {
+  const from = (query.page - 1) * opts.pageSize;
+  return fetchDealRange(query, opts, ctx, customFields, from, from + opts.pageSize - 1);
+}
+
+/** EVERY deal the list's query selects (export, grouped view), under the store's export ceiling. */
+export async function fetchDealWholeResult(
+  query: DealListQuery,
+  opts: DealSortOpts,
+  ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
+): Promise<WholeResult<DealListRow>> {
+  return readWholeResult((from, to) => fetchDealRange(query, opts, ctx, customFields, from, to));
+}
+
+async function fetchDealRange(
+  query: DealListQuery,
+  opts: DealSortOpts,
+  ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[],
+  from: number,
+  to: number,
+): Promise<{ rows: DealListRow[]; total: number }> {
   let q = applyDealListPredicates(
     crm().from("deal").select(PARTY_EMBED, { count: "exact" }),
     query,
@@ -167,28 +193,11 @@ export async function fetchDealPage(
     ? q.order(customOrder, { ascending: opts.direction === "asc", nullsFirst: false })
     : q.order(sortKey, { ascending: opts.direction === "asc" })
   ).order("id", { ascending: true });
-  const from = (query.page - 1) * opts.pageSize;
   const { data, error, count } = await q
-    .range(from, from + opts.pageSize - 1)
+    .range(from, to)
     .returns<DealListRow[]>();
   if (error) throw pgError(error);
   return { rows: data ?? [], total: count ?? 0 };
-}
-
-/** How many deals the list's query matches — the page's predicates, no rows (group counts). */
-export async function countDealList(
-  query: DealListQuery,
-  ctx: CrmQueryContext,
-  customFields: readonly StandardFieldColumn[] = [],
-): Promise<number> {
-  const { count, error } = await applyDealListPredicates(
-    crm().from("deal").select("id", { count: "exact", head: true }),
-    query,
-    ctx,
-    customFields,
-  );
-  if (error) throw pgError(error);
-  return count ?? 0;
 }
 
 /** Kanban cap: a board renders whole columns, so the fetch is bounded loudly. */

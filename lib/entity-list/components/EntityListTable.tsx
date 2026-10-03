@@ -532,7 +532,18 @@ export function EntityListTable<TRow>({
   return (
     <MatrxDataTable<TRow>
       data={rows}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+        <ItemMenu config={actions.menuFor(row)} align="end">
+          <button
+            type="button"
+            aria-label={`Actions for ${config.getRowName(row)}`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        </ItemMenu>
+      ) }]}
       getRowId={config.getRowId}
       isLoading={isLoading}
       isFetching={isFetching}
@@ -658,18 +669,7 @@ export function EntityListTable<TRow>({
             }
           : undefined
       }
-      rowActions={(row) => (
-        <ItemMenu config={actions.menuFor(row)} align="end">
-          <button
-            type="button"
-            aria-label={`Actions for ${config.getRowName(row)}`}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
-        </ItemMenu>
-      )}
+
       copy={config.copy}
       // 🚨 RIGHT-CLICK A ROW → THAT ROW'S ACTIONS (page-pass 2026-09-27). The
       // table registers a row-menu resolver for every row, and a registered

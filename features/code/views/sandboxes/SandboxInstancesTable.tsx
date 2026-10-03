@@ -394,7 +394,15 @@ export function SandboxInstancesTable({
       <MatrxDataTable<SandboxInstance>
         tableId={showingHistory ? "sandboxes/history" : "sandboxes/active"}
         data={instances}
-        columns={columns}
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          <SandboxRowActions
+            row={row}
+            stopping={stoppingIds.has(row.id)}
+            busy={busyIds.has(row.id)}
+            onStop={onStop}
+            onDelete={onDelete}
+          />
+        ) }]}
         getRowId={(row) => row.id}
         isLoading={loading}
         isFetching={isFetching}
@@ -462,15 +470,7 @@ export function SandboxInstancesTable({
               }
             : undefined
         }
-        rowActions={(row) => (
-          <SandboxRowActions
-            row={row}
-            stopping={stoppingIds.has(row.id)}
-            busy={busyIds.has(row.id)}
-            onStop={onStop}
-            onDelete={onDelete}
-          />
-        )}
+
         mobileCards={(row, _index, controls) => {
           const status = getEffectiveStatus(row);
           const template =

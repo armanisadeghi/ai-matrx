@@ -348,20 +348,7 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
       <MatrxDataTable<OrgAdminMember>
         tableId="organizations/admin/member-roster"
         data={rows}
-        columns={columns}
-        getRowId={(member) => member.userId}
-        density="condensed"
-        copy={selectionCopy}
-        toolbar={{ search: false }}
-        detail={{ enabled: false }}
-        window={{ enabled: false }}
-        pageSize={0}
-        coverage={{ noun: "member", answeredBy: "client" }}
-        onRowOpen={(member) => go(member.userId)}
-        emptyState={{
-          title: query ? "No members match your search." : "No members yet.",
-        }}
-        rowActions={(member) => (
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (member) => (
           <div className="flex items-center justify-end gap-1 text-muted-foreground">
             <CopyButtons
               size="xs"
@@ -380,7 +367,20 @@ export function MemberRosterTable({ orgSlug, members }: Props) {
             <UserCog className="h-4 w-4" />
             <ChevronRight className="h-4 w-4" />
           </div>
-        )}
+        ) }]}
+        getRowId={(member) => member.userId}
+        density="condensed"
+        copy={selectionCopy}
+        toolbar={{ search: false }}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        pageSize={0}
+        coverage={{ noun: "member", answeredBy: "client" }}
+        onRowOpen={(member) => go(member.userId)}
+        emptyState={{
+          title: query ? "No members match your search." : "No members yet.",
+        }}
+
       />
     </div>
   );

@@ -379,7 +379,29 @@ export function HrDirectory() {
           <div className="flex min-h-0 flex-1 flex-col">
             <MatrxDataTable<HrScopedDirectoryRow>
               data={rows}
-              columns={columns}
+              columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                <ItemMenu
+                  config={() =>
+                    buildMenu({
+                      employeeId: row.employee_id,
+                      displayName: row.display_name,
+                      workEmail: row.work_email,
+                      employmentId: row.employment_id,
+                      status: row.directory_status,
+                      organizationId: row.employer.organizationId,
+                    })
+                  }
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 lg:h-5 lg:w-5"
+                    aria-label={`Actions for ${row.display_name}`}
+                  >
+                    <MoreHorizontal className="h-4 w-4" aria-hidden />
+                  </Button>
+                </ItemMenu>
+              ) }]}
               getRowId={(row) => row.employee_id}
               isFetching={directory.isFetching}
               query={{
@@ -431,29 +453,7 @@ export function HrDirectory() {
                   directory_status: row.directory_status,
                 }),
               }}
-              rowActions={(row) => (
-                <ItemMenu
-                  config={() =>
-                    buildMenu({
-                      employeeId: row.employee_id,
-                      displayName: row.display_name,
-                      workEmail: row.work_email,
-                      employmentId: row.employment_id,
-                      status: row.directory_status,
-                      organizationId: row.employer.organizationId,
-                    })
-                  }
-                >
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-11 w-11 lg:h-5 lg:w-5"
-                    aria-label={`Actions for ${row.display_name}`}
-                  >
-                    <MoreHorizontal className="h-4 w-4" aria-hidden />
-                  </Button>
-                </ItemMenu>
-              )}
+
               rowWrapper={(row, children) => (
                 <ItemContextMenu
                   sourceFeature="internal"

@@ -215,21 +215,7 @@ export function ShowsClient() {
         <MatrxDataTable<PcShow>
           tableId="admin/podcasts/shows"
           data={shows}
-          columns={columns}
-          getRowId={(show) => show.id}
-          searchText={podcastShowSearchText}
-          isLoading={isLoading}
-          isFetching={isPending}
-          density="condensed"
-          detail={{ enabled: false }}
-          pageSize={0}
-          coverage={{ noun: "show", answeredBy: "client" }}
-          onRowOpen={(show) =>
-            startTransition(() =>
-              pushAppHref(router, podcastShowAdminHref(show.id)),
-            )
-          }
-          rowActions={(show) => (
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (show) => (
             <div className="flex items-center gap-0.5">
               <PublicPageLink slug={show.slug} label={show.title} />
               <CopyLinkButton slug={show.slug} />
@@ -254,7 +240,21 @@ export function ShowsClient() {
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
-          )}
+          ) }]}
+          getRowId={(show) => show.id}
+          searchText={podcastShowSearchText}
+          isLoading={isLoading}
+          isFetching={isPending}
+          density="condensed"
+          detail={{ enabled: false }}
+          pageSize={0}
+          coverage={{ noun: "show", answeredBy: "client" }}
+          onRowOpen={(show) =>
+            startTransition(() =>
+              pushAppHref(router, podcastShowAdminHref(show.id)),
+            )
+          }
+
           emptyState={{
             title: search
               ? "No shows match your search."

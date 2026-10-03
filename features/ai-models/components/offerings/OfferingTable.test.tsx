@@ -23,12 +23,9 @@ jest.mock("@ai-matrx/design-system/data-table", () => ({
         {offering
           ? props.columns.map((column) => (
               <div key={column.id ?? column.accessorKey}>
-                {column.cell?.(offering, 0)}
+                {column.customActions ? column.customActions(offering, {} as MatrxDataTableRecordControls) : column.cell?.(offering, 0)}
               </div>
             ))
-          : null}
-        {offering && props.rowActions
-          ? props.rowActions(offering, {} as MatrxDataTableRecordControls)
           : null}
       </div>
     );
@@ -190,6 +187,7 @@ describe("OfferingTable", () => {
       "output_price",
       "is_available",
       "usage_basis",
+      "custom-actions",
     ]);
     for (const id of [
       "priority",

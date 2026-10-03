@@ -409,43 +409,7 @@ export default function AdminSystemAppsListPage() {
                 <MatrxDataTable
                   urlState={{ id: "system-agent-apps" }}
                   data={apps}
-                  columns={columns}
-                  getRowId={(app) => app.id}
-                  searchText={(app) => app.id}
-                  isLoading={loading}
-                  isFetching={refreshing}
-                  pageSize={50}
-                  coverage={{
-                    total: apps.length < 500 ? apps.length : undefined,
-                    cap: 500,
-                    answeredBy: "client",
-                    noun: "loaded system app",
-                  }}
-                  emptyState={{
-                    title: "No system apps match",
-                    description:
-                      "Create a system app to ship a global agent-backed mini-app.",
-                  }}
-                  toolbar={{
-                    title: "System apps",
-                    search: true,
-                    searchPlaceholder: "Search system apps…",
-                    add: {
-                      onAdd: () =>
-                        pushAppHref(
-                          router,
-                          "/administration/agents/system-agents/apps/new",
-                        ),
-                    },
-                    refresh: {
-                      onRefresh: () => load(true),
-                      label: "Refresh system apps",
-                    },
-                  }}
-                  copy={systemAppsCopy}
-                  detail={{ enabled: false }}
-                  window={{ enabled: false }}
-                  rowActions={(app) => (
+                  columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (app) => (
                     <div className="flex items-center justify-end gap-0.5">
                       {app.status === "published" && (
                         <Button
@@ -485,7 +449,43 @@ export default function AdminSystemAppsListPage() {
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  )}
+                  ) }]}
+                  getRowId={(app) => app.id}
+                  searchText={(app) => app.id}
+                  isLoading={loading}
+                  isFetching={refreshing}
+                  pageSize={50}
+                  coverage={{
+                    total: apps.length < 500 ? apps.length : undefined,
+                    cap: 500,
+                    answeredBy: "client",
+                    noun: "loaded system app",
+                  }}
+                  emptyState={{
+                    title: "No system apps match",
+                    description:
+                      "Create a system app to ship a global agent-backed mini-app.",
+                  }}
+                  toolbar={{
+                    title: "System apps",
+                    search: true,
+                    searchPlaceholder: "Search system apps…",
+                    add: {
+                      onAdd: () =>
+                        pushAppHref(
+                          router,
+                          "/administration/agents/system-agents/apps/new",
+                        ),
+                    },
+                    refresh: {
+                      onRefresh: () => load(true),
+                      label: "Refresh system apps",
+                    },
+                  }}
+                  copy={systemAppsCopy}
+                  detail={{ enabled: false }}
+                  window={{ enabled: false }}
+
                 />
               </CardContent>
             </Card>

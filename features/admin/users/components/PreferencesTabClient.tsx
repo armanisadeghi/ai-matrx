@@ -289,7 +289,15 @@ function DriftDashboard() {
         <MatrxDataTable
           urlState={{ id: "preference-drift-report" }}
           data={report.rows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <Button size="sm" variant="ghost" asChild className="h-6 text-xs">
+              <AppLink
+                href={`/administration/users/preferences?user=${row.user_id}`}
+              >
+                View
+              </AppLink>
+            </Button>
+          ) }]}
           getRowId={(row) => `${row.user_id}:${row.organization_id ?? "none"}`}
           searchText={(row) =>
             [row.user_id, row.organization_id, row.drifted_fields]
@@ -324,15 +332,7 @@ function DriftDashboard() {
               report_drifted: report.drifted,
             }),
           }}
-          rowActions={(row) => (
-            <Button size="sm" variant="ghost" asChild className="h-6 text-xs">
-              <AppLink
-                href={`/administration/users/preferences?user=${row.user_id}`}
-              >
-                View
-              </AppLink>
-            </Button>
-          )}
+
         />
         </NonEditableContextMenu>
       ) : null}

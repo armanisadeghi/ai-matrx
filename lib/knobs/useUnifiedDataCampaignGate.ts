@@ -117,7 +117,7 @@ export function useUnifiedDataCampaign(args: {
             on: false,
             because:
                 "No organization is picked yet, so there are no tables to show. " +
-                "Pick one from the organization menu and this answers for that organization.",
+                "Choose one in the sidebar's organization switcher and this answers for that organization.",
             cause: null,
             retry,
         };

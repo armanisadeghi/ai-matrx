@@ -240,39 +240,7 @@ export function CollectionStatusPanel({
         <MatrxDataTable
           urlState={{ id: "collection-status" }}
           data={rows}
-          columns={columns}
-          getRowId={(row) => row.key}
-          isLoading={status.isLoading}
-          isFetching={status.isFetching}
-          toolbar={{ searchPlaceholder: "Search sources" }}
-          detail={{
-            title: (row) => row.label,
-            description: (row) => row.what,
-            render: (row) => <ProviderDetail row={row} />,
-          }}
-          copy={{
-            label: "Data source",
-            listLabel: "Site data sources",
-            location: "Site settings — data sources",
-            rowKind: "web-site-data-source",
-            listKind: "web-site-data-sources",
-            humanRow: (row) =>
-              [
-                row.label,
-                row.healthLabel,
-                row.healthDetail,
-                `Last run: ${row.lastRunAt ?? "never"}`,
-                `Last success: ${row.lastSuccessAt ?? "never"}`,
-                `Collected: ${row.rowCount ?? "—"} ${row.rowUnit}`,
-                `Refreshes: ${row.scheduleLabel}`,
-              ].join(" · "),
-            rowAttributes: (row) => ({
-              site_id: site.id,
-              provider: row.key,
-              health: row.health,
-            }),
-          }}
-          rowActions={(row) => (
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <>
               {row.runnable ? (
                 <Button
@@ -339,7 +307,39 @@ export function CollectionStatusPanel({
                 </Button>
               ) : null}
             </>
-          )}
+          ) }]}
+          getRowId={(row) => row.key}
+          isLoading={status.isLoading}
+          isFetching={status.isFetching}
+          toolbar={{ searchPlaceholder: "Search sources" }}
+          detail={{
+            title: (row) => row.label,
+            description: (row) => row.what,
+            render: (row) => <ProviderDetail row={row} />,
+          }}
+          copy={{
+            label: "Data source",
+            listLabel: "Site data sources",
+            location: "Site settings — data sources",
+            rowKind: "web-site-data-source",
+            listKind: "web-site-data-sources",
+            humanRow: (row) =>
+              [
+                row.label,
+                row.healthLabel,
+                row.healthDetail,
+                `Last run: ${row.lastRunAt ?? "never"}`,
+                `Last success: ${row.lastSuccessAt ?? "never"}`,
+                `Collected: ${row.rowCount ?? "—"} ${row.rowUnit}`,
+                `Refreshes: ${row.scheduleLabel}`,
+              ].join(" · "),
+            rowAttributes: (row) => ({
+              site_id: site.id,
+              provider: row.key,
+              health: row.health,
+            }),
+          }}
+
           read={readOf(status, { what: "collection status" })}
           emptyState={{
             title: "No data sources reported",

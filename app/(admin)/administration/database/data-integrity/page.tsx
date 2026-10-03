@@ -656,22 +656,7 @@ export default function DataIntegrityPage() {
           window={{ renderView: (row) => <CheckDetail row={row} />, renderEdit: false, defaultTab: "view" }}
             urlState={{ id: "data-integrity", selectedRow: false }}
             data={rows}
-            columns={columns}
-            getRowId={(r) => r.id}
-            selectedId={selectedId || null}
-            onSelectedIdChange={(id) => setSelectedId(id === null ? "" : id)}
-            isLoading={!checks && !error}
-            isFetching={runningAll}
-            pageSize={50}
-            localPagination={{ mode: "numbered", reason: "Each listed page-size choice must render exactly that many integrity checks and expose stable page navigation.", approvedBy: "Arman, September 27 2026" }}
-            // The checks read, not a run's failure (runs share `error`): once the list is in, it stands.
-            read={{ status: checks ? "ready" : error ? "error" : "loading", error, onRetry: () => void loadChecks(), what: "integrity checks" }}
-            emptyState={{
-              title: "No integrity checks registered",
-              description: "Checks live in lib/integrity.",
-            }}
-            toolbar={{ search: true, searchPlaceholder: "Search checks…" }}
-            rowActions={(r) => {
+            columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => {
               const running = runningId === r.id || runningAll;
               const onDemand = rowStatus(r) === "on-demand";
               return (
@@ -692,7 +677,22 @@ export default function DataIntegrityPage() {
                   )}
                 </Button>
               );
+            } }]}
+            getRowId={(r) => r.id}
+            selectedId={selectedId || null}
+            onSelectedIdChange={(id) => setSelectedId(id === null ? "" : id)}
+            isLoading={!checks && !error}
+            isFetching={runningAll}
+            pageSize={50}
+            localPagination={{ mode: "numbered", reason: "Each listed page-size choice must render exactly that many integrity checks and expose stable page navigation.", approvedBy: "Arman, September 27 2026" }}
+            // The checks read, not a run's failure (runs share `error`): once the list is in, it stands.
+            read={{ status: checks ? "ready" : error ? "error" : "loading", error, onRetry: () => void loadChecks(), what: "integrity checks" }}
+            emptyState={{
+              title: "No integrity checks registered",
+              description: "Checks live in lib/integrity.",
             }}
+            toolbar={{ search: true, searchPlaceholder: "Search checks…" }}
+
             copy={{
               label: "Integrity check",
               listLabel: "Integrity checks (this view)",

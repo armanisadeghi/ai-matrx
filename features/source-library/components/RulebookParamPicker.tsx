@@ -192,7 +192,7 @@ export function RulebookParamPicker({
                     {!organizationId && (
                         <p className="text-xs text-muted-foreground">
                             A Rulebook is created inside an organization, and none is
-                            active right now — pick one from the organization switcher
+                            active right now — choose one in the sidebar's organization switcher
                             first.
                         </p>
                     )}

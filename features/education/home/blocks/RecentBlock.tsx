@@ -101,15 +101,7 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
       {view === "table" ? (
         <MatrxDataTable
           data={snapshot.library.recent}
-          columns={tableColumns}
-          getRowId={(row) => row.id}
-          pageSize={0}
-          zebra
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Find recent study items…",
-          }}
-          rowActions={(row) => (
+          columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <ItemMenu config={educationLibraryMenuFor(row)} align="end">
               <Button
                 type="button"
@@ -121,7 +113,15 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </ItemMenu>
-          )}
+          ) }]}
+          getRowId={(row) => row.id}
+          pageSize={0}
+          zebra
+          toolbar={{
+            search: true,
+            searchPlaceholder: "Find recent study items…",
+          }}
+
           mobileCards={(row) => (
             <EducationLibraryRows
               rows={[row]}

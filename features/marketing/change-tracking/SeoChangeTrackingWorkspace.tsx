@@ -1820,12 +1820,7 @@ function UntrackedTable({
               ["Observed", formatDate(row.captured_at)],
             ]),
         }}
-        rowActions={(row) => (
-          <Button size="sm" className="h-7" onClick={() => onDocument(row)}>
-            <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-            Document
-          </Button>
-        )}
+        rowActions={(row) => [{ id: "document", icon: FlaskConical, label: "Document", onClick: () => onDocument(row) }]}
         emptyState={{
           icon: <SearchCheck className="h-8 w-8 text-emerald-500" />,
           title: "No unexplained crawl changes",

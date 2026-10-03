@@ -156,15 +156,6 @@ export function displayCustomValue(column: StandardFieldColumn, raw: unknown): s
   return String(raw);
 }
 
-/**
- * The filter that narrows a list to one group's value — what the group header counts. A raw
- * cell value compared as text (`custom_fields->>key`), so a choice key, a yes/no (`true`) and a
- * word all match exactly; an empty cell is the has-no-value sentinel.
- */
-export function groupFilterFor(value: unknown): ColumnFilterValue {
-  const word = value === null || value === undefined || value === "" ? CUSTOM_NONE_VALUE : String(value);
-  return { kind: "select", value: word, values: [word] };
-}
 
 /** Table filter state → (custom-field filters, everything else). */
 export function splitCustomFilters(state: ColumnFiltersState): {

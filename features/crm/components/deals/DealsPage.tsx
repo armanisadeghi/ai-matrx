@@ -78,9 +78,10 @@ import {
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
 import { useStandardFieldColumns } from "@/features/unified-data/standard-field-columns/useStandardFieldColumns";
-import { useStandardFieldGrouping } from "@/features/unified-data/standard-field-columns/useStandardFieldGrouping";
+import { standardFieldGrouping } from "@/features/unified-data/standard-field-columns/standardFieldGrouping";
+import { standardWholeResultExport } from "@/features/unified-data/standard-field-columns/standardWholeResultExport";
 import { standardColumnState } from "@/features/unified-data/standard-field-columns/standardColumnState";
-import { countDealList } from "../../deals/service";
+import { fetchDealWholeResult } from "../../deals/service";
 
 const SURFACE_KEY = "crm-deals";
 const SURFACE_DEFAULTS = {
@@ -159,6 +160,10 @@ export function DealsPage() {
   // CUSTOM FIELDS ARE COLUMNS (lane 7 wave 2): the same generic source the
   // people list uses, over the `crm_deal` token.
   const [dealFields, setDealFields] = useState<readonly StandardFieldColumn[]>([]);
+  // While grouped by a custom field the list reads its WHOLE result, so the groups and their
+  // counts are the whole result's.
+  const [groupColumnId, setGroupColumnId] = useState<string | null>(null);
+  const grouped = groupColumnId !== null;
   const list = useDealList(
     {
       sort: prefs.sort,
@@ -166,25 +171,22 @@ export function DealsPage() {
       pageSize: prefs.pageSize,
     },
     dealFields,
+    grouped,
   );
   const customColumns = useStandardFieldColumns<DealListRow>("crm_deal", list.ctx?.orgIds);
   useEffect(() => {
     setDealFields(customColumns.fields);
   }, [customColumns.fields]);
-  const grouping = useStandardFieldGrouping<DealListRow>({
+  const grouping = standardFieldGrouping<DealListRow>({
     source: customColumns,
-    rows: list.rows,
-    queryKey: JSON.stringify(list.query),
+    columnId: groupColumnId,
+    onColumnIdChange: (next) => {
+      setGroupColumnId(next);
+      list.setQuery({ page: 1 });
+    },
     rowNoun: "deal",
-    countWith: (extra) =>
-      list.ctx
-        ? countDealList(
-            { ...list.query, filters: { ...list.query.filters, custom: { ...list.query.filters.custom, ...extra } } },
-            list.ctx,
-            customColumns.fields,
-          )
-        : Promise.reject(new Error("The list has not loaded yet.")),
   });
+
   const {
     pipelines,
     stageById,
@@ -267,7 +269,7 @@ export function DealsPage() {
     ) {
       setPrefs({ sort: state.sort.id, direction: state.sort.direction });
     }
-    if (state.pageSize !== prefs.pageSize)
+    if (!grouped && state.pageSize !== prefs.pageSize)
       setPrefs({ pageSize: state.pageSize });
     list.setQuery({
       page: state.page,
@@ -293,6 +295,29 @@ export function DealsPage() {
       }),
     [stageById, pipelineById, pipelines, list.query.pipelineId, memberById],
   );
+  const tableColumns = [...columns, ...customColumns.columns];
+  const columnState = standardColumnState(
+    tableColumns.map((c) => c.id ?? String(c.accessorKey ?? "")),
+    customColumns.columnIds,
+    prefs,
+    setPrefs,
+  );
+  // The one export over the WHOLE result the list selects, columns on screen.
+  const exportWhole = standardWholeResultExport<DealListRow>({
+    columns: tableColumns,
+    hidden: () => columnState.hidden,
+    order: () => columnState.order,
+    read: () =>
+      list.ctx
+        ? fetchDealWholeResult(
+            list.query,
+            { sort: prefs.sort, direction: prefs.direction as DealSortDirection, pageSize: prefs.pageSize },
+            list.ctx,
+            customColumns.fields,
+          )
+        : Promise.reject(new Error("The list has not loaded yet.")),
+    noun: "deals",
+  });
 
   const statusFacetValue = list.query.filters.status ?? "open";
 
@@ -301,7 +326,7 @@ export function DealsPage() {
       title: `Delete "${row.name}"?`,
       description: "The deal moves to trash. Its history is kept.",
       confirmLabel: "Delete",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!ok) return;
     try {
@@ -531,6 +556,11 @@ export function DealsPage() {
         />
       )}
 
+      {grouped && list.ceiling !== null && (
+        <div className="mt-2 text-xs text-muted-foreground">
+          Grouped over the first {list.ceiling.toLocaleString()} of {list.total.toLocaleString()} deals
+        </div>
+      )}
       {pipelinesError && (
         <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
           {pipelinesError}
@@ -613,7 +643,18 @@ export function DealsPage() {
             <div className="flex h-full min-h-0 flex-col">
               <MatrxDataTable<DealListRow>
                 data={list.rows}
-                columns={[...columns, ...customColumns.columns]}
+                columns={[...columns, ...customColumns.columns, { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                  <ItemMenu align="end" config={menuFor(row)}>
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${row.name}`}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </ItemMenu>
+                ) }]}
                 getRowId={(row) => row.id}
                 isLoading={list.isLoading}
                 isFetching={list.isFetching}
@@ -621,10 +662,10 @@ export function DealsPage() {
                 pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
                 query={{
                   mode: "controlled",
-                  totalItems: list.total,
+                  totalItems: grouped ? list.rows.length : list.total,
                   state: {
-                    page: list.query.page,
-                    pageSize: prefs.pageSize,
+                    page: grouped ? 1 : list.query.page,
+                    pageSize: grouped ? Math.max(list.rows.length, 1) : prefs.pageSize,
                     search: list.query.search,
                     anyOf: "",
                     columnFilters: toTableFilters(list.query.filters),
@@ -660,28 +701,12 @@ export function DealsPage() {
                   ],
                 }}
                 {...(grouping ? { grouping } : {})}
-                columnState={standardColumnState(
-                  [...columns, ...customColumns.columns].map((c) => c.id ?? String(c.accessorKey ?? "")),
-                  customColumns.columnIds,
-                  prefs,
-                  setPrefs,
-                )}
+                columnState={columnState}
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 getRowHref={(row) => `/crm/deals/${row.id}`}
                 onRowOpen={(row) => router.push(`/crm/deals/${row.id}`)}
-                rowActions={(row) => (
-                  <ItemMenu align="end" config={menuFor(row)}>
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${row.name}`}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-3.5 w-3.5" />
-                    </button>
-                  </ItemMenu>
-                )}
+
                 copy={{
                   label: "Deal",
                   listLabel: "Deals",
@@ -691,8 +716,9 @@ export function DealsPage() {
                   humanRow: (row) =>
                     `${row.name} — ${stageById.get(row.stage_id)?.name ?? "unknown stage"}`,
                   showRow: false,
-                  // The toolbar's "Copy or export", custom-field columns included.
+                  // The toolbar's one export, over the WHOLE result (lane 7 W2).
                   showToolbar: true,
+                  export: exportWhole,
                 }}
                 emptyState={{
                   icon: <Handshake className="h-6 w-6 text-muted-foreground" />,

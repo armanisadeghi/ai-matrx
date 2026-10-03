@@ -3,13 +3,18 @@
 import { normalizeMediumValue } from "@/features/crm/normalize";
 import type { Tables } from "@/types/database.types";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import {
+  assistantBindingTargets,
+  bindingMatchesTargets,
+  successorDestinationId,
+} from "@/lib/sms/assistant-line";
 
 export const VOICE_OWNER_BETA_PROGRAM_KEY = "ai_matrx_owner_beta";
 
 type DestinationRow = Pick<
   Tables<{ schema: "communication" }, "sms_phone_numbers">,
   "id" | "phone_number" | "provider" | "provider_account_id" | "program_key"
->;
+> & { metadata?: unknown };
 
 type VerifiedCallerRow = Pick<
   Tables<{ schema: "communication" }, "sms_notification_preferences">,
@@ -169,7 +174,7 @@ async function readVoiceOwnerBetaCandidates(
   const { data: destinations, error: destinationError } = await supabase
     .schema("communication")
     .from("sms_phone_numbers")
-    .select("id, phone_number, provider, provider_account_id, program_key")
+    .select("id, phone_number, provider, provider_account_id, program_key, metadata")
     .eq("provider", "twilio")
     .eq("program_key", VOICE_OWNER_BETA_PROGRAM_KEY)
     .eq("is_active", true)
@@ -186,12 +191,33 @@ async function readVoiceOwnerBetaCandidates(
   }
 
   const destination = destinations[0];
+  // A retired staff number keeps answering the people bound to its successor
+  // (lib/sms/assistant-line.ts) — the same rule the SMS ingress and
+  // `communication.resolve_voice_owner_call_context` apply.
+  const successorId = successorDestinationId(destination.metadata);
+  let successor: { id: string; program_key: string } | null = null;
+  if (successorId) {
+    const { data: successorRow, error: successorError } = await supabase
+      .schema("communication")
+      .from("sms_phone_numbers")
+      .select("id, program_key")
+      .eq("id", successorId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (successorError) {
+      throw new Error(`Failed to read owner Voice successor destination: ${successorError.message}`);
+    }
+    successor = successorRow ?? null;
+  }
+  const bindingTargets = assistantBindingTargets(destination, successor);
   let query = supabase
     .schema("communication")
     .from("sms_notification_preferences")
-    .select("phone_number")
-    .eq("assistant_destination_id", destination.id)
-    .eq("assistant_program_key", VOICE_OWNER_BETA_PROGRAM_KEY)
+    .select("phone_number, assistant_destination_id, assistant_program_key")
+    .in(
+      "assistant_destination_id",
+      bindingTargets.map((target) => target.destinationId),
+    )
     .not("phone_number", "is", null)
     .is("deleted_at", null);
 
@@ -211,13 +237,16 @@ async function readVoiceOwnerBetaCandidates(
     query = query.eq("phone_number", canonicalCaller);
   }
 
-  const { data: verifiedCallers, error: callerError } = await query.limit(2);
+  const { data: callerRows, error: callerError } = await query.limit(2);
   if (callerError) {
     throw new Error(`Failed to read verified owner Voice caller: ${callerError.message}`);
   }
-  if (!verifiedCallers) {
+  if (!callerRows) {
     throw new Error("Verified owner Voice caller read returned no result set");
   }
+  const verifiedCallers = callerRows
+    .filter((row) => bindingMatchesTargets(row, bindingTargets))
+    .map((row) => ({ phone_number: row.phone_number }));
   return { destinations, verifiedCallers };
 }
 

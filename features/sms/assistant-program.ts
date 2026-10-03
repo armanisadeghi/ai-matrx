@@ -40,7 +40,10 @@ export interface UpdateSmsAssistantProgram {
 
 export const SMS_ASSISTANT_TEST_BODY =
   "AI Matrx: Your text assistant is connected. Reply with a harmless question to test your saved agent. Reply STOP to opt out or HELP for help.";
-export const SMS_ASSISTANT_OWNER_BETA_PROGRAM = "ai_matrx_owner_beta";
+// Personal Staff's own sender program (+1 415 980 8187, campaign VERIFIED
+// 2026-09-26; cut over 2026-10-03, Lane BC). Every enrolled person is bound to
+// it; the old +1 415 805 9951 keeps answering them (lib/sms/assistant-line.ts).
+export const SMS_PERSONAL_STAFF_PROGRAM = "ai_matrx_personal_staff";
 export const SMS_ASSISTANT_OWNER_BETA_MANDATE = MANDATE_KEYS.sms__owner_beta;
 
 const BLOCKED_REASON_LABELS: Record<string, string> = {

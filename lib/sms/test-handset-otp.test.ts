@@ -54,7 +54,13 @@ jest.mock("@/utils/supabase/adminClient", () => ({
           }),
           update: (patch: Record<string, unknown>) => {
             updateMock(patch);
-            return { eq: async () => ({ error: null }) };
+            // writeOne asks the write to return its row (`.select("id")`), so the
+            // chain answers one row from both shapes the source uses.
+            const done = { select: async () => ({ data: [{ id: "row" }], error: null }) };
+            const filtered: Record<string, unknown> = { ...done };
+            filtered.eq = () => filtered;
+            filtered.is = () => filtered;
+            return filtered;
           },
         };
       },

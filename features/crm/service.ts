@@ -87,6 +87,10 @@ import {
   type CustomFieldPredicateBuilder,
   type StandardFieldColumn,
 } from "@/features/unified-data/standard-field-columns/standardFieldColumns";
+import {
+  readWholeResult,
+  type WholeResult,
+} from "@/features/unified-data/standard-field-columns/wholeResult";
 import { announceRecordChange } from "@/lib/records/recordChanges";
 export { normalizeMediumValue };
 
@@ -249,6 +253,33 @@ export async function fetchPartyPage(
   ctx: CrmQueryContext,
   customFields: readonly StandardFieldColumn[] = [],
 ): Promise<{ rows: PartyListRow[]; total: number }> {
+  const from = (query.page - 1) * opts.pageSize;
+  return fetchPartyRange(query, opts, ctx, customFields, from, from + opts.pageSize - 1);
+}
+
+/**
+ * EVERY party the list's query selects — the same predicates, search and sort as the page,
+ * read page by page under the store's export ceiling (`readWholeResult`). What the export and
+ * the grouped view read: never just the page on screen.
+ */
+export async function fetchPartyWholeResult(
+  query: PartyListQuery,
+  opts: PartySortOpts,
+  ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
+): Promise<WholeResult<PartyListRow>> {
+  return readWholeResult((from, to) => fetchPartyRange(query, opts, ctx, customFields, from, to));
+}
+
+/** One range of the list's ordered result + the TRUE total. */
+async function fetchPartyRange(
+  query: PartyListQuery,
+  opts: PartySortOpts,
+  ctx: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[],
+  from: number,
+  to: number,
+): Promise<{ rows: PartyListRow[]; total: number }> {
   let q = applyPartyListPredicates(
     supabase
       .schema("crm")
@@ -272,13 +303,12 @@ export async function fetchPartyPage(
     : q.order(sortKey, { ascending: opts.direction === "asc" })
   ).order("id", { ascending: true });
 
-  const from = (query.page - 1) * opts.pageSize;
   // `.returns<>` because postgrest-js cannot infer the column-as-target embed
   // (it reports SelectQueryError for self-join column targets), while PostgREST
   // itself serves exactly this to-one shape — browser-verified 2026-07-27.
   // The override composes generated rows only; nothing is hand-mirrored.
   const { data, error, count } = await q
-    .range(from, from + opts.pageSize - 1)
+    .range(from, to)
     .returns<PartyListRow[]>();
   if (error) throw pgError(error);
 
@@ -287,7 +317,8 @@ export async function fetchPartyPage(
 
 /**
  * How many parties the list's query matches — the same predicates as the page,
- * no rows. Group headers ask this per value so a group never counts one page.
+ * no rows. The scope tabs count each lane with it when the query narrows by
+ * something the counts RPC cannot see.
  */
 export async function countPartyList(
   query: PartyListQuery,
@@ -324,9 +355,51 @@ export async function countPartyList(
  * numbers are identical to the old RLS-filtered client reads — verified across
  * every view × kind × search × org combination before the fan-out was deleted.
  */
+/** Does this query narrow by something `crm_list_scope_counts` cannot see? */
+function queryNeedsListPredicates(
+  query: PartyListQuery,
+  customFields: readonly StandardFieldColumn[],
+): boolean {
+  const { record_class: _recordClass, ...columnFilters } = query.filters;
+  const applied = (v: unknown) =>
+    v !== undefined &&
+    !(Array.isArray(v) && v.length === 0) &&
+    !(v !== null && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 0);
+  if (Object.values(columnFilters).some(applied)) return true;
+  return Boolean(sanitizeSearch(query.search)) && customFieldSearchClauses(customFields, query.search).length > 0;
+}
+
 export async function fetchPartyScopeCounts(
   query: PartyListQuery,
+  ctx?: CrmQueryContext,
+  customFields: readonly StandardFieldColumn[] = [],
 ): Promise<EntityScopeCounts> {
+  // THE TABS COUNT WHAT THE LIST SHOWS. `crm_list_scope_counts` knows the lane, kind, record
+  // class, organization and the identity-column search — not a column filter, a custom-field
+  // filter, or the search reaching a custom field's words. When the query carries any of those,
+  // each lane is counted with the list's OWN predicates (`countPartyList`), so a tab can never
+  // read "All 0" above a matching row. Per-organization counts are left out then (the
+  // organization filter lists names without numbers) rather than shown for another question.
+  if (ctx && queryNeedsListPredicates(query, customFields)) {
+    const lanes = ["all", "mine", "team", "orgs", "public"] as const;
+    const answers = await Promise.all(
+      lanes.map(async (kind) => {
+        try {
+          const n = await countPartyList(
+            { ...query, scope: { kind } as PartyListQuery["scope"] },
+            ctx,
+            customFields,
+          );
+          return [kind, n] as const;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    const counts: EntityScopeCounts = { byKind: {}, narrow: {} };
+    for (const answer of answers) if (answer) counts.byKind[answer[0]] = answer[1];
+    return counts;
+  }
   const { data, error } = await readListRpc("crm_list_scope_counts", {
     p_view: query.view,
     p_kind: query.kind,

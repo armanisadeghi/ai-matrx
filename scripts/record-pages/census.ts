@@ -66,7 +66,7 @@ export interface Unit {
 
 export interface TableUnit {
   file: string;
-  rowToken: "set" | "none" | "pending";
+  rowToken: "set" | "none" | "pending" | "noncanonical";
   reason?: string;
 }
 
@@ -82,6 +82,8 @@ export interface Ledger {
   exemptCeiling: number;
   pending: string[];
   tablesPending: string[];
+  /** I2 — lists not on the canonical table (`components/ui/table`): each moves to MatrxDataTable. */
+  listQueue?: string[];
 }
 
 export interface Census {
@@ -285,6 +287,11 @@ export function buildCensus(opts: CensusOptions): Census {
     if (rel.includes("__tests__") || /\.test\.tsx?$/.test(rel)) continue;
     if (rel.startsWith("components/official/MatrxDataTable")) continue;
     const text = read(rel);
+    if (text && /["']@\/components\/ui\/table["']/.test(text) && /<Table\b/.test(text)) {
+      const none = text.match(ROW_TOKEN_MARKER);
+      tables.push(none ? { file: rel, rowToken: "none", reason: none[1].trim() } : { file: rel, rowToken: "noncanonical" });
+      continue;
+    }
     if (!text || !/<MatrxDataTable\b/.test(text)) continue;
     if (/\browToken\s*[=:]/.test(text)) tables.push({ file: rel, rowToken: "set" });
     else {
@@ -315,6 +322,14 @@ export function buildCensus(opts: CensusOptions): Census {
       problems.push(`${f}: renders <MatrxDataTable> with no rowToken. Set rowToken="<token>" or mark "// row-token: none — <reason>".`);
   for (const f of ledgerTables)
     if (!tablesPendingNow.has(f)) problems.push(`${f}: sets rowToken now (or is gone) — remove it from tablesPending.`);
+
+  const queueNow = new Set(tables.filter((t) => t.rowToken === "noncanonical").map((t) => t.file));
+  const ledgerQueue = new Set(opts.ledger.listQueue ?? []);
+  for (const f of queueNow)
+    if (!ledgerQueue.has(f))
+      problems.push(`${f}: a new list on components/ui/table. Use MatrxDataTable with rowToken, or mark "// row-token: none — <reason>".`);
+  for (const f of ledgerQueue)
+    if (!queueNow.has(f)) problems.push(`${f}: moved off components/ui/table (or gone) — remove it from listQueue.`);
 
   const counts: Record<string, number> = {};
   for (const u of units) {

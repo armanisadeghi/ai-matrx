@@ -37,6 +37,10 @@ jest.mock("@/lib/redux/hooks", () => ({
     return select();
   },
 }));
+let MEMBER_OF: { id: string; name: string }[] = [];
+jest.mock("@/features/organizations/hooks/useActiveOrganizationPicker", () => ({
+  useActiveOrganizationPicker: () => ({ organizations: MEMBER_OF, loading: false, loadFailed: false }),
+}));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => store.org.id,
   selectOrganizationName: () => store.org.name,
@@ -117,4 +121,20 @@ it("with no active organization, the form offers its own picker and files into t
   const create = [...host.querySelectorAll("button")].find((b) => b.textContent === "Create record")!;
   await act(async () => create.click());
   expect(resolveParty).toHaveBeenCalledWith(expect.objectContaining({ orgId: CEDAR, displayName: "Dana Whitcomb" }));
+});
+
+it("a passed organization the person cannot file into falls back to the picker", async () => {
+  const OTHER = "11111111-1111-4111-8111-111111111111";
+  store.set(null, null);
+  MEMBER_OF = [{ id: CEDAR, name: "Cedar Ridge Physical Therapy" }];
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  await act(async () => root.render(<PartyCreateForm initialOrgId={OTHER} onCancel={() => {}} onCreated={() => {}} />));
+  expect(host.querySelector("[data-org-picker]")).not.toBeNull();
+
+  // a passed organization she belongs to stays pinned, with no picker
+  await act(async () => root.render(<PartyCreateForm initialOrgId={CEDAR} onCancel={() => {}} onCreated={() => {}} />));
+  expect(host.querySelector("[data-org-picker]")).toBeNull();
+  expect(host.textContent).toContain("Filing into Cedar Ridge Physical Therapy");
 });

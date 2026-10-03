@@ -523,7 +523,27 @@ export function GroundTruthQueue({
         <MatrxDataTable
           urlState={{ id: "competitor-ground-truth" }}
           data={pending}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row, controls) => (
+            <>
+              <AgreeAction
+                row={row}
+                onSaved={onSaved}
+                onConfirmed={controls.discardPendingEdits}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  controls.openWindow();
+                  controls.discardPendingEdits();
+                }}
+              >
+                <Pencil className="size-3.5" />
+                Edit details
+              </Button>
+            </>
+          ) }]}
           getRowId={(row) => row.id}
           edit={{ enabled: true, onSave: saveEdits }}
           // MSR-19/20: "Wrong" opens the canonical WindowPanel onto the full
@@ -545,27 +565,7 @@ export function GroundTruthQueue({
             openOnRowClick: true,
             onOpen: () => {},
           }}
-          rowActions={(row, controls) => (
-            <>
-              <AgreeAction
-                row={row}
-                onSaved={onSaved}
-                onConfirmed={controls.discardPendingEdits}
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                onClick={() => {
-                  controls.openWindow();
-                  controls.discardPendingEdits();
-                }}
-              >
-                <Pencil className="size-3.5" />
-                Edit details
-              </Button>
-            </>
-          )}
+
           emptyState={{
             title: "Nothing waiting",
             description:

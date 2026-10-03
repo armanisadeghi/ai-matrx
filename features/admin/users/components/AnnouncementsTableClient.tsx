@@ -106,7 +106,7 @@ export function AnnouncementsTableClient() {
       title: "Delete announcement?",
       description: `"${row.title}" will be permanently removed.`,
       confirmLabel: "Delete",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!ok) return;
     const res = await deleteAnnouncement(row.id);
@@ -215,7 +215,44 @@ export function AnnouncementsTableClient() {
         <MatrxDataTable
           urlState={{ id: "user-announcements" }}
           data={rows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                title={
+                  pendingWrites.isPending(row.id)
+                    ? row.is_active
+                      ? "Deactivating…"
+                      : "Activating…"
+                    : row.is_active
+                      ? "Deactivate"
+                      : "Activate"
+                }
+                disabled={pendingWrites.isPending(row.id)}
+                aria-busy={pendingWrites.isPending(row.id) || undefined}
+                onClick={() => void toggleActive(row)}
+              >
+                <Power
+                  className={
+                    row.is_active
+                      ? "h-3.5 w-3.5 text-emerald-500"
+                      : "h-3.5 w-3.5"
+                  }
+                />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                title="Delete"
+                onClick={() => void remove(row)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          ) }]}
           getRowId={(r) => r.id}
           isLoading={loading}
           pageSize={50}
@@ -288,44 +325,7 @@ export function AnnouncementsTableClient() {
               </div>
             ),
           }}
-          rowActions={(row) => (
-            <>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                title={
-                  pendingWrites.isPending(row.id)
-                    ? row.is_active
-                      ? "Deactivating…"
-                      : "Activating…"
-                    : row.is_active
-                      ? "Deactivate"
-                      : "Activate"
-                }
-                disabled={pendingWrites.isPending(row.id)}
-                aria-busy={pendingWrites.isPending(row.id) || undefined}
-                onClick={() => void toggleActive(row)}
-              >
-                <Power
-                  className={
-                    row.is_active
-                      ? "h-3.5 w-3.5 text-emerald-500"
-                      : "h-3.5 w-3.5"
-                  }
-                />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                title="Delete"
-                onClick={() => void remove(row)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
+
         />
         </NonEditableContextMenu>
       </div>

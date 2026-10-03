@@ -400,25 +400,7 @@ export function PodcastsTable({
         <MatrxDataTable<PcShow>
           tableId="admin/podcasts/editor-shows"
           data={filteredShows}
-          columns={showColumns}
-          getRowId={(show) => show.id}
-          isLoading={isLoading}
-          read={read}
-          density="condensed"
-          copy={false}
-          toolbar={{ search: false }}
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
-          selectedId={selectedId}
-          onRowOpen={onSelectShow}
-          pageSize={0}
-          coverage={{ noun: "show", answeredBy: "client" }}
-          emptyState={{
-            title: search
-              ? "No shows match your search."
-              : "No shows yet. Create one to get started.",
-          }}
-          rowActions={(show) => (
+          columns={[...(showColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (show) => (
             <div className="flex items-center gap-0.5">
               <CopyButtons
                 size="xs"
@@ -456,14 +438,8 @@ export function PodcastsTable({
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
-          )}
-        />
-      ) : (
-        <MatrxDataTable<PcEpisodeWithShow>
-          tableId="admin/podcasts/editor-episodes"
-          data={filteredEpisodes}
-          columns={episodeColumns}
-          getRowId={(episode) => episode.id}
+          ) }]}
+          getRowId={(show) => show.id}
           isLoading={isLoading}
           read={read}
           density="condensed"
@@ -472,15 +448,21 @@ export function PodcastsTable({
           detail={{ enabled: false }}
           window={{ enabled: false }}
           selectedId={selectedId}
-          onRowOpen={onSelectEpisode}
+          onRowOpen={onSelectShow}
           pageSize={0}
-          coverage={{ noun: "episode", answeredBy: "client" }}
+          coverage={{ noun: "show", answeredBy: "client" }}
           emptyState={{
             title: search
-              ? "No episodes match your search."
-              : "No episodes yet. Create one to get started.",
+              ? "No shows match your search."
+              : "No shows yet. Create one to get started.",
           }}
-          rowActions={(episode) => (
+
+        />
+      ) : (
+        <MatrxDataTable<PcEpisodeWithShow>
+          tableId="admin/podcasts/editor-episodes"
+          data={filteredEpisodes}
+          columns={[...(episodeColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (episode) => (
             <div className="flex items-center gap-0.5">
               <CopyButtons
                 size="xs"
@@ -521,7 +503,25 @@ export function PodcastsTable({
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
-          )}
+          ) }]}
+          getRowId={(episode) => episode.id}
+          isLoading={isLoading}
+          read={read}
+          density="condensed"
+          copy={false}
+          toolbar={{ search: false }}
+          detail={{ enabled: false }}
+          window={{ enabled: false }}
+          selectedId={selectedId}
+          onRowOpen={onSelectEpisode}
+          pageSize={0}
+          coverage={{ noun: "episode", answeredBy: "client" }}
+          emptyState={{
+            title: search
+              ? "No episodes match your search."
+              : "No episodes yet. Create one to get started.",
+          }}
+
         />
       )}
 

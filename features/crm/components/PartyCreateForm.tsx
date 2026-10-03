@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { OrganizationPickerPopover } from "@/features/organizations/components/OrganizationPickerPopover";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import {
   selectOrganizationId,
   selectOrganizationName,
@@ -95,7 +96,17 @@ export function PartyCreateForm({
   */
   const activeOrgId = useAppSelector(selectOrganizationId);
   const activeOrgName = useAppSelector(selectOrganizationName);
-  const orgId = initialOrgId ?? activeOrgId;
+  // A passed organization is used only if the person can file into it (a
+  // member, or the list is still loading); otherwise the form falls back to
+  // the active one and offers the picker in place — never a dead end.
+  const { organizations, loading: orgsLoading, loadFailed } =
+    useActiveOrganizationPicker();
+  const passedOrg = initialOrgId
+    ? organizations.find((org) => org.id === initialOrgId)
+    : undefined;
+  const passedUsable =
+    !initialOrgId || Boolean(passedOrg) || orgsLoading || loadFailed;
+  const orgId = passedUsable ? (initialOrgId ?? activeOrgId) : activeOrgId;
   const seedName = initialName?.trim() ?? "";
   const seedPerson = splitPersonName(seedName);
   const [kind, setKind] = useState<PartyKind>(initialKind);
@@ -339,15 +350,15 @@ export function PartyCreateForm({
             picker (the same popover the New table dialog uses) opens right
             here, so nobody is sent to a menu that does not offer it.
           */}
-          {initialOrgId ? (
+          {initialOrgId && passedUsable ? (
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
               <span>
                 Filing into{" "}
                 <span className="font-medium text-foreground">
-                  {activeOrgName && initialOrgId === activeOrgId
-                    ? activeOrgName
-                    : "the selected organization"}
+                  {passedOrg?.name ??
+                    (initialOrgId === activeOrgId ? activeOrgName : null) ??
+                    "the selected organization"}
                 </span>
               </span>
             </p>

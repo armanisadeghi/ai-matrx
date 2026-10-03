@@ -1015,7 +1015,22 @@ export function ExportRunList({
         >
         <MatrxDataTable<PayrollExportHistoryRow>
           data={rows}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row, controls) => (
+            <ItemMenu align="end" config={menuFor(row, controls.openDetail)}>
+              <button
+                type="button"
+                aria-label={`Actions for version ${row.export_version}`}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {busyId === row.export_id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                ) : (
+                  <MoreVertical className="h-3.5 w-3.5" aria-hidden />
+                )}
+              </button>
+            </ItemMenu>
+          ) }]}
           getRowId={(row) => row.export_id}
           isLoading={history.isLoading}
           zebra
@@ -1050,22 +1065,7 @@ export function ExportRunList({
             description:
               "Nothing has been built for payroll yet. Preview the file first — looking costs nothing and creates no record.",
           }}
-          rowActions={(row, controls) => (
-            <ItemMenu align="end" config={menuFor(row, controls.openDetail)}>
-              <button
-                type="button"
-                aria-label={`Actions for version ${row.export_version}`}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {busyId === row.export_id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <MoreVertical className="h-3.5 w-3.5" aria-hidden />
-                )}
-              </button>
-            </ItemMenu>
-          )}
+
         />
         </NonEditableContextMenu>
       </div>

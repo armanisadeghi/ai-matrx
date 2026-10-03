@@ -194,7 +194,7 @@ export interface KeywordTableProps {
   /** Rendered in the bulk bar. */
   selectionActions?: (ctx: KeywordTableSelectionContext) => ReactNode;
   /** A trailing per-row action column owned by this surface. */
-  rowActions?: (
+  customActions?: (
     row: GscBreakdownRow,
     controls: KeywordTableControls,
   ) => ReactNode;
@@ -239,7 +239,7 @@ export function KeywordTable({
   emptyState,
   headerActions,
   selectionActions,
-  rowActions,
+  customActions,
   extraColumns,
   wrapTable,
   toolbarLeading,
@@ -1037,7 +1037,7 @@ export function KeywordTable({
   const table = (
     <MatrxDataTable<GscBreakdownRow>
       data={topicRows}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: customActions ? (row) => customActions(row, controls) : undefined }]}
       getRowId={(row) => row.key}
       isLoading={data.isLoading}
       isFetching={data.isFetching}
@@ -1068,7 +1068,7 @@ export function KeywordTable({
             clear: () => setSelectedIds([]),
           }) ?? null,
       }}
-      rowActions={rowActions ? (row) => rowActions(row, controls) : undefined}
+
       toolbar={{
         searchPlaceholder: "Search keywords…",
         leading: toolbarLeading?.(view),

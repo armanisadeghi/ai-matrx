@@ -169,7 +169,7 @@ export function SiteKeywordPerformanceWorkspace() {
       description:
         "The library row disappears from every keyword list and research runs won't re-add it. Search-performance evidence for the query is unaffected. Undo from the toast, or restore by typing the phrase anywhere.",
       confirmLabel: "Archive",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!confirmed) return;
     try {
@@ -226,7 +226,7 @@ export function SiteKeywordPerformanceWorkspace() {
             id: "archive-library",
             label: "Archive from library",
             icon: Archive,
-            tone: "destructive",
+            tone: "destructive" as const,
             disabled: !row.keyword_id,
             disabledReason: row.keyword_id
               ? undefined
@@ -693,39 +693,7 @@ export function SiteKeywordPerformanceWorkspace() {
       <section className="min-h-[36rem] rounded-lg border border-border bg-card p-2">
         <MatrxDataTable<SiteKeywordPerformanceRow>
           data={rows}
-          columns={columns}
-          getRowId={performanceRowId}
-          isLoading={showSkeleton}
-          isFetching={performance.isFetching}
-          query={{
-            mode: "controlled",
-            state: table.state,
-            totalItems: total,
-            onStateChange: table.onStateChange,
-          }}
-          toolbar={{ searchPlaceholder: "Search query or ranking page…" }}
-          edit={{ enabled: true, onSave: saveWorkflowEdits }}
-          copy={{
-            label: "Keyword",
-            listLabel: "Keyword performance view",
-            location: pageLocation,
-            rowKind: "keyword-performance",
-            listKind: "keyword-performance-rows",
-            humanRow: humanKeywordPerformanceRow,
-            agentRow: projectKeywordPerformanceRow,
-            rowAttributes: (row) => ({
-              provider: row.provider ?? undefined,
-              query: row.query ?? undefined,
-              workflow_status: row.workflow_status ?? undefined,
-            }),
-            listAttributes: (visible) => ({
-              page: table.state.page,
-              loaded_rows: visible.length,
-              total_recorded: total,
-              search: table.state.search || undefined,
-            }),
-          }}
-          rowActions={(row) => (
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <>
               <Button
                 type="button"
@@ -758,7 +726,39 @@ export function SiteKeywordPerformanceWorkspace() {
                 </Button>
               </ItemMenu>
             </>
-          )}
+          ) }]}
+          getRowId={performanceRowId}
+          isLoading={showSkeleton}
+          isFetching={performance.isFetching}
+          query={{
+            mode: "controlled",
+            state: table.state,
+            totalItems: total,
+            onStateChange: table.onStateChange,
+          }}
+          toolbar={{ searchPlaceholder: "Search query or ranking page…" }}
+          edit={{ enabled: true, onSave: saveWorkflowEdits }}
+          copy={{
+            label: "Keyword",
+            listLabel: "Keyword performance view",
+            location: pageLocation,
+            rowKind: "keyword-performance",
+            listKind: "keyword-performance-rows",
+            humanRow: humanKeywordPerformanceRow,
+            agentRow: projectKeywordPerformanceRow,
+            rowAttributes: (row) => ({
+              provider: row.provider ?? undefined,
+              query: row.query ?? undefined,
+              workflow_status: row.workflow_status ?? undefined,
+            }),
+            listAttributes: (visible) => ({
+              page: table.state.page,
+              loaded_rows: visible.length,
+              total_recorded: total,
+              search: table.state.search || undefined,
+            }),
+          }}
+
           /*
            * NO DEAD ENDS + THE MISMATCH RULE. A row click used to open the
            * default inspector, which showed a non-technical SME bare

@@ -583,7 +583,7 @@ function BundleDetail({
       description:
         "Agents loading this bundle will no longer see this tool under its alias.",
       confirmLabel: "Remove",
-      variant: "destructive",
+      variant: "destructive" as const,
     });
     if (!ok) return;
     try {
@@ -703,7 +703,9 @@ function BundleDetail({
             detail={{ enabled: false }}
             read={readOf({ loading, error }, { what: "this bundle's tools", onRetry: () => void load() })}
             emptyState={{ title: "No tools in this bundle yet" }}
-            columns={memberColumns(onSaveAlias)}
+            columns={[...(memberColumns(onSaveAlias)), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+              <XTapButton variant="transparent" onClick={() => void onRemove(row)} ariaLabel="Remove from bundle" />
+            ) }]}
             tableId={`tool-registry/bundles/${bundle.id}/members`}
             getRowId={(row) => row.member.tool_id}
             rowClassName={(row) =>
@@ -715,9 +717,7 @@ function BundleDetail({
               refresh: { onRefresh: load },
               add: { onAdd: () => setAdding(true) },
             }}
-            rowActions={(row) => (
-              <XTapButton variant="transparent" onClick={() => void onRemove(row)} ariaLabel="Remove from bundle" />
-            )}
+
           />
       </section>
       {adding && (

@@ -646,11 +646,7 @@ export function SitePerformanceWorkspace() {
               <MatrxDataTable
                 urlState={{ id: "performance-suggested-pages" }}
                 data={suggestedPages}
-                columns={suggestedColumns}
-                getRowId={(row) => row.page_id}
-                pageSize={10}
-                pageSizeOptions={[10, 25, 50, 100]}
-                rowActions={(page) => (
+                columns={[...(suggestedColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (page) => (
                   <Button
                     size="sm"
                     variant={
@@ -668,7 +664,11 @@ export function SitePerformanceWorkspace() {
                     )}
                     Test now
                   </Button>
-                )}
+                ) }]}
+                getRowId={(row) => row.page_id}
+                pageSize={10}
+                pageSizeOptions={[10, 25, 50, 100]}
+
               />
               </NonEditableContextMenu>
             </div>

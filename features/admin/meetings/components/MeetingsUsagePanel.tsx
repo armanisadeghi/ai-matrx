@@ -120,18 +120,18 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
         <MatrxDataTable
           tableId="admin-meetings-usage-by-org"
           data={state.report?.byOrg ?? []}
-          columns={columns}
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => onOpenOrganization(row.organization_id)}>
+              Meetings
+            </Button>
+          ) }]}
           getRowId={(row) => row.organization_id}
           isLoading={state.loading && !state.report}
           stickyHeader
           density="condensed"
           defaultSort={{ id: "meetings", direction: "desc" }}
           onRowOpen={(row) => onOpenOrganization(row.organization_id)}
-          rowActions={(row) => (
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => onOpenOrganization(row.organization_id)}>
-              Meetings
-            </Button>
-          )}
+
           coverage={{ noun: "organization", answeredBy: "client", total: state.report?.byOrg.length }}
           toolbar={{ title: "By organization", search: true }}
           emptyState={{

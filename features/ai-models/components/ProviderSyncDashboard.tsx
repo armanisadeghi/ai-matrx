@@ -1212,28 +1212,7 @@ function ComparisonTable({
       <MatrxDataTable<ModelComparison>
         tableId={`ai-models/provider-sync/${providerName ?? "provider"}`}
         data={comparisons}
-        columns={columns}
-        getRowId={(comparison) => comparison.id}
-        density="condensed"
-        defaultSort={{ id: "released", direction: "desc" }}
-        pageSize={0}
-        emptyState={{ title: "No comparison data — sync this provider first." }}
-        coverage={{
-          noun: "provider model",
-          answeredBy: "client",
-          total: comparisons.length,
-        }}
-        copy={copy}
-        detail={{ enabled: false }}
-        window={{ enabled: false }}
-        selectedId={selectedId}
-        onRowOpen={(comparison) =>
-          onSelect(comparison.id === selectedId ? null : comparison)
-        }
-        rowClassName={(comparison) =>
-          `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`
-        }
-        rowActions={(comparison) => (
+        columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (comparison) => (
           <div className="flex items-center gap-1">
             {/* Retained by Arman's 2026-09-29 copy decision: this remains the
                 primary AI action because the package adapter cannot make its
@@ -1269,7 +1248,28 @@ function ComparisonTable({
               />
             )}
           </div>
-        )}
+        ) }]}
+        getRowId={(comparison) => comparison.id}
+        density="condensed"
+        defaultSort={{ id: "released", direction: "desc" }}
+        pageSize={0}
+        emptyState={{ title: "No comparison data — sync this provider first." }}
+        coverage={{
+          noun: "provider model",
+          answeredBy: "client",
+          total: comparisons.length,
+        }}
+        copy={copy}
+        detail={{ enabled: false }}
+        window={{ enabled: false }}
+        selectedId={selectedId}
+        onRowOpen={(comparison) =>
+          onSelect(comparison.id === selectedId ? null : comparison)
+        }
+        rowClassName={(comparison) =>
+          `${STATUS_LEFT[comparison.status]} ${comparison.id === selectedId ? STATUS_BG_SEL[comparison.status] : STATUS_BG[comparison.status]}`
+        }
+
       />
     </div>
   );

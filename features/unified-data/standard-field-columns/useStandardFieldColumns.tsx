@@ -10,8 +10,9 @@
 // A list names its registry token and the organizations it spans; this hands back the
 // MatrxDataTable column definitions (hidden until the person picks them in Columns), the merged
 // field list the list's service needs for its server predicates, and the group-by words.
-// Definitions come through the store's own door (`custom.entity_fields`, one call per
-// organization, as the person) — never a direct read of the field registry — and only fields the
+// Definitions come through the store's own door (`custom.entity_fields_across`: ONE call for
+// every organization the list spans, Fields and choices together, as the person) — never a
+// direct read of the field registry — and only fields the
 // seat may read become columns (see ./standardFieldColumns.ts § THE FIELD RULE).
 //
 // The organizations are the ones the LIST spans (the person's memberships), never the active
@@ -73,7 +74,58 @@ async function loadFields(
   organizationIds: readonly string[],
   userId: string | null,
 ): Promise<Omit<Loaded, "forKey">> {
+  if (organizationIds.length === 0) return { fields: [], unavailable: 0, error: null };
   const dataSource = recordsDataSource(createClient());
+  // ONE READ ACROSS EVERY ORGANIZATION THE LIST SPANS: `custom.entity_fields_across` answers the
+  // Fields and their choices together and names any organization it may not reach.
+  const across = await createRecordsClient({
+    dataSource,
+    actor: personActor(userId),
+    organizationId: organizationIds[0],
+  }).entityFieldsAcross({ token, organization_ids: [...organizationIds] });
+  if (across.ok) {
+    const definitions: StandardFieldDefinition[] = [];
+    const optionsByField = new Map<string, StandardFieldOption[]>();
+    for (const field of across.data.fields) {
+      definitions.push(field as unknown as StandardFieldDefinition);
+      if (field.options && typeof field.options === "object") {
+        optionsByField.set(
+          field.id,
+          Object.entries(field.options)
+            .filter(([, o]) => !o.retired)
+            .map(([key, o]) => ({ key, label: o.label })),
+        );
+      }
+    }
+    const unavailable = across.data.unavailable.length;
+    return {
+      fields: mergeFieldDefinitions(definitions, optionsByField),
+      unavailable,
+      error: unavailable === organizationIds.length ? (across.data.unavailable[0]?.reason ?? null) : null,
+    };
+  }
+  if (across.error.code !== "door_absent") {
+    return { fields: [], unavailable: organizationIds.length, error: across.error.message };
+  }
+  // THE DOOR IS NOT ON THIS DATABASE YET (it is owed by lane7w2_b, the chair's apply): read once
+  // per organization until it lands — said once in the console, never silently.
+  if (!warnedPerOrganization) {
+    warnedPerOrganization = true;
+    console.warn(
+      "[standard-field-columns] custom.entity_fields_across is not on this database yet; reading Fields once per organization.",
+    );
+  }
+  return loadFieldsPerOrganization(token, organizationIds, userId, dataSource);
+}
+
+let warnedPerOrganization = false;
+
+async function loadFieldsPerOrganization(
+  token: string,
+  organizationIds: readonly string[],
+  userId: string | null,
+  dataSource: ReturnType<typeof recordsDataSource>,
+): Promise<Omit<Loaded, "forKey">> {
   const definitions: StandardFieldDefinition[] = [];
   const optionsByField = new Map<string, StandardFieldOption[]>();
   let unavailable = 0;
@@ -89,11 +141,9 @@ async function loadFields(
       }
       for (const field of answer.data as unknown as StandardFieldDefinition[]) {
         definitions.push(field);
-        // The Field's own options column; a field written before the column existed keeps it in
-        // its config.
+        // The Field's own options column; config for a Field written before that column.
         const config = (field.config ?? {}) as Record<string, unknown>;
-        const optionsTableId =
-          field.options_table_id ?? config.options_table_id;
+        const optionsTableId = field.options_table_id ?? config.options_table_id;
         if (field.type === "list" && typeof optionsTableId === "string" && optionsTableId) {
           const options = await client.fieldOptions({ field_id: field.id });
           // A choice list that cannot be read still lists its values as stored.

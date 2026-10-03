@@ -124,6 +124,7 @@ describe("ProblemsPanel", () => {
       "label",
       "detail",
       "edge_count",
+      "custom-actions",
     ]);
     expect(props.data.map((row) => props.getRowId(row))).toEqual([
       "unregistered_pair:task:project:contains:0",
@@ -161,7 +162,7 @@ describe("ProblemsPanel", () => {
       discardPendingEdits() {},
     };
     const clickRowAction = (row: ProblemTableRow) => {
-      const action = props.rowActions?.(row, controls);
+      const action = props.columns.find((column) => column.customActions)?.customActions?.(row, controls);
       if (!isValidElement<{ onClick?: () => void }>(action) || !action.props.onClick) {
         throw new Error("Missing row action");
       }

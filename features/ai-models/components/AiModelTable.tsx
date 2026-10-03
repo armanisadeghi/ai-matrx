@@ -1312,7 +1312,15 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
       tableId="ai/models-canonical"
       viewTabs={false}
       data={models}
-      columns={columns}
+      columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (model) => (
+        <CanonicalModelActions
+          model={model}
+          onSelect={onSelect}
+          onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
+      ) }]}
       getRowId={(model) => model.id}
       query={{
         mode: "controlled-local",
@@ -1335,15 +1343,7 @@ function CanonicalAiModelTable(props: AiModelTableProps) {
         refresh: { onRefresh },
         add: { onAdd: onCreate },
       }}
-      rowActions={(model) => (
-        <CanonicalModelActions
-          model={model}
-          onSelect={onSelect}
-          onEdit={onEdit}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-        />
-      )}
+
     />
   );
 }

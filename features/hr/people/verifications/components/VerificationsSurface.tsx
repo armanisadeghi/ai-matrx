@@ -352,11 +352,7 @@ export function VerificationsSurface() {
         >
         <MatrxDataTable<ScopedLetterRow>
           data={rows ?? []}
-          columns={columns}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          pageSize={25}
-          rowActions={(row) => (
+          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <VerificationRowActions
               row={row}
               busy={busyId === row.id}
@@ -364,7 +360,11 @@ export function VerificationsSurface() {
               onGenerate={() => generate(row)}
               onChanged={refresh}
             />
-          )}
+          ) }]}
+          getRowId={(row) => row.id}
+          isLoading={isLoading}
+          pageSize={25}
+
           toolbar={{
             search: true,
             searchPlaceholder: "Search requests",

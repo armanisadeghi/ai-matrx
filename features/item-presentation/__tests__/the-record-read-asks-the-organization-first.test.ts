@@ -43,7 +43,7 @@ jest.mock("@/features/organizations/awaitWorkspace", () => ({
       ? mockWorkspaceReady("11111111-2222-3333-4444-555555555555")
       : mockWorkspaceUnavailable(
           "no-selection",
-          "No organization is selected, so there was nothing to read this record from. Pick the one you are working in from the menu under your avatar and it will load.",
+          "No organization is selected, so there was nothing to read this record from. Choose the one you are working in with the sidebar's organization switcher and it will load.",
         );
   },
 }));
