@@ -43,7 +43,8 @@ import "@univerjs/preset-docs-core/lib/index.css";
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { Button } from "@/components/ui/button";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { cn } from "@/lib/utils";
+import { useToolToggle } from "@/features/canvas/host/toolCanvas";
 import { toast } from "@/components/ui/use-toast";
 
 import { defaultDocumentPageStyle } from "../document-page-style";
@@ -65,7 +66,7 @@ import {
   saveDocumentSnapshot,
 } from "../document-service";
 import { isServiceFailure } from "../types";
-import { DocumentHistoryViewer } from "./DocumentHistoryViewer";
+import { documentHistoryToggleInput } from "../canvas/historyKinds";
 import { DocumentPageReferenceCopyButton } from "./DocumentPageReferenceCopyButton";
 import type { DocumentBodyPort } from "../document-body-text";
 
@@ -132,7 +133,8 @@ export default function DocumentEditor({
   const [unitId, setUnitId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [historyOpen, setHistoryOpen] = useState(false);
+  // Snapshot history is a canvas tab beside the editor; the button toggles it.
+  const snapshotHistory = useToolToggle(documentHistoryToggleInput(documentId, editable));
 
   // Univer boots ONCE per documentId (see boot effect). `editable`, `collab`,
   // and the collab host-election flag can all change AFTER boot, so we read
@@ -664,8 +666,9 @@ export default function DocumentEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1 px-2 text-xs"
-            onClick={() => setHistoryOpen(true)}
+            className={cn("h-7 gap-1 px-2 text-xs", snapshotHistory.isVisible && "bg-accent text-accent-foreground")}
+            onClick={snapshotHistory.toggle}
+            aria-pressed={snapshotHistory.isVisible}
             title="View snapshot history"
           >
             <History className="size-3" />
@@ -676,17 +679,6 @@ export default function DocumentEditor({
         <div ref={containerRef} className="absolute inset-0" />
       </div>
 
-      <MatrxDynamicPanelHost
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        title="Document history"
-        description="Every saved snapshot, newest first. Restore brings an older snapshot back as the new current state (the previous one stays in history)."
-        position="right"
-        defaultSize={32}
-        contentClassName="overflow-y-auto"
-      >
-        <DocumentHistoryViewer documentId={documentId} editable={editable} />
-      </MatrxDynamicPanelHost>
       {/* Hidden — documentName is reserved for the parent shell label. */}
       <span className="hidden">{documentName}</span>
     </div>

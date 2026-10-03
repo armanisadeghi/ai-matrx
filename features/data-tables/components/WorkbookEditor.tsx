@@ -37,7 +37,8 @@ import "@univerjs/preset-sheets-core/lib/index.css";
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { Button } from "@/components/ui/button";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { cn } from "@/lib/utils";
+import { useToolToggle } from "@/features/canvas/host/toolCanvas";
 import { toast } from "@/components/ui/use-toast";
 
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
@@ -51,7 +52,7 @@ import { registerWorkbookScopeSource } from "../workbook-scope-source";
 import { useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { isServiceFailure } from "../types";
 import { downloadUniverAsXlsx } from "../univer-to-xlsx";
-import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
+import { workbookHistoryToggleInput } from "../canvas/historyKinds";
 import { WorkbookSheetReferenceCopyButton } from "./WorkbookSheetReferenceCopyButton";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
@@ -130,7 +131,8 @@ export default function WorkbookEditor({
   >("booting");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [historyOpen, setHistoryOpen] = useState(false);
+  // Snapshot history is a canvas tab beside the editor; the button toggles it.
+  const snapshotHistory = useToolToggle(workbookHistoryToggleInput(workbookId, editable));
 
   // Univer boots ONCE per workbookId (see boot effect). `editable`, `collab`,
   // and the collab host-election flag can change AFTER boot, so we read them
@@ -749,8 +751,9 @@ export default function WorkbookEditor({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1 px-2 text-xs"
-            onClick={() => setHistoryOpen(true)}
+            className={cn("h-7 gap-1 px-2 text-xs", snapshotHistory.isVisible && "bg-accent text-accent-foreground")}
+            onClick={snapshotHistory.toggle}
+            aria-pressed={snapshotHistory.isVisible}
             title="View snapshot history"
           >
             <History className="size-3" />
@@ -773,17 +776,6 @@ export default function WorkbookEditor({
         )}
       </div>
 
-      <MatrxDynamicPanelHost
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        title="Workbook history"
-        description="Every saved snapshot, newest first. Restore brings an older snapshot back as the new current state (the previous one stays in history)."
-        position="right"
-        defaultSize={32}
-        contentClassName="overflow-y-auto"
-      >
-        <WorkbookHistoryViewer workbookId={workbookId} editable={editable} />
-      </MatrxDynamicPanelHost>
     </div>
   );
 }

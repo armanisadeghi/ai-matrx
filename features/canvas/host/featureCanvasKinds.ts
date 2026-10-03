@@ -17,6 +17,10 @@ import { USER_JOURNEY_CANVAS_KIND } from "@/features/admin/users/canvas/userJour
 import { DIRECTIVE_SHAPE_CANVAS_KIND } from "@/features/directive-catalog/canvas/directiveShapeKind";
 import { TOPICAL_MAP_TOPIC_CANVAS_KIND } from "@/features/marketing/seo/topical-map/canvas/topicKind";
 import { KG_SUGGESTIONS_CANVAS_KIND } from "@/features/kg-suggestions/canvas/kgSuggestionsKind";
+import {
+  DOCUMENT_HISTORY_CANVAS_KIND,
+  WORKBOOK_HISTORY_CANVAS_KIND,
+} from "@/features/data-tables/canvas/historyKinds";
 import { PAGE_PANEL_CANVAS_KIND } from "./pagePanel";
 
 export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -27,6 +31,9 @@ export const FEATURE_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   DIRECTIVE_SHAPE_CANVAS_KIND,
   TOPICAL_MAP_TOPIC_CANVAS_KIND,
   KG_SUGGESTIONS_CANVAS_KIND,
+  // A document's / a workbook's snapshot history beside its editor.
+  DOCUMENT_HISTORY_CANVAS_KIND,
+  WORKBOOK_HISTORY_CANVAS_KIND,
   // A page's own live panel (a table's row detail, an admin form) — see pagePanel.tsx.
   PAGE_PANEL_CANVAS_KIND,
 ];
