@@ -235,6 +235,8 @@ beforeEach(() => {
   executeSpy.mockClear();
 });
 
+const PANEL = { config: { displayMode: "flexible-panel", autoRun: false } } as const;
+
 function cancelledPicker() {
   const error = new Error("") as Error & { name: string };
   error.name = "OrganizationSelectionCancelled";
@@ -245,7 +247,7 @@ describe("a launch with no organization asks before it opens anything", () => {
   it("closing the picker opens NO window and sends nothing", async () => {
     askOrganization.mockRejectedValue(cancelledPicker());
     const store = makeStore();
-    await expect(launch(store)).rejects.toMatchObject({
+    await expect(launch(store, PANEL)).rejects.toMatchObject({
       name: expect.stringMatching(/Cancelled|OrganizationSelectionCancelled/),
     });
     expect(askOrganization).toHaveBeenCalled();
@@ -256,7 +258,7 @@ describe("a launch with no organization asks before it opens anything", () => {
   it("picking an organization continues the launch and opens the window", async () => {
     askOrganization.mockResolvedValue("org-picked");
     const store = makeStore();
-    await launchAndSettle(store);
+    await launchAndSettle(store, PANEL);
     expect(askOrganization).toHaveBeenCalled();
     expect((windows.opened).length).toBeGreaterThan(0);
   });

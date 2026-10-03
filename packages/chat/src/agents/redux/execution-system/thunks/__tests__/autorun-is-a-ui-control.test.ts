@@ -66,6 +66,13 @@ jest.mock("../../../../../host/identity", () => ({
   isSignedOutVisitor: async () => false,
 }));
 
+// The organization is selected (the store's appContext says so); the launch's
+// organization gate reads the chat host's org port, which this suite has none of.
+jest.mock("../../../../../host/org", () => ({
+  ...jest.requireActual("../../../../../host/org"),
+  ensureOrganizationContext: async () => "org-selected-for-test",
+}));
+
 // Stub `uuid` — its v13 ESM build trips Jest's CommonJS loader.
 let __uuidCounter = 0;
 jest.mock("uuid", () => ({
