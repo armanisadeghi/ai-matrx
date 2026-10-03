@@ -115,6 +115,51 @@ function sentenceFor(error: unknown): string {
   return message || "The store refused the change and gave no reason.";
 }
 
+/**
+ * Decide ONE queue row by its id, through `custom.work_approval_decide` — the one door.
+ *
+ * Exported for `/approvals` (lane VISION-REACH, 2026-10-03): the platform queue lists every
+ * pending store approval, including kinds no card draws (a new table, a put-back, a template),
+ * and decides them here so there is never a second decide path. `detail` is the store's own
+ * sentence; a card's decline appends what an administrator changes.
+ */
+export async function decideRecordApproval(
+  approvalId: string,
+  approve: boolean,
+): Promise<ApplyApprovedOutcome> {
+  const reached = await reachOrRefusal(approvalId);
+  if ("refused" in reached) return { status: "refused", detail: reached.refused };
+
+  const response = (await reached.rpc(
+    "work_approval_decide",
+    {
+      p_organization_id: reached.organizationId,
+      p_approval_id: approvalId,
+      p_approve: approve,
+      p_note: null,
+    },
+    { schema: "custom" },
+  )) as { data?: DecisionAnswer | null; error?: unknown };
+
+  if (response.error) {
+    // DECIDED ONCE — by somebody, somewhere, already. Said as what happened, not as a refusal.
+    const decided = standingFromDecidedOnce(response.error);
+    const said = decided ? standingSentence(decided) : null;
+    if (said) return { status: "already", detail: said };
+    return { status: "refused", detail: sentenceFor(response.error) };
+  }
+  const answer = (response.data ?? {}) as DecisionAnswer;
+  const outcome = answer.message?.trim();
+  if (!approve) {
+    return { status: "applied", recordId: null, detail: outcome || "The change was not made." };
+  }
+  return {
+    status: "applied",
+    recordId: answer.field_id ?? answer.record_ids?.[0] ?? null,
+    detail: outcome || "The change was applied.",
+  };
+}
+
 /** Approve or decline exactly the change a person was shown. */
 async function decide(
   wait: RecordChangeWait,
@@ -134,41 +179,11 @@ async function decide(
         "for and what to do.",
     };
   }
-  const reached = await reachOrRefusal(wait.approvalId);
-  if ("refused" in reached) return { status: "refused", detail: reached.refused };
-
-  const response = (await reached.rpc(
-    "work_approval_decide",
-    {
-      p_organization_id: reached.organizationId,
-      p_approval_id: wait.approvalId,
-      p_approve: approve,
-      p_note: null,
-    },
-    { schema: "custom" },
-  )) as { data?: DecisionAnswer | null; error?: unknown };
-
-  if (response.error) {
-    // DECIDED ONCE — by somebody, somewhere, already. Said as what happened, not as a refusal.
-    const decided = standingFromDecidedOnce(response.error);
-    const said = decided ? standingSentence(decided) : null;
-    if (said) return { status: "already", detail: said };
-    return { status: "refused", detail: sentenceFor(response.error) };
+  const outcome = await decideRecordApproval(wait.approvalId, approve);
+  if (!approve && outcome.status === "applied") {
+    return { ...outcome, detail: `${outcome.detail} ${wait.policy.howToChange}` };
   }
-  const answer = (response.data ?? {}) as DecisionAnswer;
-  const outcome = answer.message?.trim();
-  if (!approve) {
-    return {
-      status: "applied",
-      recordId: null,
-      detail: `${outcome || "The change was not made."} ${wait.policy.howToChange}`,
-    };
-  }
-  return {
-    status: "applied",
-    recordId: answer.field_id ?? answer.record_ids?.[0] ?? null,
-    detail: outcome || "The change was applied.",
-  };
+  return outcome;
 }
 
 /** Apply exactly the change a person approved. */

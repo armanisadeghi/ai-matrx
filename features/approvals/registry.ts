@@ -27,12 +27,17 @@ import { topicPlacementKind } from "./kinds/seo/topic-placement";
 import { settingsTranslationKind } from "./kinds/settings-translation";
 import { sheetWriteKind } from "./kinds/sheet-write";
 import { spreadsheetCreateKind } from "./kinds/spreadsheet-create";
+import { storeChangeKind } from "./kinds/store-change";
 import { taskImportKind } from "./kinds/task-import";
 import type { ApprovalKind } from "./types";
 
 export const APPROVAL_KINDS: readonly ApprovalKind[] = [
   // Things that leave the building first — a message nobody can recall.
   gmailSendKind,
+  // Then changes to the organization's own tables (chair ruling 2026-10-03, ONE approval
+  // queue): the record store's `work_approval` rows, read from `custom.work_inbox` across every
+  // organization and decided only through `custom.work_approval_decide`.
+  storeChangeKind,
   // Then the six Google Workspace kinds the aidream producer writes —
   // `aidream/services/google_workspace/approvals.py`, one row per proposed
   // change. Changes to a file the person already has come before the two that
