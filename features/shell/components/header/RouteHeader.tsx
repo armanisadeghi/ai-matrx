@@ -102,6 +102,13 @@ interface RouteHeaderProps {
   right?: React.ReactNode;
   /** Yield to any page-specific header mounted deeper in the route tree. */
   fallback?: boolean;
+  /**
+   * Keep the center in the row on a phone instead of moving it into the ⋮
+   * sheet. For a route whose center IS its primary control and collapses
+   * itself to one compact trigger (the chat's Chat · Work · Advanced switch —
+   * "a genuinely great concept" keeps its richer phone header). Default: sheet.
+   */
+  centerOnPhone?: "sheet" | "row";
 }
 
 const noopSubscribe = () => () => {};
@@ -229,6 +236,7 @@ export default function RouteHeader({
   center,
   right,
   fallback = false,
+  centerOnPhone = "sheet",
 }: RouteHeaderProps) {
   // State, not a ref: the row mounts through a portal whose target is found in an
   // effect, so on RouteHeader's own first layout pass there is no row yet. A ref
@@ -264,7 +272,8 @@ export default function RouteHeader({
   const yielded = useYieldedFallback(fallback);
   // The section nav folds too (page-pass shared defects, 2026-09-27): on a
   // phone the title gets the row and the nav is the first thing in the ⋮ sheet.
-  const centerToSheet = isPhone && !yielded && phoneHost != null && center != null;
+  const centerToSheet =
+    centerOnPhone === "sheet" && isPhone && !yielded && phoneHost != null && center != null;
   const hasCenter = Boolean(center) && !centerToSheet;
 
   // Latest render's inputs for the (stable) observer callback.

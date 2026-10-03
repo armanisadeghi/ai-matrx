@@ -125,6 +125,9 @@ export function ChatRunHeader({
     return (
       <RouteHeader
         center={<ComposerModeSwitch initialMode={composerMode.initialMode} />}
+        // The mode switch is the chat's primary control: on a phone it stays
+        // in the row as its one-button form, never inside the ⋮ sheet.
+        centerOnPhone="row"
         right={actions}
       />
     );
