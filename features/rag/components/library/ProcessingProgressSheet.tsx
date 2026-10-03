@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * ProcessingProgressSheet — premium right-side panel showing live progress
- * for any number of processing jobs (single stage runs OR full pipelines).
- *
- * Width is locked to `min(100vw, 900px)` so it visually aligns with
- * `LibraryDocDetailSheet` — switching between the two never makes the panel
- * jump to a different width / layout.
+ * ProcessingProgressSheet — live progress for any number of processing jobs
+ * (single stage runs OR full pipelines), shown as the page's canvas tab
+ * (`CanvasPagePanel`, ONE tab `processing-progress`): the jobs and their
+ * stop / dismiss callbacks are the page's live state, so the tab draws the
+ * page's own tree. The pane header carries the title and Stop all / Clear
+ * finished; closing the tab tells the page (`onOpenChange(false)`).
  *
  * Behavior:
  *   - One job → renders the full <ProcessingJobView/> inline (no header strip).
@@ -31,7 +31,7 @@ import {
   X as XIcon,
   XCircle,
 } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -94,21 +94,7 @@ export function ProcessingProgressSheet({
   const terminalCount = jobs.length - runningCount;
   const singleJob = jobs.length === 1 ? jobs[0] : null;
 
-  const sheetTitle = (
-    <span className="flex items-center gap-2">
-      <span className="relative inline-flex h-2 w-2">
-        {runningCount > 0 ? (
-          <>
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-          </>
-        ) : (
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-        )}
-      </span>
-      {singleJob ? singleJob.title : "Processing"}
-    </span>
-  );
+  const sheetTitle = singleJob ? singleJob.title : "Processing";
 
   const sheetDescription = singleJob
     ? (singleJob.subtitle ??
@@ -149,23 +135,26 @@ export function ProcessingProgressSheet({
       </div>
     ) : null;
 
+  if (!open) return null;
+
   return (
-    <MatrxDynamicPanelHost
-      open={open}
-      onOpenChange={onOpenChange}
+    <CanvasPagePanel
+      panelKey="processing-progress"
       title={sheetTitle}
-      description={sheetDescription}
+      description={
+        <span className="inline-flex items-center gap-1.5">
+          <RunningDot running={runningCount > 0} />
+          {sheetDescription}
+        </span>
+      }
       headerActions={headerActions}
-      position="right"
-      defaultSize={50}
-      maxSize={92}
-      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      onClose={() => onOpenChange(false)}
     >
       <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
         {jobs.length === 0 ? (
           <EmptyState />
         ) : singleJob ? (
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             <ProcessingJobView
               job={singleJob}
               onCancel={() => onCancel(singleJob.jobId)}
@@ -173,7 +162,7 @@ export function ProcessingProgressSheet({
             />
           </div>
         ) : (
-          <ol className="p-4 space-y-4">
+          <ol className="space-y-3 p-3">
             <AnimatePresence initial={false}>
               {jobs.map((job) => (
                 <motion.li
@@ -202,7 +191,23 @@ export function ProcessingProgressSheet({
           </ol>
         )}
       </div>
-    </MatrxDynamicPanelHost>
+    </CanvasPagePanel>
+  );
+}
+
+/** Live (pinging) while a job runs; settled green when all are done. */
+function RunningDot({ running }: { running: boolean }) {
+  return (
+    <span className="relative inline-flex h-2 w-2 shrink-0">
+      {running ? (
+        <>
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:animate-none" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+        </>
+      ) : (
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+      )}
+    </span>
   );
 }
 
