@@ -22,6 +22,9 @@ export const useQuestionnaireContext = () => {
     return context;
 };
 
+/** The provider above, or null — a renderer that supplies its own when none is installed. */
+export const useOptionalQuestionnaireContext = () => useContext(QuestionnaireContext);
+
 interface QuestionnaireProviderProps {
     children: React.ReactNode;
 }

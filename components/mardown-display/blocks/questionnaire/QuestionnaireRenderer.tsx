@@ -21,7 +21,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
-import { useQuestionnaireContext } from "./QuestionnaireContext";
+import {
+  QuestionnaireProvider,
+  useOptionalQuestionnaireContext,
+  useQuestionnaireContext,
+} from "./QuestionnaireContext";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -947,7 +951,7 @@ const extractSliderRange = (
   return { min: 0, max: 100 };
 };
 
-const QuestionnaireRenderer = ({
+const QuestionnaireRendererBody = ({
   data,
   theme = "default",
   questionnaireId = null,
@@ -1207,6 +1211,21 @@ const QuestionnaireRenderer = ({
         </div>
       </div>
     </>
+  );
+};
+
+/**
+ * Every host gets a working form: a questionnaire rendered where no
+ * QuestionnaireProvider is installed (the unified kind path, QuestionnaireArtifact)
+ * supplies its own instead of throwing into the error boundary.
+ */
+const QuestionnaireRenderer = (props: QuestionnaireRendererProps) => {
+  const provided = useOptionalQuestionnaireContext();
+  if (provided) return <QuestionnaireRendererBody {...props} />;
+  return (
+    <QuestionnaireProvider>
+      <QuestionnaireRendererBody {...props} />
+    </QuestionnaireProvider>
   );
 };
 
