@@ -7,12 +7,12 @@
  * and naively fitting it to the container width either runs off the screen
  * vertically (tall flowcharts) or shrinks the text to nothing (wide mind maps).
  *
- * The fix is AXIS-AWARE FIT with a READABILITY FLOOR:
- *  - Fit the diagram's *constraining* axis to the frame and SCROLL the other:
- *    a portrait diagram fills the width and scrolls down; a landscape diagram
- *    (mind map) fills the height and scrolls across.
- *  - Never auto-shrink below `FLOOR` of natural size — below that, text is
- *    unreadable, so we keep it readable and let the user scroll/pan instead.
+ * The fix is THE DIAGRAM'S FIT RULE (`canvas-adaptive.ts`, one floor for both):
+ *  - Fit the WHOLE drawing when that scale keeps text readable
+ *    (≥ `DIAGRAM_READABLE_ZOOM`, 14px text at ≥ 10px) — a 1648px flowchart in
+ *    a 1370px pane fits whole at ~0.83 instead of overflowing sideways.
+ *  - Otherwise fit the WIDTH, never below that floor; the view starts at the
+ *    top-left and the rest is reached by scrolling / panning.
  *  - Never auto-upscale past natural (`MAX_FIT`) — that just blurs and wastes
  *    space; the user can zoom in deliberately.
  *
@@ -26,11 +26,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize, Minus, Plus, Scan } from "lucide-react";
 
+import { DIAGRAM_READABLE_ZOOM } from "@/components/mardown-display/blocks/canvas-adaptive";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
-/** Don't auto-shrink below half natural size — readability floor. */
-const FLOOR = 0.5;
 /** Don't auto-upscale past natural size on fit. */
 const MAX_FIT = 1;
 /** Manual zoom bounds (the user may go past the auto limits deliberately). */
@@ -71,18 +70,29 @@ interface NaturalSize {
   h: number;
 }
 
+export interface MermaidFit {
+  scale: number;
+  /** The whole drawing fits; false = width fit at the floor, view at top-left. */
+  whole: boolean;
+}
+
 /**
- * Axis-aware fit: constrain the limiting axis, leave the other to scroll.
- * Floored so text stays readable; capped at natural so we never upscale.
+ * THE diagram fit rule (same floor as `portraitWidthFitViewport`): fit the
+ * whole drawing when that scale is readable, else fit the width down to the
+ * readable floor. `fh` is `Infinity` for a frame with no height bound.
  */
-function computeFitScale(nat: NaturalSize, fw: number, fh: number): number {
-  if (!nat.w || !nat.h || fw <= 0 || fh <= 0) return 1;
-  const frameAspect = fw / fh;
-  const diagAspect = nat.w / nat.h;
-  // diagram "taller" than the frame → constrain width (scroll vertically);
-  // diagram "wider" than the frame → constrain height (scroll horizontally).
-  const raw = diagAspect <= frameAspect ? fw / nat.w : fh / nat.h;
-  return Math.min(MAX_FIT, Math.max(FLOOR, raw));
+export function mermaidFitScale(
+  nat: NaturalSize,
+  fw: number,
+  fh: number,
+): MermaidFit {
+  if (!nat.w || !nat.h || !(fw > 0) || !(fh > 0)) return { scale: 1, whole: true };
+  const whole = Math.min(MAX_FIT, fw / nat.w, fh / nat.h);
+  if (whole >= DIAGRAM_READABLE_ZOOM) return { scale: whole, whole: true };
+  return {
+    scale: Math.min(MAX_FIT, Math.max(DIAGRAM_READABLE_ZOOM, fw / nat.w)),
+    whole: false,
+  };
 }
 
 interface MermaidViewportProps {
@@ -144,9 +154,10 @@ export function MermaidViewport({
   const frameSize = useCallback((): { fw: number; fh: number } => {
     const box = frameBoxRef.current ?? { w: 0, h: 0 };
     const fw = box.w - FRAME_PADDING;
-    const fh = (maxFrameHeight ?? box.h) - FRAME_PADDING;
-    return { fw: Math.max(0, fw), fh: Math.max(0, fh) };
-  }, [maxFrameHeight]);
+    // A frame whose height follows its content has no height to fit to.
+    const bound = maxFrameHeight ?? (fillHeight ? box.h : Infinity);
+    return { fw: Math.max(0, fw), fh: Math.max(0, bound - FRAME_PADDING) };
+  }, [maxFrameHeight, fillHeight]);
 
   /** Size the live SVG element to the given scale (vector-crisp, real scroll). */
   const applyScale = useCallback((s: number) => {
@@ -163,7 +174,7 @@ export function MermaidViewport({
     const nat = naturalRef.current;
     if (!nat) return;
     const { fw, fh } = frameSize();
-    const s = computeFitScale(nat, fw, fh);
+    const { scale: s, whole } = mermaidFitScale(nat, fw, fh);
     userAdjustedRef.current = false;
     // Size the element now: a NEW drawing (the pane flipped a flowchart's
     // direction on Expand) fitted to the same scale as the old one leaves
@@ -171,6 +182,13 @@ export function MermaidViewport({
     // the browser's default 300x150 box — small in the middle of the pane.
     applyScale(s);
     setScale(s);
+    // Wider (or taller) than the pane at the readable floor: start at the
+    // top-left, the rest is reached by scrolling / panning.
+    const frame = frameRef.current;
+    if (!whole && frame) {
+      frame.scrollLeft = 0;
+      frame.scrollTop = 0;
+    }
   }, [frameSize, applyScale]);
 
   const oneToOne = useCallback(() => {
@@ -375,7 +393,9 @@ export function MermaidViewport({
         onPointerCancel={onPointerUp}
         onDoubleClick={fit}
       >
-        <div className="flex min-h-full min-w-full touch-none select-none items-center justify-center p-2">
+        {/* `-safe` centering: a drawing larger than the frame starts at its
+            top-left edge instead of overflowing past an unscrollable left/top. */}
+        <div className="flex min-h-full min-w-full touch-none select-none items-center-safe justify-center-safe p-2">
           <div ref={hostRef} className="shrink-0" />
         </div>
       </div>

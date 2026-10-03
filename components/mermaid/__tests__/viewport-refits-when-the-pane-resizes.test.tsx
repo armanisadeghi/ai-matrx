@@ -44,13 +44,14 @@ class ManualResizeObserver {
 import { MermaidViewport } from "../MermaidViewport";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// A wide drawing: fitted to the pane's height, scrolled across.
+// A square drawing: too tall for a short pane (width fit), whole in a tall one.
 const SVG =
-  '<svg viewBox="0 0 1600 400" xmlns="http://www.w3.org/2000/svg"><text>x</text></svg>';
+  '<svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><text>x</text></svg>';
+const SHORT = { w: 1416, h: 416 };
 
 async function mount() {
   observers.length = 0;
-  frame = { w: 1000, h: 300 };
+  frame = { ...SHORT };
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -74,11 +75,12 @@ async function mount() {
 it("the pane growing taller re-fits the drawing to the bigger pane", async () => {
   const { root, report, svg } = await mount();
   const before = svg().style.width;
-  expect(before).toBe(`${Math.round(1600 * ((300 - 16) / 400))}px`);
-  frame = { w: 1000, h: 700 }; // unsplit: same width, taller
+  // 400/1000 whole is unreadable: width fit, capped at natural size.
+  expect(before).toBe("1000px");
+  frame = { w: 1416, h: 816 }; // unsplit: same width, taller
   await report();
-  expect(svg().style.width).not.toBe(before);
-  expect(svg().style.width).toBe("1600px");
+  // The whole drawing now fits at a readable 0.8.
+  expect(svg().style.width).toBe("800px");
   await act(async () => root.unmount());
 });
 
@@ -97,9 +99,9 @@ it("a manual zoom since the last fit keeps the person's view when the pane resiz
     'button[aria-label="Fit to view"]',
   ) as HTMLButtonElement;
   await act(async () => fitButton.click());
-  frame = { w: 1000, h: 300 };
+  frame = { w: 1416, h: 816 };
   await report();
-  expect(svg().style.width).toBe(`${Math.round(1600 * ((300 - 16) / 400))}px`);
+  expect(svg().style.width).toBe("800px");
   await act(async () => root.unmount());
 });
 
@@ -107,23 +109,23 @@ it("a new drawing fitted to the same scale as the old one is still sized", async
   // Expand redraws a direction-less flowchart TB -> LR. When both drawings fit
   // at the same scale, `scale` never changes — the new SVG must be sized anyway.
   const { host, root, svg } = await mount();
-  frame = { w: 1000, h: 700 };
+  frame = { w: 1700, h: 1100 };
   await act(async () => {
     for (const r of observers) r();
   });
-  expect(svg().style.width).toBe("1600px"); // capped at natural size (scale 1)
+  expect(svg().style.width).toBe("1000px"); // capped at natural size (scale 1)
   await act(async () => {
     root.render(
       <TooltipProvider>
         <MermaidViewport
-          svg={'<svg viewBox="0 0 400 1200" xmlns="http://www.w3.org/2000/svg"><text>y</text></svg>'}
+          svg={'<svg viewBox="0 0 400 1000" xmlns="http://www.w3.org/2000/svg"><text>y</text></svg>'}
           fillHeight
         />
       </TooltipProvider>,
     );
   });
   const next = host.querySelector("svg") as SVGSVGElement;
-  expect(next.getAttribute("viewBox")).toBe("0 0 400 1200");
+  expect(next.getAttribute("viewBox")).toBe("0 0 400 1000");
   expect(next.style.width).toBe("400px"); // scale 1 again: unchanged state
   await act(async () => root.unmount());
 });
