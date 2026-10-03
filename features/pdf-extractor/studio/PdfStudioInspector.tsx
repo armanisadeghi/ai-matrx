@@ -44,9 +44,8 @@ import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfa
 import { PDF_EXTRACTOR_SURFACE_NAME as PDF_EXTRACTOR_SURFACE } from "@/features/surfaces/manifests/pdf-extractor.manifest";
 
 // NOTE: Knowledge Assets is NOT a tab here. A sixth flex-1 tab overflowed this
-// narrow right rail (no horizontal scroll). The Knowledge Asset Builder now
-// opens as a resizable drawer from the studio toolbar (PdfStudioShell), so the
-// doc stays visible while building. See KnowledgeAssetPanel mount sites.
+// narrow right rail (no horizontal scroll). The studio header's action opens
+// it as a canvas tab beside the reader (kind `knowledge-assets`).
 export type SectionKey =
   "widgets" | "chunked" | "stores" | "manipulate" | "lineage";
 
