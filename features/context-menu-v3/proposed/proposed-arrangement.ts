@@ -22,7 +22,8 @@
 // A thing that brings its own Download/Export owns that verb outright: the universal page-text
 // file rows (PDF, Word, HTML, Markdown, print — regroup's "download" group) are dropped for it,
 // because they would save the menu's text, not the thing (a table exports CSV/XLSX, never a PDF
-// of its row label). `recordActionsOnly` cannot do this: it keeps Export by design.
+// of its row label). `recordActionsOnly` cannot do this: it keeps Export by design. "Save as PDF
+// Document" files the same page text as a PDF, so it goes with them.
 // Applied only where a MenuRegroupContext passes `transform` (the demo); production is unchanged
 // until Arman approves.
 
@@ -69,6 +70,9 @@ const STRIP_FOR: Record<ClickedKind, readonly string[]> = {
   editable: ["cut", "copy", "paste", "undo", "redo", "find"],
   text: ["copy", "speak", "find", "share"],
 };
+
+/** Universal rows outside regroup's "download" group that also turn the page text into a file. */
+const PAGE_TEXT_FILE_IDS = new Set(["save-as-pdf"]);
 
 /** Own rows that fold into a strip verb instead of sitting beside it. */
 const FOLDS_INTO_SHARE = [/^copy link\b/i, /^share link\b/i];
@@ -147,7 +151,11 @@ export function proposedArrangement(
 
   // 0 · the thing's own Download/Export replaces the universal file rows (see header).
   const ownsDownload = resolved.some((r) => isOwn(r.action) && SLOT.download!.ownLabels!.some((re) => re.test(label(r))));
-  if (ownsDownload) for (const r of resolved) if (!isOwn(r.action) && groupOf(r) === "download") used.add(r.action.id);
+  if (ownsDownload) {
+    for (const r of resolved) {
+      if (!isOwn(r.action) && (groupOf(r) === "download" || PAGE_TEXT_FILE_IDS.has(r.action.id))) used.add(r.action.id);
+    }
+  }
 
   // 1 · the icon row.
   const strip: ResolvedAction[] = [];

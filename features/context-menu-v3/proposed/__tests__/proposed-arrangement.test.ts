@@ -31,6 +31,7 @@ const universal = (): ResolvedAction[] => [
   row("download-pdf", "Download PDF", "export"),
   row("download-docx", "Download Word", "export"),
   row("download-html", "Download HTML", "export"),
+  row("save-as-pdf", "Save as PDF Document", "save"),
   row("cm:attach", "Attach To", "share"),
   sub("cm:placement:ai-action", "AI Actions", "ai"),
   sub("cm:placement:bound-agent", "Agents", "ai"),
@@ -120,7 +121,7 @@ describe("the proposed right-click menu", () => {
     expect(proposedArrangement(thing, [row("cm:copy", "Copy", "clipboard")], { noun: "table" }).some((r) => r.action.id === "proposed:intelligence")).toBe(true);
   });
 
-  const PAGE_TEXT_FILES = ["cm:export", "download-pdf", "download-docx", "download-html"];
+  const PAGE_TEXT_FILES = ["cm:export", "download-pdf", "download-docx", "download-html", "save-as-pdf"];
 
   it("a thing with its own Export offers only that Export, never the page-text files", async () => {
     const ids = await reachable(proposedArrangement(thing, thingRows(), { noun: "table" }));
