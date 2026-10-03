@@ -81,12 +81,18 @@ export function ensureConversationScopesOrAsk(
     // A signed-out visitor (a guest on a public app) has no scopes and no
     // saved tags to read — nothing to compare, nothing to ask.
     if (!(await hasBrowserSession())) return { blocked: false };
-    // A chat the server has not stored yet has no durable tags → C = ∅ (case
-    // 1) — the same reading ActiveContextLensChip makes. Never hold its first
-    // send on an association read (2026-10-02 latency regression: ~470ms on
-    // every new chat's first message); the post-send union sync stamps A.
-    const conversation = getState().conversations?.byConversationId[conversationId];
-    if (conversation?.cacheOnly !== false) return { blocked: false };
+    // A send that goes out as a NEW chat has no durable tags → C = ∅ (case 1).
+    // Never hold its first message on an association read (2026-10-02 latency
+    // regression: ~470ms on every new chat's first message); the post-send
+    // union sync stamps A. "New" is the send path's own test
+    // (shouldContinuePersistedConversation): not confirmed stored AND no
+    // earlier turn — a chat with a turn is stored even before its
+    // record_reserved event lands, and keeps the gate.
+    const before = getState();
+    const conversation = before.conversations?.byConversationId[conversationId];
+    const hasPriorTurns =
+      (before.messages?.byConversationId[conversationId]?.orderedIds?.length ?? 0) > 0;
+    if (conversation?.cacheOnly !== false && !hasPriorTurns) return { blocked: false };
     // Fetch (cached after first load) the chat's durable tags.
     await dispatch(ensureEntityScopes("conversation", conversationId));
 

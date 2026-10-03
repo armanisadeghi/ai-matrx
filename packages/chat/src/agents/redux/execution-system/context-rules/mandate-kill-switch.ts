@@ -6,17 +6,29 @@
  * The server applies both (RULES.md §2); the client must too, or the table
  * would show a value as sent that the server drops.
  *
- * THE SEND IS NEVER HELD BY THIS READ (2026-10-02 latency regression: a cache
- * miss cost a full server round trip before every send's real request). The
- * last answer per mandate is returned at once and refreshed beside the send;
- * a never-seen mandate answers `false` for that one send while it loads. The
- * server enforces the switch regardless and the receipt reports any difference.
+ * THE SEND IS NEVER HELD BY A RE-READ (2026-10-02 latency regression: each
+ * 5-minute cache miss cost a full server round trip before the send's real
+ * request). The last answer per mandate is returned at once and refreshed
+ * beside the send. A mandate with no answer yet is waited for — guessing
+ * `false` would send page values the server then withholds (R2-1). Every
+ * resolution invalidation (an organization switch, a binding write) forgets
+ * the answers, since a verdict is true for one person in one organization.
  */
 
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
-import { resolveMandate } from "../../../../mandates/service";
+import { onMandateCacheInvalidated, resolveMandate } from "../../../../mandates/service";
 
 const lastKnown = new Map<AnyMandateKey, boolean>();
+let forgetsOnInvalidation = false;
+
+function forgetOnInvalidation(): void {
+  if (forgetsOnInvalidation) return;
+  forgetsOnInvalidation = true;
+  onMandateCacheInvalidated((mandateKey) => {
+    if (mandateKey === undefined) lastKnown.clear();
+    else lastKnown.delete(mandateKey);
+  });
+}
 
 function refreshKillSwitch(mandateKey: AnyMandateKey): Promise<boolean> {
   return resolveMandate(mandateKey, { optional: true }).then(
@@ -39,7 +51,8 @@ export async function resolveMandateKillSwitch(
   mandateKey: AnyMandateKey | null | undefined,
 ): Promise<boolean> {
   if (!mandateKey) return false;
+  forgetOnInvalidation();
   const known = lastKnown.get(mandateKey);
-  void refreshKillSwitch(mandateKey);
-  return known ?? false;
+  const fresh = refreshKillSwitch(mandateKey);
+  return known ?? fresh;
 }

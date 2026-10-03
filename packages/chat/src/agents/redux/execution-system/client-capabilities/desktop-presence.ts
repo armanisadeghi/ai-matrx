@@ -29,6 +29,8 @@ import { hasBrowserSession } from "../../../../host/identity";
 const LIVE_WINDOW_MS = 11 * 60_000;
 /** How long a presence answer is reused before re-querying. */
 const CACHE_TTL_MS = 30_000;
+/** Past this, an expired answer is no longer served while it refreshes. */
+const STALE_SERVE_MAX_MS = 5 * 60_000;
 
 export interface DesktopPresence {
   /** Database row id used by the authenticated local-proxy resolver. */
@@ -116,7 +118,7 @@ export function getLiveDesktopInstance(): Promise<DesktopPresence | null> {
   // turn more than 30s after the last paid a session read + an app_instances
   // round trip before its request). An expired answer is served at once and
   // refreshed behind it; only the first-ever check waits.
-  if (cache) {
+  if (cache && Date.now() - cache.fetchedAt < STALE_SERVE_MAX_MS) {
     void refreshPresence();
     return Promise.resolve(cache.value);
   }
@@ -127,7 +129,14 @@ function refreshPresence(): Promise<DesktopPresence | null> {
   if (inFlight) return inFlight;
   inFlight = fetchPresence()
     .then((answer) => {
-      if (answer === undefined) return cache?.value ?? null;
+      if (answer === undefined) {
+        // Signed out (or not yet signed in): nobody's desktop. Forget the last
+        // person's answer so whoever signs in next never inherits it.
+        const hadValue = (cache?.value ?? null) !== null;
+        cache = null;
+        if (hadValue) notify();
+        return null;
+      }
       const fresh = answer;
       // Preserve object identity when nothing consumer-visible changed so
       // useSyncExternalStore snapshots stay referentially stable (lastSeen
