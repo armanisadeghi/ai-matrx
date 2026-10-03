@@ -25,6 +25,7 @@ import { useCreatorOwnershipSync } from "../../hooks/useCreatorOwnershipSync";
 import { useConversationRoutePromotion } from "../../hooks/useConversationRoutePromotion";
 import { createManualInstance } from "../../redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "../../runtime-reconnect/follow-what-is-still-in-flight";
 import { clearFocus } from "../../redux/execution-system/conversation-focus/conversation-focus.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
@@ -266,6 +267,10 @@ export function AgentRunnerPage({
         setColdLoadingConversationId(null);
         console.error("[AgentRunnerPage] loadConversation failed", err);
       }
+      // A reload mid-answer: the server is still writing this turn. Rejoin it
+      // live (and refetch on terminal) exactly as /chat does — even when the
+      // read failed, because the turn may still be running.
+      followWhatIsStillInFlight(dispatch, conversationIdFromUrl);
     })();
   }, [
     conversationIdFromUrl,

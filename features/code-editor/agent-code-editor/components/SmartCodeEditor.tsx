@@ -58,6 +58,7 @@ import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -493,6 +494,8 @@ export function SmartCodeEditor({
         // eslint-disable-next-line no-console
         console.error("[SmartCodeEditor] loadConversation failed", err);
       }
+      // The turn may still be running on the server — rejoin it.
+      followWhatIsStillInFlight(dispatch, conversationId);
     },
     [store, dispatch, widgetHandleId],
   );

@@ -18,6 +18,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { setShowMicrophone } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { updateSession } from "../service/studioService";
 import { assistantConversationIdSet, sessionUpserted } from "./slice";
@@ -150,6 +151,7 @@ export const setActiveAssistantConversationThunk = createAsyncThunk<
           err,
         );
       }
+      followWhatIsStillInFlight(dispatch, conversationId);
     }
 
     dispatch(assistantConversationIdSet({ sessionId, conversationId }));

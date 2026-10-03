@@ -12,6 +12,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { destroyInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import {
   loadComparisonSet,
   type UpsertEntryInput,
@@ -164,6 +165,8 @@ export const loadConversationBattleSet = createAsyncThunk<
       } catch (err) {
         fork.loadError = err instanceof Error ? err.message : String(err);
       }
+      // A saved run may still be answering on the server — rejoin it.
+      followWhatIsStillInFlight(dispatch, entry.conversation_id);
       forks.push(fork);
     }
 

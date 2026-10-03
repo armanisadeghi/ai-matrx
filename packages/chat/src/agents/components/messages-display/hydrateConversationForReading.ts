@@ -12,6 +12,7 @@
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { loadConversation } from "../../redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "../../runtime-reconnect/follow-what-is-still-in-flight";
 import { createManualInstance } from "../../redux/execution-system/thunks/create-instance.thunk";
 
 export async function hydrateConversationForReading(
@@ -35,4 +36,6 @@ export async function hydrateConversationForReading(
     }
   }
   await dispatch(loadConversation({ conversationId, surfaceKey }));
+  // A conversation still answering on the server keeps filling in here.
+  followWhatIsStillInFlight(dispatch, conversationId);
 }

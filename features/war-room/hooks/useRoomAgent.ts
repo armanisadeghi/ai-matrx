@@ -35,6 +35,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { setClientTools } from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
@@ -298,6 +299,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
           } catch (err) {
             reportWarRoomError("room-agent/load", err, { toast: false });
           }
+          followWhatIsStillInFlight(dispatch, targetId);
         }
         if (!cancelled) setBoundId(targetId);
       } catch (err) {

@@ -52,6 +52,7 @@ import {
 } from "../../agents/redux/agent-definition/thunks";
 import { launchAgentExecution } from "../../agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "../../agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { toast } from "../../host/notify";
 import { isNotAuthenticatedError } from "../../host/identity";
 import { DEFAULT_AGENT_ID } from "../components/agent/local-agents";
@@ -209,7 +210,9 @@ export function useInstanceBootstrap() {
       // (from metadata), and observability — superset of the legacy
       // fetchConversationHistory which only restored messages.
       if (conversationId) {
-        dispatch(loadConversation({ conversationId }));
+        void dispatch(loadConversation({ conversationId })).finally(() =>
+          followWhatIsStillInFlight(dispatch, conversationId),
+        );
       }
     })();
 

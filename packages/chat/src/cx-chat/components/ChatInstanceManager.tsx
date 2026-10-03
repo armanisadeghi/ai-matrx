@@ -22,6 +22,7 @@ import { useAppDispatch } from "../../store/hooks";
 import { fetchAgentExecutionMinimal } from "../../agents/redux/agent-definition/thunks";
 import { createManualInstance } from "../../agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "../../agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "../../agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { selectConversationExists } from "../../agents/redux/execution-system/selectors/aggregate.selectors";
 import ChatWelcomeClient from "./ChatWelcomeClient";
 import ChatConversationClient from "./core/ChatConversationClient";
@@ -112,7 +113,9 @@ export function ChatInstanceManager(props: ChatInstanceManagerProps) {
       // (from metadata), and observability — superset of the legacy
       // fetchConversationHistory which only restored messages.
       if (urlConversationId) {
-        dispatch(loadConversation({ conversationId: urlConversationId }));
+        void dispatch(loadConversation({ conversationId: urlConversationId })).finally(() =>
+          followWhatIsStillInFlight(dispatch, urlConversationId),
+        );
       }
 
       // 7. Expose the resolved conversationId — triggers re-render.

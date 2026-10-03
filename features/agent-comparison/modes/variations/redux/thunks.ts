@@ -27,6 +27,7 @@ import {
   runBattleFanOut,
 } from "@/features/agent-comparison/shared/battle-follow-up";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import {
   fetchFullAgent,
   fetchAgentVersionHistory,
@@ -825,6 +826,8 @@ export const loadVariationsBattleSet = createAsyncThunk<
       } catch (err) {
         console.warn("[variations] loadConversation failed:", err);
       }
+      // A saved run may still be answering on the server — rejoin it.
+      followWhatIsStillInFlight(dispatch, entry.conversation_id);
 
       nextColumns.push({
         columnId: crypto.randomUUID(),

@@ -33,7 +33,7 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { useConversationRoutePromotion } from "@ai-matrx/chat/agents/hooks/useConversationRoutePromotion";
 import { createManualInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/load-conversation.thunk";
-import { surfaceColdPendingCalls } from "@ai-matrx/chat/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
+import { followWhatIsStillInFlight } from "@ai-matrx/chat/agents/runtime-reconnect/follow-what-is-still-in-flight";
 import {
   setFocus,
   clearFocus,
@@ -487,7 +487,7 @@ function EducationTutorClientInner({
           }),
         ).unwrap();
         if (ctrl.signal.aborted) return;
-        void dispatch(surfaceColdPendingCalls(conversationIdProp));
+        followWhatIsStillInFlight(dispatch, conversationIdProp);
       } catch (err) {
         if (loadedKeyRef.current === conversationIdProp)
           loadedKeyRef.current = null;

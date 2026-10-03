@@ -26,6 +26,7 @@ import { makeSelectAgentConversations } from "../../../agents/redux/conversation
 import type { ConversationListItem } from "../../../agents/redux/conversation-list/conversation-list.types";
 import { AgentConversationDisplay } from "../../../agents/components/messages-display/AgentConversationDisplay";
 import { loadConversation } from "../../../agents/redux/execution-system/thunks/load-conversation.thunk";
+import { followWhatIsStillInFlight } from "../../../agents/runtime-reconnect/follow-what-is-still-in-flight";
 import { createManualInstance } from "../../../agents/redux/execution-system/thunks/create-instance.thunk";
 import type { ChatRootState } from "../../../store/root-state";
 import { useAppStore } from "../../../store/hooks";
@@ -536,12 +537,14 @@ function AgentRunHistoryWindowInner({
         );
       }
 
-      dispatch(
+      await dispatch(
         loadConversation({
           conversationId,
           surfaceKey: SURFACE_KEY,
         }),
       );
+      // The picked run may still be answering on the server — rejoin it.
+      followWhatIsStillInFlight(dispatch, conversationId);
     },
     [agentId, dispatch, store],
   );
