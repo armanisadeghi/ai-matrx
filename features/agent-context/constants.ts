@@ -225,6 +225,25 @@ export const ATTENTION_STATUSES: ContextItemStatus[] = [
   "ai_enriched",
 ];
 
+/**
+ * A fetch hint as the record store keeps it. The old scope tables also held "lazy" and
+ * "batch_related"; the store keeps three words and folded them exactly so (custom._ctx_word
+ * 'policy': lazy → on_request, batch_related → include). Every reader of an old row goes through
+ * this, so the old path and the store path name the same word (lane 9 chair ruling 3, 2026-10-02).
+ */
+export function canonicalFetchHint(word: string | null | undefined): ContextFetchHint {
+  switch (word) {
+    case "on_demand":
+    case "lazy":
+      return "on_demand";
+    case "never":
+      return "never";
+    default:
+      // "always", "batch_related", and an absent word: the store's default, include.
+      return "always";
+  }
+}
+
 // Fetch hint display config
 export const FETCH_HINT_CONFIG: Record<
   ContextFetchHint,
@@ -239,16 +258,6 @@ export const FETCH_HINT_CONFIG: Record<
     label: "On Demand",
     description: "Agent fetches when it decides this item is relevant",
     iconName: "MousePointerClick",
-  },
-  batch_related: {
-    label: "Batch with Related",
-    description: "Fetched together with related items as a group",
-    iconName: "Layers",
-  },
-  lazy: {
-    label: "Lazy",
-    description: "Only fetched if explicitly referenced or needed",
-    iconName: "Coffee",
   },
   never: {
     label: "Never",

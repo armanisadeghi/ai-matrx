@@ -48,6 +48,10 @@ export interface StandardFieldColumnSource<TRow> {
   groupableColumnIds: string[];
   /** The group header's words for one raw value of a custom column. */
   labelOf: (columnId: string, value: unknown) => string | undefined;
+  /** The RAW cell of a custom column (a choice key, `true`, a word) — what grouping compares. */
+  readCell: (row: TRow, columnId: string) => unknown;
+  /** Every custom column id, for the list's column state (they start hidden). */
+  columnIds: string[];
 }
 
 type RowCustomFields = (row: unknown) => Record<string, unknown> | null | undefined;
@@ -85,8 +89,12 @@ async function loadFields(
       }
       for (const field of answer.data as unknown as StandardFieldDefinition[]) {
         definitions.push(field);
+        // The Field's own options column; a field written before the column existed keeps it in
+        // its config.
         const config = (field.config ?? {}) as Record<string, unknown>;
-        if (field.type === "list" && typeof config.options_table_id === "string") {
+        const optionsTableId =
+          field.options_table_id ?? config.options_table_id;
+        if (field.type === "list" && typeof optionsTableId === "string" && optionsTableId) {
           const options = await client.fieldOptions({ field_id: field.id });
           // A choice list that cannot be read still lists its values as stored.
           if (options.ok) {
@@ -196,7 +204,15 @@ export function useStandardFieldColumns<TRow>(
     [fields],
   );
 
+  const readCell = (row: TRow, columnId: string) => {
+    const key = keyOfColumnId(columnId);
+    return key ? readCustomFields(row)?.[key] : undefined;
+  };
+  const columnIds = fields.map((f) => columnIdFor(f.key));
+
   return {
+    readCell,
+    columnIds,
     status: requestKey === null ? "idle" : !current ? "loading" : current.error ? "failed" : "ready",
     error: current?.error ?? null,
     unavailable: current?.unavailable ?? 0,

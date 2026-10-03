@@ -26,7 +26,7 @@ import { useRichDocumentProvider } from "@/features/rich-document/actions/useRic
 import { useContextMenuActions } from "../hooks/useContextMenuActions";
 import { buildMenuModel } from "../model/menu-model";
 import { chatMessageSubject, namedHeader, contextMenuActionsFromModel, contextMenuProvider, menuEngineRevision, menuHeader, modelRevision } from "../alchemy-provider";
-import { RegroupBoundary } from "../regroup/RegroupContext";
+import { MenuRegroupContext, RegroupBoundary } from "../regroup/RegroupContext";
 import type { MenuContentProps } from "../types";
 
 export type AlchemyMenuMode = "context" | "sheet" | "palette";
@@ -164,6 +164,9 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
   // A pass-through everywhere except under a MenuRegroupContext (the regroup
   // demo): there it reports what resolved and may draw a proposed grouping.
   const close = () => onOpenChange(false);
+  // Only under a MenuRegroupContext (the proposed-menu demo): its size and header choice.
+  const regroup = React.useContext(MenuRegroupContext);
+  const panelLook = { size: regroup?.size ?? "standard", hideHeader: regroup?.hideHeader ?? false } as const;
   if (mode === "sheet") {
     return (
       <RegroupBoundary arrangement={menuProps.menuLayout} close={close}>
@@ -191,6 +194,7 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
         // A control over a container of the thing (a note tab's "…"): its own
         // rows first, the rest under one "<subject> ▸" (alchemy 0.8.28).
         subjectFold={menuProps.subjectFold}
+        {...panelLook}
       />
     </RegroupBoundary>
   );

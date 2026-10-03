@@ -63,6 +63,7 @@ import {
     refusalLineForAPerson,
     rowNameIn,
     tableName,
+    tablePickerEntries,
 } from "@ai-matrx/records-ui";
 
 import { Button } from "@/components/ui/button";
@@ -104,7 +105,6 @@ import {
 import type { RouteFact, RoutesInThisBuild } from "./routeFacts";
 import { organizationSavedViews } from "./savedViewsPort";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { tablePickerEntries } from "@/features/unified-data/hub/tablePicking";
 
 /** The organization setting section 2 flips, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;

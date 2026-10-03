@@ -112,7 +112,9 @@ export function EntityCustomFields({
     storeSwitch: async (organization) => {
       const isMember = organization ? await mayReadAsMember(organization) : true;
       setMember(isMember);
-      return isMember ? UNIFIED_DATA_CAMPAIGN.enabled(organization) : false;
+      // `check`, never `enabled`: `enabled` folds "could not read" into "off", and this section
+      // says those two differently.
+      return isMember ? UNIFIED_DATA_CAMPAIGN.check(organization) : false;
     },
   });
   if (!organizationId || member === false) return null;

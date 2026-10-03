@@ -35,6 +35,7 @@ import {
 } from "@/features/scopes/redux/contextItemCatalog";
 import {
   FETCH_HINT_CONFIG,
+  canonicalFetchHint,
   SENSITIVITY_CONFIG,
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
@@ -131,7 +132,7 @@ export function ContextItemSettingsForm({
     setDescription(item.description ?? "");
     setCategory(item.category ?? "");
     setCustomComponent(item.custom_component ?? undefined);
-    setFetchHint(item.fetch_hint);
+    setFetchHint(canonicalFetchHint(item.fetch_hint));
     setSensitivity(item.sensitivity);
     setTags(item.tags ?? []);
     setTagInput("");

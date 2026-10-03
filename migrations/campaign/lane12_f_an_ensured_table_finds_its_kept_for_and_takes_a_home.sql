@@ -1,4 +1,4 @@
--- chair-step: this REPLACES the body of custom.table_ensure(uuid, jsonb) (born in lane12_two_first_saves_make_one_table.sql, last replaced by lane12_c_an_ensured_table_says_what_differs_from_its_spec.sql) — same signature, same SECURITY DEFINER, same search_path, same grants (CREATE OR REPLACE keeps them). Two things change: (1) a spec carrying `kept_for` is found by slug AND kept_for, and a spec without one finds only a table kept for nothing — a person's table and an app's table of the same slug are different tables (the advisory lock carries kept_for too); (2) a spec may name an existing Home (`home_id`, one the caller may change, live, in this organization) and the new table is put there instead of in a new Home; `home_id` is never stored on the table. The `drift` answer is unchanged. No table, column, trigger, policy or grant is touched. Inverse: migrations/inverse/lane12_f_an_ensured_table_finds_its_kept_for_and_takes_a_home_down.sql restores lane12_c's body.
+-- chair-step: this REPLACES the body of custom.table_ensure(uuid, jsonb) (born in lane12_two_first_saves_make_one_table.sql, last replaced by lane12_c_an_ensured_table_says_what_differs_from_its_spec.sql) — same signature, same SECURITY DEFINER, same search_path, same grants (CREATE OR REPLACE keeps them). Three things change: (1) a spec carrying `kept_for` is found by slug AND kept_for, and a spec without one finds only a table kept for nothing — a person's table and an app's table of the same slug are different tables (the advisory lock carries kept_for too); (2) a spec may name an existing Home (`home_id`, one the caller may change, live, in this organization) and the new table is put there instead of in a new Home; `home_id` is never stored on the table. (3) a NEW table's columns keep their declared keys exactly (`cards__flashcard` is no longer rebuilt from its name as `cards_flashcard`). The `drift` answer is unchanged. No table, column, trigger, policy or grant is touched. Inverse: migrations/inverse/lane12_f_an_ensured_table_finds_its_kept_for_and_takes_a_home_down.sql restores lane12_c's body.
 -- lane: PLATFORM-APP-DATA (v6 lane 12)
 -- lock: custom
 -- based-on: custom.table_ensure(uuid, jsonb) be376c8ab01e14fd61a21ffb5ede4cfe3fc27b205911b7dcdc343b2d4ff757dd
@@ -107,7 +107,10 @@ begin
         || jsonb_build_object(
              'slug', v_slug,
              'parent_id', v_home,
-             'fields', coalesce((select jsonb_agg(jsonb_build_object('name', f ->> 'key') order by n)
+             -- THE DECLARED KEY, KEPT. A table's `fields` list names each column by its key, and
+             -- table_declare's column sketch builds a key from `name` unless one is given — which
+             -- collapsed KINDS-GLUE's `cards__flashcard` to `cards_flashcard` and the table was refused.
+             'fields', coalesce((select jsonb_agg(jsonb_build_object('name', f ->> 'key', 'key', f ->> 'key') order by n)
                                    from jsonb_array_elements(v_fields) with ordinality e(f, n)
                                   where nullif(f ->> 'key', '') is not null), '[]'::jsonb)));
     v_created := true;

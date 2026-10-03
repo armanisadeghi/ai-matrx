@@ -159,7 +159,9 @@ export function DirectiveCatalogGrid({
   }, [busyToggle, onInspect, onToggleWritable, onPickNoun]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    // Phone: natural height inside the page's one scroll area, the table at a
+    // definite height of its own. lg: fills its pane.
+    <div className="flex flex-col lg:h-full lg:min-h-0">
       <MatrxDataTable<NounDirectives>
         data={filtered}
         columns={columns}
@@ -186,7 +188,7 @@ export function DirectiveCatalogGrid({
         toolbar={{
           search: false,
           leading: (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2">
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -196,7 +198,7 @@ export function DirectiveCatalogGrid({
               />
               <Select value={familyFilter} onValueChange={setFamilyFilter}>
                 <SelectTrigger
-                  className="h-11 w-full text-base sm:w-56 lg:h-8 lg:text-sm"
+                  className="h-11 w-auto min-w-0 flex-1 text-base sm:w-56 sm:flex-none lg:h-8 lg:text-sm"
                   aria-label="Filter directive nouns by family"
                 >
                   <SelectValue placeholder="All families" />
@@ -228,7 +230,7 @@ export function DirectiveCatalogGrid({
             </div>
           ),
         }}
-        className="min-h-0 flex-1"
+        className="h-[70dvh] shrink-0 lg:h-auto lg:min-h-0 lg:flex-1 lg:shrink"
       />
       <CustomActionsSection
         catalog={catalog}
@@ -260,27 +262,32 @@ function CustomActionsSection({
   if (visible.length === 0) return null;
 
   return (
+    // Phone: flows in the page's one scroll area (no nested scroller). lg: a
+    // short scrolling strip under the table. These are the server's actions
+    // that are not a type × verb cell (custom actions and older directives);
+    // the label says that in plain words, never the internal plane name.
     <section
-      className="max-h-48 shrink-0 overflow-y-auto border-t border-border"
-      aria-label="Custom actions"
+      className="shrink-0 border-t border-border lg:max-h-48 lg:overflow-y-auto"
+      aria-label="Other actions"
+      data-directive-other-actions=""
     >
-      <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Custom Actions (Plane 2) &amp; legacy Directives
-      </div>
+      <h2 className="bg-muted/40 px-3 py-1 text-xs font-semibold text-muted-foreground">
+        Other actions
+      </h2>
       <ul className="divide-y divide-border/60">
         {visible.map((action) => (
-          <li key={action.slug} className="grid grid-cols-[16rem_1fr]">
+          <li key={action.slug} className="grid grid-cols-1 sm:grid-cols-[16rem_1fr]">
             <button
               type="button"
               className="min-h-11 px-3 py-2 text-left font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onClick={() =>
                 onInspect({ kind: "custom_action", customAction: action })
               }
-              aria-label={`Inspect custom action ${action.name}`}
+              aria-label={`Inspect action ${action.name}`}
             >
               {action.name}
             </button>
-            <span className="px-3 py-2 text-xs text-muted-foreground">
+            <span className="px-3 pb-2 text-xs text-muted-foreground sm:py-2">
               {action.doc}
             </span>
           </li>

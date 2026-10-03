@@ -5,9 +5,11 @@
 // TRUE GROUP COUNTS FOR A SERVER-PAGED LIST. The canonical table groups the rows it holds — one
 // page — so a group header that counted the page would say "3 people" for a value 40 people hold.
 // The table's `grouping.groupFacts` seam lets the host answer with the whole result's count; this
-// asks the list's own service once per group value on screen (the list's filters + that value),
-// and returns `undefined` for a group until its count lands, so the header falls back to the
-// page's own number rather than a guess.
+// asks the list's own service once per group value on screen (the list's filters + that value).
+//
+// NOTHING FAILS SILENTLY: while a count is in flight the header shows nothing of its own; when
+// a count could not be read the header says so (`failed`) — never the page's number passed off
+// as the group's.
 
 import { useEffect, useMemo, useState } from "react";
 import { CUSTOM_NONE_VALUE } from "./standardFieldColumns";
@@ -15,6 +17,8 @@ import { CUSTOM_NONE_VALUE } from "./standardFieldColumns";
 export interface ServerGroupCounts {
   /** For `grouping.groupFacts`. */
   groupFacts: (group: { value: unknown }) => { count?: number | null } | undefined;
+  /** True when this group's whole-result count could not be read. */
+  failed: (value: unknown) => boolean;
 }
 
 function valueKey(value: unknown): string {
@@ -23,44 +27,50 @@ function valueKey(value: unknown): string {
 
 /**
  * @param columnId the grouped column, or null when the list is flat (nothing is asked).
- * @param values the grouping values present on the page.
+ * @param values the raw grouping values present on the page.
  * @param queryKey identity of the list's current query — a change re-asks every count.
- * @param countWhere the list's own count with one more filter: this column = this value
- *   (`__none__` = has no value).
+ * @param countWhere the list's own count with one more condition: this column = this raw value.
  */
 export function useServerGroupCounts(
   columnId: string | null,
   values: readonly unknown[],
   queryKey: string,
-  countWhere: (columnId: string, value: string) => Promise<number>,
+  countWhere: (columnId: string, value: unknown) => Promise<number>,
 ): ServerGroupCounts {
-  const wanted = useMemo(
-    () => (columnId ? [...new Set(values.map(valueKey))].sort() : []),
-    [columnId, values],
-  );
-  const askKey = `${columnId ?? ""}|${queryKey}|${wanted.join("\u0001")}`;
-  const [answered, setAnswered] = useState<{ key: string; counts: Map<string, number> }>({
-    key: "",
-    counts: new Map(),
-  });
+  const wanted = useMemo(() => {
+    if (!columnId) return [] as { key: string; value: unknown }[];
+    const byKey = new Map<string, unknown>();
+    for (const v of values) byKey.set(valueKey(v), v);
+    return [...byKey.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => ({ key, value }));
+  }, [columnId, values]);
+  const askKey = `${columnId ?? ""}|${queryKey}|${wanted.map((w) => w.key).join("\u0001")}`;
+  const [answered, setAnswered] = useState<{
+    key: string;
+    counts: Map<string, number>;
+    failed: Set<string>;
+  }>({ key: "", counts: new Map(), failed: new Set() });
 
   useEffect(() => {
     if (!columnId || wanted.length === 0) return;
     let cancelled = false;
     void Promise.all(
-      wanted.map(async (value) => {
+      wanted.map(async ({ key, value }) => {
         try {
-          return [value, await countWhere(columnId, value)] as const;
+          return { key, count: await countWhere(columnId, value) };
         } catch (e) {
           console.error("[group counts] count failed:", e);
-          return null;
+          return { key, count: null };
         }
       }),
-    ).then((pairs) => {
+    ).then((results) => {
       if (cancelled) return;
       const counts = new Map<string, number>();
-      for (const pair of pairs) if (pair) counts.set(pair[0], pair[1]);
-      setAnswered({ key: askKey, counts });
+      const failed = new Set<string>();
+      for (const r of results) {
+        if (r.count === null) failed.add(r.key);
+        else counts.set(r.key, r.count);
+      }
+      setAnswered({ key: askKey, counts, failed });
     });
     return () => {
       cancelled = true;
@@ -69,11 +79,12 @@ export function useServerGroupCounts(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [askKey]);
 
-  const counts = answered.key === askKey ? answered.counts : null;
+  const current = answered.key === askKey ? answered : null;
   return {
     groupFacts: (group) => {
-      const count = counts?.get(valueKey(group.value));
+      const count = current?.counts.get(valueKey(group.value));
       return count === undefined ? undefined : { count };
     },
+    failed: (value) => current?.failed.has(valueKey(value)) ?? false,
   };
 }

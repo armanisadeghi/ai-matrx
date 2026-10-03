@@ -47,7 +47,7 @@ import { createRecordCountStore } from "./dataHomeRecordCounts";
 import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
 import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
-import { nextStarred, useDataHomeMarks } from "./useDataHomeMarks";
+import { nextStarred, useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
 import { DataHomeRecent, recentRows } from "./DataHomeRecent";
@@ -73,9 +73,10 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const starredSet = useMemo(() => new Set(marks.starred), [marks.starred]);
   const starredKey = marks.starred.join(",");
 
-  // "SHOW APP TABLES" (CHAIR-DOORS-2, N-C8): the tables the app keeps for agents' outputs stay out
-  // of the home until the person turns this on in Filters; on, the corpus is read again with them.
-  const [showAppTables, setShowAppTables] = useState(false);
+  // "SHOW APP TABLES" (CHAIR-DOORS-2, N-C8; lane 10 item 7): the tables the app keeps — an agent's
+  // outputs, a choice column's Lists — stay out of the home until the person turns this on in
+  // Filters; on, the corpus is read again with them. Her own synced preference, so it holds.
+  const [showAppTables, setShowAppTables] = useDataHomeShowAppTables();
   // THE CORPUS (rows in hand) and the server search beside it — dataHomeCorpus.ts.
   const corpus = useMemo(
     () => createDataHomeCorpus(client, dataSource, { includeAppTables: showAppTables }),

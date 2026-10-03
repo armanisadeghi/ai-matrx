@@ -222,3 +222,24 @@ describe("a confirm that cannot be shown", () => {
     }
   });
 });
+
+describe("a confirm from a plain button", () => {
+  // G10B review (2026-10-02): an action card's Apply is a plain button — no
+  // menu, no select, no dialog is closing — yet every confirm waited two paints
+  // before it showed, and in a tab that paints no frames the whole 500 ms
+  // ceiling. With nothing closing, the handoff is immediate.
+  it("GUARD 6 — opens at once when no layer is up and the body is unlocked", async () => {
+    let outcome: string | null = null;
+    void afterCurrentLayerCloses(
+      () => 0, // a tab that paints no frames
+      () => true,
+      TRANSIENT_LAYER_WAIT_FRAMES,
+      { persistent: () => false, transient: () => false },
+    ).then((result) => {
+      outcome = result;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(outcome).toBe("clear");
+  });
+});

@@ -24,7 +24,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Skeleton } from "@ai-matrx/design-system";
 
 import {
-  itemTitle,
   nounTitleColumn,
   parseDirectiveSlug,
   type DirectiveNounCatalog,
@@ -33,7 +32,9 @@ import {
   DirectiveChangeList,
   directiveValueWord,
   itemChanges,
+  itemOwnName,
   itemRecordId,
+  NO_TITLE_WORD,
   type DirectiveAskRequest,
   type DirectiveHost,
   type DirectiveRecordProps,
@@ -49,7 +50,11 @@ import {
   resolveReferenceName,
   useResolvedReferenceLabel,
 } from "@/features/matrx-envelope/referenceResolvers";
-import { readDirectiveRecord } from "@/features/matrx-envelope/directiveRecordRow";
+import {
+  readDirectiveRecord,
+  readSameTitledCreatedAt,
+} from "@/features/matrx-envelope/directiveRecordRow";
+import { createdLabel } from "@/features/scopes/service/recordFacts";
 import { getOrganization } from "@/features/organizations/service";
 
 /**
@@ -63,7 +68,8 @@ export function useDirectiveRecordName(noun: string, id: string, fallback: strin
   const { display, status } = useResolvedReferenceLabel(item, noun);
   const loading = status === "loading" || status === "idle";
   const name = status === "ready" ? referenceChipLabel(display) : loading ? null : fallback;
-  return { name, loading };
+  // Deleted for good, or not shared with this reader: there is nothing to open.
+  return { name, loading, missing: status === "missing" };
 }
 
 /** A name still being read: a neutral bar, never an id. */
@@ -93,7 +99,7 @@ export function DirectiveRecordName({
 
 /** The `renderRecord` seam: a row's target, or a record the apply wrote. */
 export function DirectiveRecordLink({ noun, id, fallback, context, trashed: aboutToBeTrashed }: DirectiveRecordProps) {
-  const { name, loading } = useDirectiveRecordName(noun, id, fallback);
+  const { name, loading, missing } = useDirectiveRecordName(noun, id, fallback);
   // The same door ladder every reference chip climbs (`referenceDoor`) — and its
   // trash answer: a record that went to the trash ANY way (this delete, a Delete
   // card further down the note, the Tasks page) says so, and its click is the
@@ -114,6 +120,22 @@ export function DirectiveRecordLink({ noun, id, fallback, context, trashed: abou
       {trashed ? <span className="shrink-0 text-muted-foreground">(in trash)</span> : null}
     </>
   );
+
+  // 🚨 A RECORD THAT DOES NOT EXIST IS NEVER A DOOR (G10B review, 2026-10-02:
+  // a link to a missing task hovered "Open Task a8a00001"). It says so — the
+  // same "Not found" the reference chip says — and names nothing but its type.
+  if (missing && !trashed) {
+    return (
+      <span
+        className="inline-flex min-w-0 items-center gap-1 text-muted-foreground"
+        title="Not found — deleted, or not shared with you"
+        data-record-missing=""
+      >
+        <span className="truncate">{name ?? fallback}</span>
+        <span className="shrink-0 text-xs">· Not found</span>
+      </span>
+    );
+  }
 
   if (!door.canOpen) {
     return (
@@ -162,6 +184,13 @@ export type OrganizationNameOf = (organizationId: string) => string | null;
 export interface PreparedRecord {
   /** The record's live name; null when it has none this reader can read. */
   name: string | null;
+  /**
+   * What tells it apart when another record of its type has the same name —
+   * "Created Oct 2" (with the time when they share a day), the picker's rule
+   * (`createdLabel`, features/scopes/service/recordFacts.ts). Null when its
+   * name is its own.
+   */
+  fact: string | null;
   /** Its fields now; null when they could not be read. */
   values: Record<string, unknown> | null;
   /** Already in the trash. */
@@ -205,6 +234,8 @@ export function prepareDirectiveQuestion(
   request: DirectiveAskRequest,
   organizationNameOf?: OrganizationNameOf,
   timeoutMs: number = QUESTION_READ_MS,
+  /** The noun's title column — where a same-named record is looked for. */
+  titleColumn: string | null = null,
 ): Promise<PreparedQuestion> {
   const ids = targetIds(request);
   if (ids.length === 0) return Promise.resolve(NOTHING_TO_READ);
@@ -224,7 +255,13 @@ export function prepareDirectiveQuestion(
         const organizationId = typeof values?.organization_id === "string" ? values.organization_id : "";
         if (organizationId) organizationIds.add(organizationId);
         const deletedAt = values?.deleted_at;
-        records[id] = { name, values, trashed: deletedAt !== null && deletedAt !== undefined && deletedAt !== "" };
+        const fact = await distinguishingFact(noun, id, values, titleColumn);
+        records[id] = {
+          name,
+          fact,
+          values,
+          trashed: deletedAt !== null && deletedAt !== undefined && deletedAt !== "",
+        };
       }),
     );
     let organization: string | null = null;
@@ -248,6 +285,32 @@ export function prepareDirectiveQuestion(
       },
     );
   });
+}
+
+/** Same calendar day, in the reader's time zone. */
+function sameDay(a: string, b: string): boolean {
+  const x = new Date(a);
+  const y = new Date(b);
+  return x.getFullYear() === y.getFullYear() && x.getMonth() === y.getMonth() && x.getDate() === y.getDate();
+}
+
+/**
+ * "Created Oct 2" when another record of this type carries the same title —
+ * with the time when they were created the same day — else null. The same
+ * rule, and the same words, the record picker uses for colliding rows.
+ */
+async function distinguishingFact(
+  noun: string,
+  id: string,
+  values: Record<string, unknown> | null,
+  titleColumn: string | null,
+): Promise<string | null> {
+  const title = titleColumn ? values?.[titleColumn] : null;
+  const created = values?.created_at;
+  if (!titleColumn || typeof title !== "string" || !title.trim() || typeof created !== "string") return null;
+  const others = await readSameTitledCreatedAt({ noun, id }, titleColumn, title).catch(() => []);
+  if (others.length === 0) return null;
+  return createdLabel(created, others.some((at) => sameDay(at, created)), Date.now());
 }
 
 /** The prepared question once read; null while it is still being read. */
@@ -306,8 +369,29 @@ function Org({ name }: { name: string | null }) {
   );
 }
 
-function Named({ name }: { name: string }) {
-  return <b className="font-semibold text-foreground">{name}</b>;
+/** A record's name — and, when another record shares it, what tells them apart. */
+function Named({ name, fact = null }: { name: string; fact?: string | null }) {
+  return (
+    <>
+      <b className="font-semibold text-foreground">{name}</b>
+      {fact ? (
+        <span className="font-normal text-muted-foreground" data-directive-record-fact="">
+          {" "}
+          ({fact})
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** "a" or "an" before a word. */
+function article(word: string): string {
+  return /^[aeiou]/i.test(word.trim()) ? "an" : "a";
+}
+
+/** A nameless item in a list: said as such, never "Item 2 of 3". */
+function NoTitle() {
+  return <span className="italic text-muted-foreground">{NO_TITLE_WORD}</span>;
 }
 
 /** How many named records a dialog lists before "and N more". */
@@ -326,12 +410,15 @@ interface NamedItem {
 function namedNewItems(request: DirectiveAskRequest, nouns: DirectiveNounCatalog): NamedItem[] {
   const { directive, items } = request;
   const titleColumn = nounTitleColumn(directive.noun, nouns);
-  return items.map((item, index) => ({
-    key: String(index),
-    item,
-    values: null,
-    name: <Named name={itemTitle(item, titleColumn, index, items.length)} />,
-  }));
+  return items.map((item, index) => {
+    const own = itemOwnName(item, titleColumn);
+    return {
+      key: String(index),
+      item,
+      values: null,
+      name: own ? <Named name={own} /> : <NoTitle />,
+    };
+  });
 }
 
 /** Items an update/delete names by the RECORD it changes, from the read question. */
@@ -345,15 +432,21 @@ function namedTargets(request: DirectiveAskRequest, question: PreparedQuestion):
       item,
       values: record?.values ?? null,
       // Never an id: the live name, else the noun and its position.
-      name: <Named name={record?.name ?? `${nounLabel} ${index + 1}`} />,
+      name: <Named name={record?.name ?? `${nounLabel} ${index + 1}`} fact={record?.fact ?? null} />,
     };
   });
 }
 
-/** The live name of the ONE record a single-item question names, or null. */
-function onlyRecordName(request: DirectiveAskRequest, question: PreparedQuestion): string | null {
+/** The ONE record a single-item question names, by its live name, or null. */
+function onlyRecordName(
+  request: DirectiveAskRequest,
+  question: PreparedQuestion,
+  /** The title tells same-named records apart once; the sentence below need not repeat it. */
+  withFact = true,
+): ReactNode | null {
   const id = request.items[0] ? itemRecordId(request.items[0]) : null;
-  return (id ? question.records[id]?.name : null) ?? null;
+  const record = id ? question.records[id] : undefined;
+  return record?.name ? <Named name={record.name} fact={withFact ? record.fact : null} /> : null;
 }
 
 /** The one value-word rule the card uses, bound to this noun. */
@@ -458,7 +551,10 @@ export function directiveConsequenceDialog(
   // did). A create or an action lands in the organization it is sent with; an
   // update or delete changes a record where that record lives.
   const activeOrg = organizationName?.trim() || "your organization";
-  const noun = nounLabel.toLowerCase();
+  // THE TYPE'S DISPLAY NAME, as written everywhere else ("Task", "Chat") —
+  // never lowercased into a sentence of its own (G10B review, 2026-10-02:
+  // "Create task …" beside a card and a picker that say "Task").
+  const noun = nounLabel;
   const titleColumn = nounTitleColumn(directive.noun, nouns);
   const one = items.length === 1;
   const many = `${items.length} ${noun} items`;
@@ -470,14 +566,14 @@ export function directiveConsequenceDialog(
 
   switch (directive.directiveClass) {
     case "delete": {
-      const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs);
+      const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs, titleColumn);
       return {
         title: one ? (
           <WhenRead prepared={prepared} loading={<>Delete {noun} <DirectiveTitlePlaceholder />{twice}?</>}>
             {(question) => {
               const name = onlyRecordName(request, question);
               // A record whose name cannot be read is "this note" — never its id.
-              return name ? <>Delete {noun} <Named name={name} />{twice}?</> : <>Delete this {noun}{twice}?</>;
+              return name ? <>Delete {noun} {name}{twice}?</> : <>Delete this {noun}{twice}?</>;
             }}
           </WhenRead>
         ) : (
@@ -489,8 +585,8 @@ export function directiveConsequenceDialog(
               const named = namedTargets(request, question);
               const records = Object.values(question.records);
               const oneLabel = (q: PreparedQuestion, starts = false) => {
-                const name = onlyRecordName(request, q);
-                return name ? <Named name={name} /> : <>{starts ? "This" : "this"} {noun}</>;
+                const name = onlyRecordName(request, q, false);
+                return name ?? <>{starts ? "This" : "this"} {noun}</>;
               };
               // "Delete again" on a record already in the trash says so (G8A).
               const allTrashed = records.length > 0 && records.every((record) => record.trashed);
@@ -526,14 +622,14 @@ export function directiveConsequenceDialog(
       };
     }
     case "update": {
-      const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs);
+      const prepared = prepareDirectiveQuestion(request, organizationNameOf, options.readTimeoutMs, titleColumn);
       return {
         title: one ? (
           <WhenRead prepared={prepared} loading={<>Update {noun} <DirectiveTitlePlaceholder />{twice}?</>}>
             {(question) => {
               const name = onlyRecordName(request, question);
               // A record whose name cannot be read is "this note" — never its id.
-              return name ? <>Update {noun} <Named name={name} />{twice}?</> : <>Update this {noun}{twice}?</>;
+              return name ? <>Update {noun} {name}{twice}?</> : <>Update this {noun}{twice}?</>;
             }}
           </WhenRead>
         ) : (
@@ -588,13 +684,19 @@ export function directiveConsequenceDialog(
     case "create": {
       const named = namedNewItems(request, nouns);
       const first = named[0];
+      // A create with no title SAYS so — never a placeholder posing as a name.
+      const firstName = first ? itemOwnName(first.item, titleColumn) : null;
       return {
         title: again
           ? one && first
-            ? <>Create another {noun} {first.name}?</>
+            ? firstName
+              ? <>Create another {noun} {first.name}?</>
+              : `Create another ${noun} with no title?`
             : `Create ${many} again?`
           : one && first
-            ? <>Create {noun} {first.name}?</>
+            ? firstName
+              ? <>Create {noun} {first.name}?</>
+              : `Create ${article(noun)} ${noun} with no title?`
             : `Create ${many}?`,
         description: (
           <>

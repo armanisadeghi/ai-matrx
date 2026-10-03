@@ -19,6 +19,7 @@ import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayloa
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";
+import { PartialValueBadge } from "@/features/scopes/components/PartialValueBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface EditScopeValueSheetProps {
@@ -224,6 +225,7 @@ export function EditScopeValueSheet({
                 {row.sensitivity}
               </Badge>
             )}
+            <PartialValueBadge incomplete={row.value_incomplete} />
           </div>
 
           {row.description && (

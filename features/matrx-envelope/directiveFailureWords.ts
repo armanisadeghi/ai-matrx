@@ -16,10 +16,16 @@
  *     reason (a missing field, a bad value): it IS the sentence, with the
  *     remedy beside it.
  */
-import type {
-  DirectiveFailure,
-  DirectiveFailureWords,
+import {
+  directiveFieldLabel,
+  type DirectiveFailure,
+  type DirectiveFailureWords,
 } from "@ai-matrx/content-ir-react";
+import {
+  CATALOG_ALIASES,
+  CATALOG_NOUNS,
+} from "@/features/matrx-envelope/catalog-nouns.generated";
+import { formTitleColumn } from "@/features/directive-catalog/identityPicker";
 
 const VERB: Record<string, string> = {
   create: "create",
@@ -31,6 +37,45 @@ const VERB: Record<string, string> = {
 const NO_WRITER = /isn't a valid action as written/i;
 /** A confirm-door sentence written for a person. */
 const PERSON_READY = /^Nothing was applied — .+$/;
+
+/** The column the write form labels "Title" for this noun — the form's own rule. */
+export function directiveTitleColumn(noun: string): string | null {
+  const canonical = (CATALOG_ALIASES as Record<string, string>)[noun] ?? noun;
+  return formTitleColumn({ noun: canonical, title_column: CATALOG_NOUNS[canonical]?.title_column ?? null });
+}
+
+/** One field problem as the server words it: "name is required", "priority: Input should be …". */
+const FIELD_PHRASE = /^([A-Za-z_][\w.]*)( is required| is not a field this action has|:)([\s\S]*)$/;
+
+/** "items.0.due_date" → "due_date": the field, never its position in the payload. */
+function fieldKeyOf(path: string): string {
+  const parts = path.split(".").filter((part) => part && !/^\d+$/.test(part) && part !== "items");
+  return parts[parts.length - 1] ?? path;
+}
+
+/**
+ * THE SERVER'S SENTENCE, IN THE FORM'S WORDS (G10B review, 2026-10-02). The
+ * confirm door names the fields it refused by their STORAGE names
+ * ("Nothing was applied — name is required.") while the form called that field
+ * "Title". Every field the sentence names reads through the one field-label
+ * rule the form, the card and the confirm share (`directiveFieldLabel` with the
+ * form's title column); everything else in the sentence is left as written.
+ */
+export function wordServerFieldNames(sentence: string, titleColumn: string | null): string {
+  const match = /^(Nothing was applied — )([\s\S]*?)(\.?)$/.exec(sentence.trim());
+  if (!match) return sentence;
+  const [, head, body, stop] = match;
+  // "a; b, and 2 more" — the tail stays with the last phrase.
+  const tail = /, and \d+ more$/.exec(body)?.[0] ?? "";
+  const phrases = (tail ? body.slice(0, -tail.length) : body).split("; ");
+  const worded = phrases.map((phrase) => {
+    const field = FIELD_PHRASE.exec(phrase);
+    if (!field) return phrase;
+    const [, path, verb, rest] = field;
+    return `${directiveFieldLabel(fieldKeyOf(path), titleColumn)}${verb}${rest}`;
+  });
+  return `${head}${worded.join("; ")}${tail}${stop}`;
+}
 
 export function explainDirectiveFailure(
   failure: DirectiveFailure,
@@ -45,7 +90,12 @@ export function explainDirectiveFailure(
   }
   const reason = PERSON_READY.exec(failure.raw.trim());
   if (reason) {
-    return { what: reason[0], next: "Edit the block and apply again." };
+    // A remedy a person can carry out from where they are: nobody reading the
+    // card edits its source, but anyone can ask for a corrected one (G10B).
+    return {
+      what: wordServerFieldNames(reason[0], directiveTitleColumn(failure.noun)),
+      next: "Ask for a corrected version, then apply it.",
+    };
   }
   return null;
 }

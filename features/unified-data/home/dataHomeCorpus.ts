@@ -52,7 +52,11 @@ export function createDataHomeCorpus(
     dataHome?: typeof doors.dataHome;
     dataHomeSearch?: typeof doors.dataHomeSearch;
     debounceMs?: number;
-    /** "Show app tables": also read the tables the app keeps for agents' outputs. */
+    /**
+     * "Show app tables": also read the tables the app keeps for agents' outputs (the door's switch)
+     * AND list every table the one rule calls kept — a choice column's List above all. Off, both
+     * stay out; a table a person made is listed either way.
+     */
     includeAppTables?: boolean;
   } = {},
 ): DataHomeCorpus {
@@ -77,7 +81,9 @@ export function createDataHomeCorpus(
     }
     const built = await buildDataHomeRows({ client, dataSource, answer: answered.data });
     meta.refusals = built.refusals.map((r) => ({ listing: r.listing, message: doors.doorFailureLine(r.error) }));
-    let rows = built.rows;
+    // THE ONE RULE (`isKeptTable`, folded onto each row as `keptByTheApp`): the door answers a
+    // choice column's Lists whether or not app tables were asked for, so the home leaves them out here.
+    let rows = deps.includeAppTables === true ? built.rows : built.rows.filter((row) => !row.keptByTheApp);
     // THE STATED BOUND: past it the newest rows are kept and the page says so.
     meta.capped = rows.length > DATA_HOME_ROW_CAP;
     if (meta.capped) {

@@ -13,6 +13,7 @@
 
 import type { RecordsClient } from "@ai-matrx/records/core";
 import type { RecordsDataSource } from "@ai-matrx/records";
+import { isKeptTable } from "@ai-matrx/records-ui";
 
 import {
   HUB_CAPABILITIES,
@@ -62,6 +63,13 @@ export interface DataHomeRow {
   publicLabel: string | null;
   /** The store's own sentence when something is wrong with the row. */
   trouble: string | null;
+  /**
+   * A table the app keeps for itself rather than one a person made — above all the List a choice
+   * column keeps its choices in ("Status choices"). Decided by THE ONE RULE (`isKeptTable` from
+   * `@ai-matrx/records-ui`) over the door's own facts; false for every non-table row. The home
+   * lists these only under "Show app tables" (lane 10 item 7).
+   */
+  keptByTheApp: boolean;
   /**
    * Set only on a row the SERVER search found and the instant title search did not (a Field, a
    * description): where it matched, for the "Matched in" line. Absent on every other row.
@@ -123,7 +131,16 @@ export const ACCESS_WHY: Record<DataHomeAccess, string> = {
   system: "AI Matrx keeps it for everyone.",
 };
 
-function toRow(item: HubItem & { kind: string }, tables: ReadonlyMap<string, DataHomeTableRow>): DataHomeRow {
+/** Is this Tables-listing row one the app keeps (a value set, a checklist's steps …)? The package's rule. */
+export function keptTableRow(table: DataHomeTableRow): boolean {
+  return isKeptTable({ id: table.table_id, name: table.table_name, kind: table.kind, kept_by_the_app: table.kept_by_the_app });
+}
+
+function toRow(
+  item: HubItem & { kind: string },
+  tables: ReadonlyMap<string, DataHomeTableRow>,
+  fromTablesListing: boolean,
+): DataHomeRow {
   const facts: ScopeFacts = item.scope ?? { mine: false, member: true, sharedWithMe: false, visibility: null };
   const table = item.tableId ? tables.get(item.tableId) : undefined;
   const parent = item.tableName && item.tableName !== item.title ? item.tableName : null;
@@ -155,6 +172,8 @@ function toRow(item: HubItem & { kind: string }, tables: ReadonlyMap<string, Dat
     publicHref: item.publicHref ?? null,
     publicLabel: item.publicLabel ?? null,
     trouble: item.trouble ?? null,
+    // Only the Tables listing's own row is the table; a form or dashboard ON a kept table is not kept.
+    keptByTheApp: fromTablesListing && table !== undefined && item.id === table.table_id && keptTableRow(table),
   };
 }
 
@@ -194,7 +213,7 @@ export async function buildDataHomeRows(
       const read = await capability.read(ctx);
       if (!read.ok) {
         refusals.push({ listing: capability.title, error: read.error });
-        return [] as Array<HubItem & { kind: string }>;
+        return [] as Array<HubItem & { kind: string; fromTablesListing: boolean }>;
       }
       await attachChangedBy(ctx, capability, read.items);
       return read.items
@@ -211,11 +230,16 @@ export async function buildDataHomeRows(
               kind: "table",
               organizationName: item.tableName,
               scope: item.scope ?? { mine: false, member: false, sharedWithMe: true, visibility: null },
+              fromTablesListing: false,
             };
           }
-          return { ...item, kind: item.kind ?? LISTING_KIND[capability.id] ?? capability.id };
+          return {
+            ...item,
+            kind: item.kind ?? LISTING_KIND[capability.id] ?? capability.id,
+            fromTablesListing: capability.id === "tables",
+          };
         });
     }),
   );
-  return { rows: answered.flat().map((item) => toRow(item, tables)), refusals };
+  return { rows: answered.flat().map((item) => toRow(item, tables, item.fromTablesListing)), refusals };
 }

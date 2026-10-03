@@ -50,6 +50,7 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import * as doors from "@/features/unified-data/hub/doors";
 import { buildDataHomeRows, type DataHomeRow } from "@/features/unified-data/home/dataHomeRows";
+import { HUB_CAPABILITIES } from "@/features/unified-data/hub/capabilities";
 import { KindIcon } from "@/features/unified-data/home/dataHomeColumns";
 import { fetchAccessibleKits, fetchKits } from "@/features/kits/service";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -69,7 +70,7 @@ import {
   type MakeFlow,
   type MakeTile,
 } from "./tiles";
-import { answerForRecent, isTestOrganization, recentlyChanged } from "./recent";
+import { answerForRecent, isTestOrganization, recentlyChanged, withoutTestOrganizations } from "./recent";
 import { MakeMount, NewTableBody, SAVED_WHERE_CHOSEN, SavesTo } from "./MakeMount";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,17 +111,22 @@ function useRead<T>(key: string | null, load: () => Promise<{ ok: true; data: T 
 
 /**
  * RECENT: the data home's one call (`custom.data_home`), built into rows by the home's own builder,
- * with archived, test-organization and app-kept rows taken out first (recent.ts).
+ * archived and app-kept rows taken out first (recent.ts). It starts the moment the page mounts — it
+ * waits on nothing else; test organizations are dropped from the built rows at render, once the
+ * person's organizations are known. Shared-with-me is not asked: an accepted share is already a
+ * table row, and that listing costs two more round trips after the home answers.
  */
-function useRecentRead(userId: string | null, testOrganizationIds: ReadonlySet<string>, ready: boolean) {
-  const testKey = [...testOrganizationIds].sort().join(",");
-  return useRead<DataHomeRow[]>(userId && ready ? `${userId}|${testKey}` : null, async () => {
+function useRecentRead(userId: string | null) {
+  return useRead<DataHomeRow[]>(userId, async () => {
     const source = supabaseDataSource(createClient());
     const answered = await doors.dataHome(source, null);
     if (!answered.ok) return { ok: false, why: doors.doorFailureLine(answered.error) };
     const client = createRecordsClient({ dataSource: source, actor: { actor: "user", user_id: userId! }, organizationId: null });
-    const built = await buildDataHomeRows({ client, dataSource: source, answer: answerForRecent(answered.data, testOrganizationIds) });
-    return { ok: true, data: recentlyChanged(built.rows) };
+    const built = await buildDataHomeRows(
+      { client, dataSource: source, answer: answerForRecent(answered.data, new Set()) },
+      HUB_CAPABILITIES.filter((c) => c.id !== "shared-with-me"),
+    );
+    return { ok: true, data: built.rows };
   });
 }
 
@@ -128,8 +134,9 @@ function useRecentRead(userId: string | null, testOrganizationIds: ReadonlySet<s
  * STEP 1's LIST: every table the person can open in every organization she reaches — the lighter
  * `custom.data_home_tables` door alone, so "Which table" never waits on the whole home.
  */
-function useTablesRead(userId: string | null) {
-  return useRead<doors.DataHomeTableRow[]>(userId, async () => {
+function useTablesRead(userId: string | null, wanted: boolean) {
+  // Read only when a flow that asks "which table" is open: never on the page's first paint.
+  return useRead<doors.DataHomeTableRow[]>(userId && wanted ? userId : null, async () => {
     const answered = await doors.dataHomeTables(supabaseDataSource(createClient()), null);
     return answered.ok ? { ok: true, data: answered.data } : { ok: false, why: doors.doorFailureLine(answered.error) };
   });
@@ -146,15 +153,19 @@ export default function MakeHome() {
   const userId = useAppSelector(selectUserId);
   // org-filter: write-target the active organization is only where a NEW table, portal or example is saved; every read on this page walks all organizations
   const active = useOrganizationRequired();
-  const { organizations, loading: organizationsLoading } = useUserOrganizations();
+  const { organizations } = useUserOrganizations();
   const testOrganizationIds = useMemo(
     () => new Set(organizations.filter((o) => isTestOrganization(o)).map((o) => o.id)),
     [organizations],
   );
-  const recent = useRecentRead(userId ?? null, testOrganizationIds, !organizationsLoading);
-  const tables = useTablesRead(userId ?? null);
+  const recentRead = useRecentRead(userId ?? null);
+  const recent: Read<DataHomeRow[]> =
+    recentRead.phase === "read"
+      ? { phase: "read", data: recentlyChanged(withoutTestOrganizations(recentRead.data, testOrganizationIds)) }
+      : recentRead;
 
   const flow = tileFor(params.get(MAKE_FLOW_PARAM));
+  const tables = useTablesRead(userId ?? null, Boolean(flow?.asksForTable));
   const go = (next: Record<string, string | null>) => {
     const q = new URLSearchParams(params.toString());
     for (const [k, v] of Object.entries(next)) {
