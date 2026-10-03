@@ -192,16 +192,15 @@ test("a row's database class is DECLARED by the manifest, never guessed from its
 test("--skip-live-db runs no live-db or unclassified row and says so in one line", () => {
   const dir = mkdtempSync(join(tmpdir(), "release-checks-skip-"));
   const marker = (name) => join(dir, `${name}-ran`);
-  const rows = [`Live gate|touch ${marker("live")}`, `Repo gate|touch ${marker("repo")}`, `Clone gate|touch ${marker("clone")}`, `Unknown gate|touch ${marker("unknown")}`];
-  const classes = declareRows(rows, dir, (id) => ({ "live-gate": "live-db", "repo-gate": "repo-only", "clone-gate": "clone-db" })[id]);
+  const rows = [`Live gate|touch ${marker("live")}`, `Repo gate|touch ${marker("repo")}`, `Unknown gate|touch ${marker("unknown")}`];
+  const classes = declareRows(rows, dir, (id) => ({ "live-gate": "live-db", "repo-gate": "repo-only" })[id]);
   const { out, header, findings } = runWithManifest(rows, ["--classes", classes, "--skip-live-db"]);
   assert.equal(existsSync(marker("live")), false, "a live-db row executed");
   assert.equal(existsSync(marker("unknown")), false, "an unclassified row executed");
   assert.equal(existsSync(marker("repo")), true);
-  assert.equal(existsSync(marker("clone")), true);
   assert.match(out, /^checks: skipped 2 live-db rows \(1 unclassified \S+ run pnpm checks:classify\); they live in .*checks-run-in-the-app\/PLAN\.md/m);
   const { git_sha: _sha, started_at: _at, checks: _m, ...rest } = header;
-  assert.deepEqual(rest, { ran: ["repo-gate", "clone-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
+  assert.deepEqual(rest, { ran: ["repo-gate"], skipped_live_db: ["live-gate", "unknown-gate"] });
   assert.equal(findings.length, 0);
 });
 
@@ -426,15 +425,15 @@ test("end-of-scan: endItems prints only when asked, with the item lines this pro
   assert.equal(parseItems('MATRX-ITEM {"key":"x"}\nMATRX-ITEMS-END {"count":"x"}').errors.length, 1);
 });
 
-test("--repo-only runs ONLY rows declared repo-only — never clone-db, live-db or undeclared (the public CI leg)", () => {
-  const rows = ["Repo gate|echo repo", "Clone gate|echo clone", "Live gate|echo live", "Mystery gate|echo mystery"];
+test("--repo-only runs ONLY rows declared repo-only — never live-db or undeclared (the public CI leg)", () => {
+  const rows = ["Repo gate|echo repo", "Live gate|echo live", "Mystery gate|echo mystery"];
   const dir = mkdtempSync(join(tmpdir(), "release-checks-repo-only-"));
-  const byId = { "repo-gate": "repo-only", "clone-gate": "clone-db", "live-gate": "live-db" };
+  const byId = { "repo-gate": "repo-only", "live-gate": "live-db" };
   const classes = declareRows(rows, dir, (id) => byId[id]);
   const { out, header } = runWithManifest(rows, ["--classes", classes, "--repo-only"]);
   assert.deepEqual(header.ran, ["repo-gate"]);
-  assert.deepEqual([...header.skipped_not_repo_only].sort(), ["clone-gate", "live-gate", "mystery-gate"]);
-  assert.match(out, /skipped 3 row\(s\) not declared repo-only/);
+  assert.deepEqual([...header.skipped_not_repo_only].sort(), ["live-gate", "mystery-gate"]);
+  assert.match(out, /skipped 2 row\(s\) not declared repo-only/);
 });
 
 // A row on its OWN approved schedule (OWN_SCHEDULE: ui-drift → "UI drift check — daily") is left
@@ -453,59 +452,23 @@ test("--repo-only leaves out a row on its own schedule unless --only names it", 
   assert.equal(daily.header.skipped_own_schedule, undefined);
 });
 
-// -- The database-reading leg: --db-only --target clone (checks-run-in-the-app P3) --------------
-// Every row reads ONLY the nightly copy. A row that reaches for production - by host (net, dns,
-// fetch) or by user on the SHARED pooler host (pg) - is refused BY NAME before a byte leaves,
-// even when it swallows the error. No network: the allowed row dials a closed local port.
-const COPY_REF = "abcdefghijklmnopqrst";
-const COPY_ENV = {
-  ...process.env,
-  MATRX_CHECK_DB_TARGET: "clone",
-  MATRX_CLONE_REF_NAME: COPY_REF,
-  MATRX_CLONE_EXPECT_USER: `postgres.${COPY_REF}`,
-  MATRX_CLONE_PROMOTED_AT: "2026-09-29T08:54:32Z",
-  SUPABASE_MATRIX_USER: `postgres.${COPY_REF}`,
-};
-const PG = (user, host) =>
-  `node -e "const {Client}=require('pg'); new Client({host:'${host}',port:1,user:'${user}',password:'x',database:'postgres',connectionTimeoutMillis:1500}).connect().then(()=>process.exit(0),(e)=>{console.log('pg said: '+e.message);process.exit(1)})"`;
-
-test("--db-only --target clone refuses every road to production by name and records the copy", () => {
-  const attempts = {
-    "Pg as the production user": PG("postgres.brsgrqvjdzwihsvnfqkf", "127.0.0.1"),
-    "Fetch the production API": `node -e "fetch('https://db.matrxserver.com/rest/v1/').then(()=>process.exit(0),()=>process.exit(0))"`,
-    "Dns production host": `node -e "require('dns').lookup('db.brsgrqvjdzwihsvnfqkf.supabase.co',()=>{})"`,
-    "Swallowed refusal": `node -e "try{require('net').connect(443,'server.app.matrxserver.com')}catch{};console.log('fine')"`,
-  };
-  const rows = [
-    ...Object.entries(attempts).map(([k, v]) => `${k}|${v}`),
-    `Pg as the copy user|${PG(`postgres.${COPY_REF}`, "127.0.0.1")}`,
-    "Repo only row|echo repo",
-  ];
-  const { out, header, findings } = runWithManifest(rows, ["--db-only", "--target", "clone"], {
-    env: COPY_ENV,
-    classOf: (id) => (id === "repo-only-row" ? "repo-only" : "live-db"),
+// -- The database-reading leg: --db-only (owner ruling 2026-10-03: checks run on LIVE) ----------
+// There is no clone-only leg any more: --db-only selects every row that reads a database and runs
+// it against the database its own code names (live by default). `--target` is not an argument.
+test("--db-only runs the database rows and leaves repo-only rows out", () => {
+  const rows = ["Live gate|echo live", "Mystery gate|echo mystery", "Repo only row|echo repo"];
+  const { out, header } = runWithManifest(rows, ["--db-only"], {
+    classOf: (id) => ({ "live-gate": "live-db", "repo-only-row": "repo-only" })[id],
   });
-  assert.match(out, /database target = the nightly copy abcdefghijklmnopqrst/);
-  assert.deepEqual(header.db_target, { kind: "clone", ref: COPY_REF, promoted_at: "2026-09-29T08:54:32Z" });
-  assert.ok(!header.ran.includes("repo-only-row"), "--db-only must leave repo-only rows out");
-  for (const label of Object.keys(attempts)) {
-    const id = slug(label);
-    const f = findings.find((x) => x.check === id);
-    assert.ok(f, `${id}: production was reached (no refusal finding)`);
-    assert.equal(f.level, "error", JSON.stringify(f));
-    assert.match(f.title, new RegExp(`^\\[clone-target\\] REFUSED check ${id}: `));
-  }
-  const allowed = findings.find((x) => x.check === "pg-as-the-copy-user");
-  assert.ok(allowed, "the copy-user row should fail on the closed port, not pass");
-  assert.doesNotMatch(allowed.title, /\[clone-target\]/);
+  assert.match(out, /--db-only — 2 database-reading row\(s\) selected/);
+  assert.deepEqual([...header.ran].sort(), ["live-gate", "mystery-gate"]);
+  assert.equal(header.db_target, undefined);
 });
 
-test("--target clone without a prepared copy environment refuses to run", () => {
-  const env = { ...process.env };
-  delete env.MATRX_CHECK_DB_TARGET;
+test("--target is refused: there is no clone-only run", () => {
   assert.throws(
-    () => runWithManifest(["Anything|true"], ["--target", "clone"], { env }),
-    (error) => /--target clone REFUSED/.test(String(error.stderr)) && error.status === 2,
+    () => runWithManifest(["Anything|true"], ["--target", "clone"]),
+    (error) => /unknown argument --target/.test(String(error.stderr)) && error.status === 2,
   );
 });
 

@@ -13,7 +13,7 @@ name: Repo-only checks
 #   gh workflow run repo-only-checks.yml --ref main
 #
 # 🚨 THIS REPOSITORY IS PUBLIC. Nothing here may read a database or need a secret: `--repo-only`
-# runs ONLY rows declared repo-only (clone-db, live-db and undeclared rows are left out and named in
+# runs ONLY rows declared repo-only (live-db and undeclared rows are left out and named in
 # the header's `skipped_not_repo_only`). No `secrets.*` is referenced in this file — keep it so.
 on:
   schedule:

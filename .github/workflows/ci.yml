@@ -315,7 +315,7 @@ jobs:
         run: pnpm check:canonical-pickers:self-test
       - name: RELEASE ROW CLASSES — which release checks can open the live database is declared, not guessed
         # scripts/checks/row-classes.json is generated from what each release row's code reaches
-        # (live-db | clone-db | repo-only); the release after-phase skips every live-db row
+        # (live-db | repo-only); the release after-phase skips every live-db row
         # (Arman, 2026-09-25: nothing that reads the live database runs 50-90 times a day).
         # Static: resolves commands and imports, opens no database. ~5s.
         run: pnpm check:release-row-classes

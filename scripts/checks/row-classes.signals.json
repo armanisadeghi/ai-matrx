@@ -1,5 +1,5 @@
 {
-  "_about": "Database-access signals for scripts/checks/row-classes.mjs. A match in any file a release row reaches classifies the row. live = can open the live database; clone = reaches only the nightly dev clone. Patterns are JavaScript RegExp sources.",
+  "_about": "Database-access signals for scripts/checks/row-classes.mjs. A match in any file a release row reaches classifies the row live-db (it can open a database). Since the owner ruling of 2026-10-03 there is no clone-only class: a row that reaches the nightly clone is a database row like any other. Patterns are JavaScript RegExp sources.",
   "live": [
     {
       "signal": "gate-db helper (openGateDb/withGateDb)",
@@ -53,9 +53,7 @@
     {
       "signal": "aidream migration applier (opens the live database)",
       "pattern": "apply_migrations\\.py"
-    }
-  ],
-  "clone": [
+    },
     {
       "signal": "nightly dev clone connection",
       "pattern": "\\bnight_clone_dsn\\b|\\bCLONE_DATABASE_URL\\b"
