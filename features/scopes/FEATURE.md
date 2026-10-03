@@ -701,8 +701,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   the `cmt_*` chokepoint is `@ai-matrx/associations/core` bound at
   `service/commentsService.ts`; `CommentThread`/`useComments` are the canonical
   comment UI (tasks panel/editor/popover swapped); `authorDisplay` port bound on
-  the provider; `cmt_add` tap on the host dataSource carries the task
-  comment-added notification.
+  the provider. The former `cmt_add` browser notification tap was removed
+  2026-10-03; the draft saved-comment outbox now owns notification intent.
 - 2026-08-30 — Demanded-schema probe answers no longer file production repair incidents:
   only the package's exact impossible sentinels are local/non-persisting; ordinary RPC
   failures stay red.

@@ -4,7 +4,6 @@ import { sendEmail } from "./client";
 import { renderTemplate } from "./render";
 import {
   TaskAssignedEmail,
-  CommentAddedEmail,
   MessageReceivedEmail,
   DueDateReminderEmail,
   FeedbackAssignedEmail,
@@ -188,94 +187,6 @@ export async function sendTaskAssignmentEmail(options: {
   return {
     success: false,
     message: "Failed to send task assignment email",
-    error:
-      result.error instanceof Error
-        ? result.error.message
-        : String(result.error),
-  };
-}
-
-/**
- * Send comment notification email
- */
-export async function sendCommentNotificationEmail(options: {
-  /** The organization the resource is filed under, so the link names it. */
-  organizationId?: string | null;
-  resourceOwnerId: string;
-  commenterName: string;
-  commentText: string;
-  resourceTitle: string;
-  resourceType: "task" | "canvas" | "note";
-  resourceId: string;
-}): Promise<NotificationResult> {
-  const {
-    resourceOwnerId,
-    commenterName,
-    commentText,
-    resourceTitle,
-    resourceType,
-    resourceId,
-    organizationId,
-  } = options;
-
-  // Check user preferences
-  const preferences = await getUserEmailPreferences(resourceOwnerId);
-  if (!preferences?.comment_notifications) {
-    return {
-      success: true,
-      message: "User has disabled comment notifications",
-      skipped: true,
-    };
-  }
-
-  // Get resource owner details
-  const owner = await getUserDetails(resourceOwnerId);
-  if (!owner?.email) {
-    return { success: false, message: "Could not find resource owner email" };
-  }
-
-  // Generate resource URL. The map holds PATHS, and the link is built exactly once,
-  // on the line below, so there is one place where an organization can be forgotten —
-  // and it is the line that cannot forget, because the helper is the thing on it.
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const resourcePaths: Record<string, string> = {
-    task: `/tasks?task=${resourceId}`,
-    canvas: `/canvas/${resourceId}`,
-    note: `/notes/${resourceId}`,
-  };
-  const resourceUrl = await linkCarriesItsOrganization(
-    `${baseUrl}${resourcePaths[resourceType] || `/${resourceType}/${resourceId}`}`,
-    organizationId,
-  );
-
-  // Render React Email template
-  const html = await renderTemplate(
-    React.createElement(CommentAddedEmail, {
-      resourceTitle,
-      commenterName,
-      commentText:
-        commentText.length > 200
-          ? commentText.substring(0, 200) + "..."
-          : commentText,
-      resourceUrl,
-      resourceType,
-    }),
-  );
-
-  // Send email
-  const result = await sendEmail({
-    to: owner.email,
-    subject: `New comment on ${resourceType}: ${resourceTitle}`,
-    html,
-  });
-
-  if (result.success) {
-    return { success: true, message: "Comment notification email sent" };
-  }
-
-  return {
-    success: false,
-    message: "Failed to send comment notification email",
     error:
       result.error instanceof Error
         ? result.error.message
