@@ -1,3 +1,4 @@
+// record-view: none — an admin catalogue of model name translations, no single record
 import { Suspense } from "react";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import TranslationGrid from "@/features/ai-models/translation/components/TranslationGrid";

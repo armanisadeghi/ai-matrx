@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 // Old Sources page (/knowledge/library before H6a, 2026-09-27), review-only.
 // The component is restored verbatim under ../_restored from 143e461807^.
 import { SourcesPage } from "../_restored/SourcesPage";

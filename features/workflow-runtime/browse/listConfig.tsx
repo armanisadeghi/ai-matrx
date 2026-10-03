@@ -1,4 +1,5 @@
 "use client";
+// list-source: custom_fields — returned by wfx_list_scoped (lane7w5d_wfx); the chair applies it
 
 // features/workflow-runtime/browse/listConfig.tsx
 //

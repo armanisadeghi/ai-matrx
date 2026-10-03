@@ -1,4 +1,5 @@
 "use client";
+// list-source: custom_fields — returned by trx_list_scoped (lane7w5d_trx); the chair applies it
 
 // features/transcripts/browse/listConfig.tsx
 //

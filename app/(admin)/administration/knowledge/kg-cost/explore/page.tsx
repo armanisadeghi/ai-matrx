@@ -1,3 +1,4 @@
+// record-view: none — an admin cost analysis
 // app/(admin)/administration/knowledge/kg-cost/explore/page.tsx — KNOWLEDGE INGESTION'S UNIT ECONOMICS,
 // ONE EXPLORER (lane DRILL-CONVERSIONS). The KG cost dashboard's per-run ledger as questions of the
 // declared definition `kg_cost`, asked in the platform lane; the dashboard links here and keeps its own

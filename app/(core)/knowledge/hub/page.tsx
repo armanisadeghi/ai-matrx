@@ -1,3 +1,4 @@
+// record-view: none — the knowledge hub, a list of sources
 /**
  * `/knowledge` — the Knowledge hub (KNOWLEDGE-HUB §5.2, phase H3): one place to
  * keep, organize and search everything. Guests get the Knowledge landing; the

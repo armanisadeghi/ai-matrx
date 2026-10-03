@@ -1,4 +1,5 @@
 "use client";
+// list-source: custom_fields — returned by ivw_list_scoped (lane7w5d_ivw); the chair applies it
 
 // features/vision-interview/browse/listConfig.tsx
 //

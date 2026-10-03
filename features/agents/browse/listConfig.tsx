@@ -1,4 +1,5 @@
 "use client";
+// list-source: custom_fields — returned by agx_list_scoped (lane7w5c2); the chair applies it
 
 // features/agents/browse/listConfig.tsx
 //

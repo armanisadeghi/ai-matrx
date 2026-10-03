@@ -1,3 +1,4 @@
+// record-view: none — a picker that links a passage to a record; it shows no record
 // features/rich-document/annotations/LinkRecordOverlay.tsx
 //
 // "Link a record…" on ANY record the right-click menu targets (menu-model's `link-record` verb,

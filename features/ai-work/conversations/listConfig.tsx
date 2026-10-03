@@ -1,4 +1,5 @@
 "use client";
+// list-source: custom_fields — returned by cvx_list_scoped (lane7w5d_cvx); the chair applies it
 
 // features/ai-work/conversations/listConfig.tsx
 //

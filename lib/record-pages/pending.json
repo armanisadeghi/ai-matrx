@@ -1,5 +1,5 @@
 {
- "exemptCeiling": 1454,
+ "exemptCeiling": 1447,
  "pending": [
   "route:/",
   "route:/_flash-cards",
@@ -1720,18 +1720,5 @@
   "features/scopes/components/management/OrgScopeTypeSection.tsx",
   "features/tasks/components/TasksTableView.tsx"
  ],
- "listSourcesWithoutCustomFields": [
-  "features/agents/browse/listConfig.tsx",
-  "features/ai-work/conversations/listConfig.tsx",
-  "features/content-ir/browse/listConfig.tsx",
-  "features/education/assessment/components/home/assessmentList.tsx",
-  "features/flashcards/components/home/flashcardSetList.tsx",
-  "features/mandates/browse/listConfig.tsx",
-  "features/masterwork/browse/listConfig.tsx",
-  "features/research/browse/listConfig.tsx",
-  "features/spatial/boards/listConfig.tsx",
-  "features/transcripts/browse/listConfig.tsx",
-  "features/vision-interview/browse/listConfig.tsx",
-  "features/workflow-runtime/browse/listConfig.tsx"
- ]
+ "listSourcesWithoutCustomFields": []
 }

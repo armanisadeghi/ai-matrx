@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 // Old Data Stores list (/knowledge/data-stores with no store open, before H6b,
 // 2026-09-27), review-only. DataStoresPage is still live (it is the store's
 // record page); rendered here with no store_id it shows the old list view.

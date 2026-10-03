@@ -1,3 +1,4 @@
+// record-view: none — an admin list of workflow runs
 // app/(admin)/administration/automation/workflow-runs/page.tsx — EVERY WORKFLOW RUN, ONE EXPLORER
 // (lane DRILL-CONVERSIONS). The declared definition `workflow_runs` in the platform lane: runs,
 // failures, durations and what their requests spent, by workflow, status, how they started, person,

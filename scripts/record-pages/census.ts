@@ -179,7 +179,7 @@ export function buildCensus(opts: CensusOptions): Census {
     const t = types.get(token);
     if (!t) problems.push(`${where}: declares "${token}", which is not a registry token.`);
     else if (!t.is_active) problems.push(`${where}: declares "${token}", a retired token.`);
-    else if (!["entity", "detail"].includes(t.type.toLowerCase()) || !t.custom_fields_enabled)
+    else if (!["entity", "detail"].includes((t.type ?? "").toLowerCase()) || !t.custom_fields_enabled)
       problems.push(`${where}: declares "${token}", a ${t.type} table, which takes no custom fields.`);
     else if (!t.has_organization) noOrganization.add(token);
   };
@@ -327,7 +327,9 @@ export function buildCensus(opts: CensusOptions): Census {
       );
   for (const k of ledgerPending)
     if (!pendingNow.has(k)) problems.push(`${k}: is declared now (or gone) — remove it from lib/record-pages/pending.json.`);
-  const exempt = units.filter((u) => u.declaration.kind === "none" || u.declaration.kind === "pending").length;
+  // The ceiling bounds the UNCLASSIFIED views (pending). A new page is classified in its own file —
+  // a token, "host", "any", or "none — <reason>" (the reason is the review) — never added here.
+  const exempt = units.filter((u) => u.declaration.kind === "pending").length;
   if (exempt > opts.ledger.exemptCeiling)
     problems.push(
       `Views without a custom-fields section rose to ${exempt} (ceiling ${opts.ledger.exemptCeiling}). A new "record-view: none" page is the cause; declare the record's token instead.`,
@@ -355,7 +357,11 @@ export function buildCensus(opts: CensusOptions): Census {
     if (/\.test\.tsx?$/.test(rel)) continue;
     const text = read(rel);
     if (!text || !/EntityListConfig</.test(text)) continue;
-    if (!/registryToken:\s*["'][a-z0-9_]+["']|door:\s*\{\s*token:\s*["'][a-z0-9_]+["']/.test(text)) continue;
+    const tokenMatch = text.match(/registryToken:\s*["']([a-z0-9_]+)["']|door:\s*\{\s*token:\s*["']([a-z0-9_]+)["']/);
+    if (!tokenMatch) continue;
+    // A list of a token that takes no custom fields (Reference, System, untyped) owes nothing.
+    const listType = types.get(tokenMatch[1] ?? tokenMatch[2]);
+    if (!listType || !["entity", "detail"].includes((listType.type ?? "").toLowerCase()) || !listType.custom_fields_enabled) continue;
     const dir = dirname(rel);
     const folder = dir.split("/").slice(0, 3).join("/");
     const carries = allSources.some((f) => f.startsWith(folder + "/") && /custom_fields/.test(read(f) ?? ""));

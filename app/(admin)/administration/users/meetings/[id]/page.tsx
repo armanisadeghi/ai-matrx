@@ -1,3 +1,4 @@
+// record-view: none — an admin support view of a meeting; the admin seat never edits an organization's fields
 // Users & Access › Meetings › one meeting — the meeting's own home
 // (`MeetingDetail`, the same component /meetings/<id> renders) mounted INSIDE
 // the admin section so its reads ride the admin lane. The user-side route runs

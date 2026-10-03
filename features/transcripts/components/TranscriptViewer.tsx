@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useTranscripts } from "../hooks/useTranscripts";
@@ -627,6 +628,8 @@ export function TranscriptViewer() {
                     </span>
                   ))}
                 </div>
+                {/* The organization's own fields on this transcript (lane 7 W5). */}
+                <EntityCustomFields entityToken="transcript" recordId={activeTranscript.id} className="mt-3" />
               </div>
               <div className="flex flex-wrap items-center justify-end gap-1 shrink-0 self-end sm:self-auto">
                 <ReferenceCopyButton

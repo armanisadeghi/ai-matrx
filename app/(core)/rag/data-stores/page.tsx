@@ -1,3 +1,4 @@
+// record-view: none — a list of data stores
 /**
  * /knowledge/data-stores — per-user data store management.
  *

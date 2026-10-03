@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 "use client";
 
 // Old graph demo (/knowledge/visualization, the flow-animation playground,

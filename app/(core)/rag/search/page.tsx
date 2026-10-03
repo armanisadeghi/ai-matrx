@@ -1,3 +1,4 @@
+// record-view: none — a search page
 /**
  * /knowledge/search — multi-tab Knowledge Search Lab.
  *

@@ -1,20 +1,22 @@
 {
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
-  "list.sourceWithoutCustomFields": 12,
-  "route.pending": 1302,
-  "route.tokens": 15,
+  "list.sourceWithoutCustomFields": 0,
+  "route.pending": 1266,
+  "route.none": 35,
+  "route.tokens": 16,
   "route.host": 1,
   "window.pending": 181,
+  "window.none": 1,
   "window.host": 1,
   "window.tokens": 2,
   "peek.tokens": 19,
   "peek.none": 5,
   "peek.any": 1,
-  "table.pending": 242,
+  "table.pending": 241,
   "table.noncanonical": 26,
   "table.set": 1,
-  "table.none": 1
+  "table.none": 2
  },
  "tokens": [
   "agent",
@@ -351,7 +353,7 @@
   },
   "route:/administration/ai/ai-models/translations": {
    "file": "app/(admin)/administration/ai/ai-models/translations/page.tsx",
-   "pending": true
+   "none": "an admin catalogue of model name translations, no single record"
   },
   "route:/administration/ai/ai-tasks": {
    "file": "app/(admin)/administration/ai/ai-tasks/page.tsx",
@@ -431,7 +433,7 @@
   },
   "route:/administration/automation/workflow-runs": {
    "file": "app/(admin)/administration/automation/workflow-runs/page.tsx",
-   "pending": true
+   "none": "an admin list of workflow runs"
   },
   "route:/administration/billing": {
    "file": "app/(admin)/administration/billing/page.tsx",
@@ -611,7 +613,7 @@
   },
   "route:/administration/database/store-tables": {
    "file": "app/(admin)/administration/database/store-tables/page.tsx",
-   "pending": true
+   "none": "an admin list of store tables"
   },
   "route:/administration/database/unified-data-ramp": {
    "file": "app/(admin)/administration/database/unified-data-ramp/page.tsx",
@@ -747,7 +749,7 @@
   },
   "route:/administration/knowledge/kg-cost/explore": {
    "file": "app/(admin)/administration/knowledge/kg-cost/explore/page.tsx",
-   "pending": true
+   "none": "an admin cost analysis"
   },
   "route:/administration/knowledge/kg-inspector": {
    "file": "app/(admin)/administration/knowledge/kg-inspector/page.tsx",
@@ -959,7 +961,7 @@
   },
   "route:/administration/usage": {
    "file": "app/(admin)/administration/usage/page.tsx",
-   "pending": true
+   "none": "an admin usage report"
   },
   "route:/administration/users": {
    "file": "app/(admin)/administration/users/page.tsx",
@@ -1011,11 +1013,11 @@
   },
   "route:/administration/users/meetings": {
    "file": "app/(admin)/administration/users/meetings/page.tsx",
-   "pending": true
+   "none": "an admin list of meetings"
   },
   "route:/administration/users/meetings/[id]": {
    "file": "app/(admin)/administration/users/meetings/[id]/page.tsx",
-   "pending": true
+   "none": "an admin support view of a meeting; the admin seat never edits an organization's fields"
   },
   "route:/administration/users/organizations": {
    "file": "app/(admin)/administration/users/organizations/page.tsx",
@@ -1731,39 +1733,39 @@
   },
   "route:/compare/old": {
    "file": "app/(core)/compare/old/page.tsx",
-   "pending": true
+   "none": "the old-version comparison home"
   },
   "route:/compare/old/data-stores": {
    "file": "app/(core)/compare/old/data-stores/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/graph-demo": {
    "file": "app/(core)/compare/old/graph-demo/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/knowledge-home": {
    "file": "app/(core)/compare/old/knowledge-home/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/libraries": {
    "file": "app/(core)/compare/old/libraries/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/library-catalog": {
    "file": "app/(core)/compare/old/library-catalog/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/rag": {
    "file": "app/(core)/compare/old/rag/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/sources": {
    "file": "app/(core)/compare/old/sources/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/compare/old/transcripts": {
    "file": "app/(core)/compare/old/transcripts/page.tsx",
-   "pending": true
+   "none": "an old-version comparison page"
   },
   "route:/connect-computer": {
    "file": "app/(core)/connect-computer/page.tsx",
@@ -1895,11 +1897,11 @@
   },
   "route:/devices": {
    "file": "app/(core)/devices/page.tsx",
-   "pending": true
+   "none": "a list of connected computers"
   },
   "route:/devices/[deviceId]": {
    "file": "app/(core)/devices/[deviceId]/page.tsx",
-   "pending": true
+   "none": "a connected computer's console; devices are not a registry Entity/Detail table"
   },
   "route:/dictionary/admin": {
    "file": "app/(core)/dictionary/admin/page.tsx",
@@ -2973,7 +2975,7 @@
   },
   "route:/knowledge/hub": {
    "file": "app/(core)/knowledge/hub/page.tsx",
-   "pending": true
+   "none": "the knowledge hub, a list of sources"
   },
   "route:/knowledge/library": {
    "file": "app/(core)/knowledge/library/page.tsx",
@@ -3005,7 +3007,9 @@
   },
   "route:/knowledge/transcripts/[id]": {
    "file": "app/(core)/knowledge/transcripts/[id]/page.tsx",
-   "pending": true
+   "tokens": [
+    "transcript"
+   ]
   },
   "route:/knowledge/viewer/[id]": {
    "file": "app/(core)/knowledge/viewer/[id]/page.tsx",
@@ -3105,11 +3109,11 @@
   },
   "route:/make": {
    "file": "app/(core)/make/page.tsx",
-   "pending": true
+   "none": "the make hub, nothing but creation doors"
   },
   "route:/make/templates/[id]": {
    "file": "app/(core)/make/templates/[id]/page.tsx",
-   "pending": true
+   "none": "a store template preview, not a standard table row"
   },
   "route:/mandates": {
    "file": "app/(core)/mandates/page.tsx",
@@ -4123,7 +4127,7 @@
   },
   "route:/medical": {
    "file": "app/(core)/medical/page.tsx",
-   "pending": true
+   "none": "a landing page"
   },
   "route:/meet/[slug]": {
    "file": "app/(meet)/meet/[slug]/page.tsx",
@@ -4145,7 +4149,7 @@
   },
   "route:/messages-showcase": {
    "file": "app/(core)/messages-showcase/page.tsx",
-   "pending": true
+   "none": "a component showcase"
   },
   "route:/messages/[conversationId]": {
    "file": "app/(core)/messages/[conversationId]/page.tsx",
@@ -4631,47 +4635,47 @@
   },
   "route:/rag": {
    "file": "app/(core)/rag/page.tsx",
-   "pending": true
+   "none": "the RAG home"
   },
   "route:/rag/admin": {
    "file": "app/(core)/rag/admin/page.tsx",
-   "pending": true
+   "none": "a RAG admin console"
   },
   "route:/rag/data-stores": {
    "file": "app/(core)/rag/data-stores/page.tsx",
-   "pending": true
+   "none": "a list of data stores"
   },
   "route:/rag/flow": {
    "file": "app/(core)/rag/flow/page.tsx",
-   "pending": true
+   "none": "a pipeline diagram"
   },
   "route:/rag/library": {
    "file": "app/(core)/rag/library/page.tsx",
-   "pending": true
+   "none": "a library list"
   },
   "route:/rag/library-catalog": {
    "file": "app/(core)/rag/library-catalog/page.tsx",
-   "pending": true
+   "none": "a library catalogue"
   },
   "route:/rag/library/[id]/preview": {
    "file": "app/(core)/rag/library/[id]/preview/page.tsx",
-   "pending": true
+   "none": "redirects to the source studio, which shows the record"
   },
   "route:/rag/repositories": {
    "file": "app/(core)/rag/repositories/page.tsx",
-   "pending": true
+   "none": "a list of repositories"
   },
   "route:/rag/search": {
    "file": "app/(core)/rag/search/page.tsx",
-   "pending": true
+   "none": "a search page"
   },
   "route:/rag/viewer/[id]": {
    "file": "app/(core)/rag/viewer/[id]/page.tsx",
-   "pending": true
+   "none": "redirects to the source studio, which shows the record"
   },
   "route:/rag/visualization": {
    "file": "app/(core)/rag/visualization/page.tsx",
-   "pending": true
+   "none": "a visualization page"
   },
   "route:/registered-results": {
    "file": "app/(transitional)/registered-results/page.tsx",
@@ -5341,7 +5345,7 @@
   },
   "route:/workflows/runs/analyze": {
    "file": "app/(core)/workflows/runs/analyze/page.tsx",
-   "pending": true
+   "none": "a run analysis page"
   },
   "route:/workflows/waiting": {
    "file": "app/(core)/workflows/waiting/page.tsx",
@@ -5518,6 +5522,10 @@
   "window:features/review-walk/components/ReviewWalkWindow.tsx": {
    "file": "features/review-walk/components/ReviewWalkWindow.tsx",
    "pending": true
+  },
+  "window:features/rich-document/annotations/LinkRecordOverlay.tsx": {
+   "file": "features/rich-document/annotations/LinkRecordOverlay.tsx",
+   "none": "a picker that links a passage to a record; it shows no record"
   },
   "window:features/rich-document/hosts/ApplyToSourceReview.tsx": {
    "file": "features/rich-document/hosts/ApplyToSourceReview.tsx",
@@ -6472,7 +6480,7 @@
   "features/question-desk/components/InterviewListClient.tsx": "pending",
   "features/rag/components/RepositoriesPage.tsx": "pending",
   "features/rag/components/data-stores/RichMemberTable.tsx": "pending",
-  "features/records-tool-display/RecordsAnswerView.tsx": "pending",
+  "features/records-tool-display/RecordsAnswerView.tsx": "none — draws whatever rows a records-tool answer returns, from any table, not one registry token",
   "features/reports/components/agent-drift/RollupTable.tsx": "pending",
   "features/research/admin/ProjectsOverview.tsx": "pending",
   "features/research/admin/TemplatesManager.tsx": "pending",

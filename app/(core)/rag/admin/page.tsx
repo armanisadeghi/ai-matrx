@@ -1,3 +1,4 @@
+// record-view: none — a RAG admin console
 // app/(core)/knowledge/admin/page.tsx
 //
 // Per-feature admin map for the Knowledge ecosystem. Renders via the platform

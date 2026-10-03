@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 // Old Libraries list (/libraries, the Media Source Catalog front door, before
 // H6b, 2026-09-27), review-only. LibrariesFrontDoor and its list config and
 // service were deleted in H6b and are restored verbatim under ../_restored

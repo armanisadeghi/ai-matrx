@@ -1,3 +1,4 @@
+// row-token: none — draws whatever rows a records-tool answer returns, from any table, not one registry token
 "use client";
 
 /**

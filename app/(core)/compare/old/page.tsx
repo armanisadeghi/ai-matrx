@@ -1,3 +1,4 @@
+// record-view: none — the old-version comparison home
 // app/(core)/compare/old/page.tsx — the index of old Knowledge pages kept for
 // comparison, each beside its new page. Review-only; linked from nowhere.
 

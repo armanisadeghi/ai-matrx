@@ -1,3 +1,4 @@
+// record-view: none — a library catalogue
 /**
  * /knowledge/library-catalog — shared-knowledge library catalog (list → open → act).
  *

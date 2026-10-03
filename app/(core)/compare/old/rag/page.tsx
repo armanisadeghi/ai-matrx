@@ -1,3 +1,4 @@
+// record-view: none — an old-version comparison page
 // The old /rag/* family (before H6a, 2026-09-27), review-only. At c16b6616f9^
 // every /rag/* route held the page code and /knowledge/* re-exported it, so the
 // family had no page of its own beyond its twins. This map sends each old

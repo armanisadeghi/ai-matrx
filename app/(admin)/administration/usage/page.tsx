@@ -1,3 +1,4 @@
+// record-view: none — an admin usage report
 // app/(admin)/administration/usage/page.tsx — AI USAGE, ONE EXPLORER (lane DRILL-USAGE-PAGE).
 //
 // The first worked example of the semantic layer: every usage screen is one question of the
