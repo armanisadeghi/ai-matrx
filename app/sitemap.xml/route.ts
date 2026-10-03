@@ -5,6 +5,8 @@ import { MODULE_LANDING_DIRECTORY } from '@/features/auth/components/module-land
 import { MARKETING_PUBLIC_TOOLS } from '@/features/marketing/lib/marketing-nav'
 import { listSearchEngineIndexedRecords } from '@/lib/seo/search-engine-indexed.server'
 import { getScriptSupabaseClient } from '@/utils/supabase/getScriptClient'
+import { readPublicCatalogue } from '@/features/make/gallery/publicCatalogue.server'
+import { PUBLIC_GALLERY_PATH, publicTemplateHref } from '@/features/make/gallery/publicGallery'
 
 /**
  * THE INDEXED SWITCH (access ladder T-12): every published record in the sitemap comes from
@@ -132,6 +134,18 @@ export async function GET() {
 
   const recordUrls = await getIndexedRecordUrls(baseUrl)
 
+  // The public template gallery (Arman 2026-10-02: public and indexed) — every platform template a
+  // signed-out visitor can open. A closed catalogue door lists none; any other failure throws.
+  const catalogue = await readPublicCatalogue()
+  const templateUrls = [
+    { loc: `${baseUrl}${PUBLIC_GALLERY_PATH}`, changefreq: 'weekly', priority: '0.8' },
+    ...(catalogue.state === 'open' ? catalogue.cards : []).map((c) => ({
+      loc: `${baseUrl}${publicTemplateHref(c.catalogue_id)}`,
+      changefreq: 'weekly',
+      priority: '0.7',
+    })),
+  ]
+
   const urls = [
     ...staticUrls,
     { loc: `${baseUrl}/features`, changefreq: 'weekly', priority: '0.8' },
@@ -140,6 +154,7 @@ export async function GET() {
     ...moduleLandingUrls,
     ...educationUrls,
     ...recordUrls,
+    ...templateUrls,
   ]
   const now = new Date().toISOString()
 

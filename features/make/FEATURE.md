@@ -27,7 +27,12 @@ dialog on the page — no builder is forked.
   `features/make/__tests__/recent-skips-archived-and-test-rows.test.ts`.
 - Entries: `/dashboard` QUICK_ACTIONS (and so the launchpad), `/welcome`, the sidebar Data group,
   the Tools grid (`tile.make`, everyone).
+- The public gallery: `/templates` and `/templates/<catalogue id>` (app/(public)/templates), server-
+  rendered, indexed and in the sitemap; the cards and summary are `gallery/TemplateCards.tsx`, the
+  same drawing /make uses. "Use this template" = sign up, then `/make/templates/<id>`. The signed-out
+  read is `custom.templates` with the publishable key; a closed or absent door is an empty gallery.
 
 ## Change log
 
 - 2026-10-02 — wave 1: route, seven tiles, step 1, Recent, templates row, entries, G1/G2.
+- 2026-10-03 — wave 4b: public template gallery (one drawing, two hosts), sitemap entries.

@@ -45,22 +45,21 @@ import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 
 import { SAVED_WHERE_CHOSEN, SavesTo } from "../MakeMount";
+import { TemplateCardGrid, TemplateSummary } from "./TemplateCards";
 import {
   GALLERY_PAGE,
   facetValues,
-  footprintLine,
-  footprintParts,
   galleryFilter,
   hrefForMade,
   openableMade,
   orgRowCards,
   orgRowFilter,
   platformCards,
-  wordFor,
   type GalleryAnswer,
   type GalleryCard,
   type GalleryFilters,
   type MadeObject,
+  wordFor,
 } from "./catalogue";
 
 /** The preview page's address for one card. */
@@ -204,30 +203,7 @@ function Facet({
 }
 
 function CardGrid({ cards, attr }: { cards: GalleryCard[]; attr: string }) {
-  return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-3" {...{ [attr]: "" }}>
-      {cards.map((card) => (
-        <li key={card.id} className="min-w-0">
-          <Link
-            href={templatePreviewHref(card.id)}
-            data-make-gallery-card={card.catalogue_id}
-            data-industry={card.industry ?? ""}
-            className="flex h-full min-w-0 flex-col gap-1 rounded-xl border border-border bg-card p-3 shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{card.name}</span>
-              {card.installed ? <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">Installed</span> : null}
-            </span>
-            <span className="truncate text-xs text-muted-foreground">{card.business ?? card.vertical ?? ""}</span>
-            <span className="truncate text-xs text-muted-foreground" data-make-footprint="">{footprintLine(card.footprint)}</span>
-            {card.teaches ? (
-              <span className="mt-1 self-start rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">{wordFor("teaches", card.teaches)}</span>
-            ) : null}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
+  return <TemplateCardGrid cards={cards} hrefFor={(card) => templatePreviewHref(card.id)} attr={attr} />;
 }
 
 function Failed({ why, retry }: { why: string; retry: () => void }) {
@@ -308,38 +284,10 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
     run.phase === "removed" ? null : ((run.phase !== "idle" ? run.answer?.install_id : null) ?? card.installed?.install_id ?? null);
   const isInstalled = run.phase === "installed" || (run.phase !== "removed" && card.installed?.state === "installed");
   const made = ((run.phase !== "idle" ? run.answer?.made : null) ?? []) as MadeObject[];
-  const parts = footprintParts(card.footprint);
 
   return (
     <div className="flex flex-col gap-6" data-make-template-preview={card.catalogue_id}>
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{card.name}</h1>
-        <p className="truncate text-sm text-muted-foreground">{card.business ?? card.vertical ?? ""}</p>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5 text-xs">
-        {card.industry ? <Chip>{wordFor("industry", card.industry)}</Chip> : null}
-        {card.job ? <Chip>{wordFor("job", card.job)}</Chip> : null}
-        {card.teaches ? <Chip>{wordFor("teaches", card.teaches)}</Chip> : null}
-        {card.strengths.map((s) => (
-          <Chip key={s}>{wordFor("strength", s)}</Chip>
-        ))}
-      </div>
-
-      {card.persona ? <p className="max-w-2xl text-sm text-foreground">{card.persona}</p> : null}
-
-      <section className="flex flex-col gap-2" aria-labelledby="make-template-installs">
-        <h2 id="make-template-installs" className="text-sm font-medium text-muted-foreground">
-          What it makes
-        </h2>
-        <ul className="flex flex-wrap gap-2" data-make-template-footprint={footprintLine(card.footprint)}>
-          {parts.map((p) => (
-            <li key={p.kind} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-              <span className="font-medium tabular-nums">{p.count}</span> <span className="text-muted-foreground">{p.label}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <TemplateSummary card={card} />
 
       <section className="flex flex-col gap-3" aria-labelledby="make-template-install">
         <div className="flex flex-wrap items-center gap-2">
@@ -402,10 +350,6 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       />
     </div>
   );
-}
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">{children}</span>;
 }
 
 /** Live progress: every object ticks as the install makes it. */
