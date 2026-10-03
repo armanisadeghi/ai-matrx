@@ -48,6 +48,9 @@ const STRIP_SLOTS: readonly StripSlot[] = [
   { key: "archive", ownLabels: [/^archive\b/i, /^delete\b/i, /^move to trash\b/i] },
 ];
 
+/** Which slots win when more than six could fill: text editing first, then Share and Archive. */
+const STRIP_PRIORITY = ["copy", "cut", "paste", "share", "archive", "duplicate", "favorite", "download"] as const;
+
 /** Own rows that fold into a strip verb instead of sitting beside it. */
 const FOLDS_INTO_SHARE = [/^copy link\b/i, /^share link\b/i];
 
@@ -112,11 +115,13 @@ export function proposedArrangement(
   const label = (r: ResolvedAction) => actionLabel(r.action, target);
   const used = new Set<string>();
 
-  // 1 · the icon row: one leaf per slot, at most six, no submenu ever becomes an icon.
-  const strip: ResolvedAction[] = [];
-  for (const slot of STRIP_SLOTS) {
-    if (strip.length >= STRIP_MAX) break;
-    if (slot.editableOnly && !editable) continue;
+  // 1 · the icon row: one leaf per slot, at most six, no submenu ever becomes an icon. Slots are
+  // FILLED by priority (Archive always keeps its place) and DRAWN in reading order.
+  const picked = new Map<string, ResolvedAction>();
+  for (const key of STRIP_PRIORITY) {
+    if (picked.size >= STRIP_MAX) break;
+    const slot = STRIP_SLOTS.find((s) => s.key === key);
+    if (!slot || (slot.editableOnly && !editable)) continue;
     const pick =
       resolved.find(
         (r) => !used.has(r.action.id) && !r.action.expand && isOwn(r.action) && slot.ownLabels?.some((re) => re.test(label(r))),
@@ -126,6 +131,12 @@ export function proposedArrangement(
     used.add(pick.action.id);
     // A page's own Share wins: the universal Share is the same verb.
     if (slot.key === "share") for (const r of resolved) if (r.action.id === "cm:share") used.add(r.action.id);
+    picked.set(slot.key, pick);
+  }
+  const strip: ResolvedAction[] = [];
+  for (const slot of STRIP_SLOTS) {
+    const pick = picked.get(slot.key);
+    if (!pick) continue;
     const { section: _section, ...rest } = pick.action;
     void _section;
     strip.push({
