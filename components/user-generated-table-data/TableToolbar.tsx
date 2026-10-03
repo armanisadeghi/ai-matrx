@@ -670,6 +670,7 @@ export default function TableToolbar({
             sampleRow={sampleRow ?? null}
             rows={rows}
             defaultTab={configTab}
+            pageOwnsShare={pageOwnsShareAndExport}
           />
           <RowOrderingModal
             isOpen={showRowOrderingModal}

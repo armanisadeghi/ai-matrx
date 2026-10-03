@@ -60,7 +60,6 @@ import {
   ChevronRight,
   Paintbrush,
   Plus,
-  Download,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -244,8 +243,8 @@ import {
   type GridMenuTarget,
 } from "@/features/data-tables/grid-context-menu";
 import {
-  buildDatasetTableMenuSection,
   datasetTableEntityRef,
+  tableActionSectionsAwayFromPage,
 } from "@/features/data-tables/dataset-table-actions";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { OpenSurfaceMenuButton } from "@/features/context-menu-v3/components/OpenSurfaceMenuButton";
@@ -514,11 +513,11 @@ interface UserTableViewerProps {
    */
   emitSurfaceScope?: boolean;
   /**
-   * THE PAGE AROUND THE GRID OWNS SHARE AND EXPORT (the /data-v2 table page's chrome, for
-   * every layout — ruling 2026-09-23). The grid's own Share and export controls are absent,
-   * and its right-click export items become one "Export this table…" that opens the page's.
+   * THE PAGE AROUND THE GRID OWNS THE TABLE'S MENU (the /data-v2 table page's chrome, for
+   * every layout — ruling 2026-09-23; TABLE-ACTIONS item 11). The grid's own Share, export,
+   * ⋯ and table sections are absent: the page's header ⋯ is the table's one menu.
    */
-  pageOwnsShareAndExport?: { openExport: () => void };
+  pageOwnsShareAndExport?: boolean;
   /**
    * THE TABLE PAGE'S ONE TOOLBAR ROW (lane TABLE-PAGE-CHROME; records-ui `HostLayout.render`'s
    * `toolbarSlot`). Given, the Sheet draws its toolbar — Column, Row, Paste, search, Columns,
@@ -4049,45 +4048,30 @@ const UserTableViewer = ({
         : gridMenuTargetKind === "column"
           ? [gridColumnSection]
           : []),
-    buildDatasetTableMenuSection({
-      label: tableInfo.table_name ? `Table · ${tableInfo.table_name}` : "Table",
-      getRow: () => ({ id: tableId, name: tableInfo.table_name ?? null }),
-      // Table-wide doors sit ONLY here, never in a column's section.
-      extraItems: isReadOnly
-        ? []
-        : [
-            {
-              kind: "item" as const,
-              id: "grid-table-colors",
-              label: "Table colors…",
-              icon: Paintbrush,
-              onSelect: () => setShowColorsDialog(true),
-            },
-          ],
-      unavailable: {
-        // On the route itself the door leads to where the user already is.
-        "dataset-open-workspace":
-          emitSurfaceScope && "Already open in the Data Workspace",
-      },
-    }),
+    // THE TABLE'S ONE MENU (lane TABLE-ACTIONS item 11): on the table page the header ⋯ is the
+    // only table menu, so the grid adds no table section there. Away from the page the grid's
+    // right-click carries the table's one action list (`tableActions`, never a list of its own).
     ...(pageOwnsShareAndExport
-      ? [
+      ? []
+      : tableActionSectionsAwayFromPage({ id: tableId, name: tableInfo.table_name ?? null })),
+    // The Sheet's own display door — not a table action, so it stays with the grid.
+    ...(isReadOnly
+      ? []
+      : [
           {
-            id: "page-export",
-            label: "Export",
+            id: "sheet-display",
+            label: "Sheet",
             items: [
               {
                 kind: "item" as const,
-                id: "page-export-open",
-                label: "Export this table…",
-                description: "CSV, XLSX, or copy and transform, from the page",
-                icon: Download,
-                onSelect: () => pageOwnsShareAndExport.openExport(),
+                id: "grid-table-colors",
+                label: "Table colors…",
+                icon: Paintbrush,
+                onSelect: () => setShowColorsDialog(true),
               },
             ],
           },
-        ]
-      : []),
+        ]),
   ];
 
   /** The table page's one toolbar row is where the Sheet's toolbar goes, when there is one. */
@@ -4905,7 +4889,9 @@ const UserTableViewer = ({
       onApply={steady.applyCleanupPatches}
     />
   );
-  const sheetMoreActions = <SheetMoreActions getSurface={steady.getGridSurface} />;
+  // On the table page the header ⋯ is the table's one menu (TABLE-ACTIONS item 11, T3.2): no
+  // second ⋯ here. Elsewhere the ⋯ opens the grid's menu, which carries the table's action list.
+  const sheetMoreActions = pageOwnsShareAndExport ? null : <SheetMoreActions getSurface={steady.getGridSurface} />;
 
   // EVERYTHING THE COLUMN-HEADER ROW SHOWS (lane RENDER-3): a Sheet render that moved none of these
   // redraws no header — a cell write moves the rows, and the headers read no row.
@@ -4952,7 +4938,7 @@ const UserTableViewer = ({
       <SheetToolbar
         inPageRow={inPageRow}
         {...(inPageRow && sheetSortState ? { sortState: sheetSortState } : {})}
-        pageOwnsShareAndExport={Boolean(pageOwnsShareAndExport)}
+        pageOwnsShareAndExport={pageOwnsShareAndExport === true}
         tableId={tableId}
         tableInfo={tableInfo}
         fields={fields}

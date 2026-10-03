@@ -1,37 +1,27 @@
 "use client";
 
 /**
- * THE USER TABLE'S ACTIONS — ONE definition of "what you can do to a
- * user-generated data table", shared by every
- * surface that shows one AS A WHOLE RECORD (not a single row/cell inside it —
- * that is `matrx-user/data-tables`' own per-cell editor).
+ * A TABLE SHOWN AWAY FROM ITS PAGE GETS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS item 11).
  *
- * Census (context-menu rollout, 2026-08-30): the identity recurs on
- * `UserTableWindow` (full-size floating viewer, opened from a converted
- * chat-artifact table) and `QuickDataWindow`'s `QuickDataSheet` (table picker
- * + inline preview) — both windows in `features/window-panels/windows/`, both
- * previously answering a right-click with whatever page sat underneath. This
- * module is the fix: a host calls `buildDatasetTableMenuSection` with a
- * `getRow` reading its own selected-table state and gets the same actions
- * everywhere. Future adopters: `OrgResourceList`, `DatasetPeek` — same
- * table, no menu of their own today.
+ * Mounts that draw a record-store table outside `/data-v2/<id>` — `UserTableWindow`,
+ * `QuickDataWindow`'s preview, `UserTableViewer` on `/data/<id>` — answer a right-click with
+ * `tableActions()` from `@ai-matrx/records-ui`, through the one v3 renderer (`toExtraSections`).
+ * There is no second list here: the guard `no-table-action-list-outside-the-registry` forbids it.
  *
- * 🚨 NO NEW WRITE PATH LIVES HERE. "Open in Data Workspace" just links to the
- * existing `/data/[id]` route; this module adds no RPC of its own.
+ * Away from the page only the reading verbs act (Open, Open in new tab, Copy link, Copy table ID).
+ * Every other verb keeps its row and says where it acts — on the table's page, which then checks
+ * the person's real access. So `rights` here never refuse: a level this mount does not know would
+ * be a guess, and a guessed "Needs Editor access" shown to the owner is a lie.
+ *
+ * 🚨 NO NEW WRITE PATH LIVES HERE.
  */
 
-import { ExternalLink, Hash } from "lucide-react";
+import { whatYouMayDo } from "@ai-matrx/records-ui";
+import { tableActions, tableLink, type ObjectAction } from "@ai-matrx/records-ui/object-actions";
 
 import { toast } from "@/lib/toast";
-import type {
-  ContextMenuEntityRef,
-  ContextMenuExtraItem,
-  ContextMenuExtraSection,
-} from "@/features/context-menu-v3/types";
-import {
-  withAvailability,
-  type AvailabilityMap,
-} from "@/features/context-menu-v3/utils/availability";
+import type { ContextMenuEntityRef, ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { toExtraSections } from "@/features/unified-data/actions/tableActionAdapters";
 
 /** The one thing every dataset-table surface can say about the selected table. */
 export interface DatasetTableMenuRow {
@@ -52,58 +42,54 @@ export function datasetTableEntityRef(
   };
 }
 
-export function buildDatasetTableMenuSection(opts: {
-  /** The table the menu was opened on (or the window's single table). */
-  getRow: () => DatasetTableMenuRow | null;
-  /** Label for the section heading. */
-  label?: string;
-  /**
-   * THE CONSISTENCY STEP — what THIS surface cannot do, and why. Keyed by
-   * item id (`dataset-open-workspace`, `dataset-copy-id`). Contract:
-   * `features/context-menu-v3/utils/availability.ts`.
-   */
-  unavailable?: AvailabilityMap;
-  /**
-   * The host's own table-wide doors (the grid's Colors dialog), listed after
-   * the dataset's. Table-wide items belong HERE, never in a column's section.
-   */
-  extraItems?: ContextMenuExtraItem[];
-}): ContextMenuExtraSection {
-  const { getRow } = opts;
-  const row = getRow();
+/** Why a verb that needs the table's page does nothing here (≤ 60 chars). */
+export const ON_THE_TABLE_PAGE_REASON = "Open the table to do this";
 
-  const items: ContextMenuExtraItem[] = [
-    {
-      kind: "link",
-      id: "dataset-open-workspace",
-      label: "Open in Data Workspace",
-      icon: ExternalLink,
-      href: row ? `/data/${row.id}` : "#",
-      target: "_blank",
-      disabled: !row,
-    },
-    {
-      kind: "item",
-      id: "dataset-copy-id",
-      label: "Copy table ID",
-      icon: Hash,
-      onSelect: () => {
-        if (!row) return;
-        void navigator.clipboard.writeText(row.id);
-        toast.success("Table ID copied");
+/** Every verb the registry hands out that acts on the table's page, never away from it. */
+const PAGE_VERBS = [
+  "rename", "duplicate", "move", "favorite", "share", "export", "import", "add-column", "settings",
+  "history", "make-default", "archive",
+  ...["forms", "bookings", "checklists", "notifications", "portals", "inbox", "dashboards", "archived"].map(
+    (destination) => `built-on.${destination}`,
+  ),
+];
+
+/** The table's one action list, as a right-click's extra sections, for a mount away from its page. */
+export function tableActionSectionsAwayFromPage(
+  row: DatasetTableMenuRow | null,
+): ContextMenuExtraSection[] {
+  if (!row) return [];
+  const origin = typeof window !== "undefined" ? window.location.origin : undefined;
+  const copy = async (text: string, done: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(done);
+    } catch {
+      toast.error("Couldn’t copy");
+    }
+  };
+  const actions: ObjectAction[] = tableActions({
+    table: { id: row.id, name: row.name ?? "Table" },
+    // Never a refusal (see header): only the reading verbs carry a handler.
+    rights: whatYouMayDo("admin", true),
+    host: {
+      ...(origin ? { origin } : {}),
+      open: () => window.location.assign(tableLink(row.id, origin)),
+      openInNewTab: (url) => {
+        window.open(url, "_blank", "noopener,noreferrer");
       },
-      disabled: !row,
+      copyText: (url) => copy(url, "Link copied"),
+      unavailableReasons: Object.fromEntries(PAGE_VERBS.map((id) => [id, ON_THE_TABLE_PAGE_REASON])),
+      extend: () => [
+        {
+          id: "copy-table-id",
+          label: "Copy table ID",
+          icon: "copy",
+          group: "open",
+          run: () => copy(row.id, "Table ID copied"),
+        },
+      ],
     },
-    ...(opts.extraItems ?? []),
-  ];
-
-  return withAvailability(
-    {
-      id: "dataset-table",
-      label: opts.label ?? "This table",
-      anchor: "after-compare",
-      items,
-    },
-    opts.unavailable,
-  );
+  });
+  return toExtraSections(actions);
 }

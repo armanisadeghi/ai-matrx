@@ -8,7 +8,8 @@
  * or carries three or more of the registry's verb labels as literals. Other objects' menus (agents,
  * files, topics) use the same verbs on purpose, so the scan covers only the table-owning trees.
  *
- * THE BASELINE ONLY SHRINKS. Today's two lists here are named below (records-ui scans its own
+ * THE BASELINE ONLY SHRINKS — and is empty since 2026-10-03 (the Sheet's table section went onto
+ * the registry). Any list here is named below (records-ui scans its own
  * `TABLE_MENU`); a new file fails, and a baseline file that no longer matches fails too, so whoever
  * moves it onto the registry deletes its line.
  *
@@ -36,10 +37,7 @@ const REGISTRY = new Set([
 ]);
 
 /** Today's lists outside the registry. Delete a line when its list moves onto the registry. */
-const BASELINE = [
-  // `buildDatasetTableMenuSection` — the Sheet's table section.
-  "features/data-tables/dataset-table-actions.tsx",
-];
+const BASELINE: string[] = [];
 
 const TABLE_MENU_NAME =
   /\b(?:const|let|var|function)\s+(TABLE_[A-Z_]*MENU[A-Z_]*|build\w*Table\w*MenuSections?|dataHome\w*RowActions|\w*[Tt]ableMenu(?:Entries|Items|Sections?)?)\b/;
