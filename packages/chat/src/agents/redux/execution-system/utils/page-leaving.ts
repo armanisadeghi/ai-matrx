@@ -11,8 +11,10 @@
  * expires after LEAVE_WINDOW_MS so a cancelled beforeunload prompt can never
  * silence real failures for the rest of the session.
  *
- * Same rule the app's own /api capture applies (lib/diagnostics/
- * captureAppApiFetch.ts) — reload-cancelled requests are never incidents.
+ * THE one detector: the stream capture gate here, the host app's stream
+ * transport sink (lib/diagnostics/captureStreamError.ts) and its /api capture
+ * (lib/diagnostics/captureAppApiFetch.ts) all read it, so a reload-cancelled
+ * request is never an incident anywhere.
  */
 const LEAVE_WINDOW_MS = 3000;
 let leavingSince: number | null = null;

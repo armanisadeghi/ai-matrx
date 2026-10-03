@@ -32,6 +32,7 @@ import {
   type BrowserProvenance,
 } from "@/lib/deployment/browser-provenance";
 import { extractErrorMessage } from "@/utils/errors";
+import { pageIsLeaving } from "@ai-matrx/chat/agents/redux/execution-system/utils/page-leaving";
 import { classifyTier } from "@/lib/diagnostics/errorTierRules";
 import type { ErrorTier } from "@/lib/diagnostics/errorTiers";
 
@@ -824,7 +825,25 @@ function bumpUnseen(id: string, tier: ErrorTier): void {
   else if (tier === "orange") unseenOrange += 1;
 }
 
+/**
+ * The drop the browser causes when the page is leaving (reload, navigation):
+ * it cancels the live answer stream, and every layer that sees the throw —
+ * the transport sink, run-ai-stream, the send thunks' rejections — would file
+ * it. The person left; the server finishes the turn and the next page rejoins
+ * it (real test 2026-10-03: "1 error", then "2 errors" once only the sink was
+ * gated). One gate here covers every capture site.
+ */
+const TRANSPORT_DROP_CODES = new Set(["stream_transport_lost", "StreamTransportError"]);
+
+function isLeavingPageTransportDrop(input: CaptureInput): boolean {
+  const named =
+    (input.code !== undefined && TRANSPORT_DROP_CODES.has(input.code)) ||
+    (input.name !== undefined && TRANSPORT_DROP_CODES.has(input.name));
+  return named && pageIsLeaving();
+}
+
 export function captureError(rawInput: CaptureInput): string {
+  if (isLeavingPageTransportDrop(rawInput)) return makeId();
   // THE GUEST AI ALLOWANCE (lib/guest/guest-ai-allowance.ts). Every request and
   // stream failure reaches this sink, so this one call is how every AI surface
   // shows the "create a free account" reminder. The refusal is an expected
