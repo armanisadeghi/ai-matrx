@@ -40,6 +40,32 @@ const ZOOM_STEP = 1.25;
 /** Breathing room inside the frame so the diagram never touches the edges. */
 const FRAME_PADDING = 16;
 
+interface FrameBox {
+  w: number;
+  h: number;
+}
+
+/**
+ * Whether a frame resize re-fits the diagram. The pane growing (Expand,
+ * unsplit) or shrinking re-fits unless the person zoomed or panned by hand
+ * since the last fit — their view is theirs. A frame whose height follows its
+ * content (not `fillHeight`) re-fits on WIDTH only: fitting changes the
+ * content height, which would change the frame height and oscillate.
+ */
+export function shouldRefitOnResize(input: {
+  previous: FrameBox | null;
+  next: FrameBox;
+  fillHeight: boolean;
+  userAdjusted: boolean;
+  fitPending: boolean;
+}): boolean {
+  const { previous, next, fillHeight, userAdjusted, fitPending } = input;
+  if (userAdjusted) return false;
+  if (fitPending || !previous) return true;
+  if (next.w !== previous.w) return true;
+  return fillHeight && next.h !== previous.h;
+}
+
 interface NaturalSize {
   w: number;
   h: number;
@@ -90,7 +116,6 @@ export function MermaidViewport({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const naturalRef = useRef<NaturalSize | null>(null);
   const userAdjustedRef = useRef(false);
-  const lastFrameWidthRef = useRef(0);
   /**
    * The frame's inner size as the ResizeObserver last reported it — read after
    * the browser's own layout, never forced. Null until the first report.
@@ -140,8 +165,13 @@ export function MermaidViewport({
     const { fw, fh } = frameSize();
     const s = computeFitScale(nat, fw, fh);
     userAdjustedRef.current = false;
+    // Size the element now: a NEW drawing (the pane flipped a flowchart's
+    // direction on Expand) fitted to the same scale as the old one leaves
+    // `scale` unchanged, so the effect below never runs and the new SVG kept
+    // the browser's default 300x150 box — small in the middle of the pane.
+    applyScale(s);
     setScale(s);
-  }, [frameSize]);
+  }, [frameSize, applyScale]);
 
   const oneToOne = useCallback(() => {
     userAdjustedRef.current = true;
@@ -241,26 +271,31 @@ export function MermaidViewport({
     return () => ro.disconnect();
   }, []);
 
-  // Re-fit on frame WIDTH changes only (window resize, sidebar toggle). Height
-  // is read fresh inside fit() — subscribing to height would oscillate, since
-  // fitting changes the content height which changes the frame height.
+  // Re-fit when the pane resizes (Expand / Restore, split / unsplit, window
+  // resize) unless the person has zoomed or panned since the last fit. A
+  // content-height frame re-fits on width only — see `shouldRefitOnResize`.
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => {
       // Inside the observer callback layout is already clean — these reads
       // cost nothing.
-      const w = frame.clientWidth;
-      frameBoxRef.current = { w, h: frame.clientHeight };
-      const pending = fitPendingRef.current;
+      const next = { w: frame.clientWidth, h: frame.clientHeight };
+      const previous = frameBoxRef.current;
+      frameBoxRef.current = next;
+      const refit = shouldRefitOnResize({
+        previous,
+        next,
+        fillHeight: Boolean(fillHeight),
+        userAdjusted: userAdjustedRef.current,
+        fitPending: fitPendingRef.current,
+      });
       fitPendingRef.current = false;
-      if (w === lastFrameWidthRef.current && !pending) return;
-      lastFrameWidthRef.current = w;
-      if (!userAdjustedRef.current) fit();
+      if (refit) fit();
     });
     ro.observe(frame);
     return () => ro.disconnect();
-  }, [fit]);
+  }, [fit, fillHeight]);
 
   const onWheel = (e: React.WheelEvent) => {
     if (!e.ctrlKey && !e.metaKey) return; // plain wheel = native scroll
@@ -305,6 +340,11 @@ export function MermaidViewport({
     if (!drag || !frame) return;
     frame.scrollLeft = drag.left - (e.clientX - drag.x);
     frame.scrollTop = drag.top - (e.clientY - drag.y);
+    // A drag that actually moved the view is a manual pan: the next pane
+    // resize keeps this view instead of re-fitting.
+    if (frame.scrollLeft !== drag.left || frame.scrollTop !== drag.top) {
+      userAdjustedRef.current = true;
+    }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {

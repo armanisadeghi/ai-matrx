@@ -763,7 +763,9 @@ export default function MermaidWorkbench({
 
           {/* Mode pane + optional AI rail (rail stacks below on mobile) */}
           <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
-            <div className="min-h-0 flex-1">
+            {/* min-w-0: in the sm:flex-row a wide drawing must scroll inside
+                its frame, never widen the pane past its edge (controls cut off). */}
+            <div className="min-h-0 min-w-0 flex-1">
               {state.mode === "view" && (
                 <ViewModePane source={drawnSource} options={renderOptions} />
               )}

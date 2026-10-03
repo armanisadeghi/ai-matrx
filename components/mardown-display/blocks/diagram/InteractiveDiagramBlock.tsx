@@ -101,6 +101,7 @@ import { preferredFlowDirection } from "@ai-matrx/canvas";
 import { useCanvasPresentation } from "@ai-matrx/canvas/react";
 import {
   diagramScrollPans,
+  firstRankBounds,
   portraitWidthFitViewport,
 } from "@/components/mardown-display/blocks/canvas-adaptive";
 import {
@@ -1678,9 +1679,22 @@ const DiagramFlow: React.FC<{
       // at the top, and let them scroll the rest (wheel/trackpad pan there —
       // see `diagramScrollPans`). Fitting the whole graph shrinks every label
       // past reading; filling the height forces sideways panning.
+      // Too wide to read whole, it starts at its root: the top-left of the
+      // layout's first rank (top-level nodes only — a child's position is
+      // relative to its parent).
+      const firstRank = firstRankBounds(
+        laidOut.flatMap((n) => {
+          const w = n.measured?.width;
+          const h = n.measured?.height;
+          return !n.parentId && w && h
+            ? [{ x: n.position.x, y: n.position.y, width: w, height: h }]
+            : [];
+        }),
+      );
       const portraitFit = portraitWidthFitViewport({
         presentation: canvasPresentation,
         bounds,
+        firstRank,
         width: measuredWidth,
         height: measuredHeight,
         minZoom: fitMinZoom,

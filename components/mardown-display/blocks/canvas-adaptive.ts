@@ -51,21 +51,40 @@ export interface FitViewport {
 }
 
 /**
+ * The smallest zoom a diagram is ever fitted to in a portrait canvas pane:
+ * node titles (14px semibold) stay at or above ~10px on screen. Below this a
+ * wide fan-out graph fitted to a 360px pane read at zoom 0.2–0.3 — every
+ * label a smear. Tuned live on "How photosynthesis works" and "Ava Science
+ * Book" (2026-10-02).
+ */
+export const DIAGRAM_READABLE_ZOOM = 0.72;
+
+/**
  * A diagram in a portrait canvas pane fits the pane's WIDTH and starts at the
  * top; the rest is reached by scrolling down. Shrinking the whole graph to fit
  * a tall narrow pane makes every label unreadable, and the phone rule (fill
- * the height) forces sideways panning. Returns `null` when the graph already
- * fits whole (the contained fit is used) or the pane is not portrait.
+ * the height) forces sideways panning.
+ *
+ * The width fit never goes below `readableZoom`. When the graph is wider than
+ * the pane at that zoom it starts at its ROOT — the top-left of the layout's
+ * first rank (`firstRank`, the topmost nodes) — and the rest is reached by
+ * scrolling down and panning across.
+ *
+ * Returns `null` when the graph already fits whole at a readable zoom (the
+ * contained fit is used) or the pane is not portrait.
  */
 export function portraitWidthFitViewport(input: {
   presentation: CanvasPresentation | null;
   bounds: FitBounds;
+  /** Bounds of the layout's first rank; defaults to the graph's top-left. */
+  firstRank?: FitBounds | null;
   width: number;
   height: number;
   minZoom: number;
   maxZoom: number;
   padding: number;
   containedZoom: number;
+  readableZoom?: number;
 }): FitViewport | null {
   const { presentation, bounds, width, height, minZoom, maxZoom, padding } =
     input;
@@ -73,16 +92,39 @@ export function portraitWidthFitViewport(input: {
     return null;
   }
   if (!(width > 0) || !(height > 0) || !(bounds.width > 0)) return null;
-  const widthZoom = Math.min(
-    maxZoom,
-    Math.max(minZoom, (width * (1 - padding * 2)) / bounds.width),
-  );
-  if (widthZoom <= input.containedZoom) return null;
-  return {
-    zoom: widthZoom,
-    x: width / 2 - (bounds.x + bounds.width / 2) * widthZoom,
-    y: height * padding - bounds.y * widthZoom,
-  };
+  const usable = width * (1 - padding * 2);
+  const widthZoom = Math.max(minZoom, usable / bounds.width);
+  const readable = input.readableZoom ?? DIAGRAM_READABLE_ZOOM;
+  const zoom = Math.min(maxZoom, Math.max(widthZoom, readable));
+  if (zoom <= input.containedZoom) return null;
+  const y = height * padding - bounds.y * zoom;
+  if (bounds.width * zoom <= usable + 0.5) {
+    return { zoom, x: width / 2 - (bounds.x + bounds.width / 2) * zoom, y };
+  }
+  // Wider than the pane at a readable zoom: start at the root, never past the
+  // graph's right edge.
+  const anchor = input.firstRank ?? bounds;
+  const atRoot = width * padding - anchor.x * zoom;
+  const rightmost = width * (1 - padding) - (bounds.x + bounds.width) * zoom;
+  return { zoom, x: Math.max(atRoot, rightmost), y };
+}
+
+/**
+ * The layout's first rank: the nodes whose top edge is the graph's topmost
+ * (within `tolerance` px). In a top-to-bottom layout that is the root row.
+ */
+export function firstRankBounds(
+  nodes: readonly FitBounds[],
+  tolerance = 8,
+): FitBounds | null {
+  if (!nodes.length) return null;
+  const top = Math.min(...nodes.map((n) => n.y));
+  const rank = nodes.filter((n) => n.y <= top + tolerance);
+  const x = Math.min(...rank.map((n) => n.x));
+  const y = Math.min(...rank.map((n) => n.y));
+  const right = Math.max(...rank.map((n) => n.x + n.width));
+  const bottom = Math.max(...rank.map((n) => n.y + n.height));
+  return { x, y, width: right - x, height: bottom - y };
 }
 
 /** Wheel and trackpad scroll the diagram down a portrait pane instead of zooming it. */
