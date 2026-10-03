@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
 import type { PermissionLevel } from "@ai-matrx/records";
 import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
+import { createRecordsClient } from "@ai-matrx/records/core";
 import {
   TableRenameDialog,
   TableSettings,
@@ -46,36 +47,48 @@ import type { DataHomeRow } from "./dataHomeRows";
 const LEVELS_PER_CALL = 200;
 
 /** The table's level for each table id in hand; absent = not answered yet. */
-export function useTableLevels(tableIds: readonly string[]): ReadonlyMap<string, PermissionLevel | null> {
+export function useTableLevels(
+  tables: ReadonlyArray<{ tableId: string; organizationId: string | null }>,
+): ReadonlyMap<string, PermissionLevel | null> {
   const client = useRecordsClient();
-  const key = [...tableIds].sort().join(",");
+  // `custom.my_levels` is asked IN the table's own organization (the door refuses a null one, and
+  // the Data home lists every organization): one client per organization, from the mount's config.
+  const key = [...tables].map((t) => `${t.organizationId ?? ""}:${t.tableId}`).sort().join(",");
   const [levels, setLevels] = useState<ReadonlyMap<string, PermissionLevel | null>>(() => new Map());
   useEffect(() => {
     if (key === "") return;
     let live = true;
-    const ids = key.split(",");
-    for (let i = 0; i < ids.length; i += LEVELS_PER_CALL) {
-      const asked = ids.slice(i, i + LEVELS_PER_CALL);
-      // A read that fails is asked again (three tries, a pause between): the menu says
-      // "Checking your access…" meanwhile, never a refusal it did not get.
-      const ask = async () => {
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const answered = await client.myLevels({ ids: asked });
-          if (answered.ok || !live) return answered;
-          await new Promise((r) => setTimeout(r, 3000));
-        }
-        return null;
-      };
-      void ask().then((answered) => {
-        if (!live || !answered || !answered.ok) return;
-        setLevels((now) => {
-          const next = new Map(now);
-          // An id the store did not answer for is "you hold nothing on it" — an answer, not a wait.
-          for (const id of asked) next.set(id, null);
-          for (const row of answered.data) next.set(row.id, row.level);
-          return next;
+    const byOrganization = new Map<string, string[]>();
+    for (const pair of key.split(",")) {
+      const [organizationId, tableId] = pair.split(":") as [string, string];
+      if (!organizationId) continue;
+      byOrganization.set(organizationId, [...(byOrganization.get(organizationId) ?? []), tableId]);
+    }
+    for (const [organizationId, ids] of byOrganization) {
+      const inOrganization = createRecordsClient({ ...client.config, organizationId });
+      for (let i = 0; i < ids.length; i += LEVELS_PER_CALL) {
+        const asked = ids.slice(i, i + LEVELS_PER_CALL);
+        // A read that fails is asked again (three tries, a pause between): the menu says
+        // "Checking your access…" meanwhile, never a refusal it did not get.
+        const ask = async () => {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            const answered = await inOrganization.myLevels({ ids: asked });
+            if (answered.ok || !live) return answered;
+            await new Promise((r) => setTimeout(r, 3000));
+          }
+          return null;
+        };
+        void ask().then((answered) => {
+          if (!live || !answered || !answered.ok) return;
+          setLevels((now) => {
+            const next = new Map(now);
+            // An id the store did not answer for is "you hold nothing on it" — an answer, not a wait.
+            for (const id of asked) next.set(id, null);
+            for (const row of answered.data) next.set(row.id, row.level);
+            return next;
+          });
         });
-      });
+      }
     }
     return () => {
       live = false;
@@ -282,7 +295,9 @@ export function useDataHomeRowMenus({
   // (a list read that failed and was retried still gets its rights).
   const useRowActions = (list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> => {
     const levels = useTableLevels(
-      list.rows.filter((r) => r.kind === "table" && r.tableId).map((r) => r.tableId as string),
+      list.rows
+        .filter((r) => r.kind === "table" && r.tableId)
+        .map((r) => ({ tableId: r.tableId as string, organizationId: r.organizationId })),
     );
     return {
     actions: {
