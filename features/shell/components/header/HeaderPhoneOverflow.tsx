@@ -36,7 +36,7 @@ import {
   MessageSquare,
   Search,
 } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   Drawer,
   DrawerContent,
@@ -132,7 +132,7 @@ function OverflowTrigger({ onOpen, unread }: { onOpen: () => void; unread: numbe
     unread > 0 ? `${TRIGGER_LABEL} — ${unread > 99 ? "99+" : unread} new` : TRIGGER_LABEL;
   return (
     <>
-      <TapTargetButton icon={<EllipsisVertical />} ariaLabel={label} onClick={onOpen} />
+      <TapTargetButtonTransparent icon={<EllipsisVertical />} ariaLabel={label} onClick={onOpen} />
       {unread > 0 ? (
         <span
           className="pointer-events-none absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"
@@ -297,7 +297,7 @@ export function HeaderPhoneOverflow({
         <DrawerContent className="bg-textured pb-safe max-h-[85dvh]">
           <DrawerHeader className={view === "menu" ? "sr-only" : "flex flex-row items-center gap-1 px-2 py-1 text-left"}>
             {view !== "menu" ? (
-              <TapTargetButton
+              <TapTargetButtonTransparent
                 icon={<ChevronLeft />}
                 ariaLabel="Back"
                 onClick={() => setView("menu")}

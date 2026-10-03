@@ -36,6 +36,7 @@ export function CommandBarHeaderButton({
   const open = useOpenBarOrGate(isAuthenticated);
   return (
     <SearchTapButton
+      variant="transparent"
       ariaLabel={isAuthenticated ? "Search your knowledge (⌘K)" : "Search — sign in to search"}
       tooltip={isAuthenticated ? "Search  ⌘K" : "Search (sign in)"}
       onClick={open}

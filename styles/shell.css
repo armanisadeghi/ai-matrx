@@ -13,8 +13,11 @@
   /* The chrome's edge gutter: the sidebar toggle sits this far from the left
      edge and the header's last visible control this far from the right. */
   --shell-edge-gutter: 0.5rem;
-  --shell-header-fade-h: 1rem;
-  --shell-header-clearance: calc(var(--shell-header-h) + var(--shell-header-fade-h));
+  /* THE TOP BOUNDARY (owner, 2026-10-03): a few pixels of fade drawn OVER the
+     page by `.shell-header-fade` — it takes no layout space, so nothing clears
+     it. Sticky route toolbars meet the header's own edge. */
+  --shell-header-fade-h: 0.5rem;
+  --shell-header-clearance: var(--shell-header-h);
   /* Marketing CTA banner: right inset so its action button clears the
      fixed header user avatar. Scoped to AuthedWorkspaceCTA — NOT applied
      page-wide (that offsets every centered section left). */
@@ -1483,66 +1486,49 @@ button.shell-nav-flyout-item {
   pointer-events: none;
 }
 
-/* Header legibility scrim.
-   The header is transparent glass and page content scrolls UNDER it, so the
-   shell's own chrome (hamburger, avatar) and the route's injected glass tap
-   buttons sit on whatever the page happens to put there. Over a hero image or
-   video that meant invisible controls (the podcast show page's purple cover ate
-   the back button and the avatar). This is the substrate that makes the glass
-   pattern safe on ANY background instead of only on flat ones.
+/* THE HEADER BAND — and THE TOP BOUNDARY, owned ONCE here (owner, 2026-10-03).
+   Page content scrolls UNDER the header (`.shell-main` is pulled up beneath
+   it), so the header's own box is painted solid in the PAGE'S OWN background
+   colour: the shell's controls never sit on whatever the page put there (a
+   hero cover once ate the back button and the avatar), and no page text ever
+   runs through the header (2026-09-17: 8% see-through was readable text). It is
+   solid, so nothing moves behind it — which is why every control in the header
+   is `variant="transparent"`, never glass ("glass only floats").
 
-   It is painted in the PAGE'S OWN background colour, so on a normal
-   `bg-background` / `bg-textured` route it is invisible — it only becomes
-   visible where something bright/busy scrolls beneath the glass, which is
-   exactly where contrast is needed.
+   Below the band there is NO border and NO shadow. There is exactly one
+   boundary treatment: `.shell-header-fade`, rendered by the shell's `Header`
+   (never by a route), a few pixels of fade from the band colour to nothing,
+   positioned absolutely below the header with pointer-events off — it takes
+   ZERO layout space. Routes cannot change it: route header content is portaled
+   INTO the header's center/right slots and never reaches the band. A route
+   that draws its own border, fade, shadow or solid strip under the header is a
+   defect. Guard: features/shell/__tests__/header-top-boundary.test.ts.
 
-   z-index:-1 keeps it inside .shell-header's stacking context (created by
-   position:sticky + z-index:40) but BELOW the header's own in-flow children —
-   without it, an absolutely-positioned pseudo paints ABOVE non-positioned
-   siblings and would wash out the very buttons it exists to protect.
-
-   🚨 THE HEADER'S OWN BAND IS OPAQUE; ONLY THE TAIL FADES (2026-09-17).
-   The first stop used to be `/ 0.92`, and 8% of a near-black sentence on a
-   near-white page is not a wash — it is readable text. Measured live at 390px
-   on `/masterwork/<id>`, light AND dark: the route's own line "Working systems
-   built from your approved rules." ran straight through the header, across the
-   back chevron and THROUGH the word "Rulebook" — two strings of text on the
-   same pixels. `(core)` pulls content up under a 40–44px header with no
-   clearance, so there is no width at which 92% is enough; the phone is just
-   where the header is shortest and the collision is guaranteed.
-
-   The stops are LENGTHS, not percentages, so the opaque band is exactly the
-   header's own padded box (safe area + `--shell-header-h`) at every breakpoint
-   — a percentage silently re-cut the band when `--shell-header-h` drops to
-   2.5rem under the mobile breakpoint. Everything the original comment wanted is
-   intact: the dissolve still happens, it still paints in the PAGE'S OWN
-   background colour (invisible on a flat route), and it still ends at zero. */
+   z-index:-1 keeps the band inside .shell-header's stacking context (sticky +
+   z-index:40) but BELOW the header's own children, so it never washes out the
+   buttons it protects. */
 .shell-header::before {
   content: "";
   position: absolute;
   inset: 0;
-  /* Short fade tail past the header's edge. The intermediate stops preserve
-     the soft dissolve while keeping page content clear just below the bar. */
-  bottom: calc(-1 * var(--shell-header-fade-h));
   z-index: -1;
   pointer-events: none;
-  --shell-header-scrim-solid: calc(
-    var(--shell-safe-area-top) + var(--shell-header-h)
-  );
+  background: hsl(var(--background));
+}
+
+/* The one fade. Specificity beats `.shell-header > *` (which re-enables
+   pointer events on header children), so it can never catch a click. */
+.shell-header > .shell-header-fade {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: var(--shell-header-fade-h);
+  pointer-events: none;
   background: linear-gradient(
     to bottom,
     hsl(var(--background)) 0,
-    hsl(var(--background)) var(--shell-header-scrim-solid),
-    hsl(var(--background) / 0.62)
-      calc(
-        var(--shell-header-scrim-solid) + var(--shell-header-fade-h) * 0.3
-      ),
-    hsl(var(--background) / 0.28)
-      calc(
-        var(--shell-header-scrim-solid) + var(--shell-header-fade-h) * 0.62
-      ),
     hsl(var(--background) / 0)
-      calc(var(--shell-header-scrim-solid) + var(--shell-header-fade-h))
   );
 }
 
@@ -1770,7 +1756,6 @@ body[style*="pointer-events: none"] {
     .shell-main [data-matrx-table-sticky-header="true"].relative
   ) {
   --shell-header-fade-h: 0rem;
-  --shell-header-clearance: var(--shell-header-h);
 }
 
 /* Padding on an overflow owner is absorbed by border-box sizing when a route

@@ -12,6 +12,7 @@ export default function ShellChatToggle() {
   return (
     <div className="shell-chat-toggle">
       <MessageTapButton
+        variant="transparent"
         ariaLabel="Chat"
         tooltip="Chat (Ctrl/Cmd + \)"
         onClick={() => window.dispatchEvent(new Event(SHELL_CHAT_TOGGLE_EVENT))}

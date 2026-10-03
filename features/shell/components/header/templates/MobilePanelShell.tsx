@@ -45,7 +45,7 @@ import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   BottomSheet,
   BottomSheetBody,
@@ -229,7 +229,7 @@ export function MobilePanelShell({
       {hasPanels && (
         <PageHeaderRightPortal>
           <span className="relative inline-flex">
-            <TapTargetButton
+            <TapTargetButtonTransparent
               icon={<MenuIcon className="h-4 w-4" />}
               ariaLabel={
                 pendingTotal > 0

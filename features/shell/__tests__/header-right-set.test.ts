@@ -71,16 +71,6 @@ describe("the header right set", () => {
     expect(read("components/matrx/PublicHeader.tsx")).toContain("<CanvasToggle");
   });
 
-  it("is ALL GLASS — no plain icon among the glass ones (tap-target placement rule 2)", () => {
-    // The shell header floats over the scrolling page, so its set is glass;
-    // the package toggle defaults to transparent and must be told.
-    expect(set).toContain('<CanvasToggle variant="glass" />');
-    for (const control of ["<CommandBarHeaderButton", "<SurfaceAgentsHeaderButton", "<MessagesHeaderButton", "<InboxHeaderButton"]) {
-      const line = set.split("\n").find((candidate) => candidate.includes(control));
-      expect(line).not.toMatch(/variant="(transparent|outline|solid)"/);
-    }
-  });
-
   it("renders the set touching — no gap, padding or margin on its wrapper", () => {
     const wrapper = set.split("\n").find((line) => line.includes('className="shell-header-secondary"'));
     expect(wrapper).toBeDefined();

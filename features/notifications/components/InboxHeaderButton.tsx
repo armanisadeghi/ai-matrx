@@ -61,6 +61,7 @@ function GuestInboxButton() {
   const openAuthGate = useOpenAuthGateDialog();
   return (
     <BellTapButton
+      variant="transparent"
       ariaLabel="Notifications — sign in to see them"
       tooltip="Notifications (sign in)"
       onClick={() => openAuthGate(INBOX_AUTH_GATE)}
@@ -116,6 +117,7 @@ function SignedInInboxButton() {
   return (
     <div className="relative shrink-0" data-inbox-header-button>
       <Bell
+        variant="transparent"
         ariaLabel={label}
         tooltip={label}
         className={counts.badge > 0 ? "text-primary" : undefined}

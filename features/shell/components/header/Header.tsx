@@ -14,10 +14,17 @@ interface HeaderProps {
  * else is built into the header: the organization lives in the sidebar's
  * account rail (`ShellOrgSwitcher`), the person bottom-left
  * (`ShellUserBlock`). Guard: `features/shell/__tests__/header-right-set.test.ts`.
+ *
+ * THE TOP BOUNDARY is owned here, once (owner, 2026-10-03): the band is solid
+ * (`.shell-header::before`), there is no border under it, and the only
+ * transition into the page is `.shell-header-fade` — a few pixels drawn over
+ * the content, zero layout space. Routes inject into the slots below and can
+ * never style it. Guard: `features/shell/__tests__/header-top-boundary.test.ts`.
  */
 export default function Header({ isAuthenticated }: HeaderProps) {
   return (
     <header className="shell-header">
+      <div className="shell-header-fade" data-shell-header-fade aria-hidden="true" />
       <HamburgerButton />
       {isAuthenticated ? <ShellChatToggle /> : null}
       <HeaderCrowdingGuard />

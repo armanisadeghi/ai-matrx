@@ -558,6 +558,7 @@ export default function RouteHeader({
                   className="inline-flex shrink-0"
                 >
                   <MoreHorizontalTapButton
+                    variant="transparent"
                     ariaLabel={`${overflowActions.length} more action${overflowActions.length === 1 ? "" : "s"}`}
                   />
                 </span>
