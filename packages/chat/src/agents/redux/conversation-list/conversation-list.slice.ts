@@ -12,6 +12,7 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { mergeLiveListRow } from "./merge-live-list-row";
 import type {
   ConversationListItem,
   ConversationListState,
@@ -315,7 +316,10 @@ const conversationListSlice = createSlice({
       }>,
     ) {
       const { cacheKeys, row, cacheIdentities } = action.payload;
-      mergeItem(state, row);
+      const known = state.byConversationId[row.conversationId];
+      state.byConversationId[row.conversationId] = known
+        ? mergeLiveListRow(known, row)
+        : row;
       for (const key of cacheKeys) {
         const existing = state.agentCaches[key];
         if (existing) {

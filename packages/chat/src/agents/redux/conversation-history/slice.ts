@@ -11,6 +11,7 @@ import {
   type SourceFacetsStatus,
 } from "./types";
 import { laneOfClientMintedRow, type ConversationLane } from "./lanes";
+import { mergeLiveListRow } from "../conversation-list/merge-live-list-row";
 
 const initialState: ConversationHistoryState = {
   scopes: {},
@@ -423,7 +424,10 @@ const slice = createSlice({
         if (idx === -1) {
           scope.items = sortByUpdated([{ ...row, agentId }, ...scope.items]);
         } else {
-          scope.items[idx] = { ...scope.items[idx], ...row, agentId };
+          scope.items[idx] = {
+            ...mergeLiveListRow(scope.items[idx], row),
+            agentId: scope.items[idx].agentId ?? agentId,
+          };
         }
       }
     },
