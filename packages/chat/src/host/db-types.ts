@@ -2771,6 +2771,7 @@ export type ChatDatabase = {
           published_to_web: boolean
           published_to_web_at: string | null
           published_to_web_by: string | null
+          setting_profile_id: string | null
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           token_billed: boolean
           updated_at: string
@@ -2802,6 +2803,7 @@ export type ChatDatabase = {
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
+          setting_profile_id?: string | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           token_billed?: boolean
           updated_at?: string
@@ -2833,6 +2835,7 @@ export type ChatDatabase = {
           published_to_web?: boolean
           published_to_web_at?: string | null
           published_to_web_by?: string | null
+          setting_profile_id?: string | null
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           token_billed?: boolean
           updated_at?: string
@@ -2890,6 +2893,13 @@ export type ChatDatabase = {
             isOneToOne: false
             referencedRelation: "model_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_setting_profile_fkey"
+            columns: ["setting_profile_id", "api_id"]
+            isOneToOne: false
+            referencedRelation: "setting_profile"
+            referencedColumns: ["id", "api_id"]
           },
         ]
       }
@@ -2987,6 +2997,7 @@ export type ChatDatabase = {
           default_value: Json | null
           deleted_at: string | null
           description: string | null
+          family: string | null
           id: string
           is_system: boolean
           key: string
@@ -2999,6 +3010,7 @@ export type ChatDatabase = {
           ui: Json
           updated_at: string
           updated_by: string | null
+          value_positions: Json | null
           value_type: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -3012,6 +3024,7 @@ export type ChatDatabase = {
           default_value?: Json | null
           deleted_at?: string | null
           description?: string | null
+          family?: string | null
           id?: string
           is_system?: boolean
           key: string
@@ -3024,6 +3037,7 @@ export type ChatDatabase = {
           ui?: Json
           updated_at?: string
           updated_by?: string | null
+          value_positions?: Json | null
           value_type: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -3037,6 +3051,7 @@ export type ChatDatabase = {
           default_value?: Json | null
           deleted_at?: string | null
           description?: string | null
+          family?: string | null
           id?: string
           is_system?: boolean
           key?: string
@@ -3049,11 +3064,157 @@ export type ChatDatabase = {
           ui?: Json
           updated_at?: string
           updated_by?: string | null
+          value_positions?: Json | null
           value_type?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      setting_profile: {
+        Row: {
+          api_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          modality: string
+          name: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          api_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          modality: string
+          name: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          api_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          modality?: string
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setting_profile_api_id_fkey"
+            columns: ["api_id"]
+            isOneToOne: false
+            referencedRelation: "api"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      translation_cell: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          confidence: number | null
+          conflict: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          evidence: Json
+          id: string
+          layer: string
+          layer_owner_id: string
+          metadata: Json
+          organization_id: string
+          rationale: string | null
+          rejection_fingerprint: string | null
+          rule: Json
+          setting_key: string
+          source: string
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence?: number | null
+          conflict?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evidence?: Json
+          id?: string
+          layer: string
+          layer_owner_id: string
+          metadata?: Json
+          organization_id: string
+          rationale?: string | null
+          rejection_fingerprint?: string | null
+          rule: Json
+          setting_key: string
+          source: string
+          state: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence?: number | null
+          conflict?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          evidence?: Json
+          id?: string
+          layer?: string
+          layer_owner_id?: string
+          metadata?: Json
+          organization_id?: string
+          rationale?: string | null
+          rejection_fingerprint?: string | null
+          rule?: Json
+          setting_key?: string
+          source?: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_cell_setting_key_fkey"
+            columns: ["setting_key"]
+            isOneToOne: false
+            referencedRelation: "setting"
+            referencedColumns: ["key"]
+          },
+        ]
       }
       voices: {
         Row: {
@@ -3633,6 +3794,42 @@ export type ChatDatabase = {
           },
         ]
       }
+      offering_rules_compiled: {
+        Row: {
+          api_id: string | null
+          cell_id: string | null
+          layer: string | null
+          offering_id: string | null
+          rule: Json | null
+          setting_key: string | null
+          setting_profile_id: string | null
+          state: string | null
+          version: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offering_api_id_fkey"
+            columns: ["api_id"]
+            isOneToOne: false
+            referencedRelation: "api"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_setting_profile_fkey"
+            columns: ["setting_profile_id", "api_id"]
+            isOneToOne: false
+            referencedRelation: "setting_profile"
+            referencedColumns: ["id", "api_id"]
+          },
+          {
+            foreignKeyName: "translation_cell_setting_key_fkey"
+            columns: ["setting_key"]
+            isOneToOne: false
+            referencedRelation: "setting"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       provider_sync_candidates: {
         Row: {
           before_cutoff: boolean | null
@@ -3662,10 +3859,20 @@ export type ChatDatabase = {
       }
     }
     Functions: {
+      _translation_cell_target_ok: {
+        Args: {
+          p_layer: string
+          p_layer_owner_id: string
+          p_rule: Json
+          p_setting_key: string
+        }
+        Returns: undefined
+      }
       _validate_rules_envelope: {
         Args: { p_doc: Json; p_where: string }
         Returns: undefined
       }
+      archive_translation_cell: { Args: { p_cell_id: string }; Returns: Json }
       audit_ui_enum_drift: {
         Args: never
         Returns: {
@@ -3686,10 +3893,9 @@ export type ChatDatabase = {
         }[]
       }
       jsonb_num: { Args: { n: number }; Returns: Json }
-      model_message_flag_profile: {
-        Args: { p_model_id: string }
-        Returns: Json
-      }
+      model_message_flag_profile:
+        | { Args: { p_model_id: string }; Returns: Json }
+        | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
       offering_admin_columns: {
         Args: never
         Returns: {
@@ -3697,20 +3903,57 @@ export type ChatDatabase = {
           pricing: Json
         }[]
       }
-      offering_capabilities: {
-        Args: { p_model_ids?: string[] }
-        Returns: {
-          is_decision_model: boolean
-          model_id: string
-          multi_speaker: Json
-          offering_id: string
-          reference_roles: Json
-          supports_prefill: boolean
-        }[]
+      offering_capabilities:
+        | {
+            Args: { p_model_ids?: string[] }
+            Returns: {
+              is_decision_model: boolean
+              model_id: string
+              multi_speaker: Json
+              offering_id: string
+              reference_roles: Json
+              supports_prefill: boolean
+            }[]
+          }
+        | {
+            Args: { p_model_ids: string[]; p_offering_ids: string[] }
+            Returns: {
+              is_decision_model: boolean
+              model_id: string
+              multi_speaker: Json
+              offering_id: string
+              reference_roles: Json
+              supports_prefill: boolean
+            }[]
+          }
+      propose_translation_cell: {
+        Args: {
+          p_confidence: number
+          p_evidence: Json
+          p_layer: string
+          p_layer_owner_id: string
+          p_rationale: string
+          p_rule: Json
+          p_setting_key: string
+          p_source: string
+        }
+        Returns: Json
       }
+      queue_rejection_fixer: { Args: { p_event: Json }; Returns: string }
       resolve_model_config:
         | { Args: { p_model_id: string }; Returns: Json }
         | { Args: { p_model_id: string; p_offering_id: string }; Returns: Json }
+      save_translation_cell: {
+        Args: {
+          p_approve?: boolean
+          p_layer: string
+          p_layer_owner_id: string
+          p_rationale?: string
+          p_rule: Json
+          p_setting_key: string
+        }
+        Returns: Json
+      }
       set_endpoint_admin_columns: {
         Args: { p_id: string; p_values: Json }
         Returns: undefined
@@ -11314,6 +11557,7 @@ export type ChatDatabase = {
           assessment_kind: string
           created_at: string
           created_by: string
+          custom_fields: Json
           deleted_at: string
           depth: string
           description: string
@@ -11412,6 +11656,7 @@ export type ChatDatabase = {
         Returns: {
           created_at: string
           created_by: string
+          custom_fields: Json
           deleted_at: string
           description: string
           difficulty: string
@@ -17240,22 +17485,7 @@ export type ChatDatabase = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "custom_field_definition_reference_target_definition_id_fkey"
-            columns: ["reference_target_definition_id"]
-            isOneToOne: false
-            referencedRelation: "custom_entity_definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "custom_field_definition_target_definition_id_fkey"
-            columns: ["target_definition_id"]
-            isOneToOne: false
-            referencedRelation: "custom_entity_definition"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       custom_field_target: {
         Row: {
@@ -23365,15 +23595,7 @@ export type ChatDatabase = {
           target_kind?: string | null
           target_token?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "custom_field_definition_target_definition_id_fkey"
-            columns: ["target_definition_id"]
-            isOneToOne: false
-            referencedRelation: "custom_entity_definition"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ddl_guard_unacked: {
         Row: {
@@ -30002,6 +30224,7 @@ export type ChatDatabase = {
           is_owner: boolean
           model_id: string
           name: string
+          offering_id: string
           orchestra: Json
           organization_id: string
           shared_by_email: string
@@ -30027,6 +30250,7 @@ export type ChatDatabase = {
           is_owner: boolean
           model_id: string
           name: string
+          offering_id: string
           orchestra: Json
           organization_id: string
           shared_by_email: string
@@ -30472,6 +30696,7 @@ export type ChatDatabase = {
           category: string
           created_at: string
           created_by: string
+          custom_fields: Json
           description: string
           id: string
           is_active: boolean
@@ -30480,6 +30705,7 @@ export type ChatDatabase = {
           is_owner: boolean
           model_id: string
           name: string
+          offering_id: string
           organization_id: string
           organization_name: string
           owner_email: string
@@ -30557,6 +30783,7 @@ export type ChatDatabase = {
           match_score: number
           model_id: string
           name: string
+          offering_id: string
           orchestra: Json
           organization_id: string
           shared_by_email: string
@@ -31828,6 +32055,7 @@ export type ChatDatabase = {
           conversation_type: string
           created_at: string
           created_by: string
+          custom_fields: Json
           fidelity: string
           id: string
           initial_agent_id: string
@@ -35395,6 +35623,7 @@ export type ChatDatabase = {
           access_level: string
           created_at: string
           current_round: number
+          custom_fields: Json
           id: string
           is_owner: boolean
           open_questions: number
@@ -35893,6 +36122,7 @@ export type ChatDatabase = {
           budget_currency: string
           created_at: string
           created_by: string
+          custom_fields: Json
           description: string
           ends_on: string
           goal: string
@@ -37073,6 +37303,7 @@ export type ChatDatabase = {
           autonomy_level: string
           created_at: string
           created_by: string
+          custom_fields: Json
           description: string
           id: string
           name: string
@@ -37293,6 +37524,7 @@ export type ChatDatabase = {
           brand_id: string
           created_at: string
           created_by: string
+          custom_fields: Json
           device: string
           engine: string
           history_observed_at: string[]
@@ -37885,6 +38117,7 @@ export type ChatDatabase = {
           access_level: string
           created_at: string
           created_by: string
+          custom_fields: Json
           description: string
           duration_seconds: number
           folder_name: string
@@ -38341,6 +38574,7 @@ export type ChatDatabase = {
           category: string
           created_at: string
           created_by: string
+          custom_fields: Json
           description: string
           id: string
           is_active: boolean

@@ -28,7 +28,6 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
-import { offeringPinOfRow } from "@/features/ai-models/utils/model-classes";
 import { cn } from "@/lib/utils";
 import {
   shouldOpenInNewTab,
@@ -166,8 +165,8 @@ export function AgentBrowseCards({
                   {row.model_id && (
                     <AiModelRef
                       modelId={row.model_id}
-                      showClass={offeringPinOfRow(row) !== undefined}
-                      offeringId={offeringPinOfRow(row) ?? null}
+                      showClass
+                      offeringId={row.offering_id}
                       showIcon={false}
                       disableNavigation
                       className="min-w-0 text-[10px] text-muted-foreground"

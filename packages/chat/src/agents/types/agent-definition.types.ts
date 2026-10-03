@@ -553,8 +553,8 @@ export interface AgentListRow {
   shared_by_email: string;
   /** Set only when this agent is an Orchestra. See `AgentOrchestraBadgeRow`. */
   orchestra: AgentOrchestraBadgeRow | null;
-  /** The agent's class pin (settings.offering_id); absent on a database without the column. */
-  offering_id?: string | null;
+  /** The agent's class pin (settings.offering_id); null = no pin. */
+  offering_id: string | null;
 }
 
 /**
@@ -777,13 +777,25 @@ export interface AgentVersionLookup {
 // the DB side after transformation — your interface may narrow them freely.
 // ---------------------------------------------------------------------------
 
+// `offering_id` is null when the agent has no class pin; the generator
+// describes every RETURNS TABLE column as non-null, so the check re-narrows it
+// (same pattern as AgentVersionSnapshotDbProjection below).
+type WithGeneratedOfferingId<T extends { offering_id: string | null }> = Omit<
+  T,
+  "offering_id"
+> & { offering_id: string };
+
 type _Check_AgentListRow =
-  AgentListRow extends DbRpcRow<"agx_get_list"> ? true : false;
+  WithGeneratedOfferingId<AgentListRow> extends DbRpcRow<"agx_get_list">
+    ? true
+    : false;
 declare const _agentListRow: _Check_AgentListRow;
 true satisfies typeof _agentListRow;
 
 type _Check_AgentSearchRow =
-  AgentSearchRow extends DbRpcRow<"agx_search"> ? true : false;
+  WithGeneratedOfferingId<AgentSearchRow> extends DbRpcRow<"agx_search">
+    ? true
+    : false;
 declare const _agentSearchRow: _Check_AgentSearchRow;
 true satisfies typeof _agentSearchRow;
 

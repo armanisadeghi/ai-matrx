@@ -15,7 +15,8 @@
 // Every refusal comes back as a reason code and is shown as one short sentence.
 
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Check, Download, FileText, Loader2, PenLine, ShieldCheck, XCircle } from "lucide-react";
+import { Check, Download, FileText, Loader2, PenLine, ShieldCheck, Type as TypeIcon, XCircle } from "lucide-react";
+import { SignaturePad } from "@ai-matrx/records-ui";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -158,6 +159,8 @@ export function SigningSurface({
   const [activeDoc, setActiveDoc] = useState(0);
   const [step, setStep] = useState<Step>("review");
   const [typedName, setTypedName] = useState("");
+  const [mark, setMark] = useState<"typed" | "drawn">("typed");
+  const [drawing, setDrawing] = useState<string | null>(null);
   const [busy, setBusy] = useState<"consent" | "sign" | "decline" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [declineOpen, setDeclineOpen] = useState(false);
@@ -184,6 +187,11 @@ export function SigningSurface({
         }
         const me = load.me ?? {};
         setTypedName(text(me, "typed_name") ?? text(me, "full_name") ?? "");
+        // On a phone a finger is the natural pen: draw first there, when the sender allows it.
+        const options = load.signature_options ?? {};
+        const drawAllowed = options.drawn !== false;
+        const typeAllowed = options.typed !== false;
+        if (drawAllowed && (!typeAllowed || window.matchMedia("(pointer: coarse)").matches)) setMark("drawn");
         const envelopeDone = text(load.envelope, "status") === "completed";
         setStep(text(me, "signed_at") || envelopeDone ? "done" : text(me, "consented_at") ? "sign" : "review");
         const listed: DocView[] = (load.documents ?? []).map((d) => ({
@@ -308,11 +316,16 @@ export function SigningSurface({
     setBusy("sign");
     setNotice(null);
     try {
-      const adopted = await act("adopt", {
-        kind: "typed",
-        typed_name: name,
-        typed_style: "script",
-      });
+      if (mark === "drawn" && !drawing) {
+        setNotice("Draw your signature before you sign.");
+        return;
+      }
+      const adopted = await act(
+        "adopt",
+        mark === "drawn"
+          ? { kind: "drawn", typed_name: name, image_data_url: drawing }
+          : { kind: "typed", typed_name: name, typed_style: "script" },
+      );
       if (!adopted.granted) {
         setNotice(reasonText(adopted.reason));
         return;
@@ -377,6 +390,8 @@ export function SigningSurface({
   const sender = text(load.branding, "name") ?? text(load.branding, "organization_name");
   const consent = load.consent ?? null;
   const disclosureId = text(consent, "disclosure_id");
+  const canType = load.signature_options?.typed !== false;
+  const canDraw = load.signature_options?.drawn !== false;
   const allSeen = docs.length > 0 && docs.every((d) => d.rendered && d.seenHash);
   const current = docs[activeDoc] ?? null;
 
@@ -453,10 +468,29 @@ export function SigningSurface({
                   onChange={(e) => setTypedName(e.target.value)}
                 />
               </div>
-              <div className="flex h-20 items-center justify-center rounded-md border border-dashed border-border bg-card px-3">
-                <span className="truncate font-serif text-3xl italic text-foreground">{typedName.trim() || " "}</span>
-              </div>
-              <Button disabled={busy !== null || !typedName.trim()} onClick={() => void sign()}>
+              {canType && canDraw && (
+                <div className="flex gap-1">
+                  <Button size="sm" variant={mark === "typed" ? "secondary" : "ghost"} onClick={() => setMark("typed")}>
+                    <TypeIcon className="mr-1 h-3.5 w-3.5" />
+                    Type
+                  </Button>
+                  <Button size="sm" variant={mark === "drawn" ? "secondary" : "ghost"} onClick={() => setMark("drawn")}>
+                    <PenLine className="mr-1 h-3.5 w-3.5" />
+                    Draw
+                  </Button>
+                </div>
+              )}
+              {mark === "typed" ? (
+                <div className="flex h-20 items-center justify-center rounded-md border border-dashed border-border bg-card px-3">
+                  <span className="truncate font-serif text-3xl italic text-foreground">{typedName.trim() || " "}</span>
+                </div>
+              ) : (
+                <SignaturePad value={drawing} onChange={setDrawing} disabled={busy !== null} />
+              )}
+              <Button
+                disabled={busy !== null || !typedName.trim() || (mark === "drawn" && !drawing)}
+                onClick={() => void sign()}
+              >
                 {busy === "sign" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Sign
               </Button>
             </>

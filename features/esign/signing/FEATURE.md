@@ -48,11 +48,12 @@ These are the links `esign._notify_actionable` / `esign_resend_signer` email. Ch
 - **The link secret leaves the address bar on first read** (kept in this tab's `sessionStorage`), so it is not in history or in any error report's page URL.
 - **The code only goes out on a press.** Opening the page sends nothing (mail-scanner safe).
 - **This surface lets the server record the signer's IP** (evidence + outsider session pin); it never sends one of its own. The doors still take `p_ip` from any direct caller (filed as an observation, 2026-10-03).
-- Typed signatures only: `drawn` needs an uploaded image file id the surface does not collect yet.
+- **Type or draw.** Drawing uses THE platform pad (`SignaturePad`, `@ai-matrx/records-ui`); the server checks the PNG/JPEG by its bytes and files it as evidence on the envelope (owner = sender, organization = envelope's) before the adopt door names it. Phones open on Draw; the envelope's `signature_options` can turn either off.
 
 ---
 
 ## Change Log
 
+- 2026-10-03 — Drawn signatures: Type/Draw on the sign step; aidream files the drawing (`esign.signature_owner`, migration `esign_a_drawn_signature_is_filed_on_its_envelope.sql`). Proven on live for both doors.
 - 2026-10-03 — Independent review fixes: pdf.js viewer instead of an iframe (script + Android), secret stripped from the URL, refusals shown as refusals, mid-walk session loss returns to the code step, per-tab lazy fetch, retryable preview.
 - 2026-10-03 — Built: both routes, the surface, the outsider code gate, aidream `/esign/signing/*`, migration `esign_signing_surface_has_its_doors.sql` (reopened the eight signed-in doors, the code email's words). Proven on live as admin@admin.com: outsider and signed-in envelopes signed to a certificate in the browser; decline and wrong-signer refusal checked.

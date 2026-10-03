@@ -46,6 +46,7 @@ const sharedAgent: AgentBrowseRow = {
   tags: [],
   task_id: "task-id",
   total_count: 1,
+  offering_id: null,
   updated_at: "2026-08-29T00:00:00.000Z",
   version: 1,
   visibility: "shared",

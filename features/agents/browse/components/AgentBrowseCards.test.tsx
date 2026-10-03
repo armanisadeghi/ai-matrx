@@ -62,6 +62,8 @@ const sharedAgent: AgentBrowseRow = {
   is_owner: false,
   model_id: "model-id",
   name: "Shared Agent",
+  // No class pin: the database answers null (the generator types it string).
+  offering_id: null as unknown as string,
   organization_id: "organization-id",
   organization_name: "Test Organization",
   owner_email: "owner@example.com",
@@ -134,14 +136,10 @@ describe("AgentBrowseCards", () => {
     // [row's offering_id, names the class?, pin handed to the model door]
     ["29874e67-5683-40c2-9adb-fb797ea9a176", "true", "29874e67-5683-40c2-9adb-fb797ea9a176"],
     [null, "true", ""],
-    [undefined, "false", ""],
   ])(
     "a card names the model with its class (offering_id %p)",
     async (offeringId, showClass, pin) => {
-      const row =
-        offeringId === undefined
-          ? sharedAgent
-          : ({ ...sharedAgent, offering_id: offeringId } as AgentBrowseRow);
+      const row = { ...sharedAgent, offering_id: offeringId } as AgentBrowseRow;
       await act(async () =>
         root.render(
           <AgentBrowseCards

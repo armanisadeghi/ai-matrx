@@ -88,14 +88,3 @@ export function withModelClass(
 ): string {
   return className ? `${modelLabel} · ${className}` : modelLabel;
 }
-
-/**
- * A list row's class pin (`offering_id` on the agent list RPCs): a uuid, null
- * (no pin — the preferred class runs) or undefined when the row does not carry
- * the column (unknown — name the model alone).
- */
-export function offeringPinOfRow(row: object): string | null | undefined {
-  if (!("offering_id" in row)) return undefined;
-  const value = (row as { offering_id?: unknown }).offering_id;
-  return typeof value === "string" && value !== "" ? value : null;
-}
