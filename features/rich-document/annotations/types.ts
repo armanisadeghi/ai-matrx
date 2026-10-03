@@ -30,6 +30,8 @@ export interface AnnotationSource {
   save?: (nextBody: string) => Promise<void>;
   /** In-app path back to this source, used in @-mention notices. */
   href?: string;
+  /** A chat answer's conversation (token `message`): where its comments can ride along with the next message. */
+  conversationId?: string;
 }
 
 /** Durable-write state of one item (brief: pending / confirmed / failed; orphan is resolution). */

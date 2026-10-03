@@ -609,6 +609,10 @@ function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
     case "editor_error":
     case "editor_code_snippet":
       return null;
+    // Staged remarks are held out of the request until the server accepts the
+    // `input_remarks` part (an unknown part fails the whole request).
+    case "input_remarks":
+      return null;
   }
 }
 

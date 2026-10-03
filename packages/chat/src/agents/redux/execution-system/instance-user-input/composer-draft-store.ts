@@ -305,7 +305,12 @@ const generations = new Map<string, number>();
 export function currentGeneration(conversationId: string): number {
   const held = generations.get(conversationId);
   if (held !== undefined) return held;
-  const seeded = readAt(composerDraftKey(conversationId))?.gen ?? 0;
+  // The remarks record carries the same generation; whichever survived the
+  // reload (an empty composer clears the text record) seeds it.
+  const seeded = Math.max(
+    readAt(composerDraftKey(conversationId))?.gen ?? 0,
+    readRemarksAt(composerRemarksKey(conversationId))?.gen ?? 0,
+  );
   generations.set(conversationId, seeded);
   return seeded;
 }
@@ -370,6 +375,13 @@ export function markComposerDraftSent(conversationId: string): void {
     sent: true,
   };
   for (const key of keysFor(conversationId)) writeAt(key, tombstone);
+  // The staged remarks went with the message: the same tombstone covers them.
+  writeRemarksAt(composerRemarksKey(conversationId), {
+    items: [],
+    at: Date.now(),
+    gen,
+    sent: true,
+  });
 }
 
 /** Drop the records entirely (instance destroyed / explicit clear). */
@@ -421,6 +433,112 @@ export function isComposerDraftTokenLive(token: ComposerDraftToken): boolean {
   const record = readAt(token.key);
   if (!record || record.sent) return false;
   return record.gen === token.gen && record.v === token.value;
+}
+
+// ── Staged remarks (instance-resources/remarks.ts) ──────────────────────────
+//
+// The composer's staged remarks (a comment on a passage, a choice, an edit…)
+// survive a reload the same way the typed draft does: one record per
+// conversation, written under the same submit GENERATION and laid to rest by
+// the same tombstone (`markComposerDraftSent`). It has its own key so an empty
+// text box (which clears the text record) never takes the remarks with it.
+// Conversation key only — a remark always names a real conversation.
+
+const REMARKS_PREFIX = `${PREFIX}remarks.`;
+
+export type ComposerRemarksRecord = {
+  /** The staged remarks, as `remarks.ts` stores them (validated on read by its caller). */
+  items: unknown[];
+  o?: string | null;
+  at: number;
+  gen: number;
+  sent?: boolean;
+};
+
+export function composerRemarksKey(conversationId: string): string {
+  return REMARKS_PREFIX + conversationId;
+}
+
+function readRemarksAt(key: string): ComposerRemarksRecord | null {
+  const s = storage();
+  if (!s) return null;
+  try {
+    const raw = s.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<ComposerRemarksRecord>;
+    if (!parsed || !Array.isArray(parsed.items)) return null;
+    if (typeof parsed.at !== "number" || typeof parsed.gen !== "number") return null;
+    if (Date.now() - parsed.at > DRAFT_TTL_MS) {
+      s.removeItem(key);
+      return null;
+    }
+    return {
+      items: parsed.items,
+      o: typeof parsed.o === "string" ? parsed.o : null,
+      at: parsed.at,
+      gen: parsed.gen,
+      sent: parsed.sent === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeRemarksAt(key: string, record: ComposerRemarksRecord): boolean {
+  const s = storage();
+  if (!s) return false;
+  try {
+    s.setItem(key, JSON.stringify(record));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Keep the conversation's unsent remarks (the WHOLE current list — the caller
+ * reads it from the store, so there is no stale partial write). An empty list
+ * keeps a tombstone (a record of a send) and otherwise drops the record.
+ */
+export function writeComposerRemarks(
+  conversationId: string,
+  items: readonly unknown[],
+  ownerId: string | null = null,
+): boolean {
+  if (!isComposerDraftStorageAvailable()) return false;
+  const key = composerRemarksKey(conversationId);
+  const gen = currentGeneration(conversationId);
+  const live = readRemarksAt(key);
+  if (items.length === 0) {
+    if (live?.sent) return true;
+    removeAt(key);
+    return true;
+  }
+  // A newer generation in storage = another tab sent since this one last did.
+  if (live && live.gen > gen) {
+    generations.set(conversationId, live.gen);
+    return false;
+  }
+  return writeRemarksAt(key, { items: [...items], o: ownerId, at: Date.now(), gen });
+}
+
+/**
+ * The unsent remarks kept for this conversation and this person, or null
+ * (none, a tombstone, someone else's, expired).
+ */
+export function readComposerRemarks(
+  conversationId: string,
+  ownerId: string | null = null,
+): unknown[] | null {
+  const record = readRemarksAt(composerRemarksKey(conversationId));
+  if (!record || record.sent) return null;
+  if ((record.o ?? null) !== ownerId) return null;
+  return record.items.length ? record.items : null;
+}
+
+/** Drop the remarks record (conversation destroyed). */
+export function clearComposerRemarks(conversationId: string): void {
+  removeAt(composerRemarksKey(conversationId));
 }
 
 /** Test seam ONLY — drops the in-memory generations, aliases and sweep flag, as a reload would. */

@@ -37,6 +37,7 @@ export const CONTEXT_ITEM_BLOCK_TYPES = [
   "text",
   "editor_error",
   "editor_code_snippet",
+  "input_remarks",
 ] as const;
 
 export type ContextItemBlockType = (typeof CONTEXT_ITEM_BLOCK_TYPES)[number];

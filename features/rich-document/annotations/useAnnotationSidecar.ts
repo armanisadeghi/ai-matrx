@@ -151,6 +151,8 @@ export interface CommentDraft {
   parentId?: string | null;
   /** The reply composer's own stable id, reused when the person presses Reply again after a failure. */
   clientRequestId?: string;
+  /** Called with the platform.comments id once the comment is written (a top-level comment's first write). */
+  onWritten?: (commentId: string) => void;
 }
 
 export function useAnnotationSidecar(source: AnnotationSource | null) {
@@ -326,6 +328,7 @@ export function useAnnotationSidecar(source: AnnotationSource | null) {
       };
       await runDraft(draft, async () => {
         const id = await writeComment(src, draft);
+        input.onWritten?.(id);
         const mentions = mentionedUserIds(input.body);
         if (mentions.length && doors) notice = await notifyMentions(id, mentions, src.href);
       });

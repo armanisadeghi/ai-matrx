@@ -29,9 +29,12 @@ import {
 import { destroyInstance } from "../conversations/conversations.slice";
 import {
   clearComposerDraft,
+  clearComposerRemarks,
   markComposerDraftSent,
   writeComposerDraft,
+  writeComposerRemarks,
 } from "./composer-draft-store";
+import { selectUnsentRemarks } from "../instance-resources/remarks";
 import { selectRestoreUnsentDrafts } from "../../../../host/prefs";
 import { selectUserId } from "../../../../host/identity";
 
@@ -130,6 +133,19 @@ function reconcile(conversationId: string, state: ChatRootState): void {
   else clearComposerDraft(conversationId);
 }
 
+const RESOURCES_ACTION_PREFIX = "instanceResources/";
+
+/** The conversation an instanceResources action touches (payload id or `{ conversationId }`). */
+function resourcesActionConversationId(action: unknown): string | null {
+  const payload = (action as { payload?: unknown }).payload;
+  if (typeof payload === "string") return payload;
+  if (payload && typeof payload === "object") {
+    const id = (payload as { conversationId?: unknown }).conversationId;
+    if (typeof id === "string") return id;
+  }
+  return null;
+}
+
 export const composerDraftMiddleware: Middleware<
   Record<string, never>,
   ChatRootState
@@ -145,6 +161,7 @@ export const composerDraftMiddleware: Middleware<
     const conversationId = (action as { payload: string }).payload;
     cancel(conversationId);
     clearComposerDraft(conversationId);
+    if (type === destroyInstance.type) clearComposerRemarks(conversationId);
     return next(action);
   }
 
@@ -171,6 +188,21 @@ export const composerDraftMiddleware: Middleware<
       action as { payload: { conversationId: string; text: string } }
     ).payload;
     scheduleWrite(conversationId, text, selectUserId(api.getState()));
+    return result;
+  }
+
+  // Staged remarks: after any change to a conversation's resources, keep the
+  // WHOLE unsent list (synchronous — there is no debounce to go stale).
+  if (typeof type === "string" && type.startsWith(RESOURCES_ACTION_PREFIX)) {
+    const conversationId = resourcesActionConversationId(action);
+    if (conversationId) {
+      const state = api.getState();
+      writeComposerRemarks(
+        conversationId,
+        selectUnsentRemarks(state, conversationId),
+        selectUserId(state),
+      );
+    }
     return result;
   }
 

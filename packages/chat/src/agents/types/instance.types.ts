@@ -514,7 +514,11 @@ export type ResourceBlockType =
   // user_input block — it travels as a `source_set`.
   | "source_ref"
   | "editor_error"
-  | "editor_code_snippet";
+  | "editor_code_snippet"
+  // A remark on an agent answer (a comment on a passage, a choice, an edit,
+  // questionnaire answers, a shape interaction) staged to ride along with the
+  // next message — instance-resources/remarks.ts (REMARKS_BLOCK_TYPE).
+  | "input_remarks";
 
 /**
  * Which representation of a processed document is the PRIMARY one placed in the
