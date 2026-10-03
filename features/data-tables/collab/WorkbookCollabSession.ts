@@ -56,7 +56,9 @@ type ExecuteOptions = {
 };
 
 export type CommandServiceLike = {
-  onMutationExecutedForCollab(listener: (info: CollabMutationInfo) => void): {
+  onMutationExecutedForCollab(
+    listener: (info: CollabMutationInfo, options?: ExecuteOptions) => void,
+  ): {
     dispose: () => void;
   };
   syncExecuteCommand(

@@ -112,6 +112,26 @@ describe("createCoalescedCommit", () => {
     expect(commit.isBusy()).toBe(false);
   });
 
+  it("a flush during a write with nothing new waits for it instead of writing a duplicate", async () => {
+    const runs: string[] = [];
+    let finish!: () => void;
+    const commit = createCoalescedCommit({
+      delay: () => 0,
+      read: () => "route sheet v1",
+      run: (v) =>
+        new Promise<void>((resolve) => {
+          runs.push(v);
+          finish = resolve;
+        }),
+    });
+    commit.schedule();
+    const first = commit.flush();
+    const second = commit.flush(); // the last view leaving while the save is in flight
+    finish();
+    await Promise.all([first, second]);
+    expect(runs).toEqual(["route sheet v1"]);
+  });
+
   it("keeps a failed commit pending so the next flush retries it", async () => {
     let fail = true;
     const runs: string[] = [];

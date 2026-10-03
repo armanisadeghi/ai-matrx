@@ -9,8 +9,9 @@
  *
  * What lives elsewhere:
  *   - Sharing / permissions: features/sharing/ + `has_permission(...)` RLS
- *   - Realtime: features/data-tables/hooks/useDocumentRealtime
- *   - Component: features/data-tables/components/DocumentEditor
+ *   - The open document (one model per id per tab: load, one save, realtime,
+ *     collab): features/data-tables/document-model/
+ *   - Component (a view of that model): features/data-tables/components/DocumentEditor
  *
  * Mirrors `workbook-service.ts`. If you're changing the shape of one, change
  * the other at the same time — see `features/data-tables/FEATURE.md`.

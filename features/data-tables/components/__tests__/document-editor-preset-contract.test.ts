@@ -29,7 +29,7 @@ describe("DocumentEditor Univer preset contract", () => {
 
   it("registers global sheets Facade dependencies before creating the document", () => {
     const registration = source.indexOf("registerUniverFacadeDependencies(");
-    const documentCreation = source.indexOf("fb.createUniverDoc?.(initial)");
+    const documentCreation = source.indexOf("mountUniverDocument(univerAPI, initial)");
 
     expect(source).toContain("HoverManagerService");
     expect(source).toContain("DragManagerService");

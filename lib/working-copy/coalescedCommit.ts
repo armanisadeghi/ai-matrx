@@ -60,16 +60,18 @@ export function createCoalescedCommit<V>(
 
   const report = options.onError ?? ((error: unknown) => console.error("[working-copy] commit failed", error));
 
-  const start = (reason: CommitReason): Promise<void> => {
+  const start = (reason: CommitReason, force = false): Promise<void> => {
     if (timer) {
       clearTimeout(timer);
       timer = null;
     }
     if (inFlight) {
-      // Never two writes at once: run once more after this one, with the
-      // state at that moment.
-      // `inFlight` resolves only after that re-run has finished too.
-      again = again === "manual" ? "manual" : reason;
+      // Never two writes at once: when something changed since this write
+      // started (or a save is explicitly asked for), run once more after it,
+      // with the state at that moment. `inFlight` resolves only after that
+      // re-run has finished too. Nothing changed → the write in flight IS
+      // the flush; a second identical write would be a duplicate snapshot.
+      if (dirty || force) again = again === "manual" ? "manual" : reason;
       return inFlight;
     }
     dirty = false;
@@ -133,7 +135,7 @@ export function createCoalescedCommit<V>(
     },
     flush(reason = "flush", force = false) {
       if (!force && !dirty && !timer && !inFlight && !again) return Promise.resolve();
-      return start(reason);
+      return start(reason, force);
     },
     hasPending() {
       return dirty || timer !== null || again !== null;
