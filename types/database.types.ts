@@ -31149,6 +31149,20 @@ export type Database = {
         Args: { p_days: number; p_holidays: Json; p_start: string }
         Returns: string
       }
+      _fxc_apply: { Args: { p_op: string; p_vals: Json[] }; Returns: Json }
+      _fxc_context_free: { Args: { p_expr: Json }; Returns: boolean }
+      _fxc_eval: {
+        Args: { p_expr: Json; p_organization_id: string; p_values: Json }
+        Returns: Json
+      }
+      _fxc_rule_eval: {
+        Args: { p_expr: Json; p_organization_id: string; p_values: Json }
+        Returns: Json
+      }
+      _fxc_rule_sql: {
+        Args: { p_expr: Json; p_organization_id: string; p_values_sql: string }
+        Returns: string
+      }
       _fxp_level: {
         Args: { p_i: number; p_level: number; p_tokens: Json }
         Returns: Json
@@ -31784,6 +31798,10 @@ export type Database = {
           p_table_id: string
         }
         Returns: Json
+      }
+      agg_field_kind: {
+        Args: { p_key: string; p_organization_id: string; p_table_id: string }
+        Returns: string
       }
       agg_field_value_sql: {
         Args: { p_key: string; p_organization_id: string; p_table_id: string }
@@ -33717,6 +33735,10 @@ export type Database = {
         Args: { p_to: Json; p_value: Json }
         Returns: Json
       }
+      field_value_kind: {
+        Args: { p_field_data: Json; p_organization_id: string }
+        Returns: string
+      }
       field_words: {
         Args: { p_field_id: string; p_organization_id: string; p_value: Json }
         Returns: string
@@ -33907,6 +33929,10 @@ export type Database = {
         }
         Returns: Json
       }
+      formula_field_keys: {
+        Args: { p_expr: Json; p_organization_id: string }
+        Returns: string[]
+      }
       formula_node_kinds: {
         Args: never
         Returns: {
@@ -33921,6 +33947,10 @@ export type Database = {
       formula_parse: {
         Args: { p_organization_id: string; p_table_id: string; p_text: string }
         Returns: Json
+      }
+      formula_result_kind: {
+        Args: { p_expr: Json; p_organization_id: string }
+        Returns: string
       }
       formula_value: {
         Args: {
@@ -35759,6 +35789,25 @@ export type Database = {
         }
         Returns: Json
       }
+      record_runs: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: {
+          finished_at: string
+          kind: string
+          name: string
+          ran_by: string
+          run_id: string
+          says: string
+          started_at: string
+          status: string
+          steps: number
+          trigger_name: string
+        }[]
+      }
       record_scope_context: {
         Args: {
           p_history?: number
@@ -35796,6 +35845,24 @@ export type Database = {
       record_table: {
         Args: { p_organization_id: string; p_record_id: string }
         Returns: string
+      }
+      record_triggers: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: {
+          definition_id: string
+          definition_name: string
+          event: string
+          field_ids: Json
+          fire_count: number
+          is_active: boolean
+          last_fired_at: string
+          name: string
+          operations: Json
+          table_id: string
+          trigger_id: string
+          updated_at: string
+          via: Json
+        }[]
       }
       record_update: {
         Args: {
