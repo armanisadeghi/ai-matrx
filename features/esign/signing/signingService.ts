@@ -26,21 +26,29 @@ export type SigningDoor =
   | { kind: "envelope"; envelopeId: string }
   | { kind: "outsider"; session: string };
 
-/** The transport failed (the server never answered) — distinct from a refusal it answered. */
-export class SigningUnreachable extends Error {
+/** The server answered and refused, with the sentence the signer reads. */
+export class SigningRefusal extends Error {
   constructor(message: string) {
     super(message);
+    this.name = "SigningRefusal";
+  }
+}
+
+/** The transport failed — the server never answered. Distinct from a refusal it answered. */
+export class SigningUnreachable extends Error {
+  constructor() {
+    super("We could not reach AI Matrx just now. Try again in a moment.");
     this.name = "SigningUnreachable";
   }
 }
 
 function read<T>(result: ApiCallResult): T {
-  if (result.error || result.data === undefined) {
-    throw new SigningUnreachable(
-      result.error?.message ?? "We could not reach AI Matrx just now. Try again in a moment.",
-    );
-  }
-  return result.data as T;
+  if (!result.error && result.data !== undefined) return result.data as T;
+  // aidream answers a refusal as 409 `{detail: {code, message}}` (routers/esign_signing.py).
+  const detail = result.error?.serverDetail as { detail?: { message?: unknown } } | undefined;
+  const message = detail?.detail?.message;
+  if (typeof message === "string" && message !== "") throw new SigningRefusal(message);
+  throw new SigningUnreachable();
 }
 
 export async function signingAct(

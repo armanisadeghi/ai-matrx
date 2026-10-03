@@ -42,8 +42,10 @@ These are the links `esign._notify_actionable` / `esign_resend_signer` email. Ch
 ## Invariants
 
 - **The database decides.** Every act is `public.esign_sign_*` (signed-in) or `public.esign_signer_*` (outsider); §4.3's five conditions, scope, IP pin and uniform refusal are theirs. The page maps the returned `reason` code to one sentence (`REASON_TEXT`).
-- **`observed` is the hash of the bytes on screen.** The `document` act returns the frozen bytes (base64, never a URL — media-durability law); the page renders them as a blob and SHA-256s exactly those bytes.
-- **`preview` is recorded on render** (iframe `onLoad`), never on fetch, and never again once signed.
+- **`observed` is the hash of the bytes on screen.** The `document` act returns the frozen bytes (base64, never a URL — media-durability law); the page renders them as a blob and SHA-256s exactly those bytes. Bytes are fetched (and the read ledgered) only when the signer opens that document's tab.
+- **A document never runs code.** PDFs draw through `PdfDocumentRenderer` (pdf.js canvas — also the only way a PDF shows on Android); raster images through `<img>`; every other type (HTML, SVG, …) is a download only, as `application/octet-stream`. Never an `<iframe>` of a blob: a blob URL has our origin.
+- **`preview` is recorded on render** (the viewer's first drawn page), never on fetch, never again once signed; a failed record is retried by Continue.
+- **The link secret leaves the address bar on first read** (kept in this tab's `sessionStorage`), so it is not in history or in any error report's page URL.
 - **The code only goes out on a press.** Opening the page sends nothing (mail-scanner safe).
 - **The server records the signer's IP** (evidence + outsider session pin); the browser never claims its own.
 - Typed signatures only: `drawn` needs an uploaded image file id the surface does not collect yet.
@@ -52,4 +54,5 @@ These are the links `esign._notify_actionable` / `esign_resend_signer` email. Ch
 
 ## Change Log
 
+- 2026-10-03 — Independent review fixes: pdf.js viewer instead of an iframe (script + Android), secret stripped from the URL, refusals shown as refusals, mid-walk session loss returns to the code step, per-tab lazy fetch, retryable preview.
 - 2026-10-03 — Built: both routes, the surface, the outsider code gate, aidream `/esign/signing/*`, migration `esign_signing_surface_has_its_doors.sql` (reopened the eight signed-in doors, the code email's words). Proven on live as admin@admin.com: outsider and signed-in envelopes signed to a certificate in the browser; decline and wrong-signer refusal checked.

@@ -33,9 +33,26 @@ type Phase =
   | { kind: "code"; maskedTarget: string | null; sent: boolean }
   | { kind: "signing"; door: SigningDoor };
 
-function secretFromHash(): string | null {
+const LINK_KEY = "esign-link";
+
+/**
+ * The link secret, taken OUT of the address bar on first read. Left there it would sit in the
+ * browser history and ride along as the page URL in any error report this page files. It is kept
+ * in this tab's sessionStorage instead, so a reload still knows which link it is.
+ */
+function takeSecret(): string | null {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const t = params.get("t");
+  const fromHash = params.get("t");
+  if (fromHash) {
+    window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+  }
+  let t = fromHash;
+  try {
+    if (t) window.sessionStorage.setItem(LINK_KEY, t);
+    else t = window.sessionStorage.getItem(LINK_KEY);
+  } catch {
+    // A private window without storage still signs; a reload there needs the emailed link again.
+  }
   return t && /^[A-Za-z0-9]{40,48}$/.test(t) ? t : null;
 }
 
@@ -76,7 +93,7 @@ export function OutsiderSigning() {
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    const found = secretFromHash();
+    const found = takeSecret();
     if (!found) {
       setPhase({ kind: "dead", message: DEAD });
       return;

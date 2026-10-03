@@ -14,7 +14,7 @@
 //      (`observed`), and the database refuses if those bytes are not the frozen ones.
 // Every refusal comes back as a reason code and is shown as one short sentence.
 
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Check, Download, FileText, Loader2, PenLine, ShieldCheck, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,22 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 
 import {
   signingAct,
+  type SigningAction,
   type SigningAnswer,
   type SigningDoor,
-  SigningUnreachable,
+  SigningRefusal,
 } from "./signingService";
+
+// THE platform PDF viewer (pdf.js): it draws pages on a canvas, so a document never runs script on
+// our origin, and it renders on Android, whose Chrome shows nothing for a PDF in an iframe.
+const PdfDocumentRenderer = lazy(() => import("@/features/pdf/components/viewer/PdfDocumentRenderer"));
+
+/** The only types this surface draws inline. Anything else is offered as a download, never run. */
+function displayKind(mimeType: string | null): "pdf" | "image" | "download" {
+  if (mimeType === "application/pdf") return "pdf";
+  if (mimeType?.startsWith("image/") && mimeType !== "image/svg+xml") return "image";
+  return "download";
+}
 
 const SIGN_ACTION_ID = "esign-surface-sign";
 
@@ -76,6 +88,9 @@ interface DocView {
   url: string | null;
   mimeType: string | null;
   seenHash: string | null;
+  /** Drawn on this screen (or, for a download-only type, downloaded). */
+  rendered: boolean;
+  /** The database recorded the preview. */
   previewed: boolean;
   failed: string | null;
 }
@@ -114,11 +129,18 @@ async function readDocument(
     const answer = await signingAct(dispatch, door, "document", { document_id: id });
     if (!answer.granted || !answer.content_base64) return { failed: reasonText(answer.reason) };
     const bytes = decodeBase64(answer.content_base64);
-    const mimeType = answer.mime_type ?? "application/pdf";
-    const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+    const mimeType = answer.mime_type ?? "application/octet-stream";
+    // A blob takes the page's origin: never give it a type a browser would execute.
+    const blobType = displayKind(mimeType) === "download" ? "application/octet-stream" : mimeType;
+    const url = URL.createObjectURL(new Blob([bytes], { type: blobType }));
     return { url, mimeType, seenHash: await sha256Hex(bytes) };
-  } catch {
-    return { failed: "This document could not be opened. Try again in a moment." };
+  } catch (err) {
+    return {
+      failed:
+        err instanceof SigningRefusal
+          ? err.message
+          : "This document could not be opened. Try again in a moment.",
+    };
   }
 }
 
@@ -171,26 +193,21 @@ export function SigningSurface({
           url: null,
           mimeType: text(d, "mime_type"),
           seenHash: null,
+          rendered: false,
           previewed: false,
           failed: null,
         }));
         setDocs(listed);
         setPhase({ kind: "ready", load });
-        for (const doc of listed) {
-          void readDocument(dispatch, door, doc.id).then((patch) => {
-            if (patch.url) urls.current.push(patch.url);
-            if (live) setDocs((all) => all.map((d) => (d.id === doc.id ? { ...d, ...patch } : d)));
-          });
-        }
       })
       .catch((err: unknown) => {
         if (!live) return;
         setPhase({
           kind: "refused",
           message:
-            err instanceof SigningUnreachable
-              ? "We could not reach AI Matrx just now. Your link is fine — try again in a moment."
-              : "This document could not be opened.",
+            err instanceof SigningRefusal
+              ? err.message
+              : "We could not reach AI Matrx just now. Your link is fine — try again in a moment.",
         });
       });
     const held = urls.current;
@@ -200,32 +217,79 @@ export function SigningSurface({
     };
   }, [dispatch, door]);
 
+  // A document's bytes are fetched (and its read ledgered) only when the signer opens its tab.
+  // Keyed by an in-flight set, not by state: a state flag would change this effect's key and its
+  // cleanup would throw the answer away.
+  const inFlight = useRef(new Set<string>());
+  const wanted = docs[activeDoc];
+  const wantedId = wanted && !wanted.url && !wanted.failed ? wanted.id : null;
+  useEffect(() => {
+    if (!wantedId || inFlight.current.has(wantedId)) return;
+    inFlight.current.add(wantedId);
+    void readDocument(dispatch, door, wantedId).then((patch) => {
+      inFlight.current.delete(wantedId);
+      if (patch.url) urls.current.push(patch.url);
+      setDocs((all) => all.map((d) => (d.id === wantedId ? { ...d, ...patch } : d)));
+    });
+  }, [dispatch, door, wantedId]);
+
   function patchDoc(id: string, patch: Partial<DocView>) {
     setDocs((current) => current.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   }
 
+  /** One act; an outsider whose session ran out mid-walk is sent back for a fresh code. */
+  async function act(action: SigningAction, args: Parameters<typeof signingAct>[3] = {}) {
+    const answer = await signingAct(dispatch, door, action, args);
+    if (!answer.granted && answer.reason === "link_no_longer_valid" && doorClosed.current) {
+      doorClosed.current();
+    }
+    return answer;
+  }
+
+  async function recordPreview(id: string): Promise<boolean> {
+    try {
+      const answer = await act("preview", { document_id: id });
+      if (answer.granted) {
+        patchDoc(id, { previewed: true });
+        return true;
+      }
+      setNotice(reasonText(answer.reason));
+    } catch (err) {
+      setNotice(err instanceof SigningRefusal ? err.message : "We could not record that you opened it. Try again.");
+    }
+    return false;
+  }
+
   /** The document has rendered on this screen: that is the fact `preview` records (§4.1). */
-  async function markPreviewed(doc: DocView) {
-    if (doc.previewed) return;
+  function markRendered(doc: DocView) {
+    if (doc.rendered) return;
     // A signed document is reopened to read or keep a copy; there is nothing left to record.
     if (step === "done") {
-      patchDoc(doc.id, { previewed: true });
+      patchDoc(doc.id, { rendered: true, previewed: true });
       return;
     }
-    patchDoc(doc.id, { previewed: true });
-    const answer = await signingAct(dispatch, door, "preview", { document_id: doc.id }).catch(() => null);
-    if (answer && !answer.granted) setNotice(reasonText(answer.reason));
+    patchDoc(doc.id, { rendered: true });
+    void recordPreview(doc.id);
+  }
+
+  /** Continue: any rendered document whose preview did not record is retried, then consent. */
+  async function continueToConsent() {
+    setNotice(null);
+    for (const d of docs) {
+      if (d.rendered && !d.previewed && !(await recordPreview(d.id))) return;
+    }
+    setStep("consent");
   }
 
   async function agree(disclosureId: string) {
     setBusy("consent");
     setNotice(null);
     try {
-      const answer = await signingAct(dispatch, door, "consent", { disclosure_id: disclosureId });
+      const answer = await act("consent", { disclosure_id: disclosureId });
       if (answer.granted) setStep("sign");
       else setNotice(reasonText(answer.reason));
-    } catch {
-      setNotice("We could not save that. Try again in a moment.");
+    } catch (err) {
+      setNotice(err instanceof SigningRefusal ? err.message : "We could not save that. Try again in a moment.");
     } finally {
       setBusy(null);
     }
@@ -237,14 +301,14 @@ export function SigningSurface({
       setNotice(REASON_TEXT.typed_name_required);
       return;
     }
-    if (docs.some((d) => !d.seenHash)) {
+    if (docs.some((d) => !d.seenHash || !d.previewed)) {
       setNotice(REASON_TEXT.document_not_previewed);
       return;
     }
     setBusy("sign");
     setNotice(null);
     try {
-      const adopted = await signingAct(dispatch, door, "adopt", {
+      const adopted = await act("adopt", {
         kind: "typed",
         typed_name: name,
         typed_style: "script",
@@ -253,14 +317,14 @@ export function SigningSurface({
         setNotice(reasonText(adopted.reason));
         return;
       }
-      const signed = await signingAct(dispatch, door, "sign", {
+      const signed = await act("sign", {
         observed: docs.map((d) => ({ document_id: d.id, content_hash: d.seenHash ?? "" })),
         action_id: SIGN_ACTION_ID,
       });
       if (signed.granted) setStep("done");
       else setNotice(reasonText(signed.reason));
-    } catch {
-      setNotice("We could not save your signature. Try again in a moment.");
+    } catch (err) {
+      setNotice(err instanceof SigningRefusal ? err.message : "We could not save your signature. Try again in a moment.");
     } finally {
       setBusy(null);
     }
@@ -271,7 +335,7 @@ export function SigningSurface({
     if (!reason) return;
     setBusy("decline");
     try {
-      const answer = await signingAct(dispatch, door, "decline", { reason });
+      const answer = await act("decline", { reason });
       if (answer.granted) {
         setDeclineOpen(false);
         setPhase({ kind: "refused", message: REASON_TEXT.signer_declined });
@@ -279,8 +343,8 @@ export function SigningSurface({
         setNotice(reasonText(answer.reason));
         setDeclineOpen(false);
       }
-    } catch {
-      setNotice("We could not record that. Try again in a moment.");
+    } catch (err) {
+      setNotice(err instanceof SigningRefusal ? err.message : "We could not record that. Try again in a moment.");
     } finally {
       setBusy(null);
     }
@@ -313,7 +377,7 @@ export function SigningSurface({
   const sender = text(load.branding, "name") ?? text(load.branding, "organization_name");
   const consent = load.consent ?? null;
   const disclosureId = text(consent, "disclosure_id");
-  const allSeen = docs.length > 0 && docs.every((d) => d.previewed && d.seenHash);
+  const allSeen = docs.length > 0 && docs.every((d) => d.rendered && d.seenHash);
   const current = docs[activeDoc] ?? null;
 
   return (
@@ -341,14 +405,14 @@ export function SigningSurface({
                   size="sm"
                   onClick={() => setActiveDoc(i)}
                 >
-                  {d.previewed ? <Check className="mr-1 h-3.5 w-3.5" /> : <FileText className="mr-1 h-3.5 w-3.5" />}
+                  {d.rendered ? <Check className="mr-1 h-3.5 w-3.5" /> : <FileText className="mr-1 h-3.5 w-3.5" />}
                   {d.name}
                 </Button>
               ))}
             </div>
           )}
           <div className="flex min-h-0 flex-1 bg-muted/40">
-            {current && <DocumentFrame doc={current} onShown={() => void markPreviewed(current)} />}
+            {current && <DocumentFrame doc={current} onShown={() => markRendered(current)} />}
           </div>
         </section>
 
@@ -358,8 +422,8 @@ export function SigningSurface({
           {step === "review" && (
             <>
               <StepTitle icon={FileText} label="Review the document" />
-              <Button disabled={!allSeen} onClick={() => setStep("consent")}>
-                {allSeen ? "Continue" : "Opening the document"}
+              <Button disabled={!allSeen} onClick={() => void continueToConsent()}>
+                {allSeen ? "Continue" : docs.length > 1 ? "Open every document" : "Opening the document"}
               </Button>
             </>
           )}
@@ -464,5 +528,48 @@ function DocumentFrame({ doc, onShown }: { doc: DocView; onShown: () => void }) 
   if (!doc.url) {
     return <Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />;
   }
-  return <iframe key={doc.id} src={doc.url} title={doc.name} className="h-full w-full flex-1 border-0" onLoad={onShown} />;
+  const kind = displayKind(doc.mimeType);
+  if (kind === "pdf") {
+    return (
+      <Suspense fallback={<Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />}>
+        <PdfDocumentRenderer
+          key={doc.id}
+          blobUrl={doc.url}
+          fileName={doc.name}
+          className="h-full w-full"
+          renderOverlay={() => <Shown onShown={onShown} />}
+        />
+      </Suspense>
+    );
+  }
+  if (kind === "image") {
+    return (
+      <div className="flex flex-1 items-center justify-center overflow-auto p-3">
+        {/* A local blob of the frozen bytes; raster types only (displayKind refuses SVG). */}
+        <img src={doc.url} alt={doc.name} className="max-h-full max-w-full object-contain" onLoad={onShown} />
+      </div>
+    );
+  }
+  return (
+    <div className="m-auto flex flex-col items-center gap-3 px-6 text-center">
+      <FileText className="h-8 w-8 text-muted-foreground" />
+      <Button variant="outline" asChild>
+        <a href={doc.url} download={doc.name} onClick={onShown}>
+          <Download className="mr-2 h-4 w-4" />
+          Download {doc.name}
+        </a>
+      </Button>
+    </div>
+  );
+}
+
+/** Mounted by the PDF viewer only once a page has drawn; tells the surface so, once. */
+function Shown({ onShown }: { onShown: () => void }) {
+  const fired = useRef(false);
+  useEffect(() => {
+    if (fired.current) return;
+    fired.current = true;
+    onShown();
+  });
+  return null;
 }
