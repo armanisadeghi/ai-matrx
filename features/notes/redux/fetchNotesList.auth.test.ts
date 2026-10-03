@@ -29,6 +29,9 @@ function notesQuery(result: { data: unknown[] | null; error: unknown }) {
     is: jest.fn(),
     order: jest.fn(),
     range: jest.fn(async () => paged),
+    // The list's one "Shown to" read (`platform.shown_to_context`) — no
+    // per-organization defaults, so every row the viewer can open is listed.
+    rpc: jest.fn(async () => ({ data: {}, error: null })),
   };
   chain.from.mockReturnValue(chain);
   chain.select.mockReturnValue(chain);

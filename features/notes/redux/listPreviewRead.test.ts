@@ -33,6 +33,8 @@ function listQuery(result: { data: unknown[] | null; error: unknown }) {
   const chain = {
     from: jest.fn(), select: jest.fn(), eq: jest.fn(), is: jest.fn(), order: jest.fn(),
     range: jest.fn(async () => paged),
+    // The list's one "Shown to" read (`platform.shown_to_context`).
+    rpc: jest.fn(async () => ({ data: {}, error: null })),
   };
   for (const key of ["from", "select", "eq", "is", "order"] as const) chain[key].mockReturnValue(chain);
   return chain;

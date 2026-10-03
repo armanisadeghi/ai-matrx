@@ -114,6 +114,13 @@ function note(overrides: Partial<Note> = {}): Note {
   };
 }
 
+/** A write chain awaited as a whole (`writeOneRow`) resolves to the rows it wrote. */
+function writtenRows<C extends object>(chain: C, rows: unknown[]): C {
+  return Object.assign(chain, {
+    then: (resolve: (value: unknown) => unknown) => resolve({ data: rows, error: null }),
+  });
+}
+
 /** A PostgREST chain that records every call, so a test can assert the query. */
 function query(result: unknown) {
   const chain = {
@@ -346,7 +353,9 @@ describe("restoreNote", () => {
   it("clears deleted_at on that row and puts the restored note back in the store", async () => {
     const configured = store([]);
     const restored = note({ deleted_at: null, label: "Back" });
-    const chain = query({ data: restored, error: null });
+    // The restore is a single-row write (`writeOneRow`): it awaits the
+    // builder itself and reads the returned rows, never `.single()`.
+    const chain = writtenRows(query({ data: restored, error: null }), [restored]);
     const from = jest.fn().mockReturnValue(chain);
     schema.mockReturnValue({ from });
 
@@ -381,7 +390,7 @@ describe("restoreNote with its folder", () => {
   it("revives the folder that went to Trash with the note", async () => {
     const configured = store([]);
     const restored = note({ deleted_at: null, folder_id: FOLDER_ID });
-    const noteChain = query({ data: restored, error: null });
+    const noteChain = writtenRows(query({ data: restored, error: null }), [restored]);
     const folderRead = query({
       data: {
         id: FOLDER_ID,
@@ -392,9 +401,9 @@ describe("restoreNote with its folder", () => {
       },
       error: null,
     });
-    const revive = Object.assign(query({ error: null }), {
-      then: (resolve: (value: unknown) => unknown) => resolve({ error: null }),
-    });
+    // The revive reports the folder row it brought back; zero rows means the
+    // folder stayed in Trash and the restore says so.
+    const revive = writtenRows(query({ error: null }), [{ id: FOLDER_ID }]);
     const from = jest
       .fn()
       .mockReturnValueOnce(noteChain)

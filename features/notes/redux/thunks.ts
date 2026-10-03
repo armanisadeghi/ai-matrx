@@ -264,7 +264,6 @@ export const fetchNotesList = createAsyncThunk<
 >(
   "notes/fetchNotesList",
   async (_, { dispatch, getState }) => {
-    console.log("[Track Quick Notes] 6, thunks.ts — fetchNotesList started");
     const userId = getUserId(getState);
     const seq = ++notesListFetchSeq;
     const superseded = () => seq !== notesListFetchSeq;
@@ -344,9 +343,6 @@ export const fetchNotesList = createAsyncThunk<
         }),
       );
 
-      console.log("[Track Quick Notes] 6c, thunks.ts — fetchNotesList complete", {
-        notesCount: notes.length,
-      });
       dispatch(setListStatus("loaded"));
     } catch (error) {
       // A superseded run reports nothing: the newer run owns the status.
