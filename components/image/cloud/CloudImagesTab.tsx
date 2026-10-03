@@ -122,7 +122,7 @@ import {
 } from "@/components/image/cloud/CloudImageGrid";
 import { CloudImageList } from "@/components/image/cloud/CloudImageList";
 import { useBrowseAction } from "@/features/image-manager/browse/BrowseImageProvider";
-import { CloudFileMetadataSheet } from "@/features/image-manager/components/CloudFileMetadataSheet";
+import { useOpenDetail } from "@ai-matrx/detail/react";
 import { openFolderPicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -278,9 +278,11 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
   const showRecentsOnly = recentsCutoff !== null;
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const resolutionGateRef = useRef(createExclusiveOperationGate());
-  const [metadataFile, setMetadataFile] = useState<CloudFileRecord | null>(
-    null,
-  );
+  // A file's details open through the Detail primitive (its docked
+  // presentation is a canvas tab beside the grid).
+  const openDetail = useOpenDetail("file");
+  const showFileDetails = (file: CloudFileRecord) =>
+    void openDetail({ type: "file", id: file.id, seed: { name: file.fileName } });
   const { prefs, setPrefs } = useListViewPrefs(
     "image-manager-cloud",
     CLOUD_IMAGES_VIEW_DEFAULTS,
@@ -761,7 +763,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                     bulkSelectedIds={visibleBulkSelectedIds}
                     onToggleBulkSelected={handleToggleBulkSelected}
                     onTileClick={handleTileClick}
-                    onShowMetadata={setMetadataFile}
+                    onShowMetadata={showFileDetails}
                   />
                 ) : (
                   <CloudImageGrid
@@ -773,18 +775,12 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                     bulkSelectedIds={visibleBulkSelectedIds}
                     onToggleBulkSelected={handleToggleBulkSelected}
                     onTileClick={handleTileClick}
-                    onShowMetadata={setMetadataFile}
+                    onShowMetadata={showFileDetails}
                   />
                 )}
               </section>
             </div>
 
-            <CloudFileMetadataSheet
-              file={metadataFile}
-              onOpenChange={(open) => {
-                if (!open) setMetadataFile(null);
-              }}
-            />
             <FloatingSelectionToolbar
               selectedCount={visibleBulkSelectedIds.length}
               actions={[

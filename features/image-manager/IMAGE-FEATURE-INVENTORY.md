@@ -296,7 +296,7 @@ Demo files for each live under `app/(authenticated)/(admin-auth)/administration/
 | `CloudFilesTab` Browse-mode click + Photos link | RETROFIT | ✅ Shipped |
 | Mobile drawer for sidebar | NEW | ✅ Shipped — `useIsMobile()` |
 | Curated covers in Public Images | ABSORB | ✅ Shipped — `PublicImagesSection` |
-| Per-tile metadata side drawer | NEW | ✅ Shipped — `CloudFileMetadataSheet` |
+| Per-tile metadata side drawer | NEW | ✅ Shipped — the file Detail (canvas tab when docked) |
 | Paste-base64 sub-tool inside Upload | ABSORB | ✅ Shipped — collapsible inside `CloudUploadTab` |
 | Branded Upload tab | NEW | ✅ Shipped — `BrandedUploadTab` |
 | Studio Library tab | NEW | ✅ Shipped — `StudioLibraryTab` (read-only) |

@@ -36,7 +36,6 @@ describe("Images surface action guards", () => {
       "features/files/components/preview/SelectableFileThumbnail.tsx",
       "features/files/components/surfaces/PickerShell.tsx",
       "features/files/components/surfaces/desktop/FileGridCell.tsx",
-      "features/image-manager/components/CloudFileMetadataSheet.tsx",
       "features/resource-manager/resource-picker/FilesResourcePicker.tsx",
     ];
 

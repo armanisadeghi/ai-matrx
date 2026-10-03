@@ -82,8 +82,9 @@ jest.mock("@/features/image-manager/browse/BrowseImageProvider", () => ({
   useBrowseAction: () => jest.fn(),
 }));
 
-jest.mock("@/features/image-manager/components/CloudFileMetadataSheet", () => ({
-  CloudFileMetadataSheet: () => null,
+const openDetail = jest.fn(async () => "docked");
+jest.mock("@ai-matrx/detail/react", () => ({
+  useOpenDetail: () => openDetail,
 }));
 
 jest.mock("@ai-matrx/media/react", () => ({
@@ -146,6 +147,34 @@ describe("CloudImagesTab", () => {
     const html = renderToStaticMarkup(<CloudImagesTab />);
 
     expect(html).toContain('aria-label="2 images loaded"');
+  });
+
+  it("a tile's details open the file through the Detail primitive (a canvas tab when docked)", async () => {
+    mockFiles.allFiles = [
+      {
+        id: "file-1",
+        fileName: "cover.png",
+        mimeType: "image/png",
+        deletedAt: null,
+        updatedAt: "2026-05-07T10:00:00.000Z",
+        createdAt: "2026-05-07T10:00:00.000Z",
+      },
+    ];
+    openDetail.mockClear();
+    const html = renderToStaticMarkup(<CloudImagesTab />);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    let root!: ReturnType<typeof hydrateRoot>;
+    await act(async () => {
+      root = hydrateRoot(container, <CloudImagesTab />);
+    });
+    const details = container.querySelector<HTMLButtonElement>('[aria-label="Details for cover.png"]');
+    expect(details).not.toBeNull();
+    await act(async () => details?.click());
+    expect(openDetail).toHaveBeenCalledWith({ type: "file", id: "file-1", seed: { name: "cover.png" } });
+    await act(async () => root.unmount());
+    container.remove();
   });
 
   it("surfaces a recoverable load error instead of claiming the library is empty", () => {

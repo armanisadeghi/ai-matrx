@@ -537,15 +537,6 @@ export const componentList: ComponentEntry[] = [
     tags: ["image", "unsplash", "covers", "public", "search"],
   },
   {
-    id: "cloud-file-metadata-sheet",
-    name: "Cloud File Metadata Sheet",
-    path: "features/image-manager/components/CloudFileMetadataSheet.tsx",
-    description:
-      "Read-only side sheet displaying detailed metadata for a CloudFileRecord.",
-    categories: ["media", "data-display", "modals"],
-    tags: ["cloud-files", "metadata", "drawer", "sheet"],
-  },
-  {
     id: "image-preview-row",
     name: "Image Preview Row",
     path: "components/image/shared/ImagePreviewRow.tsx",
