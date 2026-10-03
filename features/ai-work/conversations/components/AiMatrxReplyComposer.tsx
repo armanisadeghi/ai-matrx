@@ -31,7 +31,8 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Button } from "@/components/ui/button";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { buildRequestUserOverrides } from "@ai-matrx/chat/agents/redux/execution-system/utils/request-user-overrides";
 import { callConversationContinue } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
 import { readServerRefusal } from "@/features/access-gate/service/serverRefusal";
@@ -92,6 +93,7 @@ export function AiMatrxReplyComposer({
   onAnswered: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const labelId = useId();
   // Read before the person types. This component only ever mounts on a
   // coding-session transcript, so the read is never made on a page that
@@ -153,6 +155,9 @@ export function AiMatrxReplyComposer({
     // to null after the await; a holder keeps the real type.
     const failure: { message: string | null } = { message: null };
 
+    // The person's USER layer (tool picks, removals, auto-tools switch,
+    // apply policy) rides this continue too — TOOL-SOURCES rule R.
+    const userOverrides = buildRequestUserOverrides(store.getState(), conversationId);
     const result = await dispatch(
       callConversationContinue({
         conversationId,
@@ -161,6 +166,7 @@ export function AiMatrxReplyComposer({
           stream: true,
           source_feature: CODING_SESSION_REPLY_SOURCE_FEATURE,
           initiation: "user",
+          ...(userOverrides ? { user: userOverrides } : {}),
         },
         onStreamEvent: (event: TypedStreamEvent) => {
           if (event.event === "chunk") {

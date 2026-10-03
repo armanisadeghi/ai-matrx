@@ -27,6 +27,7 @@
 // it; once `pnpm sync-types` regenerates, a typed `callApi` wrapper can replace
 // `postJson` here.
 
+import type { UserOverrides } from "../../agents/types/request.types";
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "../../store/hooks";
 import { applyAgentConfig } from "../state/voiceAgentSlice";
@@ -41,6 +42,8 @@ export interface RealtimeToolsRequest {
   surface: string;
   added_tool_ids: string[];
   is_version: boolean;
+  /** The person's removals + auto-tools switch (TOOL-SOURCES rule R). */
+  user?: UserOverrides | null;
 }
 
 /** Response from `POST /ai/agents/{id}/realtime-tools` (contract §3). */
@@ -105,6 +108,8 @@ export interface UseRealtimeAgentConfigOpts {
   surface: string;
   /** Per-conversation tool additions (tool UUIDs). Mirrors `addedToolIds` for text. */
   addedToolIds?: string[];
+  /** The person's removals + auto-tools switch. Same source as the session hook. */
+  userOverrides?: UserOverrides | null;
   /** Resolve against an agent VERSION row rather than the live agent. */
   isVersion?: boolean;
 }
@@ -125,12 +130,12 @@ export function useRealtimeAgentConfig(
     error: null,
   });
 
-  const { instanceId, agentId, surface, addedToolIds, isVersion } = opts;
+  const { instanceId, agentId, surface, addedToolIds, userOverrides, isVersion } = opts;
   // The session's realtime MODEL comes from the same mandate-resolved Holder
   // agent as its tools — never a constant (see realtimeModel.ts).
   useRealtimeHolderModel({ instanceId, agentId });
   // Stable dep for the (possibly undefined) array.
-  const addedToolIdsKey = JSON.stringify(addedToolIds ?? []);
+  const addedToolIdsKey = JSON.stringify([addedToolIds ?? [], userOverrides ?? null]);
 
   useEffect(() => {
     if (!agentId) {
@@ -147,6 +152,7 @@ export function useRealtimeAgentConfig(
         surface,
         added_tool_ids: addedToolIds ?? [],
         is_version: isVersion ?? false,
+        ...(userOverrides ? { user: userOverrides } : {}),
       });
       if (cancelled) return;
 

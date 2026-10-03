@@ -4,7 +4,8 @@
 // person set). Tools, skills and MCP servers a person adds to ONE
 // conversation (`builderAdvancedSettings.addedTools / addedSkills /
 // addedMcpServers`), the tools they remove (`removedTools`) and their
-// auto-tools switch (`autoTools`) lived only in Redux: reopening the conversation from
+// auto-tools switch (`autoTools`) — and the surface it is bound to
+// (`conversation.surfaceName`) — lived only in Redux: reopening the conversation from
 // history showed Tools 0 / Skills 0 and the next turn ran without them (phone
 // run PB-08 #2, 2026-10-01).
 //
@@ -42,6 +43,12 @@ export interface PersistedRunConfiguration {
   removedTools: string[];
   /** The per-chat auto-tools switch; null = follow the agent. */
   autoTools: boolean | null;
+  /**
+   * The surface this conversation is BOUND to (`conversation.surfaceName`,
+   * its launch stamp). Without it a conversation reopened or forked comes back
+   * unbound and loses its page's tools (`page-tool-binding.ts`).
+   */
+  surfaceName: string | null;
 }
 
 const EMPTY: PersistedRunConfiguration = {
@@ -50,6 +57,7 @@ const EMPTY: PersistedRunConfiguration = {
   addedMcpServers: [],
   removedTools: [],
   autoTools: null,
+  surfaceName: null,
 };
 
 function strings(value: unknown): string[] {
@@ -72,6 +80,10 @@ export function parsePersistedRunConfiguration(
     addedMcpServers: strings(r.added_mcp_servers),
     removedTools: strings(r.removed_tools),
     autoTools: typeof r.auto_tools === "boolean" ? r.auto_tools : null,
+    surfaceName:
+      typeof r.surface_name === "string" && r.surface_name.length > 0
+        ? r.surface_name
+        : null,
   };
 }
 
@@ -82,6 +94,7 @@ function toStored(config: PersistedRunConfiguration) {
     added_mcp_servers: config.addedMcpServers,
     removed_tools: config.removedTools,
     auto_tools: config.autoTools,
+    surface_name: config.surfaceName,
   };
 }
 
@@ -92,6 +105,7 @@ export function runConfigurationSignature(config: PersistedRunConfiguration): st
     [...config.addedMcpServers].sort(),
     [...config.removedTools].sort(),
     config.autoTools,
+    config.surfaceName,
   ]);
 }
 
@@ -101,13 +115,16 @@ export function selectRunConfiguration(
 ): PersistedRunConfiguration {
   const s =
     state.instanceUIState?.byConversationId[conversationId]?.builderAdvancedSettings;
-  if (!s) return EMPTY;
+  const surfaceName =
+    state.conversations?.byConversationId[conversationId]?.surfaceName ?? null;
+  if (!s) return { ...EMPTY, surfaceName };
   return {
     addedTools: s.addedTools ?? [],
     addedSkills: s.addedSkills ?? [],
     addedMcpServers: s.addedMcpServers ?? [],
     removedTools: s.removedTools ?? [],
     autoTools: s.autoTools ?? null,
+    surfaceName,
   };
 }
 

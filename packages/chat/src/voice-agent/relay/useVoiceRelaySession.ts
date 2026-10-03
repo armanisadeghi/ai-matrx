@@ -19,6 +19,8 @@
 // The surface gates on Mandate resolution BEFORE mounting this hook — an
 // unresolvable mandate refuses; there is no fallback persona.
 
+import { buildUserToolOverrides } from "../../agents/redux/execution-system/utils/build-tool-injection";
+import type { UserOverrides } from "../../agents/types/request.types";
 import { useEffect, useRef, useState } from "react";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
@@ -159,23 +161,24 @@ export function useVoiceRelaySession(
     },
   );
   const conversationId = pinnedConversationId ?? launcherConversationId;
-  // THE PERSON'S PICKS ride the voice too (TOOL-SOURCES rule R): the tools
-  // added to this conversation reach the realtime tool set on resolve AND on
-  // execute, from this ONE read, so the two can never disagree.
-  const addedToolIdsKey = useAppSelector((s) =>
-    conversationId
-      ? JSON.stringify(
-          s.instanceUIState?.byConversationId[conversationId]?.builderAdvancedSettings
-            ?.addedTools ?? [],
-        )
-      : "[]",
-  );
-  const addedToolIds = JSON.parse(addedToolIdsKey) as string[];
+  // THE PERSON'S TOOL DECISIONS ride the voice too (TOOL-SOURCES rule R):
+  // picks as added_tool_ids, removals + the auto-tools switch as `user` — on
+  // resolve AND on execute, from this ONE read, so the two never disagree.
+  const toolDecisionsKey = useAppSelector((s) => {
+    if (!conversationId) return "[[],null]";
+    const { add, ...rest } = buildUserToolOverrides(s, conversationId);
+    return JSON.stringify([add ?? [], Object.keys(rest).length > 0 ? rest : null]);
+  });
+  const [addedToolIds, userOverrides] = JSON.parse(toolDecisionsKey) as [
+    string[],
+    UserOverrides | null,
+  ];
   useRealtimeAgentConfig({
     instanceId,
     agentId: communicatorAgentId,
     surface: effectiveSurface,
     addedToolIds,
+    userOverrides,
   });
   const conversationIdRef = useRef<string | null>(null);
   useEffect(() => {
@@ -298,6 +301,7 @@ export function useVoiceRelaySession(
     agentId: communicatorAgentId,
     surface: effectiveSurface,
     addedToolIds,
+    userOverrides,
     relay: controller?.binding,
   });
   usePersistVoiceTranscript({ instanceId });

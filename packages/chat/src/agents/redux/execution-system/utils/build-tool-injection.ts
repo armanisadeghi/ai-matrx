@@ -292,7 +292,7 @@ export async function buildToolInjection(
   // so an agent launched on a surface receives that surface's tools without
   // per-conversation arming. Read fresh every turn — a page that mounted or
   // wired a handler since launch takes effect on the next turn. Skipped under
-  // the disable-injection brake (it is an automatic, surface-driven
+  // the creator's global brake (it is an automatic, surface-driven
   // injection, exactly what the brake exists to silence).
   //
   // 🚨 AND WITHHELD ENTIRELY FOR A STRUCTURED-OUTPUT RUN. An agent whose job is
@@ -445,11 +445,13 @@ export async function buildToolInjection(
   // (e.g. matrx-user/chat carries the UI-first tools; most surfaces carry
   // none — matrx-default/default is intentionally empty).
   // Resolution order:
-  //   - brake on  → undefined (server attaches nothing; see disableInjection).
+  //   - creator's global debug brake on → undefined (server attaches nothing).
   //   - Surface Simulator set (builderAdvancedSettings.surfaceOverride) → mimic
   //     ANY surface; the server can't tell it's simulated — same wire field.
   //   - the surface this conversation LAUNCHED from, when it had one.
-  //   - otherwise → the surface mapped from the current route.
+  //   - otherwise → the surface mapped from the current route — EXCEPT for a
+  //     run nobody can see (background / JSON answer), which never borrows the
+  //     route (see `resolveClientSurface`).
   //
   // The launch surface has to outrank the route guess, because
   // `detectActiveSurface()` reads `window.location.pathname` and an OVERLAY
@@ -462,14 +464,16 @@ export async function buildToolInjection(
   // Route surfaces are unaffected — there the stamped launch name and the route
   // guess are the same string. A conversation with no launch surface (a plain
   // chat send) still falls through to the route, so chat runs keep
-  // `matrx-user/chat` and the UI-first tools it carries.
+  // `matrx-user/chat` and the UI-first tools it carries. The person's per-chat
+  // auto-tools switch does NOT change this field: it rides as
+  // `user.auto_tools` and the server drops the surface's tools when it is off.
   const surface = disableInjection ? undefined : resolveClientSurface(state, conversationId);
 
   // Per-conversation MCP servers the user attached from the Smart Input tools
   // menu (`addedMcpServers`, server SLUGS) ride as `client.mcp` — the server
   // unions them into config.mcp_servers and resolves each to its
   // `bundle:list_<slug>` lister. Explicit picks, so they ride regardless of
-  // the disable-injection brake, exactly like `addedTools` above. Until
+  // the creator brake and the auto-tools switch, exactly like `user.add`. Until
   // 2026-09-13 only the Builder's manual thunk emitted `client.mcp`; every
   // chat continue turn (executeInstance) dropped the attachment on the floor
   // and the model truthfully reported "no GitHub MCP tool in my toolset".
@@ -526,8 +530,11 @@ export function buildUserToolOverrides(
   const settings = selectBuilderAdvancedSettings(conversationId)(state);
   const unique = (list: readonly string[] | undefined) =>
     [...new Set((list ?? []).filter((v) => typeof v === "string" && v.length > 0))];
+  // Picks are registry ids and removals are names (the picker removes only
+  // the agent's OWN tools and never offers those for adding), so the two
+  // lists cannot overlap; the server refuses an overlap with a 422 anyway.
   const remove = unique(settings?.removedTools);
-  const add = unique(settings?.addedTools).filter((id) => !remove.includes(id));
+  const add = unique(settings?.addedTools);
   const autoTools = settings?.autoTools ?? null;
   return {
     ...(add.length > 0 && { add }),

@@ -1052,6 +1052,7 @@ const instanceUIStateSlice = createSlice({
           "addedTools",
           "addedMcpServers",
           "addedSkills",
+          "removedTools",
           "outputKinds",
           "outputTypes",
         ] as const
@@ -1076,15 +1077,25 @@ const instanceUIStateSlice = createSlice({
         }),
       );
 
-      if (carried.length > 0 && prior) {
+      // The person's per-chat auto-tools switch is a deliberate choice too.
+      const carryAutoTools =
+        incoming?.autoTools === undefined &&
+        prior?.autoTools !== undefined &&
+        prior.autoTools !== null;
+      const kept: string[] = [...carried, ...(carryAutoTools ? ["autoTools"] : [])];
+      if (kept.length > 0 && prior) {
         for (const key of carried) {
           state.byConversationId[conversationId].builderAdvancedSettings[key] = [
             ...(prior[key] ?? []),
           ];
         }
+        if (carryAutoTools) {
+          state.byConversationId[conversationId].builderAdvancedSettings.autoTools =
+            prior.autoTools;
+        }
         console.warn(
           `[instance-ui-state] conversation "${conversationId}" was re-created while it ` +
-            `already carried per-run additions (${carried.join(", ")}) — they were kept. ` +
+            `already carried per-run additions (${kept.join(", ")}) — they were kept. ` +
             `A re-create on a conversation the person has already configured means a ` +
             `launcher effect re-ran under them; the picks must never be the casualty.`,
         );

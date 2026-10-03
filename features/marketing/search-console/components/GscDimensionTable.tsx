@@ -792,8 +792,6 @@ export function GscDimensionTable({
                 selection: {
                   selectedIds,
                   onSelectedIdsChange: setSelectedIds,
-                  isRowSelectable: (row: GscBreakdownRow) =>
-                    Boolean(row.keyword_id),
                   noun: "keyword",
                   actions: (selected: GscBreakdownRow[]) => (
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -806,7 +804,7 @@ export function GscDimensionTable({
                           size="sm"
                           variant="outline"
                           className="h-7 px-2 text-xs"
-                          disabled={bulkPending}
+                          disabled={bulkPending || !selected.some((row) => Boolean(row.keyword_id))}
                           onClick={() =>
                             void runBulkClassAssign(option.value, selected)
                           }

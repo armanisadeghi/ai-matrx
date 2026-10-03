@@ -120,6 +120,7 @@ it("persists tools and skills added mid-turn once the turn completes, keeping th
     addedMcpServers: [],
     removedTools: [],
     autoTools: null,
+    surfaceName: null,
   });
 });
 
@@ -134,6 +135,7 @@ it("parse round-trips the stored shape and ignores junk", () => {
     addedMcpServers: [],
     removedTools: [],
     autoTools: null,
+    surfaceName: null,
   });
   // The per-chat switch and removals survive a reopen too.
   expect(

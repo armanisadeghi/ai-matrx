@@ -1164,7 +1164,6 @@ export function SourcesPage() {
             );
           }}
           mobileCardsBreakpoint="sm"
-          copy={false}
           emptyState={{
             title: serverSearch.trim()
               ? `No Sources match "${serverSearch.trim()}".`

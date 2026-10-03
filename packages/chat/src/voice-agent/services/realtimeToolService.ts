@@ -25,6 +25,7 @@
 // converts that into an explanatory `output` string so the voice turn never
 // crashes.
 
+import type { UserOverrides } from "../../agents/types/request.types";
 import { apiPost } from "../../host/server/typed-client";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 
@@ -56,6 +57,8 @@ export interface RealtimeToolExecuteRequest {
    * the SAME opts the surface passes to the resolve hook.
    */
   added_tool_ids: string[];
+  /** The person's removals + auto-tools switch — MUST mirror the resolve call. */
+  user?: UserOverrides | null;
   /** Resolve against an agent VERSION row rather than the live agent. Mirrors resolve. */
   is_version: boolean;
   context?: RealtimeToolContextEnvelope | null;

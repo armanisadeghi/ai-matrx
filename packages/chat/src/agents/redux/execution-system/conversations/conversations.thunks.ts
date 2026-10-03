@@ -79,7 +79,9 @@ export const destroyInstanceIfAbandoned =
     const hasRunConfiguration =
       Boolean(added?.addedTools?.length) ||
       Boolean(added?.addedMcpServers?.length) ||
-      Boolean(added?.addedSkills?.length);
+      Boolean(added?.addedSkills?.length) ||
+      Boolean(added?.removedTools?.length) ||
+      (added?.autoTools ?? null) !== null;
     if (hasRunConfiguration) return;
     // CHOOSING WHAT THE CHAT WORKS ON IS WORK TOO. On `/chat/new` a person
     // picks repositories or Drive files BEFORE typing, and those picks are

@@ -64,6 +64,7 @@ import {
   setBuilderAdvancedSettings,
   type InitInstanceUIStatePayload,
 } from "../instance-ui-state/instance-ui-state.slice";
+import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   markRunConfigurationStored,
   parsePersistedRunConfiguration,
@@ -399,6 +400,14 @@ export const loadConversation = createAsyncThunk<
           typeof conv.metadata === "object" && conv.metadata !== null
             ? (conv.metadata as Record<string, unknown>)
             : undefined,
+        // THE PAGE BINDING survives the reopen: the surface it was launched
+        // on (stored in run_configuration). Only where this tab holds no
+        // stamp, and never onto a page's own conversation.
+        ...(storedRun?.surfaceName &&
+        !getState().conversations.byConversationId[conversationId]?.surfaceName &&
+        !isPageOwnConversation(conversationId)
+          ? { surfaceName: storedRun.surfaceName }
+          : {}),
         // Surface-owned output survives the reload (only ever set, never
         // cleared here: a live launch may hold it before the row has it).
         ...(parsePersistedSurfaceOwnsOutput(conv.metadata)

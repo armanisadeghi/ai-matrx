@@ -21,6 +21,7 @@
 // explanatory string for that call_id, so the model recovers gracefully and
 // the voice turn never crashes. Outputs are always strings.
 
+import type { UserOverrides } from "../../agents/types/request.types";
 import type { RealtimeToolSet, ResolvedRealtimeTool } from "../types";
 import type { RealtimeClientToolContext } from "./client-tool-registry";
 import type {
@@ -54,6 +55,8 @@ export interface ToolLoopContext {
    * execute time excludes an added tool and 403s it. Same source as resolve.
    */
   addedToolIds: string[];
+  /** The person's removals + auto-tools switch — mirrors the resolve call. */
+  userOverrides?: UserOverrides | null;
   /** Resolve against an agent VERSION row rather than the live agent. Mirrors resolve. */
   isVersion: boolean;
   /** Resolved tools keyed by name — the classification source. */
@@ -175,6 +178,7 @@ async function executeOne(
       call_id: call.call_id,
       surface: ctx.surface,
       added_tool_ids: ctx.addedToolIds,
+      ...(ctx.userOverrides ? { user: ctx.userOverrides } : {}),
       is_version: ctx.isVersion,
       context: ctx.contextEnvelope ?? null,
     });

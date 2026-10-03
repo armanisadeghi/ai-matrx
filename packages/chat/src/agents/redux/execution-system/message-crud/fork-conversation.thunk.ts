@@ -27,8 +27,15 @@ import {
   sourceAppFromStorage,
   sourceFeatureFromStorage,
 } from "../../../types/instance.types";
-import { hydrateConversation } from "../conversations/conversations.slice";
-import { setAutoRun } from "../instance-ui-state/instance-ui-state.slice";
+import {
+  hydrateConversation,
+  patchConversation,
+} from "../conversations/conversations.slice";
+import {
+  setAutoRun,
+  setBuilderAdvancedSettings,
+} from "../instance-ui-state/instance-ui-state.slice";
+import { parsePersistedRunConfiguration } from "../instance-ui-state/run-configuration-persist";
 import { hydrateMessages } from "../messages/messages.slice";
 import { setFocus } from "../conversation-focus/conversation-focus.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
@@ -105,7 +112,7 @@ export const forkConversation = createAsyncThunk<
   "conversations/fork",
   async (
     { conversationId, atPosition, surfaceKey },
-    { dispatch, rejectWithValue },
+    { dispatch, getState, rejectWithValue },
   ) => {
     const { data, error } = await supabase.rpc("cx_fork_conversation", {
       p_conversation_id: conversationId,
@@ -184,6 +191,13 @@ export const forkConversation = createAsyncThunk<
       }),
     );
 
+    // THE RUN CONFIGURATION AND THE PAGE BINDING RIDE TO THE BRANCH. A fork
+    // is the same chat continued another way: the person's tool picks,
+    // removals, auto-tools switch, skills, MCP servers and the surface the
+    // conversation is bound to all carry over — the branch's first turn would
+    // otherwise run without them (and unbound, so with no page tools).
+    carryRunConfigurationToFork(getState(), dispatch, conversationId, newConversationId);
+
     // Hydrate the forked messages.
     const messageRecords = bundle.messages.map(messageRowToRecord);
     dispatch(
@@ -226,3 +240,43 @@ export const forkConversation = createAsyncThunk<
     };
   },
 );
+
+/**
+ * Copy the source conversation's per-chat run configuration and surface stamp
+ * onto a freshly forked conversation. The source's live Redux state wins over
+ * whatever the fork RPC copied in metadata (it may hold unsaved picks).
+ */
+export function carryRunConfigurationToFork(
+  state: ChatRootState,
+  dispatch: ChatDispatch,
+  sourceConversationId: string,
+  forkConversationId: string,
+): void {
+  const source =
+    state.instanceUIState?.byConversationId[sourceConversationId]?.builderAdvancedSettings;
+  if (source) {
+    const changes = {
+      ...(source.addedTools?.length ? { addedTools: [...source.addedTools] } : {}),
+      ...(source.addedSkills?.length ? { addedSkills: [...source.addedSkills] } : {}),
+      ...(source.addedMcpServers?.length
+        ? { addedMcpServers: [...source.addedMcpServers] }
+        : {}),
+      ...(source.removedTools?.length ? { removedTools: [...source.removedTools] } : {}),
+      ...(source.autoTools !== undefined && source.autoTools !== null
+        ? { autoTools: source.autoTools }
+        : {}),
+    };
+    if (Object.keys(changes).length > 0) {
+      dispatch(setBuilderAdvancedSettings({ conversationId: forkConversationId, changes }));
+    }
+  }
+  const stamp =
+    state.conversations?.byConversationId[sourceConversationId]?.surfaceName ??
+    parsePersistedRunConfiguration(
+      state.conversations?.byConversationId[forkConversationId]?.metadata,
+    )?.surfaceName ??
+    null;
+  if (stamp) {
+    dispatch(patchConversation({ conversationId: forkConversationId, surfaceName: stamp }));
+  }
+}

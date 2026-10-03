@@ -21,6 +21,7 @@
 //   5. Interruption is synchronous: stop sources → send response.cancel in the
 //      same speech_started handler microtask.
 
+import type { UserOverrides } from "../../agents/types/request.types";
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
 import type { ChatRootState } from "../../store/root-state";
@@ -129,6 +130,8 @@ interface UseXaiVoiceSessionOpts {
    * added tool at execute time (the resolve hook accepted it, execute rejects).
    */
   addedToolIds?: string[];
+  /** The person's removals + auto-tools switch. Same source as the resolve hook. */
+  userOverrides?: UserOverrides | null;
   /** Resolve/execute against an agent VERSION row. Mirrors the resolve hook. */
   isVersion?: boolean;
   /**
@@ -176,6 +179,7 @@ export function useXaiVoiceSession(
     surface,
     sessionId,
     addedToolIds,
+    userOverrides,
     isVersion,
     relay,
   } = opts;
@@ -226,11 +230,13 @@ export function useXaiVoiceSession(
   // resolve time — kept in refs so the lazily-built ToolLoopContext reads the
   // current value without re-subscribing the event handler.
   const addedToolIdsRef = useRef<string[]>(addedToolIds ?? []);
+  const userOverridesRef = useRef<UserOverrides | null>(userOverrides ?? null);
   const isVersionRef = useRef<boolean>(isVersion ?? false);
   agentIdRef.current = agentId;
   surfaceRef.current = surface ?? DEFAULT_VOICE_SURFACE;
   sessionIdRef.current = sessionId ?? null;
   addedToolIdsRef.current = addedToolIds ?? [];
+  userOverridesRef.current = userOverrides ?? null;
   isVersionRef.current = isVersion ?? false;
   const relayRef = useRef<VoiceRelayBinding | undefined>(relay);
   relayRef.current = relay;
@@ -411,6 +417,7 @@ export function useXaiVoiceSession(
       conversationId,
       surface: surfaceRef.current,
       addedToolIds: addedToolIdsRef.current,
+      userOverrides: userOverridesRef.current,
       isVersion: isVersionRef.current,
       resolvedTools,
       contextEnvelope,

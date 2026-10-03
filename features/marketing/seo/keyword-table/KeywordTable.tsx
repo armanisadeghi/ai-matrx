@@ -379,7 +379,9 @@ export function KeywordTable({
   const selectedRows = selectedIds
     .map((key) => rowById.get(key))
     .filter((row): row is GscBreakdownRow => !!row);
-  const selectedKeywordIds = selectedRows
+  // Copy keeps all selected rows; write integrations receive mapped keywords only.
+  const selectedWritableRows = selectedRows.filter((row) => Boolean(row.keyword_id));
+  const selectedKeywordIds = selectedWritableRows
     .map((row) => row.keyword_id)
     .filter((id): id is string => !!id);
 
@@ -1059,12 +1061,11 @@ export function KeywordTable({
           );
         },
         noun: "keyword",
-        isRowSelectable: (row) => !!row.keyword_id,
         actions: () =>
           selectionActions?.({
             ...controls,
             keywordIds: selectedKeywordIds,
-            rows: selectedRows,
+            rows: selectedWritableRows,
             clear: () => setSelectedIds([]),
           }) ?? null,
       }}

@@ -16,6 +16,7 @@ function fragment(file: string, name: string): string {
       const action = node.initializer.expression.properties.find((property) => ts.isPropertyAssignment(property) && property.name.getText(source) === "actions");
       if (action && ts.isPropertyAssignment(action)) found = action.initializer;
     }
+    if (name === "gscSelectionActions" && ts.isPropertyAssignment(node) && node.name.getText(source) === "actions" && ts.isArrowFunction(node.initializer) && node.initializer.parameters[0]?.name.getText(source) === "selected") found = node.initializer;
     ts.forEachChild(node, visit);
   }
   visit(source);
@@ -83,4 +84,39 @@ describe("copy selection and production write boundaries", () => {
     expect(mixed.children).toContain(1);
   });
 
+});
+
+
+const KEYWORDS = "features/marketing/seo/keyword-table/KeywordTable.tsx";
+const GSC = "features/marketing/search-console/components/GscDimensionTable.tsx";
+describe("unmapped keyword rows are copyable without becoming write targets", () => {
+  const mapped = { key: "mapped", keyword_id: "keyword-1" };
+  const unmapped = { key: "unmapped", keyword_id: null };
+  it("passes only mapped rows and IDs to KeywordTable write integrations", () => {
+    const selectedRows = [mapped, unmapped];
+    const selectedWritableRows = execute(KEYWORDS, "selectedWritableRows", { selectedRows });
+    const selectedKeywordIds = execute(KEYWORDS, "selectedKeywordIds", { selectedWritableRows });
+    const selectionActions = jest.fn(() => null);
+    const actions = execute(KEYWORDS, "selectionActions", { controls: {}, selectedKeywordIds, selectedWritableRows, selectedRows, selectionActions, setSelectedIds: noop }) as () => void;
+    actions();
+    expect(selectionActions).toHaveBeenCalledWith(expect.objectContaining({ keywordIds: ["keyword-1"], rows: [mapped] }));
+    expect(selectedRows).toEqual([mapped, unmapped]);
+  });
+  it("disables Search Console class buttons for copy-only selections and writes only mapped IDs", async () => {
+    type Element = { props: { disabled?: boolean }; children: unknown[] };
+    const actions = execute(GSC, "gscSelectionActions", {
+      React: { createElement: (_type: unknown, props: Element["props"], ...children: unknown[]) => ({ props, children }) },
+      Button: "button", BULK_CLASS_OPTIONS: [{ value: "money", label: "Money" }], bulkPending: false, runBulkClassAssign: noop,
+    }) as (rows: unknown[]) => Element;
+    const button = (rows: unknown[]) => (actions(rows).children[1] as Element[])[0];
+    expect(button([unmapped]).props.disabled).toBe(true);
+    expect(button([mapped, unmapped]).props.disabled).toBe(false);
+    const setGscKeywordClass = jest.fn(async () => undefined);
+    const run = execute(GSC, "runBulkClassAssign", { siteId: "site-1", setGscKeywordClass, setBulkPending: noop, setSelectedIds: noop, toast: { error: noop, success: noop }, BULK_CLASS_OPTIONS: [], queryClient: { invalidateQueries: async () => undefined } }) as (ruling: string, rows: unknown[]) => Promise<void>;
+    await run("money", [mapped, unmapped]);
+    expect(setGscKeywordClass).toHaveBeenCalledWith("site-1", ["keyword-1"], "money", null, { origin: "manual", confirmed: true });
+    setGscKeywordClass.mockClear();
+    await run("money", [unmapped]);
+    expect(setGscKeywordClass).not.toHaveBeenCalled();
+  });
 });
