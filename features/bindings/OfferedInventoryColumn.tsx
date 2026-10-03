@@ -155,7 +155,7 @@ export function OfferedInventoryColumn({
                     {humanizeIdentifier(value.name) || value.name}
                   </span>
                   <span className="rounded border border-border px-1 font-mono text-[9px] text-muted-foreground">
-                    {value.kind}
+                    {humanizeIdentifier(value.kind)}
                   </span>
                   {!value.guaranteed ? (
                     <span className="text-[10px] text-amber-600 dark:text-amber-400">

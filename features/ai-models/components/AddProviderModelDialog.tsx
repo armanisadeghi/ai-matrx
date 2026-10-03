@@ -275,7 +275,7 @@ export default function AddProviderModelDialog({
                     </p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                       <InheritedField
-                        label="is_premium"
+                        label="Premium"
                         value={String(template.is_premium ?? false)}
                       />
                       <InheritedField

@@ -19,6 +19,7 @@
  * registry's live surface scope and the failure in its brief.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -277,7 +278,7 @@ export default function KindIncidentsTab() {
                   href={`/administration/utilities/kind-registry/${encodeURIComponent(row.kind)}`}
                   className="shrink-0 font-mono text-sm font-medium text-foreground underline-offset-2 hover:underline"
                 >
-                  {row.kind}
+                  <code>{row.kind}</code>
                 </AppLink>
                 <span className="shrink-0 text-[11px] text-muted-foreground">
                   {row.platform ?? "web"}/{row.role ?? "output"}
@@ -338,7 +339,7 @@ export default function KindIncidentsTab() {
                     </AppLink>
                     <KindAgentButton
                       kind={row.kind}
-                      label={row.kind}
+                      label={humanizeIdentifier(row.kind)}
                       part="component"
                       note={
                         `An incident is open against this kind's ${row.platform ?? "web"}/${row.role ?? "output"} component. ` +

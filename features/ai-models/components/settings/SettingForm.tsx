@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React from "react";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -244,7 +245,7 @@ export default function SettingForm({
 
       <JsonValueField
         label="Canonical Values"
-        description="Allowed values when value_type is enum-like (edited as { value: [...] })"
+        description="Allowed values for choice-type settings"
         value={data.canonical_values}
         onChange={(v) =>
           onChange({
@@ -292,7 +293,7 @@ export default function SettingForm({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Setting?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will remove <strong>{data.key}</strong>{" "}
+                  This will remove <strong>{humanizeIdentifier(data.key)}</strong>{" "}
                   from the active settings vocabulary.
                 </AlertDialogDescription>
               </AlertDialogHeader>

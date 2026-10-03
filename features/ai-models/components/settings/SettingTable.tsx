@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -108,9 +109,9 @@ function RowActions({
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete &quot;{item.key}&quot;?</AlertDialogTitle>
+            <AlertDialogTitle>Delete &quot;{humanizeIdentifier(item.key)}&quot;?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove the setting &quot;{item.key}&quot; from the
+              This will remove the setting &quot;{humanizeIdentifier(item.key)}&quot; from the
               active settings vocabulary.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -293,7 +294,7 @@ export default function SettingTable({
                   className="block max-w-full truncate text-left font-mono font-medium hover:underline"
                   onClick={() => onSelect(item)}
                 >
-                  {item.key}
+                  <code className="font-mono">{item.key}</code>
                 </button>
                 <p className="text-xs text-muted-foreground">
                   {item.value_type}

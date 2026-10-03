@@ -1,5 +1,6 @@
 "use client";
 
+import { displayLabel } from "@ai-matrx/kit/text-case";
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { useCartesia } from "@/hooks/tts/useCartesia";
@@ -142,7 +143,7 @@ export default function PlaygroundPage() {
                                 <SelectContent>
                                     {availableVoices.map((v) => (
                                         <SelectItem key={v.id} value={v.id}>
-                                            {v.name}
+                                            {displayLabel(v.name, v.id)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

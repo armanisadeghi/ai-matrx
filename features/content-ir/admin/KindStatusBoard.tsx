@@ -95,7 +95,7 @@ function KindNameCell({ row }: { row: KindBoardRow }) {
         className="font-mono text-xs text-muted-foreground"
         title={row.label}
       >
-        {row.kind}
+        <code>{row.kind}</code>
       </span>
     );
   }
@@ -105,7 +105,7 @@ function KindNameCell({ row }: { row: KindBoardRow }) {
       className="font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
       title={row.label}
     >
-      {row.kind}
+      <code>{row.kind}</code>
     </Link>
   );
 }

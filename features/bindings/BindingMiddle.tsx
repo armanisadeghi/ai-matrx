@@ -413,7 +413,7 @@ function ExtraSources({
                     variant="outline"
                     className="py-0 font-mono text-[9px]"
                   >
-                    {offered.kind}
+                    {humanizeIdentifier(offered.kind)}
                   </Badge>
                 ) : (
                   <Badge

@@ -396,7 +396,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                 <ul className="list-disc pl-5 space-y-0.5">
                                     {deleteState.usedInPages.map((u) => (
                                         <li key={u.page_id}>
-                                            Page <span className="font-mono">{u.slug}</span>
+                                            Page <code className="font-mono">{u.slug}</code>
                                             {u.title ? ` — ${u.title}` : ''}{' '}
                                             <span className="text-muted-foreground">({u.fields.join(', ')})</span>
                                         </li>

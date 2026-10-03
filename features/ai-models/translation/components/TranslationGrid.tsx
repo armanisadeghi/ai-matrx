@@ -215,9 +215,9 @@ export default function TranslationGrid() {
       width: "12rem",
       sortable: true,
       cell: (r) => (
-        <span className="block truncate font-mono text-xs font-medium" title={r.key}>
+        <code className="block truncate font-mono text-xs font-medium" title={r.key}>
           {r.key}
-        </span>
+        </code>
       ),
     },
     {
@@ -335,7 +335,7 @@ export default function TranslationGrid() {
         mobileCards={(r) => (
           <div className="space-y-1.5 p-3">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="truncate font-mono text-sm font-medium">{r.key}</span>
+              <code className="truncate font-mono text-sm font-medium">{r.key}</code>
               <span className="shrink-0 text-xs text-muted-foreground">{r.family}</span>
             </div>
             {slice.columns.map((column) => {

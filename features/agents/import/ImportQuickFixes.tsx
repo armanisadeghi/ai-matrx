@@ -200,7 +200,7 @@ export function ImportQuickFixes({
             </Label>
             <Select onValueChange={(v) => patch({ kind: "set-agent-type" }, v)}>
               <SelectTrigger className="h-7 text-xs w-[140px]">
-                <SelectValue placeholder="agent_type" />
+                <SelectValue placeholder="Choose type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="user" className="text-xs">
@@ -237,7 +237,7 @@ export function ImportQuickFixes({
               }
             >
               <SelectTrigger className="h-7 text-xs w-[160px]">
-                <SelectValue placeholder="reasoning_effort" />
+                <SelectValue placeholder="Choose effort" />
               </SelectTrigger>
               <SelectContent>
                 {effortFix.options.map((opt) => (
@@ -273,7 +273,7 @@ export function ImportQuickFixes({
               }
             >
               <SelectTrigger className="h-7 text-xs w-[160px]">
-                <SelectValue placeholder="reasoning_summary" />
+                <SelectValue placeholder="Choose summary" />
               </SelectTrigger>
               <SelectContent>
                 {summaryFix.options.map((opt) => (

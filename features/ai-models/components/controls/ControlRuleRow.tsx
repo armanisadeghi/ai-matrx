@@ -174,7 +174,7 @@ export default function ControlRuleRow({
         ) : (
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
-        <span className="text-xs font-medium font-mono shrink-0">{row.key}</span>
+        <code className="text-xs font-medium font-mono shrink-0">{row.key}</code>
         {label !== row.key && (
           <span className="text-[10px] text-muted-foreground truncate hidden lg:inline">
             {label}

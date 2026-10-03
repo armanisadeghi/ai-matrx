@@ -310,7 +310,7 @@ function ApiFormFields({
         <FormField
           label="Translator Key"
           required
-          description="Unique wire-contract token (the old wire_format vocabulary)"
+          description="Unique wire-contract token"
         >
           <Input
             value={data.translator_key}

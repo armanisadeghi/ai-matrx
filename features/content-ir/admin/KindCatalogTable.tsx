@@ -244,12 +244,9 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
         href: kindDetailHref,
         cell: (row) => (
           <span className="inline-flex max-w-full items-center gap-1.5">
-            <span
-              className="truncate font-mono text-xs text-foreground"
-              title={row.kind}
-            >
+            <code className="truncate font-mono text-xs text-foreground" title={row.kind}>
               {row.kind}
-            </span>
+            </code>
             {navigatingKind === row.kind && isPending ? (
               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             ) : null}

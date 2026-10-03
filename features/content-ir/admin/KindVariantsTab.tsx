@@ -336,6 +336,8 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
                 <Input
                   id="variant-name"
                   value={draft.name}
+                  className="font-mono"
+                  data-identifier
                   placeholder="snake_case_name"
                   onChange={(event) =>
                     setDraft({ ...draft, name: event.target.value })

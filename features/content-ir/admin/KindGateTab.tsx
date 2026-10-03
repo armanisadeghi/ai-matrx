@@ -290,7 +290,7 @@ export default function KindGateTab({
           <div className="grid gap-3 sm:grid-cols-2">
             <LegCard
               title="Structural leg"
-              subtitle="ajv over emitted_json_schema — Pydantic-parity"
+              subtitle="Checked against the emitted schema"
               leg={run.structural}
             />
             <LegCard

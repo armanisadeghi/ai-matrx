@@ -79,9 +79,9 @@ const DRIFT_COLUMNS: MatrxColumnDef<DriftRow>[] = [
     filter: "text",
     width: 180,
     cell: (row) => (
-      <span className="block truncate font-mono text-[11px]" title={row.fieldKey}>
+      <code className="block truncate font-mono text-[11px]" title={row.fieldKey}>
         {row.fieldKey}
-      </span>
+      </code>
     ),
   },
   {

@@ -229,7 +229,7 @@ function CaseCard({ item }: { item: DuplicateSkillCase }) {
         <span className="space-y-2 text-sm">
           <span className="block">
             The Shape Doctor will treat {candidate.skillId} as the one skill
-            that teaches <span className="font-mono">{item.kind}</span> in{" "}
+            that teaches <code className="font-mono">{item.kind}</code> in{" "}
             {item.syntax} syntax. {others.join(", ")} will be read as embedding
             it, not teaching it.
           </span>
@@ -279,7 +279,7 @@ function CaseCard({ item }: { item: DuplicateSkillCase }) {
           href={`/administration/utilities/kind-registry/${encodeURIComponent(item.kind)}`}
           className="font-mono text-sm font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
         >
-          {item.kind}
+          <code>{item.kind}</code>
         </AppLink>
         <span className="text-xs text-muted-foreground">{item.kindLabel}</span>
         <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">

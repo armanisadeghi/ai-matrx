@@ -1095,7 +1095,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
                           key={kv.key}
                           className="border-t border-border align-top"
                         >
-                          <td className="p-2 break-all">{kv.key}</td>
+                          <td className="p-2 break-all"><code>{kv.key}</code></td>
                           <td className="p-2 break-all text-muted-foreground">
                             {kv.present === false
                               ? "set, empty"

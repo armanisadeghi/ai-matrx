@@ -110,7 +110,7 @@ export default function AiModelForm({
                 />
             </FormField>
 
-            <FormField label="Provider" description="ai.provider record (provider_id FK) — the model's maker. The old free-text provider column is dropped and derived, never edited.">
+            <FormField label="Provider" description="The model's maker">
                 <Select
                     value={data.provider_id || undefined}
                     onValueChange={(v) => {

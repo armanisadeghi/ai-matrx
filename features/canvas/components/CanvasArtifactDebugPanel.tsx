@@ -92,7 +92,7 @@ export function CanvasArtifactDebugPanel({
         <div className="space-y-2 px-2 pb-2 max-h-48 overflow-y-auto scrollbar-thin">
           <DebugRow label="sessionItemId" value={item.id} />
           <DebugRow
-            label="artifactId (canvas_items)"
+            label="Artifact ID"
             value={artifactId ?? "—"}
             highlight={!hasRealId}
           />
@@ -120,11 +120,11 @@ export function CanvasArtifactDebugPanel({
                 <DebugRow label="db.type" value={row.type} />
                 <DebugRow label="db.version" value={String(row.version)} />
                 <DebugRow
-                  label="db.source_message_id"
+                  label="Source message ID"
                   value={row.source_message_id ?? "—"}
                 />
                 <DebugRow
-                  label="db.artifact_index"
+                  label="Artifact index"
                   value={String(row.artifact_index ?? "—")}
                 />
                 <DebugRow

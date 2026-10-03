@@ -139,25 +139,25 @@ export default function AuditRulesConfig({
           />
           <div className="grid grid-cols-2 gap-3">
             <RuleSwitch
-              label="Require common_name"
+              label="Require display name"
               description="Model must have a human-readable display name"
               checked={rules.require_common_name}
               onChange={(v) => set("require_common_name", v)}
             />
             <RuleSwitch
               label="Require maker"
-              description="Model must have a maker (provider_id FK)"
+              description="Model must have a maker"
               checked={rules.require_provider}
               onChange={(v) => set("require_provider", v)}
             />
             <RuleSwitch
-              label="Require context_window"
+              label="Require context window"
               description="Model must have a context window value"
               checked={rules.require_context_window}
               onChange={(v) => set("require_context_window", v)}
             />
             <RuleSwitch
-              label="Require max_tokens"
+              label="Require max tokens"
               description="Model must have a max output tokens value"
               checked={rules.require_max_tokens}
               onChange={(v) => set("require_max_tokens", v)}

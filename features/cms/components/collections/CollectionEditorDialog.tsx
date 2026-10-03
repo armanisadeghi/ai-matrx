@@ -376,8 +376,9 @@ export function CollectionEditorDialog({
                     slugTouched: true,
                   }))
                 }
-                placeholder="contact_requests"
                 className="text-sm font-mono"
+                data-identifier
+                placeholder="contact_requests"
               />
             </div>
           </div>

@@ -569,7 +569,7 @@ export default function ModelControlsEditor({
                         setAddKeyFilter("");
                       }}
                     >
-                      <span className="font-mono shrink-0">{s.key}</span>
+                      <code className="font-mono shrink-0">{s.key}</code>
                       <span className="text-[10px] text-muted-foreground truncate">
                         {s.value_type}
                         {s.description ? ` — ${s.description}` : ""}

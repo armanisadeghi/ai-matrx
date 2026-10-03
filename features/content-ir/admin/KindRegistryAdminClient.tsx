@@ -500,7 +500,7 @@ export default function KindRegistryAdminClient() {
                     />
                     {selected.dbRowId && (
                       <FacetItem
-                        label="content_ir row id"
+                        label="Registry row ID"
                         value={selected.dbRowId}
                       />
                     )}

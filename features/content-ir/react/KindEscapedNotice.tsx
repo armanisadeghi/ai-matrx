@@ -22,6 +22,7 @@
  * the JSON — zero data loss stays absolute.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useEffect } from "react";
 import { TriangleAlert } from "lucide-react";
 import { isTableKind } from "@ai-matrx/records";
@@ -109,15 +110,15 @@ export function KindEscapedNotice({
       <span>
         {registered ? (
           <>
-            This JSON contains a <span className="font-mono">{first.slug}</span>{" "}
+            This JSON contains a <span className="font-medium">{humanizeIdentifier(first.slug)}</span>{" "}
             Shape instance that is not rendering as its component — this is a
             pipeline defect and has been reported.
           </>
         ) : (
           <>
             This JSON declares a Shape (
-            <span className="font-mono">{first.slug}</span>) that isn&apos;t
-            registered on this platform — check the slug, or create the Shape to
+            <span className="font-medium">{humanizeIdentifier(first.slug)}</span>) that isn&apos;t
+            registered on this platform — check the name, or create the Shape to
             render it properly.
           </>
         )}

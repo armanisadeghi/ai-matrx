@@ -52,7 +52,7 @@ export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
         <div className="flex flex-col h-full">
             <p className="flex-none px-1 py-2 text-xs text-muted-foreground">
                 Per F4: <span className="font-medium text-foreground">blocked</span> — agents cannot write.{' '}
-                <span className="font-medium text-foreground">draft_only</span> — agents may save drafts, never
+                <span className="font-medium text-foreground">draft only</span> — agents may save drafts, never
                 publish. <span className="font-medium text-foreground">full</span> — agents may publish directly.
                 Enforced by P1&apos;s service layer; this only edits the setting.
             </p>
@@ -74,7 +74,6 @@ export default function PolicyEditorPanel({ sites, onSiteUpdated }: Props) {
                                 <TableRow key={site.id} className="text-xs">
                                     <TableCell className="py-1.5 font-medium">
                                         {site.name}
-                                        <span className="ml-1.5 text-muted-foreground font-mono">{site.slug}</span>
                                     </TableCell>
                                     <TableCell className="py-1.5 text-muted-foreground font-mono max-w-[220px] truncate">
                                         {site.owner_user_id ?? '—'}

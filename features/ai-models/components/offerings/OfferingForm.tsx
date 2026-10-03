@@ -164,8 +164,9 @@ export default function OfferingForm({
           <Input
             value={data.usage_basis}
             onChange={set("usage_basis")}
+            className="h-8 text-sm font-mono"
+            data-identifier
             placeholder="e.g. per_image"
-            className="h-8 text-sm"
           />
         </FormField>
         <div className="space-y-1">
