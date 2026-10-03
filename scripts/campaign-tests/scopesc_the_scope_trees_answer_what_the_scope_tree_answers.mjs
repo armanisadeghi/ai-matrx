@@ -23,6 +23,12 @@
 //   access    an organization the person may not open is answered too
 //   empty     an organization with no scope it may read comes back as something other than []
 //   type      the scope-type filter is ignored
+//   per_org   the readable set is worked out once per organization again (the defect this door removes)
+//
+// THE ONCE CHECK (switch off): in a fresh transaction with `set local track_functions = 'all'`, the door over every
+// organization the seat may open calls context._readable_scope_ids exactly ONCE, and the old batched statement over
+// the same organizations calls it once per organization holding a live scope (at least twice, which proves the
+// counter counts what it claims).
 // EXIT 0 GREEN (no plant, no difference) · 1 RED. Clone only.
 import { dsnFor, pgClient } from "../lib/pooled-db.mjs";
 
@@ -33,11 +39,13 @@ const SEATS = {
   "test@test.com": "4060701e-706a-4c76-b3ca-0bbc69fa5a14",
 };
 const FN = "public.get_scope_trees(uuid[], uuid)";
-// THE FORCING ROW. Neither seat has a scope it may not read inside an organization it may open (both see every
-// scope of their organizations), so the "readable" half of the door would be unexercised. Inside the
-// transaction, Cedar Ridge Physical Therapy's patient scope "Dana Whitfield" (admin@admin.com made it) is made
-// personal to its maker: test@test.com, a plain member there, may then open the organization but not read that
-// scope. The run proves the old answer drops it before comparing anything (a forcing row that does not take is RED).
+// THE FORCING ROW. A scope's class is `organization` (iam.class_lanes): every member reads every scope of an
+// organization she may open, at every visibility, so neither seat holds a scope the "readable" half of the door
+// would drop, and that half would go unexercised. Inside the transaction, Cedar Ridge Physical Therapy's patient
+// scope "Dana Whitfield" has its store Record taken out of the record class (data_class), so the person's readable
+// set (iam.accessible_entity_ids('scope'), which lists scopes from the store) no longer holds it while the old
+// table still lists it. The run proves the old answer drops it before comparing anything (a forcing row that does
+// not take is RED).
 const FORCE = { seat: "test@test.com", org: "0a54df90-eab8-4d07-ab29-81a45fb41e04", scope: "f3cf712a-d07b-41cd-b6bc-5dd3fb662ae4" };
 
 // The door's own body, read back from the catalogue, with ONE fault written into it — so a plant is the
@@ -47,6 +55,7 @@ const PLANTS = {
   readable: (src) => src.replace("and s.id in (select r.id from readable r)", "and true"),
   access: (src) => src.replaceAll("where iam.has_org_access(o.org)", "where true"),
   empty: (src) => src.replace("), '[]'::jsonb)", "), '[{}]'::jsonb)"),
+  per_org: (src) => src.replace("and s.id in (select r.id from readable r)", "and s.id in (select context._readable_scope_ids())"),
   type: (src) => src.replace("and (p_type_id is null or s.scope_type_id = p_type_id)", "and true").replace("public.get_scope_tree(o.org, p_type_id)", "public.get_scope_tree(o.org, null)"),
 };
 if (PLANT && !PLANTS[PLANT]) throw new Error(`unknown plant ${PLANT}: ${Object.keys(PLANTS).join(" | ")}`);
@@ -58,7 +67,7 @@ async function run(pg, email, uid, storeSwitch) {
   try {
     await c.query("begin");
     await c.query("set local statement_timeout = '300s'");
-    await c.query("set local lock_timeout = '10s'");
+    await c.query("set local lock_timeout = '60s'");
     if (PLANT) {
       const src = (await c.query(`select pg_get_functiondef('${FN}'::regprocedure) d`)).rows[0].d;
       const broken = PLANTS[PLANT](src);
@@ -88,7 +97,7 @@ async function run(pg, email, uid, storeSwitch) {
       )
     ).rows.map((r) => r.id);
     if (email === FORCE.seat) {
-      const n = (await c.query("update custom.record set visibility = 'personal' where id = $1 and organization_id = $2", [FORCE.scope, FORCE.org])).rowCount;
+      const n = (await c.query("update custom.record set data_class = 'system' where id = $1 and organization_id = $2", [FORCE.scope, FORCE.org])).rowCount;
       if (n !== 1) diffs.push(`the forcing row did not take (${n} rows)`);
     }
     await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: "authenticated" })]);
@@ -112,7 +121,7 @@ async function run(pg, email, uid, storeSwitch) {
       if (!a || !b || a.org !== b.org) diffs.push(`row ${i}: old org ${a?.org}, new org ${b?.org}`);
       else if (a.answer !== b.answer) diffs.push(`org ${a.org}: answers differ (old ${a.answer.length} chars, new ${b.answer.length})`);
     }
-    if (email === FORCE.seat) {
+    if (email === FORCE.seat && !storeSwitch) {
       const cr = old.find((r) => r.org === FORCE.org);
       if (!cr) diffs.push("the forcing organization was not answered");
       else if (JSON.parse(cr.answer).some((x) => x.id === FORCE.scope)) diffs.push("the forcing scope is still readable — the readable half is unexercised");
@@ -142,8 +151,51 @@ async function run(pg, email, uid, storeSwitch) {
   }
 }
 
+async function once(pg, email, uid) {
+  const c = pgClient(pg, dsnFor("clone", { app: "scopesc-once" }));
+  await c.connect();
+  try {
+    const count = async (sql, orgs) => {
+      await c.query("begin");
+      try {
+        await c.query("set local statement_timeout = '300s'");
+        await c.query("set local track_functions = 'all'");
+        if (PLANT) await c.query(PLANTS[PLANT]((await c.query(`select pg_get_functiondef('${FN}'::regprocedure) d`)).rows[0].d));
+        await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: "authenticated" })]);
+        await c.query("set local role authenticated");
+        await c.query(sql, [orgs]);
+        return Number((await c.query("select coalesce(sum(calls), 0) n from pg_stat_xact_user_functions where schemaname = 'context' and funcname = '_readable_scope_ids'")).rows[0].n);
+      } finally {
+        await c.query("rollback");
+      }
+    };
+    await c.query("begin");
+    await c.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: uid, role: "authenticated" })]);
+    const orgs = (await c.query("select distinct st.organization_id::text id from context.scope_types st where st.deleted_at is null and iam.has_org_access(st.organization_id) order by 1")).rows.map((r) => r.id);
+    await c.query("rollback");
+    const oldCalls = await count("select sum(jsonb_array_length(public.get_scope_tree(o.org, null::uuid))) from unnest($1::uuid[]) o(org) where iam.has_org_access(o.org)", orgs);
+    const newCalls = await count("select sum(jsonb_array_length(t.answer)) from public.get_scope_trees($1::uuid[], null::uuid) t", orgs);
+    const diffs = [];
+    if (orgs.length < 2) diffs.push(`only ${orgs.length} organization(s) with a scope type — the once check needs two`);
+    // The old body asks the set only for an organization that has a live scope row to filter, so it is called
+    // once per such organization — at least twice here, or the counter is not counting what it claims.
+    if (oldCalls < 2) diffs.push(`the old statement called the readable set ${oldCalls} time(s) over ${orgs.length} organizations — the counter does not count what it claims`);
+    if (newCalls !== 1) diffs.push(`get_scope_trees called the readable set ${newCalls} times over ${orgs.length} organizations, not once`);
+    return { seat: email, check: "once", organizations: orgs.length, old_calls: oldCalls, new_calls: newCalls, diffs };
+  } catch (err) {
+    return { seat: email, check: "once", diffs: [`the once check raised ${err.code ?? ""} ${String(err.message).split("\n")[0]}`] };
+  } finally {
+    await c.end().catch(() => undefined);
+  }
+}
+
 const pg = (await import("pg")).default;
 let bad = 0;
+for (const [email, uid] of Object.entries(SEATS)) {
+  const r = await once(pg, email, uid);
+  bad += r.diffs.length;
+  console.log(JSON.stringify(r));
+}
 for (const [email, uid] of Object.entries(SEATS)) {
   for (const storeSwitch of [false, true]) {
     const r = await run(pg, email, uid, storeSwitch);

@@ -1,4 +1,3 @@
--- draft: lane9-scopes-c rehearsing on the clone
 -- chair-step: it CREATES one door, public.get_scope_trees(uuid[], uuid), and its declared client-door row: the answer of public.get_scope_tree for many organizations in one call, with EXECUTE exactly as public.get_scope_tree has it (authenticated, service_role; never anon or PUBLIC). Additive only: no existing body, table, index, policy, grant or data row is touched, and every organization's answer is the one public.get_scope_tree gives it (scripts/campaign-tests/scopesc_the_scope_trees_answer_what_the_scope_tree_answers.sql: both seats, every organization, knob off and on, text-equal).
 -- lane: SCOPES-ON-THE-STORE
 -- lock: custom
