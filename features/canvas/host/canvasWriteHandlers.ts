@@ -287,6 +287,21 @@ export function canvasItemContentHandler(
   };
 }
 
+/**
+ * The newest version of a chain that belongs to the referenced item's owner.
+ * `parent_canvas_id` carries no owner check, so another person can insert a
+ * PUBLIC row into this chain at a higher version; it is not a version of this
+ * item (the save RPC only ever writes the owner's rows). Mirrors the server
+ * resolver (`canvas_sources._read_canvas_item`).
+ */
+export function newestOwnVersion<T extends CanvasArtifactVersion>(chain: T[], canvasId: string): T {
+  const ownerOf = (row: T) => (row as { user_id?: unknown }).user_id;
+  const referenced = chain.find((row) => row.id === canvasId);
+  const owner = referenced ? ownerOf(referenced) : undefined;
+  const own = owner === undefined ? chain : chain.filter((row) => ownerOf(row) === owner);
+  return (own.length ? own : chain).reduce((a, b) => ((b.version ?? 1) > (a.version ?? 1) ? b : a));
+}
+
 /** The real save paths: the html page API route and the canvas version RPC. */
 export const canvasRecordServices: CanvasRecordServices = {
   async readHtmlPage(pageId) {
@@ -302,7 +317,7 @@ export const canvasRecordServices: CanvasRecordServices = {
     const { canvasArtifactService } = await import("@/features/canvas/services/canvasArtifactService");
     const chain = await canvasArtifactService.readVersionHistory(canvasId);
     if (!chain.length) return canvasArtifactService.getById(canvasId);
-    return chain.reduce((a, b) => ((b.version ?? 1) > (a.version ?? 1) ? b : a));
+    return newestOwnVersion(chain, canvasId);
   },
   async saveCanvasItemVersion(input) {
     const { canvasArtifactService } = await import("@/features/canvas/services/canvasArtifactService");
