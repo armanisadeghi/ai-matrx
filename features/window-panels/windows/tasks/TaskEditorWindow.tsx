@@ -1,3 +1,4 @@
+// record-view: task
 "use client";
 
 // TaskEditorWindow — the floating, single-task editor window.

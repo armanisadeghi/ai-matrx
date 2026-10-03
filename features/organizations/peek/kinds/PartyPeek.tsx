@@ -99,6 +99,7 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "party", id }}
       onClose={onClose}
       title={party?.display_name || kindWord}
       icon={<KindIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />}

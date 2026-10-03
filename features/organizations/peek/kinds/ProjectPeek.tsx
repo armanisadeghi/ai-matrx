@@ -49,6 +49,7 @@ export default function ProjectPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "project", id }}
       onClose={onClose}
       title={row?.name || "Project"}
       icon={<FolderKanban className="h-4 w-4 text-amber-600 dark:text-amber-400" />}

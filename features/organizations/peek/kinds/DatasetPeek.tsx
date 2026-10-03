@@ -1,3 +1,4 @@
+// record-view: none — dataset is a Deprecated table, which takes no custom fields
 "use client";
 
 /**

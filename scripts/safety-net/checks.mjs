@@ -13,6 +13,7 @@ import cutover from "./checks/cutover.mjs";
 import platform from "./checks/platform.mjs";
 import query from "./checks/query.mjs";
 import forms from "./checks/forms.mjs";
+import customFields from "./checks/custom-fields.mjs";
 
 export const ITEMS = {
   // Tables
@@ -168,9 +169,11 @@ export const ITEMS = {
   // Public form (lane MAKE-HOME W5, guard G4): a stranger's form fits a phone and its answer boxes fill the column
   F01: "Public form at 390 — no sideways scroll, every answer box ≥ 80% of the column, title and box on one edge",
   F02: "Public form at 1280 — every answer box ≥ 80% of the column, title and box on one edge",
+  // Custom fields (lane 7 W5)
+  CF01: "Every declared record view shows its custom-fields section (or says why not)",
 };
 
-export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query, ...forms];
+export const CHECKS = [...tables, ...lists, ...scopes, ...datahome, ...agents, ...agentsA12, ...drill, ...cutover, ...platform, ...query, ...forms, ...customFields];
 
 for (const c of CHECKS) for (const id of c.items) if (!ITEMS[id]) throw new Error(`check ${c.id} names unknown item ${id}`);
 const ids = new Set();

@@ -1,3 +1,4 @@
+// record-view: none — mandate is a Reference table, which takes no custom fields
 "use client";
 
 /**

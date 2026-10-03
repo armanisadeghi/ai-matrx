@@ -50,6 +50,7 @@ export default function ConversationPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "conversation", id }}
       onClose={onClose}
       title={row?.title || "Conversation"}
       icon={<MessagesSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}

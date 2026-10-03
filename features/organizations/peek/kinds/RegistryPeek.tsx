@@ -1,3 +1,4 @@
+// record-view: any
 "use client";
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
@@ -114,6 +115,7 @@ export function RegistryPeek({
   return (
     <PeekDialog
       open={open}
+      record={{ token, id }}
       onClose={onClose}
       title={title}
       icon={<Icon className="h-4 w-4 text-muted-foreground" />}

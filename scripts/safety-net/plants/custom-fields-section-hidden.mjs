@@ -1,0 +1,2 @@
+// The section is mounted but never seen: CSS hides it on every page. CF01 must go RED on every measured view.
+export default { id: "custom-fields-section-hidden", check: "custom-fields.walk-every-record-view", items: ["CF01"], description: "a style hides [data-section=custom-fields] on every page in the test browser", mode: "intercept", rules: [], css: '[data-section="custom-fields"]{display:none !important}' };

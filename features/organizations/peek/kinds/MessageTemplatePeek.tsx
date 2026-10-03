@@ -55,6 +55,7 @@ export default function MessageTemplatePeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "message_template", id }}
       onClose={onClose}
       title={row?.label || "Message Template"}
       icon={

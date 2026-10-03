@@ -1,3 +1,4 @@
+// record-view: none — structured_list is a Deprecated table, which takes no custom fields
 "use client";
 
 /**

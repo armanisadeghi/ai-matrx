@@ -1,3 +1,4 @@
+// record-view: meet_meeting
 // app/(core)/meetings/[id]/page.tsx
 //
 // A meeting's own page — before, during and after it. `?tab=` picks the

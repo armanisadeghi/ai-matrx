@@ -42,6 +42,7 @@ import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import type { Visibility } from "@/features/files/types";
 import {
   fileInfoAgentPayload,
@@ -266,6 +267,9 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
               </div>
             </Section>
           ) : null}
+
+          {/* The organization's own fields on this file (lane 7 W5). Real files only. */}
+          {file.source.kind === "real" ? <EntityCustomFields entityToken="file" recordId={fileId} /> : null}
 
           {/*
            * Knowledge status — visible only for real (non-virtual) files.

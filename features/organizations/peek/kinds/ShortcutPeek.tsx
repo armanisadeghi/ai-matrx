@@ -48,6 +48,7 @@ export default function ShortcutPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "agent_shortcut", id }}
       onClose={onClose}
       title={row?.label || "Shortcut"}
       icon={<Zap className="h-4 w-4 text-amber-600 dark:text-amber-400" />}

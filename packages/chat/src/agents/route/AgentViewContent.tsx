@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   selectAgentById,
@@ -219,7 +219,12 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
   );
 }
 
-export function AgentViewContent({ agentId }: { agentId: string }) {
+/**
+ * `recordSections`: what the HOST adds to this agent's record view — the organization's custom
+ * fields (lane 7 W5: `<EntityCustomFields entityToken="agent" …>` from the route). The package
+ * renders it after the stat strip and never knows what it is.
+ */
+export function AgentViewContent({ agentId, recordSections }: { agentId: string; recordSections?: ReactNode }) {
   const dispatch = useAppDispatch();
   const [mounted, setMounted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("pretty");
@@ -733,6 +738,8 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
             </div>
 
             <Separator />
+
+            {recordSections}
 
             {/* Settings — first per ordering request */}
             {settingsCount > 0 && (

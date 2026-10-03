@@ -26,6 +26,7 @@ export default function SeoMapTopicPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "seo_map_topic", id }}
       onClose={onClose}
       title={topic.data?.name || "Topic"}
       icon={<ListTree className="h-4 w-4 text-muted-foreground" />}

@@ -1,3 +1,4 @@
+// record-view: note
 /**
  * features/window-panels/windows/notes/NoteInfoWindow.tsx
  *

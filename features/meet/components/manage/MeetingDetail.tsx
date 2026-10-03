@@ -18,6 +18,7 @@
 // `?at=<original start>` names the occurrence the person came from, so Edit and
 // Cancel can ask "this occurrence or the whole series".
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -544,6 +545,8 @@ export function MeetingDetail({
               onCopy={() => void run("copy", meeting)}
             />
           ) : null}
+          {/* The organization's own fields on this meeting (lane 7 W5). */}
+          {section === "details" ? <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} className="mt-6" /> : null}
 
           {section === "guests" ? (
             <MeetingGuests

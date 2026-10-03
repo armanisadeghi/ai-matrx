@@ -1,3 +1,4 @@
+// record-view: file
 /**
  * app/(a)/files/f/[fileId]/page.tsx
  *

@@ -52,6 +52,7 @@ import { CommentThread, useComments } from "@ai-matrx/associations/react";
 import { TaskContextPicker } from "../TaskContextSection";
 import TaskAssigneePicker from "../TaskAssigneePicker";
 import TaskAttachmentsPanel from "../TaskAttachmentsPanel";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { TaskAssociatedResources } from "../TaskAssociatedResources";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
@@ -743,6 +744,9 @@ export function TaskEditorBody({
               </div>
             </div>
           </section>
+
+          {/* The organization's own fields on this task (lane 7 W5) — page and window alike. */}
+          <EntityCustomFields entityToken="task" recordId={taskId} />
 
           {/* Attachments — notes, files, messages, conversations, chat blocks */}
           <section>

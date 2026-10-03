@@ -52,6 +52,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "transcript", id }}
       onClose={onClose}
       title={row?.title || "Transcript"}
       icon={<AudioLines className="h-4 w-4 text-sky-600 dark:text-sky-400" />}

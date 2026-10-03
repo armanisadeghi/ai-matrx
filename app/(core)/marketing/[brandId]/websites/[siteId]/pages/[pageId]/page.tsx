@@ -1,3 +1,4 @@
+// record-view: web_page
 import { PageWorkspace } from "@/features/marketing/components/pages/PageWorkspace";
 
 export default async function MarketingPageDetail({

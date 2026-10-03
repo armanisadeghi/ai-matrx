@@ -55,6 +55,7 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "task", id }}
       onClose={onClose}
       title={row?.title || "Task"}
       icon={<ListTodo className="h-4 w-4 text-amber-600 dark:text-amber-400" />}

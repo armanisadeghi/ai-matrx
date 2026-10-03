@@ -66,6 +66,12 @@ export interface EntityCustomFieldsProps {
   entityToken: string;
   /** The id of the row this page is showing. */
   recordId: string;
+  /**
+   * A host that renders this for EVERY record type (the Detail host port) sets this: a token whose
+   * table takes no custom fields at all (Reference, Ledger, …) shows no section, as the Detail body
+   * shows no section that does not apply. A standard record that cannot show fields still says why.
+   */
+  absentWhenNotApplicable?: boolean;
   /** The heading. Defaults to the section's own. */
   title?: string;
   className?: string;
@@ -74,12 +80,13 @@ export interface EntityCustomFieldsProps {
 type RecordHome =
   | { state: "loading" }
   | { state: "home"; organizationId: string }
-  | { state: "refused"; sentence: string }
+  | { state: "refused"; sentence: string; reason: string | null }
   | { state: "error" };
 
 interface RecordHomeAnswer {
   organization_id?: string;
   refused?: string;
+  reason?: string;
 }
 
 interface RecordHomeCaller {
@@ -108,7 +115,12 @@ function useRecordHome(token: string, recordId: string): { home: RecordHome; ret
           console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error });
           setHome({ state: "error" });
         } else if (data.organization_id) setHome({ state: "home", organizationId: data.organization_id });
-        else setHome({ state: "refused", sentence: data.refused ?? "This record takes no custom fields." });
+        else
+          setHome({
+            state: "refused",
+            sentence: data.refused ?? "This record takes no custom fields.",
+            reason: data.reason ?? null,
+          });
       },
       (error: unknown) => {
         if (!live) return;
@@ -148,7 +160,13 @@ function SectionLine({
   );
 }
 
-export function EntityCustomFields({ entityToken, recordId, title, className }: EntityCustomFieldsProps) {
+export function EntityCustomFields({
+  entityToken,
+  recordId,
+  title,
+  className,
+  absentWhenNotApplicable,
+}: EntityCustomFieldsProps) {
   const { home, retry: retryHome } = useRecordHome(entityToken, recordId);
   // T1.2 (Doctrine R8): a person who may not change this table makes her own, in the ONE New table
   // dialog both data homes open (features/make/MakeMount.tsx), right here on the record page.
@@ -195,6 +213,7 @@ export function EntityCustomFields({ entityToken, recordId, title, className }: 
       return isMember ? UNIFIED_DATA_CAMPAIGN.check(organization) : false;
     },
   });
+  if (home.state === "refused" && absentWhenNotApplicable && home.reason === "no_table") return null;
   if (home.state === "refused") {
     return (
       <SectionLine state="refused" title={title} className={className}>

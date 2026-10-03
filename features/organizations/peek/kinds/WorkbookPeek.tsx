@@ -50,6 +50,7 @@ export default function WorkbookPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "workbook", id }}
       onClose={onClose}
       title={row?.workbook_name || row?.description || "Workbook"}
       icon={<Sheet className="h-4 w-4 text-sky-600 dark:text-sky-400" />}

@@ -1,3 +1,4 @@
+// record-view: host
 /**
  * features/window-panels/windows/detail/DetailWindow.tsx
  *

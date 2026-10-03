@@ -37,7 +37,7 @@ async function main() {
   const args = new Set(process.argv.slice(2));
   if (args.has("--refresh-registry")) {
     const { psqlRead } = await import("../lib/pooled-db.mjs");
-    const r = psqlRead("production", REGISTRY_SQL, { app: "record-pages-census" });
+    const r = psqlRead("production", REGISTRY_SQL);
     if (!r.ok) throw new Error(`registry read failed: ${r.stderr}`);
     const rows = JSON.parse(r.stdout.trim().split("\n").pop() ?? "[]") as EntityTypeRow[];
     mkdirSync(join(ROOT, "lib/record-pages"), { recursive: true });

@@ -1,3 +1,4 @@
+// record-view: agent
 "use client";
 
 /**

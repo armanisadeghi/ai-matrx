@@ -1,3 +1,4 @@
+// record-view: none — user is a System table, which takes no custom fields
 "use client";
 
 /**

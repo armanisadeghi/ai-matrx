@@ -50,6 +50,7 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "canvas_item", id }}
       onClose={onClose}
       title={row?.title || "Canvas"}
       icon={<Frame className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}

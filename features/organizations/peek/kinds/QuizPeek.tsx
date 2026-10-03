@@ -46,6 +46,7 @@ export default function QuizPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "quiz_session", id }}
       onClose={onClose}
       title={row?.title || "Quiz"}
       icon={<ListChecks className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}

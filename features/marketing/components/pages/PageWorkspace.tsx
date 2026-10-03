@@ -149,6 +149,7 @@ import {
   readPlanContextFromCache,
 } from "@/features/marketing/components/pages/cards/PagePlanContextCard";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
 // section titles and field labels below render these byte-identically.
@@ -1345,6 +1346,9 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           <div id="page-section-plan" tabIndex={-1} className="scroll-mt-14">
             <PagePlanContextCard page={page} site={site} />
           </div>
+
+          {/* The organization's own fields on this page (lane 7 W5 — the record view of web_page). */}
+          <EntityCustomFields entityToken="web_page" recordId={page.id} />
 
           {/* Every paired row owns one compact disclosure in Studio. Nested
               card disclosures stay open there, so the two lanes can never be

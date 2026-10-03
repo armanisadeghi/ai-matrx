@@ -47,6 +47,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import type { Project } from "@/features/projects/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
@@ -577,6 +578,9 @@ export function ProjectRecordWorkspace({
               organizationId={project.organizationId}
             />
           </Card>
+
+          {/* The organization's own fields on this project (lane 7 W5). */}
+          <EntityCustomFields entityToken="project" recordId={project.id} />
 
           {/* Details & all FK references (a useful audit summary, collapsible) */}
           <details className="group">

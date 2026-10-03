@@ -57,6 +57,7 @@ export default function FilePeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "file", id }}
       onClose={onClose}
       title={row?.file_name ?? "File"}
       icon={<FileText className="h-4 w-4 text-sky-600 dark:text-sky-400" />}

@@ -58,6 +58,7 @@ export default function WorkflowPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "workflow", id }}
       onClose={onClose}
       title={row?.name || "Workflow"}
       icon={workflowIcon}

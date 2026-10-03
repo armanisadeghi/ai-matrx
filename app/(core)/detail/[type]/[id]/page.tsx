@@ -1,3 +1,4 @@
+// record-view: host
 // app/(core)/detail/[type]/[id]/page.tsx
 //
 // The Detail primitive's PAGE presentation (`lib/detail`): the same core a

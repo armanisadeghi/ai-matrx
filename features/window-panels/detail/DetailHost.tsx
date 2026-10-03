@@ -58,6 +58,7 @@ import {
   useSessionKnob,
 } from "@/lib/scoped-config/sessionKnob";
 import { HistoryActorName } from "./HistoryActorName";
+import { DetailCustomFieldsSection } from "./DetailCustomFieldsSection";
 import { savePresentation } from "./savePresentation";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -368,6 +369,8 @@ export function DetailHost({ children }: { children: ReactNode }) {
     // `resolveUserName`), never a second one. Without it every history row shows
     // a bare uuid, which is what round 5 found on every record.
     history: { list: listHistory, ActorName: HistoryActorName },
+    // Lane 7 W5 — the organization's own fields on every standard record this host shows.
+    customFields: { Section: DetailCustomFieldsSection },
     // Where a DEVELOPER goes to register a type — the console remedy the core
     // prints once per type per tab. The package cannot know a host's file paths,
     // so the host names its own registry here (the person never sees this).

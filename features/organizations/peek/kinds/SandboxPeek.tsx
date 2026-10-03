@@ -55,6 +55,7 @@ export default function SandboxPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "sandbox_instance", id }}
       onClose={onClose}
       title={row?.sandbox_id ?? "Sandbox"}
       icon={<Terminal className="h-4 w-4 text-violet-600 dark:text-violet-400" />}

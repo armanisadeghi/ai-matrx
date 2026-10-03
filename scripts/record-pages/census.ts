@@ -23,7 +23,11 @@
 //                                              every token's section through ONE port (checked: the
 //                                              file reaches DetailBody/the Detail host, and the host
 //                                              binds `customFields`)
+//        // record-view: any                   a shell that shows the section for whatever token it is
+//                                              handed (checked: it passes a variable token on)
 //        // record-view: none — <reason>        it shows no single record (a list, a settings page)
+//   1b. a peek passes `record={{ token: "<token>", id }}` to PeekDialog (checked: PeekDialog renders
+//      <EntityCustomFields>) — the peek's own line (M3)
 //   3. nothing — then it is PENDING, and the pending ledger (lib/record-pages/pending.json) may only
 //      shrink: a new undeclared unit fails G1, a declared unit still in the ledger fails G1 (stale).
 //
@@ -47,8 +51,9 @@ import { dirname, join, relative, resolve } from "node:path";
 
 export type UnitKind = "route" | "window" | "peek";
 export type Declaration =
-  | { kind: "tokens"; tokens: string[]; via: "literal" | "marker" }
+  | { kind: "tokens"; tokens: string[]; via: "literal" | "marker" | "peek" }
   | { kind: "host" }
+  | { kind: "any" }
   | { kind: "none"; reason: string }
   | { kind: "pending" };
 
@@ -163,13 +168,13 @@ export function buildCensus(opts: CensusOptions): Census {
   const types = new Map(opts.entityTypes.map((t) => [t.token, t]));
   const problems: string[] = [];
   const noOrganization = new Set<string>();
-  const judgeToken = (where: string, token: string) => {
+  const judgeToken = (where: string, token: string): void => {
     const t = types.get(token);
-    if (!t) return problems.push(`${where}: declares "${token}", which is not a registry token.`);
-    if (!t.is_active) return problems.push(`${where}: declares "${token}", a retired token.`);
-    if (!["entity", "detail"].includes(t.type.toLowerCase()) || !t.custom_fields_enabled)
-      return problems.push(`${where}: declares "${token}", a ${t.type} table, which takes no custom fields.`);
-    if (!t.has_organization) noOrganization.add(token);
+    if (!t) problems.push(`${where}: declares "${token}", which is not a registry token.`);
+    else if (!t.is_active) problems.push(`${where}: declares "${token}", a retired token.`);
+    else if (!["entity", "detail"].includes(t.type.toLowerCase()) || !t.custom_fields_enabled)
+      problems.push(`${where}: declares "${token}", a ${t.type} table, which takes no custom fields.`);
+    else if (!t.has_organization) noOrganization.add(token);
   };
 
   const declare = (key: string, rel: string): Declaration => {
@@ -187,6 +192,11 @@ export function buildCensus(opts: CensusOptions): Census {
         if (!reason) problems.push(`${key}: "record-view: none" with no reason (${rel}).`);
         return { kind: "none", reason };
       }
+      if (marker === "any") {
+        if (!/record=\{\{\s*token\b|entityToken=\{/.test(text))
+          problems.push(`${key}: declares "any" but hands no token to a custom-fields section (${rel}).`);
+        return { kind: "any" };
+      }
       if (marker === "host") {
         if (!reaches(rel, (t) => HOST_REACH.test(t)))
           problems.push(`${key}: declares "host" but renders no Detail host (${rel}).`);
@@ -202,6 +212,13 @@ export function buildCensus(opts: CensusOptions): Census {
           );
       }
       return { kind: "tokens", tokens, via: "marker" };
+    }
+    const peekTokens = [...new Set([...text.matchAll(/record=\{\{\s*token:\s*["']([a-z0-9_]+)["']/g)].map((m) => m[1]))];
+    if (peekTokens.length && /<PeekDialog\b/.test(text)) {
+      for (const token of peekTokens) judgeToken(key, token);
+      if (!/<EntityCustomFields\b/.test(read("features/organizations/peek/PeekDialog.tsx") ?? ""))
+        problems.push(`${key}: hands PeekDialog a record, but PeekDialog renders no <EntityCustomFields>.`);
+      return { kind: "tokens", tokens: peekTokens, via: "peek" };
     }
     const literal = literalTokens(text);
     if (literal.length) {
@@ -326,7 +343,7 @@ export function trackedSources(root: string): string[] {
 
 /** The generated page→token map: what each unit declares, nothing inferred. */
 export function toGenerated(c: Census) {
-  const records: Record<string, { file: string; tokens?: string[]; host?: true; none?: string; pending?: true }> = {};
+  const records: Record<string, { file: string; tokens?: string[]; host?: true; any?: true; none?: string; pending?: true }> = {};
   for (const u of c.units) {
     const d = u.declaration;
     records[u.key] =
@@ -334,6 +351,8 @@ export function toGenerated(c: Census) {
         ? { file: u.file, tokens: d.tokens }
         : d.kind === "host"
           ? { file: u.file, host: true }
+          : d.kind === "any"
+          ? { file: u.file, any: true }
           : d.kind === "none"
             ? { file: u.file, none: d.reason }
             : { file: u.file, pending: true };

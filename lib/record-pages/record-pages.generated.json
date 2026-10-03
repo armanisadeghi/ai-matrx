@@ -1,21 +1,44 @@
 {
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
-  "route.pending": 1275,
-  "route.tokens": 7,
-  "window.pending": 184,
-  "peek.pending": 25,
+  "route.pending": 1268,
+  "route.tokens": 13,
+  "route.host": 1,
+  "window.pending": 181,
+  "window.host": 1,
+  "window.tokens": 2,
+  "peek.tokens": 19,
+  "peek.none": 5,
+  "peek.any": 1,
   "route.manifestRowWithoutFile": 14,
   "table.pending": 243
  },
  "tokens": [
+  "agent",
+  "agent_shortcut",
+  "app",
+  "canvas_item",
+  "conversation",
   "crm_deal",
+  "fc_set",
+  "file",
+  "meet_meeting",
   "message_template",
+  "note",
   "party",
+  "project",
+  "quiz_session",
+  "sandbox_instance",
   "seo_collection_run",
+  "seo_map_topic",
+  "skill",
+  "task",
+  "transcript",
   "web_page",
   "web_property",
-  "web_screenshot"
+  "web_screenshot",
+  "workbook",
+  "workflow"
  ],
  "noOrganization": [],
  "records": {
@@ -1153,7 +1176,9 @@
   },
   "route:/agents/[id]": {
    "file": "app/(core)/agents/[id]/page.tsx",
-   "pending": true
+   "tokens": [
+    "agent"
+   ]
   },
   "route:/agents/[id]/answers": {
    "file": "app/(core)/agents/[id]/answers/page.tsx",
@@ -1795,7 +1820,7 @@
   },
   "route:/detail/[type]/[id]": {
    "file": "app/(core)/detail/[type]/[id]/page.tsx",
-   "pending": true
+   "host": true
   },
   "route:/developers/oauth": {
    "file": "app/(public)/developers/oauth/page.tsx",
@@ -2287,7 +2312,9 @@
   },
   "route:/files/f/[fileId]": {
    "file": "app/(core)/files/f/[fileId]/page.tsx",
-   "pending": true
+   "tokens": [
+    "file"
+   ]
   },
   "route:/files/f/[fileId]/studio": {
    "file": "app/(core)/files/f/[fileId]/studio/page.tsx",
@@ -3539,7 +3566,9 @@
   },
   "route:/marketing/[brandId]/websites/[siteId]/pages/[pageId]": {
    "file": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/[pageId]/page.tsx",
-   "pending": true
+   "tokens": [
+    "web_page"
+   ]
   },
   "route:/marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots": {
    "file": "app/(core)/marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots/page.tsx",
@@ -4011,7 +4040,9 @@
   },
   "route:/meetings/[id]": {
    "file": "app/(core)/meetings/[id]/page.tsx",
-   "pending": true
+   "tokens": [
+    "meet_meeting"
+   ]
   },
   "route:/messages": {
    "file": "app/(core)/messages/page.tsx",
@@ -4475,7 +4506,9 @@
   },
   "route:/projects/[projectId]": {
    "file": "app/(core)/projects/[projectId]/page.tsx",
-   "pending": true
+   "tokens": [
+    "project"
+   ]
   },
   "route:/projects/[projectId]/settings": {
    "file": "app/(core)/projects/[projectId]/settings/page.tsx",
@@ -4871,7 +4904,9 @@
   },
   "route:/tasks/[id]": {
    "file": "app/(core)/tasks/[id]/page.tsx",
-   "pending": true
+   "tokens": [
+    "task"
+   ]
   },
   "route:/tasks/new": {
    "file": "app/(core)/tasks/new/page.tsx",
@@ -5627,7 +5662,7 @@
   },
   "window:features/window-panels/windows/detail/DetailWindow.tsx": {
    "file": "features/window-panels/windows/detail/DetailWindow.tsx",
-   "pending": true
+   "host": true
   },
   "window:features/window-panels/windows/directive-item/DirectiveItemWindow.tsx": {
    "file": "features/window-panels/windows/directive-item/DirectiveItemWindow.tsx",
@@ -5791,7 +5826,9 @@
   },
   "window:features/window-panels/windows/notes/NoteInfoWindow.tsx": {
    "file": "features/window-panels/windows/notes/NoteInfoWindow.tsx",
-   "pending": true
+   "tokens": [
+    "note"
+   ]
   },
   "window:features/window-panels/windows/notes/NotesWindow.tsx": {
    "file": "features/window-panels/windows/notes/NotesWindow.tsx",
@@ -5867,7 +5904,9 @@
   },
   "window:features/window-panels/windows/tasks/TaskEditorWindow.tsx": {
    "file": "features/window-panels/windows/tasks/TaskEditorWindow.tsx",
-   "pending": true
+   "tokens": [
+    "task"
+   ]
   },
   "window:features/window-panels/windows/tasks/TaskQuickCreateWindow.tsx": {
    "file": "features/window-panels/windows/tasks/TaskQuickCreateWindow.tsx",
@@ -5899,103 +5938,141 @@
   },
   "peek:features/organizations/peek/kinds/AgentAppPeek.tsx": {
    "file": "features/organizations/peek/kinds/AgentAppPeek.tsx",
-   "pending": true
+   "tokens": [
+    "app"
+   ]
   },
   "peek:features/organizations/peek/kinds/AgentPeek.tsx": {
    "file": "features/organizations/peek/kinds/AgentPeek.tsx",
-   "pending": true
+   "tokens": [
+    "agent"
+   ]
   },
   "peek:features/organizations/peek/kinds/CanvasPeek.tsx": {
    "file": "features/organizations/peek/kinds/CanvasPeek.tsx",
-   "pending": true
+   "tokens": [
+    "canvas_item"
+   ]
   },
   "peek:features/organizations/peek/kinds/ConversationPeek.tsx": {
    "file": "features/organizations/peek/kinds/ConversationPeek.tsx",
-   "pending": true
+   "tokens": [
+    "conversation"
+   ]
   },
   "peek:features/organizations/peek/kinds/DatasetPeek.tsx": {
    "file": "features/organizations/peek/kinds/DatasetPeek.tsx",
-   "pending": true
+   "none": "dataset is a Deprecated table, which takes no custom fields"
   },
   "peek:features/organizations/peek/kinds/FilePeek.tsx": {
    "file": "features/organizations/peek/kinds/FilePeek.tsx",
-   "pending": true
+   "tokens": [
+    "file"
+   ]
   },
   "peek:features/organizations/peek/kinds/FlashcardPeek.tsx": {
    "file": "features/organizations/peek/kinds/FlashcardPeek.tsx",
-   "pending": true
+   "tokens": [
+    "fc_set"
+   ]
   },
   "peek:features/organizations/peek/kinds/ListPeek.tsx": {
    "file": "features/organizations/peek/kinds/ListPeek.tsx",
-   "pending": true
+   "none": "structured_list is a Deprecated table, which takes no custom fields"
   },
   "peek:features/organizations/peek/kinds/MandatePeek.tsx": {
    "file": "features/organizations/peek/kinds/MandatePeek.tsx",
-   "pending": true
+   "none": "mandate is a Reference table, which takes no custom fields"
   },
   "peek:features/organizations/peek/kinds/MessageTemplatePeek.tsx": {
    "file": "features/organizations/peek/kinds/MessageTemplatePeek.tsx",
-   "pending": true
+   "tokens": [
+    "message_template"
+   ]
   },
   "peek:features/organizations/peek/kinds/NotePeek.tsx": {
    "file": "features/organizations/peek/kinds/NotePeek.tsx",
-   "pending": true
+   "tokens": [
+    "note"
+   ]
   },
   "peek:features/organizations/peek/kinds/OrganizationPeek.tsx": {
    "file": "features/organizations/peek/kinds/OrganizationPeek.tsx",
-   "pending": true
+   "none": "organization is a System table, which takes no custom fields"
   },
   "peek:features/organizations/peek/kinds/PartyPeek.tsx": {
    "file": "features/organizations/peek/kinds/PartyPeek.tsx",
-   "pending": true
+   "tokens": [
+    "party"
+   ]
   },
   "peek:features/organizations/peek/kinds/ProjectPeek.tsx": {
    "file": "features/organizations/peek/kinds/ProjectPeek.tsx",
-   "pending": true
+   "tokens": [
+    "project"
+   ]
   },
   "peek:features/organizations/peek/kinds/QuizPeek.tsx": {
    "file": "features/organizations/peek/kinds/QuizPeek.tsx",
-   "pending": true
+   "tokens": [
+    "quiz_session"
+   ]
   },
   "peek:features/organizations/peek/kinds/RegistryPeek.tsx": {
    "file": "features/organizations/peek/kinds/RegistryPeek.tsx",
-   "pending": true
+   "any": true
   },
   "peek:features/organizations/peek/kinds/SandboxPeek.tsx": {
    "file": "features/organizations/peek/kinds/SandboxPeek.tsx",
-   "pending": true
+   "tokens": [
+    "sandbox_instance"
+   ]
   },
   "peek:features/organizations/peek/kinds/SeoMapTopicPeek.tsx": {
    "file": "features/organizations/peek/kinds/SeoMapTopicPeek.tsx",
-   "pending": true
+   "tokens": [
+    "seo_map_topic"
+   ]
   },
   "peek:features/organizations/peek/kinds/ShortcutPeek.tsx": {
    "file": "features/organizations/peek/kinds/ShortcutPeek.tsx",
-   "pending": true
+   "tokens": [
+    "agent_shortcut"
+   ]
   },
   "peek:features/organizations/peek/kinds/SkillPeek.tsx": {
    "file": "features/organizations/peek/kinds/SkillPeek.tsx",
-   "pending": true
+   "tokens": [
+    "skill"
+   ]
   },
   "peek:features/organizations/peek/kinds/TaskPeek.tsx": {
    "file": "features/organizations/peek/kinds/TaskPeek.tsx",
-   "pending": true
+   "tokens": [
+    "task"
+   ]
   },
   "peek:features/organizations/peek/kinds/TranscriptPeek.tsx": {
    "file": "features/organizations/peek/kinds/TranscriptPeek.tsx",
-   "pending": true
+   "tokens": [
+    "transcript"
+   ]
   },
   "peek:features/organizations/peek/kinds/UserPeek.tsx": {
    "file": "features/organizations/peek/kinds/UserPeek.tsx",
-   "pending": true
+   "none": "user is a System table, which takes no custom fields"
   },
   "peek:features/organizations/peek/kinds/WorkbookPeek.tsx": {
    "file": "features/organizations/peek/kinds/WorkbookPeek.tsx",
-   "pending": true
+   "tokens": [
+    "workbook"
+   ]
   },
   "peek:features/organizations/peek/kinds/WorkflowPeek.tsx": {
    "file": "features/organizations/peek/kinds/WorkflowPeek.tsx",
-   "pending": true
+   "tokens": [
+    "workflow"
+   ]
   }
  },
  "tables": {

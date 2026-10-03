@@ -52,6 +52,7 @@ export default function SkillPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "skill", id }}
       onClose={onClose}
       title={row?.label || "Skill"}
       icon={<Puzzle className="h-4 w-4 text-violet-600 dark:text-violet-400" />}

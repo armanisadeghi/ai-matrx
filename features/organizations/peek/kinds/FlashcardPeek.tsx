@@ -46,6 +46,7 @@ export default function FlashcardPeek({ id, open, onClose }: PeekProps) {
   return (
     <PeekDialog
       open={open}
+      record={{ token: "fc_set", id }}
       onClose={onClose}
       title={row?.name || row?.topic || "Flashcard set"}
       icon={<Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}

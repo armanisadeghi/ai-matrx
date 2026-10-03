@@ -1,3 +1,4 @@
+// record-view: project
 "use client";
 
 import { ProjectWorkspace } from "@/features/projects/components/ProjectWorkspace";

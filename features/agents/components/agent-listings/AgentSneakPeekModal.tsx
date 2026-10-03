@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -415,6 +416,8 @@ export function AgentSneakPeekContent({
       </TabsList>
 
       <TabsContent value="summary" className="mt-0 space-y-4">
+        {/* The organization's own fields on this agent (lane 7 W5 — the agent's peek). */}
+        <EntityCustomFields entityToken="agent" recordId={agentId} />
         <Section label="Description">
           {record.description ? (
             <p className="text-sm text-foreground whitespace-pre-wrap break-words">

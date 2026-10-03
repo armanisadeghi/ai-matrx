@@ -19,6 +19,7 @@
  * a peek genuinely has no registered token (e.g. sandbox instances).
  */
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ExternalLink } from "lucide-react";
@@ -50,6 +51,12 @@ export interface PeekDialogProps {
   /** The record's id — required alongside `token`. */
   id?: string | null;
   loading?: boolean;
+  /**
+   * THE RECORD THIS PEEK SHOWS (lane 7 W5, M3): the organization's own custom fields render under
+   * the peek's fields, the same section every record view shows. A token whose table takes no custom
+   * fields shows none. Every peek of a standard record passes it — G1 counts the peeks.
+   */
+  record?: { token: string; id: string } | null;
   children?: React.ReactNode;
 }
 
@@ -62,6 +69,7 @@ export function PeekDialog({
   token,
   id,
   loading,
+  record,
   children,
 }: PeekDialogProps) {
   const router = useRouter();
@@ -94,7 +102,17 @@ export function PeekDialog({
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            children
+            <>
+              {children}
+              {record ? (
+                <EntityCustomFields
+                  entityToken={record.token}
+                  recordId={record.id}
+                  absentWhenNotApplicable
+                  className="mt-4"
+                />
+              ) : null}
+            </>
           )}
         </div>
 

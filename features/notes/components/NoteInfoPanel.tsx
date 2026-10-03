@@ -16,6 +16,7 @@
 // a WindowPanel (see NoteInfoWindow) but is a plain component with no window
 // chrome of its own, so it can be embedded anywhere.
 
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { noteDisplayLabel } from "@/features/notes/format";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -325,6 +326,11 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       <SectionHeader icon={Hash} label="Scopes" />
       <div className="px-1" data-surface-value="note_scope_assignments">
         <NoteContextSection noteId={noteId} />
+      </div>
+
+      {/* ── The organization's own fields on this note (lane 7 W5) ───── */}
+      <div className="px-1">
+        <EntityCustomFields entityToken="note" recordId={noteId} />
       </div>
 
       {/* ── Sharing — who can see this note, and why ──────────────────── */}
