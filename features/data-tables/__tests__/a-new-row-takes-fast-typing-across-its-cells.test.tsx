@@ -1,8 +1,10 @@
 /**
  * GRIDS REVIEW 3: "+ Row" then fast Tab-typing lost five of six values. Measured again on the inline row
  * (2026-10-03, loaded preview): the first cell kept its words and every key after the first Tab was lost.
- * The Sheet's own pair — `useGridSelection` + `EditableCell` — with `useInlineNewRow`; the store is stood
- * in for and makes the row 200 ms after "+ Row"; every key is typed during that wait.
+ * The Sheet's own pair — `useGridSelection` + `EditableCell` — drawn through the Sheet's own memoised
+ * row (`SheetBodyRow`, redrawn only when its facts change, as in the viewer), with `useInlineNewRow`; the
+ * store is stood in for and makes the row 200 ms after "+ Row"; every key is typed during that wait.
+ * (Second measure, 2026-10-03: a Tab handed to the grid never reached the memoised row's open cell.)
  */
 import * as React from "react";
 import { act } from "react";
@@ -24,6 +26,7 @@ jest.mock("@/components/official/ProTextarea", () => {
 import { EditableCell } from "../components/EditableCell";
 import { useGridSelection } from "../hooks/useGridSelection";
 import { useInlineNewRow } from "../hooks/useInlineNewRow";
+import { SheetBodyRow } from "../components/sheet-body-row";
 
 // The flow runs on its own clock (the store's answer, the re-read, frames), so React schedules for
 // real here instead of queueing every update inside one long act().
@@ -61,35 +64,47 @@ function Sheet() {
     onNotShown: () => {},
   });
   addRow = () => void inline.start();
+  const latest = React.useRef(grid);
+  latest.current = grid;
   return (
     <div ref={grid.containerRef} tabIndex={0} onKeyDown={grid.onKeyDown} data-test-grid="">
       <textarea {...grid.typeCatcherProps} />
       <table>
         <tbody>
-          {rows.map((rowId) => (
-            <tr key={rowId}>
-              {FIELDS.map((fieldName) => (
-                <td key={fieldName}>
-                  <EditableCell
-                    tableId="t-equipment"
-                    rowId={rowId}
-                    fieldName={fieldName}
-                    fieldDisplayName={fieldName}
-                    dataType="string"
-                    format={null}
-                    value=""
-                    display={<span />}
-                    selected={grid.isSelected(rowId, fieldName)}
-                    editing={grid.isEditing(rowId, fieldName)}
-                    seed={grid.editSeed}
-                    onSelect={() => grid.select({ rowId, fieldName })}
-                    onBeginEdit={() => grid.beginEdit({ rowId, fieldName })}
-                    onEndEdit={(move) => grid.endEdit(move, { rowId, fieldName })}
-                    commitRequest={grid.isEditing(rowId, fieldName) ? grid.editCommit : null}
-                  />
-                </td>
-              ))}
-            </tr>
+          {rows.map((rowId, index) => (
+            <SheetBodyRow
+              key={rowId}
+              row={{ id: rowId }}
+              index={index}
+              epoch={0}
+              // The viewer's facts: which cell is selected / editing, and the open edit's seed.
+              facts={[FIELDS.map((f) => `${grid.isSelected(rowId, f) ? "s" : "-"}${grid.isEditing(rowId, f) ? "e" : "-"}`).join("|"), FIELDS.some((f) => grid.isEditing(rowId, f)) ? grid.editSeed : null]}
+              render={(row: { id: string }) => (
+                <tr>
+                  {FIELDS.map((fieldName) => (
+                    <td key={fieldName}>
+                      <EditableCell
+                        tableId="t-equipment"
+                        rowId={row.id}
+                        fieldName={fieldName}
+                        fieldDisplayName={fieldName}
+                        dataType="string"
+                        format={null}
+                        value=""
+                        display={<span />}
+                        selected={latest.current.isSelected(row.id, fieldName)}
+                        editing={latest.current.isEditing(row.id, fieldName)}
+                        seed={latest.current.editSeed}
+                        onSelect={() => latest.current.select({ rowId: row.id, fieldName })}
+                        onBeginEdit={() => latest.current.beginEdit({ rowId: row.id, fieldName })}
+                        onEndEdit={(move) => latest.current.endEdit(move, { rowId: row.id, fieldName })}
+                        commitRequest={latest.current.isEditing(row.id, fieldName) ? latest.current.editCommit : null}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              )}
+            />
           ))}
         </tbody>
       </table>

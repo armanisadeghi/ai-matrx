@@ -158,13 +158,16 @@ export function useInlineNewRow(options: {
         // A character for an open cell goes INTO its text box, as typing would (the grid's own key path
         // drops a lone space, measured: "Belt checked" landed as "Beltchecked"). Everything else — a key
         // that opens a cell, Tab, Enter — goes to the grid.
-        const box = next.key.length === 1 && wasOpen ? editorTextBox(container()) : null;
-        if (box) {
+        // Tab and Enter for an open cell go to that cell's own text box too: its key handler commits and
+        // moves, exactly as a typed Tab does. (Sent to the grid instead, the commit request never reached
+        // the Sheet's memoised row — measured: the Title stayed open holding "Rowing machine".)
+        const box = wasOpen ? editorTextBox(container()) : null;
+        if (box && next.key.length === 1) {
           typeInto(box, next.key);
         } else {
           const event = new KeyboardEvent("keydown", { key: next.key, shiftKey: next.shiftKey, bubbles: true, cancelable: true });
           ours.add(event);
-          container()?.dispatchEvent(event);
+          (box ?? container())?.dispatchEvent(event);
         }
         if (next.key === "Tab" || next.key === "Enter") await until(() => !editorOpen());
         else if (!wasOpen) await until(editorOpen);
