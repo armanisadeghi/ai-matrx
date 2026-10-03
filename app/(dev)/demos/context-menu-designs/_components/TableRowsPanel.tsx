@@ -79,7 +79,6 @@ export function TableRowsPanel({ side, viewer }: { side: "today" | "proposed"; v
           config={side === "today" ? todayConfig(t) : proposedConfig(t, viewer)}
           sourceFeature="udt"
           surfaceName="matrx-user/data-tables"
-          entity={{ type: "table", id: t.id, title: t.name }}
         >
           <div
             data-demo-row=""

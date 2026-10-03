@@ -102,8 +102,6 @@ export interface ProposedOptions {
   noun: string;
 }
 
-// "target": the clicked thing's own rows — a heading kind the package always allows; no label is drawn.
-const OWN_SECTION: ActionSection = { id: "proposed:own", label: "", primary: true, kind: "target" };
 
 export function proposedArrangement(
   target: ClickTarget,
@@ -157,14 +155,17 @@ export function proposedArrangement(
       continue;
     }
     if (own.length < OWN_ROWS_MAX && !r.action.expand) {
-      own.push({ ...r, action: { ...r.action, section: OWN_SECTION, order: own.length } });
+      // No section: the rows sit in the "edit" group, right under the icons, with no heading line.
+      const { section: _s, ...plain } = r.action;
+      void _s;
+      own.push({ ...r, action: { ...plain, category: "edit", order: own.length } });
     } else {
       more.push(r.action);
     }
   }
   const top: ResolvedAction[] = [...strip, ...own];
   if (more.length) {
-    top.push(submenu("more", `More ${noun} options`, "edit", 999, icon(Ellipsis), more, OWN_SECTION));
+    top.push(submenu("more", `More ${noun} options`, "edit", 999, icon(Ellipsis), more));
   }
 
   // 3 · everything AI behind one row, always present.

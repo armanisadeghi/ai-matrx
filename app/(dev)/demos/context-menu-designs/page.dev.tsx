@@ -54,7 +54,7 @@ function Surface({ k, side, viewer }: { k: SurfaceKey; side: "today" | "proposed
   );
 }
 
-/** Where a surface is right-clicked to draw its menu open: its first row, or its text. */
+/** Where a surface is right-clicked to draw its menu: its first row, or its text. */
 function probe(root: HTMLElement): HTMLElement | null {
   return (
     root.querySelector<HTMLElement>("[data-demo-row]") ??
@@ -64,10 +64,12 @@ function probe(root: HTMLElement): HTMLElement | null {
   );
 }
 
-function openAt(root: HTMLElement) {
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function openMenu(root: HTMLElement) {
   const el = probe(root);
   if (!el) return;
-  const box = root.getBoundingClientRect();
+  const box = el.getBoundingClientRect();
   el.dispatchEvent(
     new MouseEvent("contextmenu", {
       bubbles: true,
@@ -75,10 +77,70 @@ function openAt(root: HTMLElement) {
       view: window,
       button: 2,
       buttons: 2,
-      clientX: box.right + 12,
-      clientY: box.top,
+      clientX: box.left + Math.min(40, box.width / 2),
+      clientY: box.top + Math.min(12, box.height / 2),
     }),
   );
+}
+
+/** A frozen copy of exactly what the real menu drew (no handlers; right-click the surface to use it). */
+function freeze(el: Element): HTMLElement {
+  const copy = el.cloneNode(true) as HTMLElement;
+  copy.removeAttribute("style");
+  copy.style.position = "static";
+  copy.style.maxHeight = "none";
+  copy.setAttribute("aria-hidden", "true");
+  // A copy must never be mistaken for a live menu by the next capture.
+  copy.removeAttribute("data-alchemy-layout");
+  copy.removeAttribute("data-alchemy-submenu");
+  copy.removeAttribute("data-state");
+  copy.setAttribute("data-frozen-menu", "");
+  copy.removeAttribute("id");
+  copy.querySelectorAll("[id]").forEach((n) => n.removeAttribute("id"));
+  copy.querySelectorAll("input").forEach((n) => n.setAttribute("tabindex", "-1"));
+  return copy;
+}
+
+/** Open each surface's real menu in turn and freeze what it drew (+ its Intelligence submenu). */
+async function captureAll(
+  roots: Map<string, HTMLDivElement>,
+  slots: Map<string, HTMLDivElement>,
+  isCurrent: () => boolean,
+) {
+  for (const [id, root] of roots) {
+    if (!isCurrent()) return;
+    const slot = slots.get(id);
+    if (!slot) continue;
+    // The previous menu must be gone first, or its closing copy is what gets frozen.
+    for (let i = 0; i < 30 && document.querySelector("[data-alchemy-layout]"); i++) await sleep(100);
+    openMenu(root);
+    let menu: Element | null = null;
+    for (let i = 0; i < 40 && !menu; i++) {
+      await sleep(100);
+      const m = document.querySelector('[data-alchemy-layout][data-state="open"]');
+      if (m && m.querySelectorAll("[data-alchemy-node]").length > 0) menu = m;
+    }
+    if (!menu) continue;
+    await sleep(3000); // agent libraries finish loading
+    const parts: HTMLElement[] = [freeze(menu)];
+    const ai = menu.querySelector<HTMLElement>('[data-alchemy-node="proposed:intelligence"]');
+    if (ai) {
+      // Hover, never the keyboard: a keyboard open focuses the first row (Chat) and a stray key runs it.
+      const r = ai.getBoundingClientRect();
+      const at = { bubbles: true, pointerType: "mouse", clientX: r.left + 20, clientY: r.top + 5 };
+      ai.dispatchEvent(new PointerEvent("pointerover", at));
+      ai.dispatchEvent(new PointerEvent("pointerenter", at));
+      ai.dispatchEvent(new PointerEvent("pointermove", at));
+      await sleep(1200);
+      const sub = document.querySelector('[data-alchemy-submenu="proposed:intelligence"]');
+      if (sub) parts.push(freeze(sub));
+    }
+    slot.replaceChildren(...parts);
+    // Escape closes the menu (and its submenu) without running anything.
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    menu.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await sleep(250);
+  }
 }
 
 function Column({
@@ -86,11 +148,13 @@ function Column({
   side,
   viewer,
   register,
+  registerSlot,
 }: {
   k: SurfaceKey;
   side: "today" | "proposed";
   viewer: boolean;
   register: (el: HTMLDivElement | null) => void;
+  registerSlot: (el: HTMLDivElement | null) => void;
 }) {
   const noun = SURFACES.find((s) => s.key === k)!.noun;
   const body = (
@@ -99,83 +163,82 @@ function Column({
     </div>
   );
   return (
-    <div className="flex min-h-[620px] w-[690px] shrink-0 flex-col gap-2">
+    <div className="flex shrink-0 flex-col gap-2">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {side === "today" ? "Today" : "Proposed"}
       </div>
-      {side === "proposed" ? <MenuRegroupProvider value={proposedValue(noun)}>{body}</MenuRegroupProvider> : body}
+      <div className="flex items-start gap-3">
+        {side === "proposed" ? <MenuRegroupProvider value={proposedValue(noun)}>{body}</MenuRegroupProvider> : body}
+        <div ref={registerSlot} className="pointer-events-none flex items-start gap-1" />
+      </div>
     </div>
   );
 }
 
 export default function ContextMenuDesignsPage() {
   const [viewer, setViewer] = useState(false);
-  const [pinned, setPinned] = useState(true);
+  const [round, setRound] = useState(0);
+  const [busy, setBusy] = useState(false);
   const roots = useRef(new Map<string, HTMLDivElement>());
-
-  // Only the pairs on screen: a menu is drawn at a viewport point, so one opened off-screen would be
-  // pushed back on screen on top of the others.
-  const pinAll = () => {
-    for (const el of roots.current.values()) {
-      const top = el.getBoundingClientRect().top;
-      if (top >= 0 && top < window.innerHeight - 240) openAt(el);
-    }
-  };
+  const slots = useRef(new Map<string, HTMLDivElement>());
 
   useEffect(() => {
-    if (!pinned) return;
-    const first = window.setTimeout(pinAll, 900);
-    let t = 0;
-    const again = () => {
-      window.clearTimeout(t);
-      t = window.setTimeout(pinAll, 200);
+    let current = true;
+    const run = async () => {
+      setBusy(true);
+      await sleep(1500);
+      await captureAll(roots.current, slots.current, () => current);
+      if (current) setBusy(false);
     };
-    const scroller = document.querySelector("[data-demo-scroll]");
-    scroller?.addEventListener("scroll", again, { passive: true });
-    window.addEventListener("resize", again);
+    void run();
     return () => {
-      window.clearTimeout(first);
-      window.clearTimeout(t);
-      scroller?.removeEventListener("scroll", again);
-      window.removeEventListener("resize", again);
+      current = false;
     };
-  }, [pinned, viewer]);
+  }, [viewer, round]);
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-textured">
       <div className="flex shrink-0 items-center gap-4 border-b border-border px-4 py-2 text-sm">
         <span className="font-medium">Right-click menu</span>
         <label className="flex items-center gap-1.5">
-          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-          Show menus open
-        </label>
-        <label className="flex items-center gap-1.5">
           <input type="checkbox" checked={viewer} onChange={(e) => setViewer(e.target.checked)} />
           Viewer rights (table)
         </label>
-        <button type="button" onClick={pinAll} className="rounded-md border border-border px-2 py-0.5 hover:bg-accent">
-          Redraw
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setRound((n) => n + 1)}
+          className="rounded-md border border-border px-2 py-0.5 hover:bg-accent disabled:opacity-50"
+        >
+          {busy ? "Drawing…" : "Redraw"}
         </button>
+        <span className="text-muted-foreground">Right-click any surface to use its live menu.</span>
       </div>
-      <div data-demo-scroll="" className="min-h-0 flex-1 overflow-auto p-4">
+      <div className="min-h-0 flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-10">
           {SURFACES.map((s) => (
             <section key={s.key} className="flex flex-col gap-2">
               <h2 className="text-sm font-semibold">{s.title}</h2>
-              <div className="flex gap-6">
-                {(["today", "proposed"] as const).map((side) => (
-                  <Column
-                    key={side}
-                    k={s.key}
-                    side={side}
-                    viewer={viewer}
-                    register={(el) => {
-                      const id = `${s.key}:${side}`;
-                      if (el) roots.current.set(id, el);
-                      else roots.current.delete(id);
-                    }}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-8">
+                {(["today", "proposed"] as const).map((side) => {
+                  const id = `${s.key}:${side}`;
+                  return (
+                    <Column
+                      key={side}
+                      k={s.key}
+                      side={side}
+                      viewer={viewer}
+                      register={(el) => {
+                        if (el) roots.current.set(id, el);
+                        else roots.current.delete(id);
+                      }}
+                      registerSlot={(el) => {
+                        if (el) slots.current.set(id, el);
+                        else slots.current.delete(id);
+                      }}
+                    />
+                  );
+                })}
               </div>
             </section>
           ))}
