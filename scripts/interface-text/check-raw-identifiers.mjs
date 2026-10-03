@@ -7,15 +7,17 @@
  * else its identifier through THE humanizer (`humanizeIdentifier` / `displayLabel` from
  * `@ai-matrx/kit/text-case`; a variable: `variableRunLabel` from `@ai-matrx/agents/variables`).
  * Where a person directly uses the identifier (a `{{key}}` field, a code/JSON view) it renders as a
- * monospace token — `<code>` or a `font-mono` element — and this check leaves it alone.
+ * `<code>`/`<pre>`/`<kbd>` token, or a `font-mono` element inside an edit context (an input, a
+ * `{{key}}` token, or `data-identifier`) — and this check leaves it alone. `font-mono` by itself is
+ * styling and exempts nothing (tightened 2026-10-02).
  *
  * What it flags in .tsx (outside tests, demos and `(dev)`):
  *   1. snake_case words in visible literal text — JSX text and label/title/placeholder/aria-label/
  *      heading/description/tooltip props (`<span>normal_text</span>`, `title="tool_name"`);
  *   2. an identifier-shaped value rendered bare — `{variable.name}`, `{tool.name}`, `{x.key}`,
  *      `{x.slug}`, `{x.kind}`, `{toolName}`, `{variableName}`… as a JSX child or a visible prop.
- * A line inside a `<code>` / `font-mono` element (looked up to 3 lines back) is an identifier on
- * purpose and is skipped. Findings are compared with `raw-identifiers-baseline.json`; only a line
+ * A line inside a `<code>`/`<pre>`/`<kbd>` element, or a `font-mono` element in an edit context
+ * (looked up to 3 lines back), is an identifier on purpose and is skipped. Findings are compared with `raw-identifiers-baseline.json`; only a line
  * not in the baseline is NEW. The baseline only shrinks: fix a NEW line with the label or the
  * humanizer, never by growing the baseline. The 2026-10-02 baseline (156) is a queue of two kinds:
  * identifiers on purpose (key-entry placeholders like "e.g. budget_code", the run Payload tab, admin
@@ -58,7 +60,16 @@ const PROP_EXPR = new RegExp(String.raw`\b(?:${VISIBLE_PROPS})=\{\s*([\w$.?]+)\s
 const PROP_LIT = new RegExp(String.raw`\b(?:${VISIBLE_PROPS})\s*=\s*(["'])((?:(?!\1).){1,300})\1`, "g");
 const JSX_TEXT = />([^<>{}]{1,300})</g;
 const CODE_LIKE = /=>|===|\);|\breturn\b|\bconst\b|\bcase\s*["']|(?<!:)\/\/|\?\.\w|\(|\)/;
-const IDENTIFIER_ON_PURPOSE = /<code\b|<kbd\b|<pre\b|font-mono/;
+/** A code view: the identifier is the content. */
+const CODE_VIEW = /<code\b|<kbd\b|<pre\b/;
+/**
+ * `font-mono` alone is styling, not permission: a raw key in a monospace span on a person's screen
+ * is still a raw key. Mono exempts a line only where the person directly uses the identifier — an
+ * input/textarea, a `{{token}}`, or an element that declares `data-identifier` (the `{{key}}` under
+ * a variable's Name field).
+ */
+const MONO = /font-mono/;
+const EDIT_CONTEXT = /<(?:input|Input|textarea|Textarea)\b|contentEditable|\{\{|\{"\{\{"\}|data-identifier/;
 
 /** Every rendered raw identifier in `src`, as `line-text` snippets (stable across line moves). */
 export function findOffenders(src) {
@@ -66,7 +77,8 @@ export function findOffenders(src) {
   const lines = src.split("\n");
   lines.forEach((line, i) => {
     const near = lines.slice(Math.max(0, i - 3), i + 1).join("\n");
-    if (IDENTIFIER_ON_PURPOSE.test(near)) return;
+    if (CODE_VIEW.test(near)) return;
+    if (MONO.test(near) && EDIT_CONTEXT.test(near)) return;
     const t = line.trim();
     for (const m of line.matchAll(CHILD_EXPR)) if (ID_EXPR.test(m[1])) out.add(t);
     const lone = LONE_CHILD.exec(line);
@@ -114,7 +126,11 @@ function selfTest() {
     ["<span>{variableRunLabel(variable)}</span>", 0],
     ["<span>{displayLabel(tool.label, tool.name)}</span>", 0],
     ['<code className="font-mono">{variable.name}</code>', 0],
-    ['<span className="font-mono text-xs">\n  {variable.name}\n</span>', 0],
+    ['<span className="font-mono text-xs">\n  {variable.name}\n</span>', 1],
+    ['<span className="font-mono text-xs">{tool.name}</span>', 1],
+    ['<span data-identifier className="font-mono text-xs">\n  {variable.name}\n</span>', 0],
+    ['<Input className="font-mono" placeholder="e.g. budget_code" />', 0],
+    ['<span className="font-mono">{"{{"}{variable.name}{"}}"}</span>', 0],
     ["<span>{agent.name}</span>", 0],
     ["<span>{person.name}</span>", 0],
     ["<li key={v.name}>Normal Text</li>", 0],

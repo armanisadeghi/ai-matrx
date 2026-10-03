@@ -5,6 +5,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { variableRunLabel } from "@ai-matrx/agents";
 
 export interface DefaultVariableValuesEditorProps {
   /** Declared variables on the agent. */
@@ -82,9 +83,9 @@ export function DefaultVariableValuesEditor({
             <div className="flex items-baseline gap-2">
               <Label
                 htmlFor={`var-${v.name}`}
-                className={`font-mono font-medium ${compact ? "text-xs" : "text-sm"}`}
+                className={`font-medium ${compact ? "text-xs" : "text-sm"}`}
               >
-                {v.name}
+                {variableRunLabel(v)}
               </Label>
               {v.required && (
                 <span className="text-[10px] uppercase text-destructive">

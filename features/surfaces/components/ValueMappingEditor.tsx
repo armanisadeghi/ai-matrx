@@ -36,6 +36,7 @@ import type {
   ValueMappingMap,
 } from "@ai-matrx/chat/surfaces/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /**
  * A target the editor can bind. Used for both agent variables/context policies
@@ -616,9 +617,9 @@ function OfferedValueInput({
             {availableOfferedValues.map((v) => (
               <SelectItem key={v.name} value={v.name}>
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="font-mono text-[11px]">{v.name}</span>
-                  <Badge variant="outline" className="text-[10px] font-mono">
-                    {v.kind}
+                  <span className="text-[11px]">{humanizeIdentifier(v.name)}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {humanizeIdentifier(v.kind)}
                   </Badge>
                   {!v.guaranteed && (
                     <Badge variant="outline" className="text-[10px]">

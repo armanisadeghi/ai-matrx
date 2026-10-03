@@ -43,6 +43,7 @@ import type { EnrollRequest, SubjectKind } from "../types";
 import { ENROLLABLE_KINDS, KIND_LABEL } from "./tokens";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 type WindowMode = NonNullable<EnrollRequest["window_mode"]>;
 type LensVisibility = NonNullable<EnrollRequest["lens_visibility"]>;
@@ -529,7 +530,7 @@ export function EnrollDialog({
                       toolName === t.tool_name && "bg-muted font-medium",
                     )}
                   >
-                    <span className="truncate font-mono text-xs">{t.tool_name}</span>
+                    <span className="truncate text-xs">{humanizeIdentifier(t.tool_name)}</span>
                     <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                       {t.fails}/{t.calls} failed ({Math.round(t.fail_ratio * 100)}%)
                     </span>

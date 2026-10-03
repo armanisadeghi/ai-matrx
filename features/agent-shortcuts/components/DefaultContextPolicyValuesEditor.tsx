@@ -5,6 +5,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import type { ContextPolicy } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { displayLabel } from "@ai-matrx/kit/text-case";
 
 export interface DefaultContextPolicyValuesEditorProps {
   /** Declared context policies on the agent. */
@@ -74,9 +75,9 @@ export function DefaultContextPolicyValuesEditor({
             <div className="flex items-baseline gap-2 flex-wrap">
               <Label
                 htmlFor={`slot-${slot.key}`}
-                className={`font-mono font-medium ${compact ? "text-xs" : "text-sm"}`}
+                className={`font-medium ${compact ? "text-xs" : "text-sm"}`}
               >
-                {slot.key}
+                {displayLabel(slot.label, slot.key)}
               </Label>
               <span className="text-[10px] uppercase text-muted-foreground">
                 {slot.type}

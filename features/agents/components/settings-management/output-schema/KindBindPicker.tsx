@@ -108,10 +108,7 @@ export function KindBindPicker({
                   onSelect={() => handleSelect(entry.kind)}
                   className="flex items-center gap-2 text-xs"
                 >
-                  <span className="font-mono truncate">{entry.kind}</span>
-                  <span className="text-muted-foreground truncate">
-                    {entry.label}
-                  </span>
+                  <span className="truncate">{entry.label}</span>
                   {entry.family && (
                     <Badge
                       variant="secondary"

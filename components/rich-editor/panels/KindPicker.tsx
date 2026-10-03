@@ -144,7 +144,6 @@ export function KindPicker({
               {rows.map((row) => (
                 <CommandItem key={row.id} value={row.id} onSelect={() => void choose(row)}>
                   <span className="flex-1 truncate">{row.label}</span>
-                  <span className="ml-2 font-mono text-xs text-muted-foreground">{row.kind}</span>
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -10,6 +10,7 @@ import type {
   FieldAdapter,
   FieldDiffProps,
 } from "@ai-matrx/diff/react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function SettingsDiffRenderer({ node }: FieldDiffProps) {
   // Use children if available (decomposed by diff engine)
@@ -47,8 +48,8 @@ function SettingsDiffRenderer({ node }: FieldDiffProps) {
             key={child.key}
             className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
           >
-            <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
-              {child.key}
+            <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8">
+              {humanizeIdentifier(child.key)}
             </div>
             <div
               className={cn(

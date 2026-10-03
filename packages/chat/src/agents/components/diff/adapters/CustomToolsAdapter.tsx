@@ -7,6 +7,7 @@ import type {
   FieldDiffProps,
 } from "@ai-matrx/diff/react";
 import { InlineTextDiff } from "@ai-matrx/diff/react";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 interface CustomToolLike {
   name: string;
@@ -65,8 +66,8 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
                 key={child.key ?? i}
                 className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
               >
-                <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
-                  {toolName}
+                <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8">
+                  {humanizeIdentifier(toolName)}
                 </div>
                 <div className="min-w-0 overflow-x-auto">
                   <InlineTextDiff original={oldText} modified={newText} />
@@ -81,8 +82,8 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
             key={child.key ?? i}
             className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
           >
-            <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
-              {toolName}
+            <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8">
+              {humanizeIdentifier(toolName)}
             </div>
             <div
               className={cn(

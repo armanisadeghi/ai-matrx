@@ -541,8 +541,8 @@ function IssueTable({
               }`}
             >
               {/* setting key */}
-              <span className="font-mono text-xs text-foreground truncate">
-                {issue.key}
+              <span className="text-xs text-foreground truncate">
+                {humanizeIdentifier(issue.key)}
               </span>
 
               {/* detail */}
