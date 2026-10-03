@@ -8,6 +8,7 @@
 import { cookies, headers } from "next/headers";
 import { supabaseNext } from "@/utils/supabase/authCookie";
 import { adminLaneOpenForHeaders, installAdminLane } from "@/utils/supabase/adminLane";
+import { installRestDeadline } from "@/utils/supabase/restDeadline";
 
 export async function createClient() {
   const [cookieStore, requestHeaders] = await Promise.all([
@@ -27,5 +28,8 @@ export async function createClient() {
   // is in the admin section — the proxy's stamp, or for an unproxied /api
   // route, the admin page that called it.
   const laneOpen = adminLaneOpenForHeaders(requestHeaders);
-  return installAdminLane(client, () => laneOpen);
+  // THE REST DEADLINE (utils/supabase/restDeadline.ts): a stalled database
+  // answers this request with an honest error well inside the 15s function
+  // limit instead of an opaque 504 FUNCTION_INVOCATION_TIMEOUT.
+  return installRestDeadline(installAdminLane(client, () => laneOpen));
 }

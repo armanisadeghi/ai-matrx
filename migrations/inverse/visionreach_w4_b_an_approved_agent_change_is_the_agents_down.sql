@@ -5,6 +5,14 @@
 -- based-on: custom.record_history(uuid, uuid, integer, integer) bf9e1ff866b0ecf4069ef4d3bef273825ea789f7dcb3fc86faf305a6e34e882f
 -- based-on: custom.field_history(uuid, uuid, text, integer, integer, uuid) c63ddc244db970d00a5455cf17e5484499c9f48bc1f4ba3c95d1c1a5bb05ca9c
 -- RE-BASED 2026-10-03 on CHAIR-SELF-APPROVAL (chairselfapproval_a_decision_is_made_at_its_own_door.sql, live): work_approval_decide / work_approval_request keep its custom.decision_door mark around the one statement that writes the approval row; this file's changes are otherwise unchanged.
+--
+-- ground-standing-ok: b
+--   This file is the one meant to run when W4-B alone is undone: it restores custom.field_history as production
+--   has it, calling custom.listed_predicate_sql, which stays standing because the "Only me" file stays applied.
+--   If both are undone, inverses run newest first: this file runs, then
+--   visionreach_only_me_is_listed_for_nobody_else_down.sql replaces custom.field_history with its own
+--   pre-predicate body (it is one of that file's eleven bodies) before it drops custom.listed_predicate_sql, so
+--   no live body is left calling the dropped function.
 
 CREATE OR REPLACE FUNCTION custom.work_approval_decide(p_organization_id uuid, p_approval_id uuid, p_approve boolean, p_note text DEFAULT NULL::text)
  RETURNS jsonb
