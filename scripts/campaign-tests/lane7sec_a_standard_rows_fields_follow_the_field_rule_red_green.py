@@ -1,4 +1,4 @@
-"""LANE7-SEC guard: the field rule on a standard row, as the real seats and the real server writers, on the clone.
+"""LANE7-SEC guard (the ONE guard for this rule; it absorbed the chair's chair-sec-evidence/guard_r1.py cases): the field rule on a standard row, as the real seats and the real server writers, on the clone.
 
     python3 lane7sec_a_standard_rows_fields_follow_the_field_rule_red_green.py <mode> [--plant <case>]
 
@@ -19,7 +19,9 @@ state, and the SAME expectations are read in every mode, so red and green are on
              freeform   the closed-table knob also names the profile   -> freeform (client cases)
              mover      the mover skips its declare step               -> mover
              r0guard    the guard that refused every writer (lane7sec_a's body) is put back
-                        -> servernotice, legacy, opentable, freeform, prefix, header
+                        -> servernotice, legacy, opentable, freeform, prefix
+                        (the header cases no longer depend on this guard: platform.declared_actor_tier
+                        now reads the client channel inside a definer door, platform.is_client_channel)
 
 The rule (CHAIR-SEC-R1): an undeclared key is refused only for a CLIENT writer on a table the
 knob custom/closed_custom_field_tables names (default: party); the platform's own writers keep
@@ -122,8 +124,10 @@ with conn() as c:
             except psycopg.errors.LockNotAvailable:
                 cur.execute("rollback to savepoint ddl"); time.sleep(5)
         raise SystemExit('could not take the registry lock on the clone in 60 tries; nothing measured')
-    cur.execute("select exists(select 1 from information_schema.columns where table_schema='platform' and table_name='entity_types' and column_name='custom_fields_free_form')")
+    # Round 1 is live when the guard body reads the closed-tables setting (CHAIR-SEC-R1).
+    cur.execute("select pg_get_functiondef('custom._entity_custom_fields_guard()'::regprocedure) ~ 'closed_custom_field_tables'")
     r1_live = cur.fetchone()[0]
+    print('round 1 live on this database:', r1_live)
     if MODE == 'pre':
         if r1_live: ddl(R1_DOWN.read_text())
         ddl(SEC_DOWN.read_text())
@@ -151,7 +155,6 @@ with conn() as c:
                    where table_id=custom.field_kernel_id() and organization_id=%s and data->>'table_token'='party'
                      and data->>'key' in ('preferred_clinic_location','referral_source')""", (ORG,))
     cur.execute("set local session_replication_role = origin")
-    cur.execute("select count(*) from custom.doors_not_masking_fields()"); sweep_count = cur.fetchone()[0]
     # A note in Cedar Ridge that test@test.com wrote (a non-party standard table).
     seat(cur, TEST)
     note = first(step(cur, "insert into workbench.notes (organization_id, created_by, label, content) values (%s,%s,'Home exercise plan','Quad sets, 3x10') returning id", (ORG, TEST)))
@@ -241,6 +244,23 @@ with conn() as c:
     said = [n for n in notices if 'legacy_intake_ref' in n]
     record('LEGIT', 'servernotice', 'a server job writes an undeclared key: kept, and a NOTICE names it', (o, said),
            lambda x: first(x[0]) == 'IF-2291' and len(x[1]) > 0)
+    # The server connection itself (no role assumed, no person) keeps an undeclared key with a NOTICE.
+    owner(cur)
+    cur.execute("select set_config('app.actor_tier', 'system', true), set_config('app.actor_system', 'intake-import', true)")
+    notices.clear()
+    o = step(cur, "update crm.party set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"intake_batch\":\"2026-10 referrals\"}'::jsonb where id=%s returning custom_fields->>'intake_batch'", (PID,))
+    said = [n for n in notices if 'intake_batch' in n]
+    record('LEGIT', 'servernotice', 'the server connection (no role, no person) writes an undeclared key: kept, NOTICE', (o, said),
+           lambda x: first(x[0]) == '2026-10 referrals' and len(x[1]) > 0)
+    # A legacy key on a NOTE that predates the guard (the old studyAnnotation shape), written beneath it.
+    cur.execute("set local session_replication_role = replica")
+    cur.execute("update workbench.notes set custom_fields = coalesce(custom_fields,'{}'::jsonb) || '{\"studyAnnotation\":{\"kind\":\"note\",\"quote\":\"\"}}'::jsonb where id=%s", (note,))
+    cur.execute("set local session_replication_role = origin")
+    seat(cur, TEST)
+    o = step(cur, "update workbench.notes set custom_fields = jsonb_set(custom_fields,'{studyAnnotation,quote}','\"Quad sets first\"') where id=%s returning custom_fields->'studyAnnotation'->>'quote'", (note,))
+    record('LEGIT', 'legacy', 'member edits an old studyAnnotation key on her note', o, lambda o: first(o) == 'Quad sets first')
+    o = step(cur, "update workbench.notes set custom_fields = custom_fields - 'studyAnnotation' where id=%s returning custom_fields ? 'studyAnnotation'", (note,))
+    record('LEGIT', 'legacy', 'member clears the old studyAnnotation key', o, lambda o: first(o) is False)
     # A key the row already carries (legacy) stays editable and clearable by a person.
     seat(cur, TEST)
     o = step(cur, "update crm.party set custom_fields = custom_fields || '{\"legacy_intake_ref\":\"IF-2292\"}'::jsonb where id=%s returning custom_fields->>'legacy_intake_ref'", (PID,))
@@ -272,8 +292,10 @@ with conn() as c:
     o = step(cur, "select custom.entity_field_declare(%s,'party','{\"label\":\"Preferred therapist\",\"type\":\"text\",\"key\":\"preferred_therapist\"}'::jsonb)", (ORG,))
     record('LEGIT', 'admin', 'admin declares an internal field on a standard table', o, accepted)
     owner(cur)
-    cur.execute("select count(*) from custom.doors_not_masking_fields()"); after = cur.fetchone()[0]
-    record('LEGIT', 'sweep', f'masking sweep stays at its count ({sweep_count} -> {after})', ('OK', after), lambda o: o[1] == sweep_count)
+    # The sweep names no token door that skips the mask (a count would move with other lanes' work).
+    cur.execute("select coalesce(array_agg(function_name), '{}') from custom.doors_not_masking_fields() where function_name like 'entity%%'")
+    named = cur.fetchone()[0]
+    record('LEGIT', 'sweep', 'the masking sweep names no entity door', ('OK', named), lambda o: o[1] == [])
     c.rollback(); print('rolled back')
 
 bad = [r for r in results if not r[3]]
@@ -281,7 +303,7 @@ print(f"\n{MODE}{' plant=' + PLANT if PLANT else ''}: {len(results) - len(bad)}/
 for r in bad:
     print('  FAIL', r[0], r[1], '-', r[2])
 EXPECTED_RED = {'opentable': {'opentable'}, 'freeform': {'freeform'}, 'mover': {'mover'},
-                'r0guard': {'servernotice', 'legacy', 'opentable', 'freeform', 'prefix', 'header'}}
+                'r0guard': {'servernotice', 'legacy', 'opentable', 'freeform', 'prefix'}}
 if PLANT:
     planted = {r[1] for r in bad}
     ok = planted == EXPECTED_RED[PLANT]
