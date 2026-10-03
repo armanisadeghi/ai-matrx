@@ -36,16 +36,13 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   },
   "note": { status: "passing" },
   "note:quiet": { status: "passing" },
-  "note:split-view caret": {
-    status: "failing",
-    owner: "notes lane",
-    why: "remount puts the Split view's caret/selection at 0 (kept across hide/show)",
-  },
+  "note:split-view caret": { status: "passing" },
   "note:split-view undo": { status: "passing" },
   "file": { status: "passing" },
   "file:quiet": { status: "passing" },
   "udt_document": { status: "passing" },
   "udt_document:quiet": { status: "passing" },
+  "udt_document:undo": { status: "passing" },
   "data-table": { status: "passing" },
   "data-table:quiet": {
     status: "failing",

@@ -23,6 +23,14 @@
  *  - SIDE EFFECTS, ONCE. The snapshot realtime channel, the collab room, and
  *    the pagehide / visibility / beforeunload flush are opened once per
  *    document and closed once.
+ *  - THE EDITOR ITSELF, KEPT. Univer keeps its undo / redo history inside the
+ *    editor instance, so rebuilding the editor on a remount threw the history
+ *    away. When the last view leaves, its editor (a Univer instance with its
+ *    own DOM host) is parked here — off the page, alive — and the next view of
+ *    the document RE-ATTACHES that same instance to its own container instead
+ *    of booting a new one (`parkEditor` / `takeParkedEditor`). Undo and redo
+ *    therefore work across hide / show, a remount and a removed tile undone,
+ *    for as long as the record's session is warm; `close()` disposes it.
  */
 
 import type { ICommandInfo, IDocumentData } from "@univerjs/core";
@@ -84,6 +92,22 @@ export interface DocumentAwareness {
   selfUid: string;
 }
 
+/**
+ * An editor instance kept alive between views of the document: its DOM host
+ * (re-parented into the next view's container) and the instance behind it,
+ * whose undo history survives because the instance does. Opaque to the model
+ * apart from what it calls.
+ */
+export interface ParkedDocumentEditor<T = unknown> {
+  /** The element the editor renders into; the next view appends it to its container. */
+  element: HTMLElement;
+  instance: T;
+  /** Replace the whole document (a collaborator's snapshot arrived while parked). */
+  remount: (snapshot: DocumentSnapshotData) => void;
+  /** Throw the instance away (the record's session closed). */
+  dispose: () => void;
+}
+
 export type DocumentCollabFactory = (
   commandService: CommandServiceLike,
   onAwareness: (awareness: DocumentAwareness) => void,
@@ -110,6 +134,8 @@ export class DocumentModel {
   private readonly awarenessListeners = new Set<() => void>();
   private realtimeClose: (() => void) | null = null;
   private pageClose: (() => void) | null = null;
+  /** The last view's editor, alive and off the page until a view takes it back. */
+  private parked: ParkedDocumentEditor | null = null;
 
   constructor(handle: WorkingCopyHandle, deps: DocumentModelDeps) {
     this.documentId = handle.id;
@@ -201,6 +227,26 @@ export class DocumentModel {
       this.views.delete(id);
       if (this.lastEditedView === id) this.lastEditedView = null;
     };
+  }
+
+  /**
+   * The last view of the document is leaving: keep its editor (and Univer's
+   * undo history inside it) for the next view. Call AFTER the view's
+   * `attachView` detach. Refused — the caller disposes its editor — while
+   * another view is still attached (it carries the document) or one is
+   * already kept.
+   */
+  parkEditor(editor: ParkedDocumentEditor): boolean {
+    if (this.closed || this.views.size > 0 || this.parked) return false;
+    this.parked = editor;
+    return true;
+  }
+
+  /** The kept editor, handed to the view that mounts next (null when none is kept). */
+  takeParkedEditor(): ParkedDocumentEditor | null {
+    const editor = this.parked;
+    this.parked = null;
+    return editor;
   }
 
   private onViewMutation(
@@ -317,6 +363,7 @@ export class DocumentModel {
     this.relaying = true;
     try {
       for (const view of this.views.values()) view.port.remount(row.snapshot);
+      this.parked?.remount(row.snapshot);
     } finally {
       this.relaying = false;
     }
@@ -402,7 +449,19 @@ export class DocumentModel {
     this.awareness = null;
   }
 
+  private closed = false;
+
   close(): void {
+    this.closed = true;
+    const parked = this.parked;
+    this.parked = null;
+    if (parked) {
+      try {
+        parked.dispose();
+      } catch (error) {
+        console.warn(`[document-model] could not dispose ${this.documentId}'s kept editor`, error);
+      }
+    }
     this.realtimeClose?.();
     this.realtimeClose = null;
     this.pageClose?.();

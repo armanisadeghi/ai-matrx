@@ -112,10 +112,44 @@ remountType(
         if (!doc) throw new Error(`the document editor never mounted (instances: ${univerInstances().length})`);
         doc.type(ADDED);
       },
-      kept: () => liveUniverDocument()?.text().replace(/\r\n$/, ""),
+      kept: () => {
+        const doc = liveUniverDocument();
+        const text = () => doc?.text().replace(/\r\n$/, "");
+        const shown = text();
+        // ⌘Z, read, ⌘⇧Z, read: the history of the typing above, in the editor
+        // the person sees now.
+        doc?.undo();
+        const afterUndo = text();
+        doc?.redo();
+        return { shown, afterUndo, afterRedo: text() };
+      },
     }),
-  (r) => expectRemountSafe(r, `${DOCUMENT_TEXT}${ADDED}`, [/^workbench\.udt_documents$/, /^workbench\.udt_document_snapshots$/]),
+  (r) =>
+    expectRemountSafe(
+      { ...r, keptAfterWake: pick(r.keptAfterWake, "shown"), keptAfterRemount: pick(r.keptAfterRemount, "shown") },
+      { shown: `${DOCUMENT_TEXT}${ADDED}` },
+      [/^workbench\.udt_documents$/, /^workbench\.udt_document_snapshots$/],
+    ),
+  {
+    // Break: the editor is rebuilt on wake / remount (Univer keeps undo per
+    // instance), so ⌘Z after coming back undoes nothing.
+    undo: (r) =>
+      expect({
+        wake: pick(r.keptAfterWake, "afterUndo", "afterRedo"),
+        remount: pick(r.keptAfterRemount, "afterUndo", "afterRedo"),
+        editors: univerInstances().length,
+      }).toEqual({
+        wake: { afterUndo: DOCUMENT_TEXT, afterRedo: `${DOCUMENT_TEXT}${ADDED}` },
+        remount: { afterUndo: DOCUMENT_TEXT, afterRedo: `${DOCUMENT_TEXT}${ADDED}` },
+        editors: 1,
+      }),
+  },
 );
+
+function pick(value: unknown, ...keys: string[]): Record<string, unknown> {
+  const v = (value ?? {}) as Record<string, unknown>;
+  return Object.fromEntries(keys.map((k) => [k, v[k]]));
+}
 
 // Break: the table tile's gates (where the table lives, whether the store is
 // on, whether it is shared) forget their answers on wake — "Opening the

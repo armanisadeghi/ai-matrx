@@ -10,7 +10,10 @@
  * (an editor is only ever as current as what its host hands it), a keystroke
  * is a MUTATION through the command service (`onMutationExecutedForCollab`
  * listeners hear it, exactly as the model listens to Univer), `save()` reports
- * the unit's current body, `dispose()` throws the unit away. So the case
+ * the unit's current body, `dispose()` throws the unit away. Undo / redo live INSIDE the
+ * instance (Univer's undo service is per instance): a person's local edit is
+ * undoable, a replayed one (`fromCollab` / `onlyLocal`) is not, and a new
+ * instance starts with no history. So the case
  * asserts on the store layer: after a remount, does the host hand the new
  * editor the words the person typed, or a stale copy?
  */
@@ -22,6 +25,9 @@ export interface StandInDocument {
   text: () => string;
   /** A person's keystrokes: one rich-text mutation through the command service. */
   type: (text: string) => void;
+  /** ⌘Z / ⌘⇧Z in this editor instance (a no-op with nothing to undo / redo). */
+  undo: () => void;
+  redo: () => void;
 }
 
 interface Instance {
@@ -65,6 +71,16 @@ export function createUniverStandIn(commandServiceToken: unknown, mutationType: 
     const emit = (info: { id: string; type: number; params: unknown }, options?: Record<string, unknown>) => {
       for (const l of listeners) l(info, options);
     };
+    // This instance's history: the body before each undoable local edit.
+    let undoStack: string[] = [];
+    let redoStack: string[] = [];
+    const restore = (from: string[], to: string[]) => {
+      const previous = from.pop();
+      if (previous === undefined || !active) return;
+      to.push(active.body.dataStream);
+      active.body.dataStream = previous;
+      emit({ id: "doc.mutation.rich-text-editing", type: mutationType, params: { restore: true } });
+    };
 
     const commandService = {
       onMutationExecutedForCollab(listener: Listener) {
@@ -75,7 +91,13 @@ export function createUniverStandIn(commandServiceToken: unknown, mutationType: 
         return { dispose: () => undefined };
       },
       syncExecuteCommand(id: string, params: { at: number; text: string }, options?: Record<string, unknown>) {
+        if (typeof params?.text !== "string") return true; // an undo/redo replay carries no insert
+        const before = active?.body.dataStream;
         insert(params.at, params.text);
+        if (before !== undefined && !options?.fromCollab && !options?.onlyLocal) {
+          undoStack.push(before);
+          redoStack = [];
+        }
         emit({ id, type: mutationType, params }, options);
         return true;
       },
@@ -100,6 +122,8 @@ export function createUniverStandIn(commandServiceToken: unknown, mutationType: 
       createDocument(data: Record<string, unknown>) {
         const body = (data.body as { dataStream?: string } | undefined) ?? {};
         active = { data, body: { dataStream: body.dataStream ?? "\r\n" } };
+        undoStack = [];
+        redoStack = [];
         const unitId = String(data.id);
         instance.documents.push({
           unitId,
@@ -108,6 +132,8 @@ export function createUniverStandIn(commandServiceToken: unknown, mutationType: 
             const end = Math.max(0, (active?.body.dataStream.length ?? 2) - 2);
             commandService.syncExecuteCommand("doc.mutation.rich-text-editing", { at: end, text });
           },
+          undo: () => restore(undoStack, redoStack),
+          redo: () => restore(redoStack, undoStack),
         });
         return documentFacade();
       },

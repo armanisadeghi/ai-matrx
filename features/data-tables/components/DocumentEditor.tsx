@@ -16,7 +16,11 @@
  *   - Realtime / collab: the snapshot channel and the Yjs room are opened once
  *     per document by the model, never once per view.
  * A remount (a board tile waking, a removed tile undone, Back and forward)
- * therefore never rebuilds from a stale server copy and never saves twice.
+ * therefore never rebuilds from a stale server copy and never saves twice —
+ * and it does not rebuild the editor at all: the last view parks its Univer
+ * instance on the model and the next view re-attaches that same instance to
+ * its container, so undo / redo history survives (Univer keeps it per
+ * instance).
  *
  * SSR: this is "use client". The page that renders it should use dynamic
  * import with `ssr: false` so Univer never executes server-side.
@@ -80,7 +84,7 @@ import {
   connectDocumentRealtime,
   documentWorkingCopy,
 } from "../document-model/documentModels";
-import type { DocumentModel } from "../document-model/documentModel";
+import type { DocumentModel, ParkedDocumentEditor } from "../document-model/documentModel";
 import type {
   DocumentAwareness,
   DocumentCollabFactory,
@@ -243,8 +247,56 @@ export default function DocumentEditor({
       setAwareness(model.getAwareness()),
     );
 
-    (async () => {
+    // The host Univer renders into: the document's KEPT editor when the last
+    // view left one (same instance, same undo history — re-attached, never
+    // rebuilt), else a new one. It is appended to this view's container and
+    // leaves with the instance.
+    const container = containerRef.current;
+    let booted: KeptUniver | null = null;
+    const attachPort = (kept: KeptUniver) =>
+      model.attachView({
+        commandService: resolveCommandService(kept.univer),
+        snapshot: () => apiRef.current?.getActiveDocument()?.save() ?? null,
+        remount: (snapshot) => {
+          if (!apiRef.current) return;
+          mountUniverDocument(
+            apiRef.current,
+            sanitizeUniverDocSnapshot(snapshot as Partial<IDocumentData>, documentId),
+          );
+        },
+        editable: () => editableRef.current,
+      });
+    const parked = model.takeParkedEditor() as ParkedDocumentEditor<KeptUniver> | null;
+    if (parked) {
+      const kept = parked.instance;
+      container.appendChild(kept.host);
+      univerRef.current = kept.univer;
+      apiRef.current = kept.univerAPI;
       try {
+        detach = attachPort(kept);
+        booted = kept;
+        setUnitId(kept.unitId);
+        setBootState("ready");
+        if (collabRef.current) {
+          void model.startCollab(collabFactoryFor(documentId)).catch((err) => {
+            console.warn("[document] collab boot failed — falling back to solo mode", err);
+          });
+        }
+      } catch (err) {
+        kept.host.remove();
+        disposeUniverInstance(kept.univer);
+        univerRef.current = null;
+        apiRef.current = null;
+        setLoadError(err instanceof Error ? err.message : String(err));
+        setBootState("load_error");
+      }
+    }
+
+    if (!parked) (async () => {
+      try {
+        const host = document.createElement("div");
+        host.className = "absolute inset-0";
+        container.appendChild(host);
         const { univer, univerAPI } = createUniver({
           locale: LocaleType.EN_US,
           locales: { [LocaleType.EN_US]: merge({}, docsCoreEnUS) },
@@ -252,12 +304,13 @@ export default function DocumentEditor({
           darkMode: darkModeRef.current,
           presets: [
             UniverDocsCorePreset({
-              container: containerRef.current as HTMLElement,
+              container: host,
               ribbonType: "simple",
             }),
           ],
         });
         if (cancelled) {
+          host.remove();
           univer.dispose();
           return;
         }
@@ -297,7 +350,11 @@ export default function DocumentEditor({
         // holds the document; re-read synchronously after the await, because
         // another view may have typed while the read was in flight.
         const opening = await model.openingSnapshot(defaultEmptyDocument);
-        if (cancelled) return;
+        if (cancelled) {
+          host.remove();
+          disposeUniverInstance(univer);
+          return;
+        }
         const initial: Partial<IDocumentData> = sanitizeUniverDocSnapshot(
           (model.latest() ?? opening) as Partial<IDocumentData>,
           documentId,
@@ -305,20 +362,12 @@ export default function DocumentEditor({
         // Univer is the authority on what it actually mounted (the snapshot
         // may have been repaired); a unit that did not mount throws into the
         // catch below and the page says "Load failed" — never "Editing".
-        setUnitId(mountUniverDocument(univerAPI, initial));
+        const mountedUnit = mountUniverDocument(univerAPI, initial);
+        setUnitId(mountedUnit);
 
-        detach = model.attachView({
-          commandService: resolveCommandService(univer),
-          snapshot: () => apiRef.current?.getActiveDocument()?.save() ?? null,
-          remount: (snapshot) => {
-            if (!apiRef.current) return;
-            mountUniverDocument(
-              apiRef.current,
-              sanitizeUniverDocSnapshot(snapshot as Partial<IDocumentData>, documentId),
-            );
-          },
-          editable: () => editableRef.current,
-        });
+        const kept: KeptUniver = { host, univer, univerAPI, unitId: mountedUnit };
+        detach = attachPort(kept);
+        booted = kept;
         setBootState("ready");
 
         if (collabRef.current) {
@@ -347,12 +396,35 @@ export default function DocumentEditor({
       // disposed below); releasing the last hold flushes the one pending save,
       // and a view that comes back before it lands boots from that same state.
       detach?.();
+      // KEEP THE EDITOR, KEEP THE HISTORY. The last view parks its booted
+      // instance on the document's model (off the page, alive) before the
+      // hold is released, so a remount within the session re-attaches it and
+      // ⌘Z still undoes what was typed before. Refused (another view is
+      // open, or the editor never finished booting): dispose as before.
+      const kept = booted;
+      const parkedHere =
+        kept !== null &&
+        model.parkEditor({
+          element: kept.host,
+          instance: kept,
+          remount: (snapshot) => {
+            kept.unitId = mountUniverDocument(
+              kept.univerAPI,
+              sanitizeUniverDocSnapshot(snapshot as Partial<IDocumentData>, documentId),
+            );
+          },
+          dispose: () => disposeUniverInstance(kept.univer),
+        });
+      if (parkedHere) kept.host.remove();
       release();
       modelRef.current = null;
       const univer = univerRef.current;
       univerRef.current = null;
       apiRef.current = null;
-      disposeUniverInstance(univer);
+      if (!parkedHere) {
+        kept?.host.remove();
+        disposeUniverInstance(univer);
+      }
     };
   }, [documentId]);
 
@@ -457,6 +529,14 @@ export default function DocumentEditor({
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
+
+/** One booted Univer editor and the element it renders into (what the model keeps between views). */
+interface KeptUniver {
+  host: HTMLDivElement;
+  univer: Univer;
+  univerAPI: FUniver;
+  unitId: string;
+}
 
 /** Univer's command service for one instance — what the model listens to and replays into. */
 function resolveCommandService(univer: Univer): CommandServiceLike {

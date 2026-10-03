@@ -65,7 +65,12 @@ remountType(
         const ta = tile.container.querySelector("textarea")!;
         const caret = [ta.selectionStart, ta.selectionEnd];
         const stored = () => tile.store.getState().notes.notes[NOTE_ID]?.content;
-        return { shown: ta.value, stored: stored(), caret, afterUndo: undoRoundTrip(ta, stored) };
+        const shown = ta.value;
+        const afterUndo = undoRoundTrip(ta, stored);
+        // The round trip is this probe's, not the person's: leave the caret
+        // where the person left it for the next step of the cycle.
+        act(() => ta.setSelectionRange(caret[0] ?? 0, caret[1] ?? 0));
+        return { shown, stored: stored(), caret, afterUndo };
       },
     }),
   (r) =>

@@ -14,6 +14,7 @@ feature slice, and never runs its own save timer.
 | `workingCopyKind.ts` | `defineWorkingCopyKind({ entity, save, delay, autosave?, createEngine?, … })` — per record: ref-counted views (`attach(id, store)`), `edit` / `touch` / `load` / `reset` / `discard` / `flush(id, reason, force)`, the ONE save path (debounced unless `autosave: false`, never two writes at once, a save asked for mid-save runs once after it, a failed save stays pending, the last view leaving flushes), and a module registry for non-serializable engines (`engine(id)`), keyed the same way. A synchronous `save` commits synchronously (a note's commit lands before an unmount returns). |
 | `recordSessions.ts` | The keyed, ref-counted session registry under the kind: the last view leaving runs the flush; a view returning before it settles re-attaches to the SAME session; dropped only when nothing is pending. |
 | `coalescedCommit.ts` | The scheduler under the kind (`schedule` / `mark` / `flush` / serialized runs). |
+| `useKeptTextSelection.ts` | A text view puts the caret back where the person left it: on unmount the selection is kept under the record key (`workingCopies.selections`, which outlives the entry), on mount it is restored (never over a field the person is typing in elsewhere). Notes' plain / split textarea uses it. |
 
 ## Guarantees every kind inherits (2026-10-03)
 
@@ -42,7 +43,7 @@ feature slice, and never runs its own save timer.
 |---|---|---|---|
 | `note` | `features/notes/utils/noteLiveContent.ts` (+ `hooks/useNoteWorkingCopy.ts`) | `updateNoteContent` into the note record (sync); `autoSaveMiddleware` persists | — |
 | `file` | `features/files/redux/working-copy.ts` (+ `hooks/useFileWorkingCopy.ts`) | `saveFileNewVersion` — a new version, so `autosave: false` (Save, or the last view leaving) | — (Monaco keeps its own model) |
-| `udt_document` | `features/data-tables/document-model/documentModels.ts` | a new `udt_document_snapshots` row | `DocumentModel` (Univer body, mutation relay between views, snapshot channel, collab room) |
+| `udt_document` | `features/data-tables/document-model/documentModels.ts` | a new `udt_document_snapshots` row | `DocumentModel` (Univer body, mutation relay between views, snapshot channel, collab room, and the last view's Univer instance KEPT — parked off the page and re-attached to the next view's container, so undo / redo survive hide/show and remount; disposed on `close`) |
 
 A new record editor (a task description, a workbook) adds a kind here — never a second copy of this.
 
@@ -60,6 +61,11 @@ failure, load / `source` / draft / engine conflicts, merge, echo), plus
 `features/data-tables/__tests__/document-conflict.test.ts`.
 
 ## Change Log
+
+- 2026-10-03 — Engines keep the editor, views keep the caret: a document's last view parks its Univer
+  instance on the `DocumentModel` (`parkEditor` / `takeParkedEditor`) and the next view re-attaches it,
+  so Univer's per-instance undo history survives (remount harness `udt_document:undo`); text views keep
+  their selection per record (`useKeptTextSelection`, harness `note:split-view caret` now passing).
 
 - 2026-10-03 — Retry with backoff for every kind; permanent failures wait for the person; conflict
   state (`conflict`, `resolveConflict`, `mergeText`, `WorkingCopyAlert`, `announce.ts`); notes hold

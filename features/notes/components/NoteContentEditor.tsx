@@ -54,6 +54,8 @@ import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorC
 import type { RichEditorController } from "@/components/rich-editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useNoteWorkingCopy } from "../hooks/useNoteWorkingCopy";
+import { noteWorkingCopy } from "../utils/noteLiveContent";
+import { useKeptTextSelection } from "@/lib/working-copy/useKeptTextSelection";
 import { useNotesSurfaceRuntime } from "@/features/notes/agent-context/useNotesSurfaceRuntime";
 import { useNoteUndoRedo } from "../hooks/useNoteUndoRedo";
 import { toast } from "@/lib/toast";
@@ -224,6 +226,13 @@ export function NoteContentEditor({
   const workingCopy = useNoteWorkingCopy(noteId, reduxContent);
   const localContent = workingCopy.content;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // The caret the person left in the plain / split textarea comes back on a
+  // remount (a board tile removed and undone, a pane re-opened) — kept per note.
+  useKeptTextSelection(
+    noteWorkingCopy.key(noteId),
+    textareaRef,
+    Boolean(noteExists) && bodyLoaded && !richMode,
+  );
   // The record's last value this view saw — only to tell an outside change
   // (realtime, undo) from this note's own commit, for the recent-change flash.
   const lastReduxRef = useRef(reduxContent);
