@@ -7,7 +7,10 @@ import { DiffViewer } from "@ai-matrx/diff/react";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
-import { selectWorkingDocBinding } from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
+import {
+  selectWorkingDocBinding,
+  selectWorkingDocMaterialized,
+} from "../../redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { useWorkingDocumentVersions } from "./useWorkingDocumentVersions";
 import { useWorkingDocument } from "../../hooks/useWorkingDocument";
 import { setWorkingDocMainView } from "./workingDocumentViewStore";
@@ -131,8 +134,7 @@ function DbVersionPanel({
   if (versions.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        No versions yet. Each edit by you or the agent captures a durable version
-        here.
+        No versions yet. Each edit by you or the agent is saved here.
       </div>
     );
   }
@@ -258,6 +260,12 @@ function HistoryBody({
   const binding = useAppSelector(
     selectWorkingDocBinding(conversationId, "working"),
   );
+  // A reserved-but-unwritten document (a new chat) has an id but no row, so
+  // `version_list` can only refuse it ("access denied") — there is nothing to
+  // read yet. Ask only once the row exists.
+  const materialized = useAppSelector(
+    selectWorkingDocMaterialized(conversationId, "working"),
+  );
 
   if (binding.kind === "note" && binding.id) {
     return (
@@ -270,7 +278,7 @@ function HistoryBody({
     );
   }
 
-  if (binding.kind === "cx_working_document" && binding.id) {
+  if (binding.kind === "cx_working_document" && binding.id && materialized) {
     return (
       <DbVersionPanel
         documentId={binding.id}
@@ -285,8 +293,7 @@ function HistoryBody({
   return (
     <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
       {/* read-gate-exempt: the document has no durable row yet (binding not materialized), so there is no read; DbVersionPanel shows its own read failure */}
-      No versions yet. Once you or the agent edits this document, every change is
-      captured here.
+      No versions yet. Each edit by you or the agent is saved here.
     </div>
   );
 }
