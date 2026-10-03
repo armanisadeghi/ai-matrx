@@ -48,7 +48,7 @@ Routes outside this directory: `app/(core)/data-v2/`, `app/(core)/data/page.tsx`
 
 - **The old hub is one knob or one link away.** `custom.data_home_shell` picks the new home (live value true,
   platform default false); `?home=old` still renders the old hub for one visit. Both are removed after the soak, not
-  before 2026-10-03 20:38Z (v6 ONE-HOME wave 4).
+  before 2026-10-03 20:38Z (owner: v6 lane ONE-HOME in common-docs `projects/data-doctrine-adoption/v6/`).
 - **"Copy this table again" is still on the table menu** (`UnifiedTable.tsx` imports `cutover/copyAgain.ts`), though
   every organization has switched. Same clock as above.
 - **Never touch `custom.*` directly.** `pnpm check:no-custom-store-code` fails on any `.schema("custom")`, store SQL or
