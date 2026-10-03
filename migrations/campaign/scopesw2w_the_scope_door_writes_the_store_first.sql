@@ -1,5 +1,5 @@
 -- draft: claude-w2w clone-proven pattern door; production waits on the lane manager's ruling (chair record doors vs the lane-9 store halves) and CA1
--- chair-step: it REPLACES the body of one lane-9 scope door, custom.context_scope_write (signature, SECURITY DEFINER, search_path and grants unchanged). The door no longer calls public.create_scope / public.update_scope and no longer reads context.scopes or context.scope_types to decide anything: the organization, the type, the parent, the sort order and the current values come from the record store; the access predicate is the one the old functions applied, word for word (a platform admin, or iam.has_org_access on the scope's organization — no move to the store ladder, which is chair item CA1). The store Record is written FIRST through the lane-9 store half custom._ctx_store_scope (marked as a scope door, so the follow trigger does not copy it a second time); the old context.scopes row is then written as the IMAGE, with today's statements, so every old trigger and every reader not yet moved sees the same row; and the store half is handed the image row once more, which in steady state changes nothing (proven 'current' by the suite) and otherwise takes the old triggers' words, exactly as the write-through does today. No new door, no grant, no change to the chair's record doors or the access ladder.
+-- chair-step: it REPLACES the body of one lane-9 scope door, custom.context_scope_write (signature, SECURITY DEFINER, search_path and grants unchanged). The door no longer calls public.create_scope / public.update_scope and no longer reads context.scopes or context.scope_types to decide anything: the organization, the type, the parent, the sort order and the current values come from the record store; the access predicate is the one the old functions applied, word for word (a platform admin, or iam.has_org_access on the scope's organization — no move to the store ladder, which is chair item CA1). The store Record is written FIRST through the lane-9 store half custom._ctx_store_scope (marked as a scope door, so the follow trigger does not copy it a second time); the old context.scopes row is then written as the IMAGE, carrying the store's words for every column the door writes, so every old trigger and every reader not yet moved sees the same row; and the store half is handed the image row once more, which in steady state changes nothing (proven 'current' by the suite) and otherwise takes the old triggers' words, exactly as the write-through does today. No new door, no grant, no change to the chair's record doors or the access ladder.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom.context_scope_write(uuid, uuid, uuid, jsonb) e22357d3d6e1de646eaae962a6307865c140f629fe7874f06d58b18f9ef715f7
 -- lock: custom
@@ -139,27 +139,19 @@ begin
   if p_scope_id is null then
     insert into context.scopes (id, organization_id, scope_type_id, parent_scope_id, name, description, settings,
                                 slug, sort_order, created_by)
-    values (v_id, v_org, v_type, v_parent, s ->> 'name', coalesce(s ->> 'description', ''),
-            coalesce(s -> 'settings', '{}'::jsonb), nullif(s ->> 'slug', ''), v_sort, (select auth.uid()))
-    returning * into v_row;
-  elsif s ? 'parent_scope_id' then
-    update context.scopes sc
-       set parent_scope_id = v_parent,
-           name = coalesce(s ->> 'name', sc.name),
-           description = coalesce(s ->> 'description', sc.description),
-           settings = case when s ? 'settings' then coalesce(s -> 'settings', sc.settings) else sc.settings end,
-           slug = coalesce(nullif(s ->> 'slug', ''), sc.slug),
-           sort_order = coalesce((s ->> 'sort_order')::smallint, sc.sort_order),
-           updated_at = now()
-     where sc.id = p_scope_id
+    values (v_id, v_org, v_type, v_parent, v_spec ->> 'name', v_spec ->> 'description',
+            v_spec -> 'settings', v_spec ->> 'slug', v_sort, (select auth.uid()))
     returning * into v_row;
   else
+    -- The image takes the store's words for every column the door writes (the store is the truth; a
+    -- word only the old row held is overwritten by the Record's), so the two cannot drift apart here.
     update context.scopes sc
-       set name = coalesce(s ->> 'name', sc.name),
-           description = coalesce(s ->> 'description', sc.description),
-           settings = coalesce(case when s ? 'settings' then s -> 'settings' end, sc.settings),
-           slug = coalesce(nullif(s ->> 'slug', ''), sc.slug),
-           sort_order = coalesce((s ->> 'sort_order')::smallint, sc.sort_order),
+       set parent_scope_id = v_parent,
+           name = v_spec ->> 'name',
+           description = v_spec ->> 'description',
+           settings = v_spec -> 'settings',
+           slug = v_spec ->> 'slug',
+           sort_order = (v_spec ->> 'sort_order')::smallint,
            updated_at = now()
      where sc.id = p_scope_id
     returning * into v_row;
