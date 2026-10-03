@@ -48,16 +48,17 @@ insert into w2s_fx values
 -- type with Outpatient orthopedics (the other type a parent must not come from).
 do $setup$
 declare f jsonb := (select jsonb_object_agg(k, v) from w2s_fx); o uuid := (f->>'cedar')::uuid; tp uuid; tc uuid;
+        v_s uuid; v_y uuid; v_o uuid;
 begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', f->>'admin', 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
   tp := (custom.context_type_write(o, null, '{"label_singular":"Specialty Clinic","label_plural":"Specialty Clinics"}') -> 'row' ->> 'id')::uuid;
   tc := (custom.context_type_write(o, null, '{"label_singular":"Care Team","label_plural":"Care Teams"}') -> 'row' ->> 'id')::uuid;
-  insert into w2s_fx values ('practice', tp),
-    ('sports', (custom.context_scope_write(o, null, tp, '{"name":"Sports rehab"}') -> 'row' ->> 'id')::uuid),
-    ('youth', (custom.context_scope_write(o, null, tp, '{"name":"Youth athletics"}') -> 'row' ->> 'id')::uuid),
-    ('ortho', (custom.context_scope_write(o, null, tc, '{"name":"Outpatient orthopedics"}') -> 'row' ->> 'id')::uuid);
+  v_s := (custom.context_scope_write(o, null, tp, '{"name":"Sports rehab"}') -> 'row' ->> 'id')::uuid;
+  v_y := (custom.context_scope_write(o, null, tp, '{"name":"Youth athletics"}') -> 'row' ->> 'id')::uuid;
+  v_o := (custom.context_scope_write(o, null, tc, '{"name":"Outpatient orthopedics"}') -> 'row' ->> 'id')::uuid;
   perform set_config('role', 'none', true);
+  insert into w2s_fx values ('practice', tp), ('sports', v_s), ('youth', v_y), ('ortho', v_o);
 end $setup$;
 
 create temp table w2s_seen on commit drop as

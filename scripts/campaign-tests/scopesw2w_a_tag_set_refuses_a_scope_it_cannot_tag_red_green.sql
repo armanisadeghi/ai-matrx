@@ -52,18 +52,18 @@ insert into w2w_fx values
   ('store_val', gen_random_uuid());
 
 -- Cedar Ridge's two scopes, made by the suite through the doors (its own fixtures, so the copy's data never moves
--- them): Practice Area: Sports rehab and Department: Outpatient orthopedics.
+-- them): Treatment Focus: Sports rehab and Care Location: Outpatient orthopedics.
 do $own$
-declare f jsonb := (select jsonb_object_agg(k, v) from w2w_fx); o uuid := (f->>'cedar')::uuid; tp uuid; td uuid;
+declare f jsonb := (select jsonb_object_agg(k, v) from w2w_fx); o uuid := (f->>'cedar')::uuid; tp uuid; td uuid; v_s uuid; v_o uuid;
 begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', f->>'admin_uid', 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
-  tp := (custom.context_type_write(o, null, '{"label_singular":"Practice Area","label_plural":"Practice Areas","slug":"practice-areas-tagging"}') -> 'row' ->> 'id')::uuid;
-  td := (custom.context_type_write(o, null, '{"label_singular":"Department","label_plural":"Departments","slug":"departments-tagging"}') -> 'row' ->> 'id')::uuid;
-  insert into w2w_fx values
-    ('sports', (custom.context_scope_write(o, null, tp, '{"name":"Sports rehab"}') -> 'row' ->> 'id')::uuid),
-    ('ortho', (custom.context_scope_write(o, null, td, '{"name":"Outpatient orthopedics"}') -> 'row' ->> 'id')::uuid);
+  tp := (custom.context_type_write(o, null, '{"label_singular":"Treatment Focus","label_plural":"Treatment Focuses"}') -> 'row' ->> 'id')::uuid;
+  td := (custom.context_type_write(o, null, '{"label_singular":"Care Location","label_plural":"Care Locations"}') -> 'row' ->> 'id')::uuid;
+  v_s := (custom.context_scope_write(o, null, tp, '{"name":"Sports rehab"}') -> 'row' ->> 'id')::uuid;
+  v_o := (custom.context_scope_write(o, null, td, '{"name":"Outpatient orthopedics"}') -> 'row' ->> 'id')::uuid;
   perform set_config('role', 'none', true);
+  insert into w2w_fx values ('sports', v_s), ('ortho', v_o);
 end $own$;
 
 do $fx$
