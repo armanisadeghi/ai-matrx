@@ -2516,7 +2516,7 @@
 
    THE FIX IS A PRIMITIVE, NOT 22 CARD RENDERERS: the design-system `<Table>`
    exposes `wrapperClassName`; passing `phone-stack` there opts a table into
-   this reflow. Below 768px the <thead> is hidden, every <tr> becomes a
+   this reflow. Below 480px of the wrapper's width the <thead> is hidden, every <tr> becomes a
    flex-wrapped card, and every <td> becomes a block. Per-cell hints, all
    optional, all plain HTML attributes on `<TableCell>`:
 
@@ -2530,8 +2530,7 @@
                              the card's lead already carries).
      data-phone="actions"    the row's action cluster: last, right-aligned.
 
-   Desktop is untouched: nothing here applies at ≥768px, which is the same
-   breakpoint as `useIsMobile()` and MatrxDataTable's `mobileCards`. The
+   Wide containers are untouched: nothing here applies at ≥480px of wrapper width. The
    header-borne sort controls are not reachable on the phone card list — a
    table whose ordering matters on a phone puts its sort in a toolbar.
 
@@ -2542,7 +2541,14 @@
    Guard: `pnpm check:phone-layout` fails any fixed-width hand-rolled table
    that has no phone reflow (this class, `useIsMobile`, or `mobileCards`).
    ──────────────────────────────────────────────────────────────────────── */
-@media (max-width: 767px) {
+/* ONE definition, keyed on the wrapper's OWN width (a container query), so a
+   375px phone and a 360px canvas pane on a 1,600px desktop get the same cards.
+   The wrapper is the container; the query styles its table. 480px = the canvas
+   "narrow" threshold (CANVAS_NARROW_WIDTH). Guard: phone-stack-single-definition.test.ts. */
+.phone-stack {
+  container-type: inline-size;
+}
+@container (width < 480px) {
   .phone-stack > table,
   .phone-stack > table > tbody {
     display: block;

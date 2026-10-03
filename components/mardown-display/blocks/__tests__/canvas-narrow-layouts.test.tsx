@@ -209,7 +209,8 @@ describe("table", () => {
   it("reads as labelled cards in a narrow pane, and as the grid outside the canvas", async () => {
     await show(render(), null);
     expect(container.querySelector("table")?.getAttribute("data-canvas-fit")).toBeNull();
-    expect(container.querySelector("tbody td[data-label]")).toBeNull();
+    // The card list is ONE container query (`.phone-stack`): the labels are always
+    // in the markup, and only the wrapper's own width turns them into cards.
 
     await show(render(), NARROW);
     expect(container.querySelector("table")?.getAttribute("data-canvas-fit")).toBe("narrow");
@@ -218,7 +219,7 @@ describe("table", () => {
     );
     expect(labels).toEqual(["Material", "Price per ton", "Note"]);
     expect(container.querySelector("tbody td[data-phone='lead']")?.textContent).toContain("North");
-    expect(container.querySelector("table")?.parentElement?.className).toContain("[&>table>thead]:hidden");
+    expect(container.querySelector("table")?.parentElement?.className).toContain("phone-stack");
   });
 
   it("pins the first column in a tight pane and not when that pane is full screen", async () => {

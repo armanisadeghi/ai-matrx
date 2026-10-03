@@ -42,7 +42,6 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES, type DisplayTheme } from "../../themes";
 import { TableSaveToMenu } from "../../tables/TableSaveToMenu";
 import {
-  CANVAS_STACK_CARDS,
   phoneStackCellProps,
   useTableViewer,
 } from "../../tables/table-viewer";
@@ -697,13 +696,10 @@ const StreamingTableRendererCore: React.FC<
   // ========================================================================
 
   const isEditingEnabled = editMode !== "none";
-  // On a phone the table reads as the PHONE-STACK card list — except while
-  // editing, which needs the grid.
-  const phoneStack = isMobile && !isEditingEnabled;
-  // A narrow canvas pane on a desktop viewport: the same card list, applied by
-  // class because the phone-stack media query cannot see the pane.
-  const canvasStack = canvasFit === "narrow" && !isMobile && !isEditingEnabled;
-  const stacked = phoneStack || canvasStack;
+  // THE ONE CARD LIST: `.phone-stack` (app/globals.css) is a container query on
+  // the table's own scroll wrapper, so a phone and a narrow canvas pane both get
+  // it from their width alone. Only editing needs the grid.
+  const phoneStack = !isEditingEnabled;
   // A tight (not narrow, not full screen) pane keeps the grid and pins the
   // first column so each row stays identifiable while scrolling sideways.
   const pinFirstColumn =
@@ -772,13 +768,12 @@ const StreamingTableRendererCore: React.FC<
               isEditingEnabled && "border-dashed border-red-500 border-2",
               isMobile && "-mx-1",
               phoneStack && "phone-stack",
-              canvasStack && CANVAS_STACK_CARDS,
             )}
           >
             <table
               className={cn(
                 "divide-y divide-border",
-                isMobile && !phoneStack ? "min-w-max w-full" : stacked ? "w-full" : "min-w-full",
+                isMobile && !phoneStack ? "min-w-max w-full" : phoneStack ? "w-full" : "min-w-full",
               )}
               style={{ fontSize: `${fontSize}px` }}
               data-canvas-fit={canvasFit === "outside" ? undefined : canvasFit}
@@ -909,7 +904,7 @@ const StreamingTableRendererCore: React.FC<
                           data-cell="body"
                           data-cell-row={rowIndex}
                           data-cell-col={colIndex}
-                          {...(stacked ? phoneStackCellProps(headers, colIndex) : {})}
+                          {...(phoneStack ? phoneStackCellProps(headers, colIndex) : {})}
                           className={cn(
                             cellPaddingClass,
                             "text-foreground",

@@ -621,7 +621,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
 
   // On a phone the table reads as the PHONE-STACK card list (each row a card,
   // each value labelled) — except while editing, which needs the grid.
-  const phoneStack = isMobile && !isEditingEnabled;
+  const phoneStack = !isEditingEnabled; // card list is a container query (globals.css .phone-stack)
 
   return (
     <div className={cn("relative", className)}>
