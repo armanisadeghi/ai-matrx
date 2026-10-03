@@ -24,8 +24,7 @@ import type { ManagedResource } from "../../../types/instance.types";
 import type { ResourceEditableState } from "../../messages-display/user/ResourceAttachmentTile";
 import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
 import { ResourceAttachmentTile } from "../../messages-display/user/ResourceAttachmentTile";
-import { ContextItemDrawer } from "../../context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "../../context-items/useContextItemDrawer";
+import { useContextItemsTab } from "../../context-items/contextItemsTab";
 import { normalizeResource } from "../../context-items/normalize";
 import type { ContextDrawerItem } from "../../context-items/types";
 import { MediaAttachmentThumbnail } from "@host/features/files/components/inline/MediaAttachmentThumbnail";
@@ -120,6 +119,8 @@ interface ResourceChipProps {
   onRemove: () => void;
   onToggleEditable: () => void;
   onOpen: () => void;
+  /** Its item is the one the composer's canvas tab shows. */
+  pressed: boolean;
 }
 
 function getImageRef(source: unknown): string | null {
@@ -182,6 +183,7 @@ function ResourceChip({
   onRemove,
   onToggleEditable,
   onOpen,
+  pressed,
 }: ResourceChipProps) {
   const isPending =
     resource.status === "pending" || resource.status === "resolving";
@@ -227,6 +229,7 @@ function ResourceChip({
         icon={display.icon}
         themeKey={resource.blockType}
         onClick={onOpen}
+        pressed={pressed}
         onRemove={onRemove}
         editableState={editableState}
         onToggleEditable={onToggleEditable}
@@ -248,11 +251,13 @@ function PendingDocumentResourceChip({
   resource,
   onRemove,
   onOpen,
+  pressed,
   onSettingsChange,
 }: {
   resource: ManagedResource;
   onRemove: () => void;
   onOpen: () => void;
+  pressed: boolean;
   onSettingsChange: (settings: AttachedDocumentSettings) => Promise<boolean>;
 }) {
   return (
@@ -271,6 +276,7 @@ function PendingDocumentResourceChip({
         representation={resource.options.representation}
         resourcePolicy={resource.options.resourcePolicy}
         onOpen={onOpen}
+        pressed={pressed}
         onRemove={onRemove}
         onSettingsChange={onSettingsChange}
       />
@@ -315,7 +321,8 @@ export function SmartAgentResourceChips({
   const resources = useAppSelector(selectInstanceResources(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
-  const drawer = useContextItemDrawer();
+  // The composer's attachments are ONE canvas tab; a chip shows its item there.
+  const itemsTab = useContextItemsTab(`composer:${conversationId}`);
 
   // Only real attachments/resources render here now. Working document, the
   // scratchpad, and active scope context are no longer intrusive composer chips
@@ -343,10 +350,12 @@ export function SmartAgentResourceChips({
     return normalizeResource(resource, conversationId);
   });
 
+  const itemIdForResource = (resourceId: string) =>
+    drawerItems.find((it) => it.resourceId === resourceId)?.id ?? drawerItems[0]?.id ?? "";
   const openDrawerForResource = (resourceId: string) => {
-    const idx = drawerItems.findIndex((it) => it.resourceId === resourceId);
-    drawer.openAt(drawerItems, idx < 0 ? 0 : idx);
+    itemsTab.open(drawerItems, itemIdForResource(resourceId));
   };
+  const isShowingResource = (resourceId: string) => itemsTab.isShowing(itemIdForResource(resourceId));
 
   const handleRemove = (resourceId: string) => {
     const resource = resources.find(
@@ -407,6 +416,7 @@ export function SmartAgentResourceChips({
               resource={resource}
               onRemove={() => handleRemove(resource.resourceId)}
               onOpen={() => openDrawerForResource(resource.resourceId)}
+              pressed={isShowingResource(resource.resourceId)}
               onSettingsChange={(settings) =>
                 handleDocumentSettings(resource.resourceId, settings)
               }
@@ -423,11 +433,11 @@ export function SmartAgentResourceChips({
                 )
               }
               onOpen={() => openDrawerForResource(resource.resourceId)}
+              pressed={isShowingResource(resource.resourceId)}
             />
           ),
         )}
       </AnimatePresence>
-      <ContextItemDrawer controller={drawer} />
     </div>
   );
 }

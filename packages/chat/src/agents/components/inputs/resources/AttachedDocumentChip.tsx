@@ -33,6 +33,8 @@ interface AttachedDocumentChipProps {
   representation?: DocumentRepresentation;
   resourcePolicy?: VariableResourceContextConfig;
   onOpen: () => void;
+  /** The document is the one its canvas tab shows (the chip toggles it). */
+  pressed?: boolean;
   onRemove: () => void;
   onSettingsChange: (settings: AttachedDocumentSettings) => Promise<boolean>;
 }
@@ -62,6 +64,7 @@ export function AttachedDocumentChip({
   representation,
   resourcePolicy,
   onOpen,
+  pressed,
   onRemove,
   onSettingsChange,
 }: AttachedDocumentChipProps) {
@@ -133,9 +136,11 @@ export function AttachedDocumentChip({
                 type="button"
                 onClick={onOpen}
                 aria-label={`Document: ${title}`}
+                aria-pressed={pressed}
                 className={cn(
                   "inline-flex min-w-0 max-w-[13rem] items-center gap-1 px-2",
                   "transition-colors hover:bg-muted/60 hover:text-foreground",
+                  pressed && "bg-primary/10 text-foreground",
                 )}
               >
                 {pending ? (

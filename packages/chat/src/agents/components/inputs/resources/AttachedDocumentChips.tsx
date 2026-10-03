@@ -26,8 +26,7 @@ import {
   useContainerLinks,
   type ContainerLink,
 } from "@host/features/scopes/hooks/useContainerLinks";
-import { ContextItemDrawer } from "../../context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "../../context-items/useContextItemDrawer";
+import { useContextItemsTab } from "../../context-items/contextItemsTab";
 import type { ContextDrawerItem } from "../../context-items/types";
 import {
   AttachedDocumentChip,
@@ -167,6 +166,8 @@ interface DocumentChipRowProps {
   processedDocs: ContainerLink[];
   visibleFiles: ContainerLink[];
   onOpenDrawer: (drawerItems: ContextDrawerItem[], id: string) => void;
+  /** Is this chip's item the one the documents' canvas tab shows? */
+  isShowing: (id: string) => boolean;
   onDetach: () => void;
   onSettingsChange: (
     link: ContainerLink,
@@ -184,6 +185,7 @@ function DocumentChipRow({
   processedDocs,
   visibleFiles,
   onOpenDrawer,
+  isShowing,
   onDetach,
   onSettingsChange,
 }: DocumentChipRowProps) {
@@ -221,6 +223,7 @@ function DocumentChipRow({
         representation={meta.representation}
         resourcePolicy={meta.resource_policy}
         onOpen={openCanvas}
+        pressed={isShowing(itemId)}
         onRemove={onDetach}
         onSettingsChange={(settings) =>
           onSettingsChange(link, edgeKind, fileId, title, settings)
@@ -267,7 +270,8 @@ export function AttachedDocumentChips({
     orgId,
   });
 
-  const drawer = useContextItemDrawer();
+  // The conversation's attached documents are ONE canvas tab.
+  const itemsTab = useContextItemsTab(`documents:${conversationId}`);
 
   const processedDocs = links.linksFor("processed_document");
   const files = links.linksFor("file");
@@ -314,7 +318,7 @@ export function AttachedDocumentChips({
   }
 
   const openDrawer = (drawerItems: ContextDrawerItem[], id: string) => {
-    drawer.openItem(drawerItems, id);
+    itemsTab.open(drawerItems, id);
   };
 
   const detach = (token: "processed_document" | "file", resourceId: string) => {
@@ -436,6 +440,7 @@ export function AttachedDocumentChips({
             processedDocs={processedDocs}
             visibleFiles={visibleFiles}
             onOpenDrawer={openDrawer}
+            isShowing={itemsTab.isShowing}
             onDetach={() => detach("processed_document", link.resourceId)}
             onSettingsChange={changeSettings}
           />
@@ -449,12 +454,12 @@ export function AttachedDocumentChips({
             processedDocs={processedDocs}
             visibleFiles={visibleFiles}
             onOpenDrawer={openDrawer}
+            isShowing={itemsTab.isShowing}
             onDetach={() => detach("file", link.resourceId)}
             onSettingsChange={changeSettings}
           />
         ))}
       </AnimatePresence>
-      <ContextItemDrawer controller={drawer} />
     </div>
   );
 }

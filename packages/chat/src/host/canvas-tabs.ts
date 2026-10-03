@@ -32,11 +32,20 @@ export const CONVERSATION_LISTS_KIND = "conversation-lists";
 /** An agent's unsaved edits as a diff against its saved version: ONE tab per agent. */
 export const AGENT_UNSAVED_CHANGES_KIND = "agent-unsaved-changes";
 
+/**
+ * The attachments one chip host shows (a sent message's strip, the composer's
+ * resources, a conversation's attached documents): ONE tab per host, keyed by
+ * it. `items` is the host's list, `selected` the one on screen; the tab pages
+ * through the list in place.
+ */
+export const CONTEXT_ITEMS_KIND = "context-items";
+
 /** Every tab kind the package opens by name through `canvas.useTab`. */
 export type ChatCanvasTabKind =
   | typeof CONVERSATION_CONTEXT_KIND
   | typeof CONVERSATION_LISTS_KIND
-  | typeof AGENT_UNSAVED_CHANGES_KIND;
+  | typeof AGENT_UNSAVED_CHANGES_KIND
+  | typeof CONTEXT_ITEMS_KIND;
 /** The scratchpad tab follows the ACTIVE scratchpad, so there is exactly one. */
 export const SCRATCHPAD_TAB_KEY = "default";
 

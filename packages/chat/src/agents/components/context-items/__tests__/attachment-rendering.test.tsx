@@ -70,29 +70,10 @@ jest.mock("@host/features/agents/components/previews/WebpageHoverPreview", () =>
   ),
 }));
 
-jest.mock(
-  "../useContextItemDrawer",
-  () => ({
-    useContextItemDrawer: () => ({
-      open: false,
-      items: [],
-      index: 0,
-      activeItem: null,
-      openAt,
-      setOpen: jest.fn(),
-      next: jest.fn(),
-      prev: jest.fn(),
-      goTo: jest.fn(),
-    }),
-  }),
-);
-
-jest.mock(
-  "../ContextItemDrawer",
-  () => ({
-    ContextItemDrawer: () => null,
-  }),
-);
+jest.mock("../contextItemsTab", () => ({
+  contextItemsListKey: () => "conversation-1:list",
+  useContextItemsTab: () => ({ isShowing: () => false, open: openAt }),
+}));
 
 jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({
   FileResourceChip: (props: { fileId: string; nameOverride?: string }) => {

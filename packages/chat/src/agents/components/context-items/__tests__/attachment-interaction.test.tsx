@@ -19,14 +19,9 @@ jest.mock("../registry", () => ({
   resolveContextItemTitleActions: () => null,
 }));
 
-jest.mock("@host/components/matrx/resizable/MatrxDynamicPanelHost", () => ({
-  MatrxDynamicPanelHost: ({
-    open,
-    children,
-  }: {
-    open: boolean;
-    children: React.ReactNode;
-  }) => open ? <section data-testid="attachment-drawer">{children}</section> : null,
+const toggle = jest.fn();
+jest.mock("../../../../host/canvas", () => ({
+  useChatCanvasTab: () => ({ isAvailable: true, isVisible: false, selected: null, toggle }),
 }));
 
 jest.mock("../../../../store/hooks", () => ({
@@ -56,6 +51,9 @@ jest.mock("@host/features/agents/components/previews/DataRefHoverPreview", () =>
 }));
 
 import { MessageAttachmentStrip } from "../../messages-display/MessageAttachmentStrip";
+import { ContextItemViewer } from "../ContextItemViewer";
+import { readContextItemsTab } from "../contextItemsTab";
+import type { CanvasJson } from "@ai-matrx/canvas";
 
 describe("attachment chip interaction", () => {
   let container: HTMLDivElement;
@@ -74,7 +72,8 @@ describe("attachment chip interaction", () => {
     jest.useRealTimers();
   });
 
-  it("opens the shared immutable drawer from a submitted webpage chip", () => {
+  it("a submitted webpage chip opens its item in the strip's canvas tab, and the tab's data renders it", () => {
+    toggle.mockClear();
     act(() => {
       root.render(
         <MessageAttachmentStrip
@@ -97,8 +96,6 @@ describe("attachment chip interaction", () => {
       );
     });
 
-    expect(container.querySelector("[data-testid='attachment-drawer']")).toBeNull();
-
     const chip = container.querySelector<HTMLButtonElement>(
       "button[title='Stored article']",
     );
@@ -119,9 +116,24 @@ describe("attachment chip interaction", () => {
 
     act(() => chip?.click());
 
-    expect(
-      container.querySelector("[data-testid='attachment-drawer']"),
-    ).not.toBeNull();
+    // No panel of its own: the press goes to the canvas tab, with the list as JSON.
+    expect(container.querySelector("[data-context-item-viewer]")).toBeNull();
+    expect(toggle).toHaveBeenCalledTimes(1);
+    const open = toggle.mock.calls[0]?.[0] as {
+      title: string;
+      data: { items: CanvasJson };
+      selected: string;
+      replaceData: boolean;
+    };
+    expect(open.title).toBe("Stored article");
+    expect(open.replaceData).toBe(true);
+
+    const tab = readContextItemsTab({ items: open.data.items, selected: open.selected });
+    expect(tab.items).toHaveLength(1);
+    expect(tab.items[0]?.id).toBe(open.selected);
+    act(() => {
+      root.render(<ContextItemViewer items={tab.items} index={0} onIndexChange={() => undefined} />);
+    });
     expect(container.textContent).toContain("Saved webpage body");
   });
 });

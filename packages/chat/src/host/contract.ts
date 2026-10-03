@@ -21,6 +21,7 @@ import type { AnchorHTMLAttributes, ComponentType, ReactNode, Ref } from "react"
 import type { AgentCatalog } from "@ai-matrx/agents/catalog";
 import type { ChatDatabase } from "./db-types";
 import type { ChatWindowId } from "./windows";
+import type { CanvasJson } from "@ai-matrx/canvas";
 import type { ChatCanvasTabKind } from "./canvas-tabs";
 import type { ChatWindowOpeners } from "./window-openers";
 import type { DefaultChatServerApi, DefaultChatServerTypes } from "./defaults/server-api";
@@ -778,7 +779,13 @@ export interface ChatCanvasTabRef {
 /** What a toggle opens when the tab is absent (an open tab keeps its own). */
 export interface ChatCanvasTabOpen {
   title: string;
-  data: Readonly<Record<string, string | null>>;
+  /** Plain JSON the host's body for this kind reads. */
+  data: Readonly<Record<string, CanvasJson>>;
+  /**
+   * Replace an open tab's data with `data` (a chip host's item list moved on).
+   * Absent: an open tab keeps its own data and only `selected` moves.
+   */
+  replaceData?: boolean;
   /**
    * The value to show. Absent: a launcher press (absent → open · behind →
    * focus · in front → close). Present: in front on this value → close;

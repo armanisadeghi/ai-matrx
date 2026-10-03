@@ -169,7 +169,11 @@ export function toggleChatCanvasTab(
     canvas.close(id);
     return;
   }
-  const opened = openToolInCanvas(canvas, { ...input, data: { ...input.data, selected: open.selected } });
+  const opened = openToolInCanvas(canvas, {
+    ...input,
+    data: { ...input.data, selected: open.selected },
+    replaceData: open.replaceData === true,
+  });
   const current = opened ? canvas?.getState().items[opened] : undefined;
   if (canvas && opened && current && canvasText(current.data, "selected") !== open.selected) {
     const base = current.data && typeof current.data === "object" && !Array.isArray(current.data) ? current.data : {};

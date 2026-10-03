@@ -9,7 +9,7 @@ Every attachment a user sends with a turn renders as a chip in one of two places
 - **Pre-submit** — `inputs/resources/SmartAgentResourceChips.tsx` (resources still editable before send; `ManagedResource`).
 - **Post-submit** — `messages-display/MessageAttachmentStrip.tsx` (already sent; generated `MessagePart`; shared by user and assistant turns).
 
-Both now route every chip click through **one shared drawer** (`ContextItemDrawer`, built on `MatrxDynamicPanelHost`, right-positioned/resizable — same primitive as `ContextSlotDetailSheet`). This replaced the old per-message placeholder modal that just dumped `JSON.stringify(block.raw)` for every non-image type.
+Every chip click opens its item in the chip host's **canvas tab** (kind `context-items`, one tab per host — `contextItemsTab.ts`); the tab's body is the one shared view, `ContextItemViewer`, which pages through the host's items in place (‹ 2/3 ›). This replaced the old per-message placeholder modal that just dumped `JSON.stringify(block.raw)` for every non-image type, and (2026-10-02) the docked `MatrxDynamicPanelHost` drawer.
 
 ## The registry — the extension point
 
@@ -33,7 +33,7 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 
 ## Key flows
 
-- **Attached documents** — `inputs/resources/AttachedDocumentChips.tsx` renders the DURABLE `processed_document → conversation` / `file → conversation` edges (from `platform.associations`, not `instanceResources`). Each chip now opens the shared drawer: it builds `ContextDrawerItem`s directly (`processedDocDrawerItem` → `processed_document`/`ProcessedDocumentBody`; `fileDrawerItem` → `document`/`MediaBody`) and hosts its own `useContextItemDrawer` + `ContextItemDrawer`. This is a third chip-host alongside the pre/post-submit ones — it doesn't go through `normalize.ts` because these edges aren't `ManagedResource`/`RenderBlockPayload`.
+- **Attached documents** — `inputs/resources/AttachedDocumentChips.tsx` renders the DURABLE `processed_document → conversation` / `file → conversation` edges (from `platform.associations`, not `instanceResources`). Each chip now opens the shared drawer: it builds `ContextDrawerItem`s directly (`processedDocDrawerItem` → `processed_document`/`ProcessedDocumentBody`; `fileDrawerItem` → `document`/`MediaBody`) and opens them in its own `documents:<conversationId>` tab. This is a third chip-host alongside the pre/post-submit ones — it doesn't go through `normalize.ts` because these edges aren't `ManagedResource`/`RenderBlockPayload`.
 - **Normalization** (`normalize.ts`) — `ManagedResource` and generated `MessagePart` values both flatten to `ContextDrawerItem[]`, **one item per underlying record**. So a "3 Notes" chip becomes 3 drawer items; prev/next page through each individually. A chip opens the drawer at its first item. Runtime guards preserve exact union members; they never narrow an unknown array with a cast.
 - **Webpages** — the generated `(string | PreFetchedUrl)[]` contract survives picker → request → persistence → renderer intact. A `PreFetchedUrl` shows the exact stored `textContent`, title, character count, scrape time, and source URL. Legacy string-only URLs remain supported. Submitted snapshots are immutable and never iframe the live page.
 - **Entity references** — all seven generated id-backed parts render through the same registry and use the canonical entity door. The server resolves the ids into Matrx reference envelopes before provider dispatch.
@@ -42,9 +42,9 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 
 ## Invariants
 
-- Never branch on type inside `ContextItemDrawer` — resolve the body via the registry.
+- Never branch on type inside `ContextItemViewer` — resolve the body via the registry.
 - `input_document` (a reference to a specific rich doc) ≠ `working_document` (the live collaborative doc). Don't merge them.
-- Each chip-host owns ONE local drawer controller (`useContextItemDrawer`); no global state/Redux added.
+- Each chip-host owns ONE canvas tab (`useContextItemsTab(hostKey)`: `message` strips key by `contextItemsListKey`, the composer by `composer:<conversationId>`, attached documents by `documents:<conversationId>`). The tab's data is the host's item list as JSON (icon dropped, re-resolved from the registry on read) + `selected`; a press re-sends the list (`replaceData`). A chip is `aria-pressed` while its item is in front; pressing it again closes the tab.
 - **Attachments ≠ context (load-bearing UI rule).** User-attached resources (`input_notes`, files, tasks, …) render ONLY as attachment chips from `content[]`. Ambient / slot context (`model_context.items`, working document, org, declared slots) renders ONLY in `ContextSlotChipStrip`. Never merge `model_context.input_items` into the context strip — that field mirrors attachments for the server/audit trail; duplicating it in the UI showed notes twice and made attachments look like defer-fetch context.
 - **Generated unions are the boundary.** Outbound resource projection returns the generated request union, persistence projection returns the generated message union, and DB content is runtime-validated by the generated parser. Never rebuild a payload as `Record<string, unknown>` and assert it into a message type.
 
@@ -52,7 +52,7 @@ Both now route every chip click through **one shared drawer** (`ContextItemDrawe
 
 The panel must be hyper-focused — ~all space usable. Enforced by structure:
 
-- **Title bar** (`MatrxDynamicPanelHost`): icon + record title (bodies report it via `setTitle`) + prev/next icon controls + close. **No description line.**
+- **Pane header** (the canvas's): the record title (bodies report it via `setTitle`, which becomes the tab title) + close. **No second title bar.** A thin toolbar row appears only when there is something for it — a custom `Title` pill, `TitleActions`, or prev/next for a multi-item host. **No description line.**
 - **Body**: fills 100% of remaining height (`h-full`/flex). **No in-body header, no repeated title/type, no large buttons.**
 - **Footer** (registry `Footer`, optional): ONE thin row (`h-9`) for links / lists / inline meta + icon-only actions with tooltips. All "open / copy / re-attach / view-diff" affordances live here.
 
@@ -69,6 +69,8 @@ Shown as **context pills** (working doc + scratchpad in `ConversationContextRail
 Only the Body mounts `useWorkingDocument`; title actions + history read the shared per-conversation view store (`workingDocumentViewStore.ts`).
 
 ## Change log
+
+- `2026-10-02` — **The drawer is a canvas tab.** `ContextItemDrawer` (docked `MatrxDynamicPanelHost`) + `useContextItemDrawer` are deleted; `ContextItemViewer` is the body of kind `context-items` (host: `features/canvas/host/conversation/contextItemsKind.tsx`), one tab per chip host, prev/next in the tab. Chips carry `aria-pressed`. Guards: `features/canvas/__tests__/context-items-open-in-the-canvas.test.tsx`, `__tests__/attachment-interaction.test.tsx`.
 
 - `2026-08-29` — Submitted media attachments now preserve known file identity fields as hydration
   hints, so chips and drawer previews seed the canonical file record and fetch only missing render

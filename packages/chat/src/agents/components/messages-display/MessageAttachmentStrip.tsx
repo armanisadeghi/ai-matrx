@@ -2,8 +2,7 @@
 
 import { cn } from "@ai-matrx/design-system";
 import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
-import { ContextItemDrawer } from "../context-items/ContextItemDrawer";
-import { useContextItemDrawer } from "../context-items/useContextItemDrawer";
+import { contextItemsListKey, useContextItemsTab } from "../context-items/contextItemsTab";
 import { normalizeMessagePart } from "../context-items/normalize";
 import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";
 import { ResourceAttachmentTile } from "./user/ResourceAttachmentTile";
@@ -18,9 +17,11 @@ interface MessageAttachmentStripProps {
 
 function AttachmentItem({
   item,
+  pressed,
   onOpen,
 }: {
   item: ContextDrawerItem;
+  pressed: boolean;
   onOpen: () => void;
 }) {
   const tile = item.refs.fileId ? (
@@ -38,6 +39,7 @@ function AttachmentItem({
       title={item.title}
       icon={item.icon}
       themeKey={item.themeKey}
+      pressed={pressed}
       onClick={onOpen}
     />
   );
@@ -55,25 +57,26 @@ export function MessageAttachmentStrip({
   parts,
   className,
 }: MessageAttachmentStripProps) {
-  const drawer = useContextItemDrawer();
   const items = parts.flatMap((part, index) =>
     normalizeMessagePart(part, index, conversationId),
   );
+  // The strip's attachments are ONE canvas tab; a chip shows its item there.
+  const tab = useContextItemsTab(contextItemsListKey(conversationId, items));
 
   if (items.length === 0) return null;
 
   return (
     <>
       <div className={cn("flex flex-wrap gap-1.5", className)}>
-        {items.map((item, index) => (
+        {items.map((item) => (
           <AttachmentItem
             key={item.id}
             item={item}
-            onOpen={() => drawer.openAt(items, index)}
+            pressed={tab.isShowing(item.id)}
+            onOpen={() => tab.open(items, item.id)}
           />
         ))}
       </div>
-      <ContextItemDrawer controller={drawer} />
     </>
   );
 }

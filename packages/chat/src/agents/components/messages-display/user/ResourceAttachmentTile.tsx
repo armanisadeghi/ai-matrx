@@ -73,6 +73,8 @@ export interface ResourceAttachmentTileProps {
    * with the full info. Use in the composer so chips never crowd the input.
    */
   variant?: "default" | "compact";
+  /** The tile's item is the one its canvas tab shows (the tile toggles it). */
+  pressed?: boolean;
 }
 
 export function ResourceAttachmentTile({
@@ -88,6 +90,7 @@ export function ResourceAttachmentTile({
   error = false,
   className,
   variant = "default",
+  pressed,
 }: ResourceAttachmentTileProps) {
   const theme = resolveResourceAttachmentTileTheme(themeKey);
 
@@ -180,11 +183,13 @@ export function ResourceAttachmentTile({
                   onClick={handleChipClick}
                   aria-label={`${typeLabel}: ${title}`}
                   aria-haspopup={hasControls ? "menu" : undefined}
+                  aria-pressed={pressed}
                   className={cn(
                     "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border border-border px-2",
                     showToggle && "pr-6 max-lg:pr-2 pointer-coarse:pr-2",
                     "text-[11px] font-medium transition-colors",
                     "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    pressed && "border-primary/60 bg-primary/10 text-foreground",
                     error && "ring-1 ring-destructive/50",
                   )}
                 >
@@ -331,6 +336,7 @@ export function ResourceAttachmentTile({
             "w-[7.5rem] inline-flex items-stretch text-left min-w-0",
             resourceAttachmentTileAdaptiveSurface(theme),
             error && "ring-1 ring-destructive/50",
+            pressed && "ring-1 ring-primary/60",
             className,
           )}
           onPointerDown={handlePointerDown}
@@ -344,6 +350,7 @@ export function ResourceAttachmentTile({
             type="button"
             title={title}
             onClick={onClick}
+            aria-pressed={pressed}
             className="flex min-w-0 flex-1 flex-col gap-0.5 px-1.5 py-1 text-left"
           >
             <span className="flex items-center gap-1 min-w-0 w-full">
