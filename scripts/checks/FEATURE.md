@@ -84,7 +84,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   `live-db` (can open the live database — gate-db / `SUPABASE_MATRIX_*`, a
   secret or service-role key, an admin or supabase-js client, a pg client, a
   PostgREST URL, `execute_admin_query`, the aidream applier), `clone-db`
-  (reaches only the nightly dev clone), `repo-only`. The manifest is GENERATED
+  (reached only the nightly dev clone; the class is retired 2026-10-03 along with the clone checks leg), `repo-only`. The manifest is GENERATED
   by `scripts/checks/row-classes.mjs` (`pnpm checks:classify`), which resolves
   each row's command through package.json and `pnpm`/`npx`/`tsx`/`node`/`bash`
   hops, follows real import statements and child-process launches inside
@@ -106,7 +106,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
   row, or a declared class that disagrees with detection = `[FAIL]`, exit 1) +
   `:self-test` (red on a mismatched manifest, green on the real one) — in CI
   (`marker-law` job) and as rows of `run-release-gates.sh`.
-- **Heavy checks run on the clone** (2026-09-27, incident
+- **Heavy checks no longer default to the clone (ruling 2026-10-03, Arman: test on live as `admin@admin.com`; the clone is only for rehearsing destructive migrations and jobs that lock live 10+ minutes).** A heavy check runs on live, bounded by the production guard (every statement capped at 30 s, no loosening); it plants fixtures only as `admin@admin.com`'s disposable records. The text below is the 2026-09-27 design that defaulted them to the clone, kept as history until the code lane removes `defaultTarget: "clone"` and the `check:heavy-checks-target-the-clone` guard. Original text (2026-09-27, incident
   `common-docs/systems/architecture/database/projects/database-workload-safety/PLAN.md`:
   every warm live connection costs ~66 MB and our own censuses held them for
   minutes). A check that scans, censuses, sweeps for equivalence, plants
@@ -160,7 +160,7 @@ log, holding its own lock (`--with-checks` runs it in the foreground instead;
 | `node scripts/checks/run.mjs [--json f] [--lane x] [--only id] [--list]` / `pnpm check:release-checks` | the runner, by hand |
 | `node scripts/checks/run.mjs --skip-live-db` | what the release runs: every row but the declared live-db ones |
 | `node scripts/checks/run.mjs --repo-only` | ONLY rows declared `repo-only` (clone-db, live-db, undeclared left out; header `skipped_not_repo_only`) — what `.github/workflows/repo-only-checks.yml` runs (dispatch-only; the app's `platform_checks_ci_pull` ingests its `checks-findings` artifact) |
-| `node scripts/checks/run.mjs --db-only --target clone` | ONLY rows that read a database (live-db, clone-db, undeclared), every one pointed at the nightly copy: the environment is prepared by aidream `scripts/checks/clone_target.py`, `clone-target-guard.cjs` is preloaded into every row and refuses production by host or `pg` user (a `[clone-target] REFUSED` line is an ERROR finding even if the row swallows it); header `db_target`. Runs ONLY from aidream's private `.github/workflows/clone-db-checks.yml` — never from this public repo's Actions |
+| `node scripts/checks/run.mjs --db-only --target clone` | **RETIRED 2026-10-03** (the clone CI leg and `CLONE_CI_BUNDLE` are removed; database-reading checks run on live as `admin@admin.com` under the production guard). Was: ONLY rows that read a database (live-db, clone-db, undeclared), every one pointed at the nightly copy: the environment is prepared by aidream `scripts/checks/clone_target.py`, `clone-target-guard.cjs` is preloaded into every row and refuses production by host or `pg` user (a `[clone-target] REFUSED` line is an ERROR finding even if the row swallows it); header `db_target`. Runs ONLY from aidream's private `.github/workflows/clone-db-checks.yml` — never from this public repo's Actions |
 | `pnpm checks:classify` / `pnpm check:release-row-classes[:self-test]` | regenerate the row-class manifest / the guard that it is current |
 | `bash scripts/run-release-gates.sh [--strict]` | the old sequential gate runner — still the manifest (`--list`), still usable for one-by-one triage |
 | `pnpm test:release-ship-path` | the sandbox guard: dirty checkout + diverged branch + push landing mid-release → tag on origin |
@@ -196,6 +196,7 @@ push — are the ship path.
 
 ## Change log
 
+- 2026-10-03 — Arman: checks and tests run on live as `admin@admin.com`; the clone is only for destructive-migration rehearsal. The clone checks leg, `--db-only --target clone` and the heavy-checks-default-to-clone rule are retired (docs only; code lane removes the code).
 - 2026-09-30 — `run.mjs --db-only --target clone` + `clone-target-guard.cjs` (checks-run-in-the-app P3, the
   database-reading leg): the frontend's database rows run from aidream's private `clone-db-checks.yml`
   against the nightly copy only. Tests in `run.test.mjs` (red against the old runner, green now).

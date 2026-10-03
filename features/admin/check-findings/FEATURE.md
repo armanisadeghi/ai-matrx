@@ -123,6 +123,7 @@ adapter). Registered in `features/admin/constants/admin-categories.ts` (Reportin
 
 - 2026-09-30 — `__summary__` is no longer "check broken": it is a check that judged and failed without an item list (`unitemizedFailure`, header "N failing without an item list", row action "fix what it names"). "Check broken" now means only `__check__` / `__malformed__` — the check crashed, timed out, did not measure, or printed unreadable items (`model.test.ts`).
 
+- 2026-10-03 — Arman: checks run on live as `admin@admin.com`; the clone checks leg is retired, so the "read the nightly copy" header line and the `copy_stale` skip below describe a retired leg.
 - 2026-09-30 — A check's latest run that read the nightly copy (database-reading checks, `check_run.metadata.db_target`) says so in the check header, with the copy's date (`copySourceFromMetadata`, tested in `model.test.ts`). A run skipped because the copy was too old shows `skipped (copy_stale)` with the reason as its headline.
 
 - `2026-09-26` — Created: board, per-check findings by work unit, state filters, Mark OK via the

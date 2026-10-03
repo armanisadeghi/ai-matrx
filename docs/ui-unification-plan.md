@@ -440,7 +440,7 @@ Each step lists its scope, files, regression risk, effort, and the exit criteria
   - each change is made in the package, released, and adopted in matrx-frontend in the same session;
   - each adds a guard test proven red first, like the lobby's "renders design-system controls, never native ones".
 - **Census and checks extend to packages.** `scripts/ui-drift/census.cjs` gains the `aidream/apps/shared/*/src` roots, and the `ui-drift` findings check watches them too.
-- **Runtime sweep.** The rendered-page measurement used on 2026-10-02 (overflow, collapsed columns, nested surfaces, mismatched row heights, native controls; at 375px and desktop) becomes a script the in-app check runner runs on a schedule against the clone. That's the only way to see cross-file nesting and layout collapse.
+- **Runtime sweep.** The rendered-page measurement used on 2026-10-02 (overflow, collapsed columns, nested surfaces, mismatched row heights, native controls; at 375px and desktop) becomes a script the in-app check runner runs on a schedule against live as `admin@admin.com`. That's the only way to see cross-file nesting and layout collapse.
 - **Exit per package:** zero native `<select>`/`<input type=checkbox>`/styled `<button>` in its TSX, and its CSS has no rule that restates a design-system primitive.
 
 ### Step 8 — Colour, layering, elevation (low visibility, low risk, 1–2 sessions)

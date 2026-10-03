@@ -31,7 +31,7 @@
 > presented as production → refused; the clone presented as the branch → refused; CLONE-REF
 > unreadable → refused; each of the three accepted as itself.
 >
-> **The suite sweep is back, against the clone:** [`clone-suite-sweep.sh`](./clone-suite-sweep.sh).
+> **Retired 2026-10-03 (Arman: test on live as `admin@admin.com`; the clone is only for rehearsing destructive migrations and jobs that lock live 10+ minutes) — suites no longer sweep the clone.** Historical note: **the suite sweep was back, against the clone:** [`clone-suite-sweep.sh`](./clone-suite-sweep.sh).
 > It has no production mode and no way to acquire one — `night_assert_target clone` is the only
 > target it ever asks for. It is NOT a one-shot: no plist, no window guard (the clone is where
 > heavy work belongs) and no branch `build_lock`.
