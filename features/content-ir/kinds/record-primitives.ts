@@ -107,3 +107,15 @@ export function pickListChoices(value: Record<string, unknown>): PickListChoice[
     description: typeof c.description === "string" && c.description ? c.description : null,
   }));
 }
+
+/**
+ * What makes a Table a Pick list: drawn as a list AND kept for choices (the mark
+ * `custom.pick_list_create` gives every list). `display: list` alone is not enough — an ordinary
+ * Table may be drawn as a list too. TS mirror of `pick_list_source_refusal` (Python).
+ */
+export function pickListSourceRefusal(tableDocument: Record<string, unknown> | null): string | null {
+  if (!tableDocument) return "You can't open the Pick list these choices come from.";
+  if (tableDocument.display === "list" && tableDocument.kept_for === "choices") return null;
+  const name = typeof tableDocument.name === "string" && tableDocument.name ? tableDocument.name : "This table";
+  return `“${name}” is a table, not a Pick list, so its records can't be offered as choices.`;
+}

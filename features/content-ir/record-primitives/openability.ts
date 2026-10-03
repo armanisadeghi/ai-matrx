@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { pickListSourceRefusal } from "@/features/content-ir/kinds/record-primitives";
 
 export interface RelationRef {
   token: string;
@@ -34,6 +35,8 @@ export interface OpenabilityDoors {
    * `organizationId` is used only when the table's cannot be found.
    */
   readRecords(organizationId: string | null, tableId: string, ids: string[]): Promise<Set<string> | null>;
+  /** The table's own document (display, kept_for, name), read as the viewer; null when refused. */
+  tableDocument(tableId: string): Promise<Record<string, unknown> | null>;
   /** The `/o/<id>` door: open, or its own sentence. */
   resolveId(id: string): Promise<{ open: boolean; says: string | null }>;
   /** `{token:id → label|null}` (null = withheld); null when the call failed. */
@@ -45,6 +48,7 @@ export const CANT_OPEN_RECORD = "You can't open this record. It may be in the tr
 export const CANT_OPEN_THING = "You can't open this. It may be deleted, or not shared with you.";
 export const NO_DOOR = "Can't open this here.";
 export const DOOR_FAILED = "This couldn't be checked right now.";
+export const CANT_OPEN_LIST = "You can't open the Pick list these choices come from.";
 
 const keyOf = (r: RelationRef) => `${r.token}:${r.id}`;
 
@@ -62,7 +66,24 @@ export function supabaseOpenabilityDoors(): OpenabilityDoors {
     }
     return known;
   };
+  let kernel: Promise<string | null> | null = null;
+  const tableKernel = () =>
+    (kernel ??= Promise.resolve(supabase.schema("custom").rpc("table_kernel_id")).then(({ data }) =>
+      typeof data === "string" ? data : null,
+    ));
   return {
+    async tableDocument(tableId) {
+      const [owner, kernelId] = await Promise.all([tableOrg(tableId), tableKernel()]);
+      if (!owner || !kernelId) return null;
+      const { data, error } = await supabase
+        .schema("custom")
+        .rpc("read_records_by_ids", { p_organization_id: owner, p_table_id: kernelId, p_record_ids: [tableId] });
+      if (error) return null;
+      const row = ((data ?? []) as Array<{ id: string; document: unknown }>).find((r) => r.id === tableId);
+      return row && typeof row.document === "object" && row.document !== null
+        ? (row.document as Record<string, unknown>)
+        : null;
+    },
     async readRecords(organizationId, tableId, ids) {
       const owner = (await tableOrg(tableId)) ?? organizationId;
       if (!owner) return null;
@@ -226,7 +247,7 @@ export function useOpenability(refs: RelationRef[], organizationId: string | nul
 export type ListMembership =
   | { state: "checking" }
   | { state: "read"; members: Set<string> }
-  | { state: "refused" };
+  | { state: "refused"; sentence: string };
 
 /**
  * WHICH OF THESE IDS ARE RECORDS OF THIS PICK LIST — one read of the list's own records, as the
@@ -241,18 +262,24 @@ export function usePickListMembership(
   const [answer, setAnswer] = useState<ListMembership>({ state: "checking" });
   useEffect(() => {
     if (!listId || !signature) {
-      setAnswer({ state: "refused" });
+      setAnswer({ state: "refused", sentence: CANT_OPEN_LIST });
       return;
     }
     let live = true;
     setAnswer({ state: "checking" });
-    void openabilityDoors()
-      .readRecords(organizationId, listId, signature.split("|"))
-      .then((members) => {
-        if (live) setAnswer(members === null ? { state: "refused" } : { state: "read", members });
+    const doors = openabilityDoors();
+    void (async () => {
+      // Chair V2: the table must BE a Pick list before its records are offered as choices.
+      const refusal = pickListSourceRefusal(await doors.tableDocument(listId));
+      if (refusal) return { state: "refused", sentence: refusal } as const;
+      const members = await doors.readRecords(organizationId, listId, signature.split("|"));
+      return members === null ? ({ state: "refused", sentence: CANT_OPEN_LIST } as const) : ({ state: "read", members } as const);
+    })()
+      .then((next) => {
+        if (live) setAnswer(next);
       })
       .catch(() => {
-        if (live) setAnswer({ state: "refused" });
+        if (live) setAnswer({ state: "refused", sentence: CANT_OPEN_LIST });
       });
     return () => {
       live = false;

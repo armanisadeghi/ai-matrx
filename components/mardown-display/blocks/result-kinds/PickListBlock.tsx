@@ -4,7 +4,8 @@
  * `pick_list` — an offer to choose records of ONE Pick list, drawn as choices (KINDS-GLUE wave 4
  * §A.3.4; chair V2). Every choice must be a record of the list the offer names: the shape is
  * checked first (`pickListChoiceRefusal`), then the list's own records are read once as the
- * viewer (`usePickListMembership`). A choice that is not one of them refuses the whole offer in
+ * viewer (`usePickListMembership`) — after the store confirms the named table IS a Pick list
+ * (chair V2; any other table is refused in a sentence). A choice that is not one of them refuses the whole offer in
  * one plain sentence.
  *
  * Choosing is slice 4.6 (one server door). Until it ships the choices are drawn and cannot be
@@ -46,9 +47,7 @@ const PickListBlock: React.FC<ResultKindBlockProps> = ({ content, metadata, clas
   if (!ok) return <RawRegion content={content} className={className} />;
   if (streaming) return <StillArriving />;
   if (shapeRefusal) return <Refused sentence={shapeRefusal} className={className} />;
-  if (membership.state === "refused") {
-    return <Refused sentence="You can't open the Pick list these choices come from." className={className} />;
-  }
+  if (membership.state === "refused") return <Refused sentence={membership.sentence} className={className} />;
   const stranger = membership.state === "read" ? choices.find((c) => !membership.members.has(c.recordId)) : undefined;
   if (stranger) {
     return (

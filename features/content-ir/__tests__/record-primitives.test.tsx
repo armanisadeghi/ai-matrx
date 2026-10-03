@@ -4,7 +4,8 @@
  * - A `relation` routes to its one chip, and the chip is a LINK only after its token's own door
  *   said this viewer may open it; a target the viewer can't open is a muted chip carrying the
  *   door's sentence and no link. Every chip of one tick is checked in ONE call per door group.
- * - A `pick_list` draws its Pick list's records as choices; a choice that is not a record of the
+ * - A `pick_list` names a Pick list, never another table (chair V2: an "Appointment Slots" offer is
+ *   refused in a sentence), and draws that list's records as choices; a choice that is not a record of the
  *   named list (an Appointment Slots id offered on the "Visit type" list) refuses the offer in one
  *   plain sentence. Nothing can be pressed (choosing is slice 4.6).
  *
@@ -52,12 +53,21 @@ const OLD_INTAKE = "5c0f9a3e-7d21-4b8e-9a6f-2e4d1c3b0a97";
 /** The store's answer: which ids each table holds for this viewer. */
 const TABLES: Record<string, string[]> = { [VISIT_TYPE]: [FOLLOW_UP, DISCHARGE], [SLOTS]: [TUE_930, WED_200] };
 
+/** The two tables' own documents, as the store keeps them (slice 4.0 fixtures). */
+const DOCUMENTS: Record<string, Record<string, unknown>> = {
+  [VISIT_TYPE]: { name: "Visit type", display: "list", kept_for: "choices", title_field: "name" },
+  [SLOTS]: { name: "Appointment Slots", display: "list", title_field: "slot" },
+};
+
 function doors() {
   const calls = { readRecords: 0, resolveId: 0, entityWords: 0 };
   const fake: OpenabilityDoors = {
     async readRecords(_org, tableId, ids) {
       calls.readRecords += 1;
       return new Set(ids.filter((id) => TABLES[tableId]?.includes(id)));
+    },
+    async tableDocument(tableId) {
+      return DOCUMENTS[tableId] ?? null;
     },
     async resolveId() {
       calls.resolveId += 1;
@@ -151,6 +161,23 @@ describe("pick_list", () => {
     expect(container.querySelector("[data-pick-list-choice]")).toBeNull();
     expect(container.querySelector("[data-pick-list-refused]")?.textContent).toBe(
       "“Re-evaluation” is not a record of this Pick list, so these choices can't be offered.",
+    );
+  });
+
+  it("a pick list naming any table but a Pick list is refused in a sentence (chair V2)", async () => {
+    setOpenabilityDoorsForTests(doors().fake);
+    const { container } = await mount(
+      <PickListBlock
+        {...block("pick_list", {
+          prompt: "Which time works for Maria's follow-up visit?",
+          pick_list_id: SLOTS,
+          choices: [{ _record_id: TUE_930, label: "Tue Oct 7, 9:30 AM" }, { _record_id: WED_200, label: "Wed Oct 8, 2:00 PM" }],
+        })}
+      />,
+    );
+    expect(container.querySelector("[data-pick-list-choice]")).toBeNull();
+    expect(container.querySelector("[data-pick-list-refused]")?.textContent).toBe(
+      "“Appointment Slots” is a table, not a Pick list, so its records can't be offered as choices.",
     );
   });
 
