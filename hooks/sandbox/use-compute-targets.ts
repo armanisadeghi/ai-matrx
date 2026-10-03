@@ -42,6 +42,32 @@ interface UseComputeTargetsResult {
   refetch: () => Promise<void>;
 }
 
+/**
+ * ONE request per refresh, however many pickers are mounted. Every instance
+ * listens for window focus, so a page with the chat composer, the sandbox
+ * panel and a verified binding fired five or six identical GETs per focus
+ * (Vercel, 2026-10-03). Callers that start while one is in flight share it.
+ */
+let inflight: Promise<ComputeTargetListResponse> | null = null;
+
+function loadComputeTargets(): Promise<ComputeTargetListResponse> {
+  if (inflight) return inflight;
+  const request = (async () => {
+    const resp = await fetch("/api/compute-targets");
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(body || `HTTP ${resp.status}`);
+    }
+    return (await resp.json()) as ComputeTargetListResponse;
+  })();
+  inflight = request;
+  void request.then(
+    () => { if (inflight === request) inflight = null; },
+    () => { if (inflight === request) inflight = null; },
+  );
+  return request;
+}
+
 export function useComputeTargets(): UseComputeTargetsResult {
   const [data, setData] = useState<ComputeTargetListResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,13 +79,7 @@ export function useComputeTargets(): UseComputeTargetsResult {
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetch("/api/compute-targets");
-      if (myId !== fetchIdRef.current) return;
-      if (!resp.ok) {
-        const body = await resp.text().catch(() => "");
-        throw new Error(body || `HTTP ${resp.status}`);
-      }
-      const json = (await resp.json()) as ComputeTargetListResponse;
+      const json = await loadComputeTargets();
       if (myId !== fetchIdRef.current) return;
       setData(json);
     } catch (err) {

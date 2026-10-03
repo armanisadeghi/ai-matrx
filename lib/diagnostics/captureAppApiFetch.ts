@@ -10,6 +10,9 @@
  * once and captures a non-2xx or network failure on a same-origin `/api/`
  * path — method, path, status, and the route's own error sentence.
  *
+ * A request cancelled because the page is leaving is not captured (see
+ * `leavingSince`); a network failure while the page stays is.
+ *
  * Tier: orange by rule (`app-api-http`), client-only. Capture never breaks the
  * caller: the original response is returned untouched and every capture step
  * is wrapped.
@@ -17,6 +20,21 @@
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 let installed = false;
+
+/**
+ * When the page last began to leave (reload, navigation, the error screen's
+ * Reload). The browser cancels every request still in flight as it goes, and
+ * fetch reports each as a plain "Failed to fetch" — not a failure of the
+ * route: Vercel answered all of them 200 on 2026-10-03, while the inspector
+ * recorded three orange rows after a reload out of a crash. A leave that is
+ * itself cancelled (a beforeunload prompt) clears after LEAVE_WINDOW_MS.
+ */
+const LEAVE_WINDOW_MS = 3000;
+let leavingSince: number | null = null;
+
+function pageIsLeaving(): boolean {
+  return leavingSince !== null && Date.now() - leavingSince < LEAVE_WINDOW_MS;
+}
 
 function appApiPath(input: RequestInfo | URL): string | null {
   try {
@@ -61,6 +79,14 @@ async function sentenceOf(response: Response): Promise<string | undefined> {
 export function installAppApiFetchCapture(): void {
   if (installed || typeof window === "undefined" || typeof window.fetch !== "function") return;
   installed = true;
+  const markLeaving = () => {
+    leavingSince = Date.now();
+  };
+  window.addEventListener("beforeunload", markLeaving);
+  window.addEventListener("pagehide", markLeaving);
+  window.addEventListener("pageshow", () => {
+    leavingSince = null;
+  });
   const original = window.fetch.bind(window);
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = appApiPath(input);
@@ -72,7 +98,7 @@ export function installAppApiFetchCapture(): void {
     } catch (error) {
       try {
         const aborted = error instanceof DOMException && error.name === "AbortError";
-        if (!aborted) {
+        if (!aborted && !pageIsLeaving()) {
           captureError({
             source: "app-api-http",
             relation: path,

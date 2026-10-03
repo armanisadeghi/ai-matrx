@@ -34,3 +34,25 @@ it("leaves other origins and successful calls alone", async () => {
   await window.fetch("https://example.com/api/x");
   expect(getSnapshot().filter((c) => c.source === "app-api-http")).toHaveLength(0);
 });
+
+it("a request the browser cancels while the page is leaving is not a failure; the same failure while it stays is", async () => {
+  const failing = jest.fn(async () => {
+    throw new TypeError("Failed to fetch");
+  });
+  // The wrapper binds the fetch it finds at install, so install a fresh copy over a failing one.
+  jest.resetModules();
+  window.fetch = failing as unknown as typeof window.fetch;
+  const fresh = await import("@/lib/diagnostics/captureAppApiFetch");
+  const store = await import("@/lib/diagnostics/errorCaptureStore");
+  store.clearCapturedErrors();
+  fresh.installAppApiFetchCapture();
+
+  window.dispatchEvent(new Event("beforeunload"));
+  await expect(window.fetch("/api/compute-targets")).rejects.toThrow("Failed to fetch");
+  expect(store.getSnapshot().filter((c) => c.source === "app-api-http")).toHaveLength(0);
+
+  window.dispatchEvent(new Event("pageshow"));
+  await expect(window.fetch("/api/compute-targets")).rejects.toThrow("Failed to fetch");
+  const hit = store.getSnapshot().find((c) => c.source === "app-api-http");
+  expect(hit).toMatchObject({ relation: "/api/compute-targets", status: 0 });
+});
