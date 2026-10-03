@@ -43,6 +43,10 @@ Routes outside this directory: `app/(core)/data-v2/`, `app/(core)/data/page.tsx`
   in `hub/doors.ts` only, and moves into the package at its next release.
 - **A table opens in its own organization.** The store's doors are keyed (organization, id); the organization comes
   from the object's id (`custom.where_id_opens`), never from the active organization or a caller.
+- **The gates in front of a table keep their answers** (`useObjectOrganization`, `useUnifiedDataCampaign`,
+  `useSharedTable` → `lib/kept-answer/keptAnswer.ts`): one answer per object / organization for the session, read
+  synchronously on remount or wake, re-asked in the background when stale, replaced only when it changed, never
+  blanked by a retry; forgotten on sign-out. A gate never drops back to "resolving" and unmounts the grid.
 - **The custom-fields section reads the ROW's organization itself** (`custom.entity_record_home(token, id)`, invoker,
   through `hub/doors.ts`), never a prop and never the active organization; a record that cannot show fields says why
   in one line (`data-section="custom-fields"` + `data-state` on every state).

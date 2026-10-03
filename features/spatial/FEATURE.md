@@ -60,9 +60,8 @@ stale text. By construction a batched tile renders once per interval instead of 
   warm). A tile acts on it only with `sleeps` (React `<Activity mode="hidden">`) / `discardable`, set per
   item type (`BoardItemType.sleeps`) after a browser check — waking re-runs every effect, and content
   whose mount effect resets itself loses work. Sleeping (browser-checked 2026-10-02): label, image,
-  chat, note, task, research, project, war room, workflow run. Awake, with the reason: document (Univer is rebuilt from the
-  server snapshot), file (`@monaco-editor/react` never re-creates its editor; previews re-download),
-  table and record (the organization gate re-resolves and unmounts the grid). What must outlive a sleeping body (a chat's live run, holding the
+  chat, note, task, research, project, war room, workflow run, table, record. Awake, with the reason: document (Univer is rebuilt from the
+  server snapshot), file (`@monaco-editor/react` never re-creates its editor; previews re-download). What must outlive a sleeping body (a chat's live run, holding the
   tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
 - **Nothing inside a tile takes over the board** (`engine/tile-navigation.tsx`). A tile body sees a
   board-provided app router; a page it opens (router push, link, `location.assign`, form) lands ON the
@@ -382,6 +381,13 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
 ## Change Log
+
+- 2026-10-02 — Table and record sleep. Their three gates (where the table lives, the store switch, the
+  share check) keep their answers per record for the session (`lib/kept-answer`), so a wake or an
+  Undo-remount draws the content on its first frame, asks none of those doors again, and never
+  unmounts the grid ("Opening the table…" is gone from wake). Browser-checked on a Record tile:
+  draft kept across sleep, 0 gate calls on wake and on remove+Undo. Still re-read on wake/remount:
+  the records package's own hooks (`@ai-matrx/records` `useAsync`, realtime resubscribe).
 
 - 2026-10-02 — War room and workflow run sleep. War room: the tile (body + a `Keep`) holds a
   ref-counted room view (`features/war-room/redux/roomViewSession.ts`) — one read and one "opened"
