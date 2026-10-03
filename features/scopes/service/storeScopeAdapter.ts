@@ -131,7 +131,10 @@ export interface StoreValueRow {
   field: Pick<StoreFieldDoc, "type" | "multi" | "format" | "display_format" | "config" | "relation_target"> & {
     carried?: StoreItemRow["carried"];
   };
+  /** The version a PERSON made (system rewrites never move it) — the "v{n}" badge (lane 9 ruling 2). */
   version?: number | null;
+  /** The store's own counter for this value, system rewrites included (kept, never shown). */
+  store_version?: number | null;
   set_at?: string | null;
   source_type?: string | null;
   value_id?: string | null;
