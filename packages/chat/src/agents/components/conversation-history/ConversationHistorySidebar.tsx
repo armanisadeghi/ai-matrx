@@ -665,7 +665,7 @@ const DenseView: React.FC<
           <div className="flex shrink-0 items-center">
             {status === "loading" ? (
               <LoadingTapButton
-                variant="group"
+                variant="transparent"
                 disabled
                 ariaLabel="Refreshing conversations"
                 className="text-muted-foreground"
@@ -673,7 +673,7 @@ const DenseView: React.FC<
               />
             ) : (
               <RefreshCwTapButton
-                variant="group"
+                variant="transparent"
                 onClick={onRefresh}
                 ariaLabel="Refresh conversations"
                 className="text-muted-foreground"
@@ -683,6 +683,7 @@ const DenseView: React.FC<
             {surfaceId && (
               <ConversationSourceFilterTree
                 scopeId={scopeId}
+                triggerClassName="ml-[3px]"
                 surfaceId={surfaceId}
                 align="end"
               />
@@ -977,7 +978,7 @@ const ConsumerView: React.FC<
           <div className="flex shrink-0 items-center">
             {status === "loading" ? (
               <LoadingTapButton
-                variant="group"
+                variant="transparent"
                 disabled
                 ariaLabel="Refreshing conversations"
                 className="text-muted-foreground"
@@ -985,7 +986,7 @@ const ConsumerView: React.FC<
               />
             ) : (
               <RefreshCwTapButton
-                variant="group"
+                variant="transparent"
                 onClick={onRefresh}
                 ariaLabel="Refresh conversations"
                 className="text-muted-foreground"
@@ -994,6 +995,7 @@ const ConsumerView: React.FC<
             )}
             <ConversationSourceFilterTree
               scopeId={scopeId}
+              triggerClassName="ml-[3px]"
               surfaceId={surfaceId}
               align="end"
             />
