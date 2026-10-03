@@ -27,10 +27,16 @@ jest.mock("@/lib/api/call-api", () => ({
   callConversationContinue: jest.fn(),
   callApi: jest.fn(),
 }));
+// The person's per-chat tool decisions, as the store holds them. Empty by
+// default (the frozen body carries no `user`); one test fills it.
+const mockStoreState: { instanceUIState: { byConversationId: Record<string, unknown> } } = {
+  instanceUIState: { byConversationId: {} },
+};
 jest.mock("@/lib/redux/hooks", () => ({
   // The real dispatch executes a thunk; here the door itself is the mock, so
   // dispatch only has to hand back what it produced.
   useAppDispatch: () => (thunk: unknown) => thunk,
+  useAppStore: () => ({ getState: () => mockStoreState }),
 }));
 
 import { callApi, callConversationContinue } from "@/lib/api/call-api";
@@ -402,6 +408,30 @@ describe("AiMatrxReplyComposer", () => {
     ]);
     expect(view.onAnswered).toHaveBeenCalledTimes(1);
     await view.unmount();
+  });
+
+  it("carries the person's tool decisions as the USER layer", async () => {
+    mockStoreState.instanceUIState.byConversationId["conv-1"] = {
+      builderAdvancedSettings: {
+        addedTools: ["tool-id"],
+        removedTools: ["memory"],
+        autoTools: false,
+      },
+    };
+    try {
+      const view = await mount();
+      await view.type("What did this session change?");
+      await view.send();
+      const options = door.mock.calls[0][0];
+      expect((options.body as { user?: unknown }).user).toEqual({
+        add: ["tool-id"],
+        remove: ["memory"],
+        auto_tools: false,
+      });
+      await view.unmount();
+    } finally {
+      mockStoreState.instanceUIState.byConversationId = {};
+    }
   });
 
   it("never sends an empty or whitespace-only message", async () => {
