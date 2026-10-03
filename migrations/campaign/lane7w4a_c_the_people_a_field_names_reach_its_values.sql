@@ -20,10 +20,10 @@
 -- The three read doors above are reached from the signed-in seat (custom.entity_record_read and
 -- custom.entity_records_find run as the person; the drill doors' compiled SQL runs as the person).
 -- GRANT CHANGE (announce): EXECUTE to authenticated, declared as client-callable doors.
--- (The three doors were declared in file b, in the same transaction that created them.)
-REVOKE ALL ON FUNCTION custom.protected_value(text, uuid, uuid) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION custom.protected_values(uuid, text, uuid) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION custom.protected_matches(uuid, jsonb) FROM PUBLIC, anon;
+-- The three doors were declared (closed) in file b, in the transaction that created them; open them:
+UPDATE platform.client_callable_door
+   SET signed_in_callers = true, non_client_lane = null
+ WHERE schema_name = 'custom' AND function_name IN ('protected_value', 'protected_values', 'protected_matches');
 GRANT EXECUTE ON FUNCTION custom.protected_value(text, uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION custom.protected_values(uuid, text, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION custom.protected_matches(uuid, jsonb) TO authenticated, service_role;
