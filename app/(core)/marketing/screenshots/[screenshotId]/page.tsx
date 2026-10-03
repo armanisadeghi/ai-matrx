@@ -60,7 +60,7 @@ export default async function MarketingScreenshotPage({
       </section>
 
       <div className="mx-auto mt-4 max-w-3xl">
-        <EntityCustomFields entityToken="web_screenshot" recordId={screenshot.id} organizationId={screenshot.organization_id} />
+        <EntityCustomFields entityToken="web_screenshot" recordId={screenshot.id} />
       </div>
     </main>
   );

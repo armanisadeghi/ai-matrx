@@ -761,7 +761,6 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                   <EntityCustomFields
                     entityToken="message_template"
                     recordId={saved.id}
-                    organizationId={saved.organization_id}
                   />
                 </div>
               </article>
@@ -931,7 +930,6 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                 <EntityCustomFields
                   entityToken="message_template"
                   recordId={saved.id}
-                  organizationId={saved.organization_id}
                 />
               </section>
             )}

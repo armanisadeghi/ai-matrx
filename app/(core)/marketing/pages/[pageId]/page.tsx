@@ -167,7 +167,7 @@ export default async function MarketingPageShortLink({
             Entity tables are reachable by exactly this line and no per-entity
             code. Absent, not an empty box, until a field is declared. */}
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm empty:hidden">
-          <EntityCustomFields entityToken="web_page" recordId={page.id} organizationId={page.organization_id} />
+          <EntityCustomFields entityToken="web_page" recordId={page.id} />
         </section>
 
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm">

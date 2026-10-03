@@ -704,7 +704,6 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                   <EntityCustomFields
                     entityToken="party"
                     recordId={party.id}
-                    organizationId={party.organization_id}
                   />
                 </div>
                 {!isPerson && party.primary_domain && (

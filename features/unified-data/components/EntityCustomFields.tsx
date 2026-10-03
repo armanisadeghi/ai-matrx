@@ -1,17 +1,25 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 // features/unified-data/components/EntityCustomFields.tsx
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
 //
-//   <EntityCustomFields entityToken="crm_deal" recordId={deal.id} organizationId={deal.organization_id} />
+//   <EntityCustomFields entityToken="crm_deal" recordId={deal.id} />
 //
 // 🚨 THE ORGANIZATION IS THE ROW'S, NEVER THE PERSON'S (lane ACCESS-IS-PERSONAL, owner's law
 // 2026-09-23: "for any RECORD I try to see, the active org is meaningless"). This read the
 // organization the person was working in, so a deal of Rincon opened from another of her
-// organizations showed that OTHER organization's custom fields — or none. The page already
-// holds the row, and the row holds its organization; it hands it in.
+// organizations showed that OTHER organization's custom fields — or none.
+//
+// 🚨 LANE 7 W5 — ONE WAY ONLY: the section asks the store for the row's organization
+// (`custom.entity_record_home(token, id)`, SECURITY INVOKER, so the table's own row rules
+// decide), never takes it as a prop. Windows, peeks and the generic Detail host hold only
+// (token, id), so a prop would have meant a second way in. A record that cannot show custom
+// fields (no organization column, a personal row, a row she cannot read) says the store's
+// sentence in one line — never silently absent. Every state carries
+// `data-section="custom-fields"` + `data-state`, which G1's live check reads
+// (features/unified-data/every-record-view-has-custom-fields.test.ts).
 //
 // That is the whole contract, and it is the same line on all 643 tables the
 // registry types Entity or Detail. There is no per-entity code here, on the
@@ -58,20 +66,90 @@ export interface EntityCustomFieldsProps {
   entityToken: string;
   /** The id of the row this page is showing. */
   recordId: string;
-  /** The ROW'S organization (`row.organization_id`). Nothing renders until it is known. */
-  organizationId: string | null | undefined;
   /** The heading. Defaults to the section's own. */
   title?: string;
   className?: string;
 }
 
-export function EntityCustomFields({
-  entityToken,
-  recordId,
-  organizationId: rowOrganizationId,
+type RecordHome =
+  | { state: "loading" }
+  | { state: "home"; organizationId: string }
+  | { state: "refused"; sentence: string }
+  | { state: "error" };
+
+interface RecordHomeAnswer {
+  organization_id?: string;
+  refused?: string;
+}
+
+interface RecordHomeCaller {
+  schema(name: "custom"): {
+    rpc(
+      fn: "entity_record_home",
+      args: { p_token: string; p_record_id: string },
+    ): PromiseLike<{ data: RecordHomeAnswer | null; error: { message: string } | null }>;
+  };
+}
+
+/** The row's organization, asked as the person. Never the active organization. */
+function useRecordHome(token: string, recordId: string): { home: RecordHome; retry: () => void } {
+  const [home, setHome] = useState<RecordHome>({ state: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setHome({ state: "loading" });
+    const client = createClient() as unknown as RecordHomeCaller;
+    void Promise.resolve(
+      client.schema("custom").rpc("entity_record_home", { p_token: token, p_record_id: recordId }),
+    ).then(
+      ({ data, error }) => {
+        if (!live) return;
+        if (error || !data) {
+          console.error("[EntityCustomFields] custom.entity_record_home failed", { token, recordId, error });
+          setHome({ state: "error" });
+        } else if (data.organization_id) setHome({ state: "home", organizationId: data.organization_id });
+        else setHome({ state: "refused", sentence: data.refused ?? "This record takes no custom fields." });
+      },
+      (error: unknown) => {
+        if (!live) return;
+        console.error("[EntityCustomFields] custom.entity_record_home threw", { token, recordId, error });
+        setHome({ state: "error" });
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [token, recordId, attempt]);
+  return { home, retry: () => setAttempt((n) => n + 1) };
+}
+
+/** One line in the section's place: the heading and why nothing more shows. */
+function SectionLine({
+  state,
   title,
   className,
-}: EntityCustomFieldsProps) {
+  children,
+}: {
+  state: string;
+  title?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={cn("flex min-w-0 items-center gap-2 text-xs", className)}
+      data-section="custom-fields"
+      data-state={state}
+      data-entity-custom-fields={state}
+    >
+      <h3 className="shrink-0 text-sm font-medium">{title ?? "Custom fields"}</h3>
+      {children}
+    </section>
+  );
+}
+
+export function EntityCustomFields({ entityToken, recordId, title, className }: EntityCustomFieldsProps) {
+  const { home, retry: retryHome } = useRecordHome(entityToken, recordId);
   // T1.2 (Doctrine R8): a person who may not change this table makes her own, in the ONE New table
   // dialog both data homes open (features/make/MakeMount.tsx), right here on the record page.
   const [makingTable, setMakingTable] = useState(false);
@@ -99,7 +177,7 @@ export function EntityCustomFields({
   useSurfaceScopeContribution(declares ? runtime!.surfaceName : null, "custom-fields-section", () => ({
     [CUSTOM_FIELDS_VALUE_NAME]: customFieldsScopeValue(),
   }));
-  const organizationId = rowOrganizationId ?? null;
+  const organizationId = home.state === "home" ? home.organizationId : null;
   // Whether she is a member of the ROW's organization: `null` until asked.
   const [member, setMember] = useState<boolean | null>(null);
   // ONE switch: does this organization keep its data in the record store? Set
@@ -117,14 +195,40 @@ export function EntityCustomFields({
       return isMember ? UNIFIED_DATA_CAMPAIGN.check(organization) : false;
     },
   });
-  if (!organizationId || member === false) return null;
+  if (home.state === "refused") {
+    return (
+      <SectionLine state="refused" title={title} className={className}>
+        <span className="min-w-0 truncate text-muted-foreground" title={home.sentence}>
+          {home.sentence}
+        </span>
+      </SectionLine>
+    );
+  }
+  if (home.state === "error") {
+    return (
+      <SectionLine state="error" title={title} className={className}>
+        <span className="text-muted-foreground">Couldn&apos;t read this record</span>
+        <Button size="sm" variant="ghost" className="ml-auto" onClick={retryHome}>
+          Retry
+        </Button>
+      </SectionLine>
+    );
+  }
+  if (!organizationId) return null;
+  // A record shared from an organization she is not in: its fields are that organization's.
+  if (member === false) {
+    return (
+      <SectionLine state="not-member" title={title} className={className}>
+        <span className="text-muted-foreground">Shared from an organization you&apos;re not in</span>
+      </SectionLine>
+    );
+  }
   // 🚨 ITEM 13 (lane 7 STANDARD-TABLES): the section never silently vanishes because the
   // organization's store switch is off or could not be read — it says which, in one line.
   // (Retiring the switch itself is lane 6's.)
   if (campaign.state === "off" || campaign.state === "unavailable") {
     return (
-      <section className={cn("flex min-w-0 items-center gap-2 text-xs", className)} data-entity-custom-fields={campaign.state}>
-        <h3 className="text-sm font-medium">{title ?? "Custom fields"}</h3>
+      <SectionLine state={campaign.state} title={title} className={className}>
         <span className="text-muted-foreground">
           {campaign.state === "off" ? "Off for this organization" : "Couldn't check this organization"}
         </span>
@@ -133,7 +237,7 @@ export function EntityCustomFields({
             Retry
           </Button>
         ) : null}
-      </section>
+      </SectionLine>
     );
   }
   if (!campaign.on) return null;
@@ -145,6 +249,7 @@ export function EntityCustomFields({
       {/* THE AGENT TWIN OF "ADD FIELD": the section hands its door to the
           platform write target \`custom_fields_add\`, so every page that embeds
           this line offers it to its agents (surfaces/runtime/custom-field-targets.ts). */}
+      <div data-section="custom-fields" data-state="ready" className="min-w-0">
       <CustomFieldsSection
         entityToken={entityToken}
         recordId={recordId}
@@ -154,6 +259,7 @@ export function EntityCustomFields({
         onMakeOwnTable={() => setMakingTable(true)}
         agentDoor={(door) => registerCustomFieldsDoor({ ...door, isLive: () => liveRef.current })}
       />
+      </div>
       <NewTableDialog what={makingTable ? "create" : null} onClose={() => setMakingTable(false)} />
     </RecordsMount>
   );
