@@ -7428,6 +7428,41 @@ export type ChatDatabase = {
           user_id: string
         }[]
       }
+      agent_run_list_lane: {
+        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          episode_id: string | null
+          error: Json | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          last_heartbeat_at: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          request: Json
+          result: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          total_cost: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_run"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       conversation_lane: {
         Args: {
           conversation_type: string
@@ -11403,6 +11438,41 @@ export type ChatDatabase = {
           p_plan_id: string
         }
         Returns: string
+      }
+      study_session_list_lane: {
+        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+        Returns: {
+          aggregate_score: Json | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          session_audio_file_id: string | null
+          session_review: Json | null
+          session_transcript: string | null
+          settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_kind: string | null
+          source_query: Json | null
+          source_set_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "study_session"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
@@ -26577,6 +26647,10 @@ export type ChatDatabase = {
         Args: { p_phone: string }
         Returns: Json
       }
+      secure_delivery_recipient_phone: {
+        Args: { p_email: string }
+        Returns: string
+      }
       secure_delivery_record_snapshot: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
@@ -32517,6 +32591,28 @@ export type ChatDatabase = {
         Returns: {
           n: number
           token: string
+        }[]
+      }
+      entity_lane_counts: {
+        Args: { p_eq?: Json; p_org_id?: string; p_token: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      entity_lane_rows: {
+        Args: {
+          p_eq?: Json
+          p_org_id?: string
+          p_scope?: string
+          p_token: string
+        }
+        Returns: {
+          id: string
+          lanes: string[]
+          organization_id: string
         }[]
       }
       entity_row_create: {

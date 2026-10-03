@@ -11889,6 +11889,41 @@ export type Database = {
           user_id: string
         }[]
       }
+      agent_run_list_lane: {
+        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          episode_id: string | null
+          error: Json | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          last_heartbeat_at: string | null
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          request: Json
+          result: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          status: string
+          total_cost: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "agent_run"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       conversation_lane: {
         Args: {
           conversation_type: string
@@ -31287,6 +31322,11 @@ export type Database = {
         Returns: Json
       }
       _take_op_id: { Args: { p_doc: Json; p_door: string }; Returns: Json }
+      _template_row_value: {
+        Args: { p_tokens: Json; p_value: Json }
+        Returns: Json
+      }
+      _template_token: { Args: { p_text: string }; Returns: string }
       _view_field_key: {
         Args: {
           p_known: string[]
@@ -32206,6 +32246,23 @@ export type Database = {
           trigger_kind: string
           trigger_status: string
           updated_at: string
+        }[]
+      }
+      checklist_templates_archived: {
+        Args: {
+          p_about_table_id?: string
+          p_limit?: number
+          p_organization_id: string
+        }
+        Returns: {
+          about_table: string
+          about_table_id: string
+          archived_at: string
+          archived_by: string
+          name: string
+          steps: number
+          table_archived: boolean
+          template_id: string
         }[]
       }
       choice_census: {
@@ -33408,6 +33465,10 @@ export type Database = {
       }
       file_kernel_id: { Args: never; Returns: string }
       filter_is_rule: { Args: { p_filter: Json }; Returns: boolean }
+      form_archive: {
+        Args: { p_form_id: string; p_organization_id: string }
+        Returns: Json
+      }
       form_declare: {
         Args: {
           p_form_id?: string
@@ -33512,6 +33573,10 @@ export type Database = {
         Args: { p_organization_id: string; p_url: string }
         Returns: string
       }
+      form_restore: {
+        Args: { p_form_id: string; p_organization_id: string }
+        Returns: Json
+      }
       form_slug: {
         Args: { p_form_id?: string; p_organization_id: string; p_title: string }
         Returns: string
@@ -33549,6 +33614,25 @@ export type Database = {
           state: string
           submission_cap: number
           table_id: string
+          title: string
+        }[]
+      }
+      forms_archived: {
+        Args: {
+          p_limit?: number
+          p_organization_id: string
+          p_table_id?: string
+        }
+        Returns: {
+          archived_at: string
+          archived_by: string
+          can_restore: boolean
+          form_id: string
+          kind: string
+          slug: string
+          table_archived: boolean
+          table_id: string
+          table_name: string
           title: string
         }[]
       }
@@ -36375,6 +36459,15 @@ export type Database = {
         Args: { p_organization_id: string; p_table_id: string }
         Returns: Json
       }
+      table_row_defaults_apply: {
+        Args: {
+          p_after?: string
+          p_budget_ms?: number
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
       table_row_defaults_set: {
         Args: {
           p_defaults: Json
@@ -36582,6 +36675,15 @@ export type Database = {
           table_id: string
           table_name: string
         }[]
+      }
+      template_from_tables: {
+        Args: {
+          p_include_rows?: boolean
+          p_organization_id: string
+          p_rows_per_table?: number
+          p_table_ids: string[]
+        }
+        Returns: Json
       }
       text_head_bytes: {
         Args: { p_bytes: number; p_text: string }
@@ -38776,6 +38878,57 @@ export type Database = {
       _source_facts_may_read_any: {
         Args: { p_id: string; p_type: string }
         Returns: boolean
+      }
+      page_extraction_job_list_lane: {
+        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+        Returns: {
+          agent_id: string | null
+          archived_at: string | null
+          attach_combined_pdf: boolean
+          chunk_overlap: number
+          chunk_size: number
+          chunking_strategy: string
+          column_order: Json
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          extra_inputs: Json
+          file_id: string
+          id: string
+          is_saved: boolean
+          kind: string
+          latest_run_id: string | null
+          max_concurrent: number
+          metadata: Json
+          model_overrides: Json | null
+          name: string
+          organization_id: string
+          output_schema: Json
+          owner_id: string
+          processed_document_id: string | null
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          rag_boost: number | null
+          scope_pages: number[] | null
+          shortcut_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_variations: Json
+          updated_at: string
+          updated_by: string | null
+          validates_job_id: string | null
+          variable_mapping: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "page_extraction_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       recompute_canonical_for_file: {
         Args: { p_file_id: string }
@@ -41410,6 +41563,41 @@ export type Database = {
           p_plan_id: string
         }
         Returns: string
+      }
+      study_session_list_lane: {
+        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+        Returns: {
+          aggregate_score: Json | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json
+          mode: string
+          organization_id: string
+          session_audio_file_id: string | null
+          session_review: Json | null
+          session_transcript: string | null
+          settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source_kind: string | null
+          source_query: Json | null
+          source_set_id: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "study_session"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
@@ -90085,6 +90273,10 @@ export type Database = {
         Args: { p_phone: string }
         Returns: Json
       }
+      secure_delivery_recipient_phone: {
+        Args: { p_email: string }
+        Returns: string
+      }
       secure_delivery_record_snapshot: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
@@ -97379,6 +97571,28 @@ export type Database = {
         Returns: {
           n: number
           token: string
+        }[]
+      }
+      entity_lane_counts: {
+        Args: { p_eq?: Json; p_org_id?: string; p_token: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      entity_lane_rows: {
+        Args: {
+          p_eq?: Json
+          p_org_id?: string
+          p_scope?: string
+          p_token: string
+        }
+        Returns: {
+          id: string
+          lanes: string[]
+          organization_id: string
         }[]
       }
       entity_row_create: {
@@ -123681,6 +123895,41 @@ export type Database = {
       duration_seconds: {
         Args: { p_metadata: Json; p_segments: Json }
         Returns: number
+      }
+      studio_session_list_lane: {
+        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+        Returns: {
+          assistant_conversation_id: string | null
+          assistant_conversations: Json
+          audio_storage_path: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json
+          module_id: string
+          organization_id: string
+          project_id: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          source: string
+          started_at: string
+          status: string
+          title: string
+          total_duration_ms: number
+          transcript_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "studio_sessions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
