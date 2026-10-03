@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!resource) {
     const entry = getShareableResource(resourceType);
     return {
-      title: `${entry?.displayLabel ?? "Public resource"} · AI Matrx`,
+      title: entry?.displayLabel ?? "Public resource",
       robots: NOT_INDEXED_ROBOTS,
     };
   }
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     resource.description ?? `A ${resource.displayLabel.toLowerCase()} shared publicly on AI Matrx.`;
   const canonical = `/p/e/${resource.resourceType}/${resource.resourceId}`;
   return {
-    title: `${resource.title} · AI Matrx`,
+    title: resource.title, // the root layout's title template adds the brand
     description,
     alternates: { canonical },
     // THE INDEXED SWITCH (access ladder T-12): published to the web is not the same as
