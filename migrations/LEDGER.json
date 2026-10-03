@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-03T19:01:38.221Z",
+  "generated_at": "2026-10-03T19:06:50.908Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -691,6 +691,12 @@
       "filename": "chairrc_a_record_changed_carries_its_change.sql",
       "checksum": "1844c6ba121d8268d898aead8b579ddb0244248b09a572ea383e5661eca7558f",
       "applied_at": "2026-10-02 18:28:08.644472+00"
+    },
+    "migrations/campaign/chairrc_b_every_consumer_drains_on_its_own.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairrc_b_every_consumer_drains_on_its_own.sql",
+      "checksum": "4f88006dc7e570cecf890ba7f353b6c7d69430c90568ea04320ee86bc26a858b",
+      "applied_at": "2026-10-03 19:06:48.373473+00"
     },
     "migrations/campaign/chairreadperf_a_the_read_door_takes_the_mask_from_the_row_it_holds.sql": {
       "source": "matrx-frontend",

@@ -2,6 +2,9 @@
 -- (server-only: every client grant revoked; `custom` is a closed schema), a foreign key from the second to
 -- custom.io_outbox (SHARE ROW EXCLUSIVE on custom.io_outbox for the instant the empty table is checked),
 -- and back-fills them from io_outbox.consumed_at/consumer. The chair applies it with Arman watching.
+-- It registers both in platform.entity_types (System machinery) and turns row security on LAST: the
+-- platform_admin_read policy that follows takes ACCESS EXCLUSIVE on the 23 auth/storage/realtime
+-- relations until COMMIT (one statement long; whole apply 1.8 s on the clone, 2026-10-03).
 -- No function body changes: Part A's doors already answer in both worlds and switch the moment
 -- these two tables exist, in this file's own transaction. Its index sibling (custom.io_outbox's
 -- (event_key, organization_id, created_at, id) index) is chairrc_c_…, CREATE INDEX CONCURRENTLY.
@@ -47,10 +50,10 @@ create index io_outbox_consumption_organization_consumer_idx
 comment on table custom.io_outbox_consumption is
   'Server-only. One row per (custom.io_outbox event, consumer) that consumer has carried; written only by custom._io_outbox_claim, handed back by custom.io_outbox_release_claimed, cleared on re-arm by custom.io_outbox_rearm. Lane CHAIR-RECORD-CHANGED, 2026-10-02.';
 
--- SERVER-ONLY BY GRANT, NOT BY ROW SECURITY. `custom` is a closed schema (no PostgREST exposure) and
--- these tables hold no client grant, so no client can reach a row. Turning RLS on would add
--- platform_admin_read, whose policy statement freezes sign-in (ACCESS EXCLUSIVE on auth.users and 20+
--- relations, measured on the clone) for a table no client can see anyway.
+-- SERVER-ONLY: `custom` is a closed schema (no PostgREST exposure), these tables hold no client grant,
+-- and both are registered as System machinery below (every table is tracked from birth; an
+-- unregistered table is refused at COMMIT). Row security is turned on LAST in this file, the way the
+-- template family did it (chair_tf_…), so the policy hook's freeze is one statement long.
 revoke all on table custom.io_outbox_consumer from public, anon, authenticated;
 revoke all on table custom.io_outbox_consumption from public, anon, authenticated;
 
@@ -64,3 +67,36 @@ select o.id, o.consumer, o.organization_id, o.consumed_at
  where o.consumed_at is not null
    and coalesce(btrim(o.consumer), '') <> ''
 on conflict do nothing;
+
+-- Both tables are System machinery: no client lane, reached only through the outbox doors.
+insert into platform.entity_types (
+  token, schema_name, table_name, label, base_tier, is_versioned, has_soft_delete, is_active,
+  notes, is_listed, is_component, is_module, rls_variant, reference_pickable, audit_class,
+  audit_class_reason, relation_kind, data_class, data_class_reason, default_list_scope,
+  origin, type, type_reason, agent_writable, allow_preview, table_ref
+)
+values
+  ('custom_io_outbox_consumer', 'custom', 'io_outbox_consumer', 'Outbox consumer', 1, false, false, true,
+   'One row per named consumer of a custom.io_outbox event key, and the moment it sees events from.',
+   false, false, false, 'system', false, 'machinery',
+   'Written only by custom.io_outbox_subscribe and custom._io_outbox_claim; no app or person reads it.',
+   'table', 'organization',
+   'Names the server''s own consumers of organizations'' record changes; no client lane, only the outbox doors.',
+   'organization', 'standard', 'system',
+   'Chair v6 (CHAIR-RECORD-CHANGED): per-consumer consumption of the record-changed outbox.',
+   false, false, 'custom.io_outbox_consumer'::regclass),
+  ('custom_io_outbox_consumption', 'custom', 'io_outbox_consumption', 'Outbox consumption', 1, false, false, true,
+   'One row per (custom.io_outbox event, consumer) that consumer has carried.',
+   false, false, false, 'system', false, 'machinery',
+   'Written only by custom._io_outbox_claim, io_outbox_release_claimed and io_outbox_rearm; no app or person reads it.',
+   'table', 'organization',
+   'Each row belongs to the organization whose record change it marks as carried; no client lane, only the outbox doors.',
+   'organization', 'standard', 'system',
+   'Chair v6 (CHAIR-RECORD-CHANGED): per-consumer consumption of the record-changed outbox.',
+   false, false, 'custom.io_outbox_consumption'::regclass)
+on conflict (token) do nothing;
+
+-- Row security last (Supabase's policy hook holds ACCESS EXCLUSIVE on auth/storage/realtime
+-- relations to COMMIT when it runs; last means for one statement). No client policy: no client lane.
+alter table custom.io_outbox_consumer enable row level security;
+alter table custom.io_outbox_consumption enable row level security;
