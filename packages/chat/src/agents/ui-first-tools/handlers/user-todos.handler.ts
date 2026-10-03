@@ -127,7 +127,8 @@ export const userTodosHandler: ToolHandler<UserTodosArgs, UserTodosResult> = {
             message: "id is required",
           };
         }
-        const row = await updateUserTodo(args.id, { done: true });
+        // done:false un-checks (the extension's contract); omitted means done.
+        const row = await updateUserTodo(args.id, { done: args.done ?? true });
         if (row) dispatch(upsertUserTodo(row));
         const all = await listUserTodos(conversationId);
         return { ok: true, action: "mark_done", ...summarize(all) };
