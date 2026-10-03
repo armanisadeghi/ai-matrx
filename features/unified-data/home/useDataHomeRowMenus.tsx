@@ -22,7 +22,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Link2, Star, StarOff } from "lucide-react";
+import { ArchiveRestore, ExternalLink, Link2, Star, StarOff } from "lucide-react";
 import type { PermissionLevel } from "@ai-matrx/records";
 import { RecordsProvider, useRecordsClient } from "@ai-matrx/records/react";
 import { createRecordsClient } from "@ai-matrx/records/core";
@@ -207,6 +207,46 @@ export function useDataHomeRowMenus({
     return toItemMenuConfig(actions);
   };
 
+  /**
+   * AN ARCHIVED ROW (the list's Archived filter, TABLE-ACTIONS item 10): Open, and Restore. A table
+   * is restored in its own organization by the store's one restore (`recordRestore`), which brings
+   * back what was built on it in the same event; a portal comes back from its table's Portals rail.
+   */
+  const forArchived = (row: DataHomeRow): ItemMenuConfig => {
+    const restore = async () => {
+      if (!row.organizationId || !row.tableId) return;
+      const inOrganization = createRecordsClient({ ...client.config, organizationId: row.organizationId });
+      const answered = await inOrganization.recordRestore({ record_id: row.tableId });
+      if (!answered.ok) throw new Error(answered.error.message);
+      onChanged();
+    };
+    return {
+      sections: [
+        {
+          id: "open",
+          items: [
+            { id: "open", kind: "link", label: "Open", href: row.href },
+            { id: "open-tab", kind: "link", label: "Open in new tab", icon: ExternalLink, href: row.href, target: "_blank" },
+          ],
+        },
+        {
+          id: "restore",
+          items: [
+            row.kind === "table"
+              ? {
+                  id: "restore",
+                  label: "Restore",
+                  icon: ArchiveRestore,
+                  onSelect: restore,
+                  toast: { loading: "Restoring…", success: `${row.name} restored`, error: (e) => (e instanceof Error ? e.message : "Couldn’t restore") },
+                }
+              : { id: "restore", kind: "link", label: "Restore from its table", icon: ArchiveRestore, href: row.href },
+          ],
+        },
+      ],
+    };
+  };
+
   /** A row that is not a table: its open entries and its star. */
   const forItem = (row: DataHomeRow): ItemMenuConfig => {
     const isStarred = starred.has(row.id);
@@ -296,7 +336,7 @@ export function useDataHomeRowMenus({
   const useRowActions = (list: EntityListController<DataHomeRow>): EntityRowActionsResult<DataHomeRow> => {
     const levels = useTableLevels(
       list.rows
-        .filter((r) => r.kind === "table" && r.tableId)
+        .filter((r) => r.kind === "table" && r.tableId && !r.archived)
         .map((r) => ({ tableId: r.tableId as string, organizationId: r.organizationId })),
     );
     return {
@@ -307,7 +347,7 @@ export function useDataHomeRowMenus({
       },
       onToggleFavorite: (row) => stars.toggle(row.id),
       menuFor: (row) => () =>
-        row.kind === "table" && row.tableId ? forTable(row, row.tableId, levels) : forItem(row),
+        row.archived ? forArchived(row) : row.kind === "table" && row.tableId ? forTable(row, row.tableId, levels) : forItem(row),
     },
     modals,
     };

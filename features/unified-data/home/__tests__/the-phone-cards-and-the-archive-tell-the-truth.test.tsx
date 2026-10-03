@@ -2,11 +2,12 @@
  * DATA-HOME-3F — three fix-before-Arman defects of VERIFY-DATA-HOME-3 (Verify 2):
  *   W3 a phone card is two lines (name, then kind · organization · updated), never labelled
  *      fields, an empty line or "2 more fields";
- *   W4 the archive is read 200 at a time with "Show more", and a statement timeout (57014) is
- *      said in a person's words with Try again — never Postgres's sentence;
+ *   W4 the archive (the list's Archived filter, TABLE-ACTIONS item 10) is read only when that
+ *      filter asks, 200 at a time, and a statement timeout (57014) is said in a person's words —
+ *      never Postgres's sentence;
  *   W5 the cards view reads the SAME lazy Records counter as the table's cells.
- * Break any one (fields density on the home, PAGE back to 1000, the raw message, `row.records`
- * on the card) and its block goes red.
+ * Break any one (fields density on the home, PAGE back to 1000, the archive read on first paint,
+ * the raw message, `row.records` on the card) and its block goes red.
  */
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -29,15 +30,20 @@ jest.mock("next/link", () => {
 jest.mock("@/components/official/item/ItemMenu", () => ({
   ItemMenu: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-jest.mock("@/features/unified-data/hub/ArchivedPortalsEverywhere", () => ({ ArchivedPortalsEverywhere: () => null }));
 const archived = jest.fn();
+const archivedPortals = jest.fn();
 jest.mock("@/features/unified-data/hub/doors", () => ({
   ...jest.requireActual("@/features/unified-data/hub/doors"),
   archivedTablesEverywhere: (...args: unknown[]) => archived(...args),
+  archivedPortalsEverywhere: (...args: unknown[]) => archivedPortals(...args),
 }));
 
 // eslint-disable-next-line import/first
-import { ARCHIVE_PAGE, DataHomeArchive, archiveReadRefusal } from "../DataHomeArchive";
+import { ARCHIVE_PAGE, readArchivedDataHome } from "../dataHomeArchived";
+// eslint-disable-next-line import/first
+import { createDataHomeService } from "../dataHomeService";
+// eslint-disable-next-line import/first
+import { DEFAULT_ENTITY_LIST_QUERY, type EntityListQuery } from "@/lib/entity-list/types";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -48,6 +54,8 @@ beforeEach(() => {
   document.body.append(host);
   root = createRoot(host);
   archived.mockReset();
+  archivedPortals.mockReset();
+  archivedPortals.mockResolvedValue({ ok: true, data: [] });
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -129,77 +137,60 @@ function archivedRows(n: number, from = 0) {
   }));
 }
 
-async function openArchive() {
-  await act(async () => {
-    root.render(<DataHomeArchive dataSource={{} as never} organizationFilter={null} />);
-  });
-  await flush();
-  const toggle = host.querySelector<HTMLButtonElement>("[data-testid=archived-disclosure-toggle]");
-  await act(async () => {
-    toggle?.click();
+const SORT = { sort: "updated", direction: "desc" as const, favoritesFirst: false, pageSize: 1000 };
+const query = (archivedAxis: EntityListQuery["archived"]): EntityListQuery => ({ ...DEFAULT_ENTITY_LIST_QUERY, archived: archivedAxis });
+
+function homeService(loadArchived: () => Promise<ReturnType<typeof row>[]>) {
+  return createDataHomeService({
+    load: async () => [row({ name: "Referral Intake Queue" }), row({ name: "Insurance Plan Accounts" })],
+    loadArchived,
+    isStarred: () => false,
+    ownerLabel: () => null,
   });
 }
 
-describe("W4 — the archive pages and speaks for a person", () => {
-  it("the archive door is not called on first paint, only when the archive opens", async () => {
-    archived.mockResolvedValue({ ok: true, data: archivedRows(3) });
-    await act(async () => {
-      root.render(<DataHomeArchive dataSource={{} as never} organizationFilter={null} />);
-    });
-    await flush();
-    expect(archived).not.toHaveBeenCalled();
-    const toggle = host.querySelector<HTMLButtonElement>("[data-testid=archived-disclosure-toggle]");
-    await act(async () => {
-      toggle?.click();
-    });
-    await flush();
-    expect(archived).toHaveBeenCalledTimes(1);
+describe("W4 — the archive is the list's Archived filter, read only when asked", () => {
+  it("the active list never reads the archive; Archived only shows only archived rows", async () => {
+    const loadArchived = jest.fn(async () => [row({ name: "Retired intake form 1", archived: true })]);
+    const service = homeService(loadArchived);
+    const active = await service.fetchPage(query("active"), SORT);
+    expect(loadArchived).not.toHaveBeenCalled();
+    expect(active.rows.map((r) => r.name).sort()).toEqual(["Insurance Plan Accounts", "Referral Intake Queue"]);
+    const only = await service.fetchPage(query("archived"), SORT);
+    expect(loadArchived).toHaveBeenCalledTimes(1);
+    expect(only.rows.map((r) => r.name)).toEqual(["Retired intake form 1"]);
   });
 
-  it("asks 200 at a time and offers Show more, never the whole archive at once", async () => {
+  it("Show all holds both halves", async () => {
+    const service = homeService(async () => [row({ name: "Retired intake form 1", archived: true })]);
+    const both = await service.fetchPage(query("all"), SORT);
+    expect(both.rows.map((r) => r.name).sort()).toEqual(["Insurance Plan Accounts", "Referral Intake Queue", "Retired intake form 1"]);
+  });
+
+  it("asks 200 at a time until a short page, never the whole archive in one call", async () => {
     archived.mockImplementation(async (_ds: unknown, page: { limit: number; offset: number }) => ({
       ok: true,
-      data: archivedRows(page.limit, page.offset),
+      data: archivedRows(page.offset >= 400 ? 7 : page.limit, page.offset),
     }));
-    await openArchive();
+    const rows = await readArchivedDataHome({} as never);
     expect(ARCHIVE_PAGE).toBe(200);
-    expect(archived).toHaveBeenCalledTimes(1);
-    expect(archived.mock.calls[0]![1]).toEqual({ limit: 200, offset: 0 });
-    expect(host.querySelectorAll("[data-archived-table]")).toHaveLength(200);
-    expect(host.querySelector("[data-archived-tables-more]")?.textContent).toContain("200 shown");
-    const more = [...host.querySelectorAll("button")].find((b) => b.textContent === "Show more");
-    await act(async () => {
-      more?.click();
-    });
-    await flush();
-    expect(archived.mock.calls[1]![1]).toEqual({ limit: 200, offset: 200 });
-    expect(host.querySelectorAll("[data-archived-table]")).toHaveLength(400);
+    expect(archived.mock.calls.map((c) => c[1])).toEqual([
+      { limit: 200, offset: 0 },
+      { limit: 200, offset: 200 },
+      { limit: 200, offset: 400 },
+    ]);
+    expect(rows).toHaveLength(407);
+    expect(rows.every((r) => r.archived === true && r.kind === "table")).toBe(true);
   });
 
-  it("a planted 57014 shows the person's sentence and Try again, never the Postgres text", async () => {
-    const timeout = { message: "canceling statement due to statement timeout", sqlstate: "57014" };
-    archived.mockResolvedValueOnce({ ok: false, error: timeout });
-    await openArchive();
-    const text = host.textContent ?? "";
-    expect(text).not.toMatch(/canceling statement/i);
-    expect(text).not.toMatch(/statement timeout/i);
-    expect(text).not.toMatch(/57014/);
-    expect(text).toContain("The archive took too long to answer.");
-    const retry = [...host.querySelectorAll("button")].find((b) => b.textContent === "Try again");
-    expect(retry).toBeTruthy();
-    archived.mockResolvedValueOnce({ ok: true, data: archivedRows(3) });
-    await act(async () => {
-      retry?.click();
-    });
-    await flush();
-    expect(host.querySelectorAll("[data-archived-table]")).toHaveLength(3);
-    expect(host.textContent).not.toContain("too long");
-  });
-
-  it("the refusal keeps the raw text for engineers only", () => {
-    const r = archiveReadRefusal({ message: "canceling statement due to statement timeout", sqlstate: "57014" });
-    expect(r.code).toBe("timed_out");
-    expect(r.message).not.toMatch(/canceling/);
+  it("a planted 57014 is said in a person's words, never the Postgres text", async () => {
+    archived.mockResolvedValueOnce({ ok: false, error: { message: "canceling statement due to statement timeout", sqlstate: "57014" } });
+    const failure = await readArchivedDataHome({} as never).then(
+      () => null,
+      (e: unknown) => e as Error,
+    );
+    expect(failure?.message).toBe("The archive took too long to answer. Try again in a moment.");
+    expect(failure?.message).not.toMatch(/canceling|statement timeout|57014/i);
   });
 });
 

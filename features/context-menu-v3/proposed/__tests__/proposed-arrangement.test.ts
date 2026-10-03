@@ -16,7 +16,7 @@ import { createClickTarget, type Action, type ActionCategory, type ResolvedActio
 import { clickedKind, proposedArrangement, OWN_ROWS_MAX, STRIP_MAX } from "../proposed-arrangement";
 
 const row = (id: string, label: string, category: ActionCategory, extra: Partial<Action> = {}): ResolvedAction => ({
-  action: { id, label, category, run: () => undefined, ...extra },
+  action: { id, label, category, run: () => undefined, eligible: () => ({ status: "available" }), ...extra } as Action,
   eligibility: { status: "available" },
 });
 const sub = (id: string, label: string, category: ActionCategory) => row(id, label, category, { expand: async () => [] });

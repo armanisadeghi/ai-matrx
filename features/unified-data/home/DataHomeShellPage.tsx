@@ -38,10 +38,7 @@ import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 import { DataHomeList } from "./DataHomeList";
-import { DataHomeArchive } from "./DataHomeArchive";
 import { MountWhenNear } from "./MountWhenNear";
-import { foundHighlightOf } from "@ai-matrx/kit/reversible";
-import { ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 import type { DataHomeMaking } from "./DataHomeRoute";
 
 /** `making` is the route's: a press made on the old home before the swap still opens here. */
@@ -150,10 +147,6 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
                           router.push(openPath(recordId, { fallback: `/data-v2/${tableId}?record=${recordId}` }))
                         }
                       />
-                    </MountWhenNear>
-                    {/* Read when the person scrolls to it: the archive door is a second walk the first screen never needs. */}
-                    <MountWhenNear eager={foundHighlightOf(searchParams) === ARCHIVED_TABLES_SPOT}>
-                      <DataHomeArchive dataSource={dataSource} organizationFilter={organizationId} />
                     </MountWhenNear>
                   </div>
                 }

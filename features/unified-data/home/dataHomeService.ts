@@ -47,6 +47,11 @@ export interface DataHomeServiceOptions {
   ownerLabel: (row: DataHomeRow) => string | null;
   now?: () => number;
   /**
+   * THE ARCHIVE AXIS (lane TABLE-ACTIONS item 10): the archived tables, read only when the list's
+   * Archived filter asks for them (never on first paint). Absent → the axis shows active rows only.
+   */
+  loadArchived?: () => Promise<DataHomeRow[]>;
+  /**
    * The rows `load` resolved to, synchronously, once they are in hand (undefined before). With it
    * the service answers the shell's `peek` — every keystroke repaints in its own render.
    */
@@ -168,8 +173,44 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
     }
     return corpus;
   };
+  let archivedRead: Promise<DataHomeRow[]> | null = null;
+  let archivedHeld: DataHomeRow[] | undefined;
+  const archivedAll = () => {
+    if (!opts.loadArchived) return Promise.resolve([] as DataHomeRow[]);
+    if (!archivedRead) {
+      archivedRead = opts.loadArchived().then(
+        (rows) => {
+          archivedHeld = rows;
+          return rows;
+        },
+        (error: unknown) => {
+          archivedRead = null; // never cached as empty
+          throw error;
+        },
+      );
+    }
+    return archivedRead;
+  };
+  /** The rows the query's archive axis asks for: active (default), archived only, or both. */
+  const rowsFor = async (query: EntityListQuery): Promise<DataHomeRow[]> => {
+    if (query.archived === "archived") return archivedAll();
+    if (query.archived === "all") {
+      const [active, archived] = await Promise.all([all(), archivedAll()]);
+      return [...active, ...archived];
+    }
+    return all();
+  };
   /** The rows in hand right now, or undefined (still loading) — the `peek` answers only then. */
-  const inHand = () => held ?? opts.loaded?.();
+  const inHandActive = () => held ?? opts.loaded?.();
+  const inHand = (query: EntityListQuery): DataHomeRow[] | undefined => {
+    if (query.archived === "archived") return opts.loadArchived ? archivedHeld : [];
+    if (query.archived === "all") {
+      const active = inHandActive();
+      const archived = opts.loadArchived ? archivedHeld : [];
+      return active && archived ? [...active, ...archived] : undefined;
+    }
+    return inHandActive();
+  };
   const now = () => (opts.now ? opts.now() : Date.now());
 
   type MatchOpts = { lane?: DataHomeScope | null; skip?: string; org?: boolean };
@@ -318,29 +359,29 @@ export function createDataHomeService(opts: DataHomeServiceOptions): EntityListS
 
   return {
     async fetchPage(query: EntityListQuery, sort: EntityListSort) {
-      const rows = await all();
+      const rows = await rowsFor(query);
       askServer(query);
       return pageOf(rows, query, sort);
     },
     async fetchCounts(query: EntityListQuery): Promise<EntityScopeCounts> {
-      return countsOf(await all(), query);
+      return countsOf(await rowsFor(query), query);
     },
     async fetchFacets(query: EntityListQuery): Promise<EntityFacets> {
-      return facetsOf(await all(), query);
+      return facetsOf(await rowsFor(query), query);
     },
     peek: {
       page(query, sort) {
-        const rows = inHand();
+        const rows = inHand(query);
         if (!rows) return undefined;
         askServer(query);
         return pageOf(rows, query, sort);
       },
       counts(query) {
-        const rows = inHand();
+        const rows = inHand(query);
         return rows ? countsOf(rows, query) : undefined;
       },
       facets(query) {
-        const rows = inHand();
+        const rows = inHand(query);
         return rows ? facetsOf(rows, query) : undefined;
       },
     },

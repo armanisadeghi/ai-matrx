@@ -13,7 +13,8 @@
 // in the footer). Nothing in this file reads the active organization for a read.
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { foundHighlightOf } from "@ai-matrx/kit/reversible";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource } from "@ai-matrx/records";
 
@@ -40,6 +41,8 @@ import {
 import { ACCESS_WORD, dataHomeKindWord, type DataHomeAccess, type DataHomeRow } from "./dataHomeRows";
 import { createDataHomeService, DATA_HOME_ROW_CAP } from "./dataHomeService";
 import { createDataHomeCorpus } from "./dataHomeCorpus";
+import { readArchivedDataHome } from "./dataHomeArchived";
+import { ARCHIVED_TABLES_HREF, ARCHIVED_TABLES_SPOT } from "./archivedTablesPlace";
 import { createRecordCountStore } from "./dataHomeRecordCounts";
 import { tableRowCounts } from "@/features/unified-data/hub/doors";
 import { dataHomeColumns, ownerLabel } from "./dataHomeColumns";
@@ -125,17 +128,27 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       createDataHomeService({
         load: corpus.load,
         loaded: corpus.loaded,
+        // The Archived filter's rows, read only when it asks (TABLE-ACTIONS item 10).
+        loadArchived: () => readArchivedDataHome(dataSource),
         server: corpus.server,
         isStarred: (row) => starredSet.has(row.id),
         ownerLabel,
       }),
-    [corpus, starredSet],
+    [corpus, starredSet, dataSource],
   );
 
   // Defaults stay knobs (person / platform tier; never the active organization).
   const defaultScope = resolveDataHomeScope(null, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_SCOPE_KNOB));
+  const searchParams = useSearchParams();
   // `?kind=` (the old page's address) is kept as an alias: it opens on that kind, one chip away from all.
-  const kindParam = useSearchParams().get("kind");
+  const kindParam = searchParams.get("kind");
+  // "Open Archived tables" from an older announcement (`?found=archived-tables`) lands on the
+  // list's Archived filter, where the archive lives now (TABLE-ACTIONS item 10).
+  const router = useRouter();
+  const foundArchive = foundHighlightOf(searchParams) === ARCHIVED_TABLES_SPOT;
+  useEffect(() => {
+    if (foundArchive) router.replace(ARCHIVED_TABLES_HREF);
+  }, [foundArchive, router]);
   const defaultKind = resolveDataHomeKind(kindParam, useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_KIND_KNOB));
   const order = resolveDataHomeOrder(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_ORDER_KNOB));
   const defaultView = resolveDataHomeView(useEffectiveKnob(null, userId, DATA_HOME_DEFAULT_VIEW_KNOB));
@@ -175,7 +188,9 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
         isFavorite: (row) => starredSet.has(row.id),
         canToggle: () => true,
       },
-      supportsArchived: false,
+      // THE ARCHIVE IS THE LIST'S ARCHIVED FILTER (hide archived · show all · archived only;
+      // common-docs/policies/archived-items.md): archived tables and portals, each with Restore.
+      supportsArchived: true,
       facetSections: [
         { facet: "kind", filterId: "kind", label: "Kind", noneLabel: "None", countInLabel: false, formatValue: dataHomeKindWord },
         {

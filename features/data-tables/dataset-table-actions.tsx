@@ -29,17 +29,16 @@ export interface DatasetTableMenuRow {
   name: string | null;
 }
 
-/** THE ROW'S OWN ENTITY — Attach To / Share target this dataset. */
+/**
+ * THE TABLE'S OWN ENTITY, for right-click's Attach To: a record-store table is a `record` (the Data
+ * home's `getRowEntity` says the same). No `resourceType`: the table's action list carries Share,
+ * so v3's generic Share is not drawn beside it.
+ */
 export function datasetTableEntityRef(
   row: DatasetTableMenuRow | null,
 ): ContextMenuEntityRef | null {
   if (!row) return null;
-  return {
-    type: "dataset",
-    id: row.id,
-    title: row.name ?? "Data table",
-    resourceType: "dataset",
-  };
+  return { type: "record", id: row.id, title: row.name ?? "Table" };
 }
 
 /** Why a verb that needs the table's page does nothing here (≤ 60 chars). */

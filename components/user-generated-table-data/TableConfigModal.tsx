@@ -149,6 +149,7 @@ export default function TableConfigModal({
   rows,
   defaultTab,
   onSuccess,
+  pageOwnsShare = false,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
   // Which tab is showing, so the footer speaks for THAT tab's save model

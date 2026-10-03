@@ -22,7 +22,7 @@ import {
   type HubItem,
   type HubReadContext,
 } from "@/features/unified-data/hub/capabilities";
-import type { DataHomeAnswer, DataHomeTableRow, DoorFailure } from "@/features/unified-data/hub/doors";
+import type { ArchivedEverywhereRow, ArchivedPortalEverywhereRow, DataHomeAnswer, DataHomeTableRow, DoorFailure } from "@/features/unified-data/hub/doors";
 import { isPublicVisibility, kindOne, type ScopeFacts } from "@/features/unified-data/hub/dataHomeScope";
 
 /** Which lane put a row in front of the person — one word, the strongest reason first. */
@@ -85,6 +85,71 @@ export interface DataHomeRow {
    * description): where it matched, for the "Matched in" line. Absent on every other row.
    */
   matched?: { in: "name" | "description" | "field" | "id"; field: string | null } | undefined;
+  /**
+   * An archived table, listed only under the list's Archived filter (lane TABLE-ACTIONS item 10).
+   * Its menu offers Open and Restore; `isArchivedRow` keeps its cells read-only.
+   */
+  archived?: boolean;
+}
+
+/**
+ * ONE ARCHIVED TABLE AS A DATA HOME ROW (`custom.archived_tables_everywhere`). The door reads the
+ * organizations the person belongs to, so the row is an organization row; it says when it was
+ * archived and by whom in its facts.
+ */
+export function archivedTableRow(table: ArchivedEverywhereRow): DataHomeRow {
+  const when = table.archived_at ? new Date(table.archived_at).toLocaleDateString() : null;
+  return {
+    id: `table:${table.organization_id}:${table.id}`,
+    itemId: table.id,
+    name: table.document?.name?.trim() || "Untitled table",
+    kind: "table",
+    organizationId: table.organization_id,
+    organizationName: table.organization_name,
+    tableId: table.id,
+    parentName: null,
+    updatedAt: table.archived_at,
+    createdBy: null,
+    createdByName: null,
+    mine: false,
+    team: false,
+    member: true,
+    sharedWithMe: false,
+    visibility: null,
+    system: false,
+    access: "org",
+    records: null,
+    changedBy: table.archived_by_name,
+    details: ["Archived", when, table.archived_by_name ? `by ${table.archived_by_name}` : null].filter(Boolean).join(" "),
+    href: `/data-v2/${table.id}`,
+    publicHref: null,
+    publicLabel: null,
+    trouble: null,
+    keptByTheApp: false,
+    foundation: false,
+    syncedFrom: null,
+    archived: true,
+  };
+}
+
+/** ONE ARCHIVED PORTAL AS A ROW: it is brought back from its clients table's Portals rail. */
+export function archivedPortalRow(portal: ArchivedPortalEverywhereRow): DataHomeRow {
+  return {
+    ...archivedTableRow({
+      id: portal.client_table_id,
+      document: null,
+      archived_at: null,
+      archived_by_name: null,
+      organization_id: portal.organization_id,
+      organization_name: portal.organization_name,
+    }),
+    id: `portal:${portal.organization_id}:${portal.portal_id}`,
+    itemId: portal.portal_id,
+    name: portal.title || "Untitled portal",
+    kind: "portal",
+    parentName: portal.client_table,
+    href: `/data-v2/${portal.client_table_id}?rail=portals&item=${portal.portal_id}`,
+  };
 }
 
 /** Singular kind words the hub's KIND_ONE does not carry (the item kinds). */
