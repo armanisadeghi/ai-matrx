@@ -303,7 +303,6 @@ export function ApplicationsOverview({
                       >
                         <span
                           className="w-36 shrink-0 text-muted-foreground"
-                          title={u.key}
                         >
                           {u.label}
                         </span>

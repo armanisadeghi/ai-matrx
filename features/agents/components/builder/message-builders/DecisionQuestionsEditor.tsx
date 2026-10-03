@@ -708,11 +708,9 @@ function QuestionCard({
             value={question.name}
             onChange={(e) => onName(e.target.value)}
             aria-label={`Question ${index + 1} field name`}
+            className={cn("h-6 w-52 max-w-full font-mono text-[11px]", duplicate && "border-destructive text-destructive")}
+            data-identifier
             placeholder="field_name"
-            className={cn(
-              "h-6 w-52 max-w-full font-mono text-[11px]",
-              duplicate && "border-destructive text-destructive",
-            )}
           />
         </label>
 

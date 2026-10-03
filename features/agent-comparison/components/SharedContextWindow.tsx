@@ -219,8 +219,9 @@ function SharedContextComposerFooter({
             setDraft({ ...draft, key: e.target.value });
             setError(null);
           }}
-          placeholder="key_name"
           className="w-[140px] text-[11px] font-mono bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
+          data-identifier
+          placeholder="key_name"
         />
         <input
           type="text"

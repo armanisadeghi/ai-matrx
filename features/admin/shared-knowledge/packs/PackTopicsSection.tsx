@@ -127,9 +127,8 @@ function TopicPicker({ onPick, exclude }: { onPick: (t: TopicOption) => void; ex
               <li key={t.id}>
                 <button type="button" onClick={() => onPick(t)} className="flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs hover:bg-muted/60">
                   <span className="truncate text-foreground">{t.name}</span>
-                  <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                    {t.slug}
-                    {t.node_type ? ` · ${t.node_type}` : ""}
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                    {t.node_type ? humanizeIdentifier(t.node_type) : ""}
                   </span>
                 </button>
               </li>
@@ -310,7 +309,6 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                       <span className="text-sm font-medium text-foreground">{t.name}</span>
-                      <span className="font-mono text-[10px] text-muted-foreground">{t.slug}</span>
                       {t.lead_quality ? (
                         <Badge variant="outline" className="text-[10px]">
                           {humanizeIdentifier(t.lead_quality) || t.lead_quality}

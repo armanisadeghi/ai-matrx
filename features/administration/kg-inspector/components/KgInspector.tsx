@@ -16,6 +16,7 @@
  * the graph fills, before committing to the full cytoscape view (Phase G).
  * Pure reads through the typed kgInspectorService → Python backend.
  */
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from "@/features/surfaces/manifests/admin-knowledge.manifest";
@@ -829,9 +830,9 @@ function EdgesTab({
       header: "Edge",
       filter: "select",
       filterSingle: true,
-      filterOptions: EDGE_KINDS.map((value) => ({ value, label: value })),
+      filterOptions: EDGE_KINDS.map((value) => ({ value, label: humanizeIdentifier(value) })),
       width: 170,
-      cell: (row) => <Badge variant="outline" className="font-mono">{row.kind}</Badge>,
+      cell: (row) => <Badge variant="outline">{humanizeIdentifier(row.kind)}</Badge>,
     },
     {
       id: "target",
@@ -900,7 +901,7 @@ function EdgesTab({
               <EdgeEndpointButton id={row.src_id} name={row.src_name} kind={row.src_kind} onSelectEntity={onSelectEntity} />
             </div>
             <div className="my-2 border-l border-border pl-3 text-xs text-muted-foreground">
-              <Badge variant="outline" className="font-mono">{row.kind}</Badge>
+              <Badge variant="outline">{humanizeIdentifier(row.kind)}</Badge>
               <span className="ml-2 tabular-nums">Weight {row.weight === null ? "—" : row.weight.toFixed(2)}</span>
             </div>
             <div className="flex items-center gap-2">

@@ -2136,8 +2136,9 @@ function CustomToolForm({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
+            className="font-mono h-7 text-xs"
+            data-identifier
             placeholder="get_customer_status"
-            className="h-7 text-xs"
             style={{ fontSize: "16px" }}
           />
           {nameError && (
@@ -2181,8 +2182,9 @@ function CustomToolForm({
                 <Input
                   value={param.name}
                   onChange={(e) => updateParam(idx, { name: e.target.value })}
+                  className="font-mono h-6 text-[11px] flex-1"
+                  data-identifier
                   placeholder="param_name"
-                  className="h-6 text-[11px] flex-1"
                   style={{ fontSize: "16px" }}
                 />
                 <Select

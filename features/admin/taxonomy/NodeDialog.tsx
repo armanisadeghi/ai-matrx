@@ -185,9 +185,6 @@ export default function NodeDialog({ state, rows, onClose, onSaved }: NodeDialog
                   {parentOptions.map((option) => (
                     <SelectItem key={option.id} value={option.id}>
                       {option.name}
-                      <span className="ml-1.5 text-xs text-muted-foreground">
-                        {option.slug}
-                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

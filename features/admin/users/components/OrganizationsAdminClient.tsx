@@ -374,9 +374,6 @@ export function OrganizationsAdminClient() {
               showIcon={false}
               className="text-sm font-medium"
             />
-            <div className="truncate text-[11px] text-muted-foreground">
-              {organization.slug}
-            </div>
           </div>
         </div>
       ),

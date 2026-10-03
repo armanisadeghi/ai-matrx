@@ -237,8 +237,9 @@ export function VariableDefaultsEditor({
                     name: e.target.value.replace(/\s/g, "_"),
                   }))
                 }
-                placeholder="my_variable"
                 className="text-xs h-7 font-mono"
+                data-identifier
+                placeholder="my_variable"
                 disabled={modalMode === "edit"}
               />
             </div>

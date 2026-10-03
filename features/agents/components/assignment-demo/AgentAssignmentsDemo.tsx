@@ -560,11 +560,11 @@ function ApiReference({ mode }: { mode: AssignmentDemoMode }) {
       </CardHeader>
       <CardContent className="space-y-2 font-mono text-xs text-muted-foreground">
         {mode === "single_random" ? (
-          <p>POST /api/ai/agents/&#123;agent_id&#125;</p>
+          <p><code>POST /api/ai/agents/&#123;agent_id&#125;</code></p>
         ) : (
           <>
             <p>POST /api/ai/agent-assignments</p>
-            <p>GET /api/ai/agent-assignments/sessions/&#123;session_id&#125;</p>
+            <p><code>GET /api/ai/agent-assignments/sessions/&#123;session_id&#125;</code></p>
             <p>
               POST /api/ai/agent-assignments/sessions/&#123;session_id&#125;/cancel
             </p>
@@ -607,7 +607,7 @@ function ResultsPanel() {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="font-medium">{item.key}</span>
+                <code className="font-medium">{item.key}</code>
                 <Badge variant="outline">{item.status}</Badge>
               </div>
               {/* A real conversation the run just produced — the whole point

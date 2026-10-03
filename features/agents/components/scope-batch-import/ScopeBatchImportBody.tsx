@@ -553,9 +553,6 @@ export function ScopeBatchImportBody({
                         <span className="text-sm font-medium truncate">
                           {item.display_name}
                         </span>
-                        <span className="text-xs text-muted-foreground font-mono truncate">
-                          {item.key}
-                        </span>
                       </div>
                     </TableCell>
                     <TableCell data-label="Variable" data-phone="inline">

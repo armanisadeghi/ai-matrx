@@ -59,7 +59,7 @@ function BucketPanel({
         id: "key",
         accessorKey: "key",
         header: keyHeader,
-        cell: (row) => <span className="font-mono text-xs">{row.key}</span>,
+        cell: (row) => <code className="font-mono text-xs">{row.key}</code>,
         width: 150,
       },
       {

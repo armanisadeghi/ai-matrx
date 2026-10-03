@@ -56,7 +56,6 @@ const columns: MatrxColumnDef<AdminMeetingRow>[] = [
     cell: (row) => (
       <div className="min-w-0">
         <div className="truncate font-medium" title={row.title}>{row.title}</div>
-        {row.slug ? <div className="truncate font-mono text-[11px] text-muted-foreground">{row.slug}</div> : null}
       </div>
     ),
   },

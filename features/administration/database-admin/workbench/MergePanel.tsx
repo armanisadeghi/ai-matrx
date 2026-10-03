@@ -365,8 +365,9 @@ export function MergePanel({
                   onChange={(e) =>
                     onChangeConfig("timelineKey", e.target.value)
                   }
-                  placeholder="created_at"
                   className="h-8 text-xs font-mono"
+                  data-identifier
+                  placeholder="created_at"
                 />
               </div>
             )}

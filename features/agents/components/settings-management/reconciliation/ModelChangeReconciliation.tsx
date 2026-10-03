@@ -12,6 +12,7 @@
  * The per-row table lets the user override the suggested action for any key.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -214,8 +215,8 @@ export function ModelChangeReconciliation({
                   !isLast ? "border-b border-border" : ""
                 }`}
               >
-                <span className="font-mono text-xs truncate" title={row.key}>
-                  {row.key}
+                <span className="text-xs truncate" title={humanizeIdentifier(row.key)}>
+                  {humanizeIdentifier(row.key)}
                 </span>
                 <span
                   className="font-mono text-xs text-muted-foreground truncate"

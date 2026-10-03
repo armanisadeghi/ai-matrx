@@ -239,10 +239,10 @@ export function SystemItemDefaultsEditor({
             className="h-7"
             disabled={saving}
             onClick={() => setDraft([...draft, i.key])}
-            aria-label={`Add ${i.key}`}
+            aria-label={`Add ${i.display_name}`}
           >
             <Plus className="mr-1 h-3 w-3" aria-hidden />
-            {i.key}
+            {i.display_name}
           </Button>
         ))}
         {candidates.length === 0 && (

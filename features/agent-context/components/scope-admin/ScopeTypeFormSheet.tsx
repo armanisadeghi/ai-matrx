@@ -280,11 +280,12 @@ export function ScopeTypeFormSheet({
             <Input
               value={variableKeyInput}
               onChange={(e) => setVariableKeyInput(e.target.value)}
+              className="font-mono text-base flex-1"
+              data-identifier
               placeholder="e.g. budget_code"
               onKeyDown={(e) =>
                 e.key === "Enter" && (e.preventDefault(), addVariableKey())
               }
-              className="text-base flex-1"
               style={{ fontSize: "16px" }}
             />
             <Button

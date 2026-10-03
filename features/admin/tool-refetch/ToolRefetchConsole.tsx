@@ -20,6 +20,7 @@
  * copyable — never an inert string, never a button that 404s.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
@@ -598,7 +599,7 @@ export function ToolRefetchConsole() {
 
   const rows = report.data?.rows ?? [];
   const columns = useMemo((): MatrxColumnDef<ToolRefetchSummaryRow>[] => [
-    { id: "toolName", accessorKey: "toolName", header: "Tool", width: 240, cell: (row) => <span className="font-medium">{row.toolName}</span> },
+    { id: "toolName", accessorKey: "toolName", header: "Tool", width: 240, cell: (row) => <span className="font-medium">{humanizeIdentifier(row.toolName)}</span> },
     { id: "totalCalls", accessorKey: "totalCalls", header: "Calls", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.totalCalls)}</span> },
     { id: "repeats", accessorKey: "repeats", header: "Repeats", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtCount(row.repeats)}</span> },
     { id: "repeatRate", accessorKey: "repeatRate", header: "Repeat %", filter: "number", width: 100, cell: (row) => <span className="tabular-nums">{fmtPct(row.repeatRate)}</span> },

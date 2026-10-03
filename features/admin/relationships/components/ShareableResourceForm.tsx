@@ -243,7 +243,7 @@ export function ShareableResourceForm({
         <div className="flex items-center justify-between">
           <span className="flex flex-col">
             {/* Direct-grant sharing (ShareModal / iam.permissions) is wired for this table. */}
-            <span className="text-xs font-medium">RLS uses has_permission</span>
+            <span className="text-xs font-medium">Uses direct sharing grants</span>
           </span>
           <Switch
             checked={editor.rlsUsesHasPermission}

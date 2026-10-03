@@ -20,6 +20,7 @@
  * (`features/administration/batch/FEATURE.md`). Do not grow a third cost
  * surface here; send the operator there.
  */
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useAdminCost } from "@/components/cost/useAdminCost";
 import { splitAdminCostColumns } from "@/components/cost/adminCostColumns";
 import { useEffect, useState } from "react";
@@ -869,7 +870,7 @@ function BatchDetailDialog({
                 <dd className="font-mono">{detail.provider}</dd>
 
                 <dt className="text-muted-foreground">Kind</dt>
-                <dd className="font-mono">{detail.kind}</dd>
+                <dd>{humanizeIdentifier(detail.kind)}</dd>
 
                 <dt className="text-muted-foreground">Status</dt>
                 <dd>

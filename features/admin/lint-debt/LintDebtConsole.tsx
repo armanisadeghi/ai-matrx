@@ -906,7 +906,7 @@ function BucketCard({
               }`}
             >
               <span className="min-w-0 truncate font-mono text-foreground">
-                {b.key}
+                <code>{b.key}</code>
               </span>
               <span className="ml-2 shrink-0 tabular-nums text-muted-foreground">
                 {b.count}

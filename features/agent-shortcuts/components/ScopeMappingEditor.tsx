@@ -230,8 +230,9 @@ export function ScopeMappingEditor({
                 cancelCustomKey();
               }
             }}
+            className={compact ? "h-7 text-[16px] font-mono" : "h-8 text-[16px] font-mono"}
+            data-identifier
             placeholder="custom_key"
-            className={compact ? "h-7 text-[16px]" : "h-8 text-[16px]"}
           />
           <Button
             type="button"

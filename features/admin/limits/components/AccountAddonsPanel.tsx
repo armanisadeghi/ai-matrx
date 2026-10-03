@@ -882,9 +882,6 @@ function GrantAddonDialog({
                   {org ? (
                     <span className="truncate">
                       {org.name}
-                      <span className="ml-2 font-mono text-xs text-muted-foreground">
-                        {org.slug}
-                      </span>
                     </span>
                   ) : (
                     <span className="text-muted-foreground">
@@ -923,9 +920,6 @@ function GrantAddonDialog({
                             )}
                           />
                           <span className="truncate">{row.name}</span>
-                          <span className="truncate font-mono text-xs text-muted-foreground">
-                            {row.slug}
-                          </span>
                         </CommandItem>
                       ))}
                     </CommandGroup>

@@ -9,6 +9,7 @@
 // go through admin_upsert_catalog_entry with p_expected_updated_at; a 40001
 // conflict toasts and refreshes.
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -266,9 +267,7 @@ export function CatalogKindTable({
           <code
             className="block max-w-64 truncate text-sm font-medium"
             title={row.key}
-          >
-            {row.key}
-          </code>
+          >{row.key}</code>
         ),
         width: 260,
       },
@@ -289,7 +288,7 @@ export function CatalogKindTable({
               {name}
             </span>
           ) : (
-            <span className="text-muted-foreground">{row.key}</span>
+            <span className="text-muted-foreground">{humanizeIdentifier(row.key)}</span>
           );
         },
         width: 220,

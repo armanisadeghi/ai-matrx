@@ -993,7 +993,7 @@ function BucketCard({
                   (active === b.key ? " text-primary" : "")
                 }
               >
-                {b.key}
+                <code>{b.key}</code>
               </button>
               <span className="shrink-0 tabular-nums text-muted-foreground">
                 {b.count}

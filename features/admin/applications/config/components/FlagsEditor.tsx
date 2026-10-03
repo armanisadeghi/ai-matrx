@@ -137,8 +137,9 @@ export function FlagsEditor({
               addFlag();
             }
           }}
-          placeholder="new_flag_key"
           className="h-8 max-w-xs font-mono text-sm"
+          data-identifier
+          placeholder="new_flag_key"
           spellCheck={false}
           autoComplete="off"
         />

@@ -622,7 +622,7 @@ export function CatalogEntryEditor({
             autoComplete="off"
           />
           {fieldErrors.key ? (
-            <p className="text-xs text-destructive">{fieldErrors.key} <ErrorAlchemyMenu error={fieldErrors.key} /></p>
+            <p className="text-xs text-destructive">{String(fieldErrors.key)} <ErrorAlchemyMenu error={fieldErrors.key} /></p>
           ) : null}
         </div>
         <div className="space-y-1.5">

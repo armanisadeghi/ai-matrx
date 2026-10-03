@@ -108,7 +108,7 @@ export function SystemInstructionEditor({
           description="Listed in the system prompt"
           value={data.tools_list}
           onChange={(v) => update({ tools_list: v.length ? v : undefined })}
-          placeholder="tool_name"
+          placeholder="Add a tool"
         />
       </Section>
 

@@ -9,6 +9,7 @@
 // any HuggingFace/Civitai URL via aidream into a prefilled entry.
 // Cross-repo system-of-record: common-docs/systems/apps/remote-catalogs/FEATURE.md
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryBig, Link2, Plus } from "lucide-react";
 
@@ -552,7 +553,7 @@ export function CatalogsClient({
                   <SelectContent>
                     {apps.map((slug) => (
                       <SelectItem key={slug} value={slug} className="font-mono">
-                        {slug}
+                        {humanizeIdentifier(slug)}
                       </SelectItem>
                     ))}
                   </SelectContent>

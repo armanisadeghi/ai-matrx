@@ -1,5 +1,6 @@
 "use client";
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -255,7 +256,7 @@ export default function AppletBuilder() {
               {fnDetails?.parameters.map((param) => (
                 <div key={`${step.id}-${param.name}`} className="mb-2">
                   <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    {param.name}
+                    {humanizeIdentifier(param.name)}
                     {param.required ? " *" : ""}:
                   </label>
 

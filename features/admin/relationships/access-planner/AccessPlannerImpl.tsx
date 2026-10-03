@@ -1416,7 +1416,7 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                     <div className="flex flex-wrap gap-1">
                       {selectedTable.columns.map((column) => (
                         <Badge key={column.name} variant="outline">
-                          {column.name}
+                          {humanizeIdentifier(column.name)}
                         </Badge>
                       ))}
                     </div>

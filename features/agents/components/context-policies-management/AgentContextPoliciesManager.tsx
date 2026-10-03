@@ -403,6 +403,8 @@ function PolicyEditorFields({
             id="policy-key"
             value={form.key}
             onChange={(e) => onChange({ key: e.target.value })}
+            className="font-mono"
+            data-identifier
             placeholder="clipboard_content"
             disabled={isEdit}
             style={{ fontSize: "16px" }}
@@ -581,9 +583,10 @@ function PolicyEditorFields({
               id="src-kind"
               value={form.sourceKind}
               onChange={(e) => onChange({ sourceKind: e.target.value })}
+              className="font-mono text-xs"
+              data-identifier
               placeholder="note  |  doc  |  table_row"
               disabled={sourceDisabled}
-              className="font-mono text-xs"
               style={{ fontSize: "16px" }}
             />
           </Field>

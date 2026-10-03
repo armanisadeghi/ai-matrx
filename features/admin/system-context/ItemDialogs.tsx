@@ -356,8 +356,9 @@ export function AddItemDialog({
               <Input
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder="company_name"
                 className="font-mono text-sm"
+                data-identifier
+                placeholder="company_name"
                 autoFocus
               />
             </Field>

@@ -20,6 +20,7 @@
  *    follower count stated inside the rebind confirm.
  */
 
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -349,7 +350,7 @@ export function JobWorkbench({
                   >
                     {c.name}
                     <span className="ml-1.5 text-[10px] uppercase text-muted-foreground">
-                      {c.kind}
+                      {humanizeIdentifier(c.kind)}
                     </span>
                   </button>
                 ))}
