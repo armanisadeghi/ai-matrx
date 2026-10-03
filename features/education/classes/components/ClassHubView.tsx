@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { describeFailure } from "@/lib/failure/transport";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClasses } from "../hooks/useClasses";
@@ -118,7 +120,12 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
   // either the scope id or its slug — a student arriving on the teacher's slug
   // link (the URL the owner copies from their own address bar) must resolve
   // too, so joined classes (edu_my_classes, cross-org) are the slug fallback.
-  const { joined: myClasses, loading: myClassesLoading } = useMyClasses();
+  const {
+    joined: myClasses,
+    loading: myClassesLoading,
+    failure: myClassesFailure,
+    refresh: refreshMyClasses,
+  } = useMyClasses();
   const joinedMatch = isUuidShape(classParam)
     ? undefined
     : myClasses.find((c) => c.slug === classParam || c.classId === classParam);
@@ -178,11 +185,38 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
       <EducationToolHeader title="Class" />
       <div className="matrx-touch-targets mx-auto w-full max-w-3xl space-y-4 p-4">
         <BackToClasses />
+        {/* A read that FAILED is a fault, never "not found / ask for access":
+            when the joined-classes read broke (edu_my_classes 500), a class
+            reached by its slug could not be resolved, and the gate used to
+            tell the person they had no access (2026-10-03). */}
         <AccessGate
           token="scope"
           id={resolvedId ?? classParam}
-          error={access.error}
-          onRetry={() => void access.refresh()}
+          error={access.error ?? (cls || joinedMatch ? null : myClassesFailure)}
+          onRetry={() => {
+            void refreshMyClasses();
+            void access.refresh();
+          }}
+          renderFault={(fault) => (
+            <ErrorNotice
+              title="Couldn't open this class"
+              message={describeFailure(fault, { action: "load this class", read: true }).sentence}
+              error={fault}
+              operation="Open a class"
+              actions={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    void refreshMyClasses();
+                    void access.refresh();
+                  }}
+                >
+                  Try again
+                </Button>
+              }
+            />
+          )}
           fallbackHref="/education/classes"
           fallbackLabel="Classes"
         />

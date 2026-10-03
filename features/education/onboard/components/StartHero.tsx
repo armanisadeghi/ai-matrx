@@ -16,7 +16,6 @@ import { useCallback, useEffect, useEffectEvent, useState } from "react";
 import {
   Loader2,
   CheckCircle2,
-  AlertCircle,
   ArrowRight,
   PackageOpen,
   ShieldCheck,
@@ -44,7 +43,9 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { KitBoard } from "./KitBoard";
 import { KitDepthPicker } from "./KitDepthPicker";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { describeFailure } from "@/lib/failure/transport";
+import { RunStoppedNotice } from "@/lib/wizard-draft/RunStoppedNotice";
 import { filesDb } from "@/features/files/filesDb";
 import { supabase } from "@/utils/supabase/client";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -80,6 +81,12 @@ const KIT_SOURCE_DELIVERIES = ["direct"] as const;
 
 /** How often a held build re-reads whether its Sources are clean yet. */
 const WAIT_POLL_MS = 5_000;
+
+/**
+ * A build that stopped this recently continues by itself when the page comes
+ * back (a reload, a restored tab); an older one waits for a Continue.
+ */
+const AUTO_CONTINUE_WITHIN_MS = 30 * 60 * 1000;
 
 /**
  * Look up a file the learner owns (an agent's `file_id`). Throws a sentence
@@ -192,7 +199,7 @@ export function StartHero() {
       const kinds = [...selected].filter(isTargetAvailable);
       const requested = Number.parseInt(count, 10);
       // Meter only a real ingest; an empty selection / failed ingest burns nothing.
-      const ok = await kit.run(() => set.resolve(), kinds, {
+      const ok = await kit.run(set.toSourceSet(), kinds, {
         focus: focus.trim() || undefined,
         depth,
         count: Number.isFinite(requested) && requested > 0 ? requested : undefined,
@@ -216,6 +223,28 @@ export function StartHero() {
     organizationState,
     organizationId,
   ]);
+
+  // A BUILD THAT STOPPED WITH ITS PAGE CONTINUES (`useKitGeneration`). Right
+  // after a reload it continues by itself — the person pressed Build, and the
+  // same kit picks up where it was (nothing saved is made again). Found later
+  // (a tab closed yesterday), it is offered with one Continue.
+  const continueKit = useEffectEvent(async () => {
+    if (kit.busy) return;
+    await ingestGuard.guard(async () => {
+      const ok = await kit.continueStopped();
+      if (ok) {
+        await ingestGuard.commit();
+        for (const card of set.sources) set.remove(card.id);
+      }
+    });
+  });
+  const stoppedAt = kit.stopped?.stoppedAt ?? null;
+  const autoContinue =
+    stoppedAt !== null && Date.now() - stoppedAt < AUTO_CONTINUE_WITHIN_MS;
+  useEffect(() => {
+    if (!autoContinue || kit.phase !== "idle") return;
+    queueMicrotask(() => void continueKit());
+  }, [autoContinue, kit.phase]);
 
   // "Wait for the clean version" on a Source: the press is held, visibly, and
   // the build starts by itself once every such Source is clean.
@@ -408,12 +437,36 @@ export function StartHero() {
             />
           </div>
 
+          {kit.stopped && !autoContinue && (
+            <RunStoppedNotice
+              message={
+                kit.stopped.savedCount > 0
+                  ? `${kit.stopped.title ?? "Your kit"} stopped · ${kit.stopped.savedCount} of ${kit.stopped.request.kinds.length} saved`
+                  : `${kit.stopped.title ?? "Your kit"} stopped`
+              }
+              redoLabel="Continue"
+              onRedo={() => void continueKit()}
+              onDismiss={kit.dismissStopped}
+            />
+          )}
+
+          {kit.runningElsewhere && (
+            <p role="status" className="text-center text-xs text-muted-foreground">
+              A kit is building in another tab
+            </p>
+          )}
+
           {kit.phase === "error" && kit.error && (
-            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{kit.error}</span>
-              <ErrorAlchemyMenu error={kit.error} />
-            </div>
+            <ErrorNotice
+              title="Kit not built"
+              message={describeFailure(kit.errorCause ?? kit.error, {
+                action: "building your kit",
+                read: true,
+                fallback: kit.error,
+              }).sentence}
+              error={kit.errorCause ?? kit.error}
+              operation="Build a study kit"
+            />
           )}
 
           <KitPicker selected={selected} onToggle={toggleTarget} />
@@ -449,12 +502,8 @@ export function StartHero() {
           {showWorkspaceNotice && (
             <OrganizationContextNotice
               state={organizationState}
-              title="Your study kit needs a workspace"
-              description={
-                heldForWorkspace
-                  ? "Your kit is ready to go — choose a workspace and it starts building right away."
-                  : "Choose the workspace this kit belongs to before you build it."
-              }
+              title="Choose a workspace"
+              description=""
               compact
             />
           )}
@@ -489,13 +538,27 @@ export function StartHero() {
             )}
           </Button>
 
+          {holdingForClean && (
+            // A held build is never a dead end: the raw text is already usable.
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                setHoldingForClean(false);
+                void onGenerate();
+              }}
+            >
+              Build with the raw text now
+            </Button>
+          )}
+
           <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
-            Grounded in your material. Your files, your data —{" "}
+            Grounded in your material ·{" "}
             <Link href="/education/data" className="underline hover:text-foreground">
-              export anytime
+              Export anytime
             </Link>
-            .
           </p>
         </>
       )}
@@ -530,7 +593,7 @@ function KitPicker(props: {
               disabled={!available}
               onClick={() => props.onToggle(kind)}
               className={cn(
-                "flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                "flex min-h-11 items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-sm transition-colors sm:px-3 sm:py-2.5",
                 !available && "cursor-not-allowed opacity-50",
                 available && on
                   ? "border-primary bg-primary/5 text-foreground"
@@ -543,7 +606,7 @@ function KitPicker(props: {
                   available && on ? "text-primary" : "",
                 )}
               />
-              <span className="flex-1 truncate font-medium">
+              <span className="min-w-0 flex-1 font-medium leading-tight">
                 {gen?.label ?? kind}
               </span>
               {available ? (

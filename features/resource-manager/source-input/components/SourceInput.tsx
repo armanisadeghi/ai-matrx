@@ -315,10 +315,16 @@ export function SourceInput({
             card={card}
             set={set}
             job={
-              card.draft.fileId
-                ? (runner.jobs.find((j) => j.cldFileId === card.draft.fileId) ?? null)
-                : null
+              // The newest job reading this Source: an upload's pipeline (by
+              // file) or a clean started here (by its processed document).
+              runner.jobs.findLast(
+                (j) =>
+                  (card.draft.fileId !== undefined && j.cldFileId === card.draft.fileId) ||
+                  (card.draft.processedDocumentId !== undefined &&
+                    j.processedDocumentId === card.draft.processedDocumentId),
+              ) ?? null
             }
+            onCleanNow={(pdId) => void runner.runStage(pdId, "clean", card.draft.label)}
             deliveries={deliveries}
             heldForOrganization={fileCardHeldForOrganization(card, activeOrgId, fileOrganizationId)}
             onProcessingSettled={() => void set.manifest()}

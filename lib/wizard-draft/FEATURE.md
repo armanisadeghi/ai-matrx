@@ -94,6 +94,11 @@ const resolution = resolveWizardStep<1 | 2>({
 
 ## Change Log
 
+- 2026-10-03 — `useTabBoundRun` gains a JOURNAL: `track`'s work receives `note(journal)` (JSON,
+  replaces the marker's `journal`), a retry passes `{ journal }` back, and `stopped` carries
+  `journal` + `stoppedAt`. The study kit records what saved and which sections ran, so a
+  continuation repeats nothing. Write a COPY each time — a mutated store object is a state mutation.
+
 - 2026-09-30 — `useTabBoundRun` records the run's conversations (`attach`, third
   argument of `work`); `stopped.conversationIds` hands them back and
   `track(…, { continues })` carries them into a retry, so Try again continues a

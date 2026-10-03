@@ -25,13 +25,14 @@ import {
   type PublicDeckRow,
 } from "./types";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
+import { postgrestError } from "@/lib/failure/postgrestError";
+import { titleWithoutInternalIds } from "@/features/education/convert/coverage";
 
 function pgError(error: { message?: string; code?: string }): Error {
-  return new Error(
-    error.message?.trim()
-      ? `${error.message}${error.code ? ` (${error.code})` : ""}`
-      : "The Education Library could not be loaded.",
-  );
+  return postgrestError(error, {
+    action: "loading the Education Library",
+    fallback: "The Education Library could not be loaded.",
+  });
 }
 
 export async function fetchEducationLibraryPage(
@@ -49,7 +50,9 @@ export async function fetchEducationLibraryPage(
     p_offset: (query.page - 1) * sort.pageSize,
   });
   if (error) throw pgError(error);
-  const rows = data ?? [];
+  // No internal id reaches a list: older per-section decks carry chunk ids
+  // in their stored names (`titleWithoutInternalIds`).
+  const rows = (data ?? []).map((row) => ({ ...row, title: titleWithoutInternalIds(row.title) }));
   return { rows, total: rows.length ? Number(rows[0].total_count) : 0 };
 }
 

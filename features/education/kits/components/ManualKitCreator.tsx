@@ -27,7 +27,8 @@ import { artifactVisual } from "@/features/education/library/artifactVisuals";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 import { createManualKit, isManualKitSourceType, kitHref, kitMembershipFingerprint, readKit, type ManualKitSourceType } from "../kitService";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { describeFailure } from "@/lib/failure/transport";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationKitsScope, EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
@@ -146,7 +147,7 @@ export function ManualKitCreator() {
       setSourceReady(true);
     }).catch((cause) => {
       if (!active) return;
-      setError(cause instanceof Error ? cause.message : "Could not load this kit.");
+      setError(describeFailure(cause, { action: "loading this kit", read: true, fallback: "Could not load this kit." }).sentence);
       setSourceReady(false);
     });
     return () => { active = false; };
@@ -231,7 +232,7 @@ export function ManualKitCreator() {
     let active = true;
     void fetchEducationLibraryPage({ ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, search, page }, { sort: "updated", direction: "desc", favoritesFirst: false, pageSize: PAGE_SIZE })
       .then((result) => { if (active) { setRows(result.rows); setTotal(result.total); setLoading(false); } })
-      .catch((cause) => { if (active) { setError(cause instanceof Error ? cause.message : "Could not load your study aids."); setLoading(false); } });
+      .catch((cause) => { if (active) { setError(describeFailure(cause, { action: "loading your study aids", read: true, fallback: "Could not load your study aids." }).sentence); setLoading(false); } });
     return () => { active = false; };
   }, [page, search]);
 
@@ -262,7 +263,7 @@ export function ManualKitCreator() {
       clearDraft();
       router.push(kitHref(anchorType, anchorId));
     }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Could not create this kit."); }
+    catch (cause) { setError(describeFailure(cause, { action: "creating this kit", fallback: "Could not create this kit." }).sentence); }
     finally { setSaving(false); }
   };
   const candidates = [...new Map([...rows, ...selected].map((row) => [`${row.kind}:${row.id}`, row])).values()];
@@ -318,7 +319,7 @@ export function ManualKitCreator() {
       {!loading && !rows.length && !error && <p className="text-sm text-muted-foreground">No matching study aids.</p>}
     </div>
     <div className="flex justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">{page * PAGE_SIZE < total ? "More results available" : "End of results"}</span><Button variant="outline" disabled={page * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</Button></div>
-    {error && <p role="alert" className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
+    {error && <ErrorNotice size="inline" message={error} error={error} operation="Make a study kit" />}
     <div className="flex gap-2"><Button variant="outline" onClick={() => { clearDraft(); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving || !saveReady} onClick={() => void save()}>{saving ? "Saving…" : isExistingKit ? "Add saved aids" : "Create kit"}</Button></div>
   </main></SurfaceRuntimeProvider>;
 }

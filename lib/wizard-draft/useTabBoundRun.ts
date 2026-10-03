@@ -80,6 +80,12 @@ export interface RunMarker {
    */
   conversationIds?: string[];
   request: Record<string, unknown>;
+  /**
+   * What the run has done so far (JSON), written by the run as it goes — so a
+   * retry continues the SAME work instead of starting it again (the study kit
+   * records which outputs saved and which sections already ran).
+   */
+  journal?: Record<string, unknown>;
 }
 
 export type RunMarkerState =
@@ -115,6 +121,9 @@ export function readRunMarker(data: unknown): RunMarker | null {
       ? { conversationIds: d.conversationIds.filter((c): c is string => typeof c === "string") }
       : {}),
     request: d.request as Record<string, unknown>,
+    ...(d.journal && typeof d.journal === "object" && !Array.isArray(d.journal)
+      ? { journal: d.journal as Record<string, unknown> }
+      : {}),
   };
 }
 
@@ -148,6 +157,10 @@ export interface TabBoundRun<R> {
     whileSaving: boolean;
     /** The conversations it ran in — pass as `continues` to its retry. */
     conversationIds: string[];
+    /** What it recorded with `note` before it stopped — pass as `journal` to its retry. */
+    journal: Record<string, unknown>;
+    /** When the page that ran it closed (or last beat, for a crash). */
+    stoppedAt: number;
   } | null;
   /** Another open tab is running this right now. */
   runningElsewhere: boolean;
@@ -166,8 +179,9 @@ export interface TabBoundRun<R> {
       settle: () => void,
       saving: () => Promise<void>,
       attach: (conversationId: string) => void,
+      note: (journal: Record<string, unknown>) => void,
     ) => Promise<T>,
-    opts?: { continues?: readonly string[] },
+    opts?: { continues?: readonly string[]; journal?: Record<string, unknown> },
   ) => Promise<T>;
   /** "Seen it" — drop the stopped run (the person dismissed or redid it). */
   dismiss: () => void;
@@ -212,8 +226,9 @@ export function useTabBoundRun<R>(
       settle: () => void,
       saving: () => Promise<void>,
       attach: (conversationId: string) => void,
+      note: (journal: Record<string, unknown>) => void,
     ) => Promise<T>,
-    opts: { continues?: readonly string[] } = {},
+    opts: { continues?: readonly string[]; journal?: Record<string, unknown> } = {},
   ): Promise<T> => {
     const runId = newRunId();
     const startedAt = Date.now();
@@ -223,7 +238,14 @@ export function useTabBoundRun<R>(
     dispatch(
       patchWizardDraft({
         wizardId: draftId,
-        patch: { runId, startedAt, beatAt: startedAt, request, conversationIds: [...conversationIds] },
+        patch: {
+          runId,
+          startedAt,
+          beatAt: startedAt,
+          request,
+          conversationIds: [...conversationIds],
+          ...(opts.journal ? { journal: opts.journal } : {}),
+        },
       }),
     );
     let settled = false;
@@ -281,9 +303,12 @@ export function useTabBoundRun<R>(
       const engine = (store as unknown as { _sync?: { engineApi?: () => SyncEngineApi | null } })._sync;
       await engine?.engineApi?.()?.flushPersisted("wizardDraft");
     };
+    const note = (journal: Record<string, unknown>) => {
+      if (ours()) dispatch(patchWizardDraft({ wizardId: draftId, patch: { journal } }));
+    };
     let result: T;
     try {
-      result = await work(settle, saving, attach);
+      result = await work(settle, saving, attach, note);
     } catch (err) {
       finish(false);
       throw err;
@@ -300,6 +325,8 @@ export function useTabBoundRun<R>(
             startedAt: marker.startedAt,
             whileSaving: marker.savingAt !== undefined,
             conversationIds: marker.conversationIds ?? [],
+            journal: marker.journal ?? {},
+            stoppedAt: marker.closedAt ?? marker.beatAt,
           }
         : null,
     runningElsewhere: state === "elsewhere",

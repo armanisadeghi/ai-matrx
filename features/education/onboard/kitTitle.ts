@@ -34,6 +34,11 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 /** Mandate for the kit namer — swap the agent at /mandates, no deploy. */
 export const KIT_TITLE_MANDATE = MANDATE_KEYS.education__kit_title;
 
+/** How long a kit waits for its name before it goes on under the cleaned filename. */
+export const NAMER_DEADLINE_MS = 20_000;
+/** How long a late name is still listened for — it then renames the kit. */
+export const NAMER_LATE_MS = 120_000;
+
 /** How much of the material the namer reads. A title needs the opening, not the book. */
 const NAMER_SAMPLE_CHARS = 4_000;
 
@@ -166,47 +171,77 @@ function usableTitle(candidate: string): boolean {
  * Resolve the kit's name. NEVER throws and never returns an empty title — a
  * failed or slow namer degrades to the humanized filename, because the kit
  * itself is what the learner is waiting for.
+ *
+ * THE NAMER IS BOUNDED, AND A LATE NAME STILL COUNTS. The kit waits at most
+ * NAMER_DEADLINE_MS (the stream itself had no bound: a server restart under it
+ * held every kit at "Reading your material" for minutes, 2026-10-03). Past the
+ * deadline the kit goes on under its cleaned filename and `late` keeps
+ * listening for up to NAMER_LATE_MS: a name that arrives then renames the kit
+ * (its edges' `sourceTitle`) — the subject, not "Nist Sp 800 61r3 and 3 More".
  */
 export async function resolveKitTitle(
   dispatch: AppDispatch,
   store: AppStore,
-  input: { text: string; rawTitle: string; focus?: string; orgId?: string },
-): Promise<KitTitle> {
-  const floor = humanizeSourceTitle(input.rawTitle) || "Study material";
+  input: {
+    text: string;
+    rawTitle: string;
+    /** Every Source's own name — a kit of four Sources is named from all four. */
+    sourceTitles?: readonly string[];
+    focus?: string;
+    orgId?: string;
+  },
+): Promise<KitTitle & { late?: Promise<KitTitle | null> }> {
+  const floorTitle = humanizeSourceTitle(input.rawTitle) || "Study material";
+  const floor: KitTitle = { title: floorTitle, subjectHint: "", named: false };
 
   const sample = input.text.slice(0, NAMER_SAMPLE_CHARS).trim();
-  if (!sample) return { title: floor, subjectHint: "", named: false };
+  if (!sample) return floor;
 
-  try {
-    const extracted = await runAgentExtraction(dispatch, store, {
-      mandateKey: KIT_TITLE_MANDATE,
-      surfaceKey: "education-ingest-kit-title",
-      sourceFeature: "education-ingest",
-      organizationId: input.orgId,
-      variables: {
-        source_content: sample,
-        title: input.rawTitle,
-        focus: input.focus ?? "",
-      },
-      // A title is a few tokens: keep the learner's wait honest and short.
-      timeoutMs: 25_000,
-      live: false,
-    });
-    const named = readString(extracted.value, "title");
-    if (usableTitle(named)) {
-      return {
-        title: named,
-        subjectHint: readString(extracted.value, "subject_hint"),
-        named: true,
-      };
-    }
-    console.warn(
-      "[kitTitle] namer returned an unusable title — using the cleaned filename",
-      { named, floor },
-    );
-  } catch (err) {
-    // Loud, never fatal: the kit proceeds under its cleaned filename.
-    console.error("[kitTitle] namer failed — using the cleaned filename:", err);
-  }
-  return { title: floor, subjectHint: "", named: false };
+  const controller = new AbortController();
+  const giveUp = setTimeout(() => controller.abort(), NAMER_LATE_MS);
+  const named: Promise<KitTitle | null> = runAgentExtraction(dispatch, store, {
+    signal: controller.signal,
+    mandateKey: KIT_TITLE_MANDATE,
+    surfaceKey: "education-ingest-kit-title",
+    sourceFeature: "education-ingest",
+    organizationId: input.orgId,
+    variables: {
+      source_content: sample,
+      // Several Sources: the namer reads every one's name, not "X and 3 more".
+      title:
+        input.sourceTitles && input.sourceTitles.length > 1
+          ? input.sourceTitles.join("; ")
+          : input.rawTitle,
+      focus: input.focus ?? "",
+    },
+    // A title is a few tokens: keep the learner's wait honest and short.
+    timeoutMs: 25_000,
+    live: false,
+  })
+    .then((extracted) => {
+      const title = readString(extracted.value, "title");
+      if (usableTitle(title)) {
+        return { title, subjectHint: readString(extracted.value, "subject_hint"), named: true };
+      }
+      console.warn(
+        "[kitTitle] namer returned an unusable title — using the cleaned filename",
+        { title, floor: floorTitle },
+      );
+      return null;
+    })
+    .catch((err: unknown) => {
+      // Loud, never fatal: the kit proceeds under its cleaned filename.
+      console.error("[kitTitle] namer failed — using the cleaned filename:", err);
+      return null;
+    })
+    .finally(() => clearTimeout(giveUp));
+
+  let waited: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<"late">((resolve) => {
+    waited = setTimeout(() => resolve("late"), NAMER_DEADLINE_MS);
+  });
+  const first = await Promise.race([named, deadline]);
+  clearTimeout(waited);
+  if (first === "late") return { ...floor, late: named };
+  return first ?? floor;
 }

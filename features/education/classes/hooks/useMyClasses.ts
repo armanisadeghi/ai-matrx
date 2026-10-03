@@ -17,6 +17,8 @@ export interface UseMyClassesReturn {
   joined: MyClass[];
   loading: boolean;
   error: string | null;
+  /** The thrown value behind `error` — a fault, never to be read as "no access". */
+  failure: unknown;
   refresh: () => Promise<void>;
 }
 
@@ -24,14 +26,17 @@ export function useMyClasses(): UseMyClassesReturn {
   const [rows, setRows] = useState<MyClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<unknown>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setFailure(null);
     try {
       setRows(await getMyClasses());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load your classes.");
+      setFailure(e);
       setRows([]);
     } finally {
       setLoading(false);
@@ -45,5 +50,5 @@ export function useMyClasses(): UseMyClassesReturn {
   // Only classes the caller does NOT own — owned classes come from useClasses.
   const joined = rows.filter((c) => c.myRole !== "owner");
 
-  return { joined, loading, error, refresh };
+  return { joined, loading, error, failure, refresh };
 }

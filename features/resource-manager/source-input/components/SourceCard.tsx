@@ -50,6 +50,9 @@ import { sourceHref } from "@/features/sources/api/sourcesApi";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { describeFailure } from "@/lib/failure/transport";
+import { formatElapsed } from "@/lib/progress/elapsed";
 import { sourceKindDef, sourceKindIcon, sourceKindNoun } from "../sourceKinds";
 import {
   InlineUploadArea,
@@ -100,6 +103,7 @@ export function SourceCard({
   deliveries,
   heldForOrganization = false,
   onProcessingSettled,
+  onCleanNow,
   onTryAgain,
   onChooseFileAgain,
 }: {
@@ -112,6 +116,12 @@ export function SourceCard({
   /** The processing-runner job reading this file, when this session started one. */
   job: ProcessingJob | null;
   onProcessingSettled: () => void;
+  /**
+   * Clean this Source now, on the live lane (`POST /rag/library/{id}/clean`).
+   * The remedy for a clean that is queued and not coming back while the
+   * person waits. Omitted when the host cannot run one.
+   */
+  onCleanNow?: (processedDocumentId: string) => void;
   /** Land the kept input again (shown when the draft kept one). */
   onTryAgain?: () => void;
   /** The person chose the file again after its upload was cut off. */
@@ -305,6 +315,7 @@ export function SourceCard({
           job={job}
           onWaitChange={(wait) => set.setWaitForClean(card.id, wait)}
           onSettled={onProcessingSettled}
+          onCleanNow={onCleanNow}
         />
       ) : null}
 
@@ -492,12 +503,14 @@ function ProcessingLine({
   job,
   onWaitChange,
   onSettled,
+  onCleanNow,
 }: {
   card: SourceCardModel;
   entry: SourceManifestEntry;
   job: ProcessingJob | null;
   onWaitChange: (wait: boolean) => void;
   onSettled: () => void;
+  onCleanNow?: (processedDocumentId: string) => void;
 }) {
   const pdId = card.draft.processedDocumentId ?? null;
   const stages = useStagesStatus(entry.state === "processing" ? pdId : null);
@@ -533,6 +546,28 @@ function ProcessingLine({
     // the manifest entry changes after every re-measure.
   }, [entry, cleanDone, jobDone, pdId, stages.status, stages.reload, onSettled]);
 
+  // A CLEAN THAT IS NOT COMING BACK SAYS SO, WITH ITS REMEDY (2026-10-03).
+  // A 48-page PDF sat on "Cleaning…" for 25+ minutes: its pages were queued
+  // on the Batch lane (≥ clean_batch_min_pages), which answers in hours and
+  // carries no deadline unless batch.deadline.processing_mode = "deadline".
+  // Past CLEAN_STALL_MS with no clean of our own running, the line names the
+  // wait and offers "Clean now" (the live clean stage); a person who ticks
+  // "Wait for the clean version" is waiting, so that starts it too.
+  const seenAt = useRef<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const processing = entry.state === "processing";
+  useEffect(() => {
+    if (!processing) return undefined;
+    seenAt.current ??= Date.now();
+    const t = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(t);
+  }, [processing]);
+  const waited = seenAt.current !== null ? now - seenAt.current : 0;
+  const cleaning = job?.status === "running";
+  const cleanFailed = job?.status === "failed" ? job.error : null;
+  const stalled = !cleaning && !cleanDone && waited > CLEAN_STALL_MS;
+  const cleanNow = pdId && onCleanNow && !cleaning ? () => onCleanNow(pdId) : undefined;
+
   if (entry.state === "processing") {
     const progress = job?.frame?.message ?? (stages.status
       ? stages.status.stages
@@ -545,16 +580,40 @@ function ProcessingLine({
       <div className="space-y-2 border-t border-border px-3 py-2">
         <p className="flex items-start gap-2 text-xs text-warning">
           <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>
+          <span className="min-w-0 flex-1">
             {/* R9: short, plain; a stage list only once a stage is done ("Starting" said nothing). */}
-            {entry.state_detail ?? "Cleaning… using the raw text for now"}
+            {stalled
+              ? `Cleaning queued · ${formatElapsed(waited)}`
+              : (entry.state_detail ?? "Cleaning… using the raw text for now")}
             {progress && !/^start/i.test(progress.trim()) ? (
               <span className="text-muted-foreground"> · {progress}</span>
             ) : null}
           </span>
+          {stalled && cleanNow ? (
+            <Button type="button" variant="outline" size="sm" className="h-11 shrink-0 sm:h-7" onClick={cleanNow}>
+              Clean now
+            </Button>
+          ) : null}
         </p>
+        {cleanFailed ? (
+          <ErrorNotice
+            size="inline"
+            message={describeFailure(cleanFailed, { action: "cleaning this Source" }).sentence}
+            error={cleanFailed}
+            operation="Clean a Source"
+            className="text-xs"
+          />
+        ) : null}
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs text-foreground sm:min-h-0">
-          <Checkbox checked={card.draft.waitForClean ?? false} onCheckedChange={(v) => onWaitChange(v === true)} />
+          <Checkbox
+            checked={card.draft.waitForClean ?? false}
+            onCheckedChange={(v) => {
+              const wait = v === true;
+              onWaitChange(wait);
+              // Waiting for it means it is wanted now — never left on a lane that answers in hours.
+              if (wait) cleanNow?.();
+            }}
+          />
           Wait for the clean version before starting
         </label>
       </div>
@@ -580,6 +639,9 @@ function ProcessingLine({
     </p>
   );
 }
+
+/** How long a Source may sit on "Cleaning…" before the line names the wait and offers the remedy. */
+export const CLEAN_STALL_MS = 3 * 60 * 1000;
 
 const STAGE_WORDS: Record<string, string> = {
   cloud_file: "stored",

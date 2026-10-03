@@ -65,6 +65,12 @@ export interface UseIngestResult {
   normalizeSources: (
     resolve: () => Promise<ResolvedSourceSet>,
     onProgress?: (p: IngestProgress) => void,
+    /**
+     * The anchor an interrupted run of this kit already used. A continued kit
+     * keeps it — the multi-Source `.md` copy is never made twice, so every
+     * artifact stays in the one kit.
+     */
+    keepAnchor?: NormalizedIngest["ref"],
   ) => Promise<NormalizedIngest>;
 }
 
@@ -149,6 +155,7 @@ export function useIngest(): UseIngestResult {
     async (
       resolve: () => Promise<ResolvedSourceSet>,
       onProgress?: (p: IngestProgress) => void,
+      keepAnchor?: NormalizedIngest["ref"],
     ): Promise<NormalizedIngest> => {
       onProgress?.({ phase: "extracting", message: "Reading your sources…" });
       const resolved = await resolve();
@@ -161,8 +168,8 @@ export function useIngest(): UseIngestResult {
         ...material.sources.flatMap((s) => s.notes.map((n) => `${s.label}: ${n}`)),
       ];
       const anchor = kitFileAnchor(resolved);
-      let fileId = anchor?.fileId;
-      if (!fileId) {
+      let fileId = keepAnchor ? keepAnchor.fileId : anchor?.fileId;
+      if (!fileId && !keepAnchor) {
         onProgress?.({ phase: "uploading", message: "Saving the material…" });
         fileId = await anchorText(material.text, material.title, onProgress);
       }
@@ -170,9 +177,11 @@ export function useIngest(): UseIngestResult {
       return {
         text,
         title: material.title,
-        ref: anchor
-          ? { kind: "file", fileId, processedDocumentId: anchor.processedDocumentId }
-          : { kind: "paste", fileId },
+        ref: keepAnchor
+          ? keepAnchor
+          : anchor
+            ? { kind: "file", fileId, processedDocumentId: anchor.processedDocumentId }
+            : { kind: "paste", fileId },
         meta: {
           chars: text.length,
           pages: material.pages,
@@ -180,6 +189,7 @@ export function useIngest(): UseIngestResult {
           truncated: truncated || material.truncated,
           sourceCount: material.sourceCount,
           notes,
+          sourceTitles: material.sources.map((src) => src.label),
         },
       };
     },

@@ -36,7 +36,9 @@ import type { useKitGeneration } from "../useKitGeneration";
 import type { KitTargetState } from "../types";
 import { KitAudioRunner } from "./KitAudioRunner";
 import { formatElapsed } from "./elapsed";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { describeFailure } from "@/lib/failure/transport";
+import { Input } from "@ai-matrx/design-system";
 
 /** Student-facing words for the agent's stream phase. Never raw enum text. */
 const PHASE_COPY: Partial<Record<Phase, string>> = {
@@ -110,35 +112,27 @@ export function KitBoard({
   const now = useNow(kit.busy || stillWorking > 0);
   const elapsed = kit.startedAt ? (done ? 0 : now - kit.startedAt) : 0;
 
-  // Say the TRUE state — "0 ready" beside a cheerful "your kit is ready" is the
-  // kind of line that teaches a student not to trust the screen.
-  const headline =
-    kit.phase === "ingesting"
-      ? "Reading your material — nothing is stuck, you can watch each step below."
-      : stillWorking > 0
-        ? finished > 0
-          ? `${finished} ready · ${stillWorking} still being made — you can open the finished ones now.`
-          : `${stillWorking} being made — this takes a minute or two.`
-        : failed > 0 && finished === 0
-          ? failed === 1
-            ? "That one didn't come through — see why below."
-            : `None came through — see why below.`
-          : failed > 0
-            ? `${finished} ready · ${failed} didn't come through.`
-            : `${finished} ready`;
+  // Say the TRUE state, measured — never a promise about time. "This takes a
+  // minute or two" sat beside a 14-minute build (2026-10-03). The line counts
+  // what is ready and the sections done across every output; the clock beside
+  // it says how long it has been.
+  const headline = kitHeadline(kit.phase, kit.targets, { finished, stillWorking, failed });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-foreground">
-            {done && stillWorking === 0 && finished > 0
-              ? "Your study kit is ready"
-              : done && stillWorking === 0
-                ? "Nothing was created"
-                : "Building your study kit"}
-          </h2>
-          <p className="text-xs text-muted-foreground">{headline}</p>
+          {kit.kitTitle ? (
+            <KitTitleField
+              title={kit.kitTitle.title}
+              onRename={(t) => kit.renameTitle(t)}
+            />
+          ) : (
+            <h2 className="text-lg font-semibold text-foreground">
+              {kit.continued ? "Continuing your study kit" : "Building your study kit"}
+            </h2>
+          )}
+          <p className="text-xs tabular-nums text-muted-foreground">{headline}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {kit.busy && kit.startedAt && (
@@ -232,8 +226,7 @@ function SourceStage({
           </p>
           <p className="truncate text-xs text-muted-foreground">
             {ingesting ? (
-              (p?.detail ??
-              "This can take a moment for big files — it's working.")
+              (p?.detail ?? null)
             ) : kit.source ? (
               <>
                 {kit.source.meta.sourceCount > 1
@@ -262,13 +255,6 @@ function SourceStage({
             <IndeterminateBar className="bg-primary" />
           )}
         </div>
-      )}
-
-      {!ingesting && kit.source && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <FileText className="h-3.5 w-3.5 shrink-0" />
-          Everything below is written only from this material.
-        </p>
       )}
 
       {/* Every stand-in announces itself: a Source left out, a raw fallback. */}
@@ -346,7 +332,18 @@ function TargetRow({
             {t.title || t.label}
           </p>
           {t.status === "error" ? (
-            <p className="truncate text-xs text-destructive">{t.error} <ErrorAlchemyMenu error={t.error} /></p>
+            <ErrorNotice
+              size="inline"
+              message={
+                describeFailure(t.errorCause ?? t.error, {
+                  action: `make the ${t.label.toLowerCase()}`,
+                  fallback: t.error,
+                }).sentence
+              }
+              error={t.errorCause ?? t.error}
+              operation={`Make ${t.label}`}
+              className="text-xs"
+            />
           ) : running ? (
             <RunningLine target={t} />
           ) : producing ? (
@@ -423,6 +420,94 @@ function TargetRow({
   return body;
 }
 
+/** Sections done and planned across every output still measuring sections. */
+export function kitSectionTotals(targets: readonly KitTargetState[]): { done: number; total: number } {
+  let done = 0;
+  let total = 0;
+  for (const t of targets) {
+    if (!t.coverage || t.coverage.total <= 1) continue;
+    total += t.coverage.total;
+    done += t.status === "running" ? t.coverage.done : t.coverage.total;
+  }
+  return { done, total };
+}
+
+/** The board's one status line — counts only, never a time promise. */
+export function kitHeadline(
+  phase: string,
+  targets: readonly KitTargetState[],
+  counts: { finished: number; stillWorking: number; failed: number },
+): string {
+  if (phase === "ingesting") return "Reading your material";
+  const { finished, stillWorking, failed } = counts;
+  const parts: string[] = [`${finished} of ${targets.length} ready`];
+  if (stillWorking > 0) {
+    const sections = kitSectionTotals(targets);
+    if (sections.total > 0) parts.push(`${sections.done} of ${sections.total} sections`);
+  }
+  if (failed > 0) parts.push(`${failed} failed`);
+  return parts.join(" · ");
+}
+
+/** The kit's name — derived from the material, and the person's to change. */
+function KitTitleField({
+  title,
+  onRename,
+}: {
+  title: string;
+  onRename: (title: string) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState(title);
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState<unknown>(null);
+  const [seen, setSeen] = useState(title);
+  if (seen !== title) {
+    setSeen(title);
+    setDraft(title);
+  }
+  const commit = async () => {
+    const next = draft.trim();
+    if (!next || next === title) {
+      setDraft(title);
+      return;
+    }
+    setSaving(true);
+    setFailed(null);
+    try {
+      await onRename(next);
+    } catch (e) {
+      setFailed(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="min-w-0">
+      <Input
+        aria-label="Kit name"
+        value={draft}
+        disabled={saving}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") setDraft(title);
+        }}
+        className="h-9 border-transparent bg-transparent px-1 text-base font-semibold text-foreground shadow-none hover:border-border focus-visible:border-border sm:text-lg"
+      />
+      {failed ? (
+        <ErrorNotice
+          size="inline"
+          message={describeFailure(failed, { action: "rename the kit" }).sentence}
+          error={failed}
+          operation="Rename a study kit"
+          className="text-xs"
+        />
+      ) : null}
+    </div>
+  );
+}
+
 /** The honest present-tense line for a running generator.
  *
  *  COVERAGE WINS. A segmented generation (`convert/coverage.ts`) knows exactly
@@ -436,11 +521,10 @@ function RunningLine({ target: t }: { target: KitTargetState }) {
   const cov = t.coverage;
   if (cov && cov.total > 1) {
     return (
-      <p className="truncate text-xs text-muted-foreground">
-        {look.runningVerb} · section {Math.min(cov.done + 1, cov.total)} of{" "}
-        {cov.total}
-        {cov.label ? ` · ${cov.label}` : ""}
+      <p className="truncate text-xs tabular-nums text-muted-foreground">
+        {cov.done} of {cov.total} sections
         {cov.items > 0 ? ` · ${cov.items} so far` : ""}
+        {cov.label ? ` · ${cov.label}` : ""}
       </p>
     );
   }

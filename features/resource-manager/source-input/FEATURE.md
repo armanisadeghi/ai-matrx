@@ -86,6 +86,13 @@ Campaign of record (design, frozen contract, register): common-docs `projects/un
 
 ## Change log
 
+- 2026-10-03 — A Source stuck on "Cleaning…" (its pages queued on the Batch lane, which answers in
+  hours and has no deadline unless `batch.deadline.processing_mode = deadline`) says
+  "Cleaning queued · 25m" after `CLEAN_STALL_MS` (3 min) and offers **Clean now** — the live clean
+  stage (`POST /rag/library/{id}/clean` via `useProcessingRunner.runStage`); ticking "Wait for the
+  clean version" starts it too. A failed clean shows through `ErrorNotice`. "Use existing" list
+  failures go through `describeFailure` (no SQLSTATE prose).
+
 - 2026-10-02 — Education adopts it: `/education/start` (`StartHero`, key `education:start`) and `/education/kits/new` (`ManualKitCreator`, key `education:kits:new`) render `<SourceInput kinds={every door but "topic"}>`; start passes `deliveries={["direct"]}`. Both read the picks through `resolve()` into the kit (`features/education/onboard/kitSources.ts`); the local My files / Upload / Paste / Link pills and the creator's file picker are deleted.
 
 - 2026-10-01 — v6b items 6 + 9. (6) Use existing → Workbooks listed each workbook's description as its name: the registry's `platform.entity_types.title_column` for `workbook` was `description`; it is `workbook_name` now (live + clone, the Knowledge hub search title follows it), and a row's name is one line through `MiddleTruncate` with the full name as its tooltip. (9) A web page picked from Use existing showed no address: `sourceAddress.ts` (`useSourceDraftAddresses`, wired in `SourceInput`) reads `canonical_identity` for every card that points at a Source and has no `origin`, so any entry path gets the address line (http(s) or a YouTube link only; machine keys never show). Test: `sourceAddress.test.tsx`.
