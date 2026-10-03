@@ -20,7 +20,7 @@ components — was DELETED, not wrapped. Roughly 5,900 lines.
 | App chrome the package renders | `components/MessagingChrome.tsx` — the `data-message-id` / `data-conversation-id` the menu resolves its target from, and this app's ```matrx fence renderer                        |
 | Action cards                   | `actions/messageActionSurfaces.tsx` — this app's kinds (access request, resource shared, task reminder, agent drift, open link, setting request), handed over as `actionRenderers` |
 | Notifications                  | `lib/useIncomingMessageNotifier.ts` — sound + desktop notification, gated on this app's user preferences                                                                           |
-| Header door                    | `canvas/messagesKind.tsx` — Messages as a canvas tab (list ↔ thread inside it); the header button toggles it. No Redux chrome state.                                               |
+| Header door                    | `canvas/messagesKind.tsx` — Messages as a canvas tab; the header button toggles it. The tab is a `@container/messages`: at 42rem+ the list sits beside the open thread, narrower it is one at a time with Back (the /messages layout follows the same container — never the viewport). No Redux chrome state.                                               |
 | "Message this person"          | `service/sendDirectActionMessage.ts` — the framework-free package path, for services with no React                                                                                 |
 | Menus                          | `lib/messaging-menu-actions.tsx`                                                                                                                                                   |
 
@@ -109,3 +109,7 @@ The shared Assists clearance pass must never inset editable fields: doing so
 changes textarea auto-grow measurements. `clearance-preserves-editable-fields.test.ts`
 proves that textareas, editable elements and textbox roles retain their padding
 while their containing page can still receive dock clearance.
+
+## Change log
+
+- `2026-10-03` — claude: **Messages answers its own width, not the window's.** A thread in a 628–751px canvas pane had no way back to the list: `.messages-back` was hidden by a viewport query (≥768px) while the canvas showed the thread alone. The canvas tab and the /messages layout are now `@container/messages` roots: at 42rem+ the list sits beside the thread and Back is not drawn; narrower, one at a time with Back (`messages-native.css`). Also: an unread badge is a content-sized pill again — the package's `.mx-msg__row-preview span { flex: 1 1 auto }` matched the badge and stretched a "1" to ~100px beside a short preview; the skin pins `.mx-msg__row-preview > .mx-msg__badge` to `flex: 0 0 auto` (package selector still needs `> span:first-child`). Verified live at pane 619 / 749px and 900px.
