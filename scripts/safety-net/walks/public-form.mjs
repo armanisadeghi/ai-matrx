@@ -5,6 +5,10 @@
 // form's title, and at 390 px the page must not scroll sideways. The live walk of 2026-10-02 found a
 // 166 px box in a column starting at x=112 under a title at x=20.
 //
+// CHOICE OPTIONS ARE ANSWER BOXES TOO (MAKE-HOME W5b, 2026-10-02): a choice question's options
+// (`[data-records-choice-answer]`) must each fill the column like a text box — the verifier found
+// them drawn as pills sized to their words. Each is measured with the same 80% rule and left edge.
+//
 // READ-ONLY: it never types an answer (typing saves a draft) and never sends. It moves through the
 // questions with the form's own Next button and measures each one's answer box.
 //
@@ -25,7 +29,7 @@ function measure() {
   const colLeft = mr.left + parseFloat(cs.paddingLeft);
   const colWidth = mr.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   const h1 = main.querySelector("h1")?.getBoundingClientRect() ?? null;
-  const boxes = [...main.querySelectorAll("input, textarea, select, [role='combobox']")]
+  const boxes = [...main.querySelectorAll("input, textarea, select, [role='combobox'], [data-records-choice-answer]")]
     .filter((el) => {
       if (el.closest("[aria-hidden='true']") || el.getAttribute("tabindex") === "-1") return false;
       if (el instanceof HTMLInputElement && ["hidden", "checkbox", "radio", "file"].includes(el.type)) return false;
@@ -34,7 +38,8 @@ function measure() {
     })
     .map((el) => {
       const r = el.getBoundingClientRect();
-      return { tag: el.tagName.toLowerCase(), id: el.id || null, left: Math.round(r.left), width: Math.round(r.width) };
+      const tag = el.hasAttribute("data-records-choice-answer") ? `choice "${el.getAttribute("aria-label") ?? el.textContent?.trim()}"` : el.tagName.toLowerCase();
+      return { tag, id: el.id || null, left: Math.round(r.left), width: Math.round(r.width) };
     });
   return {
     sw: document.documentElement.scrollWidth,
@@ -52,7 +57,7 @@ async function walkAt(item, width, height) {
   await ctx.goto(page, `${ctx.origin}/f/${FORM}`);
   const ready = await until(
     "the form's first answer box",
-    () => page.evaluate(() => Boolean(document.querySelector("main h1") && document.querySelector("main input, main textarea, main [role='combobox']"))),
+    () => page.evaluate(() => Boolean(document.querySelector("main h1") && document.querySelector("main input, main textarea, main [role='combobox'], main [data-records-choice-answer]"))),
     120000,
   ).catch(() => ({ v: false }));
   if (!ready?.v) {
@@ -93,12 +98,14 @@ async function walkAt(item, width, height) {
     }
   }
   if (measured === 0) bad.push("no answer box was measured");
+  const choices = seen.reduce((n, m) => n + (m.boxes ?? []).filter((b) => b.tag.startsWith("choice")).length, 0);
+  if (choices === 0) bad.push("no choice option was measured (the fixture form asks a choice question)");
   const first = seen.find((m) => !m.error);
   await ctx.step([item], `${width} px: answer boxes fill the column on the title's edge${width <= 390 ? ", no sideways scroll" : ""}`, page, async () => ({
     ok: bad.length === 0,
     detail: bad.length
       ? bad.slice(0, 6).join(" · ")
-      : `${measured} answer boxes over ${new Set(seen.map((m) => (m.position ?? []).join("/"))).size} questions, each ≥ ${MIN_SHARE * 100}% of a ${first?.colWidth} px column at x=${first?.colLeft}; title at x=${first?.titleLeft}; page ${first?.sw} px on ${first?.iw}`,
+      : `${measured} answer boxes (${choices} choice options) over ${new Set(seen.map((m) => (m.position ?? []).join("/"))).size} questions, each ≥ ${MIN_SHARE * 100}% of a ${first?.colWidth} px column at x=${first?.colLeft}; title at x=${first?.titleLeft}; page ${first?.sw} px on ${first?.iw}`,
   }));
 }
 

@@ -389,8 +389,11 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
   const [askOrganization, setAskOrganization] = useState(false);
 
   const makeTable = async () => {
-    const name = search.trim();
-    if (!name) return;
+    // "New table" is offered before anything is typed (MAKE-HOME W5b: it appeared only after typing,
+    // so a person with no table yet saw nothing to press). Unnamed, it is "New table"; she names it
+    // and adds its questions in the builder that opens next.
+    const typed = search.trim();
+    const name = typed || "New table";
     if (!activeOrganizationId) {
       setOpen(false);
       setAskOrganization(true);
@@ -410,7 +413,7 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
       // org-filter: write-target a new table is made in the organization new things are saved to
       organizationId: activeOrganizationId,
     });
-    const made = await declareTable(client, { name, slug: tokenFor(name) });
+    const made = await declareTable(client, { name, slug: typed ? tokenFor(name) : `${tokenFor(name)}_${Date.now().toString(36)}` });
     setMaking(false);
     if (!made.ok) {
       // The store's own sentence; a statement timeout is said in a person's words (doorFailureLine).
@@ -470,7 +473,7 @@ function TableChoice({ tables: tablesRead, testOrganizationIds, activeOrganizati
           if (t) onChoose(t.table_id, t.organization_id);
         }}
         empty={<p className="px-2 py-1.5 text-xs text-muted-foreground">{q ? "No table by that name" : "No tables yet"}</p>}
-        add={search.trim() ? { label: `New table “${search.trim()}”`, onAdd: () => void makeTable(), disabled: making } : null}
+        add={{ label: search.trim() ? `New table “${search.trim()}”` : "New table", onAdd: () => void makeTable(), disabled: making }}
       />
       {making ? <Skeleton className="h-6 w-48" /> : null}
       {refused ? <p className="text-sm text-destructive">{refused}</p> : null}
