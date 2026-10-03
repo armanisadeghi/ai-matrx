@@ -58,6 +58,37 @@ function baseConfig(): MermaidConfig {
   };
 }
 
+/**
+ * Pie slice colours from the validated categorical chart palette (dataviz
+ * reference instance: fixed order, each mode its own stepped values). Mermaid's
+ * own "dark" theme derives slices from its primary colour and lands them
+ * near-black on a dark pane; "default" gives pale yellows with no contrast.
+ * Only our two auto themes are overridden — an explicitly picked mermaid theme
+ * (forest, neutral, base) keeps its own look. Slices are separated by a thin
+ * surface-coloured gap instead of a black outline.
+ */
+const PIE_PALETTE = {
+  default: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"],
+  dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
+} as const;
+
+export function pieThemeVariables(
+  theme: MermaidRenderOptions["theme"],
+): Record<string, string> | undefined {
+  if (theme !== "default" && theme !== "dark") return undefined;
+  const slices = PIE_PALETTE[theme];
+  const vars: Record<string, string> = {
+    pieSectionTextColor: "#ffffff",
+    pieStrokeColor: theme === "dark" ? "#262626" : "#ffffff",
+    pieStrokeWidth: "2px",
+    pieOuterStrokeWidth: "0px",
+    pieOpacity: "1",
+  };
+  // Twelve slots; past eight the palette repeats rather than inventing hues.
+  for (let i = 0; i < 12; i++) vars[`pie${i + 1}`] = slices[i % slices.length];
+  return vars;
+}
+
 async function getMermaid(): Promise<MermaidModule> {
   if (!mermaidPromise) {
     mermaidPromise = (async () => {
@@ -139,6 +170,8 @@ async function applyOptions(
     theme: opts.theme,
     look: opts.look,
     layout,
+    themeVariables: pieThemeVariables(opts.theme),
+    pie: { legendPosition: opts.pieLegend ?? "right" },
   });
   lastConfigKey = key;
 }

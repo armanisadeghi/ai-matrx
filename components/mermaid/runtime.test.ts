@@ -94,4 +94,23 @@ describe("Mermaid runtime render scheduling", () => {
 
     expect(mockRender).toHaveBeenCalledTimes(2);
   });
+
+  it("draws a pie with the chart palette and the requested legend position", async () => {
+    const source = "pie\n  \"a\": 1\n  \"b\": 2";
+    await renderMermaid(source, { ...DAGRE, theme: "dark", pieLegend: "bottom" });
+    const dark = mockInitialize.mock.calls.at(-1)?.[0];
+    expect(dark.pie).toEqual({ legendPosition: "bottom" });
+    expect(dark.themeVariables.pie1).toBe("#3987e5");
+
+    // A different legend position is a different drawing, never a cache hit.
+    await renderMermaid(source, { ...DAGRE, theme: "dark", pieLegend: "right" });
+    expect(mockRender).toHaveBeenCalledTimes(2);
+    expect(mockInitialize.mock.calls.at(-1)?.[0].pie).toEqual({
+      legendPosition: "right",
+    });
+
+    // An explicitly chosen mermaid theme keeps its own slice colours.
+    await renderMermaid(source, { ...DAGRE, theme: "forest" });
+    expect(mockInitialize.mock.calls.at(-1)?.[0].themeVariables).toBeUndefined();
+  });
 });
