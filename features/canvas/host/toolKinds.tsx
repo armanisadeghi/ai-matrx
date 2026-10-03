@@ -24,6 +24,7 @@ import { documentsKind } from "./conversation/documentsKind";
 import { contextPreviewKind } from "./conversation/contextPreviewKind";
 import { conversationContextKind } from "./conversation/conversationContextKind";
 import { conversationListsKind } from "./conversation/conversationListsKind";
+import { agentUnsavedChangesKind } from "./agent/agentUnsavedChangesKind";
 import { chatDocumentsKind } from "./conversation/chatDocumentsKind";
 
 export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
@@ -38,6 +39,7 @@ export const TOOL_CANVAS_KINDS: readonly AnyCanvasKind[] = [
   contextPreviewKind,
   conversationContextKind,
   conversationListsKind,
+  agentUnsavedChangesKind,
   noteKnowledgeKind,
   // The shell header's Messages and Notifications buttons open these.
   messagesKind,

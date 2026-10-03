@@ -29,8 +29,14 @@ export const CONVERSATION_CONTEXT_KIND = "conversation-context";
 /** A conversation's agent lists (plan, agent tasks, the person's todos): ONE tab per conversation. */
 export const CONVERSATION_LISTS_KIND = "conversation-lists";
 
+/** An agent's unsaved edits as a diff against its saved version: ONE tab per agent. */
+export const AGENT_UNSAVED_CHANGES_KIND = "agent-unsaved-changes";
+
 /** Every tab kind the package opens by name through `canvas.useTab`. */
-export type ChatCanvasTabKind = typeof CONVERSATION_CONTEXT_KIND | typeof CONVERSATION_LISTS_KIND;
+export type ChatCanvasTabKind =
+  | typeof CONVERSATION_CONTEXT_KIND
+  | typeof CONVERSATION_LISTS_KIND
+  | typeof AGENT_UNSAVED_CHANGES_KIND;
 /** The scratchpad tab follows the ACTIVE scratchpad, so there is exactly one. */
 export const SCRATCHPAD_TAB_KEY = "default";
 

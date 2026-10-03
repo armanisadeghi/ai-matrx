@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
-import { MatrxDynamicPanelHost } from "@host/components/matrx/resizable/MatrxDynamicPanelHost";
-import { UnsavedChangesDiff } from "../diff/UnsavedChangesDiff";
+import { useChatCanvasTab } from "../../../host/canvas";
+import { AGENT_UNSAVED_CHANGES_KIND } from "../../../host/canvas-tabs";
 import { cn } from "@ai-matrx/design-system";
 import {
   AlertDialog,
@@ -48,7 +48,8 @@ export function AgentSaveStatus({
   } = useAgentSaveAction(agentId, { editModeOverride });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showDiff, setShowDiff] = useState(false);
+  // The unsaved-changes diff is the agent's canvas tab; the eye toggles it.
+  const diffTab = useChatCanvasTab({ kind: AGENT_UNSAVED_CHANGES_KIND, key: agentId });
 
   const handleSelectModel = () => {
     setShowModelWarning(false);
@@ -83,8 +84,12 @@ export function AgentSaveStatus({
             </span>
             {!isNewRoute && (
               <button
-                onClick={() => setShowDiff(true)}
-                className="flex items-center justify-center w-6 h-6 rounded-md transition-colors text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20"
+                onClick={() => diffTab.toggle({ title: "Unsaved changes", data: { agentId } })}
+                aria-pressed={diffTab.isVisible}
+                className={cn(
+                  "flex items-center justify-center w-6 h-6 rounded-md transition-colors text-amber-500 hover:bg-amber-500/10 active:bg-amber-500/20",
+                  diffTab.isVisible && "bg-amber-500/15",
+                )}
                 title="View unsaved changes"
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -152,17 +157,6 @@ export function AgentSaveStatus({
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
       />
-
-      <MatrxDynamicPanelHost
-        open={showDiff}
-        onOpenChange={setShowDiff}
-        title="Unsaved Changes"
-        position="right"
-        defaultSize={38}
-        contentClassName="flex min-h-0 flex-1 flex-col p-0"
-      >
-        {showDiff && <UnsavedChangesDiff agentId={agentId} />}
-      </MatrxDynamicPanelHost>
 
       {readOnlySavePrompt}
       {duplicateDialog}
