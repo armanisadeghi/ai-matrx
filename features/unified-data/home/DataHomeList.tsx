@@ -50,6 +50,10 @@ import { DataHomeCards, DataHomeRows } from "./DataHomeViews";
 import { useDataHomeMarks, useDataHomeShowAppTables } from "./useDataHomeMarks";
 import { useDataHomeRowMenus, useReadAgainOnRestore } from "./useDataHomeRowMenus";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
+import { useFocusedRowCommands } from "@/features/unified-data/actions/tableActionCommands";
+
+const ROW_ID = (row: DataHomeRow) => row.id;
+const ROW_NAME = (row: DataHomeRow) => row.name;
 import { DATA_HOME_DEFAULT_VIEW_KNOB, resolveDataHomeView } from "./dataHomeKnobs";
 import { tokensToFilters, updatedBucket } from "./dataHomeQuery";
 import { DataHomeRecent, recentRows } from "./DataHomeRecent";
@@ -119,6 +123,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
   const recent = recentRows(marks.recent, rowsById, testOrganizationIds);
   // THE ROW'S MENU IS THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS): row ⋯, card ⋯ and
   // right-click all draw `menuFor`, which draws `tableActions()` for a table row.
+  const withFocusedRow = useFocusedRowCommands<DataHomeRow>(ROW_ID, ROW_NAME);
   const rowMenus = useDataHomeRowMenus({
     starred: starredSet,
     onOpened: (row) => marks.opened(row.id),
@@ -181,7 +186,8 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
       // `/` search, ↑/↓ move, Enter opens, `s` stars, Esc clears — the shell's one keyboard handler.
       rowKeys: true,
       door: { column: "name", hrefFor: (row) => row.href },
-      useRowActions: rowMenus.useRowActions,
+      // ⌘K offers the focused row's menu as commands (TABLE-ACTIONS T4.1).
+      useRowActions: (list) => withFocusedRow(rowMenus.useRowActions(list), list.rows),
       // WHAT A ROW IS, for right-click's Attach To (a record-store table is a `record`). No
       // `resourceType`: the action list carries Share, so v3's generic Share is not drawn beside it.
       getRowEntity: (row) =>
@@ -281,7 +287,7 @@ export function DataHomeList({ dataSource, footer, sharedOnlyHere = false }: Dat
           }
         : { title: "No tables yet", description: "New table makes one." },
     };
-  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, restoredVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus]);
+  }, [service, starredKey, serverVersion, showAppTables, corpusVersion, restoredVersion, corpus, recordCounts, order, defaultView, defaultKind, sharedOnlyHere, starredSet, marks, rowMenus, withFocusedRow]);
 
   return (
     // The right-click on every row and card is the proposed menu (`DataMenuProvider`).

@@ -85,7 +85,7 @@ import {
   type QueryChip,
 } from "@/features/knowledge/api/knowledgeQueryText";
 import { getActiveAttachTarget, type KnowledgeAttachTarget } from "./attachTarget";
-import { filterCommands, launcherCommands, type KnowledgeCommand } from "./commands";
+import { filterCommands, launcherCommands, pageCommands, type KnowledgeCommand } from "./commands";
 import { hitAbsoluteUrl, hitHref } from "./hitHref";
 import {
   SECTION_DIGIT,
@@ -270,8 +270,11 @@ export default function KnowledgeCommandBar({
 
   const audience = { isAdmin, isCreator };
   const tileCtx = { dispatch, getState: store.getState, router };
+  // This page's own commands (the table on screen, the focused row), read as the bar opens.
+  const [onThisPage] = useState(() => pageCommands());
   const allCommands: KnowledgeCommand[] = [
     ...(group?.commands ?? []),
+    ...onThisPage,
     ...launcherCommands(audience, tileCtx),
   ];
   const searchingText = text.trim();
@@ -671,15 +674,30 @@ export default function KnowledgeCommandBar({
             <CommandItem
               key={c.id}
               value={`command:${c.id}`}
+              disabled={c.disabledReason !== undefined}
+              data-command-id={c.id}
               onSelect={() => {
+                if (c.disabledReason !== undefined) return;
                 close();
                 c.run();
               }}
             >
               <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 flex-1 truncate text-sm">{c.label}</span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm">{c.label}</span>
+                {c.disabledReason ? (
+                  <span className="truncate text-xs text-muted-foreground" data-command-reason="">
+                    {c.disabledReason}
+                  </span>
+                ) : null}
+              </span>
               {c.group ? (
                 <span className="hidden text-xs text-muted-foreground sm:inline">{c.group}</span>
+              ) : null}
+              {c.shortcut ? (
+                <kbd className="ml-1 hidden rounded border border-border px-1 text-[10px] text-muted-foreground sm:inline">
+                  {c.shortcut}
+                </kbd>
               ) : null}
             </CommandItem>
           );
