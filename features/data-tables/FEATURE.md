@@ -453,6 +453,17 @@ own writes never arrive (every write carries an op id the port drops). Workbook 
 
 ## Change log
 
+- `2026-10-03` — claude (lane I, grids review 3, the Sheet): a date & time is stored as an absolute
+  instant (`date-cell-words.ts`, the one reader for the calendar, a key typed before it opened, a
+  paste and a default; a time typed alone keeps the cell's day); every number look reads through
+  `readCellWord` (`(150)` is −150 in Money, in a cell, a paste, bulk set and the row forms via
+  `row-form-words.ts`); "+ Row" and the Add row line make the row in the grid with its first cell
+  editing and hand over keys typed meanwhile (`hooks/useInlineNewRow.ts`); the row form focuses its
+  first field and its voice/menu buttons leave the tab order; Add Column waits with the reason beside
+  the button (`column-still-needs.ts`); Space ticks a selected tick box, a digit rates; the choice list
+  ranks by `@ai-matrx/records` `typedMatchScore`; a deleted row is one step on the one undo stack
+  (`useCellUndo.recordStep`). Phone still shows as typed: the shared `formatPhone` is not exported by
+  `@ai-matrx/records-ui` yet.
 - `2026-10-01` — claude (lane OLD-READERS-REMOVAL FE-SEAM): the seam lost its older store. Every
   export answers from the record store; `/data` and `/data/create` redirect to `/data-v2`,
   `/data/<id>` mounts the table page; the older `/data` home, its modals, `useTableRealtime`,
