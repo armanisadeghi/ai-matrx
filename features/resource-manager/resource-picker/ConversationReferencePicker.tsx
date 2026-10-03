@@ -73,7 +73,7 @@ function ConversationRow({
   );
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="group flex items-center gap-1 pr-1">
       <div className="min-w-0 flex-1">
         <PickerRow
           icon={MessagesSquare}
@@ -92,6 +92,8 @@ function ConversationRow({
         token="conversation"
         id={row.id}
         name={row.title}
+        size="md"
+        revealOnHover
         className="shrink-0"
       />
     </div>

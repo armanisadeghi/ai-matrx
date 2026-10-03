@@ -105,6 +105,8 @@ export interface EntityDoorControlsProps {
   revealOnHover?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
   extraActions?: React.ReactNode;
+  /** `md` = 28px controls with 16px icons (list rows in the attach menu). */
+  size?: "sm" | "md";
   className?: string;
 }
 
@@ -119,8 +121,11 @@ export function EntityDoorControls({
   alwaysShowActions = false,
   revealOnHover = false,
   extraActions,
+  size = "sm",
   className,
 }: EntityDoorControlsProps) {
+  const control = cn(ENTITY_DOOR_CONTROL_CLASS, size === "md" && "h-7 w-7 rounded-md");
+  const glyph = size === "md" ? "h-4 w-4" : "h-3 w-3";
   const [peekOpen, setPeekOpen] = useState(false);
 
   const doors = resolveEntityDoors(token, id, href);
@@ -141,7 +146,7 @@ export function EntityDoorControls({
           "inline-flex shrink-0 items-center gap-0.5",
           revealOnHover &&
             !alwaysShowActions &&
-            "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 group-hover:opacity-100 focus-within:opacity-100",
+            "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100",
           className,
         )}
       >
@@ -154,9 +159,9 @@ export function EntityDoorControls({
               stop(e);
               setPeekOpen(true);
             }}
-            className={ENTITY_DOOR_CONTROL_CLASS}
+            className={control}
           >
-            <Lightbulb className="h-3 w-3" />
+            <Lightbulb className={glyph} />
           </button>
         )}
         {resolvedHref && showOpen && (
@@ -166,9 +171,9 @@ export function EntityDoorControls({
             onClick={stop}
             title={`Open ${label}`}
             aria-label={`Open ${label}`}
-            className={ENTITY_DOOR_CONTROL_CLASS}
+            className={control}
           >
-            <ArrowUpRight className="h-3 w-3" />
+            <ArrowUpRight className={glyph} />
           </Link>
         )}
         {resolvedHref && !disableNewTab && (
@@ -180,9 +185,9 @@ export function EntityDoorControls({
             onClick={stop}
             title={`Open ${label} in a new tab`}
             aria-label={`Open ${label} in a new tab`}
-            className={ENTITY_DOOR_CONTROL_CLASS}
+            className={control}
           >
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className={glyph} />
           </Link>
         )}
         {extraActions}

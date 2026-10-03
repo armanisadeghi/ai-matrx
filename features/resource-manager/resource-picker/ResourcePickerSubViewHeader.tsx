@@ -196,7 +196,7 @@ export function PickerView({ children, className }: { children: ReactNode; class
 export function PickerSectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex items-center gap-2 px-2 pb-1 pt-2">
-      <span className="min-w-0 flex-1 truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
         {children}
       </span>
       {action}

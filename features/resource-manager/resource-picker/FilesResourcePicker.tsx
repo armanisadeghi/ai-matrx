@@ -206,7 +206,7 @@ function FileRow({ file, onSelect, multiple, selected }: FileRowProps) {
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center gap-1 rounded-lg",
+        "group flex min-w-0 items-center gap-1 rounded-lg pr-1",
         selected && "bg-primary/5",
       )}
     >
@@ -255,6 +255,8 @@ function FileRow({ file, onSelect, multiple, selected }: FileRowProps) {
         token="file"
         id={file.id}
         name={file.fileName}
+        size="md"
+        revealOnHover
         className="shrink-0"
       />
     </div>

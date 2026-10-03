@@ -76,7 +76,7 @@ export function ComposerMenuLabel({ children }: { children: ReactNode }) {
     );
   }
   return (
-    <div className="truncate px-2.5 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="truncate px-2.5 pb-1 pt-2 text-xs font-medium text-muted-foreground">
       {children}
     </div>
   );
