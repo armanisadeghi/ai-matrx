@@ -12,7 +12,7 @@
  * browser so a failed store write never loses what was typed.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, HardDrive, Database } from "lucide-react";
 import {
   Badge,
@@ -107,6 +107,9 @@ function writeBrowser(entries: Entries): void {
   }
 }
 
+/** One pending notes save per row; a newer keystroke replaces it (one page, one map). */
+const pendingNotes = new Map<string, ReturnType<typeof setTimeout>>();
+
 let client: RecordsClient | null = null;
 function recordsClient(userId: string | null): RecordsClient {
   // organizationId null: reads span every organization the person belongs to; each write names
@@ -133,9 +136,6 @@ export default function PageCleanupReview() {
   );
   const [doneFilter, setDoneFilter] = useState<"all" | "open" | "done">("all");
   const [copied, setCopied] = useState(false);
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const entriesRef = useRef<Entries>({});
-  const storeRef = useRef<Store["state"]>("loading");
 
   useEffect(() => {
     if (!userId) return;
@@ -148,8 +148,6 @@ export default function PageCleanupReview() {
       if (!live) return;
       if (!read.ok) {
         const saved = readBrowser();
-        entriesRef.current = saved;
-        storeRef.current = "browser";
         setEntries(saved);
         setStore({ state: "browser", why: read.error.message });
         return;
@@ -165,8 +163,6 @@ export default function PageCleanupReview() {
           at,
         };
       }
-      entriesRef.current = next;
-      storeRef.current = "store";
       setEntries(next);
       setStore({ state: "store" });
     })();
@@ -175,17 +171,16 @@ export default function PageCleanupReview() {
     };
   }, [userId]);
 
-  async function persist(path: string) {
-    const entry = entriesRef.current[path];
-    writeBrowser(entriesRef.current);
-    if (storeRef.current !== "store") return;
+  async function persist(path: string, entry: Entry, all: Entries) {
+    writeBrowser(all);
+    if (store.state !== "store") return;
     setSaves((s) => ({ ...s, [path]: "saving" }));
     try {
       const organizationId = await ensureOrganizationForWrite();
       const written = await upsertAppRow(
         recordsClient(userId),
         pageCleanupDecisions,
-        { path, decision: entry?.decision ?? null, notes: entry?.notes ?? "" },
+        { path, decision: entry.decision, notes: entry.notes },
         { organizationId },
       );
       if (!written.ok) throw new Error(written.error.message);
@@ -204,24 +199,17 @@ export default function PageCleanupReview() {
     patch: Partial<Pick<Entry, "decision" | "notes">>,
     debounce: boolean,
   ) {
-    const prev = entriesRef.current[path] ?? {
-      decision: null,
-      notes: "",
-      at: "",
-    };
-    const next = {
-      ...entriesRef.current,
-      [path]: { ...prev, ...patch, at: new Date().toISOString() },
-    };
-    entriesRef.current = next;
+    const prev = entries[path] ?? { decision: null, notes: "", at: "" };
+    const entry: Entry = { ...prev, ...patch, at: new Date().toISOString() };
+    const next = { ...entries, [path]: entry };
     setEntries(next);
-    clearTimeout(timers.current[path]);
+    clearTimeout(pendingNotes.get(path));
     if (debounce)
-      timers.current[path] = setTimeout(
-        () => void persist(path),
-        NOTES_DEBOUNCE_MS,
+      pendingNotes.set(
+        path,
+        setTimeout(() => void persist(path, entry, next), NOTES_DEBOUNCE_MS),
       );
-    else void persist(path);
+    else void persist(path, entry, next);
   }
 
   const decidedCount = PAGE_CLEANUP_ROWS.filter(
