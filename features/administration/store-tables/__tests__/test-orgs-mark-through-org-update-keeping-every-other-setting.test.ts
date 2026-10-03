@@ -93,7 +93,7 @@ describe("a filter change never leaves hidden rows selected", () => {
     expect(keepVisibleSelection(["van", "jobs", "visits"], filterRows(rows, null, "archive test"))).toEqual(["van"]);
   });
 
-  it("drops rows of another organization at once, and never keeps a protected row", () => {
-    expect(keepVisibleSelection(["van", "visits", "kept"], filterRows(rows, "cedar", ""))).toEqual(["visits"]);
+  it("drops rows of another organization but retains protected rows for copy", () => {
+    expect(keepVisibleSelection(["van", "visits", "kept"], filterRows(rows, "cedar", ""))).toEqual(["visits", "kept"]);
   });
 });

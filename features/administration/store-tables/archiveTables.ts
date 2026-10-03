@@ -150,10 +150,10 @@ export function filterRows(rows: readonly StoreTableRow[], orgId: string | null,
 }
 
 /**
- * A selection never outlives the filter that showed it: only ids still visible AND selectable stay
- * selected, so the confirm never counts — and the archive never touches — a row the person cannot see.
+ * Copy selection never outlives the page-level filter that showed it. Protected tables remain
+ * selectable for copy; the caller separately narrows Archive targets with protectionOf.
  */
 export function keepVisibleSelection(selectedIds: readonly string[], visible: readonly StoreTableRow[]): string[] {
-  const allowed = new Set(visible.filter((r) => protectionOf(r) === null).map((r) => r.id));
+  const allowed = new Set(visible.map((r) => r.id));
   return selectedIds.filter((id) => allowed.has(id));
 }
