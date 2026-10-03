@@ -1,24 +1,31 @@
 -- lock: custom
 -- lane: VIEWS-AND-FIELDS
--- based-on: custom._field_document_for(uuid, uuid, jsonb) 63e792f4b878642d17cee0f4f6b2cb7ff23eb319af30f3add305c35e0b55da6d
+-- based-on: custom._duration_seconds_of(text) 90df73341eaa6aa3d5a514671a3ce5836d6373fe9bc0c423e8a0bec0658615cf
+-- based-on: custom._entity_decoded(text) 04c788810b3760ecfc59f4711913b022672d42be36ad196f8a6cc439dabc724f
+-- based-on: custom._field_document_for(uuid, uuid, jsonb) a3473d709c71d9289cd8c2db71594975edda6c19c1890287a189d25b0a3443f5
 -- based-on: custom._field_kind_shape_ok(jsonb, text) 8ca01d8184666edf1c93c79d7e3c3865d0558967b228d2515448279c7bc0aaf6
--- based-on: custom._field_type_parity_guard() d22773995f0501cc1a59ad23f794783dcd418b6e04ac00889545639ff078df7c
+-- based-on: custom._field_type_parity_guard() 38c7e030f21f7fc4f07b6c3b593c7371592ef1e2b67a499132c3e0f43d14ac52
+-- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) dc46bffd9149bec7f8514b175b1d01227d4fa84c98c86fc6a9e7507da5b47463
+-- based-on: custom._field_value_carry_base(uuid, jsonb, jsonb, jsonb) e18630e6e2eea59e8e5835f8b47c709400f84bd03286810ed315871cb8cd9f11
 -- based-on: custom._gs1_check_ok(text) cf4de731915632fde7f192f7681d9538e588835051b54f7b3593316f7073052d
--- based-on: custom._kind_value_ok(jsonb, text, jsonb) 969897dd21c96ac303c52883904f4ccede805191d4227c68cd1da31e4737e2c3
+-- based-on: custom._kind_value_fit(jsonb, jsonb, jsonb) f8e76a2e8fa7c901c5737587afef045b4cbc127795eb04ba3c552093feda97ff
+-- based-on: custom._kind_value_ok(jsonb, text, jsonb) bb35d5cf6039c63b542fbf95498f2e4a597082885be6b0bab67ffdbbdacc47f8
+-- based-on: custom._rich_text_problem(text) b49e4dbbe06ffce67e3e4021d5a3ab1b97354dc205bc7b18f137c6da4780febe
 -- based-on: custom._status_group_word(text) 4edb9ee7a4151b58261b006622ffc775d360fabe89374e9306a9d304e81de803
 -- based-on: custom.barcode_symbologies() c26cf10559562c05db212b5d1d7663d67665d400b443cba4ba3285c2526dce41
 -- based-on: custom.display_format_ids() 6155275908c787eedf65fc1de0edb709ff9b90967314797ba8255f4a03da90f2
 -- based-on: custom.field_kind_of(jsonb) 2e36c9a9b8280794d1f36a709633cfb5a1430294a08ed8948e4e2b272fc59fdb
 -- based-on: custom.field_kinds() 5e6cfdbdb1b6d88744b824fc784b0fc1f3fc4ea7b7378e082b3abd5f9a4bbf1f
--- based-on: custom.field_update(uuid, uuid, jsonb) 39ea23de6f24485a95d176162ab50cadbfa78bc48b74d99a80f9a66d2bf5bbaa
--- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 7319e6b7aa8989852ecc597ea32fdf0be073e1d27674358ca974632018f0168b
--- based-on: custom.status_groups_of(jsonb) 4ef47fc8508a74964cb71e0b2921641c8289dd5cd7c6a3f8644bd6f252d303d5
+-- based-on: custom.field_update(uuid, uuid, jsonb) 7841e7d1a811b5b83be89df8a6b1219dac3fdb28af0bc0395f4ac3ae7cf4663f
+-- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 9a629e9f9c4b8ecb011183f24fbf2759e87e2849b746acc4052fcb9d85ef2f42
+-- based-on: custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text) f7c7b83f591bddd0d2ef6e2543ca61d9f95e7b48d72972afe1743794c8fbe156
+-- based-on: custom.status_groups_of(jsonb) d018d97be86764da71615461c63bc11a4a70dfc7cbc58e4d5919d8316b17e020
 -- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) 70649c93ecf3d84abe77a30d5c158d55d2b9ae020fe8b284a288f7bc9e47dcff
 -- chair-step: the inverse of viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more.sql.
 -- It puts back, byte for byte, custom.field_kinds, custom.display_format_ids,
 -- custom._field_document_for, custom._field_type_parity_guard, custom.validate_values,
--- custom.formula_value and custom.field_update as the main database held them before (2026-10-02),
--- and drops the seven P4 helpers. What it undoes: the nine kinds leave the menu and the door;
+-- custom.formula_value, custom.field_update and custom._field_value_carry as the main database
+-- held them before (2026-10-02), and drops the thirteen P4 helpers. What it undoes: the nine kinds leave the menu and the door;
 -- a column already declared as one keeps its document and reads as its behaviour (a rating as a
 -- number, an address as text), and Created by / Last modified by read empty.
 
@@ -1831,6 +1838,156 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION custom._field_value_carry(p_organization_id uuid, p_from jsonb, p_to jsonb, p_value jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+-- ONE VALUE, CARRIED FROM WHAT A COLUMN WAS TO WHAT IT IS NOW (DATA-V2-BASICS-2, 2026-09-28).
+-- custom.field_value_convert judges a value by the new behaviour alone, and a choice column's cell
+-- holds the choice's KEY — so a choice column changed to Text read "in_stock" in every cell, and a
+-- Text column changed to a choice column set every word aside, even the ones naming a choice.
+-- Here a held choice goes by its own words, and words (or a key, or an option's id) find their
+-- choice. Returns SQL null when the value does not fit, and the caller keeps it in `_retired`.
+-- Neither side a choice column: exactly custom.field_value_convert.
+-- DATA-V2-BASICS-2 (2026-09-30): a line of words carried into a several-choice column is split into its words.
+declare
+  v_from_list boolean := coalesce(p_from ->> 'type', '') = 'list';
+  v_to_list   boolean := coalesce(p_to ->> 'type', '') = 'list';
+  v_from_tbl  uuid    := case when v_from_list then nullif(p_from -> 'config' ->> 'options_table_id', '')::uuid end;
+  v_to_tbl    uuid    := case when v_to_list then nullif(p_to -> 'config' ->> 'options_table_id', '')::uuid end;
+  v_from      jsonb;
+  v_to        jsonb;
+  v_items     jsonb;
+  v_words     jsonb := '[]'::jsonb;
+  v_out       jsonb := '[]'::jsonb;
+  v_one       jsonb;
+  v_tok       text;
+  v_word      text;
+  v_k         text;
+  v_hit       text;
+  v_allow     boolean := coalesce((p_to -> 'config' ->> 'allow_other')::boolean, false);
+  v_many_to   boolean := coalesce((p_to ->> 'multi')::boolean, false);
+begin
+  if p_value is null or jsonb_typeof(p_value) = 'null' then
+    return p_value;
+  end if;
+  if not v_from_list and not v_to_list then
+    return custom.field_value_convert(p_to, p_value);
+  end if;
+  if jsonb_typeof(p_value) = 'object' then
+    return null;
+  end if;
+
+  v_from := jsonb_build_object('options', case when v_from_tbl is null then '{}'::jsonb
+                                               else custom.choice_options(p_organization_id, v_from_tbl) end);
+  v_to   := jsonb_build_object('options', case when v_to_tbl is null then '{}'::jsonb
+                                               else custom.choice_options(p_organization_id, v_to_tbl) end);
+  v_items := case when jsonb_typeof(p_value) = 'array' then p_value else jsonb_build_array(p_value) end;
+
+  -- ── A LINE OF WORDS INTO SEVERAL CHOICES (DATA-V2-BASICS-2, 2026-09-30; BREAKER-3 B3-02) ──────
+  -- A Text column holding "Lower back, Hip" changed to Multi-choice kept "Lower back, Hip" as ONE
+  -- value, and the Sheet drew it as a JSON list. Into a column that holds several choices, text that
+  -- is not itself one of its choices is read as the list it is: split on commas, semicolons and line
+  -- breaks (the Sheet's own reading of typed words, cell-word.ts), trimmed, blanks and repeats dropped.
+  if v_to_list and v_many_to and not v_from_list then
+    v_words := '[]'::jsonb;
+    for v_one in select e from jsonb_array_elements(v_items) e loop
+      if jsonb_typeof(v_one) = 'string'
+         and (v_one #>> '{}') ~ '[,;\n]'
+         and custom.choice_key_of(v_to, btrim(v_one #>> '{}')) is null then
+        v_words := v_words || coalesce((
+          select jsonb_agg(to_jsonb(d.w) order by d.ord)
+            from (select distinct on (lower(p.w)) p.w, p.ord
+                    from (select regexp_replace(btrim(part), '\s+', ' ', 'g') as w, ord
+                            from regexp_split_to_table(v_one #>> '{}', '[,;\n]') with ordinality s(part, ord)) p
+                   where p.w <> ''
+                   order by lower(p.w), p.ord) d), '[]'::jsonb);
+      else
+        v_words := v_words || jsonb_build_array(v_one);
+      end if;
+    end loop;
+    v_items := v_words;
+    v_words := '[]'::jsonb;
+  end if;
+
+  -- ── INTO A CHOICE COLUMN ─────────────────────────────────────────────────────────────
+  if v_to_list then
+    for v_one in select e from jsonb_array_elements(v_items) e loop
+      if jsonb_typeof(v_one) in ('object', 'array') then
+        return null;
+      end if;
+      v_tok  := btrim(v_one #>> '{}');
+      v_word := v_tok;
+      v_hit  := null;
+      if v_from_list then
+        v_k := custom.choice_key_of(v_from, v_tok);
+        if v_k is not null then
+          v_word := coalesce(v_from -> 'options' -> v_k ->> 'label', v_tok);
+        end if;
+      end if;
+      if v_from_list and v_from_tbl is not distinct from v_to_tbl then
+        -- The same list: the key it held is still the key, a retired one included.
+        v_hit := custom.choice_key_of(v_to, v_tok);
+      else
+        v_hit := coalesce(custom.choice_key_of(v_to, v_word), custom.choice_key_of(v_to, v_tok));
+        -- Nothing retired is picked anew.
+        if v_hit is not null and coalesce((v_to -> 'options' -> v_hit ->> 'retired')::boolean, false) then
+          v_hit := null;
+        end if;
+      end if;
+      if v_hit is not null then
+        v_out := v_out || jsonb_build_array(to_jsonb(v_hit));
+      elsif v_allow and v_word <> '' then
+        v_out := v_out || jsonb_build_array(to_jsonb(v_word));   -- an other value, kept as its words
+      else
+        return null;
+      end if;
+    end loop;
+    if v_many_to then
+      return v_out;
+    end if;
+    if jsonb_array_length(v_out) = 0 then
+      return 'null'::jsonb;
+    end if;
+    if jsonb_array_length(v_out) = 1 then
+      return v_out -> 0;
+    end if;
+    return null;                            -- several choices do not fit one; kept, never dropped
+  end if;
+
+  -- ── OUT OF A CHOICE COLUMN: each held choice becomes its words ────────────────────────
+  for v_one in select e from jsonb_array_elements(v_items) e loop
+    if jsonb_typeof(v_one) = 'string' then
+      v_k := custom.choice_key_of(v_from, v_one #>> '{}');
+      v_words := v_words || jsonb_build_array(
+        case when v_k is not null then coalesce(v_from -> 'options' -> v_k -> 'label', v_one) else v_one end);
+    else
+      v_words := v_words || jsonb_build_array(v_one);
+    end if;
+  end loop;
+  if jsonb_array_length(v_words) = 0 then
+    return 'null'::jsonb;
+  end if;
+  if jsonb_array_length(v_words) = 1 then
+    return custom.field_value_convert(p_to, v_words -> 0);
+  end if;
+  if coalesce(p_to ->> 'type', '') = 'text' then
+    -- Several choices read as one line of words: "Gloves, Masks".
+    return to_jsonb((select string_agg(e #>> '{}', ', ' order by ord)
+                       from jsonb_array_elements(v_words) with ordinality t(e, ord)));
+  end if;
+  return null;                              -- several choices are not one number, date or tick
+end;
+$function$;
+
+drop function if exists custom._field_value_carry_base(uuid, jsonb, jsonb, jsonb);
+drop function if exists custom._kind_value_fit(jsonb, jsonb, jsonb);
+drop function if exists custom._duration_seconds_of(text);
+drop function if exists custom._rich_text_problem(text);
+drop function if exists custom._entity_decoded(text);
+drop function if exists custom.status_groups_keyed(uuid, uuid, jsonb, jsonb, text);
 drop function if exists custom._kind_value_ok(jsonb, text, jsonb);
 drop function if exists custom._field_kind_shape_ok(jsonb, text);
 drop function if exists custom._gs1_check_ok(text);

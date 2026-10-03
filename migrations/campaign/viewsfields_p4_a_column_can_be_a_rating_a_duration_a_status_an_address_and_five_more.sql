@@ -1,9 +1,11 @@
 -- target: branch,production
 -- additive: yes
---   It ADDS seven helpers (custom.field_kind_of, custom.status_groups_of, custom._status_group_word,
---   custom.barcode_symbologies, custom._gs1_check_ok, custom._field_kind_shape_ok,
---   custom._kind_value_ok) and REPLACES seven bodies, each declared below with the body it was
---   written against. No table, column, trigger, policy or row of anybody's data is touched; every
+--   It ADDS thirteen helpers (custom.field_kind_of, custom.status_groups_of, custom._status_group_word,
+--   custom.status_groups_keyed, custom._entity_decoded, custom._rich_text_problem,
+--   custom._duration_seconds_of, custom._kind_value_fit, custom.barcode_symbologies,
+--   custom._gs1_check_ok, custom._field_kind_shape_ok, custom._kind_value_ok,
+--   custom._field_value_carry_base) and REPLACES eight bodies, each declared below with the body
+--   it was written against. No table, column, trigger, policy or row of anybody's data is touched; every
 --   existing column's document reads back exactly as before (custom.parity_type is unchanged).
 --   The inverse is `migrations/inverse/viewsfields_p4_a_column_can_be_a_rating_a_duration_a_status_an_address_and_five_more_down.sql`.
 -- guard: custom/system_enabled
@@ -16,6 +18,7 @@
 -- based-on: custom.validate_values(uuid, custom.record[], jsonb, text) cbc96f26f8766f5a4fa5bbd36cf00d31144c27c9a80e3ee487fcaa4577bd1fd8
 -- based-on: custom.formula_value(uuid, uuid, jsonb, jsonb) 67c106584e2fc938da29300c14fa11b30b6444e7e4cbf022eba37c1046db8c6d
 -- based-on: custom.field_update(uuid, uuid, jsonb) a1cef651f63997e18c731997ec33d52ff0d3b833ac90b46eaedae3ff26f7c757
+-- based-on: custom._field_value_carry(uuid, jsonb, jsonb, jsonb) 77ed55ac156d3f496b5b8be6ce6d9ea8b946946693e071f4092a3152c9723a56
 --
 -- LANE 10 VIEWS-AND-FIELDS, sublane P4 — NINE MORE KINDS OF COLUMN (champions: Airtable's field
 -- types and SmartSuite's). Lane 8's templates wait on the first of them.
@@ -97,9 +100,10 @@ $fn$;
 
 
 -- A STATUS COLUMN'S GROUPS (Notion's Status): every choice sits in To do, In progress or Done.
--- A caller may say it either way — choice → group, or group → [choices] — in words or keys;
--- the store keeps ONE shape, choice key → group word, keyed exactly as the choice keys are made
--- (custom.choice_slug). A group word it does not know is refused by name.
+-- A caller may say it either way — choice → group, or group → [choices] — naming each choice by
+-- its key, its option id or its words. This normalises the GROUP words and keeps the caller's
+-- names; custom.status_groups_keyed turns each name into the choice's stored key, the identity a
+-- rename never changes (Notion keys a group by option id). An unknown group word is refused.
 create function custom.status_groups_of(p_groups jsonb)
 returns jsonb
 language plpgsql
@@ -128,7 +132,7 @@ begin
           raise exception 'A status group lists its choices by their words, and "%" lists %.', e.key, x::text
             using errcode = '23514', hint = 'P4: {"done": ["Done", "Cancelled"]}. Nothing was written.';
         end if;
-        v_out := v_out || jsonb_build_object(custom.choice_slug(x #>> '{}'), v_group);
+        v_out := v_out || jsonb_build_object(btrim(x #>> '{}'), v_group);
       end loop;
     else
       v_group := case when jsonb_typeof(e.value) = 'string' then custom._status_group_word(e.value #>> '{}') end;
@@ -137,7 +141,7 @@ begin
                         case when jsonb_typeof(e.value) = 'string' then format('"%s"', e.value #>> '{}') else jsonb_typeof(e.value) end
           using errcode = '23514', hint = 'P4: the three groups are todo, in_progress and done. Nothing was written.';
       end if;
-      v_out := v_out || jsonb_build_object(custom.choice_slug(e.key), v_group);
+      v_out := v_out || jsonb_build_object(btrim(e.key), v_group);
     end if;
   end loop;
   return v_out;
@@ -156,6 +160,223 @@ as $fn$
     when 'inprogress' then 'in_progress' when 'doing' then 'in_progress' when 'started' then 'in_progress'
     when 'done' then 'done' when 'complete' then 'done' when 'completed' then 'done' when 'closed' then 'done'
   end;
+$fn$;
+
+
+-- A STATUS COLUMN'S GROUPS, KEYED BY EACH CHOICE'S STORED KEY (lane 10 P4, verifier V8 #3). Every
+-- name in p_groups — a choice's key, its option record's id, or its words — is found among the
+-- column's own choices (custom.choice_options) and replaced by that choice's KEY, which a rename
+-- never changes. A name that is not a choice of the column is refused by name; a group for a choice
+-- that has been removed (retired) is dropped. p_kept is the map the column held before this write:
+-- an entry it already held unchanged is never refused (its choice may have gone since) — it is
+-- dropped when its choice is gone. Entries this write CHANGED are applied last, so they win.
+create function custom.status_groups_keyed(p_organization_id uuid, p_options_table_id uuid, p_groups jsonb, p_kept jsonb, p_label text)
+returns jsonb
+language plpgsql
+stable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  v_opts jsonb := case when p_options_table_id is null then '{}'::jsonb
+                       else custom.choice_options(p_organization_id, p_options_table_id) end;
+  v_out  jsonb := '{}'::jsonb;
+  e      record;
+  v_key  text;
+begin
+  if p_groups is null or jsonb_typeof(p_groups) <> 'object' then
+    return '{}'::jsonb;
+  end if;
+  for e in
+    select g.key as name, g.value as grp,
+           coalesce(p_kept is not null and jsonb_typeof(p_kept) = 'object' and p_kept -> g.key = g.value, false) as kept
+      from jsonb_each(p_groups) g
+     order by 3 desc, 1
+  loop
+    v_key := null;
+    select o.key into v_key
+      from jsonb_each(v_opts) o
+     where o.key = e.name
+        or o.value ->> 'id' = e.name
+        or lower(btrim(o.value ->> 'label')) = lower(btrim(e.name))
+     order by (o.key = e.name) desc, (o.value ->> 'id' = e.name) desc,
+              coalesce((o.value ->> 'retired')::boolean, false)
+     limit 1;
+    if v_key is null then
+      if e.kept then
+        continue;                                 -- its choice is gone; so is its group
+      end if;
+      raise exception 'The status "%" has no choice called "%", so it cannot put it in a group.', p_label, e.name
+        using errcode = '23514', hint = 'P4: name a choice of this column by its words, its key or its id. Nothing was written.';
+    end if;
+    if coalesce((v_opts -> v_key ->> 'retired')::boolean, false) then
+      continue;                                   -- a removed choice keeps no group
+    end if;
+    v_out := v_out || jsonb_build_object(v_key, e.grp);
+  end loop;
+  return v_out;
+end;
+$fn$;
+
+-- HTML ENTITIES AND BACKSLASH ESCAPES, DECODED the way a CommonMark reader decodes a link
+-- destination before a browser sees it — so `jav&#x61;script:` and `javascript&colon;` are read
+-- as what they are: numeric references (decimal and hex), the named ones that spell a URL, and
+-- `\` before ASCII punctuation.
+create function custom._entity_decoded(p_text text)
+returns text
+language plpgsql
+immutable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  t text := coalesce(p_text, '');
+  m text[];
+  n bigint;
+begin
+  for m in select regexp_matches(t, '(&#[xX]([0-9a-fA-F]{1,8});?)', 'g') loop
+    n := ('x' || lpad(m[2], 8, '0'))::bit(32)::bigint;
+    t := replace(t, m[1], case when n between 1 and 1114111 and n not between 55296 and 57343 then chr(n::int) else chr(65533) end);
+  end loop;
+  for m in select regexp_matches(t, '(&#([0-9]{1,8});?)', 'g') loop
+    n := m[2]::bigint;
+    t := replace(t, m[1], case when n between 1 and 1114111 and n not between 55296 and 57343 then chr(n::int) else chr(65533) end);
+  end loop;
+  t := replace(replace(replace(replace(replace(replace(replace(replace(t,
+         '&colon;', ':'), '&Tab;', chr(9)), '&NewLine;', chr(10)), '&sol;', '/'), '&lpar;', '('), '&rpar;', ')'),
+         '&period;', '.'), '&nbsp;', ' ');
+  t := replace(replace(replace(replace(replace(t, '&lt;', '<'), '&gt;', '>'), '&quot;', '"'), '&apos;', ''''), '&amp;', '&');
+  t := regexp_replace(t, '\\([!-/:-@\[-`{-~])', '\1', 'g');
+  return t;
+end;
+$fn$;
+
+-- WHAT IS WRONG WITH A PIECE OF RICH TEXT, or null when nothing is (lane 10 P4, verifier V8 #5).
+-- The sanitised subset is Markdown with no raw HTML and no link to anything but a web page, an
+-- email address or a phone number. Read the CommonMark way: raw HTML is a whole tag (`<b>`,
+-- `</p>`, `<img src=x>`), a comment, a declaration or a processing instruction — "flexion <a few
+-- degrees" and "a < b" are words, not tags. Every link destination is checked after its entities
+-- and escapes are decoded and its spaces and control characters removed (the browser does both):
+-- inline links and images `](…)`, reference definitions `[a]: …` and autolinks `<scheme:…>`.
+create function custom._rich_text_problem(p_text text)
+returns text
+language plpgsql
+immutable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  v text := coalesce(p_text, '');
+  m text[];
+  d text;
+begin
+  if v ~ '<[A-Za-z][A-Za-z0-9-]*(\s+[A-Za-z_:][A-Za-z0-9_.:-]*(\s*=\s*([^\s"''=<>`]+|''[^'']*''|"[^"]*"))?)*\s*/?>'
+     or v ~ '</[A-Za-z][A-Za-z0-9-]*\s*>'
+     or v ~ '<!--' or v ~ '<\?' or v ~ '<![A-Za-z]' or v ~ '<!\[CDATA\[' then
+    return 'html';
+  end if;
+  for m in
+    select regexp_matches(v, '\]\(\s*<?([^)>\s]*)', 'g')
+    union all
+    select regexp_matches(v, '(?:^|\n)[ ]{0,3}\[[^\]\n]+\]:[ \t]*\n?[ \t]*<?([^>\s]+)', 'g')
+    union all
+    select regexp_matches(v, '<([A-Za-z][A-Za-z0-9+.-]{1,31}:[^<>\s]*)>', 'g')
+  loop
+    d := lower(regexp_replace(custom._entity_decoded(m[1]), '[\s[:cntrl:]]', '', 'g'));
+    if d ~ '^[a-z][a-z0-9+.-]*:' and d !~ '^(https?|mailto|tel):' then
+      return 'link';
+    end if;
+  end loop;
+  return null;
+end;
+$fn$;
+
+-- A LENGTH OF TIME AS A PERSON WROTE IT, in seconds — "45 min", "1:30", "1h 30m", "90s", a bare
+-- number of minutes — the store's reading of the words a Text column held when it becomes a
+-- Duration (the client's `readTypedDuration`, the same rules). Null: not a length of time.
+create function custom._duration_seconds_of(p_text text)
+returns numeric
+language plpgsql
+immutable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  t text := lower(btrim(coalesce(p_text, '')));
+  m text[];
+  v_total numeric := 0;
+  c_unit constant text := '(\d+(?:\.\d+)?)\s*(hours|hour|hrs|hr|h|minutes|minute|mins|min|m|seconds|second|secs|sec|s)\M';
+begin
+  if t = '' then return null; end if;
+  m := regexp_match(t, '^(\d+):([0-5]?\d)(?::([0-5]?\d))?$');
+  if m is not null then
+    return m[1]::numeric * 3600 + m[2]::numeric * 60 + coalesce(m[3], '0')::numeric;
+  end if;
+  if t ~ '^\d+(\.\d+)?$' then
+    return round(t::numeric * 60);
+  end if;
+  if regexp_replace(regexp_replace(t, c_unit, '', 'g'), '[\s,]|\mand\M', '', 'g') <> '' or t !~ c_unit then
+    return null;
+  end if;
+  for m in select regexp_matches(t, c_unit, 'g') loop
+    v_total := v_total + m[1]::numeric * case when m[2] like 'h%' then 3600 when m[2] like 'm%' then 60 else 1 end;
+  end loop;
+  return round(v_total);
+end;
+$fn$;
+
+-- ONE VALUE CARRIED INTO A COLUMN OF ONE OF THE NEWER KINDS (lane 10 P4, verifier V8 #1). The
+-- base carry (custom._field_value_carry_base) answers by behaviour, and a Text column becoming an
+-- Address or Formatted text keeps its behaviour — so the old words stayed in place, every later
+-- write of that record was refused, and so was retyping any other column of the table. Here the
+-- carried value is CONVERTED where it can be (a line of words becomes an address's street; "45
+-- min" becomes 2700 seconds; a whole number stays a rating) and otherwise answered SQL null, which
+-- every caller treats as "does not fit": custom._field_type_converts_values keeps it in `_retired`
+-- with its reason. Whatever is returned passes custom._kind_value_ok.
+create function custom._kind_value_fit(p_to jsonb, p_original jsonb, p_value jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path to 'pg_catalog'
+as $fn$
+declare
+  v_format text := p_to ->> 'format';
+  v_out    jsonb := p_value;
+  v_items  jsonb;
+  v_one    jsonb;
+  v_secs   numeric;
+begin
+  if coalesce(v_format, '') not in ('address', 'rating', 'duration', 'barcode', 'rich_text') then
+    return p_value;
+  end if;
+  if p_value is null then
+    if v_format = 'duration' and jsonb_typeof(p_original) = 'string' then
+      v_secs := custom._duration_seconds_of(p_original #>> '{}');
+      if v_secs is null then return null; end if;
+      v_out := to_jsonb(v_secs);
+    else
+      return null;
+    end if;
+  end if;
+  if jsonb_typeof(v_out) = 'null' then
+    return v_out;
+  end if;
+  if v_format = 'address' and jsonb_typeof(v_out) = 'string' then
+    if btrim(v_out #>> '{}') = '' then return 'null'::jsonb; end if;
+    v_out := jsonb_build_object('street', left(btrim(v_out #>> '{}'), 200));
+  end if;
+  v_items := case when jsonb_typeof(v_out) = 'array' then v_out else jsonb_build_array(v_out) end;
+  for v_one in select x from jsonb_array_elements(v_items) x loop
+    if v_format in ('rich_text', 'barcode') and jsonb_typeof(v_one) <> 'string' then
+      return null;
+    end if;
+    if v_format in ('rating', 'duration') and jsonb_typeof(v_one) <> 'number' then
+      return null;
+    end if;
+    begin
+      perform custom._kind_value_ok(p_to, coalesce(nullif(p_to ->> 'label', ''), 'this column'), v_one);
+    exception when sqlstate '23514' then
+      return null;
+    end;
+  end loop;
+  return v_out;
+end;
 $fn$;
 
 
@@ -342,14 +563,22 @@ begin
       raise exception '% is a length of time, and a length of time is never below zero.', p_label
         using errcode = '23514', hint = 'P4: a duration is a number of seconds.';
     end if;
+    -- Ten years (365.25 days each) is the longest length of time a record here holds.
+    if jsonb_typeof(v) = 'number' and (v #>> '{}')::numeric > 315576000 then
+      raise exception '% is longer than ten years, and a length of time here is at most ten years.', p_label
+        using errcode = '23514', hint = 'P4: a duration is a number of seconds, at most 315576000.';
+    end if;
     return false;
   elsif v_format = 'barcode' then
     if jsonb_typeof(v) <> 'string' then
       return false;   -- the text behaviour says "takes words"
     end if;
     v_text := v #>> '{}';
-    if btrim(v_text) = '' or v_text ~ '[[:cntrl:]]' or length(v_text) > 256 then
-      raise exception '% is a barcode: one line of up to 256 characters a scanner reads, with no line breaks.', p_label
+    -- Line and paragraph separators and the invisible format characters (soft hyphen, zero-width
+    -- spaces and joiners, direction marks, word joiner, byte-order mark) are no part of a code.
+    if btrim(v_text) = '' or v_text ~ '[[:cntrl:]]' or length(v_text) > 256
+       or v_text ~ '[\u00AD\u061C\u180E\u200B-\u200F\u2028\u2029\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFEFF]' then
+      raise exception '% is a barcode: one line of up to 256 characters a scanner reads, with no line breaks or hidden characters.', p_label
         using errcode = '23514', hint = 'P4: a barcode.';
     end if;
     v_sym := d -> 'config' ->> 'symbology';
@@ -371,21 +600,188 @@ begin
       return false;
     end if;
     v_text := v #>> '{}';
-    -- THE SANITISED SUBSET: Markdown, and no raw HTML at all. A tag, a comment or a script link
-    -- is refused rather than stripped, so what is stored is exactly what was written.
-    if v_text ~ '<[A-Za-z!/?]' then
+    -- THE SANITISED SUBSET (custom._rich_text_problem, read the CommonMark way): Markdown with no
+    -- raw HTML and links only to a web page, an email address or a phone number. Refused rather
+    -- than stripped, so what is stored is exactly what was written.
+    v_bad := custom._rich_text_problem(v_text);
+    if v_bad = 'html' then
       raise exception '% keeps formatted text as Markdown, and it was given HTML.', p_label
         using errcode = '23514', hint = 'P4: write **bold**, _italic_, [a link](https://…), - lists and # headings.';
     end if;
-    if v_text ~* '\]\(\s*(javascript|vbscript|data):' then
-      raise exception '% has a link that runs a script, and a link here opens a page.', p_label
-        using errcode = '23514', hint = 'P4: links start with https://, http:// or mailto:.';
+    if v_bad = 'link' then
+      raise exception '% has a link that is not a web page, an email address or a phone number.', p_label
+        using errcode = '23514', hint = 'P4: links start with https://, http://, mailto: or tel:.';
     end if;
     return false;
   end if;
   return false;
 end;
 $fn$;
+
+-- ═════════════════════════════════════════════════════════════════════════════════════════
+-- custom._field_value_carry_base — the carry by behaviour, as it was, under its own name
+-- ═════════════════════════════════════════════════════════════════════════════════════════
+
+create function custom._field_value_carry_base(p_organization_id uuid, p_from jsonb, p_to jsonb, p_value jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+-- ONE VALUE, CARRIED FROM WHAT A COLUMN WAS TO WHAT IT IS NOW (DATA-V2-BASICS-2, 2026-09-28).
+-- custom.field_value_convert judges a value by the new behaviour alone, and a choice column's cell
+-- holds the choice's KEY — so a choice column changed to Text read "in_stock" in every cell, and a
+-- Text column changed to a choice column set every word aside, even the ones naming a choice.
+-- Here a held choice goes by its own words, and words (or a key, or an option's id) find their
+-- choice. Returns SQL null when the value does not fit, and the caller keeps it in `_retired`.
+-- Neither side a choice column: exactly custom.field_value_convert.
+-- DATA-V2-BASICS-2 (2026-09-30): a line of words carried into a several-choice column is split into its words.
+declare
+  v_from_list boolean := coalesce(p_from ->> 'type', '') = 'list';
+  v_to_list   boolean := coalesce(p_to ->> 'type', '') = 'list';
+  v_from_tbl  uuid    := case when v_from_list then nullif(p_from -> 'config' ->> 'options_table_id', '')::uuid end;
+  v_to_tbl    uuid    := case when v_to_list then nullif(p_to -> 'config' ->> 'options_table_id', '')::uuid end;
+  v_from      jsonb;
+  v_to        jsonb;
+  v_items     jsonb;
+  v_words     jsonb := '[]'::jsonb;
+  v_out       jsonb := '[]'::jsonb;
+  v_one       jsonb;
+  v_tok       text;
+  v_word      text;
+  v_k         text;
+  v_hit       text;
+  v_allow     boolean := coalesce((p_to -> 'config' ->> 'allow_other')::boolean, false);
+  v_many_to   boolean := coalesce((p_to ->> 'multi')::boolean, false);
+begin
+  if p_value is null or jsonb_typeof(p_value) = 'null' then
+    return p_value;
+  end if;
+  if not v_from_list and not v_to_list then
+    return custom.field_value_convert(p_to, p_value);
+  end if;
+  if jsonb_typeof(p_value) = 'object' then
+    return null;
+  end if;
+
+  v_from := jsonb_build_object('options', case when v_from_tbl is null then '{}'::jsonb
+                                               else custom.choice_options(p_organization_id, v_from_tbl) end);
+  v_to   := jsonb_build_object('options', case when v_to_tbl is null then '{}'::jsonb
+                                               else custom.choice_options(p_organization_id, v_to_tbl) end);
+  v_items := case when jsonb_typeof(p_value) = 'array' then p_value else jsonb_build_array(p_value) end;
+
+  -- ── A LINE OF WORDS INTO SEVERAL CHOICES (DATA-V2-BASICS-2, 2026-09-30; BREAKER-3 B3-02) ──────
+  -- A Text column holding "Lower back, Hip" changed to Multi-choice kept "Lower back, Hip" as ONE
+  -- value, and the Sheet drew it as a JSON list. Into a column that holds several choices, text that
+  -- is not itself one of its choices is read as the list it is: split on commas, semicolons and line
+  -- breaks (the Sheet's own reading of typed words, cell-word.ts), trimmed, blanks and repeats dropped.
+  if v_to_list and v_many_to and not v_from_list then
+    v_words := '[]'::jsonb;
+    for v_one in select e from jsonb_array_elements(v_items) e loop
+      if jsonb_typeof(v_one) = 'string'
+         and (v_one #>> '{}') ~ '[,;\n]'
+         and custom.choice_key_of(v_to, btrim(v_one #>> '{}')) is null then
+        v_words := v_words || coalesce((
+          select jsonb_agg(to_jsonb(d.w) order by d.ord)
+            from (select distinct on (lower(p.w)) p.w, p.ord
+                    from (select regexp_replace(btrim(part), '\s+', ' ', 'g') as w, ord
+                            from regexp_split_to_table(v_one #>> '{}', '[,;\n]') with ordinality s(part, ord)) p
+                   where p.w <> ''
+                   order by lower(p.w), p.ord) d), '[]'::jsonb);
+      else
+        v_words := v_words || jsonb_build_array(v_one);
+      end if;
+    end loop;
+    v_items := v_words;
+    v_words := '[]'::jsonb;
+  end if;
+
+  -- ── INTO A CHOICE COLUMN ─────────────────────────────────────────────────────────────
+  if v_to_list then
+    for v_one in select e from jsonb_array_elements(v_items) e loop
+      if jsonb_typeof(v_one) in ('object', 'array') then
+        return null;
+      end if;
+      v_tok  := btrim(v_one #>> '{}');
+      v_word := v_tok;
+      v_hit  := null;
+      if v_from_list then
+        v_k := custom.choice_key_of(v_from, v_tok);
+        if v_k is not null then
+          v_word := coalesce(v_from -> 'options' -> v_k ->> 'label', v_tok);
+        end if;
+      end if;
+      if v_from_list and v_from_tbl is not distinct from v_to_tbl then
+        -- The same list: the key it held is still the key, a retired one included.
+        v_hit := custom.choice_key_of(v_to, v_tok);
+      else
+        v_hit := coalesce(custom.choice_key_of(v_to, v_word), custom.choice_key_of(v_to, v_tok));
+        -- Nothing retired is picked anew.
+        if v_hit is not null and coalesce((v_to -> 'options' -> v_hit ->> 'retired')::boolean, false) then
+          v_hit := null;
+        end if;
+      end if;
+      if v_hit is not null then
+        v_out := v_out || jsonb_build_array(to_jsonb(v_hit));
+      elsif v_allow and v_word <> '' then
+        v_out := v_out || jsonb_build_array(to_jsonb(v_word));   -- an other value, kept as its words
+      else
+        return null;
+      end if;
+    end loop;
+    if v_many_to then
+      return v_out;
+    end if;
+    if jsonb_array_length(v_out) = 0 then
+      return 'null'::jsonb;
+    end if;
+    if jsonb_array_length(v_out) = 1 then
+      return v_out -> 0;
+    end if;
+    return null;                            -- several choices do not fit one; kept, never dropped
+  end if;
+
+  -- ── OUT OF A CHOICE COLUMN: each held choice becomes its words ────────────────────────
+  for v_one in select e from jsonb_array_elements(v_items) e loop
+    if jsonb_typeof(v_one) = 'string' then
+      v_k := custom.choice_key_of(v_from, v_one #>> '{}');
+      v_words := v_words || jsonb_build_array(
+        case when v_k is not null then coalesce(v_from -> 'options' -> v_k -> 'label', v_one) else v_one end);
+    else
+      v_words := v_words || jsonb_build_array(v_one);
+    end if;
+  end loop;
+  if jsonb_array_length(v_words) = 0 then
+    return 'null'::jsonb;
+  end if;
+  if jsonb_array_length(v_words) = 1 then
+    return custom.field_value_convert(p_to, v_words -> 0);
+  end if;
+  if coalesce(p_to ->> 'type', '') = 'text' then
+    -- Several choices read as one line of words: "Gloves, Masks".
+    return to_jsonb((select string_agg(e #>> '{}', ', ' order by ord)
+                       from jsonb_array_elements(v_words) with ordinality t(e, ord)));
+  end if;
+  return null;                              -- several choices are not one number, date or tick
+end;
+$function$;
+
+-- custom._field_value_carry — the base carry, fitted to the newer kinds
+
+CREATE OR REPLACE FUNCTION custom._field_value_carry(p_organization_id uuid, p_from jsonb, p_to jsonb, p_value jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+  -- ONE VALUE, CARRIED FROM WHAT A COLUMN WAS TO WHAT IT IS NOW (DATA-V2-BASICS-2). The carry by
+  -- behaviour is custom._field_value_carry_base, unchanged; LANE 10 P4 (verifier V8 #1) fits its
+  -- answer to the newer kinds (custom._kind_value_fit): converted where it can be, SQL null — kept
+  -- in `_retired` with its reason by the caller — where it cannot, so no change of kind leaves a
+  -- value in place that the column then refuses.
+  select custom._kind_value_fit(p_to, p_value,
+                                custom._field_value_carry_base(p_organization_id, p_from, p_to, p_value));
+$function$;
 
 -- ═════════════════════════════════════════════════════════════════════════════════════════
 -- custom.field_kinds
@@ -736,6 +1132,12 @@ begin
       -- config key), 1 to 10, from the caller's `max`, else the Rule it already carries, else 5.
       -- Its bottom is a min Rule of 0. It shows as stars out of that max.
       if v_kind = 'rating' then
+        -- V8 #6: a top star that is not a number is refused, never quietly made 5.
+        if nullif(btrim(coalesce(p_spec ->> 'max', '')), '') is not null
+           and (p_spec ->> 'max') !~ '^-?[0-9]+(\.[0-9]+)?$' then
+          raise exception 'A rating goes up to a whole number of stars from 1 to 10, and "%" asks for "%", which is not a number.', v_label, p_spec ->> 'max'
+            using errcode = '23514', hint = 'P4: send max as a number between 1 and 10, or leave it out for 5. Nothing was created.';
+        end if;
         v_max := coalesce(case when (p_spec ->> 'max') ~ '^-?[0-9]+(\.[0-9]+)?$' then (p_spec ->> 'max')::numeric end,
                           (select max((r ->> 'value')::numeric) from jsonb_array_elements(v_rules) r
                             where r ->> 'kind' = 'max' and (r ->> 'value') ~ '^-?[0-9]+(\.[0-9]+)?$'),
@@ -757,6 +1159,13 @@ begin
         end if;
       -- LANE 10 P4: A DURATION is a number of seconds, never below zero, shown as hours and minutes.
       elsif v_kind = 'duration' then
+        -- V8 #6: a duration is kept in seconds; a caller asking for another unit of time is told so,
+        -- never quietly given seconds.
+        if lower(btrim(coalesce(p_spec ->> 'unit', ''))) in ('minutes', 'minute', 'min', 'mins', 'hours', 'hour', 'h', 'hr', 'hrs',
+                                                              'days', 'day', 'ms', 'milliseconds', 'millisecond', 'weeks', 'week') then
+          raise exception 'A duration is kept in seconds, so "%" cannot be kept in %. Leave the unit out; it shows as hours and minutes.', v_label, p_spec ->> 'unit'
+            using errcode = '23514', hint = 'P4: a duration''s unit is seconds. Nothing was created.';
+        end if;
         d := d || jsonb_build_object('format', 'duration', 'unit', 'seconds',
           'rules', case when exists (select 1 from jsonb_array_elements(v_rules) r where r ->> 'kind' = 'min')
                         then v_rules
@@ -996,6 +1405,11 @@ begin
   -- LANE 10 P4: A STATUS is a single choice whose choices sit in To do, In progress and Done
   -- (custom.status_groups_of keeps one shape: choice key -> group); A COUNT says so in its format.
   if v_kind = 'status' then
+    -- V8 #6: a status is one choice at a time; a caller asking for several is told so.
+    if coalesce((p_spec ->> 'multi')::boolean, false) then
+      raise exception 'A status is one choice at a time, so "%" cannot hold several. Use Several choices for that.', v_label
+        using errcode = '23514', hint = 'P4: send multi false, or leave it out. Nothing was created.';
+    end if;
     d := d || jsonb_build_object('format', 'status', 'multi', false,
                                  'config', (d -> 'config') || jsonb_build_object('status_groups',
                                    custom.status_groups_of(coalesce(p_spec -> 'status_groups', v_config -> 'status_groups'))));
@@ -1059,6 +1473,18 @@ begin
   v_derived  := custom.parity_type(d);
   v_edef     := nullif(d ->> 'entity_definition_id', '')::uuid;
 
+  -- LANE 10 P4: A STATUS'S GROUPS ARE KEYED BY EACH CHOICE'S STORED KEY (verifier V8 #3): every
+  -- name the write used (words, an option id, a key) becomes the key a rename never changes; a name
+  -- that is no choice of the column is refused; a removed choice's group is dropped.
+  if d ->> 'format' = 'status' and jsonb_typeof(d -> 'config' -> 'status_groups') = 'object' then
+    new.data := jsonb_set(new.data, '{config,status_groups}',
+                  custom.status_groups_keyed(new.organization_id,
+                                             nullif(d -> 'config' ->> 'options_table_id', '')::uuid,
+                                             d -> 'config' -> 'status_groups',
+                                             case when tg_op = 'UPDATE' then old.data -> 'config' -> 'status_groups' end,
+                                             v_label));
+    d := new.data;
+  end if;
   -- LANE 10 P4: what a column of one of the nine newer kinds has to say about itself (a rating's
   -- top star, a duration's seconds, a status's groups, a barcode's symbology …), asked in one place.
   perform custom._field_kind_shape_ok(d, v_label);
@@ -1602,22 +2028,53 @@ AS $function$
 declare
   v_values jsonb;
   v_who    uuid;
+  v_env    jsonb;
+  v_born   timestamptz;
 begin
   -- LANE 10 P4: WHO MADE IT AND WHO LAST CHANGED IT, the way Created time and Last changed time
   -- are filled: from the record's own stamps (custom.record.created_by / updated_by, which
   -- platform._stamp_actor writes from the writing actor), on read, never typed. The value is
-  -- {id, name}: the name is the organization's own (custom.history_people, the namer comments
-  -- and history use), null for somebody who is not a member of it.
+  -- {id, name, actor}: the name is the organization's own (custom.history_people, the namer
+  -- comments and history use), null for somebody who is not a member of it.
+  -- V8 #4: WHO WROTE IS ALSO WHICH KIND OF WRITER. A system or an agent write leaves
+  -- custom.record.updated_by naming the person before it; the write's own tier is on its values'
+  -- envelopes (`_values.<key>.actor`: user, agent or system, with `on_behalf_of` for an agent).
+  -- Last changed by reads the latest envelope; Created by the envelope stamped when the record was
+  -- made. A system write answers {id: null, name: null, actor: "system"}; an agent's answers
+  -- actor "agent" with the person it wrote for.
   if (p_field_data -> 'config' ->> 'system') in ('created_by', 'modified_by') then
-    select case when (p_field_data -> 'config' ->> 'system') = 'created_by' then r.created_by else r.updated_by end
-      into v_who
+    select case when (p_field_data -> 'config' ->> 'system') = 'created_by' then r.created_by else r.updated_by end,
+           r.created_at,
+           (select e.value from jsonb_each(case when jsonb_typeof(r.data -> '_values') = 'object' then r.data -> '_values' else '{}'::jsonb end) e
+             where jsonb_typeof(e.value) = 'object' and e.value ? 'actor' and e.value ? 'at'
+               -- Created by: a value first written (ver 1), the earliest. Last changed by: the latest
+               -- write, and of writes in one moment the one with the most versions behind it.
+               and ((p_field_data -> 'config' ->> 'system') = 'modified_by' or coalesce(e.value ->> 'ver', '1') = '1')
+             order by case when (p_field_data -> 'config' ->> 'system') = 'created_by' then (e.value ->> 'at')::timestamptz end asc,
+                      case when (p_field_data -> 'config' ->> 'system') = 'modified_by' then (e.value ->> 'at')::timestamptz end desc,
+                      case when (p_field_data -> 'config' ->> 'system') = 'modified_by' then coalesce((e.value ->> 'ver')::numeric, 1) end desc
+             limit 1)
+      into v_who, v_born, v_env
       from custom.record r
      where r.organization_id = p_organization_id
        and r.id = p_record_id;
+    -- A Created by envelope counts only when it was stamped as the record was made.
+    if (p_field_data -> 'config' ->> 'system') = 'created_by' and v_env is not null
+       and abs(extract(epoch from ((v_env ->> 'at')::timestamptz - v_born))) > 5 then
+      v_env := null;
+    end if;
+    if v_env ->> 'actor' = 'system' then
+      return jsonb_build_object('id', null, 'name', null, 'actor', 'system');
+    end if;
+    if v_env ->> 'actor' = 'agent' then
+      v_who := coalesce(nullif(v_env ->> 'on_behalf_of', '')::uuid, v_who);
+      return jsonb_build_object('id', v_who, 'actor', 'agent',
+                                'name', case when v_who is not null then custom.history_people(p_organization_id, array[v_who]) -> v_who::text -> 'name' end);
+    end if;
     if v_who is null then
       return 'null'::jsonb;
     end if;
-    return jsonb_build_object('id', v_who,
+    return jsonb_build_object('id', v_who, 'actor', 'user',
                               'name', custom.history_people(p_organization_id, array[v_who]) -> v_who::text -> 'name');
   end if;
   v_values := coalesce(p_values, custom.record_values(p_organization_id, p_record_id));
@@ -2019,7 +2476,12 @@ begin
   -- LANE 10 P4: a status column's groups, and a barcode column's symbology, changed in place.
   -- custom._field_kind_shape_ok refuses either on a column that is not that kind, by name.
   if p_patch ? 'status_groups' then
-    v_next := jsonb_set(v_next, '{config,status_groups}', custom.status_groups_of(p_patch -> 'status_groups'));
+    -- V8 #3: MERGED into the groups the column holds, never replacing them; the Field guard keys
+    -- each name to its choice, refuses a name that is no choice, and drops removed choices.
+    v_next := jsonb_set(v_next, '{config,status_groups}',
+                coalesce(case when jsonb_typeof(v_old -> 'config' -> 'status_groups') = 'object'
+                              then v_old -> 'config' -> 'status_groups' end, '{}'::jsonb)
+                || custom.status_groups_of(p_patch -> 'status_groups'));
   end if;
   if p_patch ? 'symbology' then
     v_next := case when nullif(btrim(coalesce(p_patch ->> 'symbology', '')), '') is null

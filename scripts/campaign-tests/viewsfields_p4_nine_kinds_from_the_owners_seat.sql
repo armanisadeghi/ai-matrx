@@ -159,7 +159,7 @@ insert into bad values
   ('ean check digit',    '{"wristband": "4006381333932"}',               'does not check out'),
   ('ean too short',      '{"wristband": "40063813"}',                    'Wristband is a EAN-13 barcode, which is 13 digits'),
   ('html in rich text',  '{"treatment_notes": "<script>alert(1)</script>"}', 'Treatment notes keeps formatted text as Markdown, and it was given HTML'),
-  ('script link',        '{"treatment_notes": "[x](javascript:alert(1))"}', 'Treatment notes has a link that runs a script'),
+  ('script link',        '{"treatment_notes": "[x](javascript:alert(1))"}', 'Treatment notes has a link that is not a web page'),
   ('typed created by',   '{"booked_by": "someone"}',                     'Booked by is worked out by the system, so it cannot be typed in'),
   ('unknown status',     '{"plan_status": "on_hold"}',                   'Plan status does not have a choice called "on_hold"');
 grant all on bad to authenticated;
@@ -201,6 +201,262 @@ begin
     insert into res values ('B refused: a status group nobody knows', m like 'A status choice is to do, in progress or done, and "Waiting" is put in "someday"%', m);
   end;
 end $$;
+
+-- ── ROUND 2 (independent verifier V8, 2026-10-02) ───────────────────────────────────────────
+
+-- X: rich text is read the CommonMark way — every bypass V8 found is refused, and words that are not
+-- HTML ("flexion <a few degrees", "a < b") are kept.
+create temp table rich (label text, body text, want text) on commit drop;
+grant all on rich to authenticated;
+insert into rich values
+  ('entity-encoded scheme',  '[x](jav&#x61;script:alert(1))',              'a link that is not a web page'),
+  ('named colon entity',     '[x](javascript&colon;alert(1))',             'a link that is not a web page'),
+  ('reference definition',   E'[ref][a]\n\n[a]: javascript:alert(1)',      'a link that is not a web page'),
+  ('backslash-escaped colon','[x](javascript\:alert(1))',                  'a link that is not a web page'),
+  ('autolink',               '<javascript:alert(1)>',                      'a link that is not a web page'),
+  ('data image',             '![i](data:image/png;base64,AAAA)',           'a link that is not a web page'),
+  ('raw tag',                'Plain <b>bold</b>',                          'it was given HTML'),
+  ('a few degrees',          'flexion <a few degrees, then rest',          ''),
+  ('less than',              'pain 3 < yesterday''s 5',                    ''),
+  ('safe links',             '[hep](https://cedarridgept.example/hep) · [call](tel:+18055550142) · [mail](mailto:front@cedarridgept.example)', '');
+do $$
+declare b record; m text;
+begin
+  for b in select * from rich loop
+    begin
+      perform custom.record_update(current_setting('t.org')::uuid, current_setting('t.rec')::uuid, jsonb_build_object('treatment_notes', b.body), null);
+      insert into res values ('X ' || b.label, b.want = '', 'kept');
+    exception when others then
+      get stacked diagnostics m = message_text;
+      insert into res values ('X ' || b.label, b.want <> '' and position(b.want in m) > 0, m);
+    end;
+  end loop;
+end $$;
+
+-- B2: a barcode refuses line and paragraph separators and invisible characters; a duration past ten
+-- years is refused.
+do $$
+declare m text; v jsonb; k text;
+begin
+  for k, v in select * from (values ('line separator', to_jsonb('4006381' || chr(8232) || '333931')),
+                                    ('zero-width space', to_jsonb('4006381' || chr(8203) || '333931')),
+                                    ('byte-order mark', to_jsonb(chr(65279) || '4006381333931'))) x loop
+    begin
+      perform custom.record_update(current_setting('t.org')::uuid, current_setting('t.rec')::uuid, jsonb_build_object('wristband', v), null);
+      insert into res values ('B2 barcode refuses a ' || k, false, 'kept');
+    exception when others then
+      get stacked diagnostics m = message_text;
+      insert into res values ('B2 barcode refuses a ' || k, m like 'Wristband is a barcode%hidden characters%', m);
+    end;
+  end loop;
+  begin
+    perform custom.record_update(current_setting('t.org')::uuid, current_setting('t.rec')::uuid, '{"session_length": 400000000}'::jsonb, null);
+    insert into res values ('B2 a duration past ten years is refused', false, 'kept');
+  exception when others then
+    get stacked diagnostics m = message_text;
+    insert into res values ('B2 a duration past ten years is refused', m like 'Session length is longer than ten years%', m);
+  end;
+end $$;
+
+-- D: a setting the store cannot keep is refused in a sentence, never changed quietly.
+do $$
+declare m text; s jsonb; w text; k text;
+begin
+  for k, s, w in select * from (values
+      ('a rating out of "ten"', '{"label": "Effort", "type": "rating", "max": "ten"}'::jsonb, 'which is not a number'),
+      ('a duration in minutes', '{"label": "Exercise time", "type": "duration", "unit": "minutes"}'::jsonb, 'A duration is kept in seconds'),
+      ('a status holding several', '{"label": "Referral stage", "type": "status", "multi": true, "options": ["Sent"]}'::jsonb, 'A status is one choice at a time')) x loop
+    begin
+      perform custom.field_declare(current_setting('t.org')::uuid, current_setting('t.tracker')::uuid, s);
+      insert into res values ('D refused: ' || k, false, 'declared');
+    exception when others then
+      get stacked diagnostics m = message_text;
+      insert into res values ('D refused: ' || k, position(w in m) > 0, m);
+    end;
+  end loop;
+end $$;
+
+-- R: EVERY CHANGE OF KIND LEAVES ONLY VALUES THE COLUMN TAKES (V8 #1). A column of each older kind,
+-- holding realistic and awkward values, is changed to each of the nine and back to text and number
+-- through custom.field_update; then (below, as the owner) every one of those records is judged
+-- again against every column it has, and (as the seat) its title is changed.
+create temp table census (src text, tgt text, field_id uuid, records uuid[], outcome text) on commit drop;
+grant all on census to authenticated;
+do $$
+declare
+  o uuid := current_setting('t.org')::uuid;
+  t uuid := current_setting('t.tracker')::uuid;
+  src record;
+  tgt record;
+  v_field uuid;
+  v_recs uuid[];
+  v_label text;
+  v_key text;
+  v jsonb;
+  m text;
+  n int := 0;
+begin
+  for src in select * from (values
+      ('text',     '{"type": "text"}'::jsonb,
+                   '["12 Main St, Boulder CO", "45 min", "<b>bold</b> notes", "4006381333931", "great", "3", "In progress"]'::jsonb),
+      ('number',   '{"type": "number"}'::jsonb, '[3, 3.5, 7, -2, 2700, 400000000]'::jsonb),
+      ('datetime', '{"type": "datetime", "kind": "datetime"}'::jsonb, '["2026-10-06T22:30:00Z"]'::jsonb),
+      ('checkbox', '{"type": "checkbox"}'::jsonb, '[true, false]'::jsonb)) s(kind, spec, vals) loop
+    for tgt in select * from (values
+        ('rating', '{"type": "rating"}'::jsonb), ('duration', '{"type": "duration"}'::jsonb),
+        ('address', '{"type": "address"}'::jsonb), ('barcode', '{"type": "barcode"}'::jsonb),
+        ('rich_text', '{"type": "rich_text"}'::jsonb), ('status', '{"type": "status"}'::jsonb),
+        ('created_by', '{"type": "created_by"}'::jsonb), ('modified_by', '{"type": "modified_by"}'::jsonb),
+        ('count', '{"type": "count", "via": "visits_booked"}'::jsonb),
+        ('text', '{"type": "text"}'::jsonb), ('number', '{"type": "number"}'::jsonb)) g(kind, spec) loop
+      n := n + 1;
+      v_label := format('Census %s %s %s', src.kind, tgt.kind, n);
+      v_key := regexp_replace(lower(v_label), '[^a-z0-9]+', '_', 'g');
+      v_field := custom.field_declare(o, t, src.spec || jsonb_build_object('label', v_label));
+      v_recs := '{}';
+      for v in select x from jsonb_array_elements(src.vals) x loop
+        v_recs := v_recs || custom.record_write(o, t, jsonb_build_object('title', format('Census patient %s', n), v_key, v));
+      end loop;
+      begin
+        perform custom.field_update(o, v_field, tgt.spec);
+        insert into census values (src.kind, tgt.kind, v_field, v_recs, 'changed');
+      exception when others then
+        get stacked diagnostics m = message_text;
+        insert into census values (src.kind, tgt.kind, v_field, v_recs, 'refused: ' || m);
+      end;
+    end loop;
+  end loop;
+end $$;
+
+-- R, judged as the owner: every census record still passes every column it has.
+reset role;
+do $$
+declare c record; r custom.record; fs custom.record[]; m text; bad int := 0; seen int := 0; refused text := '';
+begin
+  for c in select * from census loop
+    if c.outcome <> 'changed' then
+      refused := refused || format('%s→%s: %s; ', c.src, c.tgt, c.outcome);
+      continue;
+    end if;
+    select array_agg(f) into fs from custom.applicable_fields(current_setting('t.org')::uuid, current_setting('t.tracker')::uuid, null) f;
+    for r in select * from custom.record x where x.organization_id = current_setting('t.org')::uuid and x.id = any (c.records) loop
+      seen := seen + 1;
+      begin
+        perform custom.validate_values(r.organization_id, fs, r.data);
+      exception when others then
+        get stacked diagnostics m = message_text;
+        bad := bad + 1;
+        insert into res values (format('R %s → %s leaves only values the column takes', c.src, c.tgt), false, m);
+      end;
+    end loop;
+  end loop;
+  insert into res values ('R every change of kind leaves every record valid', bad = 0 and seen > 0,
+                          format('%s records judged, %s refused retypes: %s', seen, (select count(*) from census where outcome <> 'changed'), refused));
+end $$;
+set local role authenticated;
+-- R, as the seat: every census record can still be edited.
+do $$
+declare c record; rid uuid; m text; bad int := 0;
+begin
+  for c in select * from census loop
+    foreach rid in array c.records loop
+      begin
+        perform custom.record_update(current_setting('t.org')::uuid, rid, jsonb_build_object('title', 'Census patient, seen again'), null);
+      exception when others then
+        get stacked diagnostics m = message_text;
+        bad := bad + 1;
+        insert into res values (format('R %s → %s record stays editable', c.src, c.tgt), false, m);
+      end;
+    end loop;
+  end loop;
+  insert into res values ('R every census record stays editable', bad = 0, bad || ' locked');
+end $$;
+
+-- S: A STATUS'S GROUPS ARE KEYED BY THE CHOICE'S STORED KEY (V8 #3): renaming "In progress" to
+-- "Active" keeps its group; Settings merges a change by option id; a name that is no choice is
+-- refused; a removed choice's group goes at the next save.
+reset role;
+select set_config('t.sf', current_setting('t.ids')::jsonb ->> 'status', true),
+       set_config('t.sopts', (select f.data -> 'config' ->> 'options_table_id' from custom.record f
+                               where f.organization_id = current_setting('t.org')::uuid and f.id = (current_setting('t.ids')::jsonb ->> 'status')::uuid), true) \g /dev/null
+select set_config('t.opt_' || o.key, o.value ->> 'id', true)
+  from jsonb_each(custom.choice_options(current_setting('t.org')::uuid, current_setting('t.sopts')::uuid)) o \g /dev/null
+set local role authenticated;
+select set_config('app.actor_tier', 'user', true) \g /dev/null
+do $$
+begin
+  perform custom.field_update(current_setting('t.org')::uuid, current_setting('t.sf')::uuid, jsonb_build_object('options', jsonb_build_array(
+    jsonb_build_object('id', current_setting('t.opt_not_started'), 'words', 'Not started'),
+    jsonb_build_object('id', current_setting('t.opt_in_progress'), 'words', 'Active'),
+    jsonb_build_object('id', current_setting('t.opt_discharged'), 'words', 'Discharged'))));
+end $$;
+reset role;
+do $$
+declare d jsonb; v jsonb;
+begin
+  select f.data into d from custom.record f where f.organization_id = current_setting('t.org')::uuid and f.id = current_setting('t.sf')::uuid;
+  insert into res values ('S a renamed choice keeps its group', d -> 'config' -> 'status_groups' ->> 'in_progress' = 'in_progress', (d -> 'config' -> 'status_groups')::text);
+  v := custom.read_record(current_setting('t.org')::uuid, current_setting('t.rec')::uuid);
+  insert into res values ('S the read names the renamed choice by its words and keeps its key',
+    v ->> 'plan_status' = 'Active' and v -> '_choices' -> 'plan_status' ->> 'key' = 'in_progress', (v -> '_choices' -> 'plan_status')::text);
+end $$;
+set local role authenticated;
+do $$
+declare m text;
+begin
+  perform custom.field_update(current_setting('t.org')::uuid, current_setting('t.sf')::uuid,
+    jsonb_build_object('status_groups', jsonb_build_object(current_setting('t.opt_in_progress'), 'done')));
+  begin
+    perform custom.field_update(current_setting('t.org')::uuid, current_setting('t.sf')::uuid, '{"status_groups": {"Waitlisted": "todo"}}'::jsonb);
+    insert into res values ('S a group for a choice the column does not have is refused', false, 'saved');
+  exception when others then
+    get stacked diagnostics m = message_text;
+    insert into res values ('S a group for a choice the column does not have is refused', m like 'The status "Plan status" has no choice called "Waitlisted"%', m);
+  end;
+end $$;
+reset role;
+do $$
+declare d jsonb;
+begin
+  select f.data into d from custom.record f where f.organization_id = current_setting('t.org')::uuid and f.id = current_setting('t.sf')::uuid;
+  insert into res values ('S Settings merges a change by option id into the groups',
+    d -> 'config' -> 'status_groups' = '{"not_started": "todo", "in_progress": "done", "discharged": "done"}'::jsonb, (d -> 'config' -> 'status_groups')::text);
+end $$;
+set local role authenticated;
+do $$
+begin
+  perform custom.field_update(current_setting('t.org')::uuid, current_setting('t.sf')::uuid, jsonb_build_object('options', jsonb_build_array(
+    jsonb_build_object('id', current_setting('t.opt_not_started'), 'words', 'Not started'),
+    jsonb_build_object('id', current_setting('t.opt_in_progress'), 'words', 'Active'))));
+  perform custom.field_update(current_setting('t.org')::uuid, current_setting('t.sf')::uuid, '{"status_groups": {"Active": "in_progress"}}'::jsonb);
+end $$;
+reset role;
+do $$
+declare d jsonb;
+begin
+  select f.data into d from custom.record f where f.organization_id = current_setting('t.org')::uuid and f.id = current_setting('t.sf')::uuid;
+  insert into res values ('S a removed choice loses its group at the next save',
+    d -> 'config' -> 'status_groups' = '{"not_started": "todo", "in_progress": "in_progress"}'::jsonb, (d -> 'config' -> 'status_groups')::text);
+end $$;
+
+-- M: LAST CHANGED BY NAMES THE KIND OF WRITER (V8 #4). A system write is "system", never the person
+-- who wrote before it; Created by still names the person who made the record.
+set local role authenticated;
+-- (A fresh visit: this suite runs in ONE transaction, so every write here carries the same moment, and
+-- the record written most above would tie its many versions with the system's one.)
+select set_config('t.rec2', custom.record_write(current_setting('t.org')::uuid, current_setting('t.tracker')::uuid,
+         '{"title": "Rosa Delgado — evaluation", "pain_rating": 4}'::jsonb)::text, true),
+       set_config('app.actor_tier', 'system', true) \g /dev/null
+do $$
+declare v jsonb;
+begin
+  perform custom.record_update(current_setting('t.org')::uuid, current_setting('t.rec2')::uuid, '{"title": "Rosa Delgado — evaluation (rebooked)"}'::jsonb, null);
+  v := custom.read_record(current_setting('t.org')::uuid, current_setting('t.rec2')::uuid);
+  insert into res values ('M a system write reads as System in Last changed by', v -> 'last_updated_by' ->> 'actor' = 'system', (v -> 'last_updated_by')::text);
+  insert into res values ('M Created by still names the person', v -> 'booked_by' ->> 'actor' = 'user' and v -> 'booked_by' ->> 'id' = current_setting('t.me'), (v -> 'booked_by')::text);
+end $$;
+select set_config('app.actor_tier', 'user', true) \g /dev/null
+reset role;
 
 reset role;
 
