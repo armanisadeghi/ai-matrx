@@ -101,3 +101,40 @@ describe("findFreeSpot — one tile at a point", () => {
     expect(r.y).toBeGreaterThanOrEqual(-180); // not above the tile in the way
   });
 });
+
+describe("a board of many big tiles stays fit-able", () => {
+  // Real tiles are big (a note is 560x620) and the board is often zoomed in beside the chat, so
+  // the view holds ONE tile across. Rows as wide as the view then made a single tall column and
+  // Fit ended at ~8% zoom. The run's rows now widen with the tile count (a landscape block).
+  const BIG = { w: 560, h: 620 };
+  const run = (count: number, camera: Camera, size = { w: 900, h: 800 }) => {
+    const board = new BoardStore<Tile>([]);
+    let cam = camera;
+    let current: PlacementRun | null = null;
+    const rects: Rect[] = [];
+    for (let i = 0; i < count; i++) {
+      const placed: ReturnType<typeof placeTiles> = placeTiles(
+        board,
+        [{ id: `t${i}`, rect: { x: 0, y: 0, ...BIG } }],
+        { camera: cam, size, insets: INSETS },
+        current,
+      );
+      rects.push(placed.rects[0]);
+      current = placed.run;
+      if (placed.reveal) cam = placed.reveal;
+    }
+    return rects;
+  };
+  const fitZoom = (rects: Rect[], area = { w: 1400, h: 900 }) => {
+    const w = Math.max(...rects.map((r) => r.x + r.w)) - Math.min(...rects.map((r) => r.x));
+    const h = Math.max(...rects.map((r) => r.y + r.h)) - Math.min(...rects.map((r) => r.y));
+    return Math.min(area.w / w, area.h / h);
+  };
+
+  it.each([12, 16, 20])("%i tiles fit at a readable zoom, not one tall column", (count) => {
+    const rects = run(count, { x: 0, y: 0, z: 1 });
+    expect(fitZoom(rects)).toBeGreaterThan(0.25);
+    const xs = new Set(rects.map((r) => r.x));
+    expect(xs.size).toBeGreaterThan(2);
+  });
+});

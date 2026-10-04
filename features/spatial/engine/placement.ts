@@ -99,6 +99,21 @@ export function flowForView(view: Rect, size: { w: number; h: number }, margin =
   };
 }
 
+/** Width/height the block of a run aims for (a landscape screen). */
+const BLOCK_ASPECT = 1.6;
+/** A run never widens past this, however many tiles it holds. */
+const MAX_SPAN = 12_000;
+
+/**
+ * How wide the rows of a run should be for `count` tiles to make a landscape block. The view's
+ * own width is the floor, but a view that holds ONE big tile across (zoomed in, chat beside it)
+ * made every row one tile long: 20 tiles became a single column and Fit ended at ~8% zoom.
+ */
+function landscapeSpan(count: number, size: { w: number; h: number }, gap: number): number {
+  const cell = (size.w + gap) * (size.h + gap);
+  return Math.min(MAX_SPAN, Math.ceil(Math.sqrt(count * cell * BLOCK_ASPECT)));
+}
+
 /**
  * The first free spot in the flow in reading order: along each row left to
  * right, rows top to bottom (GRID steps), never wider than the flow (a tile
@@ -118,7 +133,7 @@ export function placeInFlow(
     const inside = centred.x >= flow.x && centred.x + size.w <= flow.x + Math.max(flow.w, size.w);
     if (inside && centred.y >= flow.y && isFree(occupied, centred, gap)) return centred;
   }
-  const span = Math.max(flow.w, size.w);
+  const span = Math.max(flow.w, size.w, landscapeSpan(occupied.length + 1, size, gap));
   for (let row = 0; row < MAX_FLOW_ROWS; row++) {
     const y = flow.y + row * GRID;
     for (let x = flow.x; x + size.w <= flow.x + span; ) {
