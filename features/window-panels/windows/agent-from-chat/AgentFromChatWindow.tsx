@@ -144,9 +144,9 @@ function AgentFromChatWindowInner({
       title="Make an agent"
       id="agent-from-chat-window"
       minWidth={420}
-      minHeight={320}
+      minHeight={220}
       width={phase === "done" ? 960 : 520}
-      height={phase === "done" ? 680 : 420}
+      height={phase === "done" ? 680 : phase === "idle" ? 240 : 420}
       position="center"
       onClose={onClose}
       overlayId="agentFromChatWindow"
