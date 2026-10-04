@@ -310,6 +310,8 @@ export const educationKitsManifest: SurfaceManifest = {
   readinessNote:
     "Manifest + emitters for both views (list / detail), with association-backed rename and delete. Not yet stamped verified: no data-surface-value Locate anchors; no canonical v3 context menu.",
   label: "Study Kits",
+  // What a Board agent sees of a kit that is not live: its name, its headline numbers, its progress.
+  briefValues: ["kit_title", "kit_totals", "progress_status"],
   urlPattern: "/education/kits",
   intro: `<surface_intro>
 You are on Study Kits at /education/kits. A study kit is one piece of the learner's material (usually an uploaded file) plus every study aid made from it — flashcards, a summary, a quiz, a practice test, a mind map, memory aids, notes, audio.

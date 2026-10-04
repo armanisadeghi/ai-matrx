@@ -128,6 +128,8 @@ export const educationFlashcardSetManifest: SurfaceManifest = {
   description:
     "",
   label: "Flashcard set",
+  // What a Board agent sees of a deck that is not live: its name and topic, how many cards.
+  briefValues: ["set_details", "card_count"],
   urlPattern: "/education/flashcards/[setId]",
   readiness: "partial",
   readinessNote:

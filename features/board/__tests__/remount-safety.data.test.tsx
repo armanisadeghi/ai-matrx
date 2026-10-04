@@ -203,3 +203,28 @@ remountType(
     expectRemountSafe({ ...r, keptAfterWake: null, keptAfterRemount: null }, null, ownTableDoors);
   },
 );
+
+// Break: the picklist tile (the table page's body, opened as a list) forgets the table's gates on
+// wake or re-reads them — the same break as the table, proved for a `list` source.
+remountType(
+  "list",
+  () =>
+    runCycle(type("list"), { kind: "entity", entity: "list", id: TABLE_ID }, {
+      title: "Rent roll",
+      prepare: () => {
+        seedDataTable();
+        recordsEngine.gridMounts = 0;
+      },
+      loadMs: 800,
+      kept: (tile) => ({
+        grid: tile.container.querySelector('[data-records-engine="gridMounts"]') !== null,
+        opening: (tile.container.textContent ?? "").includes("Opening the table"),
+        mounts: recordsEngine.gridMounts,
+      }),
+    }),
+  (r) => {
+    expect(r.keptAfterWake).toEqual({ grid: true, opening: false, mounts: 1 });
+    expect(r.keptAfterRemount).toEqual({ grid: true, opening: false, mounts: 2 });
+    expectRemountSafe({ ...r, keptAfterWake: null, keptAfterRemount: null }, null, ownTableDoors);
+  },
+);
