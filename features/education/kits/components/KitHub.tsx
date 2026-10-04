@@ -194,11 +194,42 @@ function ArtifactCard({
   );
 }
 
+/**
+ * THE KIT PAGE BODY — the one container every state of this page renders in
+ * (loading, read failure, no kit yet, the kit). It owns the gap under the
+ * header ONCE. The page clears the header to its exact edge and the shell's
+ * fade is drawn OVER the first few pixels of content (it takes no layout
+ * space, by ruling), so a first block with no gap of its own had its top
+ * border washed out under the header — the hero got a per-card `pt-4`, the
+ * empty state never did (2026-10-04). Every state now inherits the gap.
+ */
+function KitBody({
+  narrow = false,
+  className,
+  children,
+}: {
+  narrow?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <main
+      className={cn(
+        "mx-auto w-full px-4 pb-10 pt-4",
+        narrow ? "max-w-3xl" : "max-w-6xl",
+        className,
+      )}
+    >
+      {children}
+    </main>
+  );
+}
+
 function KitLoading({ header }: { header: ReactNode }) {
   return (
     <>
       {header}
-      <div className="matrx-touch-targets mx-auto w-full max-w-6xl space-y-6 px-4 pb-10">
+      <KitBody className="matrx-touch-targets space-y-6">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-48 w-full rounded-2xl" />
         <div className="grid gap-4 lg:grid-cols-3">
@@ -206,7 +237,7 @@ function KitLoading({ header }: { header: ReactNode }) {
           <Skeleton className="h-72 rounded-2xl" />
           <Skeleton className="h-72 rounded-2xl" />
         </div>
-      </div>
+      </KitBody>
     </>
   );
 }
@@ -387,7 +418,7 @@ export function KitHub({
     return withSurface(
       <>
         {header(null)}
-        <div className="mx-auto w-full max-w-3xl px-4 pb-10">
+        <KitBody narrow>
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
             <AGENT_ICON className="h-8 w-8 text-warning" />
             <div>
@@ -403,7 +434,7 @@ export function KitHub({
               Try again
             </Button>
           </div>
-        </div>
+        </KitBody>
       </>
     );
   }
@@ -412,7 +443,7 @@ export function KitHub({
     return withSurface(
       <>
         {header(null)}
-        <div className="matrx-touch-targets mx-auto w-full max-w-3xl px-4 pb-10">
+        <KitBody narrow className="matrx-touch-targets">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
             <AGENT_ICON className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -435,7 +466,7 @@ export function KitHub({
               />
             )}
           </div>
-        </div>
+        </KitBody>
       </>
     );
   }
@@ -643,14 +674,7 @@ export function KitHub({
   return withSurface(
     <>
       {header(kit.title)}
-      {/* With the hero leading (proposed layout) it gets the breathing room the
-          action row used to give it; otherwise it sits flush under the header. */}
-      <main
-        className={cn(
-          "mx-auto w-full max-w-6xl space-y-7 px-4 pb-10",
-          proposedLayout && "pt-4",
-        )}
-      >
+      <KitBody className="space-y-7">
         {!proposedLayout && actionRow}
         {!proposedLayout && managePanel}
 
@@ -783,7 +807,7 @@ export function KitHub({
             })}
           </div>
         </section>
-      </main>
+      </KitBody>
     </>
   );
 }
