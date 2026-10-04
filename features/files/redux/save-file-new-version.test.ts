@@ -202,7 +202,7 @@ describe("saving an edited file", () => {
         filePath: undefined as unknown as string,
         mimeType: "text/markdown",
         currentVersion: 1,
-        visibility: "shared",
+        visibility: "internal",
         deletedAt: null,
       }),
     );
