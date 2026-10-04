@@ -179,16 +179,26 @@ export function UsageGateBridge() {
       }
       if (!live) return;
       const due = freePeriodNoticeFor(freePeriod, warningDays, new Date());
-      if (!due || readShownDay() === due.dayKey) return;
+      if (!due || readShownDay() === due.dayKey || shownNotices.has(due.dayKey)) return;
+      shownNotices.add(due.dayKey);
       const name = await catalogPlanName(freePeriod.planKey);
       if (!live) return;
       const notice = freePeriodNoticeFor(freePeriod, warningDays, new Date(), name) ?? due;
-      writeShownDay(notice.dayKey);
+      // "Once per day" counts from when the person dealt with it (dismissed or
+      // chose a plan) — a notice raised before the toaster mounted is never
+      // marked seen without being seen.
       const show = notice.kind === "ended" ? toast.warning : toast.info;
       show(notice.title, {
         id: "free-period-notice",
         duration: Infinity,
-        action: { label: "Choose a plan", onClick: () => router.push("/pricing") },
+        onDismiss: () => writeShownDay(due.dayKey),
+        action: {
+          label: "Choose a plan",
+          onClick: () => {
+            writeShownDay(due.dayKey);
+            router.push("/pricing");
+          },
+        },
       });
     })();
     return () => {
