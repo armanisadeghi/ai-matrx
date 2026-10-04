@@ -94,7 +94,7 @@ importers:
         version: 0.8.68(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/realtime':
         specifier: latest
-        version: 0.8.7(react@19.3.0)
+        version: 0.9.0(react@19.3.0)
       '@ai-matrx/records':
         specifier: latest
         version: 0.68.8(react@19.3.0)
@@ -1202,8 +1202,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/realtime@0.8.7':
-    resolution: {integrity: sha512-pzGwojb/uLBlYL9d60sq2lR+tdN3gAJA0ZnS2KdIh31z6glIzDbwyP9oub7DXFYn/LlhC/dKfoT0qcwl5l9GKw==}
+  '@ai-matrx/realtime@0.9.0':
+    resolution: {integrity: sha512-dMOkkn7cAtg6IDZYj5ek8+hWdhAjut2x9Hs7ehI4bnVxqP5B4Zcu3FmlLG3sn9wZQPGLfPtBmXi+KEZ6vD8M3g==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -11852,7 +11852,7 @@ snapshots:
   '@ai-matrx/data@0.18.37(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
-      '@ai-matrx/realtime': 0.8.7(react@19.3.0)
+      '@ai-matrx/realtime': 0.9.0(react@19.3.0)
       '@supabase/ssr': 0.12.7(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))
       '@supabase/supabase-js': 2.117.2(@opentelemetry/api@1.9.0)
     optionalDependencies:
@@ -11906,7 +11906,7 @@ snapshots:
 
   '@ai-matrx/desktop-protocol@0.17.2(react@19.3.0)':
     dependencies:
-      '@ai-matrx/realtime': 0.8.7(react@19.3.0)
+      '@ai-matrx/realtime': 0.9.0(react@19.3.0)
       zod: 4.6.5
     optionalDependencies:
       react: 19.3.0
@@ -11971,7 +11971,7 @@ snapshots:
       '@ai-matrx/design-system': 0.61.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
       '@ai-matrx/messaging': 0.15.82(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
-      '@ai-matrx/realtime': 0.8.7(react@19.3.0)
+      '@ai-matrx/realtime': 0.9.0(react@19.3.0)
       '@livekit/track-processors': 0.8.1(@types/dom-mediacapture-transform@0.1.12)(livekit-client@2.22.3(@types/dom-mediacapture-record@1.0.22))
       livekit-client: 2.22.3(@types/dom-mediacapture-record@1.0.22)
     optionalDependencies:
@@ -11993,7 +11993,7 @@ snapshots:
       '@ai-matrx/agents': 0.43.31(@supabase/supabase-js@2.117.2(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/design-system': 0.61.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(recharts@3.10.1(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react-is@19.3.0)(react@19.3.0)(redux@5.0.1))
       '@ai-matrx/kit': 0.22.1(react@19.3.0)
-      '@ai-matrx/realtime': 0.8.7(react@19.3.0)
+      '@ai-matrx/realtime': 0.9.0(react@19.3.0)
       react-markdown: 10.1.0(@types/react@19.3.0)(react@19.3.0)
       remark-breaks: 4.0.0
       remark-gfm: 4.0.1
@@ -12044,7 +12044,7 @@ snapshots:
       - '@types/react-dom'
       - supports-color
 
-  '@ai-matrx/realtime@0.8.7(react@19.3.0)':
+  '@ai-matrx/realtime@0.9.0(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 
