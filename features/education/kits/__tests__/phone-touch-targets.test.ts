@@ -37,6 +37,7 @@ describe("study-kit phone touch targets", () => {
     );
 
     expect(hub).toContain('className="min-h-11 gap-1.5 sm:min-h-10"');
-    expect(makeMore).toContain('className="min-h-11 gap-1.5 sm:min-h-0"');
+    // The phone floor is the component's default button class (a host may pass its own).
+    expect(makeMore).toContain('buttonClassName = "min-h-11 gap-1.5 sm:min-h-0"');
   });
 });
