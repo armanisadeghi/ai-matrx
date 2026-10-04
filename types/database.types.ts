@@ -5885,6 +5885,7 @@ export type Database = {
           redeemed_count: number
           revoked_at: string | null
           revoked_by: string | null
+          sent: Json
           updated_at: string
           updated_by: string | null
           version: number
@@ -5911,6 +5912,7 @@ export type Database = {
           redeemed_count?: number
           revoked_at?: string | null
           revoked_by?: string | null
+          sent?: Json
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -5937,6 +5939,7 @@ export type Database = {
           redeemed_count?: number
           revoked_at?: string | null
           revoked_by?: string | null
+          sent?: Json
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -7005,6 +7008,7 @@ export type Database = {
           redeemed_count: number
           revoked_at: string | null
           revoked_by: string | null
+          sent: Json
           updated_at: string
           updated_by: string | null
           version: number
@@ -93736,75 +93740,7 @@ export type Database = {
       }
     }
     Views: {
-      spatial_boards: {
-        Row: {
-          camera: Json | null
-          created_at: string | null
-          created_by: string | null
-          deleted_at: string | null
-          description: string | null
-          edges: Json | null
-          id: string | null
-          last_opened_at: string | null
-          metadata: Json | null
-          nodes: Json | null
-          organization_id: string | null
-          published_to_web: boolean | null
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          settings: Json | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          title: string | null
-          updated_at: string | null
-          updated_by: string | null
-          version: number | null
-        }
-        Insert: {
-          camera?: Json | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          edges?: Json | null
-          id?: string | null
-          last_opened_at?: string | null
-          metadata?: Json | null
-          nodes?: Json | null
-          organization_id?: string | null
-          published_to_web?: boolean | null
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number | null
-        }
-        Update: {
-          camera?: Json | null
-          created_at?: string | null
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          edges?: Json | null
-          id?: string | null
-          last_opened_at?: string | null
-          metadata?: Json | null
-          nodes?: Json | null
-          organization_id?: string | null
-          published_to_web?: boolean | null
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string | null
-          updated_at?: string | null
-          updated_by?: string | null
-          version?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never

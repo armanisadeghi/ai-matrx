@@ -27,8 +27,6 @@ import { filesDb, FILE_VERSIONS_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { pgErrorToError } from "@ai-matrx/data";
 
 import * as Files from "@/features/files/api/files";
-import { withFileOrganization } from "@/features/files/api/fileOrganization";
-import type { FileUploadResponse } from "@/features/files/types";
 import {
   claimUpload,
   uploadDedupKey,
@@ -1895,37 +1893,11 @@ export const saveFileNewVersion = createAsyncThunk<
     try {
       const reqOpts = { requestId, idempotencyKey: requestId };
       const summary = changeSummary ?? "Edited in place";
-      let data: FileUploadResponse;
-      try {
-        ({ data } = await Files.uploadNewVersion(
-          fileId,
-          { file: upload, changeSummary: summary },
-          reqOpts,
-        ));
-      } catch (err) {
-        // TEMPORARY-FALLBACK(2026-10-04): remove after aidream deploys POST /files/{id}/versions
-        const status = (err as { status?: number | null } | null)?.status;
-        if (status !== 404 && status !== 405) throw err;
-        console.warn(
-          "[saveFileNewVersion] POST /files/{id}/versions is not deployed on the server yet " +
-            "(answered " + status + "); falling back to the path upload. " +
-            "Remove after aidream deploys POST /files/{id}/versions.",
-        );
-        let path = record.filePath;
-        if (!path) {
-          const meta = await Files.getFileMetadata(fileId);
-          path = apiFileRecordToCloudFile(meta.data).filePath;
-        }
-        if (!path) {
-          throw new Error(
-            "We couldn't save — this file has no stored path. Refresh and try again.",
-          );
-        }
-        ({ data } = await Files.uploadFile(
-          { file: upload, filePath: path, changeSummary: summary },
-          withFileOrganization(fileId, reqOpts),
-        ));
-      }
+      const { data } = await Files.uploadNewVersion(
+        fileId,
+        { file: upload, changeSummary: summary },
+        reqOpts,
+      );
       if (data.file_id !== fileId || data.is_new) {
         throw new Error(
           `Saving "${record.fileName}" did not update it — the files service wrote ` +
