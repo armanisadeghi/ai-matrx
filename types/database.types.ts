@@ -3915,6 +3915,7 @@ export type Database = {
               supports_prefill: boolean
             }[]
           }
+      offering_rules_compiled_map: { Args: never; Returns: Json }
       propose_translation_cell: {
         Args: {
           p_confidence: number
