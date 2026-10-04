@@ -15,11 +15,18 @@ import {
   type CalendarCreateResult,
 } from "./calendarCreateService";
 import {
+  readCalendarEventSource,
+  type CalendarEventSourceRequest,
+  type CalendarEventSourceResult,
+} from "./calendarEventSourceService";
+import {
+  calendarEventSourceMatchesRecovery,
   calendarCreateResultMatches,
   calendarCreateIntentMatchesRequest,
   clearCalendarCreateRecovery,
   readCalendarCreateRecovery,
   sameCalendarCreateScope,
+  settleCalendarCreateFromSource,
   writeCalendarCreateRecovery,
   type CalendarCreateRecoveryRecord,
   type StorageDoor,
@@ -30,11 +37,16 @@ import { googleCalendarHref } from "./record";
 export interface CalendarCreateTransport {
   preview(request: CalendarCreateRequest): Promise<CalendarCreateIntent>;
   confirm(input: { intentId: string; organizationId: string }): Promise<CalendarCreateResult>;
+  readSource(input: {
+    organizationId: string;
+    request: CalendarEventSourceRequest;
+  }): Promise<CalendarEventSourceResult>;
 }
 
 const defaultTransport: CalendarCreateTransport = {
   preview: previewCalendarCreate,
   confirm: confirmCalendarCreate,
+  readSource: readCalendarEventSource,
 };
 
 const browserSessionStorageDoor: StorageDoor = {
@@ -73,9 +85,37 @@ function expired(intent: CalendarCreateIntent | null): boolean {
   return !intent || Date.parse(intent.expires_at) <= Date.now();
 }
 
-function sourceUrl(saved: CalendarCreateRecoveryRecord): string {
-  void saved;
-  return "https://calendar.google.com/calendar/";
+function sourceUrl(saved: CalendarCreateRecoveryRecord): string | null {
+  return googleCalendarHref({
+    external_id: saved.request.event_id,
+    calendar_id: saved.request.calendar_id,
+  }, saved.intent?.preview.account_email ?? null);
+}
+
+function verifiedSourceView(saved: CalendarCreateRecoveryRecord | null): {
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  eventId: string;
+  href: string;
+} | null {
+  if (saved?.phase !== "source_verified" || !saved.source ||
+    typeof saved.source.event_summary !== "string" ||
+    typeof saved.source.starts_at?.dateTime !== "string" ||
+    typeof saved.source.ends_at?.dateTime !== "string" ||
+    typeof saved.source.target_event_id !== "string") return null;
+  const href = googleCalendarHref({
+    external_id: saved.source.target_event_id,
+    calendar_id: saved.source.calendar_id,
+  }, saved.source.account_email);
+  if (!href) return null;
+  return {
+    title: saved.source.event_summary,
+    startsAt: saved.source.starts_at.dateTime,
+    endsAt: saved.source.ends_at.dateTime,
+    eventId: saved.source.target_event_id,
+    href,
+  };
 }
 
 function confirmUnavailable(error: unknown): boolean {
@@ -116,7 +156,7 @@ export function CalendarCreateReview({
   const [attendees, setAttendees] = useState("");
   const [sendUpdates, setSendUpdates] = useState<"" | CalendarCreateRequest["send_updates"]>("");
   const [stableEventId, setStableEventId] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"preview" | "confirm" | null>(null);
+  const [busy, setBusy] = useState<"preview" | "confirm" | "source" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const epoch = useRef(0);
   const busyRef = useRef(false);
@@ -132,12 +172,14 @@ export function CalendarCreateReview({
   useEffect(() => {
     epoch.current += 1;
     busyRef.current = false;
-  }, [actorId, organizationId, connectionId, calendar.id]);
+  }, [actorId, organizationId, connectionId, accountLabel, calendar.id]);
 
   const scopeMatches = saved ? sameCalendarCreateScope(saved, {
     actorId, organizationId, connectionId, calendarId: calendar.id,
   }) : false;
   const canCreateHere = ["owner", "writer", "writerWithoutPrivateAccess"].includes(calendar.access_role);
+  const originalSourceHref = saved ? sourceUrl(saved) : null;
+  const verifiedSource = verifiedSourceView(saved);
 
   async function review(requestOverride?: CalendarCreateRequest) {
     if (busyRef.current || !canCreateHere) return;
@@ -164,7 +206,7 @@ export function CalendarCreateReview({
     const pending: CalendarCreateRecoveryRecord = {
       version: 1, actor_id: actorId, account_label: accountLabel,
       calendar_summary: calendar.summary, time_zone: requestOverride ? saved?.time_zone ?? timeZone : timeZone,
-      request, intent: null, result: null,
+      request, intent: null, result: null, source: null,
       problem: "Event review has not completed.",
       phase: "preview_unavailable",
     };
@@ -280,6 +322,58 @@ export function CalendarCreateReview({
     }
   }
 
+  async function checkOriginalSource() {
+    if (!saved || !scopeMatches || busyRef.current ||
+      !["uncertain", "reconciliation_required"].includes(saved.phase)) return;
+    const held = saved;
+    setBusy("source"); busyRef.current = true; setError(null); setWarning(null);
+    const callEpoch = ++epoch.current;
+    try {
+      const source = await transport.readSource({
+        organizationId: held.request.organization_id,
+        request: {
+          connection_id: held.request.connection_id,
+          calendar_id: held.request.calendar_id,
+          selected_event_id: held.request.event_id,
+          occurrence: "single",
+        },
+      });
+      if (callEpoch !== epoch.current) return;
+      const verified = settleCalendarCreateFromSource(held, source);
+      if (!verified) {
+        const problem = calendarEventSourceMatchesRecovery(held, source)
+          ? "This saved action cannot be settled from its current state."
+          : "Google returned source details that do not match the reviewed event.";
+        const mismatched = { ...held, problem };
+        if (!writeCalendarCreateRecovery(storageDoor, mismatched)) {
+          setWarning("The source mismatch could not be saved. Keep this event held.");
+        } else {
+          setSaved(mismatched);
+        }
+        setError(problem);
+        return;
+      }
+      if (!writeCalendarCreateRecovery(storageDoor, verified)) {
+        setWarning("The source proof could not be saved. Keep this event held.");
+        setError("Google returned a matching source, but this tab could not save the proof.");
+        return;
+      }
+      setSaved(verified);
+    } catch (cause) {
+      if (callEpoch !== epoch.current) return;
+      const problem = getUserMessage(cause);
+      const failed = { ...held, problem };
+      if (!writeCalendarCreateRecovery(storageDoor, failed)) {
+        setWarning("The source check failure could not be saved. Keep this event held.");
+      } else {
+        setSaved(failed);
+      }
+      setError(problem);
+    } finally {
+      if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
+    }
+  }
+
   function requireFreshReview(
     problem: string,
     current: CalendarCreateRecoveryRecord | null = saved,
@@ -289,6 +383,7 @@ export function CalendarCreateReview({
       ...current,
       intent: null,
       result: null,
+      source: null,
       problem,
       phase: "preview_unavailable",
     };
@@ -315,7 +410,7 @@ export function CalendarCreateReview({
   }
 
   function startAnother() {
-    if (!saved || saved.phase !== "consumed") return;
+    if (!saved || !["consumed", "source_verified"].includes(saved.phase)) return;
     if (!clearCalendarCreateRecovery(storageDoor)) {
       setError("This tab could not clear the completed event.");
       return;
@@ -376,7 +471,31 @@ export function CalendarCreateReview({
               {saved.problem ? <p>{saved.problem}<ErrorAlchemyMenu error={saved.problem} /></p> : null}
               <p>This event may already exist. Check the original Google source before continuing.</p>
               <p>Review {saved.request.summary} at {saved.request.starts_at} in {saved.account_label} · {saved.calendar_summary}.</p>
-              <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={sourceUrl(saved)} target="_blank" rel="noreferrer">Open Google Calendar for manual check <ExternalLink className="h-3.5 w-3.5" /></a>
+              {originalSourceHref ? <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={originalSourceHref} target="_blank" rel="noreferrer">Open original event in Google Calendar <ExternalLink className="h-3.5 w-3.5" /></a> : null}
+              {["uncertain", "reconciliation_required"].includes(saved.phase) ? (
+                <Button type="button" size="sm" variant="outline" onClick={() => void checkOriginalSource()} disabled={!scopeMatches || busy !== null}>{busy === "source" ? "Checking…" : "Check original source"}</Button>
+              ) : null}
+            </div>
+          ) : null}
+          {saved.phase === "source_verified" && verifiedSource ? (
+            <div className="space-y-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 p-2">
+              <p className="font-medium text-foreground">Matching Google source verified</p>
+              <p>{verifiedSource.title}</p>
+              <p>{verifiedSource.startsAt} – {verifiedSource.endsAt}</p>
+              <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                Current Google event ID
+                <Input readOnly value={verifiedSource.eventId} className="font-mono" />
+              </label>
+              <p>This source read confirms the matching event. It does not verify the create response, guests, body, or notifications.</p>
+              <a
+                className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline"
+                href={verifiedSource.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open verified event in Google Calendar <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+              <Button type="button" size="sm" variant="outline" onClick={startAnother}>Create another event</Button>
             </div>
           ) : null}
           {saved.phase === "consumed" ? (
