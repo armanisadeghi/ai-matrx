@@ -41,6 +41,7 @@ import {
 } from "./registry";
 import type { SurfaceScopePayload } from "../types";
 import {
+  getSurfaceRuntimeDepths,
   getSurfaceRuntimeStack,
   type SurfaceRuntimeValue,
 } from "./SurfaceRuntimeContext";
@@ -125,6 +126,18 @@ export async function buildSurfaceChain(
     runtimes.push(runtime);
   }
 
+  // A HOST the primary sits inside (a Board whose tile is live): mounted at a
+  // shallower depth than the primary, and not a layer laid over the page.
+  const mountedDepths = getSurfaceRuntimeDepths();
+  const primaryDepth = primarySurfaceName
+    ? mountedDepths.find((entry) => entry.surfaceName === primarySurfaceName)?.depth
+    : undefined;
+  const isHostOfPrimary = (runtime: SurfaceRuntimeValue): boolean => {
+    if (primaryDepth === undefined || runtime.layer) return false;
+    const depth = mountedDepths.find((entry) => entry.surfaceName === runtime.surfaceName)?.depth;
+    return depth !== undefined && depth < primaryDepth;
+  };
+
   const scopes = await Promise.all(runtimes.map(readLevelScope));
   const levels: SurfaceChainLevel[] = [];
   runtimes.forEach((runtime, index) => {
@@ -140,6 +153,16 @@ export async function buildSurfaceChain(
       values[declared.name] = { value, description: declared.description };
     }
     if (Object.keys(values).length === 0) return;
+    // The active surface is ONE item the host holds: the host's first value
+    // says so and says how to reach the rest (`SurfaceManifest.hostLead`), so
+    // the items that follow are read as the person's other open things.
+    if (manifest.hostLead && isHostOfPrimary(runtime)) {
+      const first = Object.keys(values)[0];
+      values[first] = {
+        ...values[first],
+        description: `${manifest.hostLead} ${values[first].description}`,
+      };
+    }
     levels.push({
       surface: runtime.surfaceName,
       role: runtime.layer || manifest.overlayId

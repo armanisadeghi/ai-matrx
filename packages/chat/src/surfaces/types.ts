@@ -590,6 +590,14 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    */
   otherItemsHint?: string;
   /**
+   * What an agent is told when the ACTIVE surface is one item this surface
+   * HOSTS (a Board tile that is live). One compact sentence or two: it rides
+   * on the host's first value in the surface chain, right after the live
+   * item's own surface, so the request leads with the item AND with the list
+   * of everything else the host holds and how to reach it.
+   */
+  hostLead?: string;
+  /**
    * What the person sees while this surface's `beforeExecute` works, shown on
    * the outgoing message the instant Send is pressed (e.g. "Searching your
    * study material"). Present tense, no trailing ellipsis. Defaults to

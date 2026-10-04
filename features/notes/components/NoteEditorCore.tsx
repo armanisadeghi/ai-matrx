@@ -31,6 +31,7 @@ import React, { useRef, useCallback, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
+import { useMeasure } from "@ai-matrx/kit/hooks";
 import {
   type ScrollEdgeIntent,
   useScrollEdgeIntent,
@@ -63,6 +64,9 @@ function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+
+/** Below this width of the editor's own box, Split shows one pane (30rem: two ≥ 240px columns). */
+export const SPLIT_MIN_WIDTH_PX = 480;
 
 export type EditorMode = "plain" | "write" | "source" | "preview" | "split";
 
@@ -347,13 +351,20 @@ export function NoteEditorCore({
   // The agent-wired ProTextarea (plain / split + `surfaceName`) brings its OWN
   // voice control, so suppress this overlay there to avoid two stacked mics.
   // Every other editable mode (write / source) still needs it.
+  // SPLIT NEEDS ROOM: two columns in a narrow box (a Board note tile) wrap the
+  // text a character or two per line. Below `SPLIT_MIN_WIDTH_PX` of the
+  // editor's OWN width, Split shows one pane with an Edit / Preview toggle.
+  // Width 0 = not measured yet: the side-by-side layout is kept until it is.
+  const [rootRef, { width: rootWidth }] = useMeasure<HTMLDivElement>();
+  const splitSinglePane = rootWidth > 0 && rootWidth < SPLIT_MIN_WIDTH_PX;
+
   const showVoiceOverlay =
     showVoiceButton &&
     !readOnly &&
     !((editorMode === "plain" || editorMode === "split") && Boolean(surfaceName));
 
   return (
-    <div className={cn("relative w-full h-full", className)}>
+    <div ref={rootRef} className={cn("relative w-full h-full", className)}>
       {/* Voice button overlay */}
       {showVoiceOverlay && (
         <div className="absolute top-2 right-2 z-10">
@@ -435,6 +446,7 @@ export function NoteEditorCore({
           }
           placeholder={placeholder}
           className="absolute inset-0"
+          singlePane={splitSinglePane}
           syncScroll={syncScroll}
           // Notes never open a second editor: the header's views are the one
           // switch, so the full-screen editor (its own mode chooser) is off.

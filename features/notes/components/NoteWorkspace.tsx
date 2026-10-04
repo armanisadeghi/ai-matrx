@@ -106,7 +106,10 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
         onKeyDown={onKeyDown}
       >
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/40 px-1.5">
-          <div className="flex min-w-0 flex-1 items-center justify-center">
+          {/* The four modes never reach into the tools beside them: centred while
+              they fit, start-aligned and scrollable below ~18rem (a narrow tile),
+              so the capsule can not overlap the outline / versions group. */}
+          <div className="flex min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] @[18rem]:justify-center [&::-webkit-scrollbar]:hidden">
             <NoteModeSwitch noteId={noteId} labels="container" />
           </div>
           <TapTargetButtonGroup surface="solid">

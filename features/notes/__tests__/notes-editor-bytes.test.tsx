@@ -16,6 +16,14 @@
  *
  * Every expected value is the fixture itself plus the literal characters typed.
  */
+// The editor measures its own box (Split falls back to one pane when narrow);
+// jsdom has no ResizeObserver, and a box that never reports a width keeps the layout as it was.
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 import React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";

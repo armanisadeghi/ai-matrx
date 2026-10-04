@@ -57,6 +57,13 @@ export interface MatrxSplitProps {
   readOnly?: boolean;
   /** Extra className applied to the outer ResizablePanelGroup */
   className?: string;
+  /**
+   * One pane at a time with an Edit / Preview toggle, regardless of the
+   * viewport — for a host whose OWN container is too narrow for two readable
+   * columns (a Board note tile). The viewport check (`useIsMobile`) only
+   * knows the window, never the box the split sits in.
+   */
+  singlePane?: boolean;
   /** Initial panel sizes as [leftPercent, rightPercent]. Defaults to [50, 50] */
   defaultLayout?: [number, number];
   /** Extra className for the textarea panel's inner element */
@@ -177,6 +184,7 @@ export function MatrxSplit({
   placeholder = "Start writing...",
   readOnly = false,
   className,
+  singlePane = false,
   defaultLayout = [50, 50],
   textareaClassName,
   previewClassName,
@@ -204,7 +212,7 @@ export function MatrxSplit({
   getApplicationScope,
 }: MatrxSplitProps) {
   const previewChange = onPreviewChange ?? onChange;
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile() || singlePane;
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
 
   // Single source of truth for the preview body — swaps to RichDocument when

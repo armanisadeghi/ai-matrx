@@ -95,5 +95,7 @@ Prefer arranging and grouping over describing where things are. Ask before remov
   values: mergeBaselineValues([], values),
   otherItemsHint:
     "This page is a Board. The targets listed below are only for the LIVE item. Any other item on the board (see board_items) is reached with board_open_item(id), then board_item_act(id, target + value) — that is how you read or change a note, table, list or task that is not live. Do not search for board items with knowledge_search.",
+  hostLead:
+    "The surface you are on is one item on the person's Board (the live tile). board_items lists every item (id, kind, name, basics). Reach any other with board_open_item(id), then board_item_act(id, target + value or tool + input) — never knowledge_search.",
   clientTools: BOARD_CLIENT_TOOLS,
 };

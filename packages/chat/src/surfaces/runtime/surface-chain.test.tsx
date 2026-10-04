@@ -173,6 +173,45 @@ describe("the surface chain carries every other open screen (ARE-010)", () => {
     errors.mockRestore();
   });
 
+  it("a live tile inside a host leads with the host's items and how to reach them", async () => {
+    const BOARD = "matrx-user/board";
+    const items = {
+      live_item_ids: ["t1"],
+      item_count: 2,
+      items: [
+        { id: "t1", title: "Warehouse inventory", kind: "table", surface: DATA_TABLES, live: true },
+        { id: "n1", title: "Receiving notes", kind: "note", surface: "matrx-user/notes", live: false, basics: { words: 40 } },
+      ],
+    };
+    const offBoard = registerSurfaceRuntime(
+      { surfaceName: BOARD, getScope: () => ({ board_title: "Q4 ops", board_items: items }) },
+      1,
+    );
+    const offTile = registerSurfaceRuntime(
+      { surfaceName: DATA_TABLES, getScope: () => ({ table_name: "Warehouse inventory" }) },
+      2,
+    );
+    const scope = await withLiveSurfaceContext(DATA_TABLES, {});
+    const chain = scope[SURFACE_CHAIN_KEY] as SurfaceChainLevel[];
+    const host = chain.find((level) => level.surface === BOARD);
+    expect(host).toBeDefined();
+    // The host's items travel, and the FIRST value the agent reads says what the live tile is.
+    expect(host?.values.board_items.value).toEqual(items);
+    const lead = Object.values(host?.values ?? {})[0].description;
+    expect(lead).toMatch(/one item on the person's Board/i);
+    expect(lead).toContain("board_open_item");
+    expect(lead).toContain("board_item_act");
+    expect(lead.length).toBeLessThan(500);
+    // The host itself (nothing nested) gets no such lead: it IS the lead.
+    const fromBoard = await withLiveSurfaceContext(BOARD, {});
+    const tileLevel = (fromBoard[SURFACE_CHAIN_KEY] ?? []) as SurfaceChainLevel[];
+    for (const level of tileLevel) {
+      for (const value of Object.values(level.values)) expect(value.description).not.toMatch(/one item on the person's Board/i);
+    }
+    offTile();
+    offBoard();
+  });
+
   it("both chokepoints that build a run's scope add the chain", () => {
     for (const file of [
       "packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
