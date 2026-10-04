@@ -9,6 +9,7 @@
 // importer, opened with this chat already selected. Client: `features/agents/from-chat/service.ts`.
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Layers } from "lucide-react";
 
@@ -28,8 +29,9 @@ import {
   type FromChatResult,
   type FromChatStep,
 } from "@/features/agents/from-chat/service";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
 
 type Lane = "agent" | "masterwork";
@@ -51,6 +53,8 @@ export default function AgentFromChatWindow({
   if (!isOpen) return null;
   return (
     <AgentFromChatWindowInner
+      // A singleton reopened for ANOTHER chat starts over, never shows the last chat's agent.
+      key={conversationId ?? "none"}
       onClose={onClose}
       conversationId={conversationId}
       conversationTitle={conversationTitle ?? null}
@@ -65,7 +69,6 @@ function AgentFromChatWindowInner({
 }: Omit<AgentFromChatWindowProps, "isOpen">) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const organizationId = useAppSelector(selectOrganizationId);
 
   const [lane, setLane] = useState<Lane>("agent");
   const [phase, setPhase] = useState<"idle" | "running" | "done" | "failed">("idle");
@@ -102,9 +105,11 @@ function AgentFromChatWindowInner({
   };
 
   const startMasterwork = async () => {
-    if (!conversationId || !organizationId) return;
+    if (!conversationId) return;
     setStartingMasterwork(true);
     try {
+      // Asks the person to pick one when none is selected; never picks for them.
+      const organizationId = await ensureOrgId(null);
       masterworkToken.current ??= crypto.randomUUID();
       const href = await startMasterworkFromChat({
         conversationId,
@@ -115,6 +120,7 @@ function AgentFromChatWindowInner({
       onClose();
       router.push(href);
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
       toast.error(err instanceof Error ? err.message : "The Masterwork could not be started.");
     } finally {
       setStartingMasterwork(false);
@@ -181,7 +187,7 @@ function AgentFromChatWindowInner({
                   variant="primary"
                   icon={<Layers className="h-4 w-4" />}
                   onClick={startMasterwork}
-                  disabled={!conversationId || !organizationId || startingMasterwork}
+                  disabled={!conversationId || startingMasterwork}
                 >
                   Start Masterwork
                 </Button>
@@ -212,6 +218,7 @@ function AgentFromChatWindowInner({
             onTab={setTab}
             onMasterwork={startMasterwork}
             masterworkBusy={startingMasterwork}
+            onOpened={onClose}
           />
         ) : null}
       </div>
@@ -225,12 +232,14 @@ function AgentFromChatResult({
   onTab,
   onMasterwork,
   masterworkBusy,
+  onOpened,
 }: {
   result: FromChatResult;
   tab: ResultTab;
   onTab: (tab: ResultTab) => void;
   onMasterwork: () => void;
   masterworkBusy: boolean;
+  onOpened: () => void;
 }) {
   // Defaulted lists on the wire: absent means none.
   const goals = result.goals ?? [];
@@ -257,7 +266,9 @@ function AgentFromChatResult({
           </a>
         </Button>
         <Button variant="primary" asChild>
-          <a href={`/agents/${result.agent_id}/build`}>Open</a>
+          <Link href={`/agents/${result.agent_id}/build`} onClick={onOpened}>
+            Open
+          </Link>
         </Button>
       </div>
 
@@ -293,8 +304,8 @@ function AgentFromChatResult({
 
       {tab === "requirements" ? (
         <ul className="min-h-0 flex-1 list-disc space-y-1 overflow-y-auto pl-5 text-sm">
-          {goals.map((goal) => (
-            <li key={goal}>{goal}</li>
+          {goals.map((goal, index) => (
+            <li key={`${index}:${goal}`}>{goal}</li>
           ))}
         </ul>
       ) : null}

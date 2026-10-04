@@ -447,7 +447,11 @@ export function ChatImportDialog({
           updatedAt: c.updated_at ?? null,
         })),
       );
-      setSelected(new Set(preselected.filter((id) => all.some((c) => c.id === id))));
+      const kept = preselected.filter((id) => all.some((c) => c.id === id));
+      setSelected(new Set(kept));
+      if (kept.length < preselected.length) {
+        setNotes((prev) => [...prev, "The chat you came from can't be read here, so it isn't selected."]);
+      }
       setRowsError(null);
     } catch (err) {
       setRowsError(err ?? new Error("Could not load your conversations."));
