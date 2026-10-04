@@ -214,9 +214,10 @@ export function FlashcardsHome() {
   const createButton = (
     <ControlButton variant="primary"
       onClick={() => goTo(`${EDU_BASE}/new`)}
+      icon={<Plus className="h-4 w-4" />}
+      collapse="container"
     >
-      <Plus className="h-4 w-4" />
-      <span className="max-sm:sr-only">Create deck</span>
+      Create deck
     </ControlButton>
   );
   // The streak rides the scope-tab row, beside Create deck — never a row of

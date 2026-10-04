@@ -118,8 +118,10 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen
           )}
         >
           <Building2 className="h-3.5 w-3.5 shrink-0" />
-          <span className={cn("truncate", !orgId && "max-sm:sr-only")}>{label}</span>
-          <ChevronDown className={cn("h-3.5 w-3.5 shrink-0", !orgId && "max-sm:hidden")} />
+          {/* Icon-only on a phone while un-narrowed, and always below 48rem of a list pane (the
+              pane, not the viewport: beside the chat panel a 1024px screen holds a 540px list). */}
+          <span className={cn("truncate @max-3xl/list:sr-only", !orgId && "max-sm:sr-only")}>{label}</span>
+          <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 @max-3xl/list:hidden", !orgId && "max-sm:hidden")} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-[60dvh] min-w-56 overflow-y-auto">

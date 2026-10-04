@@ -23,9 +23,8 @@ export function BoardsListPage() {
   const mayLoad = Boolean(authReady && userId && accessToken);
 
   const newButton = (
-    <ControlButton variant="primary" onClick={() => void newBoard()} disabled={creating}>
-      {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-      <span className="max-sm:sr-only">New board</span>
+    <ControlButton variant="primary" onClick={() => void newBoard()} disabled={creating} icon={creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} collapse="container">
+      New board
     </ControlButton>
   );
 

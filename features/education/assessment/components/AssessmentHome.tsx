@@ -86,10 +86,9 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
   // Navigation is a link. In the tab row the label hides on a phone (the
   // accessible name stays); the empty state always shows it.
   const createButton = (showLabel: boolean) => (
-    <ControlButton variant="primary" asChild>
+    <ControlButton variant="primary" asChild icon={<Plus className="h-4 w-4" />} collapse={showLabel ? undefined : "container"}>
       <Link href={newHref} aria-label={`New ${config.noun}`}>
-        <Plus className="h-4 w-4" />
-        <span className={showLabel ? undefined : "max-sm:sr-only"}>New {config.noun}</span>
+        New {config.noun}
       </Link>
     </ControlButton>
   );

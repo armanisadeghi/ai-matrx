@@ -6852,6 +6852,10 @@ export type Database = {
         Args: { p_customer: string; p_livemode: boolean; p_token: string }
         Returns: undefined
       }
+      renew_checkout: {
+        Args: { p_customer: string; p_livemode: boolean; p_token: string }
+        Returns: boolean
+      }
       repair_prelaunch_complimentary_grant: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -6896,6 +6900,21 @@ export type Database = {
       resolve_org_tier: {
         Args: { p_org: string }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      resolve_person_limit: {
+        Args: {
+          p_capability: string
+          p_org: string
+          p_period: Database["billing"]["Enums"]["meter_period"]
+          p_user: string
+        }
+        Returns: {
+          from_addon: boolean
+          limit_value: number
+          personal_scope: boolean
+          plan_id: string
+          unlimited: boolean
+        }[]
       }
       resolve_plan: { Args: { p_org: string }; Returns: string }
       resolve_tier: {

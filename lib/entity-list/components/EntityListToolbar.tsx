@@ -113,6 +113,8 @@ interface Props<TRow> {
    * icon that opens the box in place, Filters and View are icons, and the columns move into View.
    */
   phoneRow?: { searchOpen: boolean; onSearchOpenChange: (open: boolean) => void };
+  /** The pane is narrow (EntityListPage measures it): the columns live in the View menu. */
+  columnsInViewMenu?: boolean;
 }
 
 function IconToggle({
@@ -182,6 +184,7 @@ export function EntityListToolbar<TRow>({
   tableControlsRef,
   tableTabsRef,
   phoneRow,
+  columnsInViewMenu = Boolean(phoneRow),
 }: Props<TRow>) {
   const hasAltViews = hasCards || hasRows;
   const isMobile = useIsMobile();
@@ -190,7 +193,7 @@ export function EntityListToolbar<TRow>({
   const searchBox = (
       <div
         data-entity-list-search-box=""
-        className="flex h-7 min-w-0 flex-1 basis-full items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 sm:basis-auto sm:min-w-40 lg:min-w-56">
+        className="flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 @3xl/list:min-w-40 @5xl/list:min-w-56">
         {isFetching ? (
           <Loader2
             role="status"
@@ -308,16 +311,16 @@ export function EntityListToolbar<TRow>({
             type="button"
             aria-label="Display options"
             title="Display options"
-            // ONE "View" MENU BELOW `xl` (DATA-HOME-3E, 2026-10-01): at 1024 px the inline view
-            // and density groups pushed the table's controls past the right edge; the phone's
-            // menu already held all of them, so it now serves every width under 1280.
-            className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground xl:hidden"
+            // ONE "View" MENU BELOW 72rem OF THE PANE (DATA-HOME-3E, 2026-10-01; by the pane, not
+            // the viewport, since 2026-10-04): narrower, the inline view and density groups pushed
+            // the table's controls past the right edge, so the menu holds them.
+            className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground @6xl/list:hidden"
           >
             <Settings2 className="h-3.5 w-3.5" />
-            {phoneRow ? null : <span>View</span>}
+            {phoneRow ? null : <span className="@max-3xl/list:sr-only">View</span>}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52 xl:hidden">
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuLabel>Display</DropdownMenuLabel>
           {hasAltViews && (
             <DropdownMenuRadioGroup
@@ -345,7 +348,7 @@ export function EntityListToolbar<TRow>({
             </DropdownMenuRadioGroup>
           )}
           {hasAltViews && <DropdownMenuSeparator />}
-          {phoneRow && prefs.view === "table" ? (
+          {columnsInViewMenu && prefs.view === "table" ? (
             <>
               <DropdownMenuLabel>Columns</DropdownMenuLabel>
               {columns
@@ -426,7 +429,10 @@ export function EntityListToolbar<TRow>({
     // crushed the search to an empty 22px pill). On a phone the search owns
     // its line and the controls take the next; from `sm:` up everything sits
     // on the search row and the view-tab strip scrolls inside its own box.
-    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
+    // ONE LINE AT EVERY PANE WIDTH (owner, 2026-10-04: two rows, never clipped, never overlapping):
+    // below 48rem of the pane the labels go, Columns moves into View, and the view tabs shrink and
+    // scroll inside their own strip.
+    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-nowrap items-center gap-1.5 @3xl/list:gap-2">
       {/* The table's saved-view tabs open the row, far left (`toolbar.tabsPortalInto`); the
           package draws them and scrolls its strip — this slot only places it, at the strip's own
           width (a 16rem cap let two tabs and their "+" run over the search, /research/topics). */}
@@ -434,7 +440,7 @@ export function EntityListToolbar<TRow>({
         <div
           ref={tableTabsRef}
           data-entity-list-table-tabs=""
-          className="flex min-w-0 max-w-full shrink-0 items-center empty:hidden"
+          className="flex min-w-0 max-w-[45%] shrink-0 items-center empty:hidden @3xl/list:max-w-full"
         />
       )}
 
@@ -442,7 +448,7 @@ export function EntityListToolbar<TRow>({
 
       {filterPanel}
 
-      {prefs.view === "table" && (
+      {prefs.view === "table" && !columnsInViewMenu && (
         <EntityColumnPicker
           columns={columns}
           defaultHidden={defaultHidden}
@@ -457,7 +463,7 @@ export function EntityListToolbar<TRow>({
 
 
       {hasAltViews && (
-        <div className="hidden h-7 items-center gap-0.5 rounded-lg border border-border bg-card px-0.5 xl:flex">
+        <div className="hidden h-7 items-center gap-0.5 rounded-lg border border-border bg-card px-0.5 @6xl/list:flex">
           <IconToggle
             active={prefs.view === "table"}
             label="Table"
@@ -486,7 +492,7 @@ export function EntityListToolbar<TRow>({
         </div>
       )}
 
-      <div className="hidden h-7 items-center gap-0.5 rounded-lg border border-border bg-card px-0.5 xl:flex">
+      <div className="hidden h-7 items-center gap-0.5 rounded-lg border border-border bg-card px-0.5 @6xl/list:flex">
         <IconToggle
           active={prefs.density === "compact"}
           label={

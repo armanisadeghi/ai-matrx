@@ -176,7 +176,7 @@ export function PlanCard({
               : "border border-border/80 bg-background hover:border-foreground/40 hover:bg-accent/40",
           )}
         >
-          {pending ? "Opening checkout…" : action.label}
+          {pending && action.kind === "checkout" ? "Opening checkout…" : action.label}
         </button>
       </div>
     </div>

@@ -61,8 +61,8 @@ export function EntityColumnPicker<TRow>({
         >
           <Columns3 className="h-3.5 w-3.5" />
           {/* Named below lg (page-pass 2026-09-27: three bare icons on a phone). */}
-          <span className="lg:hidden">Columns</span>
-          <span className="hidden tabular-nums lg:inline">{visibleCount}</span>
+          <span className="@5xl/list:hidden">Columns</span>
+          <span className="hidden tabular-nums @5xl/list:inline">{visibleCount}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent sizing="content" align="end" sideOffset={8} className="p-0">

@@ -35,9 +35,8 @@ export function MapsListPage() {
   const mayLoad = canLoadMaps({ authReady, userId, accessToken });
 
   const newButton = (
-    <ControlButton variant="primary" onClick={() => setCreating(true)}>
-      <Plus className="h-4 w-4" />
-      <span className="max-sm:sr-only">New map</span>
+    <ControlButton variant="primary" onClick={() => setCreating(true)} icon={<Plus className="h-4 w-4" />} collapse="container">
+      New map
     </ControlButton>
   );
 

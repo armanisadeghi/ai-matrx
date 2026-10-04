@@ -300,7 +300,7 @@ export function EntityFilterPanel<TRow>({
         >
           <SlidersHorizontal className="h-3.5 w-3.5" />
           {/* Named on a phone too (page-pass 2026-09-27: three bare icons). */}
-          {compact ? null : <span>Filters</span>}
+          {compact ? null : <span className="@max-3xl/list:sr-only">Filters</span>}
           {activeCount > 0 && (
             <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
               {activeCount}
@@ -308,13 +308,13 @@ export function EntityFilterPanel<TRow>({
           )}
           {canSort && !compact && (
             <>
-              <span className="mx-0.5 hidden h-4 w-px bg-border sm:block" />
+              <span className="mx-0.5 hidden h-4 w-px bg-border @3xl/list:block" />
               <ArrowUpDown className="h-3.5 w-3.5" />
               {/* A FIXED width: the search beside this button no longer jumps
                   as the sort label changes (page-pass 2026-09-27). */}
-              {/* From `xl` only: at 1024 px the label pushed the table's own controls off the
-                  row (DATA-HOME-3E); the arrow alone still opens Sort. */}
-              <span className="hidden w-40 truncate text-left xl:inline" title={sortLabel}>
+              {/* From 72rem of the pane only: narrower, the label pushed the table's own controls off
+                  the row (DATA-HOME-3E); the arrow alone still opens Sort. */}
+              <span className="hidden w-40 truncate text-left @6xl/list:inline" title={sortLabel}>
                 {sortLabel}
               </span>
             </>

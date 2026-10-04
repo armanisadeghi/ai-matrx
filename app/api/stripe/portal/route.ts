@@ -2,9 +2,7 @@
 //
 // POST /api/stripe/portal — open the Stripe customer portal for the authed
 // user. THIS is the one-click cancel path (TRUST mandate: no retention maze) —
-// the portal is configured in the Stripe dashboard to allow immediate cancel.
-//
-// UNTESTED pending Stripe TEST keys.
+// cancellation stops renewal while retaining the paid period.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
@@ -12,6 +10,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isStripeConfigured, requiredStripeMode } from "@/lib/stripe/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { openSubscriptionPortal } from "@/features/entitlements/stripe/portal";
+import { requestOrigin } from "@/utils/auth/request-origin";
 import {
   billingOwnerRef,
   ownerEq,
@@ -41,6 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
     const admin = createAdminClient();
+    const origin = requestOrigin(request.headers) ?? request.nextUrl.origin;
     const livemode = requiredStripeMode() === "live";
     const { data: personal, error: personalError } = await admin.schema("billing").from("customer")
       .select("stripe_customer_id").eq("beneficiary_user_id", user.id).eq("livemode", livemode).maybeSingle();
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const body: unknown = await request.json().catch(() => null);
     const organizationPortal = body && typeof body === "object" && "scope" in body && body.scope === "organization";
     if (personal && !organizationPortal) {
-      const session = await openSubscriptionPortal(personal.stripe_customer_id, true, `${request.nextUrl.origin}/pricing`);
+      const session = await openSubscriptionPortal(personal.stripe_customer_id, true, `${origin}/pricing`);
       return NextResponse.json({ url: session.url });
     }
 
@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: membership, error: membershipError } = await supabase.schema("iam").from("organization_member")
-      .select("user_id").eq("organization_id", owner.value).eq("user_id", user.id).maybeSingle();
+      .select("user_id,role").eq("organization_id", owner.value).eq("user_id", user.id).maybeSingle();
     if (membershipError) throw membershipError;
-    if (!membership) return NextResponse.json({ error: "Choose an organization you belong to." }, { status: 403 });
+    if (!membership || !["owner", "admin"].includes(membership.role ?? "")) return NextResponse.json({ error: "An organization owner or admin must manage its subscription." }, { status: 403 });
     const { data, error } = await ownerEq(
       admin.schema("billing").from("customer").select("*"),
       owner,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await openSubscriptionPortal(stripeCustomerId, false, `${request.nextUrl.origin}/pricing`);
+    const session = await openSubscriptionPortal(stripeCustomerId, false, `${origin}/pricing`);
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

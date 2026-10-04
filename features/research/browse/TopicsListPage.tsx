@@ -32,12 +32,9 @@ function newTopicHref(name?: string): string {
 function NewTopicButton({ name }: { name?: string }) {
   const trimmed = name?.trim();
   return (
-    <ControlButton variant="primary" asChild>
+    <ControlButton variant="primary" asChild icon={<Plus className="h-4 w-4" />} collapse={trimmed ? undefined : "container"}>
       <Link href={newTopicHref(trimmed)} aria-label="New research topic">
-        <Plus className="h-4 w-4" />
-        <span className={trimmed ? undefined : "max-sm:sr-only"}>
-          {trimmed ? `New topic "${trimmed}"` : "New topic"}
-        </span>
+        {trimmed ? `New topic "${trimmed}"` : "New topic"}
       </Link>
     </ControlButton>
   );

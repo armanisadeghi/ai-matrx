@@ -41,8 +41,12 @@ export function InitiativesListPage({
     [brandName],
   );
   const action = (
-    <ControlButton variant="primary" onClick={() => setCreating(true)}>
-      <Plus className="h-4 w-4" />
+    <ControlButton
+      variant="primary"
+      onClick={() => setCreating(true)}
+      icon={<Plus className="h-4 w-4" />}
+      collapse="container"
+    >
       New initiative
     </ControlButton>
   );

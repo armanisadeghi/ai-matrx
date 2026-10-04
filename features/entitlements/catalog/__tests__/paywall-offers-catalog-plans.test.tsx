@@ -8,8 +8,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { Json } from "@/types/database.types";
 
-const announce = jest.fn((_id: string) => Promise.resolve());
-jest.mock("@/lib/coming-soon/announce", () => ({ announceComingSoon: (id: string) => announce(id) }));
+const checkout = jest.fn((..._args: unknown[]) => Promise.resolve({ ok: false, status: 503, json: async () => ({ error: "Test checkout boundary reached" }) }));
+jest.mock("@/lib/organizations/fetchWithOrganization", () => ({ fetchWithOrganization: (...args: unknown[]) => checkout(...args) }));
+jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn() }),
   usePathname: () => "/x",
@@ -27,7 +28,6 @@ jest.mock("@/components/ui/dialog", () => ({
 import { seedPlanCatalog } from "../service";
 import { parsePlanCatalog } from "../parse";
 import { CapabilityPaywallDialog } from "../../components/CapabilityPaywallDialog";
-import { PLAN_CHECKOUT_COMING_SOON } from "../planAction";
 import type { EntitlementResult } from "../../types";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -70,7 +70,7 @@ afterEach(() => {
   host.remove();
 });
 
-it("offers catalog plans with exact prices and announces the checkout promise", () => {
+it("offers catalog plans with exact prices and starts the selected annual checkout", async () => {
   act(() => {
     root.render(
       <CapabilityPaywallDialog open onOpenChange={() => undefined} capability="platform.points" verdict={verdict} />,
@@ -86,6 +86,8 @@ it("offers catalog plans with exact prices and announces the checkout promise", 
   expect(text).not.toMatch(/trial/i);
 
   const alpha = [...host.querySelectorAll("button")].find((b) => b.textContent?.includes("Alpha Plan"));
-  act(() => alpha!.click());
-  expect(announce).toHaveBeenCalledWith(PLAN_CHECKOUT_COMING_SOON);
+  await act(async () => alpha!.click());
+  expect(checkout).toHaveBeenCalledWith("/api/stripe/checkout", expect.objectContaining({
+    method: "POST", body: JSON.stringify({ planKey: "alpha", cycle: "annual" }),
+  }));
 });

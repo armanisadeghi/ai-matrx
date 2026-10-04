@@ -4,7 +4,7 @@
 //
 // The one handler for "this person picked a plan", shared by the pricing grid
 // and every upgrade dialog. It carries out planAction(): navigate to sign-up or
-// contact, or announce the tracked plan-checkout promise (no checkout exists).
+// contact, or open the chosen plan and billing cycle in Stripe Checkout.
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";

@@ -94,6 +94,7 @@
     "check:no-default-organization": "tsx scripts/check-no-default-organization.ts",
     "check:object-pages-read-the-objects-organization": "tsx scripts/check-object-pages-read-the-objects-organization.ts",
     "check:no-active-org-in-reads": "tsx scripts/check-no-active-org-in-reads.ts",
+    "check:list-header-rows": "node scripts/check-list-header-rows.mjs",
     "check:list-dimension-filter": "tsx scripts/check-list-dimension-filter.ts",
     "check:list-dimension-filter:self-test": "tsx scripts/check-list-dimension-filter.ts --self-test",
     "check:no-active-org-in-reads:self-test": "tsx scripts/check-no-active-org-in-reads.ts --self-test",

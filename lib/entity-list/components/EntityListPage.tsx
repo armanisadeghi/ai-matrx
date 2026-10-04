@@ -25,7 +25,7 @@ import {
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ControlScope } from "@ai-matrx/design-system/controls";
+import { CONTROLS_CONTAINER_NAME, ControlScope } from "@ai-matrx/design-system/controls";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import {
   effectiveHiddenColumns,
@@ -240,6 +240,9 @@ function warnRowsWithoutCustomFields(token: string) {
 
 /** No organizations yet: one stable empty answer, so the column source does not re-ask. */
 const NO_ORGANIZATIONS: readonly string[] = [];
+
+/** The pane width (48rem, Tailwind's `@3xl/list`) below which the header's controls fold. */
+const NARROW_PANE_PX = 768;
 
 export function EntityListPage<TRow>({
   config,
@@ -1128,11 +1131,12 @@ export function EntityListPage<TRow>({
 
   // The toolbar, drawn in its own row from `sm` up and INSIDE the lane row on a phone (one row).
   const [phoneSearchOpen, setPhoneSearchOpen] = useState(false);
-  const phoneSearching = phoneWidth && (phoneSearchOpen || list.query.search !== "");
   const renderToolbar = (phoneRow?: { searchOpen: boolean; onSearchOpenChange: (open: boolean) => void }) =>
     config.tableToolbar ? null : (
           <EntityListToolbar
             phoneRow={phoneRow}
+            // Below 48rem of the pane the Columns picker moves into View, as on a phone.
+            columnsInViewMenu={Boolean(phoneRow) || (listWidth !== null && listWidth < NARROW_PANE_PX)}
             query={list.query}
             facets={list.facets}
             isFetching={list.isFetching}
@@ -1225,6 +1229,11 @@ export function EntityListPage<TRow>({
       */}
       <div
         data-entity-list-header=""
+        // THE PANE DECIDES, NEVER THE VIEWPORT (owner, /agents/all beside the chat panel
+        // 2026-10-04: a 540px list at a 1024px viewport kept every control full-size and its header
+        // took four lines). The header is the size container every header control asks: Tailwind's
+        // `@…/list:` variants here, and the controls Button's `collapse="container"` (package).
+        style={{ containerType: "inline-size", containerName: `list ${CONTROLS_CONTAINER_NAME}` }}
         className={cn(
           // gap, not space-y: a child hidden with display:none (the phone
           // select-all bar on a desktop) still made its sibling "not last"
@@ -1263,20 +1272,16 @@ export function EntityListPage<TRow>({
           // this row and the toolbar stays 28px and gets an invisible 44px hit
           // area on a touch screen, instead of the list's touch floor growing
           // each one to 44px (owner, /board/all on an iPad, 2026-10-02).
-          className="matrx-tap-ring flex min-w-0 flex-wrap items-center justify-between gap-1.5 max-sm:justify-start sm:gap-2"
+          // TWO ROWS, EACH ONE LINE (owner, 2026-10-04): this row never wraps. Below 48rem of the
+          // pane the filters and the page actions are icons and the lanes are one select.
+          className="matrx-tap-ring flex min-w-0 flex-nowrap items-center justify-between gap-1.5 @3xl/list:gap-2"
         >
-          {/* On a phone the organization filter is an icon until it narrows and
-              the lane select gives way first (it truncates); wider, the tabs take
-              the room and scroll sideways before the filter or the actions are cut. */}
           <div
             data-entity-list-lanes=""
             className={cn(
-              // A LANE IS NEVER CLIPPED: wide, the lanes take the free room (a 10rem floor before the
-              // filters and actions wrap below — beside the chat panel a list is narrower than its
-              // viewport) and become one select when their tabs do not fit (EntityScopeTabs); on a
-              // phone the lane select keeps its own width and the rest of the row wraps after it.
-              "min-w-0 max-sm:max-w-full max-sm:flex-none sm:min-w-40 sm:flex-1",
-              phoneSearching && "hidden",
+              // A LANE IS NEVER CLIPPED: the lanes take the free room and become one select when
+              // their tabs do not fit it (EntityScopeTabs), at any width.
+              "min-w-0 flex-1",
             )}
           >
             {scopeTabs && (
@@ -1297,14 +1302,8 @@ export function EntityListPage<TRow>({
             )}
           </div>
           {/* THE DIMENSION FILTER (./EntityDimensionFilter): only where the surface's server honours it. */}
-          {dimensionOffered && !(phoneSearching && !dimensionValueOf(list.query.filters)) && (
-            <div
-              data-entity-list-dimension=""
-              className={cn(
-                "flex min-w-0 items-center sm:ml-auto sm:shrink-0",
-                dimensionValueOf(list.query.filters) ? "max-sm:flex-1" : "max-sm:flex-none",
-              )}
-            >
+          {dimensionOffered && (
+            <div data-entity-list-dimension="" className="ml-auto flex shrink-0 items-center">
               <EntityDimensionFilter
                 valueId={dimensionValueOf(list.query.filters)}
                 onChange={(valueId) => list.setFilters(withDimensionValue(list.query.filters, valueId))}
@@ -1312,14 +1311,10 @@ export function EntityListPage<TRow>({
             </div>
           )}
           {/* A narrowing the address carries is always visible and clearable, knob or not. */}
-          {(orgFilterOffered || Boolean(list.query.orgId)) && !(phoneSearching && !list.query.orgId) && (
+          {(orgFilterOffered || Boolean(list.query.orgId)) && (
             <div
               data-entity-list-org=""
-              className={cn(
-                "flex min-w-0 items-center sm:shrink-0",
-                !dimensionOffered && "sm:ml-auto",
-                list.query.orgId ? "max-sm:flex-1" : "max-sm:flex-none",
-              )}
+              className={cn("flex shrink-0 items-center", !dimensionOffered && "ml-auto")}
             >
               <EntityOrgFilter
                 orgId={list.query.orgId}
@@ -1335,21 +1330,21 @@ export function EntityListPage<TRow>({
             // height onto what the page passes (THE CANONICAL-OVERRIDE LAW).
             <ControlScope
               data-entity-list-actions=""
-              className="flex shrink-0 items-center gap-1.5 sm:gap-2"
+              className="flex shrink-0 items-center gap-1.5 @3xl/list:gap-2"
             >
               {typeof headerActions === "function"
                 ? headerActions(list)
                 : headerActions}
             </ControlScope>
           )}
-          {phoneWidth
-            ? renderToolbar({ searchOpen: phoneSearchOpen, onSearchOpenChange: setPhoneSearchOpen })
-            : null}
         </div>
 
         {/* TWO ROWS, ALWAYS (owner, /agents/all 2026-10-04: "These two rows should never attempt
-            to become one, regardless of space"): lanes · filters · actions above, the toolbar below. */}
-        {phoneWidth ? null : renderToolbar()}
+            to become one, regardless of space"): lanes · filters · actions above, the toolbar below
+            — on a phone too, where it is the compact toolbar (search icon, Filters, View). */}
+        {phoneWidth
+          ? renderToolbar({ searchOpen: phoneSearchOpen, onSearchOpenChange: setPhoneSearchOpen })
+          : renderToolbar()}
 
         {config.filterChips && (
           <EntityFilterChips

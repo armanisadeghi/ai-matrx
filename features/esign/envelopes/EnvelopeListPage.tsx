@@ -19,10 +19,9 @@ export function EnvelopeListPage() {
   const mayLoad = Boolean(authReady && userId && accessToken);
 
   const sendButton = (
-    <ControlButton variant="primary" asChild>
+    <ControlButton variant="primary" asChild icon={<Send className="h-4 w-4" />} collapse="container">
       <Link href="/esign/new">
-        <Send className="h-4 w-4" />
-        <span className="max-sm:sr-only">Send for signature</span>
+        Send for signature
       </Link>
     </ControlButton>
   );

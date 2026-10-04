@@ -4,6 +4,8 @@ import { EducationPricing } from "@/features/pricing/education/EducationPricing"
 import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
 import { PricingGrid } from "@/features/pricing/components/PricingGrid";
 import { readPlanCatalogServer } from "@/features/entitlements/catalog/server";
+import { SubscriptionControls } from "@/features/pricing/components/SubscriptionControls";
+import { requiredStripeMode } from "@/lib/stripe/server";
 
 // /pricing is DB-BACKED end to end:
 //  - the plan ladder comes from billing.plan_catalog() (every listed plan, its
@@ -55,6 +57,7 @@ export default async function PricingPage() {
         </header>
 
         <PricingGrid initialPlans={catalog.ok ? catalog.plans : undefined} />
+        <SubscriptionControls livemode={requiredStripeMode() === "live"} />
 
         <section
           aria-labelledby="pricing-education"

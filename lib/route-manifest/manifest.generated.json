@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1333,
+  "routeCount": 1334,
   "routes": [
     {
       "pattern": "/",
@@ -6680,6 +6680,11 @@
       "pattern": "/x/sign",
       "status": "live",
       "source": "app/(link)/x/sign/page.tsx"
+    },
+    {
+      "pattern": "/x/sign/dev-fields",
+      "status": "live",
+      "source": "app/(link)/x/sign/dev-fields/page.tsx"
     }
   ]
 }

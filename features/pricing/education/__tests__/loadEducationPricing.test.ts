@@ -37,9 +37,10 @@ function builder(table: string) {
   return api;
 }
 
-const client: { schema: () => unknown; from: (t: string) => Record<string, unknown> } = {
+const client = {
   schema: () => client,
   from: (t: string) => builder(t),
+  rpc: async (_name: string): Promise<{ data: unknown; error: null }> => ({ data: rows.plan_catalog ?? [], error: null }),
 };
 jest.mock("@/utils/supabase/server", () => ({ createClient: jest.fn(async () => client) }));
 
@@ -65,6 +66,17 @@ it("headlines each capability in its own window, phrased as a unit", async () =>
     { capability: "education.generate_cards", unit: "flashcard decks", limit: 30, period: "month" },
     { capability: "education.tutor_message", unit: "AI tutor messages", limit: 30, period: "day" },
   ]);
+});
+
+it.each([1900, 2300])("uses the registered personal plan at %i cents, not an old test product", async (amount) => {
+  rows.product = [{ id: "old-sandbox-product", active: true, name: "Old sandbox price" }];
+  rows.price = [{ id: "old-price", product_id: "old-sandbox-product", active: true, unit_amount: 1000 }];
+  rows.plan_catalog = [
+    { plan_key: "personal-entry", name: "Entry", audience: "personal", rank: 20, tier: "premium", monthly_cents: amount, limits: [] },
+    { plan_key: "personal-pro", name: "Pro", audience: "personal", rank: 30, tier: "premium", monthly_cents: 4900, limits: [] },
+    { plan_key: "free", name: "Free", audience: "free", rank: 10, tier: "free", monthly_cents: 0, limits: [] },
+  ];
+  expect((await loadEducationPricing()).premium).toMatchObject({ planKey: "personal-entry", amountCents: amount });
 });
 
 it("states the 5-hour pacing as a real limit from the rolling_5h row", async () => {
@@ -98,7 +110,7 @@ it("fails fast with a named error when the database never answers (no platform 5
   };
   try {
     const pending = loadEducationPricing();
-    const assertion = expect(pending).rejects.toThrow(/billing\.product.*did not answer/);
+    const assertion = expect(pending).rejects.toThrow(/billing\.capability_limit.*did not answer/);
     await jest.advanceTimersByTimeAsync(PRICING_READ_TIMEOUT_MS + 1);
     await assertion;
   } finally {

@@ -58,9 +58,13 @@ export function InboxPage() {
       headerActions={
         // The inbox answers "who replied"; the Chasebox answers "what needs me
         // now" across every queue, replies included. Each reaches the other.
-        <ControlButton variant="outline" asChild>
+        <ControlButton
+          variant="outline"
+          asChild
+          icon={<ListChecks className="h-4 w-4" aria-hidden />}
+          collapse="container"
+        >
           <Link href="/crm/chasebox">
-            <ListChecks className="h-4 w-4" aria-hidden />
             Chasebox
           </Link>
         </ControlButton>

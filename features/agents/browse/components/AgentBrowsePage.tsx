@@ -76,15 +76,12 @@ export function AgentBrowsePage({
   const newAgentButton = (list: EntityListController<AgentBrowseRow>) => {
     const system = systemAdmin && list.query.scope.kind === "system";
     return (
-      <ControlButton variant="primary" asChild>
+      <ControlButton variant="primary" asChild icon={<Plus className="h-4 w-4" />} collapse="container">
         <Link
           href={newAgentHref(system)}
           aria-label={system ? "New system agent" : "New agent"}
         >
-          <Plus className="h-4 w-4" />
-          <span className="max-sm:sr-only">
-            {system ? "New system agent" : "New agent"}
-          </span>
+          {system ? "New system agent" : "New agent"}
         </Link>
       </ControlButton>
     );
@@ -129,10 +126,9 @@ export function AgentBrowsePage({
           </span>
         ) : (
         <>
-          <ControlButton variant="outline" asChild>
+          <ControlButton variant="outline" asChild icon={<Network className="h-4 w-4" />} collapse="container">
             <Link href="/agents/orchestras" aria-label="Orchestras">
-              <Network className="h-4 w-4" />
-              <span className="max-sm:sr-only">Orchestras</span>
+              Orchestras
             </Link>
           </ControlButton>
           {newAgentButton(list)}

@@ -299,9 +299,10 @@ export function SitesPortfolio({
   const addSiteButton = (
     <ControlButton variant="primary"
       onClick={() => router.push("/marketing/sites/new")}
+      icon={<Plus className="h-3.5 w-3.5" />}
+      collapse="container"
     >
-      <Plus className="h-3.5 w-3.5" />
-      <span className="max-sm:sr-only">Add site</span>
+      Add site
     </ControlButton>
   );
 

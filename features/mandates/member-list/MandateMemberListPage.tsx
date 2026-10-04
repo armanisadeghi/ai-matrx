@@ -116,9 +116,13 @@ export function MandateMemberListPage({
       }
       headerActions={
         canCreate ? (
-          <ControlButton variant="primary" asChild>
+          <ControlButton
+            variant="primary"
+            asChild
+            icon={<Plus className="h-3.5 w-3.5" />}
+            collapse="container"
+          >
             <Link href={newSoftMandateHref(level, orgId)}>
-              <Plus className="h-3.5 w-3.5" />
               New mandate
             </Link>
           </ControlButton>

@@ -20,7 +20,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
 
 // REC-62 (W1-ORG-APPLY, 2026-09-22): a Stripe customer, subscription and payout
 // account belong to an ORGANIZATION, and nothing on the server picks one. These
@@ -167,14 +166,10 @@ export function EducationPricing({
       const res = await fetchWithOrganization("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId: pricing.premium.priceId }),
+        body: JSON.stringify({ planKey: pricing.premium.planKey, cycle: "monthly" }),
       });
       if (res.status === 401) {
         router.push(loginHref);
-        return;
-      }
-      if (res.status === 503) {
-        void announceComingSoon("education.premium-checkout");
         return;
       }
       const body = (await res.json().catch(() => ({}))) as {
@@ -307,7 +302,9 @@ export function EducationPricing({
               emphasis
               badge={isPremium ? (isComplimentary ? "Your plan · complimentary" : "Your plan") : undefined}
             />
-            {premium ? (
+            {isComplimentary || (!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM) ? (
+              <div className="text-4xl font-semibold tracking-tight">$0</div>
+            ) : premium ? (
               <div className="flex items-baseline gap-1.5">
                 <span className="text-4xl font-semibold tracking-tight tabular-nums">
                   {formatPrice(premium.amountCents, premium.currency)}

@@ -10,10 +10,9 @@ import { EDUCATION_LIBRARY_SURFACE } from "../librarySurface";
 
 export function EducationLibraryPage() {
   const createButton = (
-    <ControlButton variant="primary" asChild>
+    <ControlButton variant="primary" asChild icon={<FilePlus2 className="h-4 w-4" />} collapse="container">
       <Link href="/education/start">
-        <FilePlus2 className="h-4 w-4" />
-        <span className="max-sm:sr-only">Create kit</span>
+        Create kit
       </Link>
     </ControlButton>
   );
@@ -33,10 +32,9 @@ export function EducationLibraryPage() {
         surface={EDUCATION_LIBRARY_SURFACE}
         headerActions={
           <>
-            <ControlButton variant="outline" asChild>
+            <ControlButton variant="outline" asChild icon={<LibraryBig className="h-4 w-4" />} collapse="container">
               <Link href="/education/library/community">
-                <LibraryBig className="h-4 w-4" />
-                <span className="max-sm:sr-only">Community</span>
+                Community
               </Link>
             </ControlButton>
             {createButton}

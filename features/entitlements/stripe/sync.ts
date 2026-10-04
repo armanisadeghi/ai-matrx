@@ -207,7 +207,8 @@ export async function syncSubscription(
         tier: sub.status === "trialing" ? "trial" : tier,
         current_period_start: iso(item?.current_period_start),
         current_period_end: iso(item?.current_period_end),
-        cancel_at_period_end: sub.cancel_at_period_end,
+        // Newer Stripe portal configurations schedule cancel_at explicitly.
+        cancel_at_period_end: sub.cancel_at_period_end || (sub.cancel_at != null && sub.cancel_at === item?.current_period_end),
         canceled_at: iso(sub.canceled_at),
         trial_start: iso(sub.trial_start),
         trial_end: iso(sub.trial_end),
@@ -226,21 +227,16 @@ export async function markSubscriptionCanceled(
   sub: Stripe.Subscription,
   eventCreatedUnix?: number,
 ): Promise<void> {
-  if (await isStaleSubscriptionEvent(sub.id, sub.livemode, eventCreatedUnix)) return;
-  const admin = createAdminClient();
-  const { error } = await admin
-    .schema("billing")
-    .from("subscription")
-    .update({
-      status: "canceled",
-      canceled_at: iso(sub.canceled_at) ?? new Date().toISOString(),
-      last_stripe_event_at: eventCreatedUnix
-        ? new Date(eventCreatedUnix * 1000).toISOString()
-        : new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("stripe_subscription_id", sub.id).eq("livemode", sub.livemode);
+  // Deletion can arrive before creation. Persist the terminal row instead of
+  // acknowledging a zero-row UPDATE that a delayed creation could resurrect.
+  await syncSubscription({ ...sub, status: "canceled" }, eventCreatedUnix);
+}
+
+export async function hasSyncedSubscription(id: string, livemode: boolean): Promise<boolean> {
+  const { data, error } = await createAdminClient().schema("billing").from("subscription")
+    .select("id").eq("stripe_subscription_id", id).eq("livemode", livemode).maybeSingle();
   if (error) throw error;
+  return !!data;
 }
 
 /**

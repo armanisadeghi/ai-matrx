@@ -11,6 +11,7 @@ import { verifyStripeWebhook } from "@/lib/stripe/server";
 import { billingOwnerRefFromRow } from "@/features/entitlements/stripe/billingOwner";
 import {
   hasProcessedStripeEvent,
+  hasSyncedSubscription,
   recordStripeEvent,
   markSubscriptionCanceled,
   syncSubscription,
@@ -47,7 +48,15 @@ export async function POST(request: NextRequest) {
   try {
     // A failed dedupe read is retryable, never a successful acknowledgement.
     if (await hasProcessedStripeEvent(event.id)) {
-      return NextResponse.json({ received: true, deduped: true });
+      // Old handlers acknowledged failed writes. A receipt without its
+      // subscription is not fulfilment; replay it through the repaired writer.
+      const object = event.data.object;
+      const subscription = object.object === "subscription" ? object.id
+        : object.object === "checkout.session" ? object.subscription : null;
+      const id = typeof subscription === "string" ? subscription : subscription?.id;
+      if (!id || await hasSyncedSubscription(id, event.livemode)) {
+        return NextResponse.json({ received: true, deduped: true });
+      }
     }
     switch (event.type) {
       case "customer.subscription.created":

@@ -27,8 +27,8 @@ describe("Entity List responsive contract", () => {
       '"relative inline-flex h-7 items-center',
     );
     // The control row and the toolbar opt into the ring and out of the growth floor.
-    expect(componentSource("EntityListPage.tsx")).toContain('"matrx-tap-ring flex min-w-0 flex-wrap items-center');
-    expect(componentSource("EntityListToolbar.tsx")).toContain('className="matrx-tap-ring flex min-w-0 flex-wrap');
+    expect(componentSource("EntityListPage.tsx")).toContain('"matrx-tap-ring flex min-w-0 flex-nowrap items-center');
+    expect(componentSource("EntityListToolbar.tsx")).toContain('className="matrx-tap-ring flex min-w-0 flex-nowrap');
     const css = readFileSync(join(__dirname, "..", "..", "app", "globals.css"), "utf8");
     expect(css).toContain(":not(.matrx-tap-ring *):not(thead *) {\n      min-height: 2.75rem;");
     expect(css).toMatch(/:is\(\.matrx-tap-ring, \.matrx-touch-targets thead\)[\s\S]*?::before \{/);
@@ -52,6 +52,30 @@ describe("Entity List responsive contract", () => {
   it("draws two header rows at every width — the toolbar never joins the lane row", () => {
     const page = componentSource("EntityListPage.tsx");
     expect(page).not.toContain("useHeaderRowFit");
-    expect(page).toContain("{phoneWidth ? null : renderToolbar()}");
+    // The phone's compact toolbar is row 2 as well, never inside the lane row.
+    const row = page.slice(page.indexOf("data-entity-list-control-row"), page.indexOf("TWO ROWS, ALWAYS"));
+    expect(row).not.toContain("renderToolbar(");
+  });
+
+  // THE PANE DECIDES, NEVER THE VIEWPORT (owner, /agents/all beside the chat panel 2026-10-04: a
+  // 540px list at a 1024px viewport kept every control full-size; the header took four lines).
+  // Each row is ONE line (flex-nowrap, above) and folds by the header's container width: no
+  // viewport variant may size a control in the two rows. Live proof: `pnpm check:list-header-rows`.
+  it("folds the header's controls by the pane's width, never the viewport's", () => {
+    const page = componentSource("EntityListPage.tsx");
+    expect(page).toMatch(/containerName: `list \$\{CONTROLS_CONTAINER_NAME\}`/);
+    const row = page.slice(page.indexOf("data-entity-list-control-row"), page.indexOf("TWO ROWS, ALWAYS"));
+    const toolbar = componentSource("EntityListToolbar.tsx");
+    const desktop = toolbar.slice(toolbar.indexOf('data-entity-list-toolbar=""'));
+    const viewMenu = toolbar.slice(toolbar.indexOf("const viewMenu"), toolbar.indexOf("if (phoneRow)"));
+    const VIEWPORT = /(?<![@\w/-])(?:max-)?(?:sm|md|lg|xl|2xl):[\w[]/g;
+    for (const [name, source] of [["control row", row], ["toolbar", desktop], ["view menu", viewMenu]] as const) {
+      expect({ name, viewport: source.match(VIEWPORT) }).toEqual({ name, viewport: null });
+    }
+    // The filters and the column picker fold by the list container too.
+    for (const name of ["EntityDimensionFilter.tsx", "EntityOrgFilter.tsx"]) {
+      expect(componentSource(name)).toContain("@max-3xl/list:sr-only");
+    }
+    expect(componentSource("EntityFilterPanel.tsx")).toContain('<span className="@max-3xl/list:sr-only">Filters</span>');
   });
 });

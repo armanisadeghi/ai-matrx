@@ -31,25 +31,26 @@ export function LabelBatchesPage() {
 
   const actions = (
     <div className="flex gap-2">
-      <ControlButton variant="outline" asChild>
+      <ControlButton variant="outline" asChild icon={<BadgeCheck className="h-4 w-4" />} collapse="container">
         <Link href="/commerce/labels/printers">
-          <BadgeCheck className="h-4 w-4" />
-          <span className="max-sm:sr-only">Printers</span>
+          Printers
         </Link>
       </ControlButton>
       {organizationId && (
         <>
           <ControlButton variant="outline"
             onClick={() => setImporting(true)}
+            icon={<FileUp className="h-4 w-4" />}
+            collapse="container"
           >
-            <FileUp className="h-4 w-4" />
-            <span className="max-sm:sr-only">Import IDs</span>
+            Import IDs
           </ControlButton>
           <ControlButton variant="primary"
             onClick={() => setCreating(true)}
+            icon={<Plus className="h-4 w-4" />}
+            collapse="container"
           >
-            <Plus className="h-4 w-4" />
-            <span className="max-sm:sr-only">New batch</span>
+            New batch
           </ControlButton>
         </>
       )}
