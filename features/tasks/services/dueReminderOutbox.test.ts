@@ -130,4 +130,43 @@ describe("saved due-date email intent", () => {
     expect(rpc).not.toHaveBeenCalled();
     expect(notification.insert).not.toHaveBeenCalled();
   });
+
+  it("records an unaddressable reminder as terminal evidence without taking a daily slot", async () => {
+    rpc.mockImplementation((name: string) => Promise.resolve({
+      data: name === "notification_user_channels" ? { email: true } :
+        [{ address: null, refusal: "no_verified_email" }], error: null,
+    }));
+
+    expect(await enqueueDueReminderEmail(admin, taskId, day)).toBe("skipped");
+    expect(notification.insert).toHaveBeenCalledTimes(1);
+    expect(notification.insert).toHaveBeenCalledWith(expect.objectContaining({
+      status: "skipped", error_code: "no_verified_email",
+      dedupe_key: `task.due_reminder:${taskId}:${recipient}:${day}:email:skipped`,
+      target_id: taskId,
+    }));
+    expect(notification.insert.mock.calls[0][0]).not.toHaveProperty("to_address");
+    expect(notification.limit).not.toHaveBeenCalled();
+  });
+
+  it("validates a conflicting refusal row before treating it as replay", async () => {
+    rpc.mockImplementation((name: string) => Promise.resolve({
+      data: name === "notification_user_channels" ? { email: true } :
+        [{ address: null, refusal: null }], error: null,
+    }));
+    notification.insert.mockResolvedValue({ error: { code: "23505" } });
+    notification.maybeSingle.mockResolvedValueOnce({ data: {
+      id: "existing", organization_id: organization, recipient_user_id: recipient,
+      target_id: taskId, channel: "email", event_key: "task.due_reminder", status: "skipped",
+    }, error: null });
+    expect(await enqueueDueReminderEmail(admin, taskId, day)).toBe("skipped");
+    expect(notification.insert.mock.calls[0][0].error_code).toBe("no_contact_point");
+
+    notification.maybeSingle.mockResolvedValueOnce({ data: {
+      id: "foreign", organization_id: "another-org", recipient_user_id: recipient,
+      target_id: taskId, channel: "email", event_key: "task.due_reminder", status: "skipped",
+    }, error: null });
+    await expect(enqueueDueReminderEmail(admin, taskId, day)).rejects.toThrow(
+      "Reminder refusal key belongs to a different notification",
+    );
+  });
 });

@@ -98,7 +98,47 @@ export async function enqueueDueReminderEmail(
   const urgency = daysFromDue < 0 ? "overdue" : daysFromDue === 0 ? "due_today" : "upcoming";
   const urgencyLabel = urgency === "overdue" ? "Overdue" : urgency === "due_today" ? "Due today" : "Due soon";
   const urgencyWords = urgency === "overdue" ? "overdue" : urgency === "due_today" ? "due today" : "due tomorrow";
-  if (!address?.address) return "skipped";
+  if (!address?.address) {
+    const refusal = address?.refusal || "no_contact_point";
+    const skippedKey = `task.due_reminder:${task.id}:${recipientId}:${reminderDay}:email:skipped`;
+    const { error: skippedError } = await admin.schema("communication").from("notification").insert({
+      organization_id: task.organization_id,
+      event_key: "task.due_reminder",
+      channel: "email",
+      recipient_user_id: recipientId,
+      recipient_kind: "user",
+      created_by: recipientId,
+      status: "skipped",
+      error_code: refusal,
+      error_message: `No email address for this recipient (${refusal}).`,
+      dedupe_key: skippedKey,
+      payload: { task: {
+        title: task.title,
+        due: dueDay,
+        urgency_label: urgencyLabel,
+        urgency_words: urgencyWords,
+      } },
+      target_kind: "task",
+      target_id: task.id,
+      deep_link: `/tasks?task=${task.id}`,
+      visibility: "personal",
+    });
+    if (skippedError && skippedError.code !== "23505") throw skippedError;
+    if (skippedError?.code === "23505") {
+      const { data: existing, error: readError } = await admin.schema("communication")
+        .from("notification")
+        .select("id, organization_id, recipient_user_id, target_id, channel, event_key, status")
+        .eq("dedupe_key", skippedKey).maybeSingle();
+      if (readError) throw readError;
+      if (!existing || existing.organization_id !== task.organization_id ||
+          existing.recipient_user_id !== recipientId || existing.target_id !== task.id ||
+          existing.channel !== "email" || existing.event_key !== "task.due_reminder" ||
+          existing.status !== "skipped") {
+        throw new Error("Reminder refusal key belongs to a different notification");
+      }
+    }
+    return "skipped";
+  }
 
   // Recognize rows written by the earlier per-task key before the three-slot
   // admission scheme. There can be no new legacy writer after this code lands.
@@ -132,7 +172,7 @@ export async function enqueueDueReminderEmail(
   // overlapping cron requests can never both occupy the same recipient/day
   // slot, even when their task lists differ.
   for (let slot = 1; slot <= availableSlots; slot++) {
-    const dedupeKey = `task.due_reminder:${recipientId}:${reminderDay}:email:${slot}`;
+    const dedupeKey: string = `task.due_reminder:${recipientId}:${reminderDay}:email:${slot}`;
     const { error: insertError } = await admin.schema("communication").from("notification").insert({
       organization_id: task.organization_id,
       event_key: "task.due_reminder",
