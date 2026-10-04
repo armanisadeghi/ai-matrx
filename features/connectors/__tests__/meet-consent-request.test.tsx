@@ -133,5 +133,5 @@ test("an existing organization account cannot be renewed with Meet", async () =>
   if (!button) throw new Error("Missing connect control");
   await act(async () => button.click());
   expect(run).not.toHaveBeenCalled();
-  expect(container.textContent).toContain("Google Meet review can connect only to a personal Google account");
+  expect(container.textContent).toContain("Google Meet review can connect only to your own Google account");
 });

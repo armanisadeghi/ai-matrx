@@ -243,7 +243,7 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
   [GOOGLE_SCOPE.meetingsSpaceReadonly]:
     "Read Meet conference details and selected transcript entries. No recording downloads or meeting changes",
   [GOOGLE_SCOPE.directoryReadonly]:
-    "Read one page of colleagues shared with your own Google Workspace account. No saving or AI model transfer",
+    "Google permits reading your organization's Workspace directory. AI Matrx previews one shared page; no saving or model transfer",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
   [GOOGLE_SCOPE.tasksWrite]:
     "Google permits creating, editing, organizing and deleting your tasks. AI Matrx currently offers reviewed task creation and selected complete or reopen changes",

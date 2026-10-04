@@ -14,7 +14,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { GoogleContactsImportPanel } from "@/features/connectors/import/GoogleContactsImportPanel";
 import { DirectoryReview } from "@/features/google-workspace/directory/DirectoryReview";
@@ -45,12 +45,20 @@ export default function GoogleContactsImportWindow({
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const email = useAppSelector(selectUserEmail);
   const canReviewDirectory = canUseGoogleOAuthInternalTest(isSuperAdmin, email);
-  const [selectedTab, setSelectedTab] =
-    useState<GoogleContactsImportInitialView>(initialView);
-  useEffect(() => {
-    setSelectedTab(canReviewDirectory ? initialView : "contacts");
-  }, [canReviewDirectory, initialView]);
-  const activeTab = canReviewDirectory ? selectedTab : "contacts";
+  const [tabState, setTabState] = useState<{
+    launchView: GoogleContactsImportInitialView;
+    selected: GoogleContactsImportInitialView;
+  }>(() => ({ launchView: initialView, selected: initialView }));
+  if (
+    tabState.launchView !== initialView ||
+    (!canReviewDirectory && tabState.selected !== "contacts")
+  ) {
+    setTabState({
+      launchView: initialView,
+      selected: canReviewDirectory ? initialView : "contacts",
+    });
+  }
+  const activeTab = canReviewDirectory ? tabState.selected : "contacts";
   if (!isOpen) return null;
   return (
     <WindowPanel
@@ -73,7 +81,7 @@ export default function GoogleContactsImportWindow({
         value={activeTab}
         onValueChange={(value) => {
           if (value === "contacts" || value === "directory") {
-            setSelectedTab(value);
+            setTabState((current) => ({ ...current, selected: value }));
           }
         }}
         className="flex min-h-0 flex-1 flex-col"

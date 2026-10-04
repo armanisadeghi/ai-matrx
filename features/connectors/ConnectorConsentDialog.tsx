@@ -691,7 +691,7 @@ export function ConnectorConsentBody({
       return;
     }
     if (personalOnlySelected && account?.ownerKind === "organization") {
-      const sentence = `${personalOnlyName} can connect only to a personal Google account. Choose your own account or connect a different one.`;
+      const sentence = `${personalOnlyName} can connect only to your own Google account. Choose your own account or connect a different one.`;
       setAnswer(sentence);
       toast.info(sentence);
       return;
@@ -955,7 +955,7 @@ export function ConnectorConsentBody({
 
         {personalOnlySelected ? (
           <p className="rounded-2xl border border-border/70 bg-card px-4 py-3 text-xs text-muted-foreground">
-            {personalOnlyName}: personal Google accounts only. Choose your own account or connect a different one.
+            {personalOnlyName}: your own Google account only. Choose your own account or connect a different one.
           </p>
         ) : mayConnectForOrganization && activeOrganization ? (
           <label className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5">
