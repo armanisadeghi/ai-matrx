@@ -1766,7 +1766,7 @@ body[style*="pointer-events: none"] {
 :root[data-admin-attention] .shell-main::after {
   content: "";
   display: block;
-  height: var(--shell-fixed-alert-clearance);
+  height: max(var(--shell-fixed-alert-clearance), var(--matrx-floating-clearance));
   pointer-events: none;
 }
 
@@ -1875,6 +1875,63 @@ body[style*="pointer-events: none"] {
   }
 }
 
+/* THE FLOATING CLEARANCE — every page that scrolls ends with a runway as tall
+   as whatever floats over the bottom of the viewport right now (the ambient
+   chat dock, the assists pill, the mobile dock, the window tray, mobile action
+   bars) plus the safe area and a breathing gap. FloatingClearanceSync
+   (features/shell/components) measures that chrome live and publishes
+   --matrx-floating-measured on <html>; nothing floating = 0px.
+
+   It is the DEFAULT, so a page cannot forget it — and it is a real final flow
+   item (::after), never padding, so it ADDS to a page's own spacing instead of
+   replacing it, and it works whatever the scroll owner's children are sized
+   to. Scroll owners that get it with no code:
+     - .shell-main itself, for natural-height routes (the document scrolls);
+     - a full-height route body that scrolls itself, directly under .shell-main;
+     - any <main> or [data-matrx-page-scroll] scroll owner anywhere inside it.
+   A full-height route body that does NOT scroll itself has no runway on
+   .shell-main (that would be pure slack under its own scrollers); its inner
+   page scroller takes [data-matrx-page-scroll] or is a <main>.
+   Opt out ONLY with data-floating-clearance="off" plus a `// ui-exception:`
+   reason (pnpm check:floating-clearance). Runtime guard + class:
+   lib/layout/floating-chrome.ts. */
+:root {
+  --matrx-floating-clearance: calc(
+    max(var(--matrx-floating-measured, 0px), env(safe-area-inset-bottom, 0px)) +
+      1.5rem
+  );
+}
+
+.shell-main::after,
+.shell-main
+  > .h-full:is(.overflow-y-auto, .overflow-auto):not(
+    .scroll-page-end-space,
+    [data-floating-clearance="off"]
+  )::after,
+.shell-main
+  :is(main, [data-matrx-page-scroll]):is(.overflow-y-auto, .overflow-auto):not(
+    .scroll-page-end-space,
+    .education-scroll-boundary > *,
+    [data-floating-clearance="off"]
+  )::after {
+  content: "";
+  display: block;
+  flex: none;
+  grid-column: 1 / -1;
+  block-size: max(
+    var(--matrx-floating-clearance),
+    var(--shell-fixed-alert-clearance, 0px)
+  );
+  pointer-events: none;
+}
+
+/* A full-height route body owns its own layout: .shell-main has nothing to
+   scroll, so a runway there is slack that slides the whole surface up under
+   the header on the first wheel tick (see the admin-attention note above). */
+.shell-main:has(> .h-full)::after {
+  content: none;
+}
+
 /* Natural-height reading/list surfaces keep a generous final runway so fixed
    page affordances never cover the last content. The pseudo-element adds
    scroll range without shrinking full-height children. When an overlay-style
@@ -1887,12 +1944,14 @@ body[style*="pointer-events: none"] {
   padding-block-end: max(
     20rem,
     40dvh,
-    calc(var(--keyboard-inset-height, 0px) + 6rem)
+    calc(var(--keyboard-inset-height, 0px) + 6rem),
+    var(--matrx-floating-clearance)
   );
   scroll-padding-bottom: max(
     20rem,
     40dvh,
-    calc(var(--keyboard-inset-height, 0px) + 6rem)
+    calc(var(--keyboard-inset-height, 0px) + 6rem),
+    var(--matrx-floating-clearance)
   );
 }
 

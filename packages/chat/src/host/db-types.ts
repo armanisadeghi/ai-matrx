@@ -2174,9 +2174,22 @@ export type ChatDatabase = {
       }
     }
     Functions: {
+      canonical_message_flags: { Args: { p_messages: Json }; Returns: Json }
       default_tool_ids_for_organization: {
         Args: { p_organization_id: string }
         Returns: string[]
+      }
+      message_flag_problems: {
+        Args: never
+        Returns: {
+          agent_id: string
+          flags: Json
+          message_index: number
+          name: string
+          row_id: string
+          source: string
+          version_number: number
+        }[]
       }
       next_free_agent_name: {
         Args: { p_except?: string; p_name: string; p_organization_id: string }
@@ -2245,6 +2258,13 @@ export type ChatDatabase = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      repair_message_flags: {
+        Args: never
+        Returns: {
+          rows_repaired: number
+          source: string
+        }[]
       }
     }
     Enums: {

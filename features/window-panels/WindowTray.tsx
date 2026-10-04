@@ -61,7 +61,7 @@ export function WindowTray() {
   if (isMobile) {
     return (
       <div
-        className="fixed bottom-0 left-0 right-0 pb-safe z-[9999]"
+        className="fixed bottom-0 left-0 right-0 pb-safe z-[9999]" data-matrx-floating-bottom=""
       >
         <div className="flex overflow-x-auto gap-1.5 px-2 py-1.5 bg-background/80 backdrop-blur-sm border-t border-border/50 scrollbar-none">
           {minimized.map((win) => (
