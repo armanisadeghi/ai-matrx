@@ -20,8 +20,10 @@
 //     never judges it). The three render differently: placeholder
 //     "unlimited", a "not included" hint, and a "—" placeholder.
 //   * Blank typed over an existing row saves NULL (unlimited). Blank over a
-//     missing row saves nothing. There is no RPC that deletes a window, so a
-//     row once created can only be changed, never removed.
+//     missing row saves nothing. Removing a window is its own control (the X
+//     beside a cell that holds a row → `billing.plan_limit_remove`, a soft
+//     delete), and it names its consequence before it acts: the plan then has
+//     no cap in that window at all.
 //   * Money dimensions are stored in micro-dollars, points in points (the
 //     dollar figure beside points is a hint from the `billing.points_per_usd`
 //     knob via `pointsToUsdLabel`). Conversions live in `types.ts`, once.
@@ -30,7 +32,7 @@
 //   * Name and price are read-only here — they are `billing.plan` columns.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,11 +45,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import {
   fetchCapabilities,
   fetchPlanLimits,
   fetchPlans,
+  removePlanLimit,
   setPlanLimit,
 } from "../service";
 import type { Capability, Plan, PlanLimit } from "../types";
@@ -100,6 +104,16 @@ interface MatrixColumn {
 
 const BYTES_CAPABILITIES = new Set(["platform.storage_bytes"]);
 
+/** "weekly", "monthly"… — the word the remove confirmation uses for a window. */
+const PERIOD_ADJECTIVE: Record<string, string> = {
+  month: "monthly",
+  week: "weekly",
+  day: "daily",
+  rolling_5h: "5-hour",
+  rolling_1h: "1-hour",
+  lifetime: "total",
+};
+
 /** One short hint under a saved or typed value — ≤ 60 chars, one line. */
 function valueHint(
   capability: string,
@@ -122,12 +136,14 @@ function LimitCell({
   existing,
   rate,
   onSave,
+  onRemove,
 }: {
   plan: Plan;
   column: MatrixColumn;
   existing: PlanLimit | undefined;
   rate: number | null;
   onSave: (value: number | null) => Promise<void>;
+  onRemove: () => Promise<void>;
 }) {
   const saved = existing ? limitToDisplay(column.capability, existing.limit_value) : "";
   const [draft, setDraft] = useState<string | null>(null);
@@ -163,8 +179,30 @@ function LimitCell({
     }
   };
 
+  const remove = async () => {
+    const windowLabel = periodLabel(column.period);
+    const adjective = PERIOD_ADJECTIVE[column.period] ?? windowLabel.toLowerCase();
+    const ok = await confirm({
+      title: `Remove the ${windowLabel} window from ${plan.name}?`,
+      description: `${plan.name} then has no ${adjective} cap.`,
+      confirmLabel: "Remove window",
+      cancelLabel: "Keep it",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setSaving(true);
+    try {
+      await onRemove();
+      setDraft(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <td className="px-1.5 py-1 align-top">
+    <td className="group px-1.5 py-1 align-top">
       <div className="relative">
         {isMicroUsd(column.capability) && (
           <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
@@ -191,8 +229,20 @@ function LimitCell({
             if (event.key === "Escape") setDraft(null);
           }}
         />
-        {saving && (
+        {saving ? (
           <Loader2 className="absolute right-[-14px] top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-muted-foreground" />
+        ) : (
+          existing && (
+            <button
+              type="button"
+              className="absolute right-[-15px] top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+              aria-label={`Remove the ${periodLabel(column.period)} window from ${plan.name}`}
+              title="Remove this window"
+              onClick={() => void remove()}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )
         )}
       </div>
       <p
@@ -215,6 +265,7 @@ function PlanMatrix({
   rate,
   showCapability,
   onSave,
+  onRemove,
 }: {
   plans: Plan[];
   columns: MatrixColumn[];
@@ -223,6 +274,7 @@ function PlanMatrix({
   rate: number | null;
   showCapability: boolean;
   onSave: (planKey: string, column: MatrixColumn, value: number | null) => Promise<void>;
+  onRemove: (planKey: string, column: MatrixColumn) => Promise<void>;
 }) {
   const groups = groupPlansByAudience(plans);
   return (
@@ -269,6 +321,7 @@ function PlanMatrix({
               limitIndex={limitIndex}
               rate={rate}
               onSave={onSave}
+              onRemove={onRemove}
             />
           ))}
         </tbody>
@@ -284,6 +337,7 @@ function GroupRows({
   limitIndex,
   rate,
   onSave,
+  onRemove,
 }: {
   label: string;
   plans: Plan[];
@@ -291,6 +345,7 @@ function GroupRows({
   limitIndex: Map<string, PlanLimit>;
   rate: number | null;
   onSave: (planKey: string, column: MatrixColumn, value: number | null) => Promise<void>;
+  onRemove: (planKey: string, column: MatrixColumn) => Promise<void>;
 }) {
   return (
     <>
@@ -335,6 +390,7 @@ function GroupRows({
               existing={limitIndex.get(cellId(plan.plan_key, column.capability, column.period))}
               rate={rate}
               onSave={(value) => onSave(plan.plan_key, column, value)}
+              onRemove={() => onRemove(plan.plan_key, column)}
             />
           ))}
         </tr>
@@ -436,6 +492,12 @@ export function PlanAllowancesPanel() {
     [],
   );
 
+  const remove = useCallback(async (planKey: string, column: MatrixColumn) => {
+    await removePlanLimit(planKey, column.capability, column.period);
+    setLimits(await fetchPlanLimits());
+    toast.success("Window removed");
+  }, []);
+
   if (loading) {
     return <p className="p-6 text-sm text-muted-foreground">Loading plans…</p>;
   }
@@ -497,6 +559,7 @@ export function PlanAllowancesPanel() {
           rate={costRate}
           showCapability={false}
           onSave={save}
+          onRemove={remove}
         />
       </section>
 
@@ -550,6 +613,7 @@ export function PlanAllowancesPanel() {
           rate={costRate}
           showCapability
           onSave={save}
+          onRemove={remove}
         />
       </section>
     </div>

@@ -18,7 +18,7 @@ without a deploy, the limit is not done.** This page is that half of the rule.
 
 | Tab | Store | The question it answers |
 |---|---|---|
-| **Plan allowances** | `billing.plan_limit` (write: `billing.plan_limit_set`, super-admin) | *"How much does every account on this PLAN get?"* |
+| **Plan allowances** | `billing.plan_limit` (write: `billing.plan_limit_set` / `plan_limit_remove`, super-admin) | *"How much does every account on this PLAN get?"* |
 | **Account add-ons** | `billing.account_addon` (write: `billing.addon_grant`, super-admin; read: platform admins under `platform_admin_all`) | *"How much MORE does this one ORG get than its plan?"* |
 | **Feature knobs** | `platform.feature_knob` (write: `platform.feature_knob_set`, admin) | *"What does the PLATFORM absorb, or default to?"* |
 
@@ -54,7 +54,9 @@ real error, never a blank.
   "Add window". Each cell saves on Enter/blur through `plan_limit_set` and re-reads the rows.
 - Three cell states, never collapsed: blank = unlimited (`NULL`), `0` = not included (struck,
   "not included"), `—` = no row for that window (it does not apply). Blank over a missing row
-  writes nothing. There is no delete RPC, so a created window can only be changed.
+  writes nothing. A cell that holds a row carries a remove control (`billing.plan_limit_remove`,
+  super-admin, soft delete); it confirms first and names the consequence ("Pro then has no
+  weekly cap."). `plan_limit_set` on the same window revives the row.
 
 ## Plan assignment (shared dialog)
 
@@ -133,7 +135,7 @@ row (~1,800) and a bare call stopped at 1000, showing the rest as "default".
 | Path | Role |
 |---|---|
 | [`types.ts`](./types.ts) | Row shapes, the micro-dollar declaration, the points↔dollar constant, `addonIsInEffect`. |
-| [`service.ts`](./service.ts) | Client-direct Supabase reads; writes through the three admin-gated RPCs (`feature_knob_set`, `plan_limit_set`, `addon_grant`). |
+| [`service.ts`](./service.ts) | Client-direct Supabase reads; writes through the three admin-gated RPCs (`feature_knob_set`, `plan_limit_set`, `plan_limit_remove`, `addon_grant`). |
 | [`components/LimitsAdminClient.tsx`](./components/LimitsAdminClient.tsx) | The three-tab shell, with quiet links to the two usage surfaces (`/administration/knowledge/kg-cost`, `/administration/users/usage`) so this is never a disconnected third place. |
 | [`components/PlanAllowancesPanel.tsx`](./components/PlanAllowancesPanel.tsx) | The plan × window matrix; exports `EnforcementBadge`. |
 | [`components/ChangePlanDialog.tsx`](./components/ChangePlanDialog.tsx) | The one admin plan picker (person or organization). |

@@ -176,6 +176,26 @@ export async function setPlanLimit(
   if (error) throw error;
 }
 
+/**
+ * Remove one plan window (`billing.plan_limit_remove`, super-admin; soft
+ * delete). After this the window does not apply to the plan at all — distinct
+ * from saving blank (unlimited) or 0 (not included). `plan_limit_set` on the
+ * same plan × capability × window revives the row.
+ */
+export async function removePlanLimit(
+  planId: string,
+  capability: string,
+  period: string,
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.schema("billing").rpc("plan_limit_remove", {
+    p_plan_id: planId,
+    p_capability: capability,
+    p_period: period as MeterPeriod,
+  });
+  if (error) throw error;
+}
+
 // ---------------------------------------------------------------------------
 // Account add-ons — the per-org grants that RAISE a plan's allowance.
 //

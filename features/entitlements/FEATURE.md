@@ -75,9 +75,9 @@ await gen.guard(async () => {
    `useSpokenPractice.start`, `useKitGeneration.run`, `ConvertContentDialog#runConvert`).
 2. **Consume regardless of `enforced`.** `enforced` gates only whether a cap BLOCKS at the
    limit — usage recording (and thus a truthful decrementing meter) happens for EVERY metered
-   capability, enforced or not. `consumeEntitlement` never short-circuits on `enforced:false`
-   (unlike `checkEntitlement`, which does); the RPC itself writes the ledger for un-enforced
-   capabilities and only runs the advisory-locked cap check when enforced.
+   capability, enforced or not. Neither `consumeEntitlement` nor `checkEntitlement` short-circuits:
+   the client has no copy of `enforced` to short-circuit on. The RPC itself writes the ledger for
+   un-enforced capabilities and only runs the advisory-locked cap check when enforced.
 
 `commit()` auto-references the last `guard()` pre-check's `checkId`, so a check + a consume
 are one accounted unit (idempotency + audit). It fails soft — a metered action that already
@@ -89,10 +89,12 @@ full snapshot refresh.
 0. **Check it against D-5 first** (above): is this metering AI generation / depth /
    convenience, or is it metering the act of practicing? The second is forbidden, and
    `pnpm test features/entitlements` will tell you so.
-1. Add an entry to `CAPABILITY_REGISTRY` in [`registry.ts`](./registry.ts) (`enforced: false`).
+1. Add the `billing.capability` row (`enforced = false`, `min_tier`, `period`) and the WORDS entry in
+   `CAPABILITY_REGISTRY` ([`registry.ts`](./registry.ts): label, description, upgrade copy, scope).
 2. Consumers call `useEntitlement("<your.capability>")`. Done — permissive until enforcement.
 3. To ENFORCE: land the `billing.capability_limit` row + the aidream-side spend re-check, get
-   the free-tier number approved, THEN flip `enforced: true`. Never flip without both.
+   the free-tier number approved, THEN `update billing.capability set enforced = true`. Never
+   flip without both. No code change is part of a flip.
 
 ## Files
 
@@ -427,8 +429,13 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
   action starts — mid-generation ambush is a defect (README §6). The mechanism: the snapshot /
   `resolve_capability` RPCs report limits + windows for EVERY registered capability, enforced or
   not, each with an `enforced` flag; un-enforced caps stay `allowed` but the meter still renders.
-- **The database is the SINGLE SOURCE for every number** (`billing.capability_limit`,
-  `billing.plan_limit`, the `billing/points_per_usd` knob). The registry holds words only.
+- **The database is the SINGLE SOURCE for every number AND flag** (`billing.capability` owns
+  `enforced` / `min_tier` / `period`; `billing.capability_limit`, `billing.plan_limit`, the
+  `billing/points_per_usd` knob own the numbers). The registry holds words only — readers take
+  enforced / required tier / period from the verdict the resolver returns. Guard:
+  `__tests__/registry-holds-no-database-copies.test.ts`.
+- **The spend path fails closed for every capability** on resolver error: without the
+  resolver's answer the client cannot know whether the capability is enforced.
 - **Consume the primitives, never hand-roll.** `EntitlementMeter` for the meter,
   `useEntitlementGuard` for the pre-spend check + paywall + `commit()`. A hand-rolled
   `remaining` line, a `toast.error` on a cap-hit, or a direct `billing.entitlement_consume`
@@ -536,9 +543,11 @@ real (F6, 2026-07-13).
 
 ## Change Log
 
+- **2026-10-03** — Registry holds words only: removed `minTier`, `enforced` and `period` (copies of `billing.capability`). `checkEntitlement` always asks `entitlement_check` (un-enforced comes back `permissive_stub`; resolver error refuses for every capability); `CapabilityGate` and the `useOrgEntitlement` loading state read `requiredTier`/`period` from the verdict only. New guard `registry-holds-no-database-copies.test.ts` (red on the old registry, green now); fixture-state assertions dropped from three tests.
+
 - **2026-10-03** — Usage gate client half: `entitlements.usageGate` seeded at landing by the (core) layout, near/over fresh-read pre-check in `runAiStream` + `callApi`, stale + background refresh after each call, `usage_state_changed` directive + `usage_state` info event + usage refusal handling, `UsageGateBridge` (notice + `UsageLimitDialog`).
 
-- **2026-10-03** — Plan catalog: every plan surface reads `billing.plan_catalog()` via `catalog/`. `/pricing` shows the ladder (Personal / Business, exact cents, AI points per window) above the education section; paywall/upgrade/industry dialogs read the same rows; paid plans announce `billing.plan-checkout` (Coming Soon). Deleted `features/pricing/data.ts`, `PricingLandingRoute`, dead `fetchPublicPlans`; dropped registry `defaultFreeLimit` and the hardcoded points-rate sentence. Registry `minTier`/`enforced` still duplicate `billing.capability` (the resolver gate reads them) — open.
+- **2026-10-03** — Plan catalog: every plan surface reads `billing.plan_catalog()` via `catalog/`. `/pricing` shows the ladder (Personal / Business, exact cents, AI points per window) above the education section; paywall/upgrade/industry dialogs read the same rows; paid plans announce `billing.plan-checkout` (Coming Soon). Deleted `features/pricing/data.ts`, `PricingLandingRoute`, dead `fetchPublicPlans`; dropped registry `defaultFreeLimit` and the hardcoded points-rate sentence. Registry `minTier`/`enforced` still duplicate `billing.capability` (the resolver gate reads them) — closed the same day (next entry).
 
 - **2026-09-27** — page-pass 2026-09-27: `/pricing`, type promotional, posture after Linear's pricing page (CTA directly under each price), fixed: Premium card no longer shows the internal test product name/description ("AI Matrx Premium (TEST)", "Test-mode … P8 checkout verification"); removed the false "Priority generation on capacity" line (no tier-aware priority exists) and the "We email before every renewal" line (the pledge marks renewal reminders Before paid launch); Free limits phrased as units ("30 flashcard decks / month") and now include the daily AI tutor and live-grading caps; a refused `capability_limit` read throws instead of rendering a limitless Free card; signed-out visitors are told every new account gets Premium free before launch and are sent to sign-up instead of a $10 checkout (`PRELAUNCH_COMPLIMENTARY_PREMIUM` in `features/pricing/education/loadEducationPricing.ts` — un-flip with the signup trigger); complimentary Premium says so; hand-styled buttons → design-system `Button`; plan CTAs above the fold. Phase B (live proof): "complimentary" now reads the person's own `billing.user_plan.source` via `readMyPlanSource()` (`plan-service.ts`) — `entitlement_snapshot().is_subscribed` is only `tier in (premium, trial)` and cannot tell a grant from a subscription; header links carry `data-tap-target` for the 44px phone floor. Iteration (blind judge "mediocre"): headline now states the offer, pledge moved below the plans as one section with one link each; Premium leads with "Everything in Free, plus" (7 true lines, no premium limit rows exist); current plan is a "Your plan" badge, never a button; signed-out Free and Premium both go to sign-up returning to /pricing; "Start free"/"Open study tools" are real links; "test pricing" caveat removed (internal wording; `isTest` dropped); shared `PublicHeader` Download is a 44px touch link (Button asChild, no <a><button>), `PublicFooter` is one row at xl and a grid below. Excellence pass: cards share a subgrid (header · action · features · footer aligned); Premium is the emphasized card via primary border/ring on `bg-card` (no inverted slab — it glared in dark); "Every plan includes" strip holds the shared lines once; 5-hour pacing is a real limit line from the `rolling_5h` row (`freePacing`); a Premium member's plan is first on phone; pledge links one style, pledge icons 20px in primary tiles. No surface: the public shell mounts no Agents menu or agent right-click runtime, so a manifest here could never be reached.
 

@@ -6704,6 +6704,14 @@ export type Database = {
         Returns: string
       }
       plan_catalog: { Args: never; Returns: Json }
+      plan_limit_remove: {
+        Args: {
+          p_capability: string
+          p_period: Database["billing"]["Enums"]["meter_period"]
+          p_plan_id: string
+        }
+        Returns: Json
+      }
       plan_limit_set: {
         Args: {
           p_capability: string
@@ -31577,6 +31585,14 @@ export type Database = {
         }
         Returns: Json
       }
+      _derived_source_archived: {
+        Args: {
+          p_field_data: Json
+          p_organization_id: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
       _digest_since_words: {
         Args: { p_at: string; p_tz: string }
         Returns: string
@@ -34369,6 +34385,10 @@ export type Database = {
           reads: Json
           sensitivity: string
         }[]
+      }
+      field_source_archived: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: Json
       }
       field_update: {
         Args: { p_field_id: string; p_organization_id: string; p_patch: Json }
@@ -44003,6 +44023,7 @@ export type Database = {
         Args: { p_organization_id: string; p_sensitivity: string }
         Returns: Json
       }
+      retire_signer_link: { Args: { p_signer_id: string }; Returns: boolean }
       sendable_file: { Args: { p_file_id: string }; Returns: Json }
       signature_owner: {
         Args: { p_envelope_id: string; p_session: string }
