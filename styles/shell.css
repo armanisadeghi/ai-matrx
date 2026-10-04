@@ -2124,21 +2124,14 @@ body:has(.shell-root[data-pathname^="/administration"]) {
     scroll-padding-bottom: var(--shell-fixed-alert-clearance);
   }
 
-  /* The attention dock's real ::after runway already supplies this clearance.
-     Keep scroll padding for focus navigation, but do not duplicate the flow
-     reserve on natural pages. Dock routes retain their separate reserve below. */
-  :root[data-admin-attention] .shell-root:not([data-show-dock]) .shell-main {
+  /* The ::after runway (the attention alarm AND the floating clearance, which
+     measures the mobile dock like every other floating chrome) already
+     supplies this clearance. Keep scroll padding for focus navigation, but do
+     not duplicate the flow reserve. A dock route has NO reserve of its own:
+     until 2026-10-04 it padded .shell-main by the dock's height and the
+     runway stacked on top — 222px of blank at 375px. */
+  :root[data-admin-attention] .shell-main {
     padding-bottom: 0;
-  }
-
-  .shell-root[data-show-dock] .shell-main {
-    padding-bottom: max(
-      var(--shell-fixed-alert-clearance),
-      calc(
-        var(--shell-dock-h) + var(--shell-dock-bottom) + 1rem +
-          var(--shell-safe-area-bottom)
-      )
-    );
   }
 
   /* Hide dock when a note detail is open — note editor owns the bottom chrome */
@@ -2146,7 +2139,7 @@ body:has(.shell-root[data-pathname^="/administration"]) {
     display: none !important;
   }
 
-  /* Remove dock padding when note detail is open — dock is hidden */
+  /* Note detail owns the bottom chrome: no alarm padding either */
   .shell-root[data-note-detail-active] .shell-main {
     padding-bottom: 0;
   }

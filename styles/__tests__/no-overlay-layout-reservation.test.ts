@@ -34,9 +34,9 @@ describe("global fixed alerts preserve reachable page actions", () => {
   });
 
   it("uses one alarm runway on mobile natural pages and none on the admin outer shell", () => {
-    expect(SHELL_CSS).toContain(
-      ':root[data-admin-attention] .shell-root:not([data-show-dock]) .shell-main',
-    );
+    expect(SHELL_CSS).toContain(':root[data-admin-attention] .shell-main {');
+    // The floating clearance is the ONLY bottom reserve for the mobile dock.
+    expect(SHELL_CSS).not.toContain("[data-show-dock] .shell-main");
     expect(SHELL_CSS).toContain("overflow: clip");
     expect(SHELL_CSS).toContain(
       ':root[data-admin-attention] .shell-root[data-pathname^="/administration"] .shell-main::after',
