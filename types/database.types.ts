@@ -128188,6 +128188,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_account_plans: {
+        Args: never
+        Returns: {
+          grant_expires_at: string
+          grant_note: string
+          plan_key: string
+          plan_name: string
+          plan_source: string
+          usage: Json
+          user_id: string
+        }[]
+      }
       credential_item_holdings: {
         Args: { p_item_ids: string[] }
         Returns: {
