@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { projectsDb } from "@/utils/supabase/projectsDb";
-import { enqueueDueReminderEmail } from "@/features/tasks/services/dueReminderOutbox";
-import { sendDm } from "@/lib/services/system-dm";
+import { enqueueDueReminder } from "@/features/tasks/services/dueReminderOutbox";
 
 /**
  * GET /api/cron/due-date-reminders
- * Queue due-date email intents and send the in-app reminder DM.
+ * Queue one due-date notice per recipient and organization per day through the notification
+ * spine (email and its paired DM come from the one pairing rule).
  * 
  * This endpoint should be called by a cron job (e.g., Vercel Cron)
  * Recommended schedule: Daily at 8:00 AM
@@ -46,8 +46,6 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     const now = new Date();
     const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const dayAfterTomorrow = new Date(today);
     dayAfterTomorrow.setUTCDate(dayAfterTomorrow.getUTCDate() + 2);
 
@@ -57,7 +55,6 @@ export async function GET(request: Request) {
       duplicates: number;
       skipped: number;
       errors: number;
-      dmsSent?: number;
     } = {
       processed: 0,
       queued: 0,
@@ -125,35 +122,18 @@ export async function GET(request: Request) {
       }
     }
 
-    // Avoid unnecessary work after three intents in this run. The outbox's
-    // unique daily slots enforce the cap across overlapping cron requests.
+    // At most three notices per person per day (one per organization). The outbox's dedupe key
+    // (recipient/organization/day) is the atomic claim across overlapping cron requests.
     const PER_USER_CAP = 3;
     const perUserQueued = new Map<string, number>();
     const reminderDay = today.toISOString().slice(0, 10);
 
-    // A digest is scoped to one recipient AND one organization. Putting tasks
-    // from several organizations in the first task's DM discloses their titles
-    // in a conversation owned by the wrong organization.
-    type ReminderTask = (typeof tasks)[number] & {
-      urgency: 'upcoming' | 'due_today' | 'overdue';
-    };
-    const perUserTasks = new Map<string, Map<string, ReminderTask[]>>();
+    // A notice is scoped to one recipient AND one organization. Putting tasks from several
+    // organizations in one notice discloses their titles to the wrong organization.
+    const perUserTasks = new Map<string, Map<string, string[]>>();
 
-    // Process each task
     for (const task of tasks) {
       results.processed++;
-
-      // Determine urgency
-      const dueDate = new Date(task.due_date);
-      let urgency: 'upcoming' | 'due_today' | 'overdue';
-
-      if (dueDate < today) {
-        urgency = 'overdue';
-      } else if (dueDate < tomorrow) {
-        urgency = 'due_today';
-      } else {
-        urgency = 'upcoming';
-      }
 
       // Determine who to notify (assignee if assigned, otherwise owner)
       const notifyUserId = task.assignee_id || task.created_by;
@@ -171,90 +151,42 @@ export async function GET(request: Request) {
         continue;
       }
 
-      const organizations = perUserTasks.get(notifyUserId) ?? new Map<string, ReminderTask[]>();
+      const organizations = perUserTasks.get(notifyUserId) ?? new Map<string, string[]>();
       const bucket = organizations.get(task.organization_id) ?? [];
-      bucket.push({ ...task, urgency });
+      bucket.push(task.id);
       organizations.set(task.organization_id, bucket);
       perUserTasks.set(notifyUserId, organizations);
-
-      if ((perUserQueued.get(notifyUserId) ?? 0) >= PER_USER_CAP) {
-        results.skipped++;
-        continue;
-      }
-
-      try {
-        const result = await enqueueDueReminderEmail(supabase, task.id, reminderDay);
-        if (result === "queued") {
-          results.queued++;
-          perUserQueued.set(notifyUserId, (perUserQueued.get(notifyUserId) ?? 0) + 1);
-        } else if (result === "duplicate") {
-          results.duplicates++;
-          perUserQueued.set(notifyUserId, (perUserQueued.get(notifyUserId) ?? 0) + 1);
-        } else {
-          results.skipped++;
-        }
-      } catch (err) {
-        results.errors++;
-        console.error(`Exception queueing reminder for task ${task.id}:`, err);
-      }
     }
 
-    // In-app DM from the Matrx System bot — one message per user/org per run,
-    // volume-aware: a single task gets actionable Open/Complete/Snooze chips;
-    // several tasks collapse to a digest with a deep link into /tasks.
-    const urgencyLabel = { overdue: 'overdue', due_today: 'due today', upcoming: 'due tomorrow' } as const;
     for (const [userId, organizations] of perUserTasks) {
-      for (const [organizationId, userTasks] of organizations) {
+      for (const [organizationId, taskIdsForOrg] of organizations) {
+        if ((perUserQueued.get(userId) ?? 0) >= PER_USER_CAP) {
+          results.skipped++;
+          continue;
+        }
         try {
-          const dm =
-            userTasks.length === 1
-              ? sendDm({
-                  senderId: null,
-                  recipientId: userId,
-                  organizationId,
-                  content: `Task reminder — "${userTasks[0].title}" is ${urgencyLabel[userTasks[0].urgency]}.`,
-                  actionData: {
-                    kind: 'task_reminder',
-                    payload: {
-                      task_id: userTasks[0].id,
-                      title: userTasks[0].title,
-                      due_date: userTasks[0].due_date,
-                    },
-                  },
-                })
-              : sendDm({
-                  senderId: null,
-                  recipientId: userId,
-                  organizationId,
-                  content: [
-                    `You have ${userTasks.length} tasks needing attention:`,
-                    ...userTasks
-                      .slice(0, 2)
-                      .map((t) => `• ${t.title} (${urgencyLabel[t.urgency]})`),
-                    ...(userTasks.length > 2 ? [`…and ${userTasks.length - 2} more`] : []),
-                  ].join('\n'),
-                  actionData: {
-                    kind: 'open_link',
-                    payload: { href: '/tasks', label: 'Open tasks' },
-                  },
-                });
-          const dmResult = await dm;
-          if (dmResult.ok) {
-            results.dmsSent = (results.dmsSent ?? 0) + 1;
-          } else if (dmResult.error !== 'self') {
-            results.errors++;
-            console.error(`[due-date-reminders] DM to ${userId} failed:`, dmResult.error);
+          const result = await enqueueDueReminder(
+            supabase, userId, organizationId, taskIdsForOrg, reminderDay,
+          );
+          if (result === "queued") {
+            results.queued++;
+            perUserQueued.set(userId, (perUserQueued.get(userId) ?? 0) + 1);
+          } else if (result === "duplicate") {
+            results.duplicates++;
+            perUserQueued.set(userId, (perUserQueued.get(userId) ?? 0) + 1);
+          } else {
+            results.skipped++;
           }
         } catch (err) {
           results.errors++;
-          console.error(`[due-date-reminders] DM exception for ${userId}:`, err);
+          console.error(`[due-date-reminders] Exception queueing reminder for ${userId}:`, err);
         }
       }
     }
 
     return NextResponse.json({
       success: true,
-      msg: `Processed ${results.processed} tasks, queued ${results.queued} reminder emails`,
+      msg: `Processed ${results.processed} tasks, queued ${results.queued} reminder notices`,
       results,
     });
   } catch (error) {

@@ -1,6 +1,9 @@
 -- draft: communications owner - watched live database change belongs to the release lane
 -- P1: a committed comment creates one notice per eligible channel in the
 -- same transaction. Browser replays cannot cause another delivery.
+-- Delivery goes through THE spine (communication.notify_from_sql + p_options), so the
+-- email's DM leg comes from the one pairing rule (communication.notification_pair_channels):
+-- an email to a platform user never goes without a DM.
 set local lock_timeout = '2s';
 set local statement_timeout = '120s';
 
@@ -44,8 +47,9 @@ declare
   v_body text;
   v_resource_kind text;
   v_address text;
-  v_refusal text;
-  v_status text;
+  v_channels text[];
+  v_opted_out jsonb;
+  v_payload jsonb;
 begin
   -- Canvas items have no valid record deep link yet. Do not mail a 404.
   if new.entity_type not in ('task', 'note') or new.deleted_at is not null then
@@ -92,54 +96,39 @@ begin
   v_subject := 'New comment on ' || new.entity_type || ': ' || left(v_title, 180);
   v_body := coalesce(v_author, 'Someone') || ' commented on your ' || new.entity_type || ': ' || left(v_title, 180);
 
-  if 'in_app' = any (hr._notify_channels('comment.added', new.organization_id, v_owner, null)) then
-  insert into communication.notification
-    (organization_id, event_key, channel, recipient_user_id, recipient_kind,
-     created_by, dedupe_key, subject, body, payload,
-     target_kind, target_id, deep_link)
-  values
-    (new.organization_id, 'comment.added', 'in_app', v_owner, 'user',
-     v_owner, format('comment.added:%s:in_app', new.id), v_subject, v_body,
-     jsonb_build_object('comment_id', new.id,
-                        'actor_user_id', new.created_by,
-                        'comment', jsonb_build_object('author', coalesce(v_author, 'Someone'),
-                          'resource_type', new.entity_type, 'resource_title', v_title,
-                          'text', left(new.body, 200)),
-                        'notice', jsonb_build_object('subject', v_subject, 'body', v_body)),
-     v_resource_kind, new.entity_id,
-     case new.entity_type when 'task' then '/tasks?task=' || new.entity_id::text
-          else '/notes/' || new.entity_id::text end)
-  on conflict (dedupe_key) where dedupe_key is not null do nothing;
-  end if;
+  -- The person's own rungs (hr._notify_channels ends in the pairing rule). Whatever they
+  -- turned off, and their legacy "no comment emails" switch, becomes p_options.opted_out:
+  -- notify_from_sql applies the pairing rule FIRST, so an opted-out email still brings its DM
+  -- and a DM turned off takes its email with it (a named opted_out skip, never silence).
+  v_channels := coalesce(hr._notify_channels('comment.added', new.organization_id, v_owner, null),
+                         '{}'::text[]);
+  select coalesce(jsonb_agg(c), '[]'::jsonb) into v_opted_out
+    from unnest(array['in_app', 'email', 'dm']) c
+   where not (c = any (v_channels))
+      or (c = 'email' and exists (select 1 from users.user_email_preferences p
+                                   where p.user_id = v_owner and p.comment_notifications is false));
 
-  if 'email' = any (hr._notify_channels('comment.added', new.organization_id, v_owner, null))
-     and not exists (select 1 from users.user_email_preferences p
-                      where p.user_id = v_owner and p.comment_notifications is false) then
-    select a.address, a.refusal into v_address, v_refusal
-      from communication.resolve_channel_address(
-        'email', new.organization_id, 'user', v_owner, null, null, null
-      ) a limit 1;
-    v_status := case when v_address is null then 'skipped' else 'render_pending' end;
-    insert into communication.notification
-      (organization_id, event_key, channel, recipient_user_id, recipient_kind,
-       created_by, to_address, status, error_code, error_message, dedupe_key,
-       payload, target_kind, target_id, deep_link)
-    values
-      (new.organization_id, 'comment.added', 'email', v_owner, 'user', v_owner,
-       v_address, v_status,
-       case when v_status = 'skipped' then coalesce(v_refusal, 'no_contact_point') end,
-       case when v_status = 'skipped' then 'No verified email address for this comment recipient.' end,
-       format('comment.added:%s:email', new.id),
-       jsonb_build_object('comment_id', new.id, 'actor_user_id', new.created_by,
-         'comment', jsonb_build_object('author', coalesce(v_author, 'Someone'),
-           'resource_type', new.entity_type, 'resource_title', v_title,
-           'text', left(new.body, 200)),
-         'notice', jsonb_build_object('subject', v_subject, 'body', v_body)),
-       v_resource_kind, new.entity_id,
-       case new.entity_type when 'task' then '/tasks?task=' || new.entity_id::text
-            else '/notes/' || new.entity_id::text end)
-    on conflict (dedupe_key) where dedupe_key is not null do nothing;
-  end if;
+  select a.address into v_address
+    from communication.resolve_channel_address(
+      'email', new.organization_id, 'user', v_owner, null, null, null
+    ) a limit 1;
+
+  v_payload := jsonb_build_object('comment_id', new.id, 'actor_user_id', new.created_by,
+    'comment', jsonb_build_object('author', coalesce(v_author, 'Someone'),
+      'resource_type', new.entity_type, 'resource_title', v_title,
+      'text', left(new.body, 200)),
+    'notice', jsonb_build_object('subject', v_subject, 'body', v_body));
+
+  -- One row per channel the event + organization + pairing rule turn on, keyed
+  -- comment.added:<comment>:<channel> (the same keys this trigger wrote before), so a
+  -- replay queues nothing new.
+  perform communication.notify_from_sql(
+    new.organization_id, 'comment.added', v_owner, v_address, null, v_payload,
+    case new.entity_type when 'task' then '/tasks?task=' || new.entity_id::text
+         else '/notes/' || new.entity_id::text end,
+    v_resource_kind, new.entity_id,
+    format('comment.added:%s', new.id),
+    jsonb_build_object('opted_out', v_opted_out));
   return new;
 end;
 $function$;
@@ -152,4 +141,4 @@ create trigger task_comment_in_app_outbox
   for each row execute function communication._task_comment_in_app_outbox();
 
 comment on function communication._task_comment_in_app_outbox() is
-  'P1: saved task and note comments create one preference-gated in-app notice and optional email intent in their organization.';
+  'P1: saved task and note comments queue one preference-gated notice per channel through communication.notify_from_sql, so the email always carries its paired DM.';

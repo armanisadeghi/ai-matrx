@@ -1,8 +1,7 @@
 import { GET } from "./route";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { projectsDb } from "@/utils/supabase/projectsDb";
-import { enqueueDueReminderEmail } from "@/features/tasks/services/dueReminderOutbox";
-import { sendDm } from "@/lib/services/system-dm";
+import { enqueueDueReminder } from "@/features/tasks/services/dueReminderOutbox";
 
 jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: jest.fn() }));
 jest.mock("next/server", () => ({
@@ -14,12 +13,10 @@ jest.mock("next/server", () => ({
   },
 }));
 jest.mock("@/utils/supabase/projectsDb", () => ({ projectsDb: jest.fn() }));
-jest.mock("@/features/tasks/services/dueReminderOutbox", () => ({ enqueueDueReminderEmail: jest.fn() }));
-jest.mock("@/lib/services/system-dm", () => ({ sendDm: jest.fn() }));
+jest.mock("@/features/tasks/services/dueReminderOutbox", () => ({ enqueueDueReminder: jest.fn() }));
 
 const mockedWorkspaceDb = jest.mocked(projectsDb);
-const mockedSendDm = jest.mocked(sendDm);
-const mockedEnqueueEmail = jest.mocked(enqueueDueReminderEmail);
+const mockedEnqueue = jest.mocked(enqueueDueReminder);
 
 describe("due-date reminders organization boundary", () => {
   const originalSecret = process.env.CRON_SECRET;
@@ -62,8 +59,7 @@ describe("due-date reminders organization boundary", () => {
     mockedWorkspaceDb.mockReturnValue({
       from: jest.fn((table: string) => table === "tasks" ? taskQuery : muteQuery),
     } as unknown as ReturnType<typeof projectsDb>);
-    mockedEnqueueEmail.mockResolvedValue("queued");
-    mockedSendDm.mockResolvedValue({ ok: true });
+    mockedEnqueue.mockResolvedValue("queued");
 
     const response = await GET({
       headers: { get: (name: string) => name === "Authorization" ? "Bearer test-secret" : null },
@@ -71,25 +67,20 @@ describe("due-date reminders organization boundary", () => {
 
     expect(response.status).toBe(200);
     expect(taskQuery.order).toHaveBeenNthCalledWith(2, "id", { ascending: true });
-    expect(mockedEnqueueEmail).toHaveBeenCalledTimes(3);
-    expect(mockedEnqueueEmail).toHaveBeenCalledWith(expect.anything(), "task-b1", expect.any(String));
-    expect(mockedSendDm).toHaveBeenCalledTimes(2);
-    const messages = mockedSendDm.mock.calls.map(([options]) => options);
-    const alpha = messages.find((message) => message.organizationId === "org-a");
-    const beta = messages.find((message) => message.organizationId === "org-b");
-    expect(alpha?.content).toContain("Private Alpha");
-    expect(alpha?.content).toContain("Private Gamma");
-    expect(alpha?.content).not.toContain("Private Beta");
-    expect(beta?.content).toContain("Private Beta");
-    expect(beta?.content).not.toContain("Private Alpha");
+    // One notice per recipient AND organization — no task from org-b rides org-a's notice.
+    expect(mockedEnqueue).toHaveBeenCalledTimes(2);
+    expect(mockedEnqueue).toHaveBeenCalledWith(
+      expect.anything(), "recipient", "org-a", ["task-a1", "task-a2"], expect.any(String));
+    expect(mockedEnqueue).toHaveBeenCalledWith(
+      expect.anything(), "recipient", "org-b", ["task-b1"], expect.any(String));
   });
 
-  it("counts replayed daily intents toward the three-email cap", async () => {
+  it("counts replayed daily notices toward the three-notice cap", async () => {
     process.env.CRON_SECRET = "test-secret";
     delete process.env.MATRX_PROFILE;
     jest.mocked(createAdminClient).mockReturnValue({} as ReturnType<typeof createAdminClient>);
     const tasks = ["a", "b", "c", "d"].map((id) => ({
-      id, title: `Reminder ${id}`, organization_id: "admin-workspace",
+      id, title: `Reminder ${id}`, organization_id: `org-${id}`,
       due_date: new Date().toISOString(), assignee_id: "admin", created_by: "admin",
     }));
     const taskQuery = {
@@ -105,15 +96,14 @@ describe("due-date reminders organization boundary", () => {
     mockedWorkspaceDb.mockReturnValue({
       from: jest.fn((table: string) => table === "tasks" ? taskQuery : muteQuery),
     } as unknown as ReturnType<typeof projectsDb>);
-    mockedEnqueueEmail.mockResolvedValue("duplicate");
-    mockedSendDm.mockResolvedValue({ ok: true });
+    mockedEnqueue.mockResolvedValue("duplicate");
 
     const response = await GET({
       headers: { get: (name: string) => name === "Authorization" ? "Bearer test-secret" : null },
     } as Request);
 
     expect(response.status).toBe(200);
-    expect(mockedEnqueueEmail.mock.calls.map(([, id]) => id)).toEqual(["a", "b", "c"]);
+    expect(mockedEnqueue.mock.calls.map(([, , org]) => org)).toEqual(["org-a", "org-b", "org-c"]);
     expect((await response.json()).results).toEqual(expect.objectContaining({ duplicates: 3, skipped: 1 }));
   });
 });
