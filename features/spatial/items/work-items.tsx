@@ -30,6 +30,7 @@ import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/c
 import {
   selectAgentIdFromInstance,
   selectConversationTitle,
+  selectIsCacheOnly,
 } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { useRetainLatestRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { CanvasChatColumn } from "@ai-matrx/chat/canvas/workspace/CanvasChatColumn";
@@ -48,6 +49,7 @@ import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProp
 import {
   chatAgentId,
   chatSource,
+  chatSourceToSave,
   entityId,
   fileIdOf,
   fileItem,
@@ -98,18 +100,26 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
   // A new conversation (or the composer's agent switch) → save its id, and
   // its agent, so a reload reopens THAT conversation.
   const conversationTitle = useAppSelector((s) => (conversationId ? selectConversationTitle(conversationId)(s) : null));
+  // A conversation the server does not have yet (nothing sent) is never saved by id.
+  const serverHasIt = useAppSelector((s) => (conversationId ? !selectIsCacheOnly(conversationId)(s) : false));
   const record = useEffectEvent((id: string, nextTitle: string | null) => {
-    if (id !== savedId) {
-      const agentId = selectAgentIdFromInstance(id)(store.getState()) ?? chosenAgentId;
-      onSource(chatSource(id, agentId), nextTitle ?? undefined);
-    } else if (nextTitle && nextTitle !== title) {
+    const next = chatSourceToSave({
+      conversationId: id,
+      serverHasIt,
+      savedId,
+      agentId: selectAgentIdFromInstance(id)(store.getState()),
+      chosenAgentId,
+    });
+    if (next) {
+      onSource(next, nextTitle ?? undefined);
+    } else if (serverHasIt && nextTitle && nextTitle !== title) {
       // The server titles a conversation after its first turn; the tile follows.
       onSource(source, nextTitle);
     }
   });
   useEffect(() => {
     if (conversationId) record(conversationId, conversationTitle);
-  }, [conversationId, conversationTitle]);
+  }, [conversationId, conversationTitle, serverHasIt]);
 
   if (!isEntity(source, "chat")) return null;
   const column = (

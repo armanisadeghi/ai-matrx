@@ -33,6 +33,32 @@ export function chatSource(conversationId: string | null, agentId: string | null
   };
 }
 
+/**
+ * What a chat tile should save for the conversation it shows, or null to keep
+ * what it has. A new conversation exists only in the browser until its first
+ * message is sent; saving its id then makes the tile reopen a conversation the
+ * server does not have ("Couldn't load this conversation") after a reload. So
+ * an unsent chat saves only the chosen agent (a reload starts a fresh chat
+ * with it) and the id is saved once the server has the conversation.
+ */
+export function chatSourceToSave(input: {
+  conversationId: string;
+  serverHasIt: boolean;
+  savedId: string | null;
+  agentId: string | null;
+  chosenAgentId: string | null;
+}): EntitySource | null {
+  const agentId = input.agentId ?? input.chosenAgentId;
+  if (!input.serverHasIt) {
+    // The saved conversation itself, still being brought up: leave the tile alone.
+    if (input.conversationId === input.savedId) return null;
+    // A different, unsent conversation: forget the old id so a reload starts fresh.
+    if (input.savedId !== null) return chatSource(null, agentId);
+    return agentId && agentId !== input.chosenAgentId ? chatSource(null, agentId) : null;
+  }
+  return input.conversationId !== input.savedId ? chatSource(input.conversationId, agentId) : null;
+}
+
 export function chatAgentId(source: NodeSource): string | null {
   if (!isEntity(source, "chat")) return null;
   const agentId = source.meta?.agentId;
