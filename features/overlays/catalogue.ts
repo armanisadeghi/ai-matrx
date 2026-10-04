@@ -255,6 +255,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  agentFromChatWindow: {
+    label: "Make an Agent From a Chat",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentInlineOverlay: {
     label: "Agent Inline Overlay",
     instanceMode: "multi",

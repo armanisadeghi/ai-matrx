@@ -56,6 +56,7 @@ export const CHAT_WINDOWS = {
   fullScreenEditor: "fullScreenEditor",
   saveToNotes: "saveToNotes",
   shareModal: "shareModal",
+  agentFromChatWindow: "agentFromChatWindow",
 } as const;
 
 export type ChatWindowId = (typeof CHAT_WINDOWS)[keyof typeof CHAT_WINDOWS];

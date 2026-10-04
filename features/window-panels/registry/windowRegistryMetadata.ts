@@ -2273,6 +2273,18 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Make an agent from a chat (Agent Studio) ─────────────────────────────
+  {
+    slug: "agent-from-chat-window",
+    overlayId: "agentFromChatWindow",
+    kind: "window",
+    label: "Make an Agent",
+    defaultData: { conversationId: null, conversationTitle: null },
+    mobilePresentation: "drawer",
+    // A live server run streams into it; the agent lands in the person's agents either way.
+    ephemeral: true,
+  },
+
   // ── Content Editor ────────────────────────────────────────────────────────
   {
     slug: "content-editor-window",

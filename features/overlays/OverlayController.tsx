@@ -291,6 +291,10 @@ const AgentImportWindow = lazyOverlay(
   () => import("@/features/agents/import/AgentImportWindow"),
   { ssr: false },
 );
+const AgentFromChatWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agent-from-chat/AgentFromChatWindow"),
+  { ssr: false },
+);
 const AgentInlineOverlay = lazyOverlay(
   () =>
     import("@ai-matrx/chat/agents/components/agent-widgets/AgentInlineOverlay").then(
@@ -1320,6 +1324,9 @@ export default function OverlayController() {
     agentImportWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentImportWindow"),
     ),
+    agentFromChatWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentFromChatWindow"),
+    ),
     agentInterfaceVariationsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentInterfaceVariationsWindow"),
     ),
@@ -1766,6 +1773,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentImportWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentImportWindow"),
+    ) as Record<string, unknown> | null,
+    agentFromChatWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentFromChatWindow"),
     ) as Record<string, unknown> | null,
     agentInterfaceVariationsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentInterfaceVariationsWindow"),
@@ -3021,6 +3031,28 @@ export default function OverlayController() {
           />
         );
       })}
+
+      {/* agentFromChatWindow */}
+      {(() => {
+        const isOpen = isOpenById.agentFromChatWindow;
+        const data = dataById.agentFromChatWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <AgentFromChatWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentFromChatWindow" }))
+            }
+            conversationId={
+              typeof data?.conversationId === "string" ? data.conversationId : null
+            }
+            conversationTitle={
+              typeof data?.conversationTitle === "string" ? data.conversationTitle : null
+            }
+          />
+        );
+      })()}
 
       {/* agentImportWindow */}
       {(() => {

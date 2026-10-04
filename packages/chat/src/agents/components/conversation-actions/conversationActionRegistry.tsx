@@ -45,6 +45,7 @@ import {
   copyConversationLink,
   displayConversationTitle,
   duplicateConversationVerb,
+  makeAgentFromConversation,
   shareConversation,
 } from "./conversation-verbs";
 
@@ -268,6 +269,13 @@ export function buildConversationMenu(
             icon: Share2,
             onSelect: () =>
               shareConversation(ctx.dispatch, ctx.conversationId, ctx.title),
+          },
+          {
+            id: "make-agent",
+            label: "Make an agent…",
+            icon: Webhook,
+            onSelect: () =>
+              makeAgentFromConversation(ctx.dispatch, ctx.conversationId, ctx.title),
           },
           {
             id: "archive",

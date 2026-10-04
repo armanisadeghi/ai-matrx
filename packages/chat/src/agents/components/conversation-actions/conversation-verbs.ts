@@ -76,6 +76,20 @@ export function shareConversation(
   );
 }
 
+/** Make an agent from this chat — Agent Studio's window (single agent or Masterwork). */
+export function makeAgentFromConversation(
+  dispatch: ChatDispatch,
+  conversationId: string,
+  title: string | null,
+): void {
+  dispatch(
+    openOverlay({
+      overlayId: CHAT_WINDOWS.agentFromChatWindow,
+      data: { conversationId, conversationTitle: displayConversationTitle(title) },
+    }),
+  );
+}
+
 /** Duplicate — a full copy, with a toast door to the copy. */
 export async function duplicateConversationVerb(
   dispatch: ChatDispatch,
