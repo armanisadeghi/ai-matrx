@@ -101,8 +101,10 @@ jest.mock("@/utils/supabase/client", () => {
         schema: () => client,
         from: () => query,
         rpc: async () => ({ data: null, error: null }),
+        // lib/supabase/authRetry.ts binds `supabase.auth` at import (teamsService reaches it).
+        auth: { getSession: async () => ({ data: { session: null }, error: null }), refreshSession: async () => ({ data: { session: null }, error: null }) },
     };
-    return { createClient: () => client };
+    return { createClient: () => client, supabase: client };
 });
 // The "Membership alone shows" section reads the setting's CHOICES from the registry now
 // (lane FRONT-DOOR, 2026-09-21 — `useKnobChoices` → `fetchKnobDefinition`),
@@ -261,6 +263,7 @@ jest.mock("@ai-matrx/records-ui", () => {
         /** The package renamed this read: `rowName(row)` → `rowNameIn(table, row)`. */
         rowNameIn: () => "row",
         tableName: (table: { name: string }) => table.name,
+        tablePickerEntries: () => ({ entries: [] }),
     };
 });
 

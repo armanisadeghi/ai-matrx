@@ -1,5 +1,7 @@
 "use client";
 
+// row-token: none — rows are translation settings awaiting a decision, not records of a registry token
+
 /**
  * The "Needs you" queue: one decision per row — who it applies to, the setting
  * in words, what is proposed against what happens without it, how sure the

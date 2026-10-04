@@ -1,7 +1,7 @@
 {
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
-  "list.sourceWithoutCustomFields": 0,
+  "list.sourceWithoutCustomFields": 1,
   "route.pending": 1266,
   "route.none": 35,
   "route.tokens": 16,
@@ -15,8 +15,8 @@
   "peek.any": 1,
   "table.pending": 241,
   "table.noncanonical": 26,
-  "table.set": 1,
-  "table.none": 2
+  "table.none": 4,
+  "table.set": 1
  },
  "tokens": [
   "agent",
@@ -6266,6 +6266,7 @@
   "app/(dev)/demos/tests/matrx-table/components/MatrxTable.tsx": "noncanonical",
   "app/(dev)/demos/tests/matrx-table/components/MatrxTablePage.tsx": "noncanonical",
   "app/(dev)/demos/tests/tailwind-test/color-converter/components/ColorTester.tsx": "noncanonical",
+  "app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx": "none — a dev demo sample of the table shell over sample rows, not a record view",
   "app/(transitional)/_flash-cards/components/FlashcardTable.tsx": "noncanonical",
   "components/admin/state-analyzer/sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn.tsx": "noncanonical",
   "components/agent-copy/copy-subset/CopySubsetWindow.tsx": "pending",
@@ -6348,6 +6349,7 @@
   "features/ai-models/components/offerings/OfferingTable.tsx": "pending",
   "features/ai-models/components/providers/ProviderTable.tsx": "pending",
   "features/ai-models/components/settings/SettingTable.tsx": "pending",
+  "features/ai-models/translation/components/NeedsYouQueue.tsx": "none — rows are translation settings awaiting a decision, not records of a registry token",
   "features/ai-models/translation/components/TranslationGrid.tsx": "pending",
   "features/artifacts/components/CmsArtifactList.tsx": "pending",
   "features/assists/manager/AssistsManager.tsx": "pending",

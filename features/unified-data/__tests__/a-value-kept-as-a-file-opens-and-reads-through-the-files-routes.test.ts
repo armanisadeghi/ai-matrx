@@ -61,13 +61,15 @@ describe("the table page binds the file ports", () => {
   // the cell says "in a file" with no way to open it and the export has no way to read it.
   // The page binds the ONE shared host (one-grid merge, step 7), and that binding spreads them —
   // so every record-store table (window, overlay, artifact, quick sheet, picker) gets them too.
-  const page = readFileSync(join(process.cwd(), "app/(core)/data-v2/[tableId]/page.tsx"), "utf8");
+  const page = readFileSync(join(process.cwd(), "features/unified-data/table-page/UnifiedTable.tsx"), "utf8");
   const binding = readFileSync(
     join(process.cwd(), "features/data-tables/records-ui-host/recordsUiHost.tsx"),
     "utf8",
   );
   it("the page's RecordsMount takes its host from the one binding", () => {
-    expect(page).toMatch(/<RecordsMount[\s\S]*?host=\{recordsUiHostFor\(/);
+    // UnifiedTable builds the host with the one binding, then hands it to RecordsMount.
+    expect(page).toMatch(/recordsHost[^=]*=\s*mountOrganizationId\s*\?\s*recordsUiHostFor\(/);
+    expect(page).toMatch(/<RecordsMount[^>]*host=\{mount\.recordsHost/);
   });
   it("the binding imports the one files module", () => {
     expect(binding).toMatch(featureRegExp(/import \{ RECORDS_FILES \} from "@\/features\/unified-data\/recordsFiles";/));

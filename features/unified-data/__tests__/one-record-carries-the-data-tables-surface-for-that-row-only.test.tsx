@@ -96,6 +96,7 @@ const mockRecord = {
 const mockRights = { known: true, level: "editor", write: true };
 jest.mock("@ai-matrx/records/react", () => ({
   useRecordsClient: () => mockClient,
+  useRowActions: () => ({ data: { actions: [], stale: [] }, loading: false, error: null }),
   useTable: () => mockTable,
   useFields: () => mockFields,
   useRecord: () => mockRecord,

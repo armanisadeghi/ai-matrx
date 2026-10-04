@@ -1,5 +1,7 @@
 "use client";
 
+// row-token: none — a dev demo sample of the table shell over sample rows, not a record view
+
 /**
  * /education/overview — an HONEST rebuild as a HUB (owner, 2026-10-03, feedback
  * items 3, 4, 6, 7: "currently horrible … a hub one level up the tree that
