@@ -25,7 +25,9 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
 
-export interface GoogleAgendaWindowProps {
+import type { GoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
+
+export interface GoogleAgendaWindowProps extends GoogleAgendaWindowLaunchData {
   isOpen: boolean;
   onClose?: () => void;
   id?: string;
@@ -35,6 +37,7 @@ export function GoogleAgendaWindow({
   isOpen,
   onClose,
   id = "google-agenda-window",
+  initialView = "calendar",
 }: GoogleAgendaWindowProps) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const email = useAppSelector(selectUserEmail);
@@ -42,7 +45,11 @@ export function GoogleAgendaWindow({
     isSuperAdmin,
     email,
   );
-  const [view, setView] = useState("calendar");
+  const [selection, setSelection] = useState({ initialView, view: initialView });
+  const view = selection.initialView === initialView ? selection.view : initialView;
+  if (selection.initialView !== initialView) {
+    setSelection({ initialView, view: initialView });
+  }
   if (!isOpen) return null;
   return (
     <WindowPanel
@@ -57,8 +64,10 @@ export function GoogleAgendaWindow({
       onClose={onClose}
     >
       <Tabs
-        value={view}
-        onValueChange={setView}
+        value={!canReviewSelectedCalendar && (view === "meet" || view === "selected") ? "calendar" : view}
+        onValueChange={(next) => {
+          if (next === "calendar" || next === "agenda" || next === "selected" || next === "meet") setSelection({ initialView, view: next });
+        }}
         className="flex min-h-0 flex-1 flex-col"
       >
         <TabsList

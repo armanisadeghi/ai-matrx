@@ -176,7 +176,7 @@ function click(element: Element) {
   });
 }
 
-function mount() {
+function mount(account = REFUSED) {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -184,7 +184,7 @@ function mount() {
     root.render(
       <ConnectorConsentBody
         provider={provider}
-        accounts={[REFUSED]}
+        accounts={[account]}
         rollout={LIVE}
         isLoading={false}
         rolloutUnavailable={false}
@@ -242,4 +242,17 @@ describe("pressing Import your tasks after the renewal lands", () => {
       }),
     );
   });
+});
+
+test("Meet first action carries its exact tab into the canonical Calendar window", async () => {
+  const meet = provider.products.find((product) => product.key === "meet")!;
+  const account = { ...REFUSED, grantedScopes: [...provider.identityScopes, ...meet.scopes], activity: googleActivityByProduct(provider, parseGoogleCapabilityHealth({ __kind: GOOGLE_CAPABILITY_HEALTH_KIND, meet: { last_refusal: { at: "2026-10-04T00:00:00Z", action: "meet.preview", code: "grant_expired_or_revoked", sentence: "Renew Meet access", http_status: 401 } } })) };
+  mount(account);
+  const connect = [...container.querySelectorAll("button")].find((node) => node.textContent?.includes(provider.dialog.cta));
+  await act(async () => connect!.click());
+  const button = container.querySelector('[data-connector-first-action="meet"]');
+  expect(button).not.toBeNull();
+  dispatch.mockClear();
+  click(button!);
+  expect(dispatch).toHaveBeenCalledWith(openOverlay({ overlayId: "googleAgendaWindow", data: { initialView: "meet" } }));
 });

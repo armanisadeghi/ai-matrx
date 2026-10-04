@@ -36,6 +36,7 @@ import {
   Search,
   Tag,
   MonitorPlay,
+  Video,
 } from "lucide-react";
 import {
   GOOGLE_IDENTITY_SCOPES,
@@ -43,6 +44,7 @@ import {
   GOOGLE_SCOPE,
   GOOGLE_WORKSPACE_FILE_SCOPES,
 } from "@/lib/googleScopes";
+import type { GoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import type { ConnectorId, ConnectorLogo } from "./types";
 import {
@@ -105,9 +107,11 @@ export type ConnectorFirstAction =
   | {
       kind: "overlay";
       label: string;
-      overlayId: OverlayId;
       needs?: readonly ConnectorFirstActionContextKey[];
-    }
+    } & (
+      | { overlayId: "googleAgendaWindow"; data?: GoogleAgendaWindowLaunchData }
+      | { overlayId: Exclude<OverlayId, "googleAgendaWindow">; data?: never }
+    )
   /** Nothing to offer YET, and the row says why in writing. Never a bare null. */
   | { kind: "none"; because: string };
 
@@ -212,6 +216,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "Read events on a calendar you explicitly select. No changes to any calendar",
   [GOOGLE_SCOPE.calendarEventsWrite]:
     "Google permits viewing and editing events on all your calendars. AI Matrx only runs the exact create, move, cancel, or RSVP you review",
+  [GOOGLE_SCOPE.meetingsSpaceReadonly]:
+    "Read Meet conference details and selected transcript entries. No recording downloads or meeting changes",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
   [GOOGLE_SCOPE.tasksWrite]:
     "Google permits creating, editing, organizing and deleting your tasks. AI Matrx currently offers reviewed task creation and selected complete or reopen changes",
@@ -411,6 +417,24 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "overlay",
         label: "Open Calendar to review a selected calendar",
         overlayId: "googleAgendaWindow",
+      },
+    },
+    {
+      key: "meet",
+      name: "Google Meet review",
+      promise:
+        "Preview conference details and selected transcript entries from your personal account. No data is saved or sent to an AI model.",
+      group: WORKSPACE_GROUP,
+      icon: Video,
+      capabilityKeys: ["meet"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.meetingsSpaceReadonly],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "reviewing Meet conference details and transcript entries",
+      firstAction: {
+        kind: "overlay",
+        label: "Review Google Meet",
+        overlayId: "googleAgendaWindow",
+        data: { initialView: "meet" },
       },
     },
     {

@@ -2,6 +2,7 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { readGoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
 import { GoogleAgendaWindow } from "./GoogleAgendaWindow";
 
 let mockAdmission = { isSuperAdmin: false, email: "ordinary@example.com" };
@@ -42,7 +43,7 @@ jest.mock("@/features/google-workspace/meet/MeetReview", () => ({
   MeetReview: () => <div>Meet review body</div>,
 }));
 jest.mock("@/components/ui/tabs", () => ({
-  Tabs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Tabs: ({ children, value }: { children: React.ReactNode; value: string }) => <div data-current-view={value}>{children}</div>,
   TabsList: ({
     children,
     className,
@@ -112,10 +113,27 @@ describe("GoogleAgendaWindow selected-calendar admission", () => {
       expect(tab.className).toContain("min-h-11");
   });
 
+  it("opens Meet directly for a reviewer and falls back after eligibility changes", () => {
+    mockAdmission = { isSuperAdmin: false, email: "oauth-review@aimatrx.com" };
+    act(() => root.render(<GoogleAgendaWindow isOpen initialView="calendar" />));
+    expect(host.querySelector("[data-current-view]")?.getAttribute("data-current-view")).toBe("calendar");
+    act(() => root.render(<GoogleAgendaWindow isOpen initialView="meet" />));
+    expect(host.querySelector("[data-current-view]")?.getAttribute("data-current-view")).toBe("meet");
+    mockAdmission = { isSuperAdmin: false, email: "ordinary@example.com" };
+    act(() => root.render(<GoogleAgendaWindow isOpen initialView="meet" />));
+    expect(host.querySelector("[data-current-view]")?.getAttribute("data-current-view")).toBe("calendar");
+    expect(host.textContent).not.toContain("Meet review body");
+  });
+
   it("shows the reviewer for a super admin in the admin lane", () => {
     mockAdmission = { isSuperAdmin: true, email: "admin@example.com" };
     act(() => root.render(<GoogleAgendaWindow isOpen />));
     expect(host.textContent).toContain("Selected calendar");
     expect(host.textContent).toContain("Meet review");
   });
+});
+
+test("restored Calendar launch data accepts known tabs and rejects malformed values", () => {
+  expect(readGoogleAgendaWindowLaunchData({ initialView: "meet" })).toEqual({ initialView: "meet" });
+  for (const value of [null, "meet", { initialView: "unknown" }, { initialView: 4 }, {}]) expect(readGoogleAgendaWindowLaunchData(value)).toEqual({});
 });

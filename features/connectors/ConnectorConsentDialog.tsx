@@ -515,8 +515,8 @@ function FirstAction({
       onClick={() => {
         dispatch(
           openOverlay(
-            Object.keys(data).length > 0
-              ? { overlayId: action.overlayId, data }
+            Object.keys(data).length > 0 || action.data
+              ? { overlayId: action.overlayId, data: { ...action.data, ...data } }
               : { overlayId: action.overlayId },
           ),
         );
@@ -620,6 +620,11 @@ export function ConnectorConsentBody({
     activeOrganization?.role === "owner" || activeOrganization?.role === "admin";
   const [forOrganization, setForOrganization] = useState(false);
   const gmailChangesSelected = selected.includes("gmail_modify");
+  const meetSelected = selected.includes("meet");
+  const personalOnlySelected = gmailChangesSelected || meetSelected;
+  const personalOnlyName = gmailChangesSelected && meetSelected
+    ? "Gmail changes and Google Meet review"
+    : meetSelected ? "Google Meet review" : "Gmail changes";
 
   const plan = buildConsentPlan({
     provider,
@@ -687,8 +692,8 @@ export function ConnectorConsentBody({
       toast.info(sentence);
       return;
     }
-    if (gmailChangesSelected && account?.ownerKind === "organization") {
-      const sentence = "Gmail changes can connect only to a personal Google account. Choose your own account or connect a different one.";
+    if (personalOnlySelected && account?.ownerKind === "organization") {
+      const sentence = `${personalOnlyName} can connect only to a personal Google account. Choose your own account or connect a different one.`;
       setAnswer(sentence);
       toast.info(sentence);
       return;
@@ -711,7 +716,7 @@ export function ConnectorConsentBody({
       const changesDisclosed = await confirmGmailChangesDisclosure(plan.request);
       if (!changesDisclosed) return;
       const options = {
-        owner: !gmailChangesSelected && forOrganization && activeOrganization
+        owner: !personalOnlySelected && forOrganization && activeOrganization
           ? { type: "organization" as const, organizationId: activeOrganization.id }
           : { type: "user" as const },
         loginHint: account?.label ?? null,
@@ -950,9 +955,9 @@ export function ConnectorConsentBody({
           })}
         </div>
 
-        {gmailChangesSelected ? (
+        {personalOnlySelected ? (
           <p className="rounded-2xl border border-border/70 bg-card px-4 py-3 text-xs text-muted-foreground">
-            Gmail changes connect only to your personal Google account. Choose your own account or connect a different one.
+            {personalOnlyName}: personal Google accounts only. Choose your own account or connect a different one.
           </p>
         ) : mayConnectForOrganization && activeOrganization ? (
           <label className="flex items-start gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5">

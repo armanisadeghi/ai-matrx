@@ -115,9 +115,6 @@ const NOT_SURFACED: Record<
       "Whole-Drive browsing has an internal Files route, not a public consent row.",
     internalFilesRoute: true,
   },
-  meet: {
-    reason: "Google Meet preview remains internal and has no consent row.",
-  },
 };
 
 function serverDescriptor(key: string): string {

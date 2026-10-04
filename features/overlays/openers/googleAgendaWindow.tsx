@@ -6,10 +6,10 @@
  * `useOpenGoogleAgenda()` — the imperative hook; the Controller component is the
  * declarative face for a caller whose lifecycle is mount/unmount. Singleton:
  * opening again reveals the one window rather than stacking a copy. It carries no
- * data, because the agenda's subject is the signed-in person and their window
- * knob — nothing a caller has to supply.
+ * required identity data. A caller can select an initial Calendar tab.
  */
 
+import type { GoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
 import { useCallback, useEffect } from "react";
 
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -23,8 +23,8 @@ export interface GoogleAgendaWindowHandle {
 
 export function useOpenGoogleAgenda() {
   const dispatch = useAppDispatch();
-  return useCallback((): GoogleAgendaWindowHandle => {
-    dispatch(openOverlay({ overlayId: OVERLAY_ID }));
+  return useCallback((data?: GoogleAgendaWindowLaunchData): GoogleAgendaWindowHandle => {
+    dispatch(openOverlay(data ? { overlayId: OVERLAY_ID, data } : { overlayId: OVERLAY_ID }));
     return { close: () => dispatch(closeOverlay({ overlayId: OVERLAY_ID })) };
   }, [dispatch]);
 }

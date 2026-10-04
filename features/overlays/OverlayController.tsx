@@ -1,3 +1,4 @@
+import { readGoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
 /**
  * OverlayController.tsx
  *
@@ -1943,6 +1944,9 @@ export default function OverlayController() {
     googleContactsImportWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleContactsImportWindow"),
     ) as Record<string, unknown> | null,
+    googleAgendaWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleAgendaWindow"),
+    ),
     googleTasksImportWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleTasksImportWindow"),
     ) as Record<string, unknown> | null,
@@ -4886,8 +4890,10 @@ export default function OverlayController() {
       {/* googleAgendaWindow — the agenda over synced Calendar events (PLAN §4.6) */}
       {(() => {
         if (!isOpenById.googleAgendaWindow) return null;
+        const data = readGoogleAgendaWindowLaunchData(dataById.googleAgendaWindow);
         return (
           <GoogleAgendaWindow
+            initialView={data?.initialView}
             isOpen
             onClose={() => dispatch(closeOverlay({ overlayId: "googleAgendaWindow" }))}
           />
