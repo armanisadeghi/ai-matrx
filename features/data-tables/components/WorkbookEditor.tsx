@@ -390,12 +390,13 @@ export default function WorkbookEditor({
       uid,
       clientId,
       commandService,
-      makeProvider: ({ workbookId: wid, clientId: cid, doc, awareness }) =>
+      makeProvider: ({ workbookId: wid, clientId: cid, doc, awareness, onLeaderChange }) =>
         new SupabaseYjsProvider({
           workbookId: wid,
           clientId: cid,
           doc,
           awareness,
+          onLeaderChange,
         }),
       onAwarenessChange: (aw) => {
         setRemoteAwareness(

@@ -35,6 +35,12 @@ export type CollabProviderLike = {
   connect(): Promise<void>;
   disconnect(): void;
   ready(): Promise<void>;
+  /**
+   * True when this is the only holder of its room in this tab allowed to act as
+   * host (autosave). Same-tab holders share one client id and one uid, so
+   * awareness cannot tell them apart. Absent = a lone holder = leader.
+   */
+  isTabLeader?(): boolean;
 };
 
 // Univer types are loose at the public hook boundary; we narrow with a
@@ -79,6 +85,8 @@ export type WorkbookCollabSessionOptions = {
     clientId: string;
     doc: Y.Doc;
     awareness: Awareness;
+    /** Wire to the provider so a host handover re-runs the election. */
+    onLeaderChange: () => void;
   }) => CollabProviderLike;
   /** Called when the awareness set changes (peers join / leave / move cursor). */
   onAwarenessChange?: (awareness: Awareness) => void;
@@ -127,6 +135,9 @@ export class WorkbookCollabSession {
       clientId: this.options.clientId,
       doc: this.doc,
       awareness: this.awareness,
+      onLeaderChange: () => {
+        if (this.awareness) this.options.onAwarenessChange?.(this.awareness);
+      },
     });
 
     // Subscribe to inbound Yjs array changes BEFORE connecting the provider,
@@ -236,7 +247,10 @@ export class WorkbookCollabSession {
       .filter((u): u is string => u !== null)
       .sort();
     const hostUid = uids[0] ?? null;
-    return { isHost: hostUid === this.options.uid, hostUid };
+    // Lowest uid wins ACROSS tabs; inside this tab only the room's tab leader
+    // may be host, because every same-tab holder carries the same uid.
+    const leader = this.provider?.isTabLeader?.() ?? true;
+    return { isHost: hostUid === this.options.uid && leader, hostUid };
   }
 
   // ─── internals ────────────────────────────────────────────────────────

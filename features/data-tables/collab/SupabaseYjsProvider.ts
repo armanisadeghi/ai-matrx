@@ -87,6 +87,8 @@ export type SupabaseYjsProviderOptions = {
    * never see each other's frames.
    */
   manager?: RealtimeManager;
+  /** Fires when this holder gains or loses tab leadership of its room. */
+  onLeaderChange?: () => void;
 };
 
 /** One place names this channel. A second, different declaration throws. */
@@ -154,6 +156,7 @@ export class SupabaseYjsProvider {
   private readonly chunkSize: number;
   private readonly channelName: string;
   private readonly manager: RealtimeManager | null;
+  private readonly onLeaderChange: (() => void) | undefined;
 
   private channel: ChannelHandle | null = null;
   private _disposed = false;
@@ -196,6 +199,7 @@ export class SupabaseYjsProvider {
     this.awareness = options.awareness;
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
     this.manager = options.manager ?? currentRealtimeManager();
+    this.onLeaderChange = options.onLeaderChange;
     this.channelName = yjsChannel.topic({
       prefix: options.channelPrefix ?? "workbook",
       resourceId: this.workbookId,
@@ -260,6 +264,7 @@ export class SupabaseYjsProvider {
           ? undefined
           : `${frame.batchId}:${String(frame.seq)}`;
       },
+      onLeaderChange: () => this.onLeaderChange?.(),
       onStatusChange: (status) => {
         if (typeof process !== "undefined" && process.env?.COLLAB_DEBUG) {
           console.debug(`[collab:debug] ${this.channelName} status=${status}`);
@@ -348,6 +353,15 @@ export class SupabaseYjsProvider {
 
   ready(): Promise<void> {
     return this.readyPromise;
+  }
+
+  /**
+   * One holder per room per tab is the leader (package-owned). Same-tab holders
+   * of one document also hear each other's updates through the package, so they
+   * converge; only the leader may be host/autosaver. No channel (solo) = leader.
+   */
+  isTabLeader(): boolean {
+    return this.channel ? this.channel.isLocalLeader() : true;
   }
 
   // ─── Internals ───────────────────────────────────────────────────────────

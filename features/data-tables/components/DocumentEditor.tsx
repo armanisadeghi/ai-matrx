@@ -585,7 +585,7 @@ function collabFactoryFor(documentId: string): DocumentCollabFactory {
       uid,
       clientId,
       commandService,
-      makeProvider: ({ workbookId: rid, clientId: cid, doc, awareness }) =>
+      makeProvider: ({ workbookId: rid, clientId: cid, doc, awareness, onLeaderChange }) =>
         new SupabaseYjsProvider({
           workbookId: rid,
           // Distinct channel namespace — docs and workbooks never share a
@@ -594,6 +594,7 @@ function collabFactoryFor(documentId: string): DocumentCollabFactory {
           clientId: cid,
           doc,
           awareness,
+          onLeaderChange,
         }),
       onAwarenessChange: (aw) => {
         host = session.electHost().isHost;
