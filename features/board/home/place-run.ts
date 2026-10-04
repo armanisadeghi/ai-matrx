@@ -38,6 +38,25 @@ export interface PlacementView {
 /** Screen px kept between a revealed tile and the board's edge. */
 const REVEAL_MARGIN = 48;
 
+/**
+ * THE READABLE FLOOR FOR ADDING. A tile added while the person is zoomed out past this (a Fit of 12
+ * tiles sits at ~15%, title-card level) would land as a speck in a gap — "I added a War Room and
+ * nothing appeared" — so an add measures and places at this zoom around the view's centre and the
+ * camera flies there. Fit itself never changes: it stays exact (every tile in view, whatever the zoom).
+ */
+export const READABLE_ADD_ZOOM = 0.5;
+
+/** The view as it is at the readable floor (same centre), or itself when it is already readable. */
+export function atReadableZoom(view: PlacementView): PlacementView {
+  if (view.camera.z >= READABLE_ADD_ZOOM) return view;
+  const { camera, size, insets } = view;
+  const sx = insets.left + (size.w - insets.left - insets.right) / 2;
+  const sy = insets.top + (size.h - insets.top - insets.bottom) / 2;
+  const centre = screenToWorld(camera, sx, sy);
+  const z = READABLE_ADD_ZOOM;
+  return { ...view, camera: { z, x: sx - centre.x * z, y: sy - centre.y * z } };
+}
+
 /** The board area not under chrome, in world px. */
 export function clearView(view: PlacementView): Rect {
   const { camera, size, insets } = view;
@@ -86,14 +105,19 @@ export function placeTiles<T extends BoardTileBase>(
     for (const tile of tiles) rects.push(board.addTile(tile, at));
     return { rects, run: null, reveal: revealCamera(rects[rects.length - 1], view) };
   }
+  // Zoomed out past the readable floor: place (and reveal) as if at the floor, so the tile lands
+  // near where the person looks, at a size they can read.
+  const wide = view;
+  view = atReadableZoom(wide);
+  const zoomedIn = view !== wide;
   const area = clearView(view);
-  const fresh = !run || !sameView(run.camera, view.camera);
+  const fresh = !run || !sameView(run.camera, wide.camera);
   const flow = fresh ? flowForView(area, tiles[0].rect, REVEAL_MARGIN / view.camera.z) : run.flow;
   const centre = { x: area.x + area.w / 2, y: area.y + area.h / 2 };
   tiles.forEach((tile, i) => {
     rects.push(board.addTile(tile, fresh && i === 0 ? centre : undefined, { flow }));
   });
-  const reveal = revealCamera(rects[rects.length - 1], view);
+  const reveal = revealCamera(rects[rects.length - 1], view) ?? (zoomedIn ? view.camera : null);
   return { rects, run: { flow, camera: reveal ?? view.camera }, reveal };
 }
 

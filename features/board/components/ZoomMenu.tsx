@@ -85,6 +85,15 @@ export function ZoomMenu({ history, className }: { history?: HistoryControls; cl
           Fit everything
           <DropdownMenuShortcut>⇧1</DropdownMenuShortcut>
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => {
+            const selected = store.getSelected();
+            if (selected) store.fitItem(selected);
+          }}
+        >
+          Zoom to selection
+          <DropdownMenuShortcut>⇧2</DropdownMenuShortcut>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="font-normal text-muted-foreground">
           {`Now ${Math.round(store.getCamera().z * 100)}%`}

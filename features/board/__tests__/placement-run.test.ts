@@ -8,7 +8,7 @@
 import { BoardStore } from "../board/board-store";
 import type { Camera, Rect } from "../engine/camera";
 import { findFreeSpot } from "../engine/placement";
-import { type PlacementRun, type PlacementView, clearView, placeTiles } from "../home/place-run";
+import { type PlacementRun, type PlacementView, READABLE_ADD_ZOOM, clearView, clearViewCentre, placeTiles } from "../home/place-run";
 
 type Tile = { id: string; rect: { x: number; y: number; w: number; h: number } };
 
@@ -136,5 +136,42 @@ describe("a board of many big tiles stays fit-able", () => {
     expect(fitZoom(rects)).toBeGreaterThan(0.25);
     const xs = new Set(rects.map((r) => r.x));
     expect(xs.size).toBeGreaterThan(2);
+  });
+});
+
+describe("adding while zoomed out past the readable floor", () => {
+  // A person who pressed Fit on 12 tiles sits at ~15%: every tile is a title card. Bringing in a
+  // War Room there used to drop it as a 55 px speck in a gap and leave the camera alone
+  // ("Add → War Room shows nothing visible", browser walk 2026-10-04).
+  const wide: Camera = { x: 100, y: 60, z: 0.1 };
+  const tile = { id: "room", rect: { x: 0, y: 0, w: 560, h: 620 } };
+
+  it("flies to a readable zoom with the new tile inside the clear view", () => {
+    const board = new BoardStore<Tile>([]);
+    const view: PlacementView = { camera: wide, size: SIZE, insets: INSETS };
+    const placed = placeTiles(board, [tile], view, null);
+    expect(placed.reveal).not.toBeNull();
+    expect(placed.reveal!.z).toBeGreaterThanOrEqual(READABLE_ADD_ZOOM);
+    const seen = clearView({ camera: placed.reveal!, size: SIZE, insets: INSETS });
+    const r = placed.rects[0];
+    expect(r.x).toBeGreaterThanOrEqual(seen.x);
+    expect(r.y).toBeGreaterThanOrEqual(seen.y);
+    expect(r.x + r.w).toBeLessThanOrEqual(seen.x + seen.w);
+    expect(r.y + r.h).toBeLessThanOrEqual(seen.y + seen.h);
+  });
+
+  it("is placed near where the person was looking, not far across the board", () => {
+    const board = new BoardStore<Tile>([]);
+    const view: PlacementView = { camera: wide, size: SIZE, insets: INSETS };
+    const centre = clearViewCentre(view);
+    const r = placeTiles(board, [tile], view, null).rects[0];
+    expect(Math.hypot(r.x + r.w / 2 - centre.x, r.y + r.h / 2 - centre.y)).toBeLessThan(200);
+  });
+
+  it("leaves a readable view alone (no zoom change)", () => {
+    const board = new BoardStore<Tile>([]);
+    const camera = { x: 0, y: 0, z: 0.8 };
+    const placed = placeTiles(board, [tile], { camera, size: SIZE, insets: INSETS }, null);
+    expect(placed.reveal === null || placed.reveal.z === 0.8).toBe(true);
   });
 });
