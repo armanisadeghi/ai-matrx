@@ -5,6 +5,7 @@ import {
   cellStatusLabel,
   entryToCell,
   failedCellCount,
+  shouldPoll,
   unfinishedLabel,
   spendOf,
   sumMetrics,
@@ -78,7 +79,7 @@ describe("cached input is its own number (finding 2)", () => {
 
 describe("queued is never labelled running (finding 3)", () => {
   it("names the state each cell is in", () => {
-    expect(cellStatusLabel([cell({ status: "queued" })])).toBe("Queued");
+    expect(cellStatusLabel([cell({ status: "queued", heartbeat_at: new Date().toISOString() })])).toBe("Queued");
     expect(cellStatusLabel([cell({ status: "running", heartbeat_at: new Date().toISOString() })])).toBe("Running");
     expect(cellStatusLabel([])).toBe("Not run");
   });
@@ -91,5 +92,27 @@ describe("archive reaches every attempt (finding 4)", () => {
       row({}, "conv-b1"),
     ];
     expect(allCellConversationIds(rows).sort()).toEqual(["conv-a1", "conv-a2", "conv-a3", "conv-b1"]);
+  });
+});
+
+describe("a lapsed lease is stalled, never polled forever", () => {
+  const old = new Date(Date.now() - 120_000).toISOString();
+  const fresh = new Date().toISOString();
+
+  it("marks a queued cell past its heartbeat lease as stalled", () => {
+    const c = cell({ status: "queued", heartbeat_at: old });
+    expect(c.stalled).toBe(true);
+    expect(cellStatusLabel([c])).toBe("Stalled");
+    expect(cell({ status: "queued", heartbeat_at: fresh }).stalled).toBe(false);
+  });
+
+  it("stops polling when every unfinished cell is stalled", () => {
+    const stalled = [cell({ status: "queued", heartbeat_at: old }), cell({ status: "running", heartbeat_at: old })];
+    expect(shouldPoll([...stalled, cell({ status: "completed" })], false)).toBe(false);
+    expect(shouldPoll([...stalled, cell({ status: "queued", heartbeat_at: fresh })], false)).toBe(true);
+  });
+
+  it("treats a queued cell with no time signal as stalled", () => {
+    expect(cell({ status: "queued" }).stalled).toBe(true);
   });
 });

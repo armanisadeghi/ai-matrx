@@ -203,8 +203,7 @@ export function entryToCell(row: ComparisonEntryRow, now: number): MatrixCell | 
     columnId: String(md.column_id ?? ""),
     repeat: typeof md.repeat === "number" ? md.repeat : 0,
     status,
-    stalled:
-      status === "running" && Number.isFinite(lastSign) && now - lastSign > MATRIX_LEASE_MS,
+    stalled: isStalled(status, lastSign, now),
     attempt: typeof md.attempt === "number" ? md.attempt : 1,
     startedAt: typeof md.started_at === "string" ? md.started_at : null,
     finishedAt: typeof md.finished_at === "string" ? md.finished_at : null,
@@ -248,12 +247,30 @@ export function allCellConversationIds(
 export function cellStatusLabel(cells: MatrixCell[]): string {
   if (cells.length === 0) return "Not run";
   if (cells.some((c) => c.status === "running" && !c.stalled)) return "Running";
-  if (cells.some((c) => c.status === "queued")) return "Queued";
+  if (cells.some((c) => c.status === "queued" && !c.stalled)) return "Queued";
   if (cells.some((c) => c.stalled)) return "Stalled";
   if (cells.some((c) => c.status === "failed")) return "Failed";
   if (cells.some((c) => c.status === "cancelled")) return "Cancelled";
   return "Done";
 }
+
+/**
+ * A queued or running cell holds a heartbeat lease. Past the lease (or with no
+ * time signal at all) nothing is working on it: it is stalled, never live.
+ */
+export function isStalled(status: MatrixCellStatus, lastSign: number, now: number): boolean {
+  if (status !== "queued" && status !== "running") return false;
+  if (!Number.isFinite(lastSign)) return true;
+  return now - lastSign > MATRIX_LEASE_MS;
+}
+
+/** Poll only while something can still change: a run call in flight, or a live cell. */
+export function shouldPoll(cells: MatrixCell[], runInFlight: boolean): boolean {
+  return runInFlight || cells.some(isLive);
+}
+
+/** Hard stop: no cell changed for this long means nothing is coming. */
+export const POLL_IDLE_LIMIT_MS = 5 * 60_000;
 
 export function isLive(cell: MatrixCell): boolean {
   return (cell.status === "queued" || cell.status === "running") && !cell.stalled;

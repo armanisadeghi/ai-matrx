@@ -5,21 +5,20 @@
  * every cell on the server, read the grid and the analysis.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { BattleRouteNotice, useBattleRoute } from "@/features/agent-comparison/shared/useBattleRoute";
-import { MAX_REPEATS } from "../model";
+import { MAX_REPEATS, POLL_IDLE_LIMIT_MS, shouldPoll } from "../model";
 import { setBasePatch, setRepeats } from "../redux/slice";
 import {
   selectMatrixBase,
   selectMatrixCellCount,
   selectMatrixCells,
   selectMatrixDirty,
-  selectMatrixLiveCount,
   selectMatrixProgress,
   selectMatrixReadError,
   selectMatrixRepeats,
@@ -48,7 +47,6 @@ export function MatrixBattlePage({ setId = null }: { setId?: string | null }) {
     load: (id) => dispatch(loadMatrixBattleSet({ setId: id })).unwrap(),
   });
   const cells = useAppSelector(selectMatrixCells);
-  const liveCount = useAppSelector(selectMatrixLiveCount);
   const runInFlight = useAppSelector(selectMatrixRunInFlight);
   const runError = useAppSelector(selectMatrixRunError);
   const readError = useAppSelector(selectMatrixReadError);
@@ -60,12 +58,27 @@ export function MatrixBattlePage({ setId = null }: { setId?: string | null }) {
     if (!tabChosen && cells.length > 0) setTab("results");
   }, [cells.length, tabChosen]);
 
-  // Live while any cell is queued/running (or a run call is in flight); stops when none.
-  const polling = runInFlight || liveCount > 0;
+  // Live while a run call is in flight or a cell is queued/running under a
+  // fresh lease; stalled cells never keep it alive. A hard idle limit means it
+  // can never poll forever.
+  const signature = cells.map((c) => `${c.entryId}:${c.status}:${c.attempt}:${c.stalled}`).join("|");
+  const lastChange = useRef(0);
+  const [idleStopped, setIdleStopped] = useState(false);
+  useEffect(() => {
+    lastChange.current = Date.now();
+    setIdleStopped(false);
+  }, [signature, runInFlight]);
+  const polling = shouldPoll(cells, runInFlight) && !idleStopped;
   useEffect(() => {
     if (!polling || !activeSetId) return undefined;
     void dispatch(refreshMatrixCells());
-    const t = setInterval(() => void dispatch(refreshMatrixCells()), POLL_MS);
+    const t = setInterval(() => {
+      if (Date.now() - lastChange.current > POLL_IDLE_LIMIT_MS) {
+        setIdleStopped(true);
+        return;
+      }
+      void dispatch(refreshMatrixCells());
+    }, POLL_MS);
     return () => clearInterval(t);
   }, [polling, activeSetId, dispatch]);
 
