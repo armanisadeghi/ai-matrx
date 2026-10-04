@@ -28,6 +28,12 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   selected-file registration, Drive-import, Picker-broker, and reviewed-Gmail
   consent flow. `GoogleConnectWindow` supplies only WindowPanel chrome, so the
   same body can compose into the Workspace overview and settings surfaces.
+- In workspace mode, `forms/SelectedFormResponsesReview.tsx` uses the selected
+  account and Forms-only Picker. Preview reads one selected Form response page
+  through `forms/service.ts`; Next page is a separate action. Selected response
+  rows go through the existing Save-to-table overlay. Its callback alone yields
+  the saved table door. Source changes discard the page, selection, pending
+  callbacks, and open save overlay.
 - `GoogleWorkspaceOverviewBody.tsx` renders the same compact account inspector
   in Settings and the singleton window. It combines direct-RLS account/resource
   inventory with typed `GET /api/google-integrations/capabilities` metadata;

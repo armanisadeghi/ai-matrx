@@ -70,6 +70,7 @@ import type {
 import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { SelectedFormResponsesReview } from "@/features/google-workspace/forms/SelectedFormResponsesReview";
 
 export interface GoogleWorkspaceConnectBodyProps {
   onClose: () => void;
@@ -651,6 +652,15 @@ function GoogleWorkspaceConnectBodyContent({
               onConnectionChange={selectConnection}
               disabled={busy !== null}
             />
+
+            {mode === "workspace" ? (
+              <SelectedFormResponsesReview
+                key={`${connection.id}:${organizationContextId ?? ""}`}
+                connectionId={connection.id}
+                accountLabel={connection.account_email ?? connection.account_name ?? "Google account"}
+                organizationId={organizationContextId}
+              />
+            ) : null}
 
             <Button
               size="sm"
