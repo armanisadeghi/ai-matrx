@@ -53,11 +53,9 @@ import { agentListConfig } from "@/features/agents/browse/listConfig";
 import { newAgentHref } from "@/features/agents/browse/agentPaths";
 import { AGENT_BROWSE_SURFACE } from "@/features/agents/browse/surface";
 import { AGENT_LIST_SCOPES, type AgentBrowseRow } from "@/features/agents/browse/types";
-import { ClassicViewNotice } from "@/features/agents/browse/components/ClassicViewNotice";
 import { cn } from "@/lib/utils";
 import { PlusGlyph } from "../../../_components/one-control";
 import { SampleScale } from "../../_components/kit";
-import { ReplacesLine } from "../../_components/replaces-line";
 import { FeatureCards, type FeatureCardItem } from "../../_components/page-top/feature-cards";
 
 /** The Agents area's own pages — the crumb's sibling menu (nav-data's Agents children). */
@@ -143,16 +141,13 @@ function DriftDoor() {
   );
 }
 
-/** The page top: provenance, the feature cards, the real migration notice. */
+/** The page top: the feature cards. */
 function AgentsPageTop() {
   return (
     // pb: the space BETWEEN the page-top block and the list (owner: space
     // goes between big blocks, never padding inside padding).
     <div className="flex flex-col gap-3 pb-4">
-      <ReplacesLine href="/agents/all" />
       <FeatureCards items={FEATURES} rotating={ROTATING} ariaLabel="Agent features" />
-      {/* The real page's notice, unchanged (dismissal is the person's synced preference). */}
-      <ClassicViewNotice />
     </div>
   );
 }

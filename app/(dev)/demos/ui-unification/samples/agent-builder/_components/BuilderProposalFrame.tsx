@@ -18,7 +18,6 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SampleScale } from "../../_components/kit";
-import { ReplacesLine } from "../../_components/replaces-line";
 
 interface Proposal {
   text: string;
@@ -56,7 +55,7 @@ ${P} button[aria-label^="Remove "] { position: relative; }
 ${P} button[aria-label^="Remove "]::after { content: ""; position: absolute; inset: -8px; }
 `;
 
-export function BuilderProposalFrame({ realHref, children }: { realHref: string; children: ReactNode }) {
+export function BuilderProposalFrame({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(false);
   const shown = PROPOSALS.filter((p) => p.previewed).length;
@@ -66,7 +65,6 @@ export function BuilderProposalFrame({ realHref, children }: { realHref: string;
       <SampleScale>
         <div className="shrink-0 border-b border-border">
           <div className="uc-row py-0.5 pl-3 pr-[9px]" style={{ flexWrap: "nowrap" }}>
-            <ReplacesLine href={realHref} className="mx-[3px] min-w-0 flex-1" />
             <button
               type="button"
               className="uc-btn uc-btn-quiet"

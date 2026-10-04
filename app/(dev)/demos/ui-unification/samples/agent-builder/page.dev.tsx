@@ -36,7 +36,7 @@ export default async function AgentBuilderSamplePage({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <BuilderProposalFrame realHref={`/agents/${id}/build`}>
+      <BuilderProposalFrame>
         <AgentBuilderPage agentId={id} />
       </BuilderProposalFrame>
     </>

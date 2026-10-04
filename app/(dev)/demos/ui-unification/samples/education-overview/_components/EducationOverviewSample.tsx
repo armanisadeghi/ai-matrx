@@ -85,7 +85,6 @@ import { educationLibraryHref } from "@/features/education/library/types";
 import { educationLibraryMenuFor } from "@/features/education/library/useEducationLibraryRowActions";
 import { EDU_START_HREF } from "@/features/education/onboard/startRoutes";
 import { CapsuleSeg, SampleScale, ToneBadge, type TabItem } from "../../_components/kit";
-import { ReplacesLine } from "../../_components/replaces-line";
 import { KpiRow, type KpiRowItem } from "../../_components/page-top/kpi-row";
 import { FeatureCards } from "../../_components/page-top/feature-cards";
 import { PlusGlyph } from "../../../_components/one-control";
@@ -699,7 +698,6 @@ export function EducationOverviewSample() {
                 {/* PAGE TOP — provenance + the page's two actions, then the KPI row. */}
                 <div className="flex flex-col gap-3">
                   <div className="flex min-h-7 flex-wrap items-center gap-y-1">
-                    <ReplacesLine href="/education/overview" className="mr-auto" />
                     <div className="uc-row" style={{ flexWrap: "nowrap" }}>
                       <Link href="/education/library" className="uc-btn uc-btn-outline">
                         <Library aria-hidden /> Library
