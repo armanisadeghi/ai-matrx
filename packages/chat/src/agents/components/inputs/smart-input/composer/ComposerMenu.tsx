@@ -17,6 +17,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -507,5 +508,34 @@ function InPlaceNav({ children }: { children: ReactNode }) {
     <ComposerSheetNavContext.Provider value={nav}>
       {top ? <div className="flex h-full min-h-0 flex-col">{top.render()}</div> : children}
     </ComposerSheetNavContext.Provider>
+  );
+}
+
+/**
+ * What a narrow composer folded out of its rows (Arman, 2026-10-04): its own
+ * section at the very bottom of the menu that took it, which glows once as
+ * the menu opens so nobody reads the control as missing. Reduced motion
+ * keeps the tint and skips the fade.
+ */
+export function ComposerFoldedSection({ children }: { children: ReactNode }) {
+  const [fresh, setFresh] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setFresh(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return (
+    <>
+      <ComposerMenuDivider />
+      <ComposerMenuLabel>From the toolbar</ComposerMenuLabel>
+      <div
+        data-composer-folded-section=""
+        className={cn(
+          "rounded-md transition-[background-color,box-shadow] duration-1000 ease-out motion-reduce:transition-none",
+          fresh ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : "bg-transparent ring-0",
+        )}
+      >
+        {children}
+      </div>
+    </>
   );
 }
