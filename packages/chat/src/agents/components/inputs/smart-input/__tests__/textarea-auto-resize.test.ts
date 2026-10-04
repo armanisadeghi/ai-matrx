@@ -140,8 +140,10 @@ describe("AgentTextarea auto-resize", () => {
 
   it("paints the window body guard ring with the canonical background", () => {
     expect(windowPanelSource).toContain(
-      "overflow-hidden bg-background p-0.5 pointer-events-none",
+      "overflow-hidden bg-background pointer-events-none",
     );
+    // The 2px guard ring applies only while restored; a maximized window is flush.
+    expect(windowPanelSource).toContain('!isMaximized && "p-0.5"');
     expect(windowPanelSource).toContain("data-window-panel-body-shell");
   });
 });

@@ -51,7 +51,7 @@ export function ComposerScopeCluster({
   composer: ComposerPresentation;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
+    <div className="flex shrink-0 items-center gap-1.5">
       <ActiveContextLensChip
         conversationId={conversationId}
         className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
@@ -94,7 +94,7 @@ export function ComposerPills({
     // floor a `justify-end` cluster spills its pills out of its LEFT edge,
     // over the Output pill ("TexGen…" at a 260px column); start-justified,
     // the overflow runs right, into the row's sideways scroll.
-    <div className="ml-auto flex min-w-0 shrink items-center gap-0.5 [&>*:first-child]:min-w-[4.5rem] [&>*:not(:first-child)]:shrink-0">
+    <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 [&>*:first-child]:min-w-[4.5rem] [&>*:not(:first-child)]:shrink-0">
       <ComposerAgentPill
         conversationId={conversationId}
         mode={composer.mode}

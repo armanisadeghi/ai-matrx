@@ -357,7 +357,7 @@ export function InputActionButtons({
     // `line`: the + leads the row, voice and send close it, the text between.
     if (composer.part === "plus") {
       return (
-        <span className="flex shrink-0 items-center gap-0.5">
+        <span className="flex shrink-0 items-center gap-1.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
           {variablesToggle}
@@ -366,7 +366,7 @@ export function InputActionButtons({
     }
     if (composer.part === "trail") {
       return (
-        <span className="flex shrink-0 items-center gap-0.5">
+        <span className="flex shrink-0 items-center gap-1.5">
           {extraRightControls}
           {micGroup}
           {liveAudioButton}
@@ -379,12 +379,12 @@ export function InputActionButtons({
       <div
         className={
           compact
-            ? "flex min-w-0 items-center justify-between gap-1 shrink-0"
+            ? "flex min-w-0 items-center justify-between gap-1.5 shrink-0"
             : // One 32px composer row, the same height as each text line.
-              "flex min-w-0 items-center justify-between gap-1 shrink-0 lg:h-8"
+              "flex min-w-0 items-center justify-between gap-1.5 shrink-0 lg:h-8"
         }
       >
-        <div className="flex min-w-0 items-center gap-0.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
           {variablesToggle}
@@ -392,7 +392,7 @@ export function InputActionButtons({
           {compact ? liveAudioButton : null}
           {compact ? composer.leading : null}
         </div>
-        <div className="flex min-w-0 items-center gap-0.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           {extraRightControls}
           {composer.trailing}
           {compact ? null : micGroup}

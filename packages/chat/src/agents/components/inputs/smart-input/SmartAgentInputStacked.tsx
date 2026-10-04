@@ -381,7 +381,7 @@ export function SmartAgentInputStacked({
         className={cn(
           "mx-auto flex w-full min-w-0 shrink-0 flex-col",
           // Tight to the card: the rows above and below belong to it (Arman, 2026-09-28).
-          compact ? "gap-1" : "max-w-[760px] gap-1",
+          compact ? "gap-1" : "max-w-[768px] gap-1",
         )}
         data-composer-size={composer.size}
         data-composer-mode={composer.mode}
@@ -417,7 +417,7 @@ export function SmartAgentInputStacked({
             surfaceValueName={surfaceValueAnchors?.variables}
           />
           {line ? (
-            <div className="flex min-w-0 items-end gap-1">
+            <div className="flex min-w-0 items-end gap-1.5">
               {linePlus}
               <div className="min-w-0 flex-1">{textarea}</div>
               {lineTrail}
