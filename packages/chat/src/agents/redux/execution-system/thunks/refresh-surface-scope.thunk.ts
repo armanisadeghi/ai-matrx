@@ -17,6 +17,7 @@ import { getShortcutRecordFromState } from "../../agent-shortcuts/selectors";
 import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
 import type { ApplicationScope } from "../../../types/scope.types";
 import {
+  getClosedSurfaceHosts,
   getSurfaceRuntimeForName,
   wasPageOwnConversationOf,
   wasSurfaceMountedThisSession,
@@ -176,7 +177,19 @@ export const refreshSurfaceScope = createAsyncThunk<
       if (conversation.engineeredInputs) {
         return { refreshed: false, surfaceName, reason: "no_provider" };
       }
-      if (wasSurfaceMountedThisSession(surfaceName)) {
+      // A TILE THAT WENT DORMANT (a Board tile's surface exists only while the
+      // tile is live): the surface the conversation was stamped with closed, but
+      // the host it sat inside is still open. The conversation follows the HOST —
+      // never "the screen closed" plus a scope with no Board values in it, which
+      // sent the agent looking for the board's items with knowledge_search.
+      const host = getClosedSurfaceHosts(surfaceName)
+        .map((name) => getSurfaceRuntimeForName(name))
+        .find((candidate) => candidate && !candidate.layer);
+      if (host?.surfaceName) {
+        dispatch(patchConversation({ conversationId, surfaceName: host.surfaceName }));
+        surfaceName = host.surfaceName;
+        runtime = host;
+      } else if (wasSurfaceMountedThisSession(surfaceName)) {
         const label = getManifest(surfaceName)?.label ?? surfaceName;
         const live = await withLiveSurfaceContext(surfaceName, {
           surface_closed: `${label} (${surfaceName}), where this conversation started, has been closed. Its earlier values are gone; what is open now is listed in surface_chain and window_forms.`,
@@ -200,19 +213,21 @@ export const refreshSurfaceScope = createAsyncThunk<
       // conversation follows the runtime a fresh launch adopts — the deepest
       // mounted one — and re-reads it now. Never a silent drop: a reopened
       // chat used to keep nothing from the transcript on screen (2026-10-03).
-      const mounted = getSurfaceRuntime();
-      if (!mounted?.surfaceName || mounted.surfaceName === surfaceName) {
+      if (!host?.surfaceName) {
+        const mounted = getSurfaceRuntime();
+        if (!mounted?.surfaceName || mounted.surfaceName === surfaceName) {
+          console.warn(
+            `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}" and none is mounted on this page`,
+          );
+          return { refreshed: false, surfaceName, reason: "no_provider" };
+        }
         console.warn(
-          `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}" and none is mounted on this page`,
+          `[surfaces] "${surfaceName}" has no live provider on this page — conversation "${conversationId}" now follows the mounted "${mounted.surfaceName}"`,
         );
-        return { refreshed: false, surfaceName, reason: "no_provider" };
+        dispatch(patchConversation({ conversationId, surfaceName: mounted.surfaceName }));
+        surfaceName = mounted.surfaceName;
+        runtime = mounted;
       }
-      console.warn(
-        `[surfaces] "${surfaceName}" has no live provider on this page — conversation "${conversationId}" now follows the mounted "${mounted.surfaceName}"`,
-      );
-      dispatch(patchConversation({ conversationId, surfaceName: mounted.surfaceName }));
-      surfaceName = mounted.surfaceName;
-      runtime = mounted;
     }
 
     let preparation;

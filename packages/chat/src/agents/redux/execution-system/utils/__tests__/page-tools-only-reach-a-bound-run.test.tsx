@@ -334,6 +334,117 @@ describe("a run stamped with a surface nested in a host keeps the host's tools",
   });
 });
 
+/**
+ * THE WRITE TOOL POINTS AT THE HOST'S WAY IN (Board, 2026-10-04). On a Board
+ * the injected `apply_surface_write` lists only the LIVE item's targets; an
+ * agent that wanted another item's cell called it anyway ("declares no write
+ * target") or went searching with knowledge_search. A mounted surface's
+ * `otherItemsHint` rides in that tool's description.
+ */
+describe("apply_surface_write carries the mounted host's otherItemsHint", () => {
+  const HINT = "HOST-HINT: other items are reached with board_open_item then board_item_act.";
+  let unmount: () => void;
+  let infoSpy: jest.SpyInstance;
+  beforeEach(() => {
+    invalidateOutputSchemaCache();
+    resetMandateCatalogueCache();
+    infoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    unmount();
+    infoSpy.mockRestore();
+  });
+  function description(result: ToolInjectionResult): string {
+    const spec = (result.tools ?? []).find((t) => t.kind !== "agent" && t.name === "apply_surface_write");
+    return spec && spec.kind !== "agent" ? String(spec.description) : "";
+  }
+
+  it("states the hint when the surface that declares it is mounted", async () => {
+    mockGetManifest.mockImplementation((name: string) =>
+      name === PAGE ? { writeTargets: [WRITE_TARGET], clientTools: [CLIENT_TOOL], otherItemsHint: HINT } : {},
+    );
+    unmount = mountPage();
+    const result = await buildToolInjection(makeState({ surfaceName: PAGE }), "conv");
+    expect(description(result)).toContain(HINT);
+  });
+
+  it("says nothing extra when no mounted surface declares one", async () => {
+    mockGetManifest.mockImplementation((name: string) =>
+      name === PAGE ? { writeTargets: [WRITE_TARGET], clientTools: [CLIENT_TOOL] } : {},
+    );
+    unmount = mountPage();
+    const result = await buildToolInjection(makeState({ surfaceName: PAGE }), "conv");
+    expect(description(result)).not.toContain("HOST-HINT");
+    expect(description(result)).toContain("Available targets right now");
+  });
+});
+
+/**
+ * A DORMANT TILE KEEPS ITS HOST (Board side chat, 2026-10-04). A side chat
+ * opened (or restamped) while a table tile was live carries the TILE's surface
+ * as its stamp. The moment the tile is deselected its surface unmounts, so
+ * "mounted around the stamp" is false and the Board's tools (board_read,
+ * board_open_item, board_item_act) vanished mid-conversation — the agent fell
+ * back to knowledge_search / apply_surface_write. The binding must remember
+ * which host a surface was mounted inside and keep that host's tools while the
+ * host is still open.
+ */
+describe("a run stamped with a surface that has since closed keeps the host it was inside", () => {
+  const HOST = "matrx-user/host-board";
+  const TILE_GONE = "matrx-user/tile-gone";
+  const HOST_TOOL = { ...CLIENT_TOOL, name: "host_board_read" };
+  const cleanups: Array<() => void> = [];
+  let infoSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    invalidateOutputSchemaCache();
+    resetMandateCatalogueCache();
+    mockGetManifest.mockImplementation((name: string) =>
+      name === HOST ? { clientTools: [HOST_TOOL] } : {},
+    );
+    infoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    cleanups.push(
+      registerSurfaceRuntime({ surfaceName: HOST, getScope: () => ({}), getWriteHandlers: () => ({}) }, 1),
+    );
+    function Host() {
+      useSurfaceClientTools(HOST, { [HOST_TOOL.name]: () => ({ ok: true }) });
+      return null;
+    }
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => root.render(<Host />));
+    cleanups.push(() => {
+      act(() => root.unmount());
+      container.remove();
+    });
+  });
+  afterEach(() => {
+    while (cleanups.length) cleanups.pop()?.();
+    infoSpy.mockRestore();
+  });
+
+  it("the tile was live (mounted inside the host), then went dormant: the host's tools still reach the run", async () => {
+    const closeTile = registerSurfaceRuntime(
+      { surfaceName: TILE_GONE, getScope: () => ({}), getWriteHandlers: () => ({}) },
+      2,
+    );
+    const live = await buildToolInjection(makeState({ surfaceName: TILE_GONE }), "conv");
+    expect(toolNames(live)).toContain(HOST_TOOL.name);
+    closeTile();
+    const dormant = await buildToolInjection(makeState({ surfaceName: TILE_GONE }), "conv");
+    expect(toolNames(dormant)).toContain(HOST_TOOL.name);
+  });
+
+  it("a stamp that was never inside the host gets none of its tools", async () => {
+    const dormant = await buildToolInjection(
+      makeState({ surfaceName: "matrx-user/never-inside" }),
+      "conv",
+    );
+    expect(toolNames(dormant)).not.toContain(HOST_TOOL.name);
+  });
+});
+
 describe("the person's tool decisions travel as the USER layer", () => {
   it("picks → user.add, removals → user.remove, the switch → user.auto_tools; never tools[]", async () => {
     const state = makeState({

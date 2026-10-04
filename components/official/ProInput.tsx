@@ -68,7 +68,10 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
-import { reservedRightPaddingPx } from "@/components/official/proInputReservedPadding";
+import {
+  hoverRevealsCluster,
+  reservedRightPaddingPx,
+} from "@/components/official/proInputReservedPadding";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useMicField } from "@/features/audio/hooks/useMicField";
@@ -253,6 +256,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const clusterRef = useRef<HTMLDivElement>(null);
     const auxRef = useRef<HTMLDivElement>(null);
     const [clusterWidths, setClusterWidths] = useState({ cluster: 0, aux: 0 });
+    // The field's own width: a narrow field reveals the cluster on focus, not hover.
+    const [inputWidth, setInputWidth] = useState(0);
     useEffect(() => {
       const cluster = clusterRef.current;
       if (!cluster || typeof ResizeObserver === "undefined") return;
@@ -272,6 +277,15 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       return () => observer.disconnect();
     }, []);
     const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
+    useEffect(() => {
+      const el = inputRef.current;
+      if (!el || typeof ResizeObserver === "undefined") return;
+      const measure = () => setInputWidth(el.getBoundingClientRect().width);
+      measure();
+      const observer = new ResizeObserver(measure);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, [inputRef]);
     const cleanupAction = useProTextareaAgentAction();
     const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
     const cleanupSurfaceAgentId =
@@ -500,8 +514,11 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       ],
     );
 
+    const pointerReveals = hoverRevealsCluster(inputWidth)
+      ? isHovered
+      : isFocused;
     const showHoverControls =
-      (isHovered || isRecording || isTranscribing) && !disabled;
+      (pointerReveals || isRecording || isTranscribing) && !disabled;
     const isVoiceDisabled =
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
     const showMic = enableVoice && isAudioAvailable;

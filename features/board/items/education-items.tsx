@@ -31,6 +31,7 @@ import { kitHref, listKits, type StudyKit } from "@/features/education/kits/kitS
 import { EDUCATION_KITS_SURFACE_NAME } from "@/features/surfaces/manifests/education-kits.manifest";
 import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps } from "./types";
 import { RecordList } from "./feature-items";
+import { titleToAdopt } from "./feature-items.logic";
 import {
   FLASHCARD_ITEM_KEY,
   KIT_ITEM_KEY,
@@ -96,9 +97,22 @@ function DeckDraftBody({ title, onSource }: Pick<ItemBodyProps, "title" | "onSou
   );
 }
 
+/** The tile follows the record's current name (renamed by an agent or on the deck's own page). */
+function useFollowName(source: ItemBodyProps["source"], title: string, onSource: ItemBodyProps["onSource"]) {
+  return (name: string | null | undefined) => {
+    const next = titleToAdopt(title, name);
+    if (next) onSource(source, next);
+  };
+}
+
 function DeckBody(props: ItemBodyProps) {
   const id = deckIdOf(props.source);
-  return id ? <SetDetailView key={id} setId={id} initialName={props.title} embedded /> : <DeckDraftBody title={props.title} onSource={props.onSource} />;
+  const follow = useFollowName(props.source, props.title, props.onSource);
+  return id ? (
+    <SetDetailView key={id} setId={id} initialName={props.title} embedded onNameKnown={follow} />
+  ) : (
+    <DeckDraftBody title={props.title} onSource={props.onSource} />
+  );
 }
 
 // ─── Study kit ───────────────────────────────────────────────────────────────
@@ -156,12 +170,26 @@ function KitDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
   );
 }
 
+/** Renders nothing: the kit hub's header slot is where its current title arrives. */
+function FollowKitTitle({ name, source, title, onSource }: { name: string | null } & Pick<ItemBodyProps, "source" | "title" | "onSource">) {
+  const next = titleToAdopt(title, name);
+  useEffect(() => {
+    if (next) onSource(source, next);
+  }, [next, source, onSource]);
+  return null;
+}
+
 function KitBody(props: ItemBodyProps) {
   const kit = kitFromSource(props.source);
   if (!kit) return <KitDraftBody onSource={props.onSource} />;
   return (
     <div className="h-full min-h-0 overflow-y-auto bg-textured">
-      <KitHub key={kit.sourceId} sourceId={kit.sourceId} sourceType={kit.sourceType} renderHeader={() => null} />
+      <KitHub
+        key={kit.sourceId}
+        sourceId={kit.sourceId}
+        sourceType={kit.sourceType}
+        renderHeader={({ title }) => <FollowKitTitle name={title} source={props.source} title={props.title} onSource={props.onSource} />}
+      />
     </div>
   );
 }

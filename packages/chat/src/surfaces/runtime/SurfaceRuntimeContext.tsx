@@ -439,6 +439,48 @@ const globalRegistry = createRegistry("global", (value) =>
   mountedThisSession.add(value.surfaceName),
 );
 
+/**
+ * WHICH HOST A SURFACE WAS MOUNTED INSIDE, remembered after it closes. A
+ * Board tile's surface exists only while the tile is live; a conversation
+ * stamped with it (a side chat opened or re-stamped while the tile was live)
+ * must keep the Board's tools and scope once the tile goes dormant. Updated on
+ * every registry change from what is mounted RIGHT NOW: each surface's
+ * shallower-depth neighbours are its hosts. Page session only.
+ */
+const enclosingHosts = new Map<string, Set<string>>();
+
+function rememberEnclosingHosts(): void {
+  const mounted = globalRegistry.depths();
+  // A window laid over a page is a layer, not something mounted INSIDE the
+  // page: its closing keeps its own "closed" notice (`refreshSurfaceScope`).
+  const layers = new Set(
+    globalRegistry.stack().filter((value) => value.layer).map((value) => value.surfaceName),
+  );
+  for (const entry of mounted) {
+    if (layers.has(entry.surfaceName)) continue;
+    for (const other of mounted) {
+      if (other.depth >= entry.depth || other.surfaceName === entry.surfaceName) continue;
+      let hosts = enclosingHosts.get(entry.surfaceName);
+      if (!hosts) enclosingHosts.set(entry.surfaceName, (hosts = new Set()));
+      hosts.add(other.surfaceName);
+    }
+  }
+}
+globalRegistry.subscribe(rememberEnclosingHosts);
+
+/**
+ * The hosts `surfaceName` was mounted inside earlier in this page session
+ * that are STILL mounted, deepest first. Empty when `surfaceName` itself is
+ * mounted (it has not closed — nothing to follow) or never sat inside one.
+ */
+export function getClosedSurfaceHosts(surfaceName: string): string[] {
+  const mounted = globalRegistry.depths();
+  if (mounted.some((entry) => entry.surfaceName === surfaceName)) return [];
+  const hosts = enclosingHosts.get(surfaceName);
+  if (!hosts) return [];
+  return mounted.map((entry) => entry.surfaceName).filter((name) => hosts.has(name));
+}
+
 /** The ONE global registry — what agents and chrome read. */
 export function getGlobalSurfaceRegistry(): SurfaceRegistry {
   return globalRegistry;

@@ -1100,6 +1100,16 @@ function failUnapplicable(
  * receive the write. It states the fact, then BOTH honest ways forward, so the
  * model can act on it instead of guessing (W49).
  */
+/** What a mounted host says about reaching the items it holds (`SurfaceManifest.otherItemsHint`). */
+function otherItemsHintSentence(surfaceNames: readonly string[]): string {
+  const hints: string[] = [];
+  for (const name of surfaceNames) {
+    const hint = getManifest(name)?.otherItemsHint;
+    if (hint && !hints.includes(hint)) hints.push(hint);
+  }
+  return hints.length > 0 ? ` ${hints.join(" ")}` : "";
+}
+
 function unapplicableMessage(targetName: string, detail: string): string {
   return (
     `${detail} No page open right now can apply "${targetName}", so nothing ` +
@@ -1481,7 +1491,7 @@ async function applySurfaceWriteNow(
   return failUnapplicable(
     unapplicableMessage(
       targetName,
-      `The page open here (${stack.map((entry) => entry.surfaceName).join(", ")}) declares no write target by that name.`,
+      `The page open here (${stack.map((entry) => entry.surfaceName).join(", ")}) declares no write target by that name.${otherItemsHintSentence(stack.map((entry) => entry.surfaceName))}`,
     ),
     {
       targetName,

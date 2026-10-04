@@ -633,6 +633,7 @@ export function SetDetailView({
   setId,
   initialName = null,
   embedded = false,
+  onNameKnown,
 }: {
   setId: string;
   /** Read on the server so the header names the deck on its first paint. */
@@ -643,6 +644,8 @@ export function SetDetailView({
    * address bar (the host owns the address). Everything else is the page.
    */
   embedded?: boolean;
+  /** The deck's current name, whenever it is known or changes (a Board tile follows it). */
+  onNameKnown?: (name: string) => void;
 }) {
   useFlashcardMandates(["enrichCard"]);
   const router = useRouter();
@@ -720,6 +723,10 @@ export function SetDetailView({
   const error = deckRead.isError ? (deckRead.error ?? recordUnavailableMessage("deck", "unknown")) : null;
   const data: SetWithCards | null = deckRead.isError ? null : (deckRead.data ?? null);
   const loading = !deckRead.hasData && !deckRead.isError;
+  const currentName = data?.set.name ?? null;
+  useEffect(() => {
+    if (currentName) onNameKnown?.(currentName);
+  }, [currentName, onNameKnown]);
   const masteryByCard: Record<string, ItemMasteryRow | undefined> = masteryRead.data ?? {};
   // A missing mastery read is not the same as a learner with no history: the surface value stays
   // absent rather than handing an agent fabricated "new" evidence.

@@ -297,6 +297,38 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     }
   });
 
+  // Break this catches: a Board side chat stamped with the TILE's surface while
+  // the tile was live; the tile went dormant, so the next turn was told "Data
+  // Tables ... has been closed" and carried no Board scope — the agent never saw
+  // board_items and reached for knowledge_search instead of board_open_item.
+  test("a tile that went dormant hands the conversation back to the Board that still holds it", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    const BOARD = "matrx-user/board";
+    const TILE = "matrx-user/data-tables";
+    store.dispatch(patchConversation({ conversationId: CONVERSATION_ID, surfaceName: TILE }));
+    const unregisterBoard = registerSurfaceRuntime(
+      { surfaceName: BOARD, getScope: () => ({ board_title: "My board", board_items: { item_count: 2 } }) },
+      1,
+    );
+    const closeTile = registerSurfaceRuntime(
+      { surfaceName: TILE, getScope: () => ({ table_name: "Site palette" }) },
+      2,
+    );
+    closeTile(); // the person selected another tile (or none)
+    try {
+      await (store.dispatch as unknown as ChatDispatch)(
+        refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
+      ).unwrap();
+      const state = store.getState() as unknown as ChatRootState;
+      expect(state.conversations.byConversationId[CONVERSATION_ID]?.surfaceName).toBe(BOARD);
+      const entries = state.instanceContext.byConversationId[CONVERSATION_ID] ?? {};
+      expect(entries.surface_closed).toBeUndefined();
+    } finally {
+      unregisterBoard();
+    }
+  });
+
   // Break this catches: refreshSurfaceScope writing `surface_closed` ("Chat …
   // has been closed") into the page's OWN conversation while a route swap
   // (/chat/new → /chat/<id>) has the page's provider momentarily unmounted —

@@ -36,3 +36,19 @@ export function reservedRightPaddingPx({
     Math.ceil(visible) + PRO_INPUT_TEXT_GAP_PX,
   );
 }
+
+/**
+ * A NARROW FIELD NEVER LETS A HOVER STEAL ITS CLICK.
+ *
+ * The mic + "…" cluster fades in on pointer hover over the right end of the
+ * field. In a field only a couple of hundred px wide (a board tile's task-add
+ * row, a sidebar) the cluster and its reserved padding leave a sliver of text,
+ * and a press aimed at the middle of the field lands ON the mic: no focus, no
+ * typing. Below this width the cluster appears on FOCUS instead of hover, so
+ * the first press always focuses the field.
+ */
+export const PRO_INPUT_NARROW_FIELD_PX = 260;
+
+export function hoverRevealsCluster(inputWidth: number): boolean {
+  return !(inputWidth > 0 && inputWidth < PRO_INPUT_NARROW_FIELD_PX);
+}

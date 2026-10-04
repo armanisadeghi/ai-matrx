@@ -50,7 +50,7 @@ export function listIdOf(source: NodeSource): string | null {
 
 type Read =
   | { phase: "reading" }
-  | { phase: "read"; lists: PickListEntry[] }
+  | { phase: "read"; lists: PickListEntry[]; archivedIds: ReadonlySet<string> }
   | { phase: "failed"; why: string };
 
 function ListPicker({ onPick, onCancel }: PickerProps) {
@@ -61,7 +61,7 @@ function ListPicker({ onPick, onCancel }: PickerProps) {
     setRead({ phase: "reading" });
     void readPickListIndex(supabase, { everywhere: true }).then((answered) => {
       if (!alive) return;
-      setRead(answered.ok ? { phase: "read", lists: answered.lists } : { phase: "failed", why: answered.why });
+      setRead(answered.ok ? { phase: "read", lists: answered.lists, archivedIds: new Set(answered.archivedIds) } : { phase: "failed", why: answered.why });
     });
     return () => {
       alive = false;
@@ -76,6 +76,7 @@ function ListPicker({ onPick, onCancel }: PickerProps) {
           { what: "your picklists", onRetry: () => setAgain((n) => n + 1) },
         )}
         rowKey={(l) => l.id}
+        isArchived={(l) => read.phase === "read" && read.archivedIds.has(l.id)}
         rowText={(l) => `${l.listName} ${l.organizationName ?? ""}`}
         onChoose={(l) => onPick([{ title: l.listName, source: listSource(l.id) }])}
         onCancel={onCancel}

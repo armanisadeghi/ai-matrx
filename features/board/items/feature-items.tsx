@@ -22,7 +22,7 @@
 import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ExternalLink, FlaskConical, FolderKanban, ListTodo, Loader2, UsersRound, Video, Workflow } from "lucide-react";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { ArchivedDisclosure, Input, Skeleton } from "@ai-matrx/design-system";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -177,6 +177,7 @@ export function RecordList<T>({
   onChoose,
   onCancel,
   emptyState,
+  isArchived,
 }: {
   rows: readonly T[];
   read: ReadOutcome;
@@ -186,12 +187,21 @@ export function RecordList<T>({
   onChoose: (row: T) => void;
   onCancel: () => void;
   emptyState: ReactNode;
+  /**
+   * THE ARCHIVED-ITEMS LAW for pickers: rows this names are hidden until the
+   * person opens the "Archived" disclosure (one click). Omit only when the
+   * feature's own read already returns live rows alone.
+   */
+  isArchived?: (row: T) => boolean;
 }) {
+  const [showArchived, setShowArchived] = useState(false);
+  const archivedCount = isArchived ? rows.filter(isArchived).length : 0;
+  const shown = isArchived && !showArchived ? rows.filter((r) => !isArchived(r)) : rows;
   return (
     <div className="flex flex-col gap-3">
       <ReadGate
         read={read}
-        isEmpty={rows.length === 0}
+        isEmpty={shown.length === 0 && archivedCount === 0}
         empty={<div className="px-3 py-6 text-center text-sm text-muted-foreground">{emptyState}</div>}
         loading={
           <div className="space-y-2 p-2" aria-busy="true" aria-label={`Loading ${read.what ?? "the list"}`}>
@@ -205,7 +215,7 @@ export function RecordList<T>({
           <CommandInput placeholder="Search…" className="text-base" />
           <CommandList className="max-h-[min(420px,60dvh)]">
             <CommandEmpty>Nothing matches.</CommandEmpty>
-            {rows.map((row) => (
+            {shown.map((row) => (
               <CommandItem
                 key={rowKey(row)}
                 value={`${rowText(row)} ${rowKey(row)}`}
@@ -218,6 +228,9 @@ export function RecordList<T>({
           </CommandList>
         </Command>
       </ReadGate>
+      {isArchived ? (
+        <ArchivedDisclosure count={archivedCount} open={showArchived} onOpenChange={setShowArchived} />
+      ) : null}
       <div className="flex justify-end">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel

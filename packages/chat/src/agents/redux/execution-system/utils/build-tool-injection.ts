@@ -69,6 +69,7 @@ import {
 } from "./page-tool-binding";
 import { selectAgentAutoToolsDisabled } from "../../agent-definition/selectors";
 import type { UserOverrides } from "../../../types/request.types";
+import { getManifest } from "../../../../surfaces/runtime/registry";
 import { describeAgentWritableTargets } from "../../../../surfaces/runtime/agent-offer";
 import {
   announceWithheldSurfaceWriteTools,
@@ -118,8 +119,19 @@ interface BuildOptions {
  * likewise stays silent when every target is manual). The `target` enum makes
  * the server reject an undeclared target before it is ever delegated.
  */
+/** Each mounted surface's `otherItemsHint`, once, in order. */
+function otherItemsHintsFor(surfaceNames: readonly string[]): string[] {
+  const hints: string[] = [];
+  for (const name of new Set(surfaceNames)) {
+    const hint = getManifest(name)?.otherItemsHint;
+    if (hint && !hints.includes(hint)) hints.push(hint);
+  }
+  return hints;
+}
+
 async function buildSurfaceWriteInlineSpec(
   writable: ReturnType<typeof listAgentWritableTargets>,
+  otherItemsHints: readonly string[] = [],
 ): Promise<ToolSpecInline | null> {
   if (writable.length === 0) return null;
 
@@ -147,6 +159,7 @@ async function buildSurfaceWriteInlineSpec(
       (writable.some(({ target }) => target.patchable)
         ? `${surfacePatchContractLine()}\n\n`
         : "") +
+      (otherItemsHints.length > 0 ? `${otherItemsHints.join("\n")}\n\n` : "") +
       "Available targets right now:\n" +
       lines.join("\n"),
     input_schema: {
@@ -382,7 +395,13 @@ export async function buildToolInjection(
     // seam is the gate. Read fresh every turn, like the client tools above.
     const surfaceWriteTool = outputContract
       ? null
-      : await buildSurfaceWriteInlineSpec(writableTargets);
+      : await buildSurfaceWriteInlineSpec(
+          writableTargets,
+          otherItemsHintsFor([
+            ...liveSurfaceTools.map((row) => row.surfaceName),
+            ...writableTargets.map((row) => row.surfaceName),
+          ]),
+        );
     if (surfaceWriteTool) {
       if (alreadyNamed.has(surfaceWriteTool.name)) {
         console.warn(

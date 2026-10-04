@@ -581,6 +581,15 @@ export interface SurfaceManifest extends SurfaceDeclaration {
    */
   requiresBeforeExecute?: boolean;
   /**
+   * How an agent reaches the things this surface HOSTS that are not the live
+   * page (a Board's other tiles). One or two plain sentences. It rides in the
+   * injected `apply_surface_write` tool's description while this surface is
+   * mounted, and in the "declares no write target" refusal, so the model that
+   * reaches for a write on something it has not been handed is pointed at the
+   * host's own way in instead of guessing or searching.
+   */
+  otherItemsHint?: string;
+  /**
    * What the person sees while this surface's `beforeExecute` works, shown on
    * the outgoing message the instant Send is pressed (e.g. "Searching your
    * study material"). Present tense, no trailing ellipsis. Defaults to

@@ -31,6 +31,11 @@
  *     and the server refused the call (2026-10-04, conversation 051d7738).
  *     Only surfaces outside the stamp in the live stack — never siblings,
  *     never tools flowing down to a surface the run is not on.
+ *   - …and when that stamped surface has since CLOSED (the tile went dormant
+ *     because the person selected another or none), the hosts it was mounted
+ *     inside stay accepted while they are still open — the Board's side chat
+ *     keeps board_read / board_open_item / board_item_act every turn, live tile
+ *     or not (`getClosedSurfaceHosts`, 2026-10-04).
  *   - No stamp ⇒ no page tools.
  *
  * Guard: `__tests__/page-tools-only-reach-a-bound-run.test.tsx`.
@@ -39,6 +44,7 @@
 import type { ChatRootState } from "../../../../store/root-state";
 import { isHeadlessDisplayMode } from "../../../utils/run-ui-utils";
 import {
+  getClosedSurfaceHosts,
   getSurfaceRuntimeDepths,
   isPageOwnConversation,
 } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
@@ -93,7 +99,13 @@ export function resolvePageToolBinding(
   const stamp =
     state.conversations?.byConversationId[conversationId]?.surfaceName ?? null;
   if (!stamp) return { bound: false, reason: "not-bound" };
-  const allowed = new Set<string>([stamp, ...getSurfaceAncestry(stamp)]);
+  // A stamp whose surface has CLOSED (a tile gone dormant) keeps the hosts it
+  // sat inside while they are still open (`getClosedSurfaceHosts`).
+  const allowed = new Set<string>([
+    stamp,
+    ...getSurfaceAncestry(stamp),
+    ...getClosedSurfaceHosts(stamp),
+  ]);
   return {
     bound: true,
     via: "launch-surface",

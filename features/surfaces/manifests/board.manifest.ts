@@ -47,7 +47,7 @@ const values: SurfaceValue[] = [
     name: "board_items",
     label: "Items on the board",
     description:
-      "Every item on the board: {live_item_ids, item_count, omitted_count, items, limits}. Each item is {id, title, kind, surface, live, parked?, removed?, basics?, basics_note?}. `surface` names the item's feature surface (null for board-only content). The LIVE item's full surface is already in your context as that surface. `basics` are a few of a dormant item's own values (a note's title and first line with its word count, a table's name and row count, a task's status and due date), bounded by `limits`. To read or change any item, call board_open_item then board_item_act — both work in this same turn.",
+      "Every item on the board: {live_item_ids, item_count, omitted_count, items, limits}. Each item is {id, title, kind, surface, live, parked?, removed?, basics?, basics_note?}. `surface` names the item's feature surface (null for board-only content). The LIVE item's full surface is already in your context as that surface. `basics` are a few of a dormant item's own values (a note's title and first line with its word count, a table's name and row count, a task's status and due date), bounded by `limits`. Every item on this board — a note, a table, a list, a task, a file — is reached with board_open_item(id) then board_item_act(id, …), in this same turn; do not look for them with knowledge_search or the data tool, and do not call apply_surface_write for an item that is not live.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 4000,
@@ -86,11 +86,14 @@ You can WORK ON THE BOARD with the board_* tools, and every change you make land
 - board_update_tile, board_move_tiles, board_arrange (tidy / grid / row / column / align / distribute), board_group (a named frame), board_connect, board_park, board_focus (show them a tile), board_remove_tile (they can undo), board_undo.
 - Working INSIDE items (rewrite a note, fix a table, change a task, act on a file) — any of them, in ONE turn:
   - The LIVE item (the one the person has selected or is working in) arrives in full: its feature's own values, write targets and tools, exactly as on its own page.
+  - These items are NOT found by knowledge_search or the data tool, and apply_surface_write only reaches the live one: board_items is the list, board_open_item is the way in.
   - board_items names EVERY other item — id, title, kind, surface — with a few basics, so you know what each one is.
   - For any other item: board_open_item(id) returns its values and its controls (write targets and tools, as its page offers them), then board_item_act(id, target + value, or tool + input) changes it through the item's own rules — the person approves where that item asks. Open as many items as the request needs; you never have to wait a turn.
 Prefer arranging and grouping over describing where things are. Ask before removing something the person made.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues([], values),
+  otherItemsHint:
+    "This page is a Board. The targets listed below are only for the LIVE item. Any other item on the board (see board_items) is reached with board_open_item(id), then board_item_act(id, target + value) — that is how you read or change a note, table, list or task that is not live. Do not search for board items with knowledge_search.",
   clientTools: BOARD_CLIENT_TOOLS,
 };
