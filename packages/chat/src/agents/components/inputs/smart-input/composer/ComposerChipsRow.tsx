@@ -97,7 +97,7 @@ export function ComposerChipsRow({
         conversationId={conversationId}
         variant="chips"
         showResources={composerShows(mode, "chips.repos")}
-        emptyChips={<ComposerConnectPromo />}
+        emptyChips={<ComposerConnectPromo conversationId={conversationId} menuSide={menuSide} />}
       />
     </div>
   );

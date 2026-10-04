@@ -86,6 +86,13 @@ const ROTATING: FeatureCardItem[] = [
 ];
 
 const INFO_ONLY = new Set<DriftSeverity>(["info"]);
+/** The drift door's tint: the severity's status tone (the real header's pill). */
+const DRIFT_TONE: Record<DriftSeverity, "destructive" | "warning" | "info"> = {
+  breaking: "destructive",
+  silent_breaking: "destructive",
+  warning: "warning",
+  info: "info",
+};
 
 /**
  * The drift door — the same read, badge and destination as the real header's
@@ -116,6 +123,7 @@ function DriftDoor() {
     <Button
       asChild
       variant="quiet"
+      tone={worstSev ? DRIFT_TONE[worstSev] : undefined}
       aria-label={worstSev ? `Agent drift report — ${totals[worstSev]} ${worstSev.replace("_", " ")}` : "Agent drift report"}
     >
       <Link href="/reports/agent-drift" title={meta?.description ?? "Open agent drift report"}>

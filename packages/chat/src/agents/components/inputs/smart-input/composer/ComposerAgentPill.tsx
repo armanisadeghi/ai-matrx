@@ -18,7 +18,7 @@
  */
 
 import { useState } from "react";
-import { ChevronDown, Layers, Star } from "lucide-react";
+import { AppWindow, ChevronDown, Gauge, Layers, Star, Webhook } from "lucide-react";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -42,10 +42,13 @@ import {
   ComposerMenuHelp,
   ComposerMenuLabel,
   ComposerMenuRow,
+  ComposerSubmenu,
 } from "./ComposerMenu";
+import { ComposerOutputPanel } from "./ComposerOutput";
+import { ComposerEffortRows, useComposerEffort } from "./ComposerEffortPill";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
-import { useComposerAgent, type ComposerAgentInfo } from "./useComposerAgent";
+import { useComposerAgent, useEffectiveModelId, type ComposerAgentInfo } from "./useComposerAgent";
 import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
 import { ensureOrgId, isOrganizationSelectionCancelled } from "../../../../../host/org";
 
@@ -55,6 +58,11 @@ interface ComposerAgentPillProps {
   size: ComposerSize;
   agentControl?: ComposerAgentControl;
   menuSide: "top" | "bottom";
+  /**
+   * The composer is narrow (useComposerFold): Output and Effort leave the row
+   * and ride THIS menu, under the agent choice (Arman, 2026-10-04).
+   */
+  folded?: boolean;
 }
 
 export function composerPillClass(size: ComposerSize, open: boolean): string {
@@ -72,8 +80,9 @@ function pillLabel(info: ComposerAgentInfo, mode: ComposerMode): string {
   return info.effectiveModelLabel ? `${name} · ${info.effectiveModelLabel}` : name;
 }
 
-export function ComposerAgentPill({ conversationId, mode, size, agentControl, menuSide }: ComposerAgentPillProps) {
+export function ComposerAgentPill({ conversationId, mode, size, agentControl, menuSide, folded = false }: ComposerAgentPillProps) {
   const [open, setOpen] = useState(false);
+  const effort = useComposerEffort(conversationId, useEffectiveModelId(conversationId));
   const info = useComposerAgent(conversationId);
   const label = pillLabel(info, mode);
   const onSelectAgent = agentControl?.onSelectAgent;
@@ -102,6 +111,63 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
       <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
     </button>
   );
+
+  // Narrow: ONE menu — the agent choice, then Output and Effort.
+  if (folded) {
+    const chatPresets = composerShows(mode, "agent.presets");
+    const showEffort = Boolean(effort) && composerShows(mode, "meta.effort");
+    return (
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
+        <PopoverTrigger asChild>{pill}</PopoverTrigger>
+        <PopoverContent
+          /* sizing: fixed — the agent menu is a fixed 320px menu of known rows (brief §8) */
+          side={menuSide}
+          align="end"
+          sideOffset={8}
+          className="flex w-80 max-h-[var(--radix-popover-content-available-height)] flex-col overflow-y-auto p-1"
+        >
+          {chatPresets ? (
+            <ChatPresetsPanel
+              conversationId={conversationId}
+              info={info}
+              agentControl={agentControl}
+              close={() => setOpen(false)}
+            />
+          ) : onSelectAgent ? (
+            <AgentListDropdown
+              onSelect={(agentId: string) => {
+                setOpen(false);
+                if (agentId !== info.agentId) onSelectAgent(agentId);
+              }}
+              activeAgentId={info.agentId}
+              contentSide="left"
+              triggerSlot={
+                <button
+                  type="button"
+                  className="flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground hover:bg-accent"
+                >
+                  <Webhook className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{info.agentName ?? "Agent"}</span>
+                  <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-muted-foreground" />
+                </button>
+              }
+            />
+          ) : (
+            <ComposerMenuRow icon={Webhook} label={info.agentName ?? "Agent"} checked />
+          )}
+          <ComposerMenuDivider />
+          <ComposerSubmenu row={{ icon: AppWindow, label: "Output" }} panelClassName="w-80">
+            <ComposerOutputPanel conversationId={conversationId} />
+          </ComposerSubmenu>
+          {showEffort && effort ? (
+            <ComposerSubmenu row={{ icon: Gauge, label: "Effort", detail: effort.word }} panelClassName="w-56 p-1">
+              {(close) => <ComposerEffortRows effort={effort} onChosen={close} />}
+            </ComposerSubmenu>
+          ) : null}
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   // Work / Advanced: the pill IS the agent picker.
   if (!composerShows(mode, "agent.presets")) {

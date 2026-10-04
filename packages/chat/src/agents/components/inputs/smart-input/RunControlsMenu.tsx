@@ -90,8 +90,10 @@ export interface RunControlsMenuProps {
     mode: ComposerMode;
     size: ComposerSize;
     surfaceKey?: string;
-    /** The composer is narrow: Scope and Output live in the + menu. */
-    foldScopeAndOutput?: boolean;
+    /** The composer is narrow: Scope lives in the + menu. */
+    folded?: boolean;
+    /** Compact and narrow: live audio lives in the + menu too. */
+    foldLiveAudio?: boolean;
   };
 }
 
@@ -209,7 +211,8 @@ export function RunControlsMenu({
           trigger={triggerButton}
           mode={composer.mode}
           size={composer.size}
-          foldScopeAndOutput={composer.foldScopeAndOutput}
+          folded={composer.folded}
+          foldLiveAudio={composer.foldLiveAudio}
           side={side}
           surfaceKey={composer.surfaceKey}
           onRequestInputExpand={onRequestInputExpand}
@@ -239,7 +242,8 @@ export function RunControlsMenu({
         trigger={triggerButton}
         mode={composer.mode}
         size={composer.size}
-        foldScopeAndOutput={composer.foldScopeAndOutput}
+        folded={composer.folded}
+          foldLiveAudio={composer.foldLiveAudio}
         side={side}
         surfaceKey={composer.surfaceKey}
         onRequestInputExpand={onRequestInputExpand}

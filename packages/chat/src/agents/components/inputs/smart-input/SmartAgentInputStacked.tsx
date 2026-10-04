@@ -36,7 +36,7 @@ import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { composerShows } from "./composer/composer-mode-visibility";
 import { ComposerChipsRow } from "./composer/ComposerChipsRow";
-import { ComposerMetaRow } from "./composer/ComposerMetaRow";
+import { ComposerMetaRow, ComposerPills, ComposerScopeCluster } from "./composer/ComposerMetaRow";
 import { useComposerFold } from "./composer/useComposerFold";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
@@ -258,9 +258,10 @@ export function SmartAgentInputStacked({
   // design draws them.
   if (composer) {
     // TWO styles (Arman, 2026-10-04). Full (splash · page): two text rows and
-    // a button row in the card. Compact: ONE row in the card — + · text ·
-    // voice · send. Both keep every part: chips above (Work+), attachments,
-    // variables, and the meta row below (scope · values | agent · output · effort).
+    // a button row in the card, the meta row under it. Compact: the card holds
+    // the text and ↵ ONLY; one row under it carries + · mic · live audio ·
+    // scope · values | agent · output · effort. Narrow (useComposerFold):
+    // Scope and Compact's live audio ride +, Output and Effort the agent menu.
     const compact = composer.size === "compact";
     const menuSide = composer.size === "splash" ? "bottom" : "top";
     const cardClassName = cn(
@@ -268,12 +269,14 @@ export function SmartAgentInputStacked({
       // ONE inset (Arman, 2026-10-03): the send button's distance from the
       // card edge is every edge's distance. Variable labels and text start
       // where the + glyph does (6px in).
-      "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5",
+      compact
+        ? "[&_[data-variable-row]]:px-0 [&_[data-variable-heading]]:px-0"
+        : "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5",
       // The drop target's hidden file input is not a row (it took a gap), and
       // an inline-block textarea leaves a 7px baseline strip under itself.
       "[&>input[type=file]]:!hidden [&_textarea]:block",
       compact
-        ? "rounded-[18px] p-1.5 gap-0"
+        ? "rounded-[14px] p-1.5 gap-1.5"
         : "rounded-[22px] p-2 gap-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     );
     const textarea = (
@@ -292,12 +295,11 @@ export function SmartAgentInputStacked({
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
         textMenu={composer.textMenu}
-        // Every text line is one 32px composer row. Full: two rows sit still
-        // and the third grows it (Arman, 2026-10-03). Compact: one row, the
-        // text centred against the buttons, growing from the second.
-        minHeightPx={compact ? 32 : 64}
+        // Two lines sit still; the third grows it (Arman, 2026-10-03). Full:
+        // each line is one 32px composer row. Compact: 24px lines.
+        minHeightPx={compact ? 48 : 64}
         composerType
-        composerRows
+        composerRows={!compact}
         flush
       />
     );
@@ -312,7 +314,7 @@ export function SmartAgentInputStacked({
       surfaceKey,
       disableSend: sendBlocked,
     };
-    const composerParts = { size: composer.size, mode: composer.mode, foldScopeAndOutput: folded };
+    const composerParts = { size: composer.size, mode: composer.mode, folded };
     return (
       <div
         ref={composerRootRef}
@@ -355,18 +357,8 @@ export function SmartAgentInputStacked({
           />
           {compact ? (
             <div className="flex min-w-0 items-end gap-1.5">
-              <InputActionButtons
-                {...buttonsProps}
-                onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
-                composer={{ ...composerParts, part: "plus" }}
-              />
               <div className="min-w-0 flex-1">{textarea}</div>
-              <InputActionButtons
-                {...buttonsProps}
-                onVoiceBusyChange={setVoiceBusy}
-                extraRightControls={extraRightControls}
-                composer={{ ...composerParts, part: "trail" }}
-              />
+              <InputActionButtons {...buttonsProps} composer={{ ...composerParts, part: "send" }} />
             </div>
           ) : (
             <>
@@ -381,7 +373,24 @@ export function SmartAgentInputStacked({
             </>
           )}
         </SmartInputFileDropTarget>
-        <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
+        {compact ? (
+          <InputActionButtons
+            {...buttonsProps}
+            onVoiceBusyChange={setVoiceBusy}
+            extraRightControls={extraRightControls}
+            onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
+            composer={{
+              ...composerParts,
+              part: "controls",
+              leading: <ComposerScopeCluster conversationId={conversationId} composer={composer} folded={folded} />,
+              trailing: (
+                <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
+              ),
+            }}
+          />
+        ) : (
+          <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
+        )}
       </div>
     );
   }

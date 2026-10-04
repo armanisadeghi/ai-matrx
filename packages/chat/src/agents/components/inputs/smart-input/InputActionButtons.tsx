@@ -131,13 +131,21 @@ interface InputActionButtonsProps {
   composer?: {
     size: ComposerSize;
     mode: ComposerMode;
-    /** The composer is narrow: Scope and Output live in the + menu. */
-    foldScopeAndOutput?: boolean;
     /**
-     * Which part this instance draws. Compact's one row mounts two: `"plus"`
-     * leads it, `"trail"` (voice · send) closes it. Absent = Full's button row.
+     * The composer is narrow (useComposerFold): Scope (and, in Compact, live
+     * audio) live in the + menu; Output and Effort in the agent pill's menu.
      */
-    part?: "plus" | "trail";
+    folded?: boolean;
+    /** Compact's row under the card: after + · mic (· live audio). */
+    leading?: React.ReactNode;
+    /** Compact's row under the card: the right end (agent · output · effort). */
+    trailing?: React.ReactNode;
+    /**
+     * Which part this instance draws. Compact mounts two: `"send"` (↵, inside
+     * the card beside the text) and `"controls"` (the row under the card).
+     * Absent = Full's button row inside the card.
+     */
+    part?: "send" | "controls";
   };
 }
 
@@ -299,7 +307,9 @@ export function InputActionButtons({
           mode: composer.mode,
           size: composer.size,
           surfaceKey,
-          foldScopeAndOutput: composer.foldScopeAndOutput,
+          folded: composer.folded,
+          // Compact's live audio leaves the row when narrow and rides +.
+          foldLiveAudio: composer.folded && composer.part === "controls",
         }}
       />
     );
@@ -354,27 +364,28 @@ export function InputActionButtons({
       </ComposerSendSlot>
     ) : null;
 
-    // `line`: the + leads the row, voice and send close it, the text between.
-    if (composer.part === "plus") {
+    if (composer.part === "send") return sendControls;
+    // Compact (Arman, 2026-10-04): the card holds the text and ↵ only; this
+    // row under it carries + · mic (protected) · live audio · scope · the
+    // values count, and agent · output · effort at the right end.
+    if (composer.part === "controls") {
       return (
-        <span className="flex shrink-0 items-center gap-1.5">
-          {plusMenu}
-          <DesktopPresenceIndicator conversationId={conversationId} />
-          {variablesToggle}
-        </span>
+        <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0">
+          <div className="flex min-w-0 shrink-0 items-center gap-1.5">
+            {plusMenu}
+            <DesktopPresenceIndicator conversationId={conversationId} />
+            {variablesToggle}
+            {micGroup}
+            {composer.folded ? null : liveAudioButton}
+            {composer.leading}
+          </div>
+          <div className="flex min-w-0 items-center gap-1.5">
+            {extraRightControls}
+            {composer.trailing}
+          </div>
+        </div>
       );
     }
-    if (composer.part === "trail") {
-      return (
-        <span className="flex shrink-0 items-center gap-1.5">
-          {extraRightControls}
-          {micGroup}
-          {liveAudioButton}
-          {sendControls}
-        </span>
-      );
-    }
-
     return (
       // Full's button row: one 32px composer row, the same height as each text line.
       <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0 lg:h-8">

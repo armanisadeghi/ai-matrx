@@ -29,6 +29,7 @@
 import { useContext, useRef, useState, type ReactNode } from "react";
 import {
   AppWindow,
+  AudioLines,
   Brain,
   Camera,
   Image as ImageIcon,
@@ -110,7 +111,7 @@ import {
   ComposerMenuSwitchRow,
   ComposerSubmenu,
 } from "./ComposerMenu";
-import { ComposerOutputPanel } from "./ComposerOutput";
+import { announceComingSoon } from "@host/lib/coming-soon/announce";
 import { ComposerMenuSheet } from "./ComposerMenuSheet";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
@@ -138,8 +139,10 @@ interface ComposerPlusMenuProps {
   mode: ComposerMode;
   /** Which style hosts the menu (rows do not vary by it; width folds via the next prop). */
   size?: ComposerSize;
-  /** The composer is narrow: Scope and Output live here, not in the meta row. */
-  foldScopeAndOutput?: boolean;
+  /** The composer is narrow: Scope lives here (Output and Effort ride the agent menu). */
+  folded?: boolean;
+  /** Compact and narrow: live audio lives here too. */
+  foldLiveAudio?: boolean;
   side: "top" | "bottom";
   /** The host's surface key — auto-clear keeps its display slot in step. */
   surfaceKey?: string;
@@ -156,7 +159,8 @@ export function ComposerPlusMenu({
   surfaceKey,
   trigger,
   mode,
-  foldScopeAndOutput = false,
+  folded = false,
+  foldLiveAudio = false,
   side,
   onRequestInputExpand,
   presentation = "popover",
@@ -273,16 +277,24 @@ export function ComposerPlusMenu({
           }}
         />
 
-        {/* A narrow composer folds Scope and Output in here (under 480px). */}
-        {foldScopeAndOutput ? (
+        {/* A narrow composer (under 480px) folds Scope — and Compact's live
+            audio — in here; Output and Effort ride the agent pill's menu. */}
+        {folded ? (
           <>
             <ComposerMenuDivider />
             <ComposerSubmenu row={{ icon: Target, label: "Scope" }} panelClassName="w-[340px] p-0">
               <ActiveContextTree conversationId={conversationId} maxHeight={360} className="w-full" />
             </ComposerSubmenu>
-            <ComposerSubmenu row={{ icon: AppWindow, label: "Output" }} panelClassName="w-80">
-              <ComposerOutputPanel conversationId={conversationId} />
-            </ComposerSubmenu>
+            {foldLiveAudio ? (
+              <ComposerMenuRow
+                icon={AudioLines}
+                label="Live audio"
+                onClick={() => {
+                  close();
+                  void announceComingSoon("chat.live-audio");
+                }}
+              />
+            ) : null}
           </>
         ) : null}
 

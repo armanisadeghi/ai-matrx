@@ -53,28 +53,54 @@ const SCOPE_CHIP_CLASS: Record<"plain" | "pill", string> = {
 };
 
 /** Agent · (Output) · (Effort) — the right cluster, shared by the meta row and the compact toolbar. */
+/**
+ * Scope · surface values — the meta row's left cluster, and Compact's after
+ * + · mic. Narrow: the values count stays; Scope rides the + menu.
+ */
+export function ComposerScopeCluster({
+  conversationId,
+  composer,
+  folded = false,
+}: {
+  conversationId: string;
+  composer: ComposerPresentation;
+  folded?: boolean;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      {folded ? null : (
+        <ActiveContextLensChip
+          conversationId={conversationId}
+          className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
+        />
+      )}
+      <ComposerValueGroupChip conversationId={conversationId} />
+    </div>
+  );
+}
+
+/**
+ * Agent · Output · Effort (Work+) — the right cluster of the meta row and of
+ * Compact's row. Narrow: Output and Effort ride the agent pill's menu.
+ */
 export function ComposerPills({
   conversationId,
   composer,
   menuSide,
-  withOutput = false,
+  folded = false,
 }: {
   conversationId: string;
   composer: ComposerPresentation;
   menuSide: "top" | "bottom";
-  /** The meta row carries Output here, between Agent and Effort (compact keeps it in +). */
-  withOutput?: boolean;
+  folded?: boolean;
 }) {
   const effectiveModelId = useEffectiveModelId(conversationId);
-  // Every size: the direct way to change effort (Work+) is the point of this pill.
-  const showEffort = composerShows(composer.mode, "meta.effort");
+  const showEffort = !folded && composerShows(composer.mode, "meta.effort");
   return (
     // The agent pill is the ONE pill here that shrinks (its label ellipsizes),
-    // never below a readable floor; Effort keeps its natural width.
-    // `ml-auto` keeps the cluster on the right. Never `justify-end`: past the
-    // floor a `justify-end` cluster spills its pills out of its LEFT edge,
-    // over the Output pill ("TexGen…" at a 260px column); start-justified,
-    // the overflow runs right, into the row's sideways scroll.
+    // never below a readable floor. `ml-auto` keeps the cluster on the right;
+    // start-justified, any overflow runs into the row's sideways scroll and
+    // never over its left neighbour.
     <div className="ml-auto flex min-w-0 shrink items-center gap-1.5 [&>*:first-child]:min-w-[4.5rem] [&>*:not(:first-child)]:shrink-0">
       <ComposerAgentPill
         conversationId={conversationId}
@@ -82,10 +108,11 @@ export function ComposerPills({
         size={composer.size}
         agentControl={composer.agent}
         menuSide={menuSide}
+        folded={folded}
       />
-      {withOutput ? (
+      {folded ? null : (
         <ComposerOutputPill conversationId={conversationId} size={composer.size} menuSide={menuSide} />
-      ) : null}
+      )}
       {showEffort ? (
         <ComposerEffortPill
           conversationId={conversationId}
@@ -107,23 +134,15 @@ export function ComposerMetaRow({
   conversationId: string;
   composer: ComposerPresentation;
   menuSide: "top" | "bottom";
-  /** Under 480px of composer width Scope and Output live in + (useComposerFold). */
+  /** Under 480px of composer width (useComposerFold). */
   folded?: boolean;
 }) {
   return (
     // One line, always: a narrow column scrolls the row sideways, never wraps it.
     // Every gap is the tap-target 6px; the clusters sit at the two ends.
     <div className={cn(COMPOSER_ROW_CLASS, "justify-between gap-1.5 px-1")}>
-      <div className="flex shrink-0 items-center gap-1.5">
-        {folded ? null : (
-          <ActiveContextLensChip
-            conversationId={conversationId}
-            className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
-          />
-        )}
-        <ComposerValueGroupChip conversationId={conversationId} />
-      </div>
-      <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} withOutput={!folded} />
+      <ComposerScopeCluster conversationId={conversationId} composer={composer} folded={folded} />
+      <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
     </div>
   );
 }

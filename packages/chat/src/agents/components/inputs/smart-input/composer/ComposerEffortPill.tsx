@@ -48,6 +48,68 @@ function effortWord(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/**
+ * The conversation's effort state — null when its model exposes no
+ * `reasoning_effort`. One reader for the pill and for the agent menu's
+ * Effort row (a narrow composer folds Effort in there).
+ */
+export function useComposerEffort(conversationId: string, modelId: string | null) {
+  const dispatch = useAppDispatch();
+  // The FULL record carries the model's `controls`; asking for it here means the
+  // pill never depends on some other screen having loaded the model first.
+  const model = useModelFull(modelId);
+  const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
+  if (!model || !modelId) return null;
+  const control = resolveModelControls([model], modelId).normalizedControls?.reasoning_effort;
+  // "auto" is never offered as a value to SEND — Auto is the absence of an override.
+  const values = (control?.enum ?? []).filter(isReasoningEffort).filter((value) => value !== "auto");
+  if (values.length === 0) return null;
+  const overriddenRaw = overrideState?.overrides?.reasoning_effort;
+  const overridden = typeof overriddenRaw === "string" && overriddenRaw !== "auto" ? overriddenRaw : null;
+  const base = overrideState?.baseSettings?.reasoning_effort ?? control?.default;
+  const agentOwn = typeof base === "string" ? base : null;
+  const choose = (value: ReasoningEffort | null) => {
+    if (value === null) {
+      dispatch(resetOverride({ conversationId, key: "reasoning_effort" }));
+      return;
+    }
+    dispatch(setOverrides({ conversationId, changes: { reasoning_effort: value } }));
+  };
+  return { values, overridden, agentOwn, word: overridden ? effortWord(overridden) : "Auto", choose };
+}
+
+export type ComposerEffortState = NonNullable<ReturnType<typeof useComposerEffort>>;
+
+/** Auto · the model's effort words — the pill's menu and the agent menu's Effort panel. */
+export function ComposerEffortRows({ effort, onChosen }: { effort: ComposerEffortState; onChosen?: () => void }) {
+  return (
+    <>
+      <ComposerMenuLabel>Effort</ComposerMenuLabel>
+      <ComposerMenuRow
+        label="Auto"
+        description={effort.agentOwn ? `Agent Default: ${effortWord(effort.agentOwn)}` : "The agent's default"}
+        checked={!effort.overridden}
+        onClick={() => {
+          onChosen?.();
+          effort.choose(null);
+        }}
+      />
+      <ComposerMenuDivider />
+      {effort.values.map((value) => (
+        <ComposerMenuRow
+          key={value}
+          label={effortWord(value)}
+          checked={value === effort.overridden}
+          onClick={() => {
+            onChosen?.();
+            effort.choose(value);
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
 export function ComposerEffortPill({
   conversationId,
   modelId,
@@ -59,45 +121,9 @@ export function ComposerEffortPill({
   size: ComposerSize;
   menuSide: "top" | "bottom";
 }) {
-  const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
-  // The FULL record carries the model's `controls`; asking for it here means the
-  // pill never depends on some other screen having loaded the model first.
-  const model = useModelFull(modelId);
-  const overrideState = useAppSelector(
-    selectInstanceOverrideState(conversationId),
-  );
-
-  if (!model || !modelId) return null;
-  const control = resolveModelControls([model], modelId).normalizedControls
-    ?.reasoning_effort;
-  // "auto" is never offered as a value to SEND — Auto is the absence of an override.
-  const values = (control?.enum ?? [])
-    .filter(isReasoningEffort)
-    .filter((value) => value !== "auto");
-  if (values.length === 0) return null;
-
-  const overriddenRaw = overrideState?.overrides?.reasoning_effort;
-  const overridden =
-    typeof overriddenRaw === "string" && overriddenRaw !== "auto"
-      ? overriddenRaw
-      : null;
-  const base =
-    overrideState?.baseSettings?.reasoning_effort ?? control?.default;
-  const agentOwn = typeof base === "string" ? base : null;
-  const pillWord = overridden ? `${effortWord(overridden)}` : "Auto";
-
-  const choose = (value: ReasoningEffort | null) => {
-    setOpen(false);
-    if (value === null) {
-      dispatch(resetOverride({ conversationId, key: "reasoning_effort" }));
-      return;
-    }
-    dispatch(
-      setOverrides({ conversationId, changes: { reasoning_effort: value } }),
-    );
-  };
-
+  const effort = useComposerEffort(conversationId, modelId);
+  if (!effort) return null;
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
@@ -107,13 +133,7 @@ export function ComposerEffortPill({
           aria-label="Effort"
           title="How hard the model thinks"
         >
-          <span
-            className={
-              overridden ? "truncate font-medium text-foreground" : "truncate"
-            }
-          >
-            {pillWord}
-          </span>
+          <span className={effort.overridden ? "truncate font-medium text-foreground" : "truncate"}>{effort.word}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -123,26 +143,7 @@ export function ComposerEffortPill({
         sideOffset={8}
         className="w-56 p-1"
       >
-        <ComposerMenuLabel>Effort</ComposerMenuLabel>
-        <ComposerMenuRow
-          label="Auto"
-          description={
-            agentOwn
-              ? `Agent Default: ${effortWord(agentOwn)}`
-              : "The agent's default"
-          }
-          checked={!overridden}
-          onClick={() => choose(null)}
-        />
-        <ComposerMenuDivider />
-        {values.map((value) => (
-          <ComposerMenuRow
-            key={value}
-            label={effortWord(value)}
-            checked={value === overridden}
-            onClick={() => choose(value)}
-          />
-        ))}
+        <ComposerEffortRows effort={effort} onChosen={() => setOpen(false)} />
       </PopoverContent>
     </Popover>
   );

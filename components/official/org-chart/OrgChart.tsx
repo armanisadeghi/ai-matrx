@@ -438,9 +438,9 @@ export function OrgChart<T>({
       }
     };
     const up = (ev: PointerEvent) => {
-      const d = dragRef.current;
       cleanup();
-      if (!d?.active) return;
+      // Whatever happened in between, a release always ends a drag in progress.
+      if (!liveDrag.current) return;
       swallowClick.current = true;
       window.setTimeout(() => (swallowClick.current = false), 0);
       const cur = liveDrag.current;
@@ -463,11 +463,19 @@ export function OrgChart<T>({
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
       window.removeEventListener("keydown", key_);
+      window.removeEventListener("blur", cancelOnBlur);
     };
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
     window.addEventListener("keydown", key_);
+    window.addEventListener("blur", cancelOnBlur);
+  };
+  /** The window lost focus mid-drag (alt-tab, a system dialog): drop nothing. */
+  const cancelOnBlur = () => {
+    if (!liveDrag.current) return;
+    liveDrag.current = null;
+    setDrag(null);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -968,6 +976,15 @@ function crossLinkPath(
   const bc = { x: b.x + w / 2, y: b.y + h / 2 };
   const dx = bc.x - ac.x;
   const dy = bc.y - ac.y;
+  if (Math.abs(dx) < w) {
+    // Same column (e.g. a stacked team): a straight route would run behind the
+    // cards between them, so leave and re-enter by the right side, bowing out.
+    const sx = Math.max(a.x, b.x) + w;
+    const bow = Math.min(90, 28 + Math.abs(dy) / 6);
+    const start = { x: a.x + w, y: ac.y };
+    const end = { x: b.x + w + 4, y: bc.y };
+    return `M ${start.x} ${start.y} C ${sx + bow} ${start.y}, ${sx + bow} ${end.y}, ${end.x} ${end.y}`;
+  }
   const horizontal = Math.abs(dx) * h > Math.abs(dy) * w;
   const start = horizontal
     ? { x: ac.x + Math.sign(dx) * (w / 2), y: ac.y }
