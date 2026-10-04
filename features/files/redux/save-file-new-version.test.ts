@@ -1,74 +1,64 @@
 /**
- * Saving an edited file writes the NEXT VERSION of that SAME file — never a second file.
+ * Saving an edited file writes the NEXT VERSION of that SAME file — never a second file —
+ * by FILE ID (`POST /files/{id}/versions`), the same way for the owner and for an editor
+ * holding an edit grant on a file someone else owns.
  *
- * The 2026-09-30 defect (browser walk): open a text file, Edit tab, type, Save. The editor
- * re-uploaded through `uploadFiles`, whose Drive-style collision rename turned the taken
- * name "notes.txt" into "notes (1).txt". The files service saw a NEW path, created a
- * second row, the original stayed at version 1, and the UI said "Saved".
- *
- * The fake below is the files service's own rule (matrx-utils `managed_write_async`): an
- * upload to a path that already holds a row version-bumps THAT row; any other path is a
- * brand-new row. So a caller that derives or renames the path goes red here exactly the
- * way it went wrong live.
+ * History: 2026-09-30 the editor re-uploaded through a path-keyed door whose collision
+ * rename turned "notes.txt" into "notes (1).txt" (a second row, original stuck at v1,
+ * UI said "Saved"). Then saves of a SHARED file were refused because the path door
+ * resolves under the uploader. The id-keyed door fixes both.
  *
  * Breaks guarded:
- *   1. the editor save seam (`writeAny` on a stored file, the same dispatch the Edit-tab
- *      editors make) keeps the file id, bumps the version, adds no row — whether the
- *      folder is loaded (old path: "notes (1).txt") or not (old path: "notes.txt" at root);
+ *   1. the editor save seam (`writeAny` on a stored file) keeps the file id, bumps the
+ *      version, adds no row;
  *   2. two saves in a row are versions 2 and 3 of one file;
- *   3. the request carries the file's exact stored path, not one built from its folder;
- *   4. an answer naming a different row (or `is_new`) is REFUSED, never "Saved".
+ *   3. the request is keyed by the file id and carries NO derived path;
+ *   4. a file owned by SOMEONE ELSE saves through the very same call (no branch, no
+ *      refusal) and the change summary rides along;
+ *   5. an answer naming a different row (or `is_new`) is REFUSED, never "Saved".
  */
 
 import { configureStore } from "@reduxjs/toolkit";
 
-type UploadCall = { fileId: string | null; filePath: string; body: string };
+type UploadCall = { fileId: string; body: string; changeSummary?: string; keys: string[] };
 const uploads: UploadCall[] = [];
-// path → { id, version } — the service's rows, keyed the way it looks them up.
-const serverRows = new Map<string, { id: string; version: number }>();
+// id -> the service's row, keyed the way the by-id door looks it up.
+const serverRows = new Map<string, { version: number }>();
 let forceForeignAnswer = false;
 
-function fakeServerWrite(filePath: string) {
-  const existing = serverRows.get(filePath);
-  if (existing && !forceForeignAnswer) {
-    existing.version += 1;
-    return { id: existing.id, version: existing.version, isNew: false };
-  }
-  const id = `new-${serverRows.size + 1}`;
-  serverRows.set(filePath, { id, version: 1 });
-  return { id, version: 1, isNew: true };
-}
-
-async function answer(fileId: string | null, file: File, filePath: string) {
-  const body = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
-  uploads.push({ fileId, filePath, body });
-  const w = fakeServerWrite(filePath);
-  return {
-    data: {
-      file_id: w.id,
-      file_path: filePath,
-      version_number: w.version,
-      size_bytes: file.size,
-      checksum: `sha-${body.length}`,
-      url: null,
-      is_new: w.isNew,
-    },
-    meta: {},
-  };
-}
-
 jest.mock("@/features/files/api/files", () => ({
-  uploadFileWithProgress: (p: { file: File; filePath: string }) =>
-    answer(null, p.file, p.filePath),
-  uploadFile: (p: { file: File; filePath: string }) =>
-    answer(null, p.file, p.filePath),
-  uploadNewVersion: (fileId: string, p: { file: File; filePath: string }) =>
-    answer(fileId, p.file, p.filePath),
+  uploadNewVersion: async (
+    fileId: string,
+    p: { file: File; changeSummary?: string },
+  ) => {
+    const body = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(p.file);
+    });
+    uploads.push({
+      fileId,
+      body,
+      changeSummary: p.changeSummary,
+      keys: Object.keys(p).sort(),
+    });
+    const row = serverRows.get(fileId);
+    if (!row) throw new Error("not found");
+    row.version += 1;
+    return {
+      data: {
+        file_id: forceForeignAnswer ? "some-other-file" : fileId,
+        file_path: "Docs/notes.txt",
+        version_number: row.version,
+        size_bytes: p.file.size,
+        checksum: `sha-${body.length}`,
+        url: null,
+        is_new: forceForeignAnswer,
+      },
+      meta: {},
+    };
+  },
   getFileMetadata: jest.fn(),
 }));
 
@@ -96,6 +86,7 @@ import { writeAny } from "./virtual-thunks";
 
 const FILE_ID = "file-original";
 const FOLDER_ID = "folder-docs";
+const SHARED_ID = "file-owned-by-someone-else";
 
 function makeStore({ folderLoaded = false }: { folderLoaded?: boolean } = {}) {
   const store = configureStore({
@@ -152,7 +143,8 @@ function liveFileIds(store: ReturnType<typeof makeStore>): string[] {
 beforeEach(() => {
   uploads.length = 0;
   serverRows.clear();
-  serverRows.set("Docs/notes.txt", { id: FILE_ID, version: 1 });
+  serverRows.set(FILE_ID, { version: 1 });
+  serverRows.set(SHARED_ID, { version: 1 });
   forceForeignAnswer = false;
 });
 
@@ -163,10 +155,10 @@ describe("saving an edited file", () => {
     await dispatchWriteAny(store, writeAny({ id: FILE_ID, content: "edited once" })).unwrap();
 
     expect(uploads).toHaveLength(1);
-    expect(uploads[0].filePath).toBe("Docs/notes.txt");
+    expect(uploads[0].fileId).toBe(FILE_ID);
     expect(uploads[0].body).toBe("edited once");
     expect(liveFileIds(store)).toEqual([FILE_ID]);
-    expect(serverRows.size).toBe(1);
+    expect(serverRows.size).toBe(2);
     expect(store.getState().cloudFiles.filesById[FILE_ID]?.currentVersion).toBe(2);
     expect(store.getState().cloudFiles.filesById[FILE_ID]?.fileName).toBe("notes.txt");
   });
@@ -176,8 +168,7 @@ describe("saving an edited file", () => {
 
     await dispatchWriteAny(store, writeAny({ id: FILE_ID, content: "edited" })).unwrap();
 
-    expect(uploads.map((u) => u.filePath)).toEqual(["Docs/notes.txt"]);
-    expect(serverRows.size).toBe(1);
+    expect(uploads.map((u) => u.fileId)).toEqual([FILE_ID]);
     expect(liveFileIds(store)).toEqual([FILE_ID]);
     expect(store.getState().cloudFiles.filesById[FILE_ID]?.currentVersion).toBe(2);
   });
@@ -194,13 +185,47 @@ describe("saving an edited file", () => {
 
     expect(first).toEqual({ fileId: FILE_ID, versionNumber: 2 });
     expect(second).toEqual({ fileId: FILE_ID, versionNumber: 3 });
-    expect(uploads.map((u) => u.filePath)).toEqual([
-      "Docs/notes.txt",
-      "Docs/notes.txt",
-    ]);
     expect(uploads.every((u) => u.fileId === FILE_ID)).toBe(true);
-    expect(serverRows.size).toBe(1);
+    // keyed by id: the request carries the bytes and the summary, never a path
+    expect(uploads.every((u) => u.keys.join() === "changeSummary,file")).toBe(true);
     expect(liveFileIds(store)).toEqual([FILE_ID]);
+  });
+
+  it("saves a file someone else owns through the same call, with the change summary", async () => {
+    const store = makeStore();
+    // A row shared with me: owned by another person, hydrated without its path.
+    store.dispatch(
+      upsertFile({
+        id: SHARED_ID,
+        ownerId: "someone-else",
+        fileName: "plan.md",
+        filePath: undefined as unknown as string,
+        mimeType: "text/markdown",
+        currentVersion: 1,
+        visibility: "shared",
+        deletedAt: null,
+      }),
+    );
+
+    const result = await store
+      .dispatch(
+        saveFileNewVersion({
+          fileId: SHARED_ID,
+          content: "# plan v2",
+          changeSummary: "Tightened the plan",
+        }),
+      )
+      .unwrap();
+
+    expect(result).toEqual({ fileId: SHARED_ID, versionNumber: 2 });
+    expect(uploads).toEqual([
+      expect.objectContaining({
+        fileId: SHARED_ID,
+        body: "# plan v2",
+        changeSummary: "Tightened the plan",
+      }),
+    ]);
+    expect(store.getState().cloudFiles.filesById[SHARED_ID]?.currentVersion).toBe(2);
   });
 
   it("refuses an answer that names a different row — never reports Saved", async () => {

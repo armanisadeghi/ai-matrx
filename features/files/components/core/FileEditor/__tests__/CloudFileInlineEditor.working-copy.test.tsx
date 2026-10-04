@@ -48,7 +48,7 @@ jest.mock("@/features/files/api/files", () => ({
     if (!row) throw new Error("not found");
     return { blob: new Blob([row.text], { type: "text/markdown" }), filename: null, meta: {} };
   },
-  uploadNewVersion: async (fileId: string, p: { file: File; filePath: string }) => {
+  uploadNewVersion: async (fileId: string, p: { file: File; changeSummary?: string }) => {
     const text = await readText(p.file);
     if (holdUploads) await new Promise<void>((resolve) => holdUploads!.push(resolve));
     if (failUploads) throw new Error("The files service is unreachable");

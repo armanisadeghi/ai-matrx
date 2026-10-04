@@ -14,6 +14,7 @@ import {
   getJson,
   patchJson,
   postJson,
+  postMultipart,
   uploadWithProgress,
   type DownloadProgressEvent,
   type RequestOptions,
@@ -109,26 +110,30 @@ export async function uploadFile(
 }
 
 /**
- * Write new bytes as the NEXT VERSION of an existing file — same id, version + 1.
+ * Write new bytes as the NEXT VERSION of an existing file — same id, version + 1 —
+ * `POST /files/{file_id}/versions`.
  *
- * The files service has no by-id content endpoint; a new version is an upload to the
- * file's EXACT stored `file_path` (the service looks the row up by path and version-bumps
- * it in place). The request carries the FILE's own organization, never the picker's.
- * Callers go through the `saveFileNewVersion` thunk, which verifies the answer names the
- * same file — never call `uploadFile` with a derived path to "save" an edit (that is how a
- * save became a second file, "name (1).txt", 2026-09-30).
+ * Keyed by the file's ID, so it is the ONE save path for the owner AND for an editor
+ * holding an edit grant on someone else's file: the server authorizes the caller's
+ * `write` right on that file, stores the bytes under the file's own owner/path, records
+ * the caller as the version's author and keeps `changeSummary`. The request carries the
+ * FILE's own organization, never the picker's. Callers go through the `saveFileNewVersion`
+ * thunk (never `uploadFile` with a derived path — that is how a save became a second
+ * file, "name (1).txt", 2026-09-30).
+ *
+ * Raw multipart helper: the route is not in the pinned generated contract yet.
  */
 export async function uploadNewVersion(
   fileId: string,
-  params: Pick<UploadFileParams, "file" | "filePath" | "changeSummary">,
+  params: { file: File; changeSummary?: string },
   opts: RequestOptions = {},
 ): Promise<{ data: FileUploadResponse; meta: ResponseMeta }> {
-  return uploadFile(
-    {
-      file: params.file,
-      filePath: params.filePath,
-      changeSummary: params.changeSummary,
-    },
+  const form = new FormData();
+  form.append("file", params.file);
+  if (params.changeSummary) form.append("change_summary", params.changeSummary);
+  return postMultipart<FileUploadResponse>(
+    `/files/${encodeURIComponent(fileId)}/versions`,
+    form,
     withFileOrganization(fileId, opts),
   );
 }

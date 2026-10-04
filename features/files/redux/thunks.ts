@@ -1847,10 +1847,12 @@ export const restoreVersion = createAsyncThunk<
  * re-uploaded its own file created a second file and left the original at
  * version 1 while the UI said "Saved" (2026-09-30).
  *
- * This thunk uploads to the file's exact stored `file_path` (the service
- * version-bumps the row at that path) and then REFUSES any answer that is not
- * that same row: a different `file_id` or `is_new: true` throws, naming what
- * happened, so a save can never again silently become a copy.
+ * ONE path for everyone: `POST /files/{id}/versions` writes by file ID, so the
+ * owner and an editor holding an edit grant on someone else's file save the
+ * same way (the server checks the caller's write right, keeps the file's owner
+ * and path, and records the caller + `changeSummary` on the version). The
+ * answer is still REFUSED if it is not that same row (a different `file_id` or
+ * `is_new: true`), so a save can never silently become a copy.
  */
 export const saveFileNewVersion = createAsyncThunk<
   SaveFileNewVersionResult,
@@ -1865,18 +1867,13 @@ export const saveFileNewVersion = createAsyncThunk<
       );
     }
     let record: CloudFile | undefined = getState().cloudFiles.filesById[fileId];
-    // A row hydrated for rendering only may not carry its path — read the
-    // file's own metadata rather than guessing a path from its folder.
-    if (!record?.filePath) {
+    // A row hydrated for rendering only may not carry its name/mime — read the
+    // file's own metadata rather than guessing.
+    if (!record?.fileName) {
       const { data } = await Files.getFileMetadata(fileId);
       const fresh = apiFileRecordToCloudFile(data);
       dispatch(upsertFile(fresh));
       record = fresh;
-    }
-    if (!record.filePath) {
-      throw new Error(
-        "We couldn't save — this file has no stored path. Refresh and try again.",
-      );
     }
     const mimeType = record.mimeType ?? "text/plain";
     const body =
@@ -1898,7 +1895,6 @@ export const saveFileNewVersion = createAsyncThunk<
         fileId,
         {
           file: upload,
-          filePath: record.filePath,
           changeSummary: changeSummary ?? "Edited in place",
         },
         { requestId, idempotencyKey: requestId },
