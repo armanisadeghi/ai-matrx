@@ -155,9 +155,10 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ImportReceipt | null>(null);
-  const attemptedImports = useRef(new Set<string>());
+  const [attemptedImportKeys, setAttemptedImportKeys] = useState<string[]>([]);
   const inFlightImport = useRef(false);
   const browseGeneration = useRef(0);
+  const [unconfirmedAttempt, setUnconfirmedAttempt] = useState<string | null>(null);
 
   const connections = eligibleGoogleConnections(
     environment.connections,
@@ -223,6 +224,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
     setImportSelection(null);
     setDestinationPath("");
     setImportError(null);
+    setReceipt(null);
   }
 
   function selectForImport(file: DriveBrowsePage["files"][number]) {
@@ -253,10 +255,14 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
     const slash = destinationPath.lastIndexOf("/");
     const folder = slash < 0 ? "" : destinationPath.slice(0, slash);
     const name = destinationPath.slice(slash + 1);
+    const exportExtension = GOOGLE_NATIVE_EXTENSIONS[selected.file.mime_type];
     try {
       if (!folder || validateStorageDestinationFolderPath(folder) ||
           storageDestinationPath(folder, name) !== destinationPath) {
         throw new Error("Choose a valid Matrx Files destination path.");
+      }
+      if (exportExtension && !name.toLowerCase().endsWith(exportExtension)) {
+        throw new Error(`This Google file is exported as ${exportExtension}. Keep that file extension.`);
       }
     } catch (caught) {
       setImportError(extractErrorMessage(caught));
@@ -265,11 +271,11 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
     const attemptKey = JSON.stringify([
       destinationOrganizationId, selected.connectionId, selected.file.id, destinationPath,
     ]);
-    if (attemptedImports.current.has(attemptKey)) {
+    if (attemptedImportKeys.includes(attemptKey)) {
       setImportError("This import was already requested. Check Matrx Files before choosing another destination.");
       return;
     }
-    attemptedImports.current.add(attemptKey);
+    setAttemptedImportKeys((current) => [...current, attemptKey]);
     inFlightImport.current = true;
     setImporting(true);
     setImportError(null);
@@ -286,14 +292,21 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
         fileName: selected.file.name,
         organizationId: destinationOrganizationId,
       });
+      setUnconfirmedAttempt(null);
       setImportSelection(null);
     } catch (caught) {
       setImportError(`${extractErrorMessage(caught)} Check Matrx Files before another import.`);
+      setUnconfirmedAttempt(`${selected.file.name} from ${selected.sourceAccount} to ${destinationPath} was not confirmed. Check Matrx Files before another import.`);
     } finally {
       inFlightImport.current = false;
       setImporting(false);
     }
   }
+
+  const selectedAttemptKey = importSelection && selectedOrganizationId
+    ? JSON.stringify([selectedOrganizationId, importSelection.connectionId, importSelection.file.id, destinationPath])
+    : null;
+  const alreadyAttempted = selectedAttemptKey !== null && attemptedImportKeys.includes(selectedAttemptKey);
 
   async function checkAccess(fileId: string) {
     if (!connectionId) return;
@@ -379,8 +392,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
               Google Drive
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Browse a connected account, then choose one file to save a copy
-              in Matrx Files. Browsing alone does not save file content.
+              Browse Drive files. Save a copy only when you choose Import.
             </p>
           </div>
           {page ? (
@@ -408,17 +420,14 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
         </div>
       ) : !capabilityAvailable ? (
         <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
-          Google Drive metadata browsing is not available to this signed-in
-          account for this internal test.
+          Drive browsing is unavailable for this account.
           {driveBrowse?.remedy
             ? ` ${driveBrowse.remedy}`
-            : " The Files library cannot add this access."}
+            : ""}
         </p>
       ) : connections.length === 0 ? (
         <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
-          No connected Google account currently has Drive browse access for this
-          internal test. The Files library cannot request or add that access
-          here.
+          No connected Google account has Drive access.
         </p>
       ) : (
         <section className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -504,9 +513,15 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
         >
           <p className="font-medium">Access confirmed right now</p>
           <p className="mt-1 text-muted-foreground">
-            {access.file.name} is accessible through {access.source_account}.
-            Metadata only; the file was not opened.
+            {access.file.name} · {access.source_account} · No content read.
           </p>
+        </div>
+      ) : null}
+      {unconfirmedAttempt ? (
+        <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+          <p className="font-medium">Import not confirmed</p>
+          <p>{unconfirmedAttempt}</p>
+          <ErrorAlchemyMenu error={unconfirmedAttempt} />
         </div>
       ) : null}
       {importSelection ? (
@@ -523,10 +538,10 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
             <Input value={destinationPath} onChange={(event) => setDestinationPath(event.target.value)} disabled={importing} aria-label="Matrx Files destination path" />
           </label>
           <p className="text-xs text-muted-foreground">
-            Import downloads or exports this one Google file and saves a Matrx Files copy until you delete it.
+            Import downloads or exports this file. The saved copy stays in Matrx Files until you delete it.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void importSelected()} disabled={importing || !selectedOrganizationId}>
+            <Button type="button" onClick={() => void importSelected()} disabled={importing || !selectedOrganizationId || alreadyAttempted}>
               {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Import selected file
             </Button>
             <Button type="button" variant="outline" disabled={importing} onClick={() => setImportSelection(null)}>Cancel</Button>

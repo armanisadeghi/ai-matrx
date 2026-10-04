@@ -93,7 +93,8 @@ async function click(element: HTMLElement) {
 }
 
 async function chooseAccount(value = "connection-harbor") {
-  const select = container.querySelector("select")!;
+  const select = container.querySelector("select");
+  if (!select) throw new Error("Missing Google account selector");
   await act(async () => {
     select.value = value;
     select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -154,6 +155,8 @@ it("imports the one selected file to the explicit destination and opens its save
   expect(container.textContent).toContain("Saved to Matrx Files");
   await click(button("Open saved file"));
   expect(mockOpenFilePreview).toHaveBeenCalledWith("saved-intake-guide");
+  await chooseAccount("connection-river");
+  expect(container.textContent).not.toContain("Saved to Matrx Files");
 });
 
 it("does not blindly resend an uncertain import", async () => {
@@ -165,4 +168,38 @@ it("does not blindly resend an uncertain import", async () => {
   await click(button("Import selected file"));
   expect(mockImportFile).toHaveBeenCalledTimes(1);
   expect(container.querySelector('[role="alert"]')?.textContent).toContain("Check Matrx Files");
+  expect(button("Import selected file").disabled).toBe(true);
+  await chooseAccount("connection-river");
+  expect(container.textContent).toContain("Import not confirmed");
+  expect(container.textContent).toContain("records@harbordental.test");
+});
+
+it("drops a selected file when the Google account changes", async () => {
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await showFiles();
+  await click(button("Save to Matrx Files"));
+  await chooseAccount("connection-river");
+  expect(container.textContent).not.toContain("Import selected file");
+  expect(mockImportFile).not.toHaveBeenCalled();
+});
+
+it("blocks a second import while the first request is in flight", async () => {
+  let finish: ((value: unknown) => void) | undefined;
+  mockImportFile.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await showFiles();
+  await click(button("Save to Matrx Files"));
+  await act(async () => {
+    button("Import selected file").click();
+  });
+  expect(button("Import selected file").disabled).toBe(true);
+  button("Import selected file").click();
+  expect(mockImportFile).toHaveBeenCalledTimes(1);
+  await act(async () => finish?.({
+    file_id: "saved-intake-guide",
+    file_path: "My Files/Imports/New patient intake guide.docx",
+    version_number: 1,
+    created: true,
+    source: { provider: "google_drive", connection_id: "connection-harbor", source_ref: "drive-intake-guide" },
+  }));
 });
