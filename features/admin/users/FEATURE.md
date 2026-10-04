@@ -188,11 +188,25 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 - **Plan and Usage columns (Accounts).** Both come from `users.admin_account_plans()` (service-role,
   one pass, ~0.65 s): `billing.user_effective_plan` + `billing._points_usage_state` — never
-  recomputed in TypeScript. Source is `grant` / `default` / `guest`; Usage shows ok/near/over with
+  recomputed in TypeScript. Source is `organization` / `grant` / `default` / `guest`; Usage shows ok/near/over with
   the binding window's used/limit on hover. A failed read returns `plans_error` and the roster
   still loads (ErrorNotice). "Change plan…" (row action) and the Organizations "Change plan" button
   open the shared `features/admin/limits/components/ChangePlanDialog.tsx`; the Organizations Plan
   column reads `org_plan_list` paged to completion, and names the audience (two plans share "Pro").
+- **AI usage limits (`/administration/users/usage-limits`).** Rows come from the same
+  `/api/admin/users` read — no per-row calls. Each plan carries every judged window verbatim
+  (`users.admin_account_plans().usage.windows`) plus `users.admin_account_points()`: the Enterprise
+  organization the values come from (source `organization`, only when `limits_source =
+  organization`), points this month, latest spend. Default population: AI spend in the last 35 days
+  or state near/over ("All accounts" lifts it); segments reuse `lib/accountSegments`. Never
+  recompute a state, ratio threshold or limit (`lib/usageLimits.ts` only selects, sorts, counts).
+  "Reset…" calls `billing.usage_reset_apply` (super-admin; one `billing.usage_reset` marker per
+  window, the calculation counts that window from the marker, the ledger is untouched) and
+  replaces the row with its returned state; the dialog states the consequence before it acts.
+  A person is never offered Enterprise in "Change plan".
+- **Organizations `?plan=<audience>`** lists only organizations on that plan audience (the
+  allowances matrix links `?plan=enterprise`); an Enterprise organization's panel shows its custom
+  limits editor (`features/admin/limits/components/EnterpriseCustomLimitsEditor.tsx`).
 
 ## Doctrine compliance
 

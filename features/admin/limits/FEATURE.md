@@ -58,6 +58,28 @@ real error, never a blank.
   super-admin, soft delete); it confirms first and names the consequence ("Pro then has no
   weekly cap."). `plan_limit_set` on the same window revives the row.
 
+## Enterprise is custom per organization (Arman, 2026-10-04)
+
+- 🚨 **Enterprise is NEVER unlimited and never one person's plan.** It has no `plan_limit` rows; the
+  matrix's Enterprise row reads "Custom per organization" and links
+  `/administration/users/organizations?plan=enterprise` — never an editable cell, never a blank.
+- Values are entered per ORGANIZATION in `EnterpriseCustomLimitsEditor` (Organizations panel, and
+  the change-plan dialog when Enterprise is chosen): AI points per person for Month / Week / 5-hour
+  / Day / 1-hour, stored as `billing.account_addon` rows with source `enterprise_custom`, written
+  only by `billing.org_custom_limit_set` (a number ≥ 0 is required; serialized per org × window)
+  and `billing.org_custom_limit_remove` (soft delete). Empty = "Not set — members use their own
+  plan". There is no Unlimited option. 0 confirms first ("every member … is blocked").
+- Members inherit the values through `billing._points_usage_state`; `billing.user_effective_plan`
+  decides whether the Enterprise organization is the person's plan.
+- The add-on register read (`/api/admin/limits/account-addons`) excludes soft-deleted rows; an
+  expired row still lists.
+
+## THE 0 TRAP
+
+Saving `0` in a plan cell asks first and names the consequence (`zeroConfirmation` in
+`enterpriseCustom.ts`): "0 means no AI points at all for Pro — every account on it is blocked."
+Blank keeps its meaning (unlimited over an existing row, nothing over a missing one).
+
 ## Plan assignment (shared dialog)
 
 `components/ChangePlanDialog.tsx` is the ONE plan picker for admins: a person →

@@ -74,6 +74,9 @@ function CustomCell({
   };
 
   const commit = async () => {
+    // Enter saves, then the input disables and blurs: that blur must not send
+    // the same value a second time while the first save is in flight.
+    if (saving) return;
     if (draft === null || draft.trim() === savedText) {
       setDraft(null);
       return;
@@ -110,7 +113,7 @@ function CustomCell({
   };
 
   const hint =
-    value.trim() === "" ? "Not set" : (pointsToUsdLabel(value.replace(/[,_\s]/g, ""), period, rate) ?? "not a number");
+    value.trim() === "" ? "" : (pointsToUsdLabel(value.replace(/[,_\s]/g, ""), null, rate) ?? "not a number");
 
   return (
     <label className="group block min-w-0 space-y-0.5">
