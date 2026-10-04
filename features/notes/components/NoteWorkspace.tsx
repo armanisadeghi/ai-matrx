@@ -105,11 +105,11 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
         className={cn("@container flex h-full min-h-0 w-full min-w-0 flex-col bg-card", className)}
         onKeyDown={onKeyDown}
       >
-        <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/40 px-1">
+        <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border/40 px-1.5">
           <div className="flex min-w-0 flex-1 items-center justify-center">
             <NoteModeSwitch noteId={noteId} labels="container" />
           </div>
-          <TapTargetButtonGroup>
+          <TapTargetButtonGroup surface="solid">
             <NoteRecordTools
               instanceId={instanceId}
               noteId={noteId}
