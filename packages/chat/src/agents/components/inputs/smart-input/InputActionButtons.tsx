@@ -346,7 +346,14 @@ export function InputActionButtons({
     if (composer.part === "send") return sendControls;
 
     return (
-      <div className="flex min-w-0 items-center justify-between gap-1 shrink-0">
+      <div
+        className={
+          compact
+            ? "flex min-w-0 items-center justify-between gap-1 shrink-0"
+            : // One 32px composer row, the same height as each text line.
+              "flex min-w-0 items-center justify-between gap-1 shrink-0 lg:h-8"
+        }
+      >
         <div className="flex min-w-0 items-center gap-0.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
