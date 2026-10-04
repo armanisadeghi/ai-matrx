@@ -8,6 +8,7 @@ import {
   Building2,
   DollarSign,
   Gauge,
+  Gift,
   Mail,
   MailPlus,
   Megaphone,
@@ -57,6 +58,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     label: "Entitlements",
     href: "/administration/users/entitlements",
     icon: Gauge,
+  },
+  {
+    label: "Free time & coupons",
+    href: "/administration/users/coupons",
+    icon: Gift,
   },
   {
     label: "Limits & Knobs",

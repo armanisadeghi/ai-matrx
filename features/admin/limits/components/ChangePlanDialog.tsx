@@ -2,9 +2,11 @@
 
 // Change which plan a PERSON or an ORGANIZATION is on (super-admin).
 //
-// One dialog, two subjects: a person writes `billing.user_plan_set` (per user
-// first — Arman 2026-10-03; optional expiry and note; "Default plan" clears the
-// grant), an organization writes `billing.org_plan_assign` (plan + note; that
+// One dialog, two subjects: a person gets DATED free time through
+// `billing.free_months_apply` (Arman 2026-10-04: free time is never endless — months are
+// required, 1..billing/free_period_max_months read live; the database keeps the more
+// generous plan and caps the end date) and "Default plan" clears the grant through
+// `billing.user_plan_set(null)`; an organization writes `billing.org_plan_assign` (plan + note; that
 // function has no expiry argument, so the field is not offered). Plans come
 // from `billing.plan`, grouped by audience, with the read-only price beside
 // each name. The database refuses anyone but a super admin; its message is
@@ -37,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
+import { applyFreeMonths, fetchFreeTimeKnobs } from "@/features/admin/users/service/coupons";
+import { refusalText, validateMonths } from "@/features/admin/users/lib/coupons";
 import { assignOrgPlan, fetchPlans, setUserPlan } from "../service";
 import { groupPlansByAudience, planPriceLabel, type Plan } from "../types";
 import { isEnterpriseAudience } from "../enterpriseCustom";
@@ -61,15 +65,18 @@ export function ChangePlanDialog({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [choice, setChoice] = useState<string>("");
   const [note, setNote] = useState("");
-  const [expires, setExpires] = useState("");
+  const [months, setMonths] = useState("1");
+  const [cap, setCap] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!subject) return;
     let cancelled = false;
-    fetchPlans()
-      .then((rows) => {
-        if (!cancelled) setPlans(rows.filter((p) => p.active));
+    Promise.all([fetchPlans(), fetchFreeTimeKnobs()])
+      .then(([rows, knobs]) => {
+        if (cancelled) return;
+        setPlans(rows.filter((p) => p.active));
+        setCap(knobs.maxMonths);
       })
       .catch((err: unknown) => {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : String(err));
@@ -89,7 +96,7 @@ export function ChangePlanDialog({
         : (subject.currentPlanKey ?? ""),
     );
     setNote("");
-    setExpires("");
+    setMonths("1");
   }
 
   const groups = groupPlansByAudience(
@@ -102,17 +109,33 @@ export function ChangePlanDialog({
     (plans ?? []).find((p) => p.plan_key === choice)?.audience,
   );
 
+  const givesFreeTime = subject?.kind === "user" && choice !== "" && choice !== DEFAULT_CHOICE;
+  const monthsError = givesFreeTime && cap !== null ? validateMonths(Number(months), cap) : null;
+
   const save = async () => {
-    if (!subject || !choice) return;
+    if (!subject || !choice || monthsError) return;
     setSaving(true);
     try {
-      if (subject.kind === "user") {
-        await setUserPlan({
-          userId: subject.id,
-          planKey: choice === DEFAULT_CHOICE ? null : choice,
+      if (subject.kind === "user" && choice === DEFAULT_CHOICE) {
+        await setUserPlan({ userId: subject.id, planKey: null, note: note.trim() || null, expiresAt: null });
+      } else if (subject.kind === "user") {
+        const outcome = await applyFreeMonths({
+          userIds: [subject.id],
+          planKey: choice,
+          months: Number(months),
           note: note.trim() || null,
-          expiresAt: expires ? new Date(`${expires}T23:59:59`).toISOString() : null,
         });
+        const result = outcome.results[0];
+        if (!result?.ok || !result.grant) {
+          toast.error(result ? refusalText(result) : "Refused");
+          return;
+        }
+        toast.success(
+          `${plans?.find((p) => p.plan_key === result.grant?.plan_key)?.name ?? result.grant.plan_key} until ${new Date(result.grant.ends_at).toLocaleDateString()}`,
+        );
+        onChanged();
+        onClose();
+        return;
       } else {
         await assignOrgPlan(subject.id, choice, note.trim() || null);
       }
@@ -158,10 +181,17 @@ export function ChangePlanDialog({
               </SelectContent>
             </Select>
           )}
-          {subject?.kind === "user" && choice !== DEFAULT_CHOICE && (
+          {givesFreeTime && (
             <label className="block space-y-1 text-xs text-muted-foreground">
-              <span>Expires (optional)</span>
-              <Input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+              <span>Free for (months{cap !== null ? `, up to ${cap}` : ""})</span>
+              <Input
+                type="number"
+                min={1}
+                max={cap ?? undefined}
+                value={months}
+                onChange={(e) => setMonths(e.target.value)}
+              />
+              {monthsError && <span className="text-destructive">{monthsError}</span>}
             </label>
           )}
           {subject?.kind === "organization" && choiceIsEnterprise && (
@@ -183,7 +213,7 @@ export function ChangePlanDialog({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => void save()} disabled={saving || !choice}>
+          <Button onClick={() => void save()} disabled={saving || !choice || !!monthsError || (givesFreeTime && cap === null)}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save plan
           </Button>

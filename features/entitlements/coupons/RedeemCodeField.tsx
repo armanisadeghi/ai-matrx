@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { refreshUsageInBackground } from "../usage-gate/usageGate";
 import { redeemCoupon } from "./redeemCoupon";
-import type { RedeemOutcome } from "./couponCopy";
+import { redeemSuccessLine, type RedeemOutcome } from "./couponCopy";
+import { catalogPlanName } from "./planName";
 
 export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
   const dispatch = useAppDispatch();
@@ -28,10 +29,19 @@ export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
     setPending(true);
     setOutcome(null);
     const result = await redeemCoupon(value);
-    setOutcome(result);
+    const shown = result.ok
+      ? { ...result, line: redeemSuccessLine(result.body, await catalogPlanName(result.planKey)) }
+      : result;
+    setOutcome(shown);
     setPending(false);
     if (result.ok) {
       setCode("");
+      // A spent code leaves the address bar, so a reload never reads "already redeemed".
+      if (autoCode) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("code");
+        window.history.replaceState(window.history.state, "", url.pathname + url.search);
+      }
       void refreshUsageInBackground(dispatch, store.getState);
     }
   };

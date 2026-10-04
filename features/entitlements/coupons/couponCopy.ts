@@ -40,11 +40,20 @@ export function parseCouponPreview(raw: unknown): CouponPreview | null {
   };
 }
 
-/** "Pro" from a plan name, else a title-cased plan key. */
+/**
+ * The plan's catalog name ("Pro"); without one, the plan key minus its
+ * audience prefix, title-cased ("personal-pro" → "Pro").
+ */
 export function planLabel(planName: string | null, planKey: string | null): string {
   if (planName) return planName;
   if (!planKey) return "Paid plan";
-  return planKey.charAt(0).toUpperCase() + planKey.slice(1).replace(/[_-]+/g, " ");
+  const bare = planKey.replace(/^(personal|company)-/, "").replace(/[_-]+/g, " ");
+  return bare.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** The grant's plan key in a redeem body, for a catalog name lookup. */
+export function redeemPlanKey(body: unknown): string | null {
+  return str(rec(rec(rec(body)?.result)?.grant)?.plan_key);
 }
 
 export function formatPlanDate(iso: string | null): string | null {
@@ -83,21 +92,21 @@ export function invalidLinkLine(reason: string | null): string {
 }
 
 export type RedeemOutcome =
-  | { ok: true; line: string }
+  | { ok: true; line: string; planKey: string | null; body: unknown }
   | { ok: false; code: string | null; line: string };
 
 /**
  * The success line from the route's body: a grant names its plan and end
  * ("Pro free until Mar 4, 2027"); the Stripe path names months off the bill.
  */
-export function redeemSuccessLine(body: unknown): string {
+export function redeemSuccessLine(body: unknown, planName: string | null = null): string {
   const v = rec(body);
   if (v?.mode === "stripe") {
     const months = num(v.months);
     return months ? `${months} month${months === 1 ? "" : "s"} free on your bill` : "Free months added to your bill";
   }
   const grant = rec(rec(v?.result)?.grant);
-  const plan = planLabel(null, str(grant?.plan_key));
+  const plan = planLabel(planName, str(grant?.plan_key));
   const until = formatPlanDate(str(grant?.ends_at));
   return until ? `${plan} free until ${until}` : `${plan} free time added`;
 }

@@ -33,7 +33,7 @@ export function freePeriodNoticeFor(
   planName: string | null = null,
 ): FreePeriodNotice | null {
   if (!fp || !fp.endsAt) return null;
-  const plan = planLabel(fp.planKey === null ? planName : null, fp.planKey);
+  const plan = planLabel(planName, fp.planKey);
   const date = formatPlanDate(fp.endsAt);
   if (fp.status === "ended") {
     return {

@@ -46,6 +46,6 @@ describe("redeemCoupon", () => {
     await Promise.resolve();
     const second = await redeemCoupon("TOKEN-3", fetchImpl);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
-    expect(second).toEqual({ ok: true, line: "3 months free on your bill" });
+    expect(second).toMatchObject({ ok: true, line: "3 months free on your bill" });
   });
 });

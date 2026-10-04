@@ -42,6 +42,7 @@ import {
   FREE_PERIOD_WARNING_DAYS_FALLBACK,
   freePeriodNoticeFor,
 } from "../coupons/freePeriodNotice";
+import { catalogPlanName } from "../coupons/planName";
 
 const FREE_PERIOD_NOTICE_STORAGE = "matrx:free-period-notice";
 
@@ -177,8 +178,11 @@ export function UsageGateBridge() {
         }
       }
       if (!live) return;
-      const notice = freePeriodNoticeFor(freePeriod, warningDays, new Date());
-      if (!notice || readShownDay() === notice.dayKey) return;
+      const due = freePeriodNoticeFor(freePeriod, warningDays, new Date());
+      if (!due || readShownDay() === due.dayKey) return;
+      const name = await catalogPlanName(freePeriod.planKey);
+      if (!live) return;
+      const notice = freePeriodNoticeFor(freePeriod, warningDays, new Date(), name) ?? due;
       writeShownDay(notice.dayKey);
       const show = notice.kind === "ended" ? toast.warning : toast.info;
       show(notice.title, {

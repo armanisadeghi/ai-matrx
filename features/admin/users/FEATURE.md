@@ -37,6 +37,8 @@ not own or duplicate organization or membership data.
 - `app/api/admin/users/acquisition/route.ts` — super-admin projection joining auth users, guest-registry provenance, and the canonical usage rollup.
 - `app/api/admin/users/acquisition/[rowId]/route.ts` — per-identity owned-observability join over the HTTP ledger, runtime spine, Error Inspector/server incidents, and AI Dream logs.
 - `features/admin/users/server/organizationMembershipAdmin.ts` — shared server projection and audited mutation caller.
+- `app/(admin)/administration/users/coupons/page.tsx` → `components/CouponsAdminClient.tsx` — **Free time & coupons.** Every `billing.coupon` (status derived: revoked › redeemed › expired › active; redeemer via `AdminUserRef`), revoke (`billing.coupon_revoke`, consequence stated), `CreateCouponDialog` (`billing.coupon_create`; months ≤ `billing/free_period_max_months` and batch ≤ `billing/coupon_batch_max` read live; new-account links exist only in its result view — the DB keeps the hash), `SendCouponDialog` (DM via `/api/messages`, email via `/api/admin/email`, text via `/api/sms/send` → `sendAndLogSms` opt-out + off-production loopback guard; each send recorded by `billing.coupon_mark_sent` into `metadata.sent`). Logic: `lib/coupons.ts` (+ test); data/sends: `service/coupons.ts`.
+- `features/admin/users/components/GiveFreeMonthsDialog.tsx` — direct dated free time (`billing.free_months_apply`), per-person end date or the DB's refusal. Doors: Coupons tab, Accounts row menu and bulk selection ("Give free months…"). The Limits **Change plan** dialog now gives a person a plan only this way (months required); "Default plan" still clears via `user_plan_set(null)`.
 
 ---
 
@@ -233,6 +235,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 - Known sibling path (not closed here): the pre-existing `platform_admin_all` RLS policy still lets any platform admin UPDATE the table directly; the RPC is the only sanctioned writer.
 
 ## Change log
+- `2026-10-04` — Free time & coupons tab (`/administration/users/coupons`): coupon table, create (existing-account codes / new-account one-time links), send by DM/email/SMS with a sent log (`billing.coupon_mark_sent`, new super-admin RPC + door row), revoke, and direct free months. Accounts roster gained row + bulk "Give free months…"; Change plan for a person no longer writes an endless grant.
 - `2026-09-30` — Accounts facts now come from `users.admin_account_facts()` (one ~0.5 s database pass replacing 8 guest-row slices and two usage-rollup calls, ~5 s). Added Active days and first AI use; the owner's `crm.party_research` category overrides the automatic kind; new Friends & family slice.
 - `2026-09-30` — Accounts roster triage. Measured live: 979 of 1,071 accounts created in 30 days were guests, 670 of them HeadlessChrome; 91 dotted-Gmail signups never confirmed; ~20 people actually used AI. Added the `kind`/`stage` decision tree, preset segments defaulting to People, AI requests (all-time + 7d), last AI use, AI cost, source, client and landing columns, and a KPI strip. Fixed `users.profiles` being read without paging (names past row 1,000 dropped) and widened the shared classifier to `*.localhost` previews and `python-httpx`/`aiohttp`.
 

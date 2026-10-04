@@ -628,6 +628,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/users/admins"),
           destination("/administration/users/invitations"),
           destination("/administration/users/entitlements"),
+          destination("/administration/users/coupons"),
           destination("/administration/users/limits"),
           destination("/administration/users/usage-limits"),
           destination("/administration/usage"),

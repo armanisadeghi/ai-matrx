@@ -7,7 +7,12 @@
 // request (a second request would only earn "already redeemed" and hide the
 // real result).
 
-import { couponRefusalLine, redeemSuccessLine, type RedeemOutcome } from "./couponCopy";
+import {
+  couponRefusalLine,
+  redeemPlanKey,
+  redeemSuccessLine,
+  type RedeemOutcome,
+} from "./couponCopy";
 
 const inFlight = new Map<string, Promise<RedeemOutcome>>();
 
@@ -25,7 +30,9 @@ export function redeemCoupon(code: string, fetchImpl: Fetch = fetch): Promise<Re
         body: JSON.stringify({ code: key }),
       });
       const body: unknown = await res.json().catch(() => null);
-      if (res.ok) return { ok: true, line: redeemSuccessLine(body) };
+      if (res.ok) {
+        return { ok: true, line: redeemSuccessLine(body), planKey: redeemPlanKey(body), body };
+      }
       const b = (body ?? {}) as { error?: unknown; message?: unknown };
       const errCode = typeof b.error === "string" ? b.error : null;
       return {

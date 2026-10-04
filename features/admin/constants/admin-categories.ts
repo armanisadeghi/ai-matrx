@@ -1076,6 +1076,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Free time & coupons",
+        description:
+          "One-time coupons for existing and new accounts, sent by message, email or text, plus free months applied directly. Never endless.",
+        iconName: "Gift",
+        link: "/administration/users/coupons",
+        isNew: true,
+      },
+      {
         title: "Limits & Knobs",
         description:
           "Every limit on the platform, editable without a deploy: what each plan includes, and the operational ceilings and defaults that belong to no account.",

@@ -14,6 +14,7 @@ import {
   BadgeCheck,
   Building2,
   Gauge,
+  Gift,
   KeyRound,
   Loader2,
   Mail,
@@ -33,7 +34,6 @@ import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,9 @@ import {
 } from "@/features/admin/limits/components/ChangePlanDialog";
 import { periodLabel } from "@/features/admin/limits/types";
 import { UserResearchDialog } from "./UserResearchDialog";
+import { GiveFreeMonthsDialog, type FreeMonthsPerson } from "./GiveFreeMonthsDialog";
 import { readUserResearch } from "../service/userResearch";
+import { sendDirectMessage } from "../service/coupons";
 import { RELATIONSHIP_LABELS, CONTACT_STATE_LABELS, feedbackDmKey, type UserResearch } from "../lib/userResearch";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -170,6 +172,8 @@ export function AccountsTableClient() {
   const [rows, setRows] = useState<AdminUserRow[]>([]);
   const [plansError, setPlansError] = useState<string | null>(null);
   const [planTarget, setPlanTarget] = useState<ChangePlanSubject | null>(null);
+  const [freeMonthsPeople, setFreeMonthsPeople] = useState<FreeMonthsPerson[] | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const researchOwnerId = useAppSelector(state => state.userAuth.id);
   const costDisplay = useCostDisplay();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -331,30 +335,12 @@ export function AccountsTableClient() {
     }
     setDmSending(true);
     try {
-      const convRes = await fetch("/api/messages/conversations", {
-        method: "POST",
-        headers: applyOrganizationContextHeader(
-          { "Content-Type": "application/json" },
-          selectedOrganizationId,
-        ),
-        body: JSON.stringify({
-          type: "direct",
-          participant_ids: [dmTarget.id],
-        }),
+      await sendDirectMessage({
+        userId: dmTarget.id,
+        content: dmContent,
+        organizationId: selectedOrganizationId,
+        replayKey: (conversationId, content) => feedbackDmKey(researchOwnerId, conversationId, content),
       });
-      const convJson = await convRes.json();
-      if (!convRes.ok || !convJson.success)
-        throw new Error(convJson.msg ?? "Could not open conversation");
-      const conversationId = convJson.data?.ConversationID as string;
-      const clientMessageId = await feedbackDmKey(researchOwnerId, conversationId, dmContent);
-      const msgRes = await fetch(`/api/messages/${conversationId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: dmContent.trim(), client_message_id: clientMessageId }),
-      });
-      const msgJson = await msgRes.json();
-      if (!msgRes.ok || !msgJson.success)
-        throw new Error(msgJson.msg ?? "Could not send message");
       toast.success(
         `Message sent to ${dmTarget.display_name ?? dmTarget.email}`,
         {
@@ -1029,6 +1015,14 @@ export function AccountsTableClient() {
                 >
                   <WalletCards className="mr-2 h-4 w-4" /> Change plan…
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={row.is_anonymous}
+                  onClick={() =>
+                    setFreeMonthsPeople([{ id: row.id, label: row.display_name ?? row.email ?? row.id }])
+                  }
+                >
+                  <Gift className="mr-2 h-4 w-4" /> Give free months…
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => void toggleMcpFullAccess(row)}
@@ -1063,6 +1057,26 @@ export function AccountsTableClient() {
           // filter miss — that blames a control the user never touched for a
           // record that simply is not in this list. The banner above says what
           // actually happened; this only has to stop contradicting it.
+          selection={{
+            selectedIds: selectedUserIds,
+            onSelectedIdsChange: setSelectedUserIds,
+            isRowSelectable: (row) => !row.is_anonymous,
+            noun: "account",
+            actions: (selected) => (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={selected.length === 0}
+                onClick={() =>
+                  setFreeMonthsPeople(
+                    selected.map((row) => ({ id: row.id, label: row.display_name ?? row.email ?? row.id })),
+                  )
+                }
+              >
+                <Gift className="mr-1.5 h-3.5 w-3.5" /> Give free months…
+              </Button>
+            ),
+          }}
           read={readOf({ loading, error }, { what: "user accounts" })}
           emptyState={
             focusMissed
@@ -1196,6 +1210,12 @@ export function AccountsTableClient() {
       </div>
 
       {plansError && <ErrorNotice size="inline" message="Plans and usage could not load. Refresh to retry." error={plansError} operation="Load account plans" calls={["users.admin_account_plans"]} />}
+      <GiveFreeMonthsDialog
+        open={freeMonthsPeople !== null}
+        people={freeMonthsPeople ?? []}
+        onClose={() => setFreeMonthsPeople(null)}
+        onApplied={() => setRefreshKey((key) => key + 1)}
+      />
       <ChangePlanDialog
         subject={planTarget}
         onClose={() => setPlanTarget(null)}

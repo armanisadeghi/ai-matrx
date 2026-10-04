@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1334,
+  "routeCount": 1336,
   "routes": [
     {
       "pattern": "/",
@@ -1192,6 +1192,11 @@
       "pattern": "/administration/users/change-policy",
       "status": "live",
       "source": "app/(admin)/administration/users/change-policy/page.tsx"
+    },
+    {
+      "pattern": "/administration/users/coupons",
+      "status": "live",
+      "source": "app/(admin)/administration/users/coupons/page.tsx"
     },
     {
       "pattern": "/administration/users/email",
@@ -5815,6 +5820,11 @@
       "pattern": "/rag/visualization",
       "status": "live",
       "source": "app/(core)/rag/visualization/page.tsx"
+    },
+    {
+      "pattern": "/redeem",
+      "status": "live",
+      "source": "app/(core)/redeem/page.tsx"
     },
     {
       "pattern": "/registered-results",
