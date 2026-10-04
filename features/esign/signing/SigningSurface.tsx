@@ -35,6 +35,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 
 import { AdoptSignature, type SignatureMark } from "./AdoptSignature";
 import { initialsOf, readFieldMap, signingDate, type PlacedField } from "./fieldMap";
+import { SignedCopy } from "./SignedCopy";
 import { SigningFields, type FieldValues } from "./SigningFields";
 
 import {
@@ -562,9 +563,9 @@ export function SigningSurface({
                 onPage={(page) => setPageByDoc((pages) => ({ ...pages, [current.id]: page }))}
                 renderFields={(pageNumber, rotation) => (
                   <SigningFields
-                    // After signing, a reopened document shows only what this screen adopted.
+                    // A signed document reopened later shows no boxes: the signed copy has the marks.
                     fields={current.fields.filter(
-                      (f) => f.page === pageNumber && (step !== "done" || fieldValues !== null || f.signerId !== myId),
+                      (f) => f.page === pageNumber && (step !== "done" || fieldValues !== null),
                     )}
                     rotation={rotation}
                     myId={myId}
@@ -677,9 +678,10 @@ export function SigningSurface({
           {step === "done" && (
             <>
               <StepTitle icon={Check} label="Signed" />
+              <SignedCopy door={door} />
               {docs.map((d) =>
                 d.url ? (
-                  <Button key={d.id} variant="outline" asChild>
+                  <Button key={d.id} variant="ghost" asChild>
                     <a href={d.url} download={d.name}>
                       <Download className="mr-2 h-4 w-4" />
                       {d.name}
