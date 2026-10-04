@@ -53,6 +53,7 @@ function snapshot(state: UsageSnapshot["state"]): UsageSnapshot {
       },
     ],
     computedAt: "2026-10-03T00:00:00Z",
+    enforced: true,
   };
 }
 
@@ -153,6 +154,14 @@ test("cached near + fresh over: the turn is stopped before fetch and the refusal
   expect(gate.state).toBe("over");
   expect(gate.refusal?.period).toBe("week");
   expect(gate.refusal?.used).toBe(100);
+});
+
+test("enforcement off: a fresh over never blocks — the turn goes out (same switch as the server)", async () => {
+  readMock.mockResolvedValue({ ...snapshot("over"), enforced: false });
+  const store = makeStore("over");
+  await expect(startTurn(store)).rejects.toBeDefined();
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(store.getState().entitlements.usageGate.refusal).toBeNull();
 });
 
 test("cached over alone never blocks: a fresh ok lets the turn go", async () => {

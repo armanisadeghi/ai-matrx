@@ -30,6 +30,12 @@ export interface UsageSnapshot {
   windows: UsageWindow[];
   /** The server's `computed_at`. */
   computedAt: string | null;
+  /**
+   * The enforcement switch (billing.capability 'platform.points'.enforced), as
+   * the server read it. Absent = false: a state never blocks unless the server
+   * says enforcement is on.
+   */
+  enforced: boolean;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -77,6 +83,7 @@ function parseFlat(v: Record<string, unknown>): UsageSnapshot | null {
     resetsAt: str(v.resets_at),
     windows,
     computedAt: str(v.computed_at),
+    enforced: v.enforced === true,
   };
 }
 

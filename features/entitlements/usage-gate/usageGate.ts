@@ -4,7 +4,8 @@
 // common-docs/systems/platform/entitlements-knobs/USAGE-GATE.md (9-12).
 //
 //   • cached `ok` / `unknown` → the call goes out with ZERO added work;
-//   • cached `near` / `over`  → ONE fresh read first; only a fresh `over` blocks
+//   • cached `near` / `over`  → ONE fresh read first; only a fresh `over` with
+//     enforcement on blocks
 //     (a cached `over` alone never blocks — a top-up, an upgrade or another
 //     device must never be missed);
 //   • every call end          → mark stale + debounced BACKGROUND refresh,
@@ -67,7 +68,8 @@ export async function checkUsageBeforeAiCall(
   const fresh = await readUsageSnapshot();
   if (!fresh) return { allowed: true };
   dispatch(setUsageSnapshot({ snapshot: fresh, fetchedAt: Date.now() }));
-  if (fresh.state !== "over") return { allowed: true };
+  // Same switch as the server: over only blocks while enforcement is on.
+  if (fresh.state !== "over" || !fresh.enforced) return { allowed: true };
 
   const window = bindingWindow(fresh);
   dispatch(setUsageRefusal(window));

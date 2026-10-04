@@ -35,6 +35,8 @@ export interface UsageGateState {
   windows: UsageWindow[];
   /** Server `computed_at` of the answer held. */
   computedAt: string | null;
+  /** The server's enforcement switch with that answer; false never blocks. */
+  enforced: boolean;
   /** A call ended since the last answer; a background refresh is due. */
   stale: boolean;
   /** Client clock when the answer landed. */
@@ -50,6 +52,7 @@ export const initialUsageGateState: UsageGateState = {
   resetsAt: null,
   windows: [],
   computedAt: null,
+  enforced: false,
   stale: false,
   fetchedAt: null,
   refusal: null,
@@ -109,6 +112,7 @@ function usageGateFromSnapshot(
     resetsAt: snapshot.resetsAt,
     windows: snapshot.windows,
     computedAt: snapshot.computedAt,
+    enforced: snapshot.enforced,
     stale: false,
     fetchedAt,
     refusal,
