@@ -37,6 +37,7 @@ import { syncPolicies } from "@/lib/sync/registry";
 import { ChunkRecoveryBootScript } from "@/components/errors/ChunkRecoveryBootScript";
 import { NewVersionWatcher } from "@/components/errors/NewVersionWatcher";
 import { UserAcquisitionCapture } from "@/lib/product-analytics/UserAcquisitionCapture";
+import { AgentTrafficForwarder } from "@/lib/agent-traffic/AgentTrafficForwarder";
 import { DevWalkMonitor } from "@/components/dev/DevWalkMonitor";
 
 export { metadata, viewport };
@@ -119,6 +120,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <SessionIntegrityGate />
         {process.env.NODE_ENV === "development" ? <DevWalkMonitor /> : null}
         {children}
+        <AgentTrafficForwarder />
         <UserAcquisitionCapture />
         <Toaster />
         <Sonner />

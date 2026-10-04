@@ -15,6 +15,7 @@ import { ADMIN_LANE_HEADER, isAdminLanePath } from "@/utils/supabase/adminLane";
 import { siteConfig } from "@/config/extras/site";
 import {
   applyAcquisitionCookie,
+  applyLocalAgentTrafficCookie,
   prepareAcquisitionCapture,
 } from "@/lib/product-analytics/server/request-capture";
 import {
@@ -339,7 +340,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const robotsLookup = startRecordRobotsLookup(request.nextUrl.pathname);
   const response = await routeRequest(request);
   await applyRecordRobotsHeader(robotsLookup, response);
-  return applyAcquisitionCookie(response, capture, request);
+  return applyLocalAgentTrafficCookie(
+    applyAcquisitionCookie(response, capture, request),
+    request,
+  );
 }
 
 export const config = {
