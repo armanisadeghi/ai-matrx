@@ -1,5 +1,10 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Note tile never sits on "Loading note..."; Picklist opens wide enough to read names
+
+- Root cause: `NoteContentEditor` started the body read only for a note the store already held as a list row. A note the store did not hold at all (a board opened already zoomed, so the tile mounts before or without the list delivering it, or a note outside the list's page or scope) never got a read, and a read that settled "loaded" without leaving the full note (record replaced by a list row) was never repeated; both waited forever. Fix: the read starts for an absent note too, a "loaded but not full" note is read once more, and a read still "loading" after 20 s (`NOTE_READ_DEADLINE_MS`) becomes "This note is taking too long to load" with Retry. A rejected read already showed the access gate with retry. Guard: `features/notes/components/NoteContentEditor.bodyGate.test.tsx` (3 new cases, red before the fix).
+- Picklist default tile size 760 -> 1240 wide (`items/list-items.tsx`): the table gives its columns equal shares, so Name was ~96 px beside five other columns and the pinned Actions column ("Cigna ..."); at 1240 it is ~170 px. The canonical table is untouched.
+
 ## 2026-10-04 — Tile defects from the final walk (project, pickers, titles, picklist, pill guard)
 
 - Project tile: the header editors are the project page's own (`ProjectRecordWorkspace`); they are read-only only for a person with no admin/owner role on that project, on the page too (admin@admin.com is not a member of Arman's projects). The task-add input "ignored typing" because ProInput's hover cluster (mic, "...") sat over the middle of a 206 px field and a press there hit the mic, not the field. Below 260 px (`PRO_INPUT_NARROW_FIELD_PX`) the cluster now appears on focus, never on hover (`hoverRevealsCluster`, guard `components/official/__tests__/proInput-narrow-field.test.ts`).

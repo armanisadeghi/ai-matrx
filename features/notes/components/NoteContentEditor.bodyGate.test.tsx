@@ -35,6 +35,57 @@ import type { Note } from "../types";
 const id = "44444444-4444-4444-8444-444444444444", org = "11111111-1111-4111-8111-111111111111", actor = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const note = (o: Partial<Note> = {}): Note => ({ id, organization_id: org, version: 2, content: "Kiln firing schedule", label: "Kiln", folder_name: null, folder_id: null, tags: [], metadata: {}, published_to_web: false, position: 0, project_id: null, task_id: null, created_at: "", created_by: actor, updated_at: "", updated_by: actor, deleted_at: null, content_hash: null, file_path: null, last_device_id: null, custom_fields: {}, sync_version: 0, search_engine_indexed: null, shown_to: null, ...o });
 
+
+const harness = async (run: (c: HTMLElement, store: ReturnType<typeof configureStore>) => Promise<void>, preload?: (s: any) => Promise<void> | void) => {
+  (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  Object.defineProperty(window, "matchMedia", { value: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }), configurable: true });
+  const store = configureStore({ reducer: { notes: notesReducer, userAuth: (state = { id: actor, authReady: true }) => state, appContext: appContextReducer }, middleware: (gdm) => gdm({ serializableCheck: false }) });
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  try {
+    if (preload) await act(async () => { await preload(store); });
+    await act(async () => root.render(<Provider store={store}><NotesInstanceProvider value="i"><NoteContentEditor noteId={id} /></NotesInstanceProvider></Provider>));
+    await run(container, store as never);
+  } finally { await act(async () => root.unmount()); }
+};
+
+// A NOTE THE STORE NEVER HEARD OF (a board tile opened already zoomed, a note
+// outside the list's page or scope) used to sit on "Loading note…" forever:
+// the body read only fired for a record already in the store.
+it("reads a note the store does not hold at all", async () => {
+  fetchNoteContent.mockClear();
+  await harness(async (container) => {
+    expect(container.textContent).toContain("Loading note");
+    expect(fetchNoteContent).toHaveBeenCalledWith(id);
+  });
+});
+
+// A read that settled "loaded" while the record is still not full (the record
+// was evicted/replaced by a list row) is not a state to wait in.
+it("reads again when a read finished but left the note without its body", async () => {
+  fetchNoteContent.mockClear();
+  await harness(async () => {
+    expect(fetchNoteContent).toHaveBeenCalledWith(id);
+  }, (store) => {
+    const { content: _b, ...row } = note();
+    store.dispatch(upsertNoteFromServer({ note: row as Note, fetchStatus: "list" }));
+    store.dispatch({ type: "notes/fetchNoteContent/fulfilled", meta: { arg: id, requestId: "r", requestStatus: "fulfilled" }, payload: null });
+  });
+});
+
+// A read that is still "loading" past its deadline says so, with Retry.
+it("says so, with Retry, when the read never answers", async () => {
+  jest.useFakeTimers();
+  try {
+    await harness(async (container) => {
+      await act(async () => { jest.advanceTimersByTime(30_000); });
+      expect(container.textContent).toContain("Retry");
+    }, (store) => {
+      store.dispatch({ type: "notes/fetchNoteContent/pending", meta: { arg: id, requestId: "r", requestStatus: "pending" } });
+    });
+  } finally { jest.useRealTimers(); }
+});
+
 it("waits for the body of a listed note, then mounts the editor", async () => {
   (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   Object.defineProperty(window, "matchMedia", { value: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }), configurable: true });

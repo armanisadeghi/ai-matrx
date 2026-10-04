@@ -124,6 +124,9 @@ interface NoteContentEditorProps {
   forceReadOnly?: boolean;
 }
 
+/** How long a body read may stay "loading" before the wait becomes a message with Retry. */
+const NOTE_READ_DEADLINE_MS = 20_000;
+
 export function NoteContentEditor({
   noteId,
   actionsSurfaceId,
@@ -153,11 +156,33 @@ export function NoteContentEditor({
   // the next save REPLACES the whole note with those few characters. A new
   // unsaved note is created "full" (it is empty), so it opens at once.
   const bodyLoaded = noteExists?._fetchStatus === "full";
+  // The body read starts for a note the store holds only as a list row AND for
+  // one it does not hold at all (a board tile opened already zoomed, a note
+  // outside the list's page or scope): waiting for the list to deliver it
+  // left "Loading note…" up forever. A read that settled "loaded" yet left the
+  // note without its body (evicted, replaced by a list row) is read once more.
+  const rereadFor = useRef<string | null>(null);
   useEffect(() => {
-    if (noteExists && !bodyLoaded && contentLoadStatus === "idle") {
+    if (bodyLoaded) return;
+    if (contentLoadStatus === "idle") {
+      void dispatch(fetchNoteContent(noteId));
+    } else if (contentLoadStatus === "loaded" && rereadFor.current !== noteId) {
+      rereadFor.current = noteId;
       void dispatch(fetchNoteContent(noteId));
     }
-  }, [noteExists, bodyLoaded, contentLoadStatus, dispatch, noteId]);
+  }, [bodyLoaded, contentLoadStatus, dispatch, noteId]);
+
+  // A read that never answers must say so (nothing fails silently): after the
+  // deadline the wait becomes a message with Retry.
+  const [readStalled, setReadStalled] = useState(false);
+  useEffect(() => {
+    if (bodyLoaded || contentLoadStatus !== "loading") {
+      setReadStalled(false);
+      return;
+    }
+    const timer = setTimeout(() => setReadStalled(true), NOTE_READ_DEADLINE_MS);
+    return () => clearTimeout(timer);
+  }, [bodyLoaded, contentLoadStatus, noteId]);
 
   const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
   const folderReferences = useAppSelector(selectFolderReferences);
@@ -600,6 +625,25 @@ export function NoteContentEditor({
   // as a missing record made a slow/temporarily unavailable DB look like a
   // deleted note. Only show unavailable after the request rejects.
   if (!noteExists || !bodyLoaded) {
+    if (readStalled) {
+      return (
+        <div className="flex flex-1 items-center justify-center p-4" role="alert">
+          <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+            This note is taking too long to load.
+            <button
+              type="button"
+              className="rounded border border-border px-2 py-1 text-foreground hover:bg-accent"
+              onClick={() => {
+                setReadStalled(false);
+                void dispatch(fetchNoteContent(noteId));
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
     if (contentLoadStatus !== "error") {
       return (
         <div className="flex flex-1 items-center justify-center text-muted-foreground">

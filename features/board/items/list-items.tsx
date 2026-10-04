@@ -188,7 +188,9 @@ export const LIST_ITEMS: readonly BoardItemType[] = [
     kindLabel: "picklist",
     icon: ListChecks,
     group: "work",
-    defaultSize: { w: 760, h: 560 },
+    // Wide enough for the table's Name column (~170 px, equal-share columns) to read a normal name beside five other columns and
+    // the pinned Actions column (at 760 it was ~96 px: "Cigna ...").
+    defaultSize: { w: 1240, h: 560 },
     matches: (s) => s.kind === "entity" && s.entity === LIST_ITEM_KEY,
     Body: ListBody,
     startNew: { label: NEW_LIST_TITLE, create: () => ({ title: NEW_LIST_TITLE, source: listSource(null) }) },
