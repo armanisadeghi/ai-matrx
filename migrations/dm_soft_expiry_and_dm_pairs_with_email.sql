@@ -1,11 +1,11 @@
--- draft: owner-session(board+notify) — applied to clone; production apply awaits Arman (ALTER on communication.dm_messages). ONE file on purpose: the column, the rule, every producer, the DM words and the knob rows land together or not at all.
+-- chair-step: Arman approved this production apply in chat on 2026-10-04 (it ALTERs communication.dm_messages). Its REVOKEs only contain this file's own new functions, its one DROP removes a superseded draft overload production never had, and its DELETE FROM lines sit inside the take-over function body it re-bases unchanged.
 -- based-on: public.get_dm_unread_count(uuid, uuid) d9ce120d569bac59c466e4b7fddc39ff15a315ae9221554c6f7cbef5b12d4ca4
 -- based-on: communication.notification_user_channels(uuid, text, uuid, jsonb, boolean) 35135eeee5d692e87d5aefc9b244e8e3ac709d4b42b7a617fd9c61f780d3b75a
 -- based-on: communication.notify_from_sql(uuid, text, uuid, text, text, jsonb, text, text, uuid, text) 7510107182dc09fb91601ba12bced08b9177ffb4e4033214d326b2c44f0ba25e
 -- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) 9362490a6452fc524a08e07fdb80ac8f594b823c1f4a1a069af73ab6837e473b
 -- based-on: iam._notify_door(uuid, text, uuid, jsonb, uuid, text, text) 6727eebbe9779ee0bd45b91c5e676830ced54ed5109c9e73dc911013f5cb90be
 -- based-on: public.org_admin_take_over_account(uuid, uuid, text, text, text) b5d40e915824b176e50393ea1864e8114455f6af2ef4c8bbb82d1f89dc01d92b
--- based-on: public.org_admin_take_over_member_records(uuid, uuid, text, text, uuid) 3b1bfeae05d3a074440d8ff471c94552d79672d485abf94801e3477ecf55731c
+-- based-on: public.org_admin_take_over_member_records(uuid, uuid, text, text, uuid) 63ddc43bc7163106b805d209654fef7ed387c7595477c5b935fd44efb16ead48
 -- based-on: custom.agg_deliver(uuid, uuid, uuid, text, uuid, text, text, text, jsonb, text) 3dc8d308c985f09d48dde3c8341418525777b005f92642fc699f487a8d68eba2
 -- based-on: communication.my_notification_unread_count() e1c5933ef166d42f7caa4f8aaf0dbbd4e380f17d77d9185c8788dbae33dabd72
 -- based-on: communication.my_notifications(integer, timestamp with time zone, boolean) b8763b3814b5a5e293830fe5d8e63059dcd595b90fa4c86ed30d394caf125a56
@@ -1246,6 +1246,7 @@ CREATE OR REPLACE FUNCTION public.org_admin_take_over_member_records(p_org_id uu
  SET search_path TO 'public', 'pg_temp'
 AS $function$
 declare
+  v_custom jsonb; v_custom_done boolean := false;
   v_uid uuid := auth.uid();
   v_to uuid := coalesce(p_to_user_id, auth.uid());
   v_caller_role text; v_target_role text; v_min integer;
@@ -1324,24 +1325,31 @@ begin
 
   -- ── THE MOVE: ownership of their records in THIS organization only. Sign-in is not touched.
   for r in select * from iam._org_records_owned_by(p_org_id, p_user_id) loop
-    if r.token = 'custom_table' then
-      -- Each custom Table through the custom data system's own audited transfer (it keeps the
-      -- previous owner on the Table as an editor while they are still a member, and tells both).
-      for v_tbl in select ct.id from custom.record ct
-                where ct.table_id = custom.table_kernel_id() and ct.deleted_at is null
-                  and ct.created_by = p_user_id and ct.organization_id = p_org_id loop
+    if r.token in ('custom_table', 'custom_record') then
+      -- CD-LADDER (2026-10-03): the member's custom Tables and every custom row they made here move
+      -- through custom.member_records_take_over in ONE call (the first of the two tokens); the
+      -- previous owner keeps nothing unless separately shared.
+      if not coalesce(v_custom_done, false) then
+        v_custom_done := true;
         begin
-          perform custom.table_transfer_owner(v_tbl.id, v_to, p_reason);
-          v_tables := v_tables + 1;
+          v_custom := custom.member_records_take_over(p_org_id, p_user_id, v_to, p_reason);
+          if (v_custom ->> 'tables')::integer > 0 then
+            v_moved := v_moved || jsonb_build_object('token', 'custom_table', 'label', 'Table',
+              'data_class', 'organization', 'count', (v_custom ->> 'tables')::integer);
+          end if;
+          if (v_custom ->> 'records')::bigint > 0 then
+            v_moved := v_moved || jsonb_build_object('token', 'custom_record', 'label', 'Table row',
+              'data_class', 'organization', 'count', (v_custom ->> 'records')::bigint);
+          end if;
+          v_total := v_total + (v_custom ->> 'rows')::bigint;
+          if (v_custom ->> 'confidential_kept')::bigint > 0 then
+            v_not_moved := v_not_moved || jsonb_build_object('token', 'custom_record', 'label', 'Table row',
+              'count', (v_custom ->> 'confidential_kept')::bigint, 'why', 'rows of a Confidential table never move');
+          end if;
         exception when others then
           v_not_moved := v_not_moved || jsonb_build_object('token', r.token, 'label', r.label,
-            'count', 1, 'why', format('%s %s', sqlstate, sqlerrm));
+            'count', r.row_count, 'why', format('%s %s', sqlstate, sqlerrm));
         end;
-      end loop;
-      if v_tables > 0 then
-        v_moved := v_moved || jsonb_build_object('token', r.token, 'label', r.label,
-          'data_class', r.data_class, 'count', v_tables);
-        v_total := v_total + v_tables;
       end if;
       continue;
     end if;
