@@ -252,6 +252,20 @@
   "has_organization": true
  },
  {
+  "token": "ai_setting_profile",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "ai_translation_cell",
+  "type": "reference",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "ai_usage_executions",
   "type": "system",
   "custom_fields_enabled": false,
@@ -700,11 +714,25 @@
   "has_organization": true
  },
  {
+  "token": "billing_usage_reset",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "billing_user_plan",
   "type": "entity",
   "custom_fields_enabled": true,
   "is_active": true,
   "has_organization": false
+ },
+ {
+  "token": "board",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
  },
  {
   "token": "browser_account_binding",
@@ -1687,6 +1715,13 @@
   "has_organization": true
  },
  {
+  "token": "crm_sending_claim",
+  "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "crm_sending_event",
   "type": "detail",
   "custom_fields_enabled": true,
@@ -1743,6 +1778,20 @@
   "has_organization": true
  },
  {
+  "token": "custom_io_outbox_consumer",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": false
+ },
+ {
+  "token": "custom_io_outbox_consumption",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
   "token": "custom_record",
   "type": "detail",
   "custom_fields_enabled": true,
@@ -1752,6 +1801,20 @@
  {
   "token": "custom_share_tails_mine_repair",
   "type": null,
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_template",
+  "type": "system",
+  "custom_fields_enabled": false,
+  "is_active": true,
+  "has_organization": true
+ },
+ {
+  "token": "custom_template_install",
+  "type": "system",
   "custom_fields_enabled": false,
   "is_active": true,
   "has_organization": true
@@ -6190,13 +6253,6 @@
  {
   "token": "source_authority",
   "type": "reference",
-  "custom_fields_enabled": false,
-  "is_active": true,
-  "has_organization": true
- },
- {
-  "token": "spatial_board",
-  "type": null,
   "custom_fields_enabled": false,
   "is_active": true,
   "has_organization": true

@@ -2,7 +2,7 @@
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
   "list.sourceWithoutCustomFields": 1,
-  "route.pending": 1266,
+  "route.pending": 1281,
   "route.none": 35,
   "route.tokens": 16,
   "route.host": 1,
@@ -13,7 +13,8 @@
   "peek.tokens": 19,
   "peek.none": 5,
   "peek.any": 1,
-  "table.pending": 241,
+  "route.manifestRowWithoutFile": 1,
+  "table.pending": 242,
   "table.noncanonical": 26,
   "table.none": 4,
   "table.set": 1
@@ -651,6 +652,10 @@
    "file": "app/(admin)/administration/documentation/feature-docs/view/[[...path]]/page.tsx",
    "pending": true
   },
+  "route:/administration/documentation/feature-maps": {
+   "file": "app/(admin)/administration/documentation/feature-maps/page.tsx",
+   "pending": true
+  },
   "route:/administration/education": {
    "file": "app/(admin)/administration/education/page.tsx",
    "pending": true
@@ -1031,6 +1036,10 @@
    "file": "app/(admin)/administration/users/usage/page.tsx",
    "pending": true
   },
+  "route:/administration/users/usage-limits": {
+   "file": "app/(admin)/administration/users/usage-limits/page.tsx",
+   "pending": true
+  },
   "route:/administration/utilities": {
    "file": "app/(admin)/administration/utilities/page.tsx",
    "pending": true
@@ -1299,6 +1308,14 @@
   },
   "route:/agents/battle/conversation/[setId]": {
    "file": "app/(core)/agents/battle/conversation/[setId]/page.tsx",
+   "pending": true
+  },
+  "route:/agents/battle/matrix": {
+   "file": "app/(core)/agents/battle/matrix/page.tsx",
+   "pending": true
+  },
+  "route:/agents/battle/matrix/[setId]": {
+   "file": "app/(core)/agents/battle/matrix/[setId]/page.tsx",
    "pending": true
   },
   "route:/agents/battle/model": {
@@ -1863,6 +1880,14 @@
    "file": "app/(core)/data-v2/[tableId]/page.tsx",
    "pending": true
   },
+  "route:/data-v2/[tableId]/r/[recordId]": {
+   "file": "app/(core)/data-v2/[tableId]/r/[recordId]/page.tsx",
+   "pending": true
+  },
+  "route:/data-v2/connect": {
+   "file": "app/(core)/data-v2/connect/page.tsx",
+   "pending": true
+  },
   "route:/data-v2/try-everything": {
    "file": "app/(core)/data-v2/try-everything/page.tsx",
    "pending": true
@@ -2349,6 +2374,18 @@
   },
   "route:/error": {
    "file": "app/error/page.tsx",
+   "pending": true
+  },
+  "route:/esign": {
+   "file": "app/(core)/esign/page.tsx",
+   "pending": true
+  },
+  "route:/esign/[envelopeId]": {
+   "file": "app/(core)/esign/[envelopeId]/page.tsx",
+   "pending": true
+  },
+  "route:/esign/new": {
+   "file": "app/(core)/esign/new/page.tsx",
    "pending": true
   },
   "route:/exports": {
@@ -4825,6 +4862,10 @@
    "file": "app/(core)/resources/term-lists/page.tsx",
    "pending": true
   },
+  "route:/review/page-cleanup": {
+   "file": "app/(core)/review/page-cleanup/page.tsx",
+   "pending": true
+  },
   "route:/rsvp/[secret]": {
    "file": "app/(link)/rsvp/[secret]/page.tsx",
    "pending": true
@@ -5025,6 +5066,10 @@
    "file": "app/(link)/sign/[token]/page.tsx",
    "pending": true
   },
+  "route:/sign/e/[envelopeId]": {
+   "file": "app/(link)/sign/e/[envelopeId]/page.tsx",
+   "pending": true
+  },
   "route:/sms": {
    "file": "app/(public)/sms/page.tsx",
    "pending": true
@@ -5065,6 +5110,14 @@
   },
   "route:/teams/id/[teamId]": {
    "file": "app/(core)/teams/id/[teamId]/page.tsx",
+   "pending": true
+  },
+  "route:/templates": {
+   "file": "app/(public)/templates/page.tsx",
+   "pending": true
+  },
+  "route:/templates/[catalogueId]": {
+   "file": "app/(public)/templates/[catalogueId]/page.tsx",
    "pending": true
   },
   "route:/terms-and-conditions": {
@@ -5335,6 +5388,10 @@
    "file": "app/(core)/workflows/battle/page.tsx",
    "pending": true
   },
+  "route:/workflows/builder/[tableId]": {
+   "file": "app/(core)/workflows/builder/[tableId]/page.tsx",
+   "pending": true
+  },
   "route:/workflows/runs": {
    "file": "app/(core)/workflows/runs/page.tsx",
    "pending": true
@@ -5349,6 +5406,10 @@
   },
   "route:/workflows/waiting": {
    "file": "app/(core)/workflows/waiting/page.tsx",
+   "pending": true
+  },
+  "route:/x/sign": {
+   "file": "app/(link)/x/sign/page.tsx",
    "pending": true
   },
   "window:components/admin/controls/AdminIndicator.tsx": {
@@ -6323,6 +6384,7 @@
   "features/admin/users/components/InvitationsTableClient.tsx": "pending",
   "features/admin/users/components/OrganizationsAdminClient.tsx": "pending",
   "features/admin/users/components/PreferencesTabClient.tsx": "pending",
+  "features/admin/users/components/UsageLimitsClient.tsx": "pending",
   "features/admin/users/components/UserAcquisitionTableClient.tsx": "pending",
   "features/administration/batch/components/ProviderBatchesPanel.tsx": "pending",
   "features/administration/batch/components/WorkItemsPanel.tsx": "pending",

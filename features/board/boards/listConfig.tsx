@@ -11,8 +11,8 @@ import { BOARD_LIST_SCOPES, createBoardListService } from "./listService";
 import { useBoardRowActions } from "./useBoardRowActions";
 
 export const boardListConfig: EntityListConfig<BoardListRow> = {
-  surfaceKey: "spatial-boards-browse", // legacy key; renames with the table
-  registryToken: "spatial_board",
+  surfaceKey: "boards-browse",
+  registryToken: "board",
   entityLabel: { singular: "board", plural: "boards" },
   // SourceFeature is a closed registry with no board member yet; the board is
   // the Board, so it attributes to "canvas".
@@ -24,7 +24,7 @@ export const boardListConfig: EntityListConfig<BoardListRow> = {
   prefsDefaults: { sort: "updated_at", direction: "desc" },
   getRowId: (row) => row.id,
   getRowName: (row) => row.title,
-  getRowEntity: (row) => ({ type: "spatial_board", id: row.id, title: row.title }),
+  getRowEntity: (row) => ({ type: "board", id: row.id, title: row.title }),
   door: { hrefFor: boardRowHref },
   useRowActions: useBoardRowActions,
   edit: {

@@ -118,7 +118,7 @@ describe("saveBoardDocument", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
       expect(url).toBe(
-        "https://db.example.test/rest/v1/spatial_boards?id=eq.b1&version=eq.7&deleted_at=is.null&select=version",
+        "https://db.example.test/rest/v1/boards?id=eq.b1&version=eq.7&deleted_at=is.null&select=version",
       );
       expect(init.method).toBe("PATCH");
       expect(init.keepalive).toBe(true);

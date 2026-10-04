@@ -1,5 +1,5 @@
 /**
- * Surface manifest — Board (`matrx-user/spatial-board`).
+ * Surface manifest — Board (`matrx-user/board`).
  *
  * The surface key keeps its original name: it is a row in `ui.ui_surface`
  * and the server (aidream) resolves it. Renaming it is a data migration, not
@@ -21,7 +21,7 @@ import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@ai-matrx
 import { BOARD_CLIENT_TOOLS } from "@/features/board/tools/board-tools";
 import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
-export const BOARD_SURFACE_NAME = "matrx-user/spatial-board";
+export const BOARD_SURFACE_NAME = "matrx-user/board";
 
 const groups: SurfaceValueGroup[] = [
   {

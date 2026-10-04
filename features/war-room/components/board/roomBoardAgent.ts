@@ -6,7 +6,7 @@
 //
 // Tiles are the thread PARTS (`<threadId>:<tab>`), frames are the THREADS (id =
 // the thread id). Every change goes through the same layout path a person's
-// drag, throw and Parts menu use, so it is saved to `metadata.spatial_layout`
+// drag, throw and Parts menu use, so it is saved to `metadata.board_layout`
 // exactly like theirs. What a thread-shaped board cannot do is refused with the
 // remedy: parts come from the thread (no free tiles), groups ARE threads (no
 // regrouping), there are no connections, and the board keeps no undo history

@@ -1,6 +1,37 @@
 {
  "actions": [
   {
+   "doc": "Reply to a person's remark inside its comment thread (not in the answer). `to` is the remark's handle from its marker (c3); the reply is signed by the running agent. Executed only from the current turn's model text.",
+   "item_kind": null,
+   "item_schema": {
+    "additionalProperties": false,
+    "description": "One reply: which remark (``to``: its handle) and what to say.",
+    "properties": {
+     "body": {
+      "description": "The reply (markdown).",
+      "maxLength": 4000,
+      "minLength": 1,
+      "title": "Body",
+      "type": "string"
+     },
+     "to": {
+      "description": "The remark's handle, e.g. c3.",
+      "pattern": "^c[1-9][0-9]{0,5}$",
+      "title": "To",
+      "type": "string"
+     }
+    },
+    "required": [
+     "to",
+     "body"
+    ],
+    "title": "CommentReplyItem",
+    "type": "object"
+   },
+   "name": "comment_reply",
+   "slug": "directive_v1_action_comment_reply"
+  },
+  {
    "doc": "Groom conversation context: stub (or retain) the inline content of tool results linked to stored values. Emitted INLINE in the model's own prose \u2014 executed only from current-turn model text (the turn-directive seam), never from history/user/tool content.",
    "item_kind": null,
    "item_schema": {
@@ -76,6 +107,19 @@
         "description": "What this variable contains.",
         "title": "Description",
         "type": "string"
+       },
+       "label": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "description": "The person-facing name screens show for this variable (\"Normal Text\"). Omit and screens humanize `name`.",
+        "title": "Label"
        },
        "name": {
         "description": "Variable name the agent template references.",
@@ -498,6 +542,18 @@
         "default": null,
         "title": "Max Output Tokens"
        },
+       "offering_id": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "default": null,
+        "title": "Offering Id"
+       },
        "reasoning_effort": {
         "anyOf": [
          {
@@ -522,11 +578,11 @@
         "anyOf": [
          {
           "enum": [
+           "auto",
            "concise",
            "detailed",
-           "never",
-           "auto",
-           "always"
+           "always",
+           "never"
           ],
           "type": "string"
          },
@@ -3001,7 +3057,200 @@
    "label": "Settings Profile",
    "noun": "ai_setting_profile",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "api_id": {
+       "title": "Api Id",
+       "type": "string"
+      },
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "modality": {
+       "enum": [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "embedding",
+        "realtime"
+       ],
+       "title": "Modality",
+       "type": "string"
+      },
+      "name": {
+       "title": "Name",
+       "type": "string"
+      }
+     },
+     "required": [
+      "api_id",
+      "name",
+      "modality"
+     ],
+     "title": "CreateAiSettingProfileItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteAiSettingProfileItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "api_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Api Id"
+      },
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "modality": {
+       "anyOf": [
+        {
+         "enum": [
+          "text",
+          "image",
+          "video",
+          "audio",
+          "embedding",
+          "realtime"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Modality"
+      },
+      "name": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Name"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateAiSettingProfileItem",
+     "type": "object"
+    }
+   },
    "table": "ai.setting_profile",
    "title_column": "name",
    "update": "planned",
@@ -3015,7 +3264,545 @@
    "label": "Translation Cell",
    "noun": "ai_translation_cell",
    "reference": "no",
-   "schemas": null,
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "approved_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Approved At"
+      },
+      "approved_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Approved By"
+      },
+      "confidence": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Confidence"
+      },
+      "conflict": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "evidence": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
+      },
+      "layer": {
+       "enum": [
+        "api",
+        "profile",
+        "offering"
+       ],
+       "title": "Layer",
+       "type": "string"
+      },
+      "layer_owner_id": {
+       "title": "Layer Owner Id",
+       "type": "string"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "rationale": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Rationale"
+      },
+      "rejection_fingerprint": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Rejection Fingerprint"
+      },
+      "rule": {
+       "anyOf": [
+        {
+         "type": "null"
+        },
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "number"
+        },
+        {
+         "type": "string"
+        },
+        {
+         "type": "array"
+        },
+        {
+         "type": "object"
+        }
+       ],
+       "description": "Any JSON value \u2014 this column is json/jsonb.",
+       "title": "JSON"
+      },
+      "setting_key": {
+       "title": "Setting Key",
+       "type": "string"
+      },
+      "source": {
+       "enum": [
+        "human",
+        "agent",
+        "probe",
+        "ingest",
+        "migration"
+       ],
+       "title": "Source",
+       "type": "string"
+      },
+      "state": {
+       "enum": [
+        "approved",
+        "agent",
+        "proposed",
+        "inherited"
+       ],
+       "title": "State",
+       "type": "string"
+      }
+     },
+     "required": [
+      "layer",
+      "layer_owner_id",
+      "setting_key",
+      "rule",
+      "state",
+      "source"
+     ],
+     "title": "CreateAiTranslationCellItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteAiTranslationCellItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "approved_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Approved At"
+      },
+      "approved_by": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Approved By"
+      },
+      "confidence": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Confidence"
+      },
+      "conflict": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "evidence": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "layer": {
+       "anyOf": [
+        {
+         "enum": [
+          "api",
+          "profile",
+          "offering"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Layer"
+      },
+      "layer_owner_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Layer Owner Id"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "rationale": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Rationale"
+      },
+      "rejection_fingerprint": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Rejection Fingerprint"
+      },
+      "rule": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "setting_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Setting Key"
+      },
+      "source": {
+       "anyOf": [
+        {
+         "enum": [
+          "human",
+          "agent",
+          "probe",
+          "ingest",
+          "migration"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Source"
+      },
+      "state": {
+       "anyOf": [
+        {
+         "enum": [
+          "approved",
+          "agent",
+          "proposed",
+          "inherited"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "State"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateAiTranslationCellItem",
+     "type": "object"
+    }
+   },
    "table": "ai.translation_cell",
    "title_column": null,
    "update": "planned",
@@ -10446,12 +11233,12 @@
    "identity_fields": [],
    "label": "Public form",
    "noun": "anon_form",
-   "reference": "no",
+   "reference": "planned",
    "schemas": null,
    "table": "custom.anon_form",
-   "title_column": null,
+   "title_column": "title",
    "update": "planned",
-   "view": "no"
+   "view": "planned"
   },
   {
    "create": "planned",
@@ -27021,7 +27808,8 @@
           "purchase",
           "grant",
           "internal",
-          "grandfathered"
+          "grandfathered",
+          "enterprise_custom"
          ],
          "type": "string"
         },
@@ -27226,7 +28014,8 @@
           "purchase",
           "grant",
           "internal",
-          "grandfathered"
+          "grandfathered",
+          "enterprise_custom"
          ],
          "type": "string"
         },
@@ -32414,6 +33203,18 @@
        "title": "Provider Model Id",
        "type": "string"
       },
+      "setting_profile_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Setting Profile Id"
+      },
       "token_billed": {
        "anyOf": [
         {
@@ -32737,6 +33538,18 @@
        ],
        "default": null,
        "title": "Provider Model Id"
+      },
+      "setting_profile_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Setting Profile Id"
       },
       "token_billed": {
        "anyOf": [
@@ -33392,6 +34205,18 @@
        "default": null,
        "title": "Description"
       },
+      "family": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Family"
+      },
       "is_system": {
        "anyOf": [
         {
@@ -33471,6 +34296,38 @@
         }
        ],
        "default": {}
+      },
+      "value_positions": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
       },
       "value_type": {
        "enum": [
@@ -33618,6 +34475,18 @@
        "default": null,
        "title": "Description"
       },
+      "family": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Family"
+      },
       "id": {
        "title": "Id",
        "type": "string"
@@ -33679,6 +34548,38 @@
        "default": null
       },
       "ui": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "value_positions": {
        "anyOf": [
         {
          "anyOf": [
@@ -42517,6 +43418,7 @@
        "anyOf": [
         {
          "enum": [
+          "guest",
           "free",
           "personal",
           "company",
@@ -42725,6 +43627,7 @@
        "anyOf": [
         {
          "enum": [
+          "guest",
           "free",
           "personal",
           "company",
@@ -44738,6 +45641,20 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
+   "label": "Usage reset",
+   "noun": "billing_usage_reset",
+   "reference": "no",
+   "schemas": null,
+   "table": "billing.usage_reset",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
    "label": "User plan",
    "noun": "billing_user_plan",
    "reference": "no",
@@ -45034,6 +45951,454 @@
     }
    },
    "table": "billing.user_plan",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Board",
+   "noun": "board",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "camera": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {
+        "x": 0,
+        "y": 0,
+        "z": 0.6
+       }
+      },
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "edges": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
+      },
+      "last_opened_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Last Opened At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "nodes": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": []
+      },
+      "settings": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "title": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "Untitled board",
+       "title": "Title"
+      }
+     },
+     "title": "CreateBoardItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBoardItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "camera": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "description": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Description"
+      },
+      "edges": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_opened_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Last Opened At"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "nodes": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "settings": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "title": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Title"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBoardItem",
+     "type": "object"
+    }
+   },
+   "table": "projects.boards",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -74145,6 +75510,314 @@
    "view": "no"
   },
   {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Sending claim",
+   "noun": "crm_sending_claim",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": false,
+     "properties": {
+      "claim_key": {
+       "title": "Claim Key",
+       "type": "string"
+      },
+      "claimed_at": {
+       "format": "date-time",
+       "title": "Claimed At",
+       "type": "string"
+      },
+      "error_code": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error Code"
+      },
+      "identity_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Identity Id"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": {}
+      },
+      "provider_message_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Provider Message Id"
+      },
+      "sending_event_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Sending Event Id"
+      },
+      "settled_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Settled At"
+      },
+      "state": {
+       "anyOf": [
+        {
+         "enum": [
+          "claimed",
+          "sent",
+          "failed"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": "claimed",
+       "title": "State"
+      }
+     },
+     "required": [
+      "claim_key",
+      "claimed_at"
+     ],
+     "title": "CreateCrmSendingClaimItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": false,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmSendingClaimItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": false,
+     "properties": {
+      "claim_key": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Claim Key"
+      },
+      "claimed_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Claimed At"
+      },
+      "error_code": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Error Code"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "identity_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Identity Id"
+      },
+      "metadata": {
+       "anyOf": [
+        {
+         "anyOf": [
+          {
+           "type": "null"
+          },
+          {
+           "type": "boolean"
+          },
+          {
+           "type": "number"
+          },
+          {
+           "type": "string"
+          },
+          {
+           "type": "array"
+          },
+          {
+           "type": "object"
+          }
+         ],
+         "description": "Any JSON value \u2014 this column is json/jsonb.",
+         "title": "JSON"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null
+      },
+      "provider_message_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Provider Message Id"
+      },
+      "sending_event_id": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Sending Event Id"
+      },
+      "settled_at": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Settled At"
+      },
+      "state": {
+       "anyOf": [
+        {
+         "enum": [
+          "claimed",
+          "sent",
+          "failed"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "State"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmSendingClaimItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.sending_claim",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -78373,6 +80046,34 @@
    "view": "no"
   },
   {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Outbox consumer",
+   "noun": "custom_io_outbox_consumer",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.io_outbox_consumer",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Outbox consumption",
+   "noun": "custom_io_outbox_consumption",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.io_outbox_consumption",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -78396,6 +80097,34 @@
    "reference": "no",
    "schemas": null,
    "table": "custom._share_tails_mine_repair",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Template",
+   "noun": "custom_template",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.template",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Template install",
+   "noun": "custom_template_install",
+   "reference": "no",
+   "schemas": null,
+   "table": "custom.template_install",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -156620,10 +158349,12 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Mandate",
    "noun": "mandate",
-   "reference": "no",
+   "reference": "yes",
    "schemas": {
     "create": {
      "additionalProperties": false,
@@ -157636,9 +159367,9 @@
     }
    },
    "table": "mandate.definition",
-   "title_column": null,
+   "title_column": "label",
    "update": "planned",
-   "view": "no"
+   "view": "yes"
   },
   {
    "create": "planned",
@@ -166927,10 +168658,12 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
-   "identity_fields": [],
+   "identity_fields": [
+    "id"
+   ],
    "label": "Meeting",
    "noun": "meet_meeting",
-   "reference": "no",
+   "reference": "yes",
    "schemas": {
     "create": {
      "additionalProperties": false,
@@ -167698,9 +169431,9 @@
     }
    },
    "table": "communication.meet_meetings",
-   "title_column": null,
+   "title_column": "title",
    "update": "planned",
-   "view": "no"
+   "view": "yes"
   },
   {
    "create": "no",
@@ -192152,7 +193885,7 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Processed document",
+   "label": "Source",
    "noun": "processed_document",
    "reference": "yes",
    "schemas": {
@@ -216584,454 +218317,6 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Spatial Board",
-   "noun": "spatial_board",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": false,
-     "properties": {
-      "camera": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {
-        "x": 0,
-        "y": 0,
-        "z": 0.6
-       }
-      },
-      "description": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Description"
-      },
-      "edges": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": []
-      },
-      "last_opened_at": {
-       "anyOf": [
-        {
-         "format": "date-time",
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Last Opened At"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "nodes": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": []
-      },
-      "settings": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": {}
-      },
-      "title": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": "Untitled board",
-       "title": "Title"
-      }
-     },
-     "title": "CreateSpatialBoardItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": false,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteSpatialBoardItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": false,
-     "properties": {
-      "camera": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "description": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Description"
-      },
-      "edges": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "last_opened_at": {
-       "anyOf": [
-        {
-         "format": "date-time",
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Last Opened At"
-      },
-      "metadata": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "nodes": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "settings": {
-       "anyOf": [
-        {
-         "anyOf": [
-          {
-           "type": "null"
-          },
-          {
-           "type": "boolean"
-          },
-          {
-           "type": "number"
-          },
-          {
-           "type": "string"
-          },
-          {
-           "type": "array"
-          },
-          {
-           "type": "object"
-          }
-         ],
-         "description": "Any JSON value \u2014 this column is json/jsonb.",
-         "title": "JSON"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null
-      },
-      "title": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "default": null,
-       "title": "Title"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateSpatialBoardItem",
-     "type": "object"
-    }
-   },
-   "table": "projects.spatial_boards",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
    "label": "Stage reference kind",
    "noun": "stage_ref_kind",
    "reference": "no",
@@ -218205,7 +219490,7 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Audio Session",
+   "label": "Transcript Studio session",
    "noun": "studio_session",
    "reference": "yes",
    "schemas": {
@@ -247549,7 +248834,7 @@
    "delete": "no",
    "family": "Other",
    "identity_fields": [],
-   "label": "Canonical Page",
+   "label": "Site page",
    "noun": "web_page",
    "reference": "no",
    "schemas": null,
@@ -256979,7 +258264,7 @@
    "identity_fields": [
     "url"
    ],
-   "label": "Url",
+   "label": "URL",
    "noun": "url",
    "reference": "yes",
    "schemas": null,

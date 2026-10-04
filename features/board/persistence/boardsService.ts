@@ -1,7 +1,7 @@
 // features/board/persistence/boardsService.ts
 //
-// The ONE client path for saved boards (`projects.spatial_boards`, entity
-// token `spatial_board`). React → Supabase directly; RLS is the authority
+// The ONE client path for saved boards (`projects.boards`, entity
+// token `board`). React → Supabase directly; RLS is the authority
 // (owner reads/writes/soft-deletes their own rows).
 //
 // Rules this file keeps:
@@ -48,11 +48,11 @@ import {
 } from "../board/document";
 import { mergeBoardDocuments } from "../board/merge";
 
-type BoardRow = Database["projects"]["Tables"]["spatial_boards"]["Row"];
+type BoardRow = Database["projects"]["Tables"]["boards"]["Row"];
 /** What a save reads back: the version always; the content only when a CAS missed. */
 type SaveRow = Pick<BoardRow, "version"> & Partial<Pick<BoardRow, "nodes" | "edges">>;
 
-const TABLE = "spatial_boards";
+const TABLE = "boards";
 const db = projectsDb(supabase);
 
 /** The title a person's home board is created with. */
@@ -64,7 +64,7 @@ const BOARD_COLUMNS =
 const LIST_COLUMNS =
   "id, organization_id, title, nodes, settings, created_at, updated_at, last_opened_at, deleted_at" as const;
 /** The entity token Trash and `entity_undelete` know this table by. */
-export const BOARD_TOKEN = "spatial_board";
+export const BOARD_TOKEN = "board";
 
 // ── Errors ───────────────────────────────────────────────────────────────────
 
@@ -360,7 +360,7 @@ export async function listBoards(archived: ArchiveFilterValue = "active"): Promi
           .order("updated_at", { ascending: false })
           .order("id", { ascending: true })
           .range(from, to),
-      { label: "projects.spatial_boards" },
+      { label: "projects.boards" },
     );
   } catch (error) {
     throw readFailed("your boards", error);
@@ -428,7 +428,7 @@ const meetingInFlight = new Map<string, Promise<LoadedBoard>>();
  * `organizationId` — the organization new work is filed in; null → the
  * organization gate asks the person.
  *
- * The link is a setting, not a column: `projects.spatial_boards` has no
+ * The link is a setting, not a column: `projects.boards` has no
  * meeting column and no association is registered for it (yet).
  */
 export async function getMeetingBoard(input: {

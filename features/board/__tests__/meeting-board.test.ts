@@ -1,4 +1,4 @@
-// A meeting's board is a SAVED board: the viewer's own spatial_boards row
+// A meeting's board is a SAVED board: the viewer's own boards row
 // linked by settings.meeting_id. These cases drive the real service against a
 // recorded fake of the table, and fail when the link, the seed or the
 // one-at-a-time rule breaks.

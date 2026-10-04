@@ -65,7 +65,7 @@ export interface RemarkTarget {
 
 /** A non-chat record a remark points at. */
 export interface RemarkRecordTarget {
-  /** The platform entity token (`task`, `note`, `spatial_board` …). */
+  /** The platform entity token (`task`, `note`, `board` …). */
   token: string;
   id: string;
   title: string | null;

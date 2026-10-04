@@ -3,7 +3,7 @@
 /**
  * /demos/canvas-workspace — the Board demo inside ChatCanvasWorkspace.
  *
- * The board publishes its own surface (`matrx-user/spatial-board`: values +
+ * The board publishes its own surface (`matrx-user/board`: values +
  * board_* agent tools), so the workspace passes no page-level snapshot of it.
  * No properties panel: the board's Layers need its store
  * outside the viewport, which the board does not expose yet — and a
@@ -38,7 +38,7 @@ export function BoardCanvasWorkspaceDemo({
       initialLayout={initialLayout}
       initialMode={initialMode}
       // No getCanvasContext here: the board publishes ITSELF as the
-      // `matrx-user/spatial-board` surface (its values + board_* tools reach
+      // `matrx-user/board` surface (its values + board_* tools reach
       // the chat on their own). A second, page-level snapshot of the same
       // board would send it twice.
       canvas={

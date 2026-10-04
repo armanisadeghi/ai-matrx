@@ -21,7 +21,7 @@
 //       delete thread (consequence-naming confirm, committed after the Undo
 //       window) · the thread's own ⋯ menu
 // The arrangement (part rects, parked/removed parts) and the camera live on
-// the room row (`metadata.spatial_layout`, debounced) — see `boardLayout.ts`.
+// the room row (`metadata.board_layout`, debounced) — see `boardLayout.ts`.
 //
 // The board is an agent SURFACE (`BoardSurface`, stacked inside the War
 // Room's own surface, which stays mounted in `WarRoomShell`): the board tools
@@ -703,7 +703,7 @@ function BoardPartTile({
       icon={kind.Icon}
       statusFrom={{ kind: "static", value: status }}
       onMove={onMove}
-      // A part's size comes from its thread's layout (spatial_layout), which
+      // A part's size comes from its thread's layout (board_layout), which
       // stores positions only — the board adapter refuses resize with a remedy.
       onResize={null}
       onThrow={onThrow}

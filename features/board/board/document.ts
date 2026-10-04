@@ -1,5 +1,5 @@
 /**
- * The saved form of a board (pure) — what `projects.spatial_boards` stores in
+ * The saved form of a board (pure) — what `projects.boards` stores in
  * its `camera` / `nodes` / `edges` columns, and its JSON Canvas export.
  *
  * A node is a rect plus a TYPED SOURCE: the thing the tile shows, by

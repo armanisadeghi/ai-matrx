@@ -8,7 +8,7 @@
 // person can have notes, files, audio and chat all out at once, nothing on top
 // of anything.
 //
-// Remembered on the room row at `projects.war_rooms.metadata.spatial_layout`:
+// Remembered on the room row at `projects.war_rooms.metadata.board_layout`:
 //   { v: 2, parts: { "<threadId>:<tab>": {x,y,w,h} }, parked: [key], removed: [key], camera }
 // A frame is never stored — it is the bounding box of its thread's part rects
 // plus padding and the header band, so it moves when its parts move. A parked
@@ -20,7 +20,7 @@ import { type Camera, type Rect, rectsIntersect } from "@/features/board/engine/
 import type { ThreadTab } from "@/features/war-room/types";
 import type { Json } from "@/types/database.types";
 
-export const BOARD_LAYOUT_KEY = "spatial_layout";
+export const BOARD_LAYOUT_KEY = "board_layout";
 
 // ── sizes ────────────────────────────────────────────────────────────────
 export const PART_W = 600;

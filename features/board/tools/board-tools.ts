@@ -1,6 +1,6 @@
 /**
  * The board's AGENT TOOLS — what any agent working beside a Board can
- * do to it. Declared once here and carried by the `matrx-user/spatial-board`
+ * do to it. Declared once here and carried by the `matrx-user/board`
  * surface manifest, so every board host (the demo, War Room, meetings,
  * workflow runs) offers the same vocabulary. Executed in the browser by
  * `useBoardAgentTools`, through the board's ONE change path (`useBoard`, or a

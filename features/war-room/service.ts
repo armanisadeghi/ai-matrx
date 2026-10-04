@@ -174,7 +174,7 @@ export async function updateSession(
 
 /**
  * Replace ONE key of `projects.war_rooms.metadata` (e.g. the Board view's
- * `spatial_layout`) without clobbering the others — compare-and-swap on
+ * `board_layout`) without clobbering the others — compare-and-swap on
  * `version` through the shared `mergeJsonColumn`, so two tabs moving tiles in
  * the same room can never erase each other's other keys. The update matches
  * the row's own `organization_id` explicitly (every write names its org).

@@ -220,6 +220,6 @@ export const DOORLESS_LISTED_ENTITIES: Readonly<DoorlessCensus> = Object.freeze(
 // resolver route, `/teams/id/<id>` (app/(core)/teams/id/[teamId]/page.tsx),
 // same shape as the `mandate`/`agent` resolver routes; 2026-09-28.
 // (80 was itself: `team`, 2026-09-26, joined the listed entities with no
-// door — measured, owed (LIVES_UNDER_ITS_ORGANIZATION). `spatial_board` got
+// door — measured, owed (LIVES_UNDER_ITS_ORGANIZATION). `board` got
 // its door instead (entityRegistry.ts), page-pass /notes 2026-09-28.)
 export const DOORLESS_BASELINE = 79;

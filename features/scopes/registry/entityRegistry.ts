@@ -409,7 +409,7 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   },
   // A board opens at its own page (app/(core)/board/[id]) — THE DOOR LAW
   // census found it listed with no door (page-pass /notes, 2026-09-28).
-  spatial_board: {
+  board: {
     Icon: Frame,
     labelPlural: "Boards",
     hrefFor: (id) => `/board/${id}`,

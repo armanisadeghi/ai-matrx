@@ -4,7 +4,7 @@
  * BoardSurface — makes a board an agent SURFACE. Every host wraps its
  * board in this (the demo, War Room's Board view, the meeting Board layout, a
  * workflow run's Board view, the person's own Board): it registers the
- * `matrx-user/spatial-board` runtime and the board's agent tools
+ * `matrx-user/board` runtime and the board's agent tools
  * (`useBoardAgentTools`), so any agent running while the board is on screen —
  * the chat beside it, a shortcut, a mandate — can read and change the board.
  * Inside another surface (a War Room) it stacks; the host keeps its own.

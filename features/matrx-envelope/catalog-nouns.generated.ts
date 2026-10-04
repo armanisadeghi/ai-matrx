@@ -321,9 +321,17 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "education.learn_doc",
   "title_column": "title"
  },
+ "mandate": {
+  "table": "mandate.definition",
+  "title_column": "label"
+ },
  "marketing_initiative": {
   "table": "marketing.initiative",
   "title_column": "name"
+ },
+ "meet_meeting": {
+  "table": "communication.meet_meetings",
+  "title_column": "title"
  },
  "message": {
   "table": "chat.message",
@@ -551,11 +559,11 @@ export interface CatalogNounDisplay {
 export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
  "ai_setting_profile": {
   "label": "Settings Profile",
-  "family": "AI catalog"
+  "family": "AI Models"
  },
  "ai_translation_cell": {
   "label": "Translation Cell",
-  "family": "AI catalog"
+  "family": "AI Models"
  },
  "agent": {
   "label": "Agent",
@@ -1365,9 +1373,17 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Usage ledger",
   "family": "Billing"
  },
+ "billing_usage_reset": {
+  "label": "Usage reset",
+  "family": "Other"
+ },
  "billing_user_plan": {
   "label": "User plan",
   "family": "Billing"
+ },
+ "board": {
+  "label": "Board",
+  "family": "Other"
  },
  "browser_account_binding": {
   "label": "Browser Account Binding",
@@ -1917,6 +1933,10 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Registry Source",
   "family": "CRM"
  },
+ "crm_sending_claim": {
+  "label": "Sending claim",
+  "family": "CRM"
+ },
  "crm_sending_event": {
   "label": "Sending Event",
   "family": "CRM"
@@ -1949,12 +1969,28 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Custom Field Target",
   "family": "Platform"
  },
+ "custom_io_outbox_consumer": {
+  "label": "Outbox consumer",
+  "family": "Custom"
+ },
+ "custom_io_outbox_consumption": {
+  "label": "Outbox consumption",
+  "family": "Custom"
+ },
  "custom_record": {
   "label": "Custom Record",
   "family": "Platform"
  },
  "custom_share_tails_mine_repair": {
   "label": "Share tails repair",
+  "family": "Custom"
+ },
+ "custom_template": {
+  "label": "Template",
+  "family": "Custom"
+ },
+ "custom_template_install": {
+  "label": "Template install",
   "family": "Custom"
  },
  "data_rights_event": {
@@ -3614,7 +3650,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Podcasts"
  },
  "processed_document": {
-  "label": "Processed document",
+  "label": "Source",
   "family": "Document Processing"
  },
  "processed_document_page": {
@@ -4065,10 +4101,6 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "label": "Source authority",
   "family": "Platform"
  },
- "spatial_board": {
-  "label": "Spatial Board",
-  "family": "Workspace"
- },
  "stage_ref_kind": {
   "label": "Stage reference kind",
   "family": "Growth"
@@ -4114,7 +4146,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Transcripts"
  },
  "studio_session": {
-  "label": "Audio Session",
+  "label": "Transcript Studio session",
   "family": "Transcripts"
  },
  "studio_session_settings": {
@@ -4554,7 +4586,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Marketing & Web"
  },
  "web_page": {
-  "label": "Canonical Page",
+  "label": "Site page",
   "family": "Marketing & Web"
  },
  "web_page_content": {
@@ -4794,7 +4826,7 @@ export const CATALOG_NOUN_DISPLAY: Record<string, CatalogNounDisplay> = {
   "family": "Derived shapes"
  },
  "url": {
-  "label": "Url",
+  "label": "URL",
   "family": "Derived shapes"
  },
  "transcript_segment": {

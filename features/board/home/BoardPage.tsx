@@ -4,7 +4,7 @@
  * BoardPage — the Board: a person's own canvas, the platform's main way in.
  * The ONE chat-beside-a-canvas layout (`ChatCanvasWorkspace`) with the
  * person's saved board as its canvas. The board publishes its own surface
- * (`matrx-user/spatial-board`), so no page-level snapshot is passed.
+ * (`matrx-user/board`), so no page-level snapshot is passed.
  *
  * Code splitting: the board (engine + every item type's canonical body) is
  * ONE `ssr: false` edge, rendered only once the saved board is ready.
@@ -108,7 +108,7 @@ export function BoardPage({
                   title="Your board could not be opened"
                   message={saved.reason}
                   operation="Open board"
-                  calls={["spatial_boards"]}
+                  calls={["boards"]}
                   actions={<Button onClick={saved.retry}>Try again</Button>}
                 />
               </BoardMessage>

@@ -6741,6 +6741,10 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_checkout: {
+        Args: { p_customer: string; p_livemode: boolean; p_token: string }
+        Returns: boolean
+      }
       entitlement_check:
         | { Args: { p_capability: string }; Returns: Json }
         | { Args: { p_capability: string; p_org: string }; Returns: Json }
@@ -6844,6 +6848,10 @@ export type Database = {
       }
       plan_status: { Args: { p_org: string }; Returns: Json }
       public_plans: { Args: never; Returns: Json }
+      release_checkout: {
+        Args: { p_customer: string; p_livemode: boolean; p_token: string }
+        Returns: undefined
+      }
       repair_prelaunch_complimentary_grant: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -44120,6 +44128,10 @@ export type Database = {
         Args: { p_envelope_id: string; p_reason: string }
         Returns: number
       }
+      attach_field_map: {
+        Args: { p_envelope_id: string; p_fields: Json }
+        Returns: number
+      }
       config_resolve: {
         Args: { p_key: string; p_organization_id: string }
         Returns: Json
@@ -44148,6 +44160,10 @@ export type Database = {
         Args: { p_secret: string }
         Returns: string
       }
+      record_signed_copy: {
+        Args: { p_document_id: string; p_file_id: string }
+        Returns: boolean
+      }
       resolve_config_snapshot: {
         Args: { p_organization_id: string; p_sensitivity: string }
         Returns: Json
@@ -44158,10 +44174,12 @@ export type Database = {
         Args: { p_envelope_id: string; p_session: string }
         Returns: Json
       }
+      signed_copy_inputs: { Args: { p_envelope_id: string }; Returns: Json }
       signer_belongs_to: {
         Args: { p_envelope_id: string; p_signer_id: string }
         Returns: boolean
       }
+      signer_envelope: { Args: { p_signer_id: string }; Returns: string }
       wf_apply_signature_request: {
         Args: { p_instance_id: string }
         Returns: Json
@@ -92758,6 +92776,78 @@ export type Database = {
   }
   projects: {
     Tables: {
+      boards: {
+        Row: {
+          camera: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          edges: Json
+          id: string
+          last_opened_at: string | null
+          metadata: Json
+          nodes: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          settings: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          camera?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          nodes?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          camera?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json
+          id?: string
+          last_opened_at?: string | null
+          metadata?: Json
+          nodes?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           created_at: string
@@ -92829,78 +92919,6 @@ export type Database = {
           start_date?: string | null
           status?: string
           target_date?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      spatial_boards: {
-        Row: {
-          camera: Json
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          description: string | null
-          edges: Json
-          id: string
-          last_opened_at: string | null
-          metadata: Json
-          nodes: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          settings: Json
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          title: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          camera?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          edges?: Json
-          id?: string
-          last_opened_at?: string | null
-          metadata?: Json
-          nodes?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          camera?: Json
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          edges?: Json
-          id?: string
-          last_opened_at?: string | null
-          metadata?: Json
-          nodes?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          settings?: Json
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          title?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -93250,7 +93268,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      spatial_boards: {
+        Row: {
+          camera: Json | null
+          created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          edges: Json | null
+          id: string | null
+          last_opened_at: string | null
+          metadata: Json | null
+          nodes: Json | null
+          organization_id: string | null
+          published_to_web: boolean | null
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          settings: Json | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          title: string | null
+          updated_at: string | null
+          updated_by: string | null
+          version: number | null
+        }
+        Insert: {
+          camera?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json | null
+          id?: string | null
+          last_opened_at?: string | null
+          metadata?: Json | null
+          nodes?: Json | null
+          organization_id?: string | null
+          published_to_web?: boolean | null
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Update: {
+          camera?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          edges?: Json | null
+          id?: string | null
+          last_opened_at?: string | null
+          metadata?: Json | null
+          nodes?: Json | null
+          organization_id?: string | null
+          published_to_web?: boolean | null
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          settings?: Json | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          title?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

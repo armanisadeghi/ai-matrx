@@ -2,7 +2,7 @@
 
 /**
  * A guest's board for one meeting. A guest has no account, so there is no
- * saved-board row to keep it in (`projects.spatial_boards` is per person);
+ * saved-board row to keep it in (`projects.boards` is per person);
  * the same board DOCUMENT a signed-in viewer saves is kept in this browser
  * instead, under the meeting, and opens again on the next visit. Blocked
  * storage means this visit only.

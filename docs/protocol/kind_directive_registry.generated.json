@@ -14,6 +14,57 @@
     {
       "capability": "side_effect",
       "class": "action",
+      "doc": "Reply to a person's remark inside its comment thread (not in the answer). `to` is the remark's handle from its marker (c3); the reply is signed by the running agent. Executed only from the current turn's model text.",
+      "item_model": "CommentReplyItem",
+      "noun": "comment_reply",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "__kind": {
+            "const": "directive_v1_action_comment_reply",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "description": "One reply: which remark (``to``: its handle) and what to say.",
+              "properties": {
+                "body": {
+                  "description": "The reply (markdown).",
+                  "maxLength": 4000,
+                  "minLength": 1,
+                  "title": "Body",
+                  "type": "string"
+                },
+                "to": {
+                  "description": "The remark's handle, e.g. c3.",
+                  "pattern": "^c[1-9][0-9]{0,5}$",
+                  "title": "To",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "to",
+                "body"
+              ],
+              "title": "CommentReplyItem",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "__kind",
+          "items"
+        ],
+        "type": "object"
+      },
+      "slug": "directive_v1_action_comment_reply"
+    },
+    {
+      "capability": "side_effect",
+      "class": "action",
       "doc": "Groom conversation context: stub (or retain) the inline content of tool results linked to stored values. Emitted INLINE in the model's own prose \u2014 executed only from current-turn model text (the turn-directive seam), never from history/user/tool content.",
       "item_model": "GroomItem",
       "noun": "context_groom",

@@ -2,7 +2,7 @@
 // pannable, zoomable plane, with streaming paced by zoom level — hosted in the
 // ONE chat-beside-a-canvas layout (features/canvas/workspace/FEATURE.md): the
 // platform chat docks beside it (or floats over it) and receives the board as
-// ONE `spatial_board` context entry. Engine + doctrine: features/board/FEATURE.md.
+// ONE `board` context entry. Engine + doctrine: features/board/FEATURE.md.
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";

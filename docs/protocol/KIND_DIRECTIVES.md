@@ -158,7 +158,9 @@ resolution adds itself there deliberately, with a consumer.
 **The third position** — current-turn model-authored text — is the orchestrator's
 `turn_directive_handler` seam. It hands EACH turn's model output (never history, user, or
 tool content) to the host, which executes only explicitly turn-scoped shapes (today:
-`directive_v1_action_context_groom`). The position is enforced by the INVOKER: matrx-ai
+`directive_v1_action_context_groom` and `directive_v1_action_comment_reply` — the agent's
+reply to a person's remark `cN`, written into that remark's comment thread, not the answer;
+`aidream/services/comment_replies/`). The position is enforced by the INVOKER: matrx-ai
 passes only that turn's assistant text, and the host guards the class. A turn-scoped
 shape's blast radius must be reversible and confined to the requester's own conversation.
 
@@ -355,12 +357,15 @@ register_action(
 )
 ```
 
-Registered today: `context_groom`, `create_agent`, `create_agent_definition`,
+Registered today: `comment_reply`, `context_groom`, `create_agent`, `create_agent_definition`,
 `create_project_with_tasks`, `create_task`, `db_create`, `db_update`,
 `plan_node_patch`, `plan_tree`.
 
-(`context_groom` registers at startup from `package_integration.py`, not from
-`register_output_directives()` — a count taken from that function alone reads one low.)
+(`context_groom` and `comment_reply` register at startup from `package_integration.py`, not
+from `register_output_directives()` — a count taken from that function alone reads two low.)
+
+`comment_reply` is the one shape whose receipt carries an extra field: `directive_apply.item`
+gains `thread: {entity_type, entity_id, root_id, reply_id, handle}` — the thread to open.
 
 ### THE DIRECTIVE⇄KIND SEAM — an item can BE a registered kind
 
@@ -634,6 +639,15 @@ you are reading this because you want to import the shim somewhere else: the ans
 ---
 
 ## Change Log
+
+- **2026-10-03 — `comment_reply`, the second turn-scoped shape (THREADS S3).** An agent answers
+  a person's remark (`<!-- comment c3 on your previous reply -->`) with
+  `directive_v1_action_comment_reply` `{to: "c3", body}`; it lands in that remark's comment
+  thread signed by the agent (`platform.comments.created_by_agent_id`). Threads on this
+  conversation's replies apply at once; threads on other records go through the apply-policy
+  cascade. `directive_apply.item` gains the optional `thread` link. A turn-directive handler
+  failure is now captured as a system error (`turn_directive_handler_failed`), never a
+  swallowed yellow line.
 
 - **2026-09-12 (round 1) — The confirm path too.** `DirectiveConfirmResult.message`; and
   `conversation_id` threaded into the confirm so the auto path and the confirm path key

@@ -76,6 +76,7 @@ export const EXCLUDED: Readonly<Record<string, ReasonKey>> = {
   agent_run: "UNMEASURED",
   agent_term_list: "UNMEASURED",
   billing_spend_guardrail: "UNMEASURED",
+  board: "UNMEASURED",
   browser_profile: "UNMEASURED",
   comment: "UNMEASURED",
   commerce_certified_printer: "UNMEASURED",
@@ -98,7 +99,6 @@ export const EXCLUDED: Readonly<Record<string, ReasonKey>> = {
   seo_keyword_class_rule: "UNMEASURED",
   seo_rank_target: "UNMEASURED",
   seo_topical_map: "UNMEASURED",
-  spatial_board: "UNMEASURED",
   study_session: "UNMEASURED",
   system_announcement: "UNMEASURED",
   user_feedback: "UNMEASURED",
@@ -197,11 +197,11 @@ select
 
 function selfTest(): number {
   const green: Census = {
-    modules: ["note", "meet_meeting", "spatial_board"],
+    modules: ["note", "meet_meeting", "board"],
     kinds: ["note", "meet_meeting", "mandate", "anon_form"],
     products: ["forms", "portals"],
   };
-  const ex = { spatial_board: "UNMEASURED" } as const;
+  const ex = { board: "UNMEASURED" } as const;
   const pr: Record<string, Mapping> = { forms: { tokens: ["anon_form"] }, portals: { excluded: "NOT_REGISTERED" } };
   const nm: Record<string, Mapping> = { mandate: { tokens: ["mandate"] } };
   const ok = judge(green, ex, pr, nm, 1);
@@ -209,8 +209,8 @@ function selfTest(): number {
   const plants: Array<[string, Verdict, RegExp]> = [
     ["a new module without a kind", judge({ ...green, modules: [...green.modules, "booking_widget"] }, ex, pr, nm, 1), /module "booking_widget" has no reference kind/],
     ["a kind withdrawn from a module", judge({ ...green, kinds: green.kinds.filter((k) => k !== "meet_meeting") }, ex, pr, nm, 1), /module "meet_meeting" has no reference kind/],
-    ["a stale exclusion (now a kind)", judge({ ...green, kinds: [...green.kinds, "spatial_board"] }, ex, pr, nm, 1), /STALE: EXCLUDED "spatial_board" is a reference kind/],
-    ["a stale exclusion (no longer a module)", judge({ ...green, modules: ["note", "meet_meeting"] }, ex, pr, nm, 1), /STALE: EXCLUDED "spatial_board" is no longer/],
+    ["a stale exclusion (now a kind)", judge({ ...green, kinds: [...green.kinds, "board"] }, ex, pr, nm, 1), /STALE: EXCLUDED "board" is a reference kind/],
+    ["a stale exclusion (no longer a module)", judge({ ...green, modules: ["note", "meet_meeting"] }, ex, pr, nm, 1), /STALE: EXCLUDED "board" is no longer/],
     ["a new data-home product", judge({ ...green, products: [...green.products, "kiosks"] }, ex, pr, nm, 1), /data-home product "kiosks" has no line/],
     ["a product whose token lost its kind", judge({ ...green, kinds: green.kinds.filter((k) => k !== "anon_form") }, ex, pr, nm, 1), /"forms" maps to "anon_form"/],
     ["a dropped product line", judge({ ...green, products: ["forms"] }, ex, pr, nm, 1), /STALE: PRODUCTS "portals"/],

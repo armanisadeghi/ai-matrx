@@ -83,7 +83,7 @@ describe("restoreBoard", () => {
         : { data: [], error: null };
     await expect(restoreBoard("b1")).resolves.toEqual({ id: "b1", is_home: false });
     expect(restoreFromTrash).toHaveBeenCalledWith(BOARD_TOKEN, "b1");
-    expect(BOARD_TOKEN).toBe("spatial_board");
+    expect(BOARD_TOKEN).toBe("board");
   });
 
   it("a deleted HOME board restored while another home is live loses its flag BEFORE it comes back", async () => {

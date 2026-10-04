@@ -379,7 +379,7 @@ export const persistActiveThread =
 
 /**
  * Persist one key of the room's `metadata` (the Board view's
- * `spatial_layout`). Background persistence: a failure is reported loudly
+ * `board_layout`). Background persistence: a failure is reported loudly
  * once, never thrown into the gesture that caused it.
  */
 export const persistRoomMetadataKey =
