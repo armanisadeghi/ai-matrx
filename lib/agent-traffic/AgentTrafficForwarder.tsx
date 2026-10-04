@@ -23,6 +23,7 @@ import {
 
 const FINGERPRINT_HEADER = "x-fingerprint-id";
 const probes = new Map<string, Promise<boolean>>();
+const PROBE_TIMEOUT_MS = 3000;
 let installed = false;
 
 function markerValue(): string | null {
@@ -44,9 +45,16 @@ function originAccepts(
       method: "GET",
       cache: "no-store",
       headers: { [MATRX_AGENT_TRAFFIC.header]: value },
+      // A label must never hold a request up: a slow origin answers "not now".
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     }).then(
       () => true,
-      () => {
+      (error: unknown) => {
+        if (error instanceof DOMException && error.name === "TimeoutError") {
+          // A blip is not a refusal: forget it so the next guest request asks again.
+          probes.delete(origin);
+          return false;
+        }
         console.warn(
           `[agent-traffic] ${origin} refused the ${MATRX_AGENT_TRAFFIC.header} header (CORS). ` +
             "Guest requests there go unmarked until aidream allows it.",
