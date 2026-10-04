@@ -7098,6 +7098,10 @@ export type Database = {
           recipient_user_id: string
         }[]
       }
+      coupon_mark_sent: {
+        Args: { p_address: string; p_channel: string; p_id: string }
+        Returns: Json
+      }
       coupon_preview: { Args: { p_token: string }; Returns: Json }
       coupon_redeem: { Args: { p_code: string }; Returns: Json }
       coupon_revoke: { Args: { p_id: string }; Returns: Json }
@@ -17759,7 +17763,7 @@ export type Database = {
           complete_window_end: string | null
           complete_window_start: string | null
           completed_at: string | null
-          connection_id: string
+          connection_id: string | null
           created_at: string
           id: string
           organization_id: string
@@ -17777,7 +17781,7 @@ export type Database = {
           complete_window_end?: string | null
           complete_window_start?: string | null
           completed_at?: string | null
-          connection_id: string
+          connection_id?: string | null
           created_at?: string
           id?: string
           organization_id: string
@@ -17795,7 +17799,7 @@ export type Database = {
           complete_window_end?: string | null
           complete_window_start?: string | null
           completed_at?: string | null
-          connection_id?: string
+          connection_id?: string | null
           created_at?: string
           id?: string
           organization_id?: string

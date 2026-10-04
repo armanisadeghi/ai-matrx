@@ -20,6 +20,20 @@ export interface UsageWindow {
   state: UsageGateLevel;
 }
 
+/**
+ * The free time governing the person's plan (`billing._free_period_state`), or
+ * null when they pay or hold none. Free time is never endless (rule 18): an
+ * `active` period carries its end, an `ended` one prompts a paid plan.
+ */
+export interface FreePeriod {
+  status: "active" | "ended";
+  planKey: string | null;
+  /** Null only for an undated legacy grant. */
+  endsAt: string | null;
+  daysLeft: number | null;
+  source: string | null;
+}
+
 export interface UsageSnapshot {
   state: UsageGateLevel;
   planKey: string | null;
@@ -36,6 +50,8 @@ export interface UsageSnapshot {
    * says enforcement is on.
    */
   enforced: boolean;
+  /** The server's `free_period`; null when paying or none. */
+  freePeriod: FreePeriod | null;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -69,6 +85,19 @@ function parseWindow(v: unknown): UsageWindow | null {
   };
 }
 
+export function parseFreePeriod(v: unknown): FreePeriod | null {
+  if (!isRecord(v)) return null;
+  const status = v.status === "active" || v.status === "ended" ? v.status : null;
+  if (!status) return null;
+  return {
+    status,
+    planKey: str(v.plan_key),
+    endsAt: str(v.ends_at),
+    daysLeft: num(v.days_left),
+    source: str(v.source),
+  };
+}
+
 function parseFlat(v: Record<string, unknown>): UsageSnapshot | null {
   const state = level(v.state);
   if (!state) return null;
@@ -84,6 +113,7 @@ function parseFlat(v: Record<string, unknown>): UsageSnapshot | null {
     windows,
     computedAt: str(v.computed_at),
     enforced: v.enforced === true,
+    freePeriod: parseFreePeriod(v.free_period),
   };
 }
 

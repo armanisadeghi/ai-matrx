@@ -17,6 +17,7 @@ import type {
   UsageGateLevel,
   UsageSnapshot,
   UsageWindow,
+  FreePeriod,
 } from "../usage-gate/usageState";
 
 /**
@@ -43,6 +44,8 @@ export interface UsageGateState {
   fetchedAt: number | null;
   /** A fresh `over` stopped a call — the limit dialog renders while set. */
   refusal: UsageWindow | null;
+  /** The server's `free_period` with that answer (null: paying or none). */
+  freePeriod: FreePeriod | null;
 }
 
 export const initialUsageGateState: UsageGateState = {
@@ -56,6 +59,7 @@ export const initialUsageGateState: UsageGateState = {
   stale: false,
   fetchedAt: null,
   refusal: null,
+  freePeriod: null,
 };
 
 export interface EntitlementsState extends EntitlementSnapshot {
@@ -116,6 +120,7 @@ function usageGateFromSnapshot(
     stale: false,
     fetchedAt,
     refusal,
+    freePeriod: snapshot.freePeriod,
   };
 }
 

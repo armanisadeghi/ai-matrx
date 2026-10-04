@@ -186,6 +186,12 @@ export const selectUsageGatePlanName = createSelector(
   (u) => u.planName,
 );
 
+/** The free time governing the plan (`free_period`), or null. */
+export const selectUsageGateFreePeriod = createSelector(
+  selectUsageGate,
+  (u) => u.freePeriod,
+);
+
 export const selectUsageGateStale = createSelector(
   selectUsageGate,
   (u) => u.stale,
