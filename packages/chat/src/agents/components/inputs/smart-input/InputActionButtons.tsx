@@ -140,7 +140,7 @@ interface InputActionButtonsProps {
      * two instances: `"send"` (stop/send only) and `"controls"` (the rest).
      * Absent = everything (splash · page).
      */
-    part?: "send" | "controls";
+    part?: "send" | "controls" | "plus" | "trail";
   };
 }
 
@@ -354,6 +354,26 @@ export function InputActionButtons({
     ) : null;
 
     if (composer.part === "send") return sendControls;
+    // `line`: the + leads the row, voice and send close it, the text between.
+    if (composer.part === "plus") {
+      return (
+        <span className="flex shrink-0 items-center gap-0.5">
+          {plusMenu}
+          <DesktopPresenceIndicator conversationId={conversationId} />
+          {variablesToggle}
+        </span>
+      );
+    }
+    if (composer.part === "trail") {
+      return (
+        <span className="flex shrink-0 items-center gap-0.5">
+          {extraRightControls}
+          {micGroup}
+          {liveAudioButton}
+          {sendControls}
+        </span>
+      );
+    }
 
     return (
       <div

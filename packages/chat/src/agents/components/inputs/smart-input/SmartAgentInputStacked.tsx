@@ -254,7 +254,9 @@ export function SmartAgentInputStacked({
   // and the toolbar whose + trigger owns the documents bridge — arranged as the
   // design draws them.
   if (composer) {
-    const compact = composer.size === "compact";
+    const line = composer.size === "line";
+    // `line` is compact density too (6px inset, 14px corners).
+    const compact = composer.size === "compact" || line;
     const menuSide = composer.size === "splash" ? "bottom" : "top";
     const cardClassName = cn(
       "relative flex w-full min-h-0 flex-col border border-border bg-card transition-colors focus-within:border-foreground/25",
@@ -292,9 +294,10 @@ export function SmartAgentInputStacked({
         // the third (Arman, 2026-10-03 — Claude and ChatGPT do the same).
         // splash · page: THREE IDENTICAL 32px ROWS — two text lines + the
         // toolbar (Arman, 2026-10-03). Compact keeps 24px lines.
-        minHeightPx={compact ? 48 : 64}
+        // Line: ONE 32px row, the text centred against the buttons.
+        minHeightPx={line ? 32 : compact ? 48 : 64}
         composerType
-        composerRows={!compact}
+        composerRows={!compact || line}
         flush
       />
     );
@@ -342,6 +345,37 @@ export function SmartAgentInputStacked({
         composer={{ size: composer.size, mode: composer.mode, part: "send" }}
       />
     );
+    // Line: the + leads the one row; voice · send close it.
+    const linePlus = (
+      <InputActionButtons
+        conversationId={conversationId}
+        uploadRoot={uploadRoot}
+        uploadPath={uploadPath}
+        showSendButton={showSendButton}
+        showSubmitOnEnterToggle={false}
+        showVariableIcon={showVariableIcon}
+        sendButtonVariant="blue"
+        surfaceKey={surfaceKey}
+        disableSend={sendBlocked}
+        composer={{ size: composer.size, mode: composer.mode, part: "plus" }}
+      />
+    );
+    const lineTrail = (
+      <InputActionButtons
+        conversationId={conversationId}
+        uploadRoot={uploadRoot}
+        uploadPath={uploadPath}
+        showSendButton={showSendButton}
+        showSubmitOnEnterToggle={false}
+        showVariableIcon={showVariableIcon}
+        sendButtonVariant="blue"
+        surfaceKey={surfaceKey}
+        disableSend={sendBlocked}
+        onVoiceBusyChange={setVoiceBusy}
+        extraRightControls={extraRightControls}
+        composer={{ size: composer.size, mode: composer.mode, part: "trail" }}
+      />
+    );
     return (
       <div
         className={cn(
@@ -382,7 +416,13 @@ export function SmartAgentInputStacked({
             styleOverride={variablesPanelStyle}
             surfaceValueName={surfaceValueAnchors?.variables}
           />
-          {compact ? (
+          {line ? (
+            <div className="flex min-w-0 items-end gap-1">
+              {linePlus}
+              <div className="min-w-0 flex-1">{textarea}</div>
+              {lineTrail}
+            </div>
+          ) : compact ? (
             <div className="flex min-w-0 items-end gap-1.5">
               <div className="min-w-0 flex-1">{textarea}</div>
               {sendInCard}
@@ -394,7 +434,7 @@ export function SmartAgentInputStacked({
             </>
           )}
         </SmartInputFileDropTarget>
-        {compact ? (
+        {line ? null : compact ? (
           toolbar
         ) : (
           <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} />

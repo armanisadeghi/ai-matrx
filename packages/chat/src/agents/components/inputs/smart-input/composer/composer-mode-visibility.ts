@@ -73,7 +73,7 @@ export function composerShows(mode: ComposerMode, control: ComposerControl): boo
  * Output move into the + menu (A5 compact-composer ruling).
  */
 export function metaRowHoldsScopeAndOutput(size: ComposerSize): boolean {
-  return size !== "compact";
+  return size !== "compact" && size !== "line";
 }
 
 /**
