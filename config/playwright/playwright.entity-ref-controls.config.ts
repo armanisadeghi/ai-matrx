@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+// matrx-agent-traffic: exempt static fixtures only, no app or server request is made
 
 /**
  * Real-browser hit-testing gate for EntityRef's hover-revealed doors. jsdom

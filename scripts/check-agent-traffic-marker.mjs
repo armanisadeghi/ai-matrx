@@ -227,6 +227,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         join(FRONTEND, "lib/agent-traffic/marker.ts"),
         join(WORKSPACE, "aidream/packages/matrx-ai/matrx_ai/agent_traffic.py"),
       ),
+      ...parity(
+        join(FRONTEND, "lib/agent-traffic/marker.ts"),
+        join(WORKSPACE, "matrx-extend/tests/browser/agent-traffic.mjs"),
+      ).map((f) => ({ ...f, file: "lib/agent-traffic/marker.ts <> matrx-extend tests/browser/agent-traffic.mjs" })),
       ...scan(census()),
     ];
     report(findings, process.argv.includes("--json"));

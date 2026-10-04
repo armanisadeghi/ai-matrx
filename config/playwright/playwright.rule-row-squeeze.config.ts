@@ -1,4 +1,5 @@
 /**
+// matrx-agent-traffic: exempt static fixtures only, no app or server request is made
  * The MOBILE RULE-ROW SQUEEZE gate (`pnpm test:rule-row-squeeze`).
  *
  * DELIBERATELY NOT `playwright.config.ts` — same reasoning as

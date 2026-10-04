@@ -1,4 +1,5 @@
 /**
+// matrx-agent-traffic: exempt static fixtures only, no app or server request is made
  * The SHELL LAYOUT gate (`pnpm test:shell-layout`).
  *
  * DELIBERATELY NOT `playwright.config.ts` — see the note in

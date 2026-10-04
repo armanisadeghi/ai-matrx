@@ -23,6 +23,8 @@
 # worktree may never reuse this server because that would certify code other
 # than the diff under test.
 set -uo pipefail
+# Our own traffic says so (lib/agent-traffic/marker.ts): every curl below carries it.
+AGENT_TRAFFIC_HEADER="X-Matrx-Agent-Traffic: preview-server"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="${MATRX_PREVIEW_STATE_DIR:-${TMPDIR:-/tmp}/matrx-frontend-preview-${UID:-$(id -u)}}"
@@ -680,14 +682,14 @@ cmd_warm() {
 
   local attempt
   for attempt in $(seq 1 90); do
-    if curl --max-time 5 -fsS -o /dev/null "http://$SESSION_HOST:$PORT/" 2>/dev/null; then
+    if curl --max-time 5 -fsS -o /dev/null -H "$AGENT_TRAFFIC_HEADER" "http://$SESSION_HOST:$PORT/" 2>/dev/null; then
       # Warm on THIS session's host, with THIS session's nonce file. The old
       # warm-up logged in on bare localhost, which both wrote into the shared
       # cookie jar and consumed the one shared nonce file out from under any
       # agent mid-handshake.
       mint_nonce "$SESSION_HOST"
       if [[ -n "${NONCE:-}" ]]; then
-        curl -fsS -L -c "$JAR" -b "$JAR" -o /dev/null \
+        curl -fsS -L -c "$JAR" -b "$JAR" -o /dev/null -H "$AGENT_TRAFFIC_HEADER" \
           "http://$SESSION_HOST:$PORT/api/dev-login?nonce=$NONCE&next=/dashboard" \
           2>/dev/null || true
       fi
@@ -819,7 +821,7 @@ preview_stop_reason() {
 # Any HTTP answer counts as alive. The static 404 is instant, compiles nothing,
 # and Next does not log it, so the probe never counts as "use".
 preview_answers() {
-  curl -s -o /dev/null --max-time 10 "http://127.0.0.1:$1/_next/static/__matrx_health" 2>/dev/null
+  curl -s -o /dev/null --max-time 10 -H "$AGENT_TRAFFIC_HEADER" "http://127.0.0.1:$1/_next/static/__matrx_health" 2>/dev/null
 }
 
 # OLD NEVER BLOCKS NEW. Called by cmd_start: a managed preview (any checkout's)

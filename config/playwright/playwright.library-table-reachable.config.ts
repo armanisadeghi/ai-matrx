@@ -1,4 +1,5 @@
 /**
+// matrx-agent-traffic: exempt static fixtures only, no app or server request is made
  * The LIBRARY TABLE REACHABILITY gate (`pnpm test:library-table-reachable`).
  *
  * Same shape as `playwright.rule-row-squeeze.config.ts`: one gate for one
