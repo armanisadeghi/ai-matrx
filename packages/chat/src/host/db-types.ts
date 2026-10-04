@@ -32981,6 +32981,15 @@ export type ChatDatabase = {
         }
         Returns: Json
       }
+      esign_envelope_list: {
+        Args: {
+          p_lane?: string
+          p_limit?: number
+          p_org_id?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
       esign_envelope_state: { Args: { p_envelope_id: string }; Returns: Json }
       esign_expire_sweep: { Args: { p_limit?: number }; Returns: Json }
       esign_mint_signer_token: {
