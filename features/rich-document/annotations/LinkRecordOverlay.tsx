@@ -10,7 +10,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@ai-matrx/design-system";
 import {
   alreadyLinked,
   linkReplaces,
@@ -101,17 +101,6 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
   const words = asking ? confirmWords(asking) : null;
   return (
     <>
-    <ConfirmDialog
-      open={asking !== null}
-      onOpenChange={(open) => {
-        if (!open) settle(false);
-      }}
-      title={words?.title ?? ""}
-      description={words?.description ?? ""}
-      confirmLabel={words?.confirm ?? "Link"}
-      cancelLabel="Cancel"
-      onConfirm={() => settle(true)}
-    />
     <LinkRecordPickerSheet
       open
       onOpenChange={(open) => {
@@ -120,6 +109,22 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
       targetToken={target.token}
       title={target.title ? `Link to ${target.title}` : "Link a record"}
       attachedKeys={attachedKeys}
+      question={
+        words ? (
+          <div className="flex flex-col gap-2 rounded-md border p-3 text-sm" role="alertdialog" aria-label={words.title}>
+            <p className="font-medium">{words.title}</p>
+            <p className="text-muted-foreground">{words.description}</p>
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={() => settle(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={() => settle(true)}>
+                {words.confirm}
+              </Button>
+            </div>
+          </div>
+        ) : null
+      }
       // Record ↔ record goes through the store's own relation columns (it refuses a free edge
       // between two records) — `storeRecordLink.ts` — so a store record is offered everywhere.
       storeRecords={target.token !== STORE_RECORD_TOKEN || Boolean(target.organizationId)}
@@ -135,7 +140,7 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
               toast({ title: "Already linked", description: title || undefined });
               return true;
             }
-            if ((plan.kind === "new_column" || linkReplaces(plan)) && !(await ask(plan))) return false;
+            if ((plan.kind === "new_column" || linkReplaces(plan)) && !(await ask(plan))) return "cancelled";
             await writeStoreRecordLink(plan);
             setAttached((prev) => new Set(prev).add(attachedKey(token, id)));
             toast({
