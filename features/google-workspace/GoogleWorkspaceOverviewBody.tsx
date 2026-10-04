@@ -59,6 +59,7 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { ChatMessagesReview } from "@/features/google-workspace/chat/ChatMessagesReview";
 
 export interface GoogleWorkspaceOverviewBodyProps {
   initialConnectionId?: string | null;
@@ -321,6 +322,17 @@ function GoogleWorkspaceOverviewBodyContent({
             authorizationActionDisabled={authorizationActionDisabled}
           />
         )}
+        {capabilities.data?.some((capability) =>
+          capability.key === "chat_messages" &&
+          capability.rollout_phase === "internal_test" && capability.eligible,
+        ) ? (
+          <ChatMessagesReview
+            key={`${selectedConnection?.id ?? "none"}:${selectedConnection?.health ?? "none"}:${selectedConnection?.scopes.join("|") ?? ""}:${organizationContextId ?? "none"}:${userId ?? "none"}`}
+            connection={selectedConnection}
+            actorId={userId}
+            organizationId={organizationContextId}
+          />
+        ) : null}
         <GoogleAgentToolsSection />
       </div>
     </div>
@@ -470,6 +482,7 @@ function CapabilityCatalog({
           );
           const capabilityKey = googleCapabilityKey(capability.key);
           const canEnable = Boolean(
+            capability.key !== "chat_messages" &&
             capabilityKey &&
             capability.eligible &&
             connection?.health === "connected" &&

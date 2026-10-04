@@ -236,6 +236,23 @@ describe("GoogleWorkspaceOverviewBody", () => {
     expect(onAddAccount).not.toHaveBeenCalled();
   });
 
+  it("shows Chat review only for admitted internal testers without a consent action", () => {
+    mockCapabilities.mockReturnValue({
+      data: [...capabilities, {
+        ...capabilities[0], key: "chat_messages", title: "Google Chat messages",
+        rollout_phase: "internal_test", eligible: true,
+        required_scopes: [{ scope: GOOGLE_SCOPE.chatMessagesReadonly, provider_classification: "restricted" }],
+      }],
+      isLoading: false, isError: false, refetch: jest.fn(),
+    });
+    renderOverview();
+    expect(host.textContent).toContain("Google Chat messages");
+    expect(host.textContent).toContain("needs connected Google Chat message permission");
+    expect(host.textContent).not.toContain("Enable Google Chat messages");
+    expect(host.textContent).not.toContain("Connect Google Chat messages");
+    expect(mockOpenConsent).not.toHaveBeenCalled();
+  });
+
   it("opens Gmail reading consent for the account selected in the overview", () => {
     renderOverview();
     const account = host.querySelector<HTMLSelectElement>(

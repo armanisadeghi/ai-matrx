@@ -38,6 +38,14 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   in Settings and the singleton window. It combines direct-RLS account/resource
   inventory with typed `GET /api/google-integrations/capabilities` metadata;
   product rollout, account permission, and selected-resource state stay distinct.
+- `chat/ChatMessagesReview.tsx` appears in that inspector only when the
+  `chat_messages` catalog entry admits the internal tester. A personal, connected
+  selected account must already hold the exact Chat messages read scope. The
+  person supplies a space resource name, time window, size, and order, then
+  requests each page. The organization is transport context, never request JSON.
+  The preview is temporary text, with system messages and other content named
+  as omitted; it starts no consent, sync, save, or agent handoff. This is
+  preparation for a later provider review, not evidence of a grant.
 
 ## Authorization contract
 
