@@ -153,7 +153,7 @@ export function SelectedFormResponsesReview({ connectionId, accountLabel, organi
         </div>
       ) : <p className="mt-2 text-sm text-muted-foreground">Choose a Form to review its responses.</p>}
       {error ? <div role="alert" className="mt-2 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /> {failedOperation ? <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => void (failedOperation.kind === "pick" ? chooseForm() : preview(failedOperation.pageToken))}>Retry</Button> : null}</div> : null}
-      {page?.respondent_data_present ? <p className="mt-2 text-xs text-muted-foreground">Respondent data present. Review before saving.</p> : null}
+      {page?.respondent_data_present ? <p className="mt-2 text-xs text-muted-foreground">Respondent data present; review before saving.</p> : null}
       {page?.status === "forms_api_unavailable" || page?.status === "selected_form_unavailable" ? (
         <p className="mt-2 text-sm" role="status">{page.unavailable_reason || "This Form is unavailable. Choose another Form or retry."}</p>
       ) : null}

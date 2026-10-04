@@ -14,6 +14,7 @@ it("sends the selected connection, Form, page and same organization header", asy
     provenance: { form_id: "form-1", form_title: "Survey", connection_id: "account-1", account_label: "person@example.com", organization_id: organizationId },
     responses: [{ response_id: "response-1", submitted_at: "2026-09-26T12:00:00Z", answers: [{ question_id: "q1", question_label: "Rating", values: ["Great"], file_upload_count: 0 }] }],
     next_page_token: "opaque-next",
+    respondent_data_present: true,
   };
   postGoogleBackend.mockResolvedValue({ json: async () => payload });
   const request = { organization_id: organizationId, connection_id: "account-1", form_id: "form-1", page_token: "opaque-first" };
