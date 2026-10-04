@@ -127,7 +127,7 @@ test("ordinary accounts cannot select the internal Meet product", async () => {
 
 test("an existing organization account cannot be renewed with Meet", async () => {
   await act(async () => root.render(<ConnectorConsentBody provider={provider} accounts={[{
-    id: "org-meet-test", label: "disposable@example.com", ownerKind: "organization", organizationId: "org-1", providerSubject: "subject-1", grantedScopes: [], usable: true, statusLabel: "Connected", statusReason: null, statusRemedy: null, lastVerifiedAt: null, lastRefusalSentence: null,
+    id: "org-meet-test", label: "disposable@example.com", ownerKind: "organization", organizationId: "org-1", providerSubject: "subject-1", grantedScopes: [], usable: true, statusLabel: "Connected", statusReason: "This account is connected.", statusRemedy: null, lastVerifiedAt: null, lastRefusalSentence: null,
   }]} rollout={rollout} isLoading={false} rolloutUnavailable={false} errorMessage={null} refetch={async () => {}} initialAccountId="org-meet-test" initialProductKeys={["meet"]} />));
   const button = Array.from(container.querySelectorAll("button")).find((item) => item.textContent?.includes(provider.dialog.cta));
   if (!button) throw new Error("Missing connect control");

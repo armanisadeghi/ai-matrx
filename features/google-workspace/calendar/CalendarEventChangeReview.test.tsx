@@ -335,7 +335,8 @@ describe("CalendarEventChangeReview", () => {
     [{ status: "pending", reason: "refresh_pending", cache_refresh_pending: false }, "Saved copy refresh pending"],
     [{ status: "invalid" }, "Saved copy refresh pending"],
   ])("settles and reloads a Google move without repeating it for saved-copy state", async (localRefresh, message) => {
-    const changeTransport = transport({ confirmReschedule: jest.fn(async () => ({ ...movePreview, provider_etag: '\"cedar-v2\"', reconciliation_pending: false, local_refresh: localRefresh })) });
+    // The transport receives JSON from the server; malformed refresh metadata must reach the runtime reader.
+    const changeTransport = transport({ confirmReschedule: jest.fn(async () => JSON.parse(JSON.stringify({ ...movePreview, provider_etag: '\"cedar-v2\"', reconciliation_pending: false, local_refresh: localRefresh }))) });
     await loadSource(changeTransport);
     const start = host.querySelector<HTMLInputElement>('input[aria-label="New start"]');
     const end = host.querySelector<HTMLInputElement>('input[aria-label="New end"]');

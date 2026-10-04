@@ -306,7 +306,7 @@ export function OtherContactsReview() {
                     return <label key={field.key} className="flex gap-3 p-3 text-sm"><Checkbox checked={checked} disabled={!decision.choosable} onCheckedChange={(value) => setOverrides((current) => ({ ...current, [field.key]: value === true }))} /><span className="min-w-0 flex-1"><span className="font-medium">{field.label} → {field.person_label}</span><span className="mt-0.5 block text-xs text-muted-foreground">Google: {valueText(field.value)} · CRM now: {valueText(field.current_value)}</span><span className="mt-1 block text-xs text-muted-foreground">{field.explanation || "The server did not return an explanation for this field."}</span></span></label>;
                   })}
                 </div>
-                {review.result.warnings.map((warning) => <p key={warning} className="text-xs text-amber-700 dark:text-amber-300">{warning}</p>)}
+                {review?.result.warnings.map((warning) => <p key={warning} className="text-xs text-amber-700 dark:text-amber-300">{warning}</p>)}
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">

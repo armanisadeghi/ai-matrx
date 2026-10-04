@@ -355,7 +355,13 @@ describe("CalendarCreateReview", () => {
     [{ status: "invalid" }, "Saved copy refresh pending"],
   ])("restores confirmed create independently of saved-copy metadata", async (localRefresh, message) => {
     const confirmed = { ...result, result: { ...result.result, local_refresh: localRefresh } };
-    const storage = memoryStorage(recovery({ phase: "consumed", result: confirmed }));
+    // Recovery is read from untrusted storage; keep malformed wire metadata in that input.
+    let serialized = JSON.stringify({ ...recovery({ phase: "consumed" }), result: confirmed });
+    const storage: StorageDoor = {
+      getItem: () => serialized,
+      setItem: (_key, value) => { serialized = value; },
+      removeItem: () => { serialized = ""; },
+    };
     const transport = createTransport();
     await act(async () => root.render(<CalendarCreateReview actorId="admin-user" organizationId={request.organization_id} connectionId={request.connection_id} accountLabel="admin@admin.com" calendar={writerCalendar} storage={storage} transport={transport} />));
     expect(host.textContent).toContain("Event created in Google Calendar.");
@@ -363,7 +369,7 @@ describe("CalendarCreateReview", () => {
     expect(transport.confirm).not.toHaveBeenCalled();
     expect(transport.preview).not.toHaveBeenCalled();
     expect(transport.readSource).not.toHaveBeenCalled();
-    expect(storage.read().phase).toBe("consumed");
+    expect(JSON.parse(serialized).phase).toBe("consumed");
   });
 
 });
