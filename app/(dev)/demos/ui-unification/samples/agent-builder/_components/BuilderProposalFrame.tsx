@@ -63,7 +63,7 @@ export function BuilderProposalFrame({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <ControlScope className="h-full">
+      <ControlScope className="shrink-0">
         <div className="shrink-0 border-b border-border">
           <ControlRow nowrap className="py-0.5 pl-3 pr-[9px]">
             <Button variant="quiet"
