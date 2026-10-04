@@ -65,6 +65,7 @@ import type {
 import { SeverityChip } from "../shared/badges";
 import { ExceptionSentence } from "../shared/ExceptionDoor";
 import { ExceptionResolveControls } from "../shared/ExceptionsStrip";
+import { ExceptionResolveMenu } from "../shared/ExceptionResolveMenu";
 import { formatLocalDate, formatVariance, pluralize } from "../shared/format";
 import { HrTimeReadState, RefusalNotice } from "../shared/RefusalNotice";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
@@ -387,18 +388,14 @@ function exceptionColumns({
       // The one column that must never sort or filter — it holds controls, not a value.
       filter: false,
       sortable: false,
-      cell: (row) =>
-        readOnly ? (
-          <span className="text-[11px] text-muted-foreground">
-            Your manager decides this. You can add a comment from your HR tasks.
-          </span>
-        ) : (
-          <ExceptionResolveControls
-            exception={row}
-            mockCase={mockCase}
-            onResolved={onResolved}
-          />
-        ),
+      customActions: (row) => (
+        <ExceptionResolveMenu
+          exception={row}
+          readOnly={readOnly}
+          mockCase={mockCase}
+          onResolved={onResolved}
+        />
+      ),
     },
   ];
 }
