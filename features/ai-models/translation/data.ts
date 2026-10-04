@@ -49,7 +49,11 @@ const CELL_COLUMNS =
 
 const PAGE = 1000;
 
-type PageResult<T> = { data: T[] | null; error: { message: string } | null; count?: number | null };
+type PageResult<T> = {
+  data: T[] | null;
+  error: { message: string } | null;
+  count?: number | null;
+};
 
 /**
  * Every row, pages fetched in parallel. The first page carries the exact count;
@@ -57,7 +61,10 @@ type PageResult<T> = { data: T[] | null; error: { message: string } | null; coun
  * instead of returning a partial list (same contract as `readAllRows`).
  */
 async function readAllRowsParallel<T>(
-  page: (range: { from: number; to: number }, withCount: boolean) => PromiseLike<PageResult<T>>,
+  page: (
+    range: { from: number; to: number },
+    withCount: boolean,
+  ) => PromiseLike<PageResult<T>>,
   label: string,
 ): Promise<T[]> {
   const first = await page({ from: 0, to: PAGE - 1 }, true);
@@ -67,7 +74,12 @@ async function readAllRowsParallel<T>(
   const total = typeof first.count === "number" ? first.count : null;
   if (total === null) {
     if (rows.length < PAGE) return rows;
-    throw new IncompleteReadError(label, rows.length, null, "the query returned no count");
+    throw new IncompleteReadError(
+      label,
+      rows.length,
+      null,
+      "the query returned no count",
+    );
   }
   const rest: Promise<PageResult<T>>[] = [];
   for (let from = PAGE; from < total; from += PAGE) {
@@ -78,7 +90,12 @@ async function readAllRowsParallel<T>(
     rows.push(...(res.data ?? []));
   }
   if (rows.length < total) {
-    throw new IncompleteReadError(label, rows.length, total, "a page came back short");
+    throw new IncompleteReadError(
+      label,
+      rows.length,
+      total,
+      "a page came back short",
+    );
   }
   return rows;
 }
@@ -97,7 +114,9 @@ async function readCells(): Promise<TranslationCellRow[]> {
         .select(CELL_COLUMNS, withCount ? { count: "exact" } : undefined)
         .is("deleted_at", null)
         .order("id", { ascending: true })
-        .range(from, to) as unknown as PromiseLike<PageResult<TranslationCellRow>>,
+        .range(from, to) as unknown as PromiseLike<
+        PageResult<TranslationCellRow>
+      >,
     "ai.translation_cell",
   );
   return rows.map((r) => ({
@@ -108,23 +127,54 @@ async function readCells(): Promise<TranslationCellRow[]> {
   }));
 }
 
-async function readCompiled(): Promise<CompiledRow[]> {
-  return readAllRowsParallel<CompiledRow>(
-    ({ from, to }, withCount) =>
-      ai()
-        .from("offering_rules_compiled")
-        .select("offering_id, setting_key, cell_id, layer, state", withCount ? { count: "exact" } : undefined)
-        .order("offering_id", { ascending: true })
-        .order("setting_key", { ascending: true })
-        .range(from, to) as unknown as PromiseLike<PageResult<CompiledRow>>,
-    "ai.offering_rules_compiled",
-  );
+/**
+ * The ONE merge (K5) in one round trip: `ai.offering_rules_compiled_map()` returns the view as
+ * {offering_id: {setting_key: cell_id}} (paging the ~21k-row view cost 22 requests and ~1.2 s).
+ * Layer and state come from the cell each row names.
+ */
+async function readCompiledMap(): Promise<
+  Record<string, Record<string, string>>
+> {
+  const { data, error } = await ai().rpc("offering_rules_compiled_map");
+  if (error) throw error;
+  return (data ?? {}) as Record<string, Record<string, string>>;
+}
+
+function compiledRows(
+  map: Record<string, Record<string, string>>,
+  cells: TranslationCellRow[],
+): CompiledRow[] {
+  const byId = new Map(cells.map((c) => [c.id, c]));
+  const rows: CompiledRow[] = [];
+  for (const [offeringId, keys] of Object.entries(map)) {
+    for (const [settingKey, cellId] of Object.entries(keys)) {
+      const cell = byId.get(cellId);
+      if (!cell) {
+        throw new IncompleteReadError(
+          "ai.offering_rules_compiled",
+          rows.length,
+          null,
+          `cell ${cellId} is not in the cell read`,
+        );
+      }
+      rows.push({
+        offering_id: offeringId,
+        setting_key: settingKey,
+        cell_id: cellId,
+        layer: cell.layer,
+        state: cell.state,
+      });
+    }
+  }
+  return rows;
 }
 
 /** One offering's K5 rows WITH their rules — the rule source
  *  `ai.resolve_model_config` and `resolveControls.buildControlRows` use when it
  *  is non-empty. `null` = the view is not on this database (legacy columns). */
-export async function readOfferingCells(offeringId: string): Promise<OfferingCellRow[] | null> {
+export async function readOfferingCells(
+  offeringId: string,
+): Promise<OfferingCellRow[] | null> {
   const { data, error } = await ai()
     .from("offering_rules_compiled")
     .select("offering_id, setting_key, rule, cell_id, layer, state, version")
@@ -173,9 +223,12 @@ async function readOfferings(): Promise<TranslationOffering[]> {
       ({ from, to }) =>
         ai()
           .from("offering")
-          .select("id, api_id, model_id, provider_model_id, setting_profile_id, capabilities_override", {
-            count: "exact",
-          })
+          .select(
+            "id, api_id, model_id, provider_model_id, setting_profile_id, capabilities_override",
+            {
+              count: "exact",
+            },
+          )
           .eq("is_available", true)
           .is("deleted_at", null)
           .order("id", { ascending: true })
@@ -198,12 +251,17 @@ async function readOfferings(): Promise<TranslationOffering[]> {
       { label: "ai.model_definition" },
     ),
   ]);
-  const nameById = new Map(models.map((m) => [m.id, m.common_name || m.name || m.id]));
+  const nameById = new Map(
+    models.map((m) => [m.id, m.common_name || m.name || m.id]),
+  );
   const capsById = new Map(models.map((m) => [m.id, m.capabilities]));
   return offerings.map(({ capabilities_override, ...o }) => ({
     ...o,
     model_name: nameById.get(o.model_id) ?? o.provider_model_id ?? o.id,
-    capabilities: listingCapabilities(capsById.get(o.model_id), capabilities_override),
+    capabilities: listingCapabilities(
+      capsById.get(o.model_id),
+      capabilities_override,
+    ),
   }));
 }
 
@@ -221,7 +279,8 @@ function listingCapabilities(
   return {
     input: words(merged.input),
     output: words(merged.output),
-    interaction: typeof merged.interaction === "string" ? merged.interaction : null,
+    interaction:
+      typeof merged.interaction === "string" ? merged.interaction : null,
   };
 }
 
@@ -243,7 +302,10 @@ async function readSettings(): Promise<TranslationSetting[]> {
   if (settingsRes.error) throw settingsRes.error;
   if (familiesRes.error) throw familiesRes.error;
   const familyName = new Map(
-    ((familiesRes.data ?? []) as { id: string; name: string }[]).map((f) => [f.id, f.name]),
+    ((familiesRes.data ?? []) as { id: string; name: string }[]).map((f) => [
+      f.id,
+      f.name,
+    ]),
   );
   const seen = new Set<string>();
   const out: TranslationSetting[] = [];
@@ -256,13 +318,18 @@ async function readSettings(): Promise<TranslationSetting[]> {
       value_type: String(raw.value_type ?? "string"),
       canonical_min: toNumberOrNull(raw.canonical_min),
       canonical_max: toNumberOrNull(raw.canonical_max),
-      canonical_values: Array.isArray(raw.canonical_values) ? raw.canonical_values : null,
+      canonical_values: Array.isArray(raw.canonical_values)
+        ? raw.canonical_values
+        : null,
       default_value: raw.default_value ?? null,
       value_positions:
         raw.value_positions && typeof raw.value_positions === "object"
           ? (raw.value_positions as Record<string, number>)
           : null,
-      family: typeof raw.family === "string" ? (familyName.get(raw.family) ?? null) : null,
+      family:
+        typeof raw.family === "string"
+          ? (familyName.get(raw.family) ?? null)
+          : null,
     });
   }
   return out;
@@ -272,22 +339,41 @@ async function readSettings(): Promise<TranslationSetting[]> {
 export async function readTranslationBundle(): Promise<TranslationRead> {
   // No separate existence probe: the first page of each read carries the
   // PostgREST code, so "the tables are not here" is told apart in one round trip.
-  let parts: [TranslationCellRow[], CompiledRow[], SettingProfileRow[], TranslationApi[], TranslationOffering[], TranslationSetting[]];
+  let parts: [
+    TranslationCellRow[],
+    Record<string, Record<string, string>>,
+    SettingProfileRow[],
+    TranslationApi[],
+    TranslationOffering[],
+    TranslationSetting[],
+  ];
   try {
     parts = await Promise.all([
       readCells(),
-      readCompiled(),
+      readCompiledMap(),
       readProfiles(),
       readApis(),
       readOfferings(),
       readSettings(),
     ]);
   } catch (error) {
-    if (isAbsentRelationError(error) || (error as { status?: unknown })?.status === 404) return { status: "absent" };
+    if (
+      isAbsentRelationError(error) ||
+      (error as { status?: unknown })?.status === 404
+    )
+      return { status: "absent" };
     throw error;
   }
-  const [cells, compiled, profiles, apis, offerings, settings] = parts;
-  const bundle: TranslationBundle = { cells, compiled, profiles, apis, offerings, settings };
+  const [cells, compiledMap, profiles, apis, offerings, settings] = parts;
+  const compiled = compiledRows(compiledMap, cells);
+  const bundle: TranslationBundle = {
+    cells,
+    compiled,
+    profiles,
+    apis,
+    offerings,
+    settings,
+  };
   return { status: "ready", bundle };
 }
 
@@ -300,7 +386,9 @@ export type SaveCellArgs = {
 };
 
 /** THE human door: saves one cell and approves it, stamping the caller. */
-export async function saveTranslationCell(args: SaveCellArgs): Promise<{ cellId: string; state: string }> {
+export async function saveTranslationCell(
+  args: SaveCellArgs,
+): Promise<{ cellId: string; state: string }> {
   const { data, error } = await ai().rpc("save_translation_cell", {
     p_layer: args.layer,
     p_layer_owner_id: args.ownerId,
@@ -311,12 +399,17 @@ export async function saveTranslationCell(args: SaveCellArgs): Promise<{ cellId:
   });
   if (error) throw error;
   const reply = (data ?? {}) as { cell_id?: string; state?: string };
-  return { cellId: String(reply.cell_id ?? ""), state: String(reply.state ?? "") };
+  return {
+    cellId: String(reply.cell_id ?? ""),
+    state: String(reply.state ?? ""),
+  };
 }
 
 /** Archive door (never a delete): the next layer down takes over. */
 export async function archiveTranslationCell(cellId: string): Promise<void> {
-  const { error } = await ai().rpc("archive_translation_cell", { p_cell_id: cellId });
+  const { error } = await ai().rpc("archive_translation_cell", {
+    p_cell_id: cellId,
+  });
   if (error) throw error;
 }
 
