@@ -53,8 +53,10 @@ import {
   readKitArtifactStats,
   removeKitMember,
   removeKitMembersVersioned,
+  createManualKit,
   renameKit,
   type KitArtifactStats,
+  type ManualKitSourceType,
   type StudyKit,
 } from "../kitService";
 import { MakeMoreFromKit } from "./MakeMoreFromKit";
@@ -73,7 +75,10 @@ import {
 } from "../kitSurfaceScope";
 import { collectionWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { refuseSurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import { parseKitDeletes, parseKitUpdates } from "../kitWrites";
+import { KIT_MEMBER_CANDIDATE_LIMIT, parseKitDeletes, parseKitMemberAdds, parseKitUpdates } from "../kitWrites";
+import { fetchEducationLibraryPage } from "@/features/education/library/service";
+import type { EducationLibraryRow } from "@/features/education/library/types";
+import { DEFAULT_ENTITY_LIST_QUERY } from "@/lib/entity-list/types";
 
 const FORMAT_PROMISE: Record<TargetKind, string> = {
   deck: "Build recall one card at a time.",
@@ -290,6 +295,19 @@ export function KitHub({
     enabled: kit !== null,
     staleAfterMs: 60_000,
   });
+  // The saved aids an agent may add (bounded; the add page has the full list). Read once per tab.
+  const candidatesKey = `education.kit_candidates:${sourceType}:${sourceId}`;
+  const readCandidates = async (): Promise<EducationLibraryRow[]> => {
+    const page = await fetchEducationLibraryPage(
+      { ...DEFAULT_ENTITY_LIST_QUERY, scope: { kind: "mine" }, page: 1 },
+      { sort: "updated", direction: "desc", favoritesFirst: false, pageSize: KIT_MEMBER_CANDIDATE_LIMIT * 2 },
+    );
+    return page.rows;
+  };
+  const candidatesRead = useStoreRead<EducationLibraryRow[]>(candidatesKey, readCandidates, {
+    enabled: kit !== null,
+    staleAfterMs: 60_000,
+  });
   const loading = !kitRead.hasData && !kitRead.isError;
   const loadError = kitRead.isError;
   const stats: KitArtifactStats = statsRead.data ?? {};
@@ -301,6 +319,7 @@ export function KitHub({
         refreshStoreRead(kitKey, () => readKit(sourceType, sourceId)),
       );
       if (fresh) await dispatchRead(refreshStoreRead(statsKey, () => readKitArtifactStats(fresh.artifacts)));
+      await dispatchRead(refreshStoreRead(candidatesKey, readCandidates));
     })();
   };
 
@@ -314,6 +333,7 @@ export function KitHub({
       stats,
       statsLoading,
       statsFailed,
+      memberCandidates: candidatesRead.data,
     });
   const getWriteHandlers = () => {
     if (!kit) return {};
@@ -366,7 +386,22 @@ export function KitHub({
       });
       return { fingerprint, refs };
     };
-    return { ...collection, remove_kit_members: {
+    const parseMemberAdd = (value: unknown) => {
+      if (writing || (managing && draftTitle !== kit.title)) {
+        throw new Error("Save or cancel your kit title edits before applying agent changes.");
+      }
+      return parseKitMemberAdds(value, kit, candidatesRead.data ?? []);
+    };
+    return { ...collection, add_kit_members: {
+      validate: (value: unknown) => { parseMemberAdd(value); },
+      apply: async (value: unknown) => {
+        const plan = parseMemberAdd(value);
+        // The same write the add page's button runs.
+        await createManualKit({ sourceId: kit.sourceId, sourceType: kit.sourceType as ManualKitSourceType, title: plan.title, artifacts: plan.artifacts, allowExisting: true, expectedFingerprint: plan.expectedFingerprint });
+        reload();
+        return { summary: `Added ${plan.artifacts.length} saved study aid${plan.artifacts.length === 1 ? "" : "s"} to the kit.`, data: { added: plan.artifacts.map((row) => ({ kind: row.kind, id: row.id, title: row.title })) } };
+      },
+    }, remove_kit_members: {
       validate: (value: unknown) => { parseMemberRemoval(value); },
       apply: async (value: unknown) => {
         const { refs, fingerprint } = parseMemberRemoval(value);

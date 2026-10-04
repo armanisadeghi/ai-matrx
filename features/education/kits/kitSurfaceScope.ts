@@ -7,9 +7,10 @@
 import { educationEntityStudyHref } from "@/features/education/data/entityRoutes";
 import type { GeneratedArtifact } from "@/features/education/convert/lineage";
 import type { TargetKind } from "@/features/education/convert/types";
-import type { LibraryRowStats } from "@/features/education/library/types";
+import type { EducationLibraryRow, LibraryRowStats } from "@/features/education/library/types";
 import { createEducationKitsScope } from "@/features/surfaces/manifests/education-kits.manifest";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import { KIT_MEMBER_CANDIDATE_LIMIT } from "./kitWrites";
 import { kitArtifactKey, kitMembershipFingerprint, type KitArtifactStats, type StudyKit } from "./kitService";
 
 export interface StudyStage {
@@ -98,6 +99,8 @@ export function buildKitDetailScope(input: {
   stats: KitArtifactStats;
   statsLoading: boolean;
   statsFailed: boolean;
+  /** Saved aids the person could add (bounded); absent until read. Aids already in the kit are left out here. */
+  memberCandidates?: readonly EducationLibraryRow[];
 }): SurfaceScopePayload {
   const { kit, stats, statsLoading, statsFailed } = input;
   const status = input.loading
@@ -127,6 +130,14 @@ export function buildKitDetailScope(input: {
     kit_title: kit.title,
     kit_membership_fingerprint: kitMembershipFingerprint(kit),
     kit_created_at: kit.createdAt,
+    ...(input.memberCandidates
+      ? {
+          kit_member_candidates: input.memberCandidates
+            .filter((row) => !kit.artifacts.some((artifact) => artifact.artifactType === row.kind && artifact.artifactId === row.id))
+            .slice(0, KIT_MEMBER_CANDIDATE_LIMIT)
+            .map((row) => ({ id: row.id, title: row.title, kind: row.kind, subtype: row.subtype })),
+        }
+      : {}),
     study_aids: ordered.map((artifact) => {
       const s = statsReady ? stats[kitArtifactKey(artifact)] : undefined;
       return {
