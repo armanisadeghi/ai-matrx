@@ -269,12 +269,41 @@ describe("CalendarCreateReview", () => {
     await click(host, "Check original source");
     expect(storage.read()).toMatchObject({ phase: "uncertain", source: null });
     expect(host.textContent).toContain("do not match the reviewed event");
+    expect(host.textContent).toContain("Returned source differences");
+    expect(host.textContent).toContain("Title");
+    expect(host.textContent).toContain("Original: Cedar treatment plan review");
+    expect(host.textContent).toContain("Returned: Different appointment");
+    expect(host.textContent).not.toContain("Provider version");
     expect(host.textContent).not.toContain("Create another event");
     expect(host.textContent).not.toContain("does not exist");
 
     const failedTransport = createTransport({ readSource: jest.fn(async () => { throw new Error("Google source is unavailable."); }) });
     await act(async () => root.render(<CalendarCreateReview actorId="admin-user" organizationId={request.organization_id} connectionId={request.connection_id} accountLabel="admin@admin.com" calendar={writerCalendar} storage={storage} transport={failedTransport} />));
     await click(host, "Check original source");
+    expect(storage.read()).toMatchObject({ phase: "uncertain", source: null });
+    expect(host.textContent).not.toContain("Create another event");
+    expect(host.textContent).not.toContain("Returned source differences");
+  });
+
+  it("shows returned source identity and timing differences without persisting them as proof", async () => {
+    const storage = memoryStorage(recovery({ phase: "uncertain", problem: "The confirmation outcome is unknown." }));
+    const transport = createTransport({
+      readSource: jest.fn(async () => ({
+        ...source,
+        account_email: "other-proof@example.test",
+        target_event_id: "different-provider-event",
+        starts_at: { dateTime: "2026-10-05T16:30:00Z" },
+      })),
+    });
+    await act(async () => root.render(<CalendarCreateReview actorId="admin-user" organizationId={request.organization_id} connectionId={request.connection_id} accountLabel="admin@admin.com" calendar={writerCalendar} storage={storage} transport={transport} />));
+    await click(host, "Check original source");
+
+    expect(host.textContent).toContain("Google account");
+    expect(host.textContent).toContain("Returned: other-proof@example.test");
+    expect(host.textContent).toContain("Target event ID");
+    expect(host.textContent).toContain("Returned: different-provider-event");
+    expect(host.textContent).toContain("Start");
+    expect(host.textContent).toContain("Returned: 2026-10-05T16:30:00Z");
     expect(storage.read()).toMatchObject({ phase: "uncertain", source: null });
     expect(host.textContent).not.toContain("Create another event");
   });

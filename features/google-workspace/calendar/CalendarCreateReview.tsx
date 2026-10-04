@@ -118,6 +118,41 @@ function verifiedSourceView(saved: CalendarCreateRecoveryRecord | null): {
   };
 }
 
+interface SourceDifference {
+  label: string;
+  expected: string;
+  returned: string;
+}
+
+function sourceDifferenceRows(
+  saved: CalendarCreateRecoveryRecord,
+  source: CalendarEventSourceResult,
+): SourceDifference[] {
+  const unavailable = source.redacted === true ? "Redacted by Google" : "Unavailable in source response";
+  const returnedStart = typeof source.starts_at?.dateTime === "string" ? source.starts_at.dateTime : unavailable;
+  const returnedEnd = typeof source.ends_at?.dateTime === "string" ? source.ends_at.dateTime : unavailable;
+  const candidates: SourceDifference[] = [
+    { label: "Google account", expected: saved.intent?.preview.account_email ?? saved.account_label, returned: source.account_email },
+    { label: "Calendar ID", expected: saved.request.calendar_id, returned: source.calendar_id },
+    { label: "Selected event ID", expected: saved.request.event_id, returned: source.selected_event_id },
+    { label: "Target event ID", expected: saved.request.event_id, returned: source.target_event_id ?? unavailable },
+    { label: "Occurrence", expected: "single", returned: source.occurrence },
+    { label: "Provider version", expected: "A current provider version", returned: source.target_etag?.trim() || unavailable },
+    { label: "Visibility", expected: "Readable source", returned: source.redacted === false ? "Readable source" : "Redacted by Google" },
+    { label: "Title", expected: saved.request.summary, returned: source.event_summary ?? unavailable },
+    { label: "Start", expected: saved.request.starts_at, returned: returnedStart },
+    { label: "End", expected: saved.request.ends_at, returned: returnedEnd },
+  ];
+  return candidates.filter((row) => {
+    if (row.label === "Provider version") return !source.target_etag?.trim();
+    if ((row.label === "Start" || row.label === "End") && row.returned !== unavailable) {
+      return !Number.isFinite(Date.parse(row.returned)) ||
+        Date.parse(row.returned) !== Date.parse(row.expected);
+    }
+    return row.expected !== row.returned;
+  });
+}
+
 function confirmUnavailable(error: unknown): boolean {
   return error instanceof BackendApiError && error.code === "calendar_create_unavailable";
 }
@@ -158,6 +193,7 @@ export function CalendarCreateReview({
   const [stableEventId, setStableEventId] = useState<string | null>(null);
   const [busy, setBusy] = useState<"preview" | "confirm" | "source" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sourceMismatch, setSourceMismatch] = useState<CalendarEventSourceResult | null>(null);
   const epoch = useRef(0);
   const busyRef = useRef(false);
 
@@ -180,6 +216,9 @@ export function CalendarCreateReview({
   const canCreateHere = ["owner", "writer", "writerWithoutPrivateAccess"].includes(calendar.access_role);
   const originalSourceHref = saved ? sourceUrl(saved) : null;
   const verifiedSource = verifiedSourceView(saved);
+  const sourceDifferences = saved && sourceMismatch && scopeMatches
+    ? sourceDifferenceRows(saved, sourceMismatch)
+    : [];
 
   async function review(requestOverride?: CalendarCreateRequest) {
     if (busyRef.current || !canCreateHere) return;
@@ -326,7 +365,7 @@ export function CalendarCreateReview({
     if (!saved || !scopeMatches || busyRef.current ||
       !["uncertain", "reconciliation_required"].includes(saved.phase)) return;
     const held = saved;
-    setBusy("source"); busyRef.current = true; setError(null); setWarning(null);
+    setBusy("source"); busyRef.current = true; setError(null); setWarning(null); setSourceMismatch(null);
     const callEpoch = ++epoch.current;
     try {
       const source = await transport.readSource({
@@ -350,6 +389,7 @@ export function CalendarCreateReview({
         } else {
           setSaved(mismatched);
         }
+        setSourceMismatch(source);
         setError(problem);
         return;
       }
@@ -358,10 +398,12 @@ export function CalendarCreateReview({
         setError("Google returned a matching source, but this tab could not save the proof.");
         return;
       }
+      setSourceMismatch(null);
       setSaved(verified);
     } catch (cause) {
       if (callEpoch !== epoch.current) return;
       const problem = getUserMessage(cause);
+      setSourceMismatch(null);
       const failed = { ...held, problem };
       if (!writeCalendarCreateRecovery(storageDoor, failed)) {
         setWarning("The source check failure could not be saved. Keep this event held.");
@@ -469,6 +511,17 @@ export function CalendarCreateReview({
           {["attempting", "uncertain", "reconciliation_required"].includes(saved.phase) ? (
             <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
               {saved.problem ? <p>{saved.problem}<ErrorAlchemyMenu error={saved.problem} /></p> : null}
+              {sourceMismatch && scopeMatches ? (
+                <div className="space-y-1 rounded-md border border-amber-500/40 bg-background/70 p-2" aria-label="Source differences">
+                  <p className="font-medium text-foreground">Returned source differences</p>
+                  {sourceDifferences.length > 0 ? sourceDifferences.map((difference) => (
+                    <div key={difference.label} className="grid gap-1 sm:grid-cols-[8rem_1fr]">
+                      <span className="font-medium text-muted-foreground">{difference.label}</span>
+                      <span className="break-all">Original: {difference.expected}<br />Returned: {difference.returned}</span>
+                    </div>
+                  )) : <p>The returned source could not be validated.</p>}
+                </div>
+              ) : null}
               <p>This event may already exist. Check the original Google source before continuing.</p>
               <p>Review {saved.request.summary} at {saved.request.starts_at} in {saved.account_label} · {saved.calendar_summary}.</p>
               {originalSourceHref ? <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={originalSourceHref} target="_blank" rel="noreferrer">Open original event in Google Calendar <ExternalLink className="h-3.5 w-3.5" /></a> : null}
