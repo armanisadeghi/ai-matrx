@@ -57,6 +57,7 @@ export function AgentOrgCard({
   return (
     <div
       role={interactive ? "button" : "group"}
+      data-clickable={interactive ? "" : undefined}
       tabIndex={interactive ? 0 : undefined}
       aria-label={name}
       aria-pressed={interactive ? state.selected : undefined}
@@ -73,7 +74,7 @@ export function AgentOrgCard({
       }}
       className={cn(
         "group/card relative flex h-full w-full flex-col rounded-xl border bg-card px-3 py-2.5 text-left shadow-sm transition-[box-shadow,border-color] duration-150",
-        interactive && "cursor-pointer hover:border-foreground/25 hover:shadow-md",
+        interactive && "hover:border-foreground/25 hover:shadow-md",
         d.isConductor ? cn("border-transparent ring-2", a.ring) : "border-border",
         state.selected && "ring-2 ring-primary shadow-md",
         state.matched && !state.selected && "ring-2 ring-warning",
