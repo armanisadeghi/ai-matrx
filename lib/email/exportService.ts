@@ -207,66 +207,6 @@ export async function emailTableExport(options: {
 }
 
 /**
- * Email a share link to a user
- */
-export async function emailShareLink(options: {
-  to: string;
-  resourceType: string;
-  resourceName: string;
-  shareUrl: string;
-  message?: string;
-}): Promise<EmailExportResult> {
-  const { to, resourceType, resourceName, shareUrl, message } = options;
-  
-  const subject = `Link to ${resourceType}: ${resourceName}`;
-  
-  const htmlContent = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); padding: 24px; border-radius: 8px 8px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">Saved Link</h1>
-        <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0 0; font-size: 14px;">
-          ${resourceType}: ${resourceName}
-        </p>
-      </div>
-      <div style="background: #ffffff; border-radius: 0 0 8px 8px; padding: 24px; border: 1px solid #e5e7eb; border-top: none;">
-        ${message ? `<p style="color: #4b5563; margin-bottom: 16px;">${escapeHtml(message)}</p>` : ''}
-        <div style="text-align: center; margin: 24px 0;">
-          <a href="${shareUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-            Open ${resourceType}
-          </a>
-        </div>
-        <div style="background: #f9fafb; border-radius: 8px; padding: 12px; text-align: center;">
-          <p style="color: #6b7280; font-size: 12px; margin: 0 0 4px 0;">Direct link:</p>
-          <a href="${shareUrl}" style="color: #3b82f6; font-size: 14px; word-break: break-all;">${shareUrl}</a>
-        </div>
-      </div>
-      <div style="margin-top: 24px; text-align: center;">
-        <p style="color: #9ca3af; font-size: 12px;">
-          Sent from <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://aimatrx.com'}" style="color: #3b82f6; text-decoration: none;">AI Matrx</a>
-        </p>
-      </div>
-    </div>
-  `;
-  
-  const result = await sendEmail({
-    to,
-    subject,
-    html: htmlContent,
-    text: `${resourceType}: ${resourceName}\n\nLink: ${shareUrl}${message ? `\n\nNote: ${message}` : ''}`,
-  });
-  
-  if (result.success) {
-    return { success: true, message: 'Link emailed successfully' };
-  }
-  
-  return {
-    success: false,
-    message: 'Failed to send email',
-    error: extractErrorMessage(result.error),
-  };
-}
-
-/**
  * Email notification templates for various events
  */
 export const notificationTemplates = {

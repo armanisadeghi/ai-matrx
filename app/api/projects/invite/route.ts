@@ -1,22 +1,28 @@
 /**
- * Project Invitation Email Route (email-only)
+ * Project invitation notice.
  *
  * The invitation ROW is created on the client via the canonical `inv_create`
  * RPC (`invitationsService.create`, client → Supabase per repo doctrine). This
  * route accepts only an invitation id. `inv_get_managed` proves caller access
  * and derives the stored recipient, token, project, and expiry.
+ *
+ * The notice goes through the notification spine (`invitation.project`): email, plus the
+ * paired DM when the address already has an account.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { projectsDb } from "@/utils/supabase/projectsDb";
-import {
-  sendEmail,
-  emailTemplates,
-  emailErrorMessage,
-} from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  actorName,
+  invitationOutcome,
+  noticeDate,
+  notifyFromSql,
+  userIdForEmail,
+} from "@/lib/notifications/notifyFromSql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,8 +41,6 @@ export async function POST(request: NextRequest) {
     }
     const body = await request.json();
     const { invitationId } = body;
-    // THE strict RFC-4122 predicate (@ai-matrx/kit/uuid) — a validation door
-    // on a public route only ever sees ids this system minted.
 
     if (!isRfc4122Uuid(invitationId)) {
       return NextResponse.json(
@@ -68,10 +72,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch project + org details for the email body (read-only, RLS-scoped).
-    // `projects` lives in `workspace`, `organizations` in `public` — PostgREST
-    // resource embedding is single-schema, so the org name is fetched in a
-    // separate `public` query and merged in JS.
     const { data: projectData } = await projectsDb(supabase)
       .from("projects")
       .select("name, organization_id")
@@ -96,56 +96,45 @@ export async function POST(request: NextRequest) {
       if (orgData?.name) orgName = orgData.name;
     }
 
-    const inviterName =
-      user.user_metadata?.full_name ??
-      user.user_metadata?.name ??
-      user.email ??
-      "Someone";
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/project/accept/${invitationToken}`;
-    const expiry = invitation.expires_at
+    const acceptPath = `/invitations/project/accept/${invitationToken}`;
+    const expiresAt = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const emailTemplate = emailTemplates.projectInvitation(
-      projectData.name,
-      orgName,
-      inviterName,
-      invitationUrl,
-      expiry,
+    const admin = createAdminClient();
+    const recipientUserId =
+      invitation.invited_user_id ?? (await userIdForEmail(admin, recipientEmail));
+
+    const result = await notifyFromSql(admin, {
+      organizationId: invitation.organization_id,
+      eventKey: "invitation.project",
+      recipientUserId,
+      toAddress: recipientEmail,
+      recipientLabel: recipientEmail,
+      payload: {
+        invite: {
+          inviter: actorName(user, "Someone"),
+          project: projectData.name,
+          organization: orgName,
+          token: invitationToken,
+          expires: noticeDate(expiresAt),
+        },
+      },
+      deepLink: acceptPath,
+      targetKind: "invitation",
+      targetId: invitation.id,
+      // One notice per invitation token: a repeat POST queues nothing new.
+      dedupeKey: `invitation.project:${invitation.id}:${invitationToken}`,
+      dm: { sender_user_id: user.id },
+    });
+
+    return NextResponse.json(
+      invitationOutcome(result, `${siteUrl}${acceptPath}`),
     );
-
-    const emailResult = await sendEmail({
-      to: recipientEmail,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
-    });
-
-    if (!emailResult.success) {
-      // Keep the invitation row; say the email failed and hand back the link
-      // as the remedy (DD-091, law 4).
-      console.warn(
-        "Failed to send project invitation email:",
-        emailResult.error,
-      );
-      return NextResponse.json({
-        success: true,
-        emailSent: false,
-        emailError: emailErrorMessage(emailResult.error),
-        acceptUrl: invitationUrl,
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      emailSent: true,
-    });
   } catch (error: unknown) {
-    const msg =
-      error instanceof Error
-        ? error.message
-        : "Failed to send invitation email";
+    const msg = error instanceof Error ? error.message : "Failed to send invitation email";
     console.error("Error in POST /api/projects/invite:", error);
     return NextResponse.json(
       {
@@ -159,11 +148,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    emailConfigured: !!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM),
-  });
 }

@@ -2,37 +2,28 @@
 import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 
 /**
- * Resending an organization invitation — the honesty contract (DD-091, law 4).
+ * Resending a ORGANIZATION invitation through the notification spine
+ * (`invitation.organization_reminder`), with the honesty contract kept (DD-091, law 4).
  *
- * A resend carries a property a first invite does not: `inv_resend` has ALREADY
- * minted a fresh token by the time this route runs, so the recipient's earlier
- * link is dead whatever happens next. The route used to answer a flat
- * `500 {success:false,"Failed to send email"}` when the send failed, which told
- * the manager nothing happened while the person they were chasing was quietly
- * left holding a link that no longer works. It must instead say: the invitation
- * is refreshed, the email did not go out, here is the new link.
- *
- * The failure shapes below are the REAL ones `sendEmail` returns (an `Error`
- * instance and Resend's `{name,message}`), read back through `JSON.stringify`
- * exactly as the browser receives them — a string reason is what the banner
- * renders, and an object there throws in React.
+ * `inv_resend` has already minted a fresh token when this route runs, so the
+ * recipient's earlier link is dead. The notice must carry the NEW token, and a
+ * notice whose email is not on its way must hand back the NEW link — never a
+ * flat 500 that makes it look as if nothing had happened.
  */
 
-const sendEmail = jest.fn();
 const getUser = jest.fn();
 const rpc = jest.fn();
+const notifyFromSql = jest.fn();
+const userIdForEmail = jest.fn();
 
-jest.mock("@/lib/email/client", () => ({
-  ...jest.requireActual("@/lib/email/error-message"),
-  sendEmail: (...args: unknown[]) => sendEmail(...args),
-  emailTemplates: {
-    organizationInvitationReminder: (
-      _org: string,
-      _inviter: string,
-      url: string,
-    ) => ({ subject: "Reminder", html: `<a href="${url}">accept</a>` }),
-  },
+jest.mock("server-only", () => ({}));
+jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: () => ({}) }));
+jest.mock("@/lib/notifications/notifyFromSql", () => ({
+  ...jest.requireActual("@/lib/notifications/notifyFromSql"),
+  notifyFromSql: (...args: unknown[]) => notifyFromSql(...args),
+  userIdForEmail: (...args: unknown[]) => userIdForEmail(...args),
 }));
+
 
 jest.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({
@@ -56,14 +47,11 @@ const { POST } = require("./route") as typeof import("./route");
 const INVITATION_ID = "3f1c2a10-8a7e-4c3e-9b0a-2f5d6e7c8a91";
 
 async function resendAndReadOverTheWire() {
-  const request = new Request(
-    "https://www.aimatrx.com/api/organizations/invitations/resend",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ invitationId: INVITATION_ID }),
-    },
-  );
+  const request = new Request("https://www.aimatrx.com/api/organizations/invitations/resend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ invitationId: INVITATION_ID }),
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const response = await POST(request as any);
   const body = JSON.parse(JSON.stringify(await response.json()));
@@ -80,64 +68,55 @@ beforeEach(() => {
   // The FRESH token `inv_resend` just minted.
   rpc.mockResolvedValue({
     data: {
+      id: INVITATION_ID,
+      organization_id: "org-1",
       target_type: "organization",
-      target_id: "org-1",
+      target_id: "target-1",
       email: "dana@example.com",
+      invited_user_id: null,
       token: "fresh-tok-999",
       expires_at: null,
     },
     error: null,
   });
+  userIdForEmail.mockResolvedValue(null);
 });
 
-test("CONTROL: a successful resend mails the FRESH token's link and says so", async () => {
-  sendEmail.mockResolvedValue({ success: true });
+test("CONTROL: a resend queues the FRESH token's link, token only", async () => {
+  notifyFromSql.mockResolvedValue({ queued: ["email"], skipped: [], say: "An email is on its way to them." });
 
   const { response, body } = await resendAndReadOverTheWire();
 
   expect(response.status).toBe(200);
   expect(body.success).toBe(true);
   expect(body.emailSent).toBe(true);
-
-  const [{ html, to }] = sendEmail.mock.calls[0] as [
-    { html: string; to: string },
-  ];
-  expect(to).toBe("dana@example.com");
-  expect(html).toContain("/invitations/organization/accept/fresh-tok-999");
-  // The token and nothing else — no address in a URL.
-  expect(html).not.toContain("email=");
-  expect(html).not.toContain("dana@example.com");
+  const [, args] = notifyFromSql.mock.calls[0];
+  expect(args.eventKey).toBe("invitation.organization_reminder");
+  expect(args.toAddress).toBe("dana@example.com");
+  // No account behind the address: email only, no DM to a stranger.
+  expect(args.recipientUserId).toBeNull();
+  expect(args.deepLink).toBe("/invitations/organization/accept/fresh-tok-999");
+  expect(args.deepLink).not.toContain("dana@example.com");
+  // Each real resend is its own notice: the fresh token is in the key.
+  expect(args.dedupeKey).toContain("fresh-tok-999");
 });
 
-describe.each([
-  [
-    "EMAIL_FROM missing (an Error instance)",
-    new Error("EMAIL_FROM is not configured"),
-    "EMAIL_FROM is not configured",
-  ],
-  [
-    "Resend rejected it (a {name,message} object)",
-    { name: "validation_error", message: "API key is invalid" },
-    "API key is invalid",
-  ],
-])("REFUSAL: %s", (_label, providerError, expectedSentence) => {
-  test("never 500s away a refreshed invitation — it reports emailSent:false with the NEW link", async () => {
-    sendEmail.mockResolvedValue({ success: false, error: providerError });
-
-    const { response, body } = await resendAndReadOverTheWire();
-
-    // NOT a 500: the invitation is real and refreshed; only the email failed.
-    expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.emailSent).toBe(false);
-    expect(typeof body.emailError).toBe("string");
-    expect(body.emailError).toBe(expectedSentence);
-    // The remedy is the link the fresh token produced — handing back the old
-    // one would send the manager to chase a link that is already dead.
-    expect(body.acceptUrl).toBe(
-      "https://www.aimatrx.com/invitations/organization/accept/fresh-tok-999",
-    );
+test("REFUSAL: an email that is not on its way is reported, not 500'd away, with the NEW link", async () => {
+  notifyFromSql.mockResolvedValue({
+    queued: [],
+    skipped: [{ channel: "email", why: "suppressed" }],
+    say: "Nothing could be sent to them.",
   });
+
+  const { response, body } = await resendAndReadOverTheWire();
+
+  expect(response.status).toBe(200);
+  expect(body.success).toBe(true);
+  expect(body.emailSent).toBe(false);
+  expect(body.emailError).toBe("Nothing could be sent to them.");
+  expect(body.acceptUrl).toBe(
+    "https://www.aimatrx.com/invitations/organization/accept/fresh-tok-999",
+  );
 });
 
 // This file is a module (its own scope) — several route tests declare the

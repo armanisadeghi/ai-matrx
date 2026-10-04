@@ -1,18 +1,23 @@
 /**
  * Feedback assignment notifier
  *
- * Single helper that fires both in-app DM and email notifications when an
- * admin is assigned a feedback item. Called from the `submitFeedback` and
- * `updateFeedback` server actions whenever `assigned_to` becomes a non-null
- * value that differs from the previous value AND is not the actor.
+ * Tells an admin they were assigned a feedback item, through the notification
+ * spine (`feedback.assigned`): email plus the paired DM, sent as the assigner.
+ * Called from the `submitFeedback` and `updateFeedback` server actions whenever
+ * `assigned_to` becomes a non-null value that differs from the previous value
+ * AND is not the actor.
  *
- * Both DM and email are best-effort: failures here MUST NOT block the
- * underlying feedback insert/update. Errors are logged.
+ * Best-effort: a failure here MUST NOT block the underlying feedback
+ * insert/update. Errors are logged.
  */
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { sendDm } from "@/lib/services/system-dm";
-import { sendFeedbackAssignmentEmail } from "@/lib/email/notificationService";
+import {
+  accountEmail,
+  legacyEmailOptOut,
+  notifyFromSql,
+  preview,
+} from "@/lib/notifications/notifyFromSql";
 import type { UserFeedback } from "@/types/feedback.types";
 
 interface NotifyOptions {
@@ -36,38 +41,15 @@ interface NotifyResult {
   reason?: string;
 }
 
-/**
- * Compose the in-app message body sent to the assignee. Kept short — full
- * detail is one click away on the admin dashboard.
- */
-function buildDmContent(
-  feedback: UserFeedback,
-  assignerName: string,
-  categoryName: string | null,
-): string {
-  const typeLabel =
-    feedback.feedback_type.charAt(0).toUpperCase() +
-    feedback.feedback_type.slice(1);
-  const preview =
-    feedback.description.length > 240
-      ? feedback.description.slice(0, 240) + "…"
-      : feedback.description;
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const url = `${baseUrl}/administration/users/feedback?feedback=${feedback.id}`;
-
-  const categoryLine = categoryName ? `\nCategory: ${categoryName}` : "";
-
-  return `📋 ${assignerName} assigned you a ${typeLabel.toLowerCase()}${categoryLine}
-Route: ${feedback.route}
-
-${preview}
-
-Open: ${url}`;
-}
+const TYPE_LABELS: Record<string, string> = {
+  bug: "bug",
+  feature: "feature request",
+  suggestion: "suggestion",
+  request: "access request",
+};
 
 /**
- * Resolve a category id to its display name (for the DM/email body). Returns
+ * Resolve a category id to its display name (for the notice). Returns
  * null if not set or not found.
  */
 async function getCategoryName(
@@ -90,9 +72,7 @@ async function getCategoryName(
 }
 
 /**
- * Notify the newly-assigned admin via DM + email.
- *
- * The result is for observability only — both channels are best-effort.
+ * Notify the newly-assigned admin. The result is for observability only.
  */
 export async function notifyFeedbackAssigned(
   options: NotifyOptions,
@@ -102,77 +82,54 @@ export async function notifyFeedbackAssigned(
 
   // No-op conditions
   if (!newAssigneeId) {
-    return {
-      dmSent: false,
-      emailSent: false,
-      skipped: true,
-      reason: "no_assignee",
-    };
+    return { dmSent: false, emailSent: false, skipped: true, reason: "no_assignee" };
   }
   if (newAssigneeId === previousAssignedTo) {
-    return {
-      dmSent: false,
-      emailSent: false,
-      skipped: true,
-      reason: "unchanged",
-    };
+    return { dmSent: false, emailSent: false, skipped: true, reason: "unchanged" };
   }
   if (newAssigneeId === assignerId) {
+    return { dmSent: false, emailSent: false, skipped: true, reason: "self_assign" };
+  }
+  // The notice about a feedback item belongs where the feedback item lives, not in the
+  // assigner's private workspace (DEFAULT-ORG-4, 2026-09-22).
+  if (!feedback.organization_id) {
+    return { dmSent: false, emailSent: false, skipped: true, reason: "no_organization" };
+  }
+
+  try {
+    const admin = createAdminClient();
+    const categoryName = await getCategoryName(feedback.category_id);
+    const result = await notifyFromSql(admin, {
+      organizationId: feedback.organization_id,
+      eventKey: "feedback.assigned",
+      recipientUserId: newAssigneeId,
+      toAddress: await accountEmail(admin, newAssigneeId),
+      payload: {
+        assigner: { name: assignerName },
+        feedback: {
+          type_label: TYPE_LABELS[feedback.feedback_type] ?? "feedback item",
+          category: categoryName ?? "None",
+          route: feedback.route || "—",
+          preview: preview(feedback.description, 240),
+        },
+      },
+      deepLink: `/administration/users/feedback?feedback=${feedback.id}`,
+      targetKind: "feedback",
+      targetId: feedback.id,
+      dedupeKey: `feedback.assigned:${feedback.id}:${newAssigneeId}:${feedback.updated_at ?? ""}`,
+      dm: { sender_user_id: assignerId },
+      // A feedback assignment is the same kind of "you have a new work item" notice
+      // as a task, so it has always followed the task email switch.
+      optedOut: await legacyEmailOptOut(admin, newAssigneeId, "task_notifications"),
+    });
     return {
-      dmSent: false,
-      emailSent: false,
-      skipped: true,
-      reason: "self_assign",
+      dmSent: result.queued.includes("dm"),
+      emailSent: result.queued.includes("email"),
+      skipped: result.queued.length === 0,
+      reason: result.queued.length === 0 ? result.say : undefined,
     };
+  } catch (error) {
+    console.error("[feedback-assignment-notifier] notice failed:", error);
+    return { dmSent: false, emailSent: false, skipped: true, reason: "error" };
   }
-
-  const categoryName = await getCategoryName(feedback.category_id);
-
-  // Fire DM and email in parallel — best effort.
-  const dmContent = buildDmContent(feedback, assignerName, categoryName);
-  const [dmResult, emailResult] = await Promise.allSettled([
-    // The DM about a feedback item belongs where the feedback item lives, not in the
-    // assigner's private workspace (DEFAULT-ORG-4, 2026-09-22).
-    sendDm({
-      senderId: assignerId,
-      recipientId: newAssigneeId,
-      content: dmContent,
-      organizationId: feedback.organization_id ?? "",
-    }),
-    sendFeedbackAssignmentEmail({
-      assigneeId: newAssigneeId,
-      assignerName,
-      feedbackId: feedback.id,
-      feedbackType: feedback.feedback_type,
-      feedbackPreview: feedback.description,
-      feedbackRoute: feedback.route,
-      categoryName,
-      organizationId: feedback.organization_id ?? null,
-    }),
-  ]);
-
-  let dmSent = false;
-  if (dmResult.status === "fulfilled") {
-    dmSent = dmResult.value.ok;
-    if (!dmSent) {
-      console.error(
-        "[feedback-assignment-notifier] DM failed:",
-        dmResult.value.error,
-      );
-    }
-  } else {
-    console.error("[feedback-assignment-notifier] DM threw:", dmResult.reason);
-  }
-
-  let emailSent = false;
-  if (emailResult.status === "fulfilled") {
-    emailSent = emailResult.value.success && !emailResult.value.skipped;
-  } else {
-    console.error(
-      "[feedback-assignment-notifier] Email threw:",
-      emailResult.reason,
-    );
-  }
-
-  return { dmSent, emailSent, skipped: false };
 }

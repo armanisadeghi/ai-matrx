@@ -2,36 +2,27 @@
 import { withClaims as mockWithClaims } from "@/test-utils/supabase-auth";
 
 /**
- * The invitation email route's HONESTY contract (DD-091, law 4).
+ * The organization invitation route's contract, now that the notice rides the
+ * notification spine (`invitation.organization`).
  *
- * The route used to answer `{success:true, emailSent:<whatever>}` and the
- * caller threw the answer away, so a misconfigured provider produced a green
- * "Invitation sent" toast over an email nobody received.
- *
- * 🚨 THE FAILURES HERE ARE THE REAL ONES. `sendEmail` never returns a string
- * error — its three failure returns are `new Error(...)` (EMAIL_FROM missing),
- * Resend's `{name, message}`, and whatever the `catch` caught (where a missing
- * RESEND_API_KEY lands). The first version of this test fed it a *string*, a
- * shape the real code cannot produce, and so stayed green while the honest
- * banner threw `Objects are not valid as a React child` in production
- * (verification finding I1, 2026-09-11). Every case below drives the REAL
- * exported handler with a real `Request` and one of those REAL shapes, and
- * asserts the answer survives `JSON.stringify` as a readable sentence.
+ * - The FACTS go to `communication.notify_from_sql`: the address, the account
+ *   behind it (so the paired DM fires), the token-only accept path, the inviter.
+ * - The answer stays honest (DD-091, law 4): when the email leg is not on its
+ *   way the route says so in a readable sentence and hands back the accept link,
+ *   and the invitation row is never rolled back over it.
  */
 
-const sendEmail = jest.fn();
 const getUser = jest.fn();
 const rpc = jest.fn();
+const notifyFromSql = jest.fn();
+const userIdForEmail = jest.fn();
 
-jest.mock("@/lib/email/client", () => ({
-  ...jest.requireActual("@/lib/email/error-message"),
-  sendEmail: (...args: unknown[]) => sendEmail(...args),
-  emailTemplates: {
-    organizationInvitation: (_org: string, _inviter: string, url: string) => ({
-      subject: "You're invited",
-      html: `<a href="${url}">accept</a>`,
-    }),
-  },
+jest.mock("server-only", () => ({}));
+jest.mock("@/utils/supabase/adminClient", () => ({ createAdminClient: () => ({}) }));
+jest.mock("@/lib/notifications/notifyFromSql", () => ({
+  ...jest.requireActual("@/lib/notifications/notifyFromSql"),
+  notifyFromSql: (...args: unknown[]) => notifyFromSql(...args),
+  userIdForEmail: (...args: unknown[]) => userIdForEmail(...args),
 }));
 
 jest.mock("@/utils/supabase/server", () => ({
@@ -80,73 +71,73 @@ beforeEach(() => {
   });
   rpc.mockResolvedValue({
     data: {
+      id: INVITATION_ID,
+      organization_id: "org-1",
       target_type: "organization",
       target_id: "org-1",
       email: "dana@example.com",
+      invited_user_id: null,
       token: "tok-123",
       expires_at: null,
     },
     error: null,
   });
+  userIdForEmail.mockResolvedValue("dana-user");
 });
 
-describe.each([
-  [
-    "EMAIL_FROM missing (an Error instance)",
-    new Error("EMAIL_FROM is not configured"),
-    "EMAIL_FROM is not configured",
-  ],
-  [
-    "Resend rejected it (a {name,message} object)",
-    { name: "validation_error", message: "API key is invalid" },
-    "API key is invalid",
-  ],
-  [
-    "RESEND_API_KEY missing (the catch path, an Error instance)",
-    new Error("RESEND_API_KEY environment variable is not set"),
-    "RESEND_API_KEY environment variable is not set",
-  ],
-])("REFUSAL: %s", (_label, providerError, expectedSentence) => {
-  test("is reported as emailSent:false with a READABLE sentence and the link to hand over", async () => {
-    sendEmail.mockResolvedValue({ success: false, error: providerError });
-
-    const { response, body } = await postAndReadOverTheWire();
-
-    // The invitation ROW is good — the failure is the email, so the request
-    // succeeds and the row is never rolled back.
-    expect(response.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.emailSent).toBe(false);
-    // The screen renders this. It MUST be a string after the wire, or React
-    // throws while drawing the honest banner.
-    expect(typeof body.emailError).toBe("string");
-    expect(body.emailError).toBe(expectedSentence);
-    expect(body.acceptUrl).toBe(
-      "https://www.aimatrx.com/invitations/organization/accept/tok-123",
-    );
+test("the notice carries the account behind the address, so the DM fires beside the email", async () => {
+  notifyFromSql.mockResolvedValue({
+    queued: ["dm", "email", "in_app"],
+    skipped: [],
+    say: "An email is on its way to them.",
   });
-});
-
-test("CONTROL: a real send answers emailSent:true and hands back no remedy link", async () => {
-  sendEmail.mockResolvedValue({ success: true });
 
   const { response, body } = await postAndReadOverTheWire();
 
   expect(response.status).toBe(200);
-  expect(body).toEqual({ success: true, emailSent: true });
-  expect(sendEmail).toHaveBeenCalledTimes(1);
+  expect(body).toMatchObject({ success: true, emailSent: true, queued: ["dm", "email", "in_app"] });
+  expect(body.acceptUrl).toBeUndefined();
+  const [, args] = notifyFromSql.mock.calls[0];
+  expect(args).toMatchObject({
+    organizationId: "org-1",
+    eventKey: "invitation.organization",
+    recipientUserId: "dana-user",
+    toAddress: "dana@example.com",
+    deepLink: "/invitations/organization/accept/tok-123",
+    dm: { sender_user_id: "u1" },
+  });
+  expect(args.payload.invite).toMatchObject({ organization: "Acme", token: "tok-123" });
 });
 
-test("REFUSAL: the emailed accept link carries the token and NOTHING else — no address in a URL", async () => {
-  sendEmail.mockResolvedValue({ success: true });
+test("REFUSAL: an email that is not on its way is reported with a readable sentence and the link", async () => {
+  notifyFromSql.mockResolvedValue({
+    queued: [],
+    skipped: [{ channel: "all", why: "event_not_declared" }],
+    say: "This server does not know the invitation.organization notice yet, so nothing was sent.",
+  });
+
+  const { response, body } = await postAndReadOverTheWire();
+
+  expect(response.status).toBe(200);
+  expect(body.success).toBe(true);
+  expect(body.emailSent).toBe(false);
+  expect(typeof body.emailError).toBe("string");
+  expect(body.emailError).toContain("nothing was sent");
+  expect(body.acceptUrl).toBe(
+    "https://www.aimatrx.com/invitations/organization/accept/tok-123",
+  );
+});
+
+test("REFUSAL: the accept link carries the token and NOTHING else — no address in a URL", async () => {
+  notifyFromSql.mockResolvedValue({ queued: ["email"], skipped: [], say: "ok" });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await POST(inviteRequest() as any);
 
-  const [{ html }] = sendEmail.mock.calls[0] as [{ html: string }];
-  expect(html).toContain("/invitations/organization/accept/tok-123");
-  expect(html).not.toContain("email=");
-  expect(html).not.toContain("dana@example.com");
+  const [, args] = notifyFromSql.mock.calls[0];
+  expect(args.deepLink).toBe("/invitations/organization/accept/tok-123");
+  expect(args.deepLink).not.toContain("email=");
+  expect(args.deepLink).not.toContain("dana@example.com");
 });
 
 // This file is a module (its own scope) — several route tests declare the

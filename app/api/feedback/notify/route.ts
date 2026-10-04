@@ -1,8 +1,8 @@
 /**
- * Feedback Notification API Route
+ * Feedback status notice.
  *
- * Sends email notifications to users when their feedback item status changes.
- * Follows the same pattern as /api/sharing/notify
+ * Tells the reporter their feedback item's status changed, through the
+ * notification spine (`feedback.status_updated`): email plus the paired DM.
  *
  * POST /api/feedback/notify
  * Body: { feedback_id: string }
@@ -11,31 +11,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
 import { createClient } from '@/utils/supabase/server';
-import { sendEmail, emailTemplates } from '@/lib/email/client';
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import {
+    accountEmail,
+    legacyEmailOptOut,
+    notifyFromSql,
+    preview,
+} from "@/lib/notifications/notifyFromSql";
 
-/**
- * Check if user has feedback email notifications enabled
- */
-async function checkFeedbackEmailPreferences(
-    supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never,
-    userId: string
-): Promise<boolean> {
-    try {
-        const { data } = await supabase
-            .schema('users').from('user_email_preferences')
-            .select('feedback_notifications')
-            .eq('user_id', userId)
-            .single();
-
-        // Default to true if no preferences found
-        return data?.feedback_notifications !== false;
-    } catch (error) {
-        console.error('Error checking feedback email preferences:', error);
-        return true; // Default to sending if error
-    }
-}
+const STATUS_LABELS: Record<string, string> = {
+    in_progress: 'In Progress',
+    awaiting_review: 'Fix Ready - Under Review',
+    resolved: 'Resolved',
+    closed: 'Closed',
+    wont_fix: "Won't Fix",
+};
 
 export async function POST(request: NextRequest) {
     try {
@@ -67,7 +58,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Fetch the feedback item
+        // Fetch the feedback item (RLS proves the caller may view it).
         const { data: feedback, error: fetchError } = await supabase
             .schema('users').from('user_feedback')
             .select('*')
@@ -80,63 +71,50 @@ export async function POST(request: NextRequest) {
                 { status: 404 }
             );
         }
-
-        const admin = createAdminClient();
-
-        // Check if user wants feedback notifications after RLS has established
-        // that the caller may view this feedback item.
-        const shouldSendEmail = await checkFeedbackEmailPreferences(admin, feedback.user_id);
-        if (!shouldSendEmail) {
+        if (!feedback.user_id || !feedback.organization_id) {
             return NextResponse.json({
                 success: true,
                 skipped: true,
-                reason: 'User has disabled feedback notifications',
+                reason: 'This feedback item has no reporter or organization to tell',
             });
         }
 
-        const { data: recipient, error: recipientError } =
-            await admin.auth.admin.getUserById(feedback.user_id);
-        const recipientEmail = recipient.user?.email;
-
-        if (recipientError || !recipientEmail) {
-            console.warn('No email found for user:', feedback.user_id);
-            return NextResponse.json(
-                { success: false, error: 'User email not found' },
-                { status: 404 }
-            );
-        }
-
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com';
-        const portalUrl = `${siteUrl}/user-settings/feedback`;
-
-        // Prepare email
-        const emailContent = emailTemplates.feedbackStatusUpdate(
-            feedback.username || recipientEmail,
-            feedback.feedback_type,
-            feedback.description,
-            feedback.status,
-            feedback.resolution_notes || undefined,
-            portalUrl
-        );
-
-        // Send email
-        const emailResult = await sendEmail({
-            to: recipientEmail,
-            subject: emailContent.subject,
-            html: emailContent.html,
+        const admin = createAdminClient();
+        const recipientEmail = await accountEmail(admin, feedback.user_id);
+        const status = String(feedback.status);
+        const result = await notifyFromSql(admin, {
+            organizationId: feedback.organization_id,
+            eventKey: 'feedback.status_updated',
+            recipientUserId: feedback.user_id,
+            toAddress: recipientEmail,
+            payload: {
+                feedback: {
+                    type: String(feedback.feedback_type),
+                    status: STATUS_LABELS[status] || status,
+                    username: feedback.username || recipientEmail || 'there',
+                    description: preview(String(feedback.description), 200),
+                    resolution_line: feedback.resolution_notes
+                        ? `Resolution notes: ${feedback.resolution_notes}`
+                        : 'No resolution notes yet.',
+                    next_step:
+                        status === 'resolved'
+                            ? 'If the fix looks good, you can confirm it in the feedback portal.'
+                            : 'You can track all your feedback items in the feedback portal.',
+                },
+            },
+            deepLink: '/user-settings/feedback',
+            targetKind: 'feedback',
+            targetId: feedback.id,
+            dedupeKey: `feedback.status_updated:${feedback.id}:${status}`,
+            optedOut: await legacyEmailOptOut(admin, feedback.user_id, 'feedback_notifications'),
         });
-
-        if (!emailResult.success) {
-            console.error('Failed to send feedback notification:', emailResult.error);
-            return NextResponse.json(
-                { success: false, error: 'Failed to send email' },
-                { status: 500 }
-            );
-        }
 
         return NextResponse.json({
             success: true,
-            emailSent: true,
+            emailSent: result.queued.includes('email'),
+            queued: result.queued,
+            skipped: result.skipped,
+            say: result.say,
         });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to send feedback notification';

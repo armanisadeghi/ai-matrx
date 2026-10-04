@@ -1,6 +1,5 @@
 import { Button, Heading, Text, Section, Hr } from "react-email";
 import * as React from "react";
-import type { FeedbackType } from "@/types/feedback.types";
 import { BaseLayout } from "./BaseLayout";
 
 // ─── Task Assigned ──────────────────────────────────────────────────────────
@@ -39,44 +38,6 @@ export function TaskAssignedEmail({
   );
 }
 
-// ─── Comment Added ──────────────────────────────────────────────────────────
-
-interface CommentAddedEmailProps {
-  resourceTitle: string;
-  commenterName: string;
-  commentText: string;
-  resourceUrl: string;
-  resourceType: string;
-}
-
-export function CommentAddedEmail({
-  resourceTitle,
-  commenterName,
-  commentText,
-  resourceUrl,
-  resourceType,
-}: CommentAddedEmailProps) {
-  return (
-    <BaseLayout preview={`${commenterName} commented on ${resourceTitle}`}>
-      <Heading style={heading}>New Comment</Heading>
-      <Text style={text}>
-        <strong>{commenterName}</strong> commented on your {resourceType}{" "}
-        <strong>{resourceTitle}</strong>.
-      </Text>
-
-      <Section style={quoteBlock}>
-        <Text style={quoteText}>"{commentText}"</Text>
-      </Section>
-
-      <Section style={buttonSection}>
-        <Button href={resourceUrl} style={button}>
-          View Comment
-        </Button>
-      </Section>
-    </BaseLayout>
-  );
-}
-
 // ─── Message Received ───────────────────────────────────────────────────────
 
 interface MessageReceivedEmailProps {
@@ -104,69 +65,6 @@ export function MessageReceivedEmail({
       <Section style={buttonSection}>
         <Button href={conversationUrl} style={button}>
           Reply
-        </Button>
-      </Section>
-    </BaseLayout>
-  );
-}
-
-// ─── Feedback Assigned ─────────────────────────────────────────────────────
-
-interface FeedbackAssignedEmailProps {
-  assignerName: string;
-  feedbackType: FeedbackType;
-  feedbackPreview: string;
-  feedbackRoute: string;
-  feedbackUrl: string;
-  categoryName?: string | null;
-}
-
-const feedbackTypeLabel: Record<
-  FeedbackAssignedEmailProps["feedbackType"],
-  string
-> = {
-  bug: "Bug",
-  feature: "Feature",
-  suggestion: "Suggestion",
-  other: "Feedback",
-  request: "Access request",
-};
-
-export function FeedbackAssignedEmail({
-  assignerName,
-  feedbackType,
-  feedbackPreview,
-  feedbackRoute,
-  feedbackUrl,
-  categoryName,
-}: FeedbackAssignedEmailProps) {
-  const typeLabel = feedbackTypeLabel[feedbackType];
-  return (
-    <BaseLayout
-      preview={`${assignerName} assigned you a ${typeLabel.toLowerCase()}`}
-    >
-      <Heading style={heading}>Feedback Assigned</Heading>
-      <Text style={text}>
-        <strong>{assignerName}</strong> assigned you a {typeLabel.toLowerCase()}
-        {categoryName ? (
-          <>
-            {" "}
-            in <strong>{categoryName}</strong>
-          </>
-        ) : null}
-        .
-      </Text>
-
-      <Section style={card}>
-        <Text style={cardTitle}>
-          {typeLabel} · {feedbackRoute}
-        </Text>
-        <Text style={cardBody}>{feedbackPreview}</Text>
-      </Section>
-
-      <Section style={buttonSection}>
-        <Button href={feedbackUrl} style={button}>
-          Open in Admin Dashboard
         </Button>
       </Section>
     </BaseLayout>

@@ -1,5 +1,6 @@
 "use client";
 
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import { usePageCapture } from "@/components/agent-copy/page-capture/usePageCapture";
 import { dialogCapture } from "@/components/agent-copy/page-capture/pageCapture";
 import { PageCaptureButton } from "@/components/agent-copy/page-capture/PageCaptureButton";
@@ -164,6 +165,8 @@ export function ShareModal({
           resourceType: getResourceTypeLabel(resourceType),
           resourceName,
           shareUrl,
+          // object-org-exempt: the saved-link notice is filed with the shared object, else where the person works
+          organizationId: organizationId ?? getActiveOrgId(), // org-filter: write-target for the person's own saved-link notice
         }),
       });
 

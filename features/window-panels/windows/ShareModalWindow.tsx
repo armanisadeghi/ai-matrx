@@ -1,5 +1,6 @@
 "use client";
 
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import React, { useCallback, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,8 @@ export default function ShareModalWindow({
           resourceType: getResourceTypeLabel(resourceType),
           resourceName,
           shareUrl,
+          // object-org-exempt: the saved-link notice is filed with the shared object, else where the person works
+          organizationId: homeOrganizationId ?? getActiveOrgId(), // org-filter: write-target for the person's own saved-link notice
         }),
       });
 

@@ -1,25 +1,31 @@
 /**
- * Class Invitation Email Route (email-only) — the class twin of
- * /api/organizations/invite, on the SAME canonical invitation system.
+ * Class invitation notice — the class twin of /api/organizations/invite, on
+ * the SAME canonical invitation system.
  *
  * The invitation ROW is created on the client via `inv_create`
  * (invitationsService, target_type='scope'). This route accepts only an
  * invitation id: the caller-scoped `inv_get_managed` RPC proves the caller
  * manages the invitation (class owner / org admin) and supplies the stored
  * recipient/token, and the class name comes from the owner-readable
- * `edu_class_state` RPC. An email failure never fails the request — the
+ * `edu_class_state` RPC. A notice that cannot go never fails the request — the
  * invitation row already exists and its link can be copied from the UI.
+ *
+ * The notice goes through the notification spine (`invitation.class`): email,
+ * plus the paired DM when the address already has an account.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import {
-  sendEmail,
-  emailTemplates,
-  emailErrorMessage,
-} from "@/lib/email/client";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  actorName,
+  invitationOutcome,
+  noticeDate,
+  notifyFromSql,
+  userIdForEmail,
+} from "@/lib/notifications/notifyFromSql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,17 +35,18 @@ export async function POST(request: NextRequest) {
       data: { user },
       error: userError,
     } = await getClaimsUser(supabase);
+
     if (userError || !user) {
       return NextResponse.json(
         { success: false, error: "User not authenticated" },
         { status: 401 },
       );
     }
-
     const body = await request.json();
     const { invitationId } = body;
     // THE strict RFC-4122 predicate (@ai-matrx/kit/uuid) — a validation door
     // on a public route only ever sees ids this system minted.
+
     if (!isRfc4122Uuid(invitationId)) {
       return NextResponse.json(
         { success: false, error: "A valid invitationId is required" },
@@ -83,47 +90,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const inviterName =
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      user.email ||
-      "Your teacher";
-
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/class/accept/${invitationToken}`;
+    const acceptPath = `/invitations/class/accept/${invitationToken}`;
     const expiry = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const emailTemplate = emailTemplates.classInvitation(
-      className,
-      inviterName,
-      invitationUrl,
-      expiry,
+    const admin = createAdminClient();
+    const recipientUserId =
+      invitation.invited_user_id ?? (await userIdForEmail(admin, recipientEmail));
+
+    const result = await notifyFromSql(admin, {
+      organizationId: invitation.organization_id,
+      eventKey: "invitation.class",
+      recipientUserId,
+      toAddress: recipientEmail,
+      recipientLabel: recipientEmail,
+      payload: {
+        invite: {
+          inviter: actorName(user, "Your teacher"),
+          class: className,
+          token: invitationToken,
+          expires: noticeDate(expiry),
+        },
+      },
+      deepLink: acceptPath,
+      targetKind: "invitation",
+      targetId: invitation.id,
+      dedupeKey: `invitation.class:${invitation.id}:${invitationToken}`,
+      dm: { sender_user_id: user.id },
+    });
+
+    return NextResponse.json(
+      invitationOutcome(result, `${siteUrl}${acceptPath}`),
     );
-
-    const emailResult = await sendEmail({
-      to: recipientEmail,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
-    });
-    if (!emailResult.success) {
-      // Keep the invitation row; say the email failed and hand back the link
-      // as the remedy (DD-091, law 4).
-      console.warn("Failed to send class invitation email:", emailResult.error);
-      return NextResponse.json({
-        success: true,
-        emailSent: false,
-        emailError: emailErrorMessage(emailResult.error),
-        acceptUrl: invitationUrl,
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      emailSent: true,
-    });
   } catch (error: unknown) {
     console.error("Error in POST /api/education/class-invite:", error);
     const message =
@@ -133,11 +134,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    emailConfigured: !!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM),
-  });
 }

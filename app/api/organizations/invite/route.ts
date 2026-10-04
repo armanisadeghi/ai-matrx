@@ -1,21 +1,28 @@
 /**
- * Organization Invitation Email Route (email-only)
+ * Organization invitation notice.
  *
  * The invitation ROW is created on the client via the canonical `inv_create`
  * RPC (`invitationsService.create`, client → Supabase per repo doctrine). This
  * route accepts only an invitation id. The caller-scoped `inv_get_managed`
  * RPC proves manager access and supplies the stored recipient/token/target.
+ *
+ * The notice goes through the notification spine (`invitation.organization`):
+ * email to the address, and — when that address already has an account — the
+ * paired DM and in-app line. Words: aidream `services/notifications/declarations.py`.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import {
-  sendEmail,
-  emailTemplates,
-  emailErrorMessage,
-} from "@/lib/email/client";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  actorName,
+  invitationOutcome,
+  noticeDate,
+  notifyFromSql,
+  userIdForEmail,
+} from "@/lib/notifications/notifyFromSql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,52 +88,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const inviterName =
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      user.email ||
-      "Someone";
-
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitationToken}`;
+    const acceptPath = `/invitations/organization/accept/${invitationToken}`;
     const expiry = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const emailTemplate = emailTemplates.organizationInvitation(
-      orgData.name,
-      inviterName,
-      invitationUrl,
-      expiry,
+    const admin = createAdminClient();
+    const recipientUserId =
+      invitation.invited_user_id ?? (await userIdForEmail(admin, recipientEmail));
+
+    const result = await notifyFromSql(admin, {
+      organizationId: invitation.organization_id,
+      eventKey: "invitation.organization",
+      recipientUserId,
+      toAddress: recipientEmail,
+      recipientLabel: recipientEmail,
+      payload: {
+        invite: {
+          inviter: actorName(user, "Someone"),
+          organization: orgData.name,
+          token: invitationToken,
+          expires: noticeDate(expiry),
+        },
+      },
+      deepLink: acceptPath,
+      targetKind: "invitation",
+      targetId: invitation.id,
+      // One notice per invitation token: a repeat POST queues nothing new.
+      dedupeKey: `invitation.organization:${invitation.id}:${invitationToken}`,
+      dm: { sender_user_id: user.id },
+    });
+
+    return NextResponse.json(
+      invitationOutcome(result, `${siteUrl}${acceptPath}`),
     );
-
-    const emailResult = await sendEmail({
-      to: recipientEmail,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
-    });
-
-    if (!emailResult.success) {
-      // The invitation ROW is good; only the delivery failed. We keep the row
-      // (rolling it back would destroy a valid invitation over a mail outage)
-      // and we SAY SO — `emailSent:false` with the provider's reason and the
-      // accept link, so the caller can show the honest "copy this link and
-      // send it yourself" state instead of a green success toast (DD-091,
-      // law 4: nothing fails silently).
-      console.warn("Failed to send invitation email:", emailResult.error);
-      return NextResponse.json({
-        success: true,
-        emailSent: false,
-        emailError: emailErrorMessage(emailResult.error),
-        acceptUrl: invitationUrl,
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      emailSent: true,
-    });
   } catch (error: unknown) {
     console.error("Error in POST /api/organizations/invite:", error);
     const message =
@@ -141,11 +138,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    emailConfigured: !!(process.env.RESEND_API_KEY && process.env.EMAIL_FROM),
-  });
 }

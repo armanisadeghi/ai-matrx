@@ -557,7 +557,6 @@ export async function shareWithUser(
       resourceId,
       userId,
       permissionLevel,
-      resourceName,
       organizationId,
     } = options;
 
@@ -584,80 +583,40 @@ export async function shareWithUser(
     if (parsed.outcome === "unchanged")
       return { success: true, message: parsed.message };
 
-    // Fire-and-forget notifications — failure doesn't affect the grant.
-    void getClaimsUser(supabase).then(({ data: { user } }) => {
-      if (!user) return;
-      const resourceLabel = getResourceTypeLabel(resourceType);
-
-      // (1) Email (respects the recipient's preferences server-side). It answers the address it
-      // named for THIS recipient (a table row outside its organization: /p/e/record/<id>, access
-      // ladder T-40), which the in-app card below opens too.
-      const notified: Promise<string | null> = fetch("/api/sharing/notify", {
+    // Fire-and-forget notice — failure doesn't affect the grant. ONE path: the
+    // notification spine (`share.resource_shared`) emails the recipient and sends
+    // the paired DM (as the sharer, with the resource card), honouring their email
+    // switch. It used to be an email route plus a DM sent from here — two paths.
+    //
+    // 🚨 THE NOTICE IS FILED IN THE SHARED OBJECT'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18
+    // H4). Unnamed, the messaging door fell back to the active organization and, with
+    // none picked, raised the organization gate over the Share dialog — "Which workspace
+    // is this for?" with 44 organizations, for a table that names its own — and the pick
+    // closed the Share dialog with it. The share has already landed here; a notification
+    // is never a reason to ask anything.
+    const noticeOrganizationId =
+      organizationId ??
+      // object-org-exempt: a share dialog opened with no object organization (a non-record resource) files its notification where the person works, and never prompts
+      getActiveOrgId(); // org-filter: write-target the share notification is filed where the person works when the object names no organization
+    if (!noticeOrganizationId) {
+      console.warn(
+        "[sharing] Nobody was told about this share: the dialog was opened without the " +
+          "shared object's organization and none is picked. The share itself landed. " +
+          "Remedy: pass organizationId to <ShareModal>.",
+      );
+    } else {
+      fetch("/api/sharing/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           recipientUserId: userId,
           resourceType,
           resourceId,
+          organizationId: noticeOrganizationId,
+          permissionLevel,
         }),
-      })
-        .then(async (res) => {
-          const body = (await res.json().catch(() => null)) as { path?: unknown } | null;
-          return typeof body?.path === "string" ? body.path : null;
-        })
-        .catch((err) => {
-          console.error("Sharing notification failed:", err);
-          return null;
-        });
-
-      // (2) In-app DM with a clickable resource card. Lazy import keeps the
-      // messaging service out of the permissions bundle.
-      //
-      // 🚨 THE DM IS FILED IN THE SHARED OBJECT'S ORGANIZATION (ACCESS-FIX-18, VERIFIER-18
-      // H4). Unnamed, the messaging door fell back to the active organization and, with
-      // none picked, raised the organization gate over the Share dialog — "Which workspace
-      // is this for?" with 44 organizations, for a table that names its own — and the pick
-      // closed the Share dialog with it. The share has already landed here; a notification
-      // is never a reason to ask anything.
-      const dmOrganizationId =
-        organizationId ??
-        // object-org-exempt: a share dialog opened with no object organization (a non-record resource) files its notification where the person works, and never prompts
-        getActiveOrgId(); // org-filter: write-target the share notification is filed where the person works when the object names no organization
-      if (!dmOrganizationId) {
-        console.warn(
-          "[sharing] The in-app message about this share was not sent: the dialog was opened " +
-            "without the shared object's organization and none is picked. The share itself and " +
-            "its email notification are unaffected. Remedy: pass organizationId to <ShareModal>.",
-        );
-        return;
-      }
-      Promise.all([import("@/features/messaging/service/sendDirectActionMessage"), notified])
-        .then(([{ sendDirectActionMessage }, resourceHref]) =>
-          sendDirectActionMessage({
-            recipientId: userId,
-            organizationId: dmOrganizationId,
-            content: `${user.user_metadata?.full_name || user.user_metadata?.name || user.email || "Someone"} shared a ${resourceLabel} with you`,
-            actionData: {
-              kind: "resource_shared",
-              version: 1,
-              payload: {
-                resource_type: resourceType,
-                resource_id: resourceId,
-                resource_title: resourceName || resourceLabel,
-                resource_label: resourceLabel,
-                permission_level: permissionLevel,
-                sharer_name:
-                  user.user_metadata?.full_name ||
-                  user.user_metadata?.name ||
-                  user.email ||
-                  "Someone",
-                ...(resourceHref ? { resource_href: resourceHref } : {}),
-              },
-            },
-          }),
-        )
-        .catch((err) => console.error("Sharing DM failed:", err));
-    });
+      }).catch((err) => console.error("Sharing notification failed:", err));
+    }
 
     return {
       success: true,

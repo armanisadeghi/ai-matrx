@@ -1,4 +1,5 @@
 "use client";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import React, { useState } from "react";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
@@ -106,6 +107,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
             resourceName: presentationTitle || "Presentation",
             shareUrl: publishedUrl,
             message: `${presentationData.slides.length} slides`,
+            organizationId: getActiveOrgId(), // org-filter: write-target for the person's own saved-link notice
           }),
         });
 
@@ -148,6 +150,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
             resourceName: presentationTitle || "Presentation",
             shareUrl: publishResult.url,
             message: `${presentationData.slides.length} slides`,
+            organizationId: getActiveOrgId(), // org-filter: write-target for the person's own saved-link notice
           }),
         });
 

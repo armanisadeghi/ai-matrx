@@ -1,22 +1,28 @@
 /**
- * Resend Project Invitation Email Route (email-only)
+ * Project invitation reminder notice.
  *
  * The invitation row is refreshed (new expiry + fresh token) on the client via
  * the canonical `inv_resend` RPC (`invitationsService.resend`). This route
  * accepts only an invitation id. `inv_get_managed` derives the fresh stored
  * recipient/token/project after proving manager access.
+ *
+ * The notice goes through the notification spine (`invitation.project_reminder`): email, plus the
+ * paired DM when the address already has an account.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/adminClient";
 import { projectsDb } from "@/utils/supabase/projectsDb";
-import {
-  sendEmail,
-  emailTemplates,
-  emailErrorMessage,
-} from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import {
+  actorName,
+  invitationOutcome,
+  noticeDate,
+  notifyFromSql,
+  userIdForEmail,
+} from "@/lib/notifications/notifyFromSql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,8 +41,6 @@ export async function POST(request: NextRequest) {
     }
     const body = await request.json();
     const { invitationId } = body;
-    // THE strict RFC-4122 predicate (@ai-matrx/kit/uuid) — a validation door
-    // on a public route only ever sees ids this system minted.
 
     if (!isRfc4122Uuid(invitationId)) {
       return NextResponse.json(
@@ -68,10 +72,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read-only, RLS-scoped lookup for the email body.
-    // `projects` lives in `workspace`, `organizations` in `public` — PostgREST
-    // resource embedding is single-schema, so the org name is fetched in a
-    // separate `public` query and merged in JS.
     const { data: projectData } = await projectsDb(supabase)
       .from("projects")
       .select("name, organization_id")
@@ -96,57 +96,45 @@ export async function POST(request: NextRequest) {
       if (orgData?.name) orgName = orgData.name;
     }
 
-    const inviterName =
-      user.user_metadata?.full_name ??
-      user.user_metadata?.name ??
-      user.email ??
-      "Someone";
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/project/accept/${invitationToken}`;
+    const acceptPath = `/invitations/project/accept/${invitationToken}`;
     const expiresAt = invitation.expires_at
       ? new Date(invitation.expires_at)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const emailTemplate = emailTemplates.projectInvitationReminder(
-      projectData.name,
-      orgName,
-      inviterName,
-      invitationUrl,
-      expiresAt,
+    const admin = createAdminClient();
+    const recipientUserId =
+      invitation.invited_user_id ?? (await userIdForEmail(admin, recipientEmail));
+
+    const result = await notifyFromSql(admin, {
+      organizationId: invitation.organization_id,
+      eventKey: "invitation.project_reminder",
+      recipientUserId,
+      toAddress: recipientEmail,
+      recipientLabel: recipientEmail,
+      payload: {
+        invite: {
+          inviter: actorName(user, "Someone"),
+          project: projectData.name,
+          organization: orgName,
+          token: invitationToken,
+          expires: noticeDate(expiresAt),
+        },
+      },
+      deepLink: acceptPath,
+      targetKind: "invitation",
+      targetId: invitation.id,
+      // `inv_resend` mints a fresh token, so each real resend is its own notice.
+      dedupeKey: `invitation.project_reminder:${invitation.id}:${invitationToken}`,
+      dm: { sender_user_id: user.id },
+    });
+
+    return NextResponse.json(
+      invitationOutcome(result, `${siteUrl}${acceptPath}`),
     );
-
-    const emailResult = await sendEmail({
-      to: recipientEmail,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
-    });
-
-    if (!emailResult.success) {
-      // `inv_resend` already minted a fresh token, so the older link is dead.
-      // Report the honest outcome plus the new link (DD-091, law 4).
-      console.warn(
-        "Failed to resend project invitation email:",
-        emailResult.error,
-      );
-      return NextResponse.json({
-        success: true,
-        emailSent: false,
-        emailError: emailErrorMessage(emailResult.error),
-        acceptUrl: invitationUrl,
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Invitation resent successfully",
-      emailSent: true,
-    });
   } catch (error: unknown) {
-    const msg =
-      error instanceof Error
-        ? error.message
-        : "Failed to resend invitation email";
+    const msg = error instanceof Error ? error.message : "Failed to resend invitation";
     console.error("Error in POST /api/projects/invitations/resend:", error);
     return NextResponse.json(
       {

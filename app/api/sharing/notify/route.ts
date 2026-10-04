@@ -1,36 +1,30 @@
 /**
- * Sharing notification email (Resend API). Server-only: RESEND_API_KEY + EMAIL_FROM.
+ * "Somebody shared something with you" — the ONE notice for a user-to-user share.
+ *
+ * Goes through the notification spine (`share.resource_shared`): email to the
+ * recipient's account address plus the paired DM, sent as the sharer and carrying
+ * the resource card. The share dialog calls this once after the grant lands; it
+ * no longer sends its own DM.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
-import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { getResourceDetails, type SupabaseServerClient } from "@/features/sharing/service/sharedResourceDetails";
+import { getResourceDetails } from "@/features/sharing/service/sharedResourceDetails";
+import { getResourceTypeLabel } from "@/utils/permissions/registry";
+import {
+  accountEmail,
+  actorName,
+  legacyEmailOptOut,
+  notifyFromSql,
+} from "@/lib/notifications/notifyFromSql";
 
-/**
- * Check if user has email notifications enabled for sharing
- */
-async function checkEmailPreferences(
-  supabase: SupabaseServerClient,
-  userId: string,
-): Promise<boolean> {
-  try {
-    const { data } = await supabase
-      .schema("users")
-      .from("user_email_preferences")
-      .select("sharing_notifications")
-      .eq("user_id", userId)
-      .single();
-
-    // Default to true if no preferences found
-    return data?.sharing_notifications !== false;
-  } catch (error) {
-    console.error("Error checking email preferences:", error);
-    return true; // Default to sending if error
-  }
+/** The same-app path of a link `getResourceDetails` built (it carries `?org=` already). */
+function samePath(url: string): string {
+  const parsed = new URL(url);
+  return `${parsed.pathname}${parsed.search}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -52,12 +46,20 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { recipientUserId, resourceType, resourceId, message } = body;
+    const {
+      recipientUserId,
+      resourceType,
+      resourceId,
+      organizationId,
+      permissionLevel,
+      message,
+    } = body;
 
     // Validate input
     if (
       !isRfc4122Uuid(recipientUserId) ||
       !isRfc4122Uuid(resourceId) ||
+      !isRfc4122Uuid(organizationId) ||
       typeof resourceType !== "string" ||
       !/^[a-z][a-z0-9_]{0,63}$/i.test(resourceType)
     ) {
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error:
-            "Missing required fields: recipientUserId, resourceType, resourceId",
+            "Missing required fields: recipientUserId, resourceType, resourceId, organizationId",
         },
         { status: 400 },
       );
@@ -107,8 +109,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get resource details. The address can depend on the recipient: a table row shared with a
-    // person outside its organization opens at its own page (access ladder T-40).
+    // Read AS THE SHARER, so the title and link are what they can see. The address can depend on
+    // the recipient: a table row shared with a person outside its organization opens at its own
+    // page (access ladder T-40).
     const resourceDetails = await getResourceDetails(
       supabase,
       resourceType,
@@ -134,62 +137,61 @@ export async function POST(request: NextRequest) {
         { status: 404 },
       );
     }
-    // The in-app card opens the same place the email names.
+    // The in-app card and the DM open the same place the email names.
     const path = resourceDetails.path ?? null;
 
-    // Check if user wants email notifications only after the grant is proven.
-    const shouldSendEmail = await checkEmailPreferences(admin, recipientUserId);
-    if (!shouldSendEmail) {
-      return NextResponse.json({
-        success: true,
-        skipped: true,
-        reason: "User has disabled sharing notifications",
-        path,
-      });
-    }
+    const sharerName = actorName(user, "Someone");
+    const resourceLabel = getResourceTypeLabel(resourceType);
+    const note = typeof message === "string" ? message.trim() : "";
 
-    const { data: recipient, error: recipientError } =
-      await admin.auth.admin.getUserById(recipientUserId);
-    const recipientEmail = recipient.user?.email;
-
-    if (recipientError || !recipientEmail) {
-      console.warn("No email found for user:", recipientUserId);
-      return NextResponse.json(
-        { success: false, error: "User email not found", path },
-        { status: 404 },
-      );
-    }
-
-    // Prepare email template
-    const emailTemplate = emailTemplates.resourceShared(
-      user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email ||
-        "Someone",
-      resourceType,
-      resourceDetails.title,
-      resourceDetails.url,
-      message,
-    );
-
-    // Send email
-    const emailResult = await sendEmail({
-      to: recipientEmail,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
+    const result = await notifyFromSql(admin, {
+      organizationId,
+      eventKey: "share.resource_shared",
+      recipientUserId,
+      toAddress: await accountEmail(admin, recipientUserId),
+      payload: {
+        share: {
+          sharer: sharerName,
+          resource_type: resourceLabel,
+          title: resourceDetails.title,
+          note_line: note ? `"${note}"` : "No note was added.",
+        },
+      },
+      deepLink: path ?? samePath(resourceDetails.url),
+      targetKind: resourceType,
+      targetId: resourceId,
+      // One notice per grant: re-saving the same share tells nobody twice.
+      dedupeKey: `share.resource_shared:${permission.id}`,
+      dm: {
+        sender_user_id: user.id,
+        action_data: {
+          kind: "resource_shared",
+          version: 1,
+          payload: {
+            resource_type: resourceType,
+            resource_id: resourceId,
+            resource_title: resourceDetails.title,
+            resource_label: resourceLabel,
+            permission_level:
+              typeof permissionLevel === "string" ? permissionLevel : "viewer",
+            sharer_name: sharerName,
+            ...(path ? { resource_href: path } : {}),
+          },
+        },
+      },
+      optedOut: await legacyEmailOptOut(
+        admin,
+        recipientUserId,
+        "sharing_notifications",
+      ),
     });
-
-    if (!emailResult.success) {
-      console.error("Failed to send sharing notification:", emailResult.error);
-      return NextResponse.json(
-        { success: false, error: "Failed to send email", path },
-        { status: 500 },
-      );
-    }
 
     return NextResponse.json({
       success: true,
-      emailSent: true,
+      emailSent: result.queued.includes("email"),
+      queued: result.queued,
+      skipped: result.skipped,
+      say: result.say,
       path,
     });
   } catch (error: unknown) {

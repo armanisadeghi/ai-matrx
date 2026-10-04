@@ -1,9 +1,14 @@
 /**
- * User Review Notification API Route
+ * Review-message notice.
  *
- * Sends the canonical stored review message by email. The caller supplies only
- * the message ID; feedback ownership, sender identity, and message content are
- * derived from the database after authentication.
+ * Delivers the canonical stored review message through the notification spine.
+ * The caller supplies only the message ID; feedback ownership, sender identity,
+ * and message content are derived from the database after authentication.
+ *
+ * - An admin's message to the reporter → `feedback.review_requested` (email +
+ *   the paired DM, sent as the admin).
+ * - The reporter's reply → `feedback.user_replied`, to the operator inbox
+ *   (`ADMIN_EMAIL`), with the DM when that inbox belongs to an account.
  *
  * POST /api/feedback/user-review-notify
  * Body: { message_id: string }
@@ -11,13 +16,17 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { hasAdminPower } from "@/utils/auth/adminLaneServer";
-import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-// 🚨 THE ONE HELPER. Never build `?org=` by hand — the rule lives once, in the
-// database, where the notice/assist/DM triggers read it too.
-import { linkCarriesItsOrganization } from "@/lib/organizations/linkCarriesItsOrganization";
+import {
+  accountEmail,
+  legacyEmailOptOut,
+  notifyFromSql,
+  preview,
+  userIdForEmail,
+  type NotifyFromSqlResult,
+} from "@/lib/notifications/notifyFromSql";
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,67 +124,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
+    if (!feedback.organization_id) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: "This feedback item is not filed under an organization",
+      });
+    }
+
+    const description = preview(String(feedback.description), 150);
+    let result: NotifyFromSqlResult;
 
     if (isStoredAdminMessage) {
-      const { data: prefs } = await admin
-        .schema("users")
-        .from("user_email_preferences")
-        .select("feedback_notifications")
-        .eq("user_id", feedback.user_id)
-        .maybeSingle();
-
-      if (prefs?.feedback_notifications === false) {
-        return NextResponse.json({
-          success: true,
-          skipped: true,
-          reason: "User has disabled feedback notifications",
-        });
-      }
-
-      const { data: recipient, error: recipientError } =
-        await admin.auth.admin.getUserById(feedback.user_id);
-      const recipientEmail = recipient.user?.email;
-
-      if (recipientError || !recipientEmail) {
+      if (!feedback.user_id) {
         return NextResponse.json(
-          { success: false, error: "User email not found" },
+          { success: false, error: "Feedback item has no reporter" },
           { status: 404 },
         );
       }
-
-      const emailContent = emailTemplates.feedbackUserReviewMessage(
-        feedback.username || recipientEmail,
-        feedback.feedback_type,
-        feedback.description,
-        storedMessage.content,
-        storedMessage.sender_name || "Admin",
-        // /user-settings is declared organization-free in
-        // platform.organization_free_link_prefixes() — account settings are about the
-        // person — so this comes back unchanged. It goes through the helper anyway, so
-        // the day that ruling changes this link follows it without an edit here.
-        await linkCarriesItsOrganization(
-          `${siteUrl}/user-settings/feedback`,
-          feedback.organization_id,
+      const recipientEmail = await accountEmail(admin, feedback.user_id);
+      result = await notifyFromSql(admin, {
+        organizationId: feedback.organization_id,
+        eventKey: "feedback.review_requested",
+        recipientUserId: feedback.user_id,
+        toAddress: recipientEmail,
+        payload: {
+          feedback: {
+            type: String(feedback.feedback_type),
+            username: feedback.username || recipientEmail || "there",
+            description,
+          },
+          message: {
+            sender: storedMessage.sender_name || "Admin",
+            text: storedMessage.content,
+          },
+        },
+        deepLink: "/user-settings/feedback",
+        targetKind: "feedback",
+        targetId: feedback.id,
+        dedupeKey: `feedback.review_requested:${storedMessage.id}`,
+        dm: { sender_user_id: user.id },
+        optedOut: await legacyEmailOptOut(
+          admin,
+          feedback.user_id,
+          "feedback_notifications",
         ),
-      );
-      const emailResult = await sendEmail({
-        to: recipientEmail,
-        subject: emailContent.subject,
-        html: emailContent.html,
       });
-
-      if (!emailResult.success) {
-        console.error(
-          "Failed to send user review notification:",
-          emailResult.error,
-        );
-        return NextResponse.json(
-          { success: false, error: "Failed to send email" },
-          { status: 500 },
-        );
-      }
     } else {
       const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_FROM;
       if (!adminEmail) {
@@ -186,31 +180,38 @@ export async function POST(request: NextRequest) {
           reason: "No admin email configured",
         });
       }
-
-      const emailContent = emailTemplates.feedbackUserReply(
-        "Admin",
-        feedback.feedback_type,
-        feedback.description,
-        storedMessage.content,
-        feedback.username || storedMessage.sender_name || "User",
-        await linkCarriesItsOrganization(
-          `${siteUrl}/administration/users/feedback`,
-          feedback.organization_id,
-        ),
-      );
-      const emailResult = await sendEmail({
-        to: adminEmail,
-        subject: emailContent.subject,
-        html: emailContent.html,
+      result = await notifyFromSql(admin, {
+        organizationId: feedback.organization_id,
+        eventKey: "feedback.user_replied",
+        recipientUserId: await userIdForEmail(admin, adminEmail),
+        toAddress: adminEmail,
+        recipientLabel: "Feedback admin",
+        payload: {
+          feedback: {
+            type: String(feedback.feedback_type),
+            description,
+          },
+          message: {
+            sender: feedback.username || storedMessage.sender_name || "User",
+            text: storedMessage.content,
+          },
+        },
+        deepLink: "/administration/users/feedback",
+        targetKind: "feedback",
+        targetId: feedback.id,
+        dedupeKey: `feedback.user_replied:${storedMessage.id}`,
+        dm: { sender_user_id: user.id },
       });
+    }
 
-      if (!emailResult.success) {
-        console.error("Failed to send admin notification:", emailResult.error);
-        return NextResponse.json(
-          { success: false, error: "Failed to send email" },
-          { status: 500 },
-        );
-      }
+    if (result.queued.length === 0) {
+      return NextResponse.json({
+        success: true,
+        emailSent: false,
+        queued: result.queued,
+        skipped: result.skipped,
+        say: result.say,
+      });
     }
 
     const { error: markError } = await admin.rpc("mark_user_message_emailed", {
@@ -219,12 +220,18 @@ export async function POST(request: NextRequest) {
     if (markError) {
       console.error("Failed to mark review message as emailed:", markError);
       return NextResponse.json(
-        { success: false, error: "Email sent, but delivery state was not saved" },
+        { success: false, error: "The notice is on its way, but its delivery state was not saved" },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ success: true, emailSent: true });
+    return NextResponse.json({
+      success: true,
+      emailSent: result.queued.includes("email"),
+      queued: result.queued,
+      skipped: result.skipped,
+      say: result.say,
+    });
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Failed to send notification";

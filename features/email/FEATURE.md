@@ -16,9 +16,15 @@ There are **two independent paths** with **separate Resend credentials**.
 - **Domain guard:** `EMAIL_ALLOWED_DOMAINS` (e.g. `aimatrx.com,updates.aimatrx.com`).
 - **Admin notifications:** `ADMIN_EMAIL` (contact form, some feedback routes).
 
-**Covers:** org/project invites, sharing notifications, contact form, feedback,
-admin bulk email, generic/public sends, invitation & landing emails, export/notification
-emails.
+- 🚨 **A notice to a person is NOT sent from here.** Invitations, feedback, shares and
+  access-request decisions go through the notification spine:
+  `lib/notifications/notifyFromSql.ts` → `communication.notify_from_sql` (service role), words
+  declared in aidream `services/notifications/declarations.py`, and the pairing rule adds the DM
+  for every recipient with an account. Census: aidream `services/notifications/FEATURE.md`.
+
+**Covers:** contact form, admin bulk email (custom From / Reply-To), generic/public sends,
+landing emails, export emails (chat response, table export), task-assigned and message-received
+notification emails.
 
 **Does NOT cover:** signup confirmation or password reset — those are Path 2.
 
@@ -69,6 +75,7 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 | Area                                          | Role                                                        |
 | --------------------------------------------- | ----------------------------------------------------------- |
 | `lib/email/client.ts`                         | Resend API client + templates                               |
+| `lib/notifications/notifyFromSql.ts`          | Server door to the notification spine (email + paired DM)   |
 | `lib/email/render.ts`, `lib/email/templates/` | React-email templates                                       |
 | `app/api/email/send`                          | Authenticated generic send                                  |
 | `app/api/admin/email`                         | Admin bulk send                                             |
@@ -78,6 +85,11 @@ Reset-password email template must use `{{ .ConfirmationURL }}` (not `{{ .SiteUR
 
 ## Change Log
 
+- **2026-10-04** — Invitation, feedback, share and access-request notices moved onto the
+  notification spine (`lib/notifications/notifyFromSql.ts`); their Resend templates and senders
+  were deleted. Due-date reminders and task comments write their own outbox rows
+  (`features/tasks/services/dueReminderOutbox.ts`, the comment trigger) and are not moved. The share dialog's own DM is gone — `/api/sharing/notify`
+  is the one path, and its DM comes from the sharer with the resource card.
 - **2026-09-30** — Clone outbound guard in `sendEmail` and `app/api/test-email` (X1).
 - **2026-09-21** — Replaced deprecated `@react-email/components` imports in all
   application templates with `react-email`. `react-email` is now a runtime

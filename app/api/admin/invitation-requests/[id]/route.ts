@@ -3,7 +3,7 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { sendInvitationRequestApprovalEmail, sendInvitationRequestRejectionEmail } from "@/features/invitations/emailService";
+import { notifyFromSql, userIdForEmail } from "@/lib/notifications/notifyFromSql";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
 import { tryWriteOne, writeFailureStatus } from "@/utils/supabase/writeOne";
 
@@ -138,24 +138,33 @@ export async function PATCH(
         );
       }
 
-      // Send approval email
-      const emailResult = await sendInvitationRequestApprovalEmail({
-        fullName: invitationRequest.full_name,
-        email: invitationRequest.email,
-        invitationCode,
+      // Tell the requester through the notification spine (`access_request.approved`).
+      // Email only: the message carries a one-use sign-up code, which never goes to a chat
+      // thread (the event's pair_dm_with_email is off). A notice that cannot go never fails
+      // the approval — the code is on screen for the admin to pass on.
+      const notice = await notifyFromSql(adminSupabase, {
+        organizationId: SYSTEM_ORGANIZATION_ID,
+        eventKey: "access_request.approved",
+        recipientUserId: await userIdForEmail(adminSupabase, invitationRequest.email),
+        toAddress: invitationRequest.email,
+        recipientLabel: invitationRequest.full_name,
+        payload: {
+          request: {
+            full_name: invitationRequest.full_name || "there",
+            code: invitationCode,
+          },
+        },
+        deepLink: `/sign-up?invitation=${encodeURIComponent(invitationCode)}`,
+        dedupeKey: `access_request.approved:${params.id}`,
       });
-
-      if (!emailResult.success) {
-        console.warn("Failed to send approval email:", emailResult.error);
-        // Don't fail the request if email fails
-      }
+      const emailSent = notice.queued.includes("email");
 
       return NextResponse.json({
         success: true,
-        msg: emailResult.success
+        msg: emailSent
           ? "Invitation request approved and code sent"
-          : "Invitation request approved, but the email failed to send",
-        data: { invitationCode, emailSent: emailResult.success },
+          : `Invitation request approved. ${notice.say}`,
+        data: { invitationCode, emailSent, queued: notice.queued, skipped: notice.skipped },
       });
     } else {
       // Reject
@@ -181,22 +190,33 @@ export async function PATCH(
         );
       }
 
-      // Send rejection email
-      const emailResult = await sendInvitationRequestRejectionEmail({
-        fullName: invitationRequest.full_name,
-        email: invitationRequest.email,
-        reason: rejectionReason,
+      // Tell the requester through the notification spine (`access_request.rejected`).
+      const notice = await notifyFromSql(adminSupabase, {
+        organizationId: SYSTEM_ORGANIZATION_ID,
+        eventKey: "access_request.rejected",
+        recipientUserId: await userIdForEmail(adminSupabase, invitationRequest.email),
+        toAddress: invitationRequest.email,
+        recipientLabel: invitationRequest.full_name,
+        payload: {
+          request: {
+            full_name: invitationRequest.full_name || "there",
+            reason_line:
+              typeof rejectionReason === "string" && rejectionReason.trim()
+                ? rejectionReason.trim()
+                : "No reason was given.",
+          },
+        },
+        dedupeKey: `access_request.rejected:${params.id}`,
       });
-
-      if (!emailResult.success) {
-        console.warn("Failed to send rejection email:", emailResult.error);
-        // Don't fail the request if email fails
-      }
 
       return NextResponse.json({
         success: true,
         msg: "Invitation request rejected",
-        data: { emailSent: emailResult.success },
+        data: {
+          emailSent: notice.queued.includes("email"),
+          queued: notice.queued,
+          skipped: notice.skipped,
+        },
       });
     }
   } catch (error) {
