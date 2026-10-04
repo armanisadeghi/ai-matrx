@@ -934,7 +934,7 @@ export function AccountsTableClient() {
         >
         <MatrxDataTable
           data={visibleRows}
-          columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+          columns={[...(columns), { id: "custom-actions", header: "Manage", sortable: false, filter: false, customActions: (row) => (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
