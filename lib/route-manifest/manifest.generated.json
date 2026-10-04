@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1318,
+  "routeCount": 1333,
   "routes": [
     {
       "pattern": "/",
@@ -759,6 +759,11 @@
       "source": "app/(admin)/administration/documentation/feature-docs/view/[[...path]]/page.tsx"
     },
     {
+      "pattern": "/administration/documentation/feature-maps",
+      "status": "live",
+      "source": "app/(admin)/administration/documentation/feature-maps/page.tsx"
+    },
+    {
       "pattern": "/administration/education",
       "status": "live",
       "source": "app/(admin)/administration/education/page.tsx"
@@ -1234,6 +1239,11 @@
       "source": "app/(admin)/administration/users/usage/page.tsx"
     },
     {
+      "pattern": "/administration/users/usage-limits",
+      "status": "live",
+      "source": "app/(admin)/administration/users/usage-limits/page.tsx"
+    },
+    {
       "pattern": "/administration/utilities",
       "status": "live",
       "source": "app/(admin)/administration/utilities/page.tsx"
@@ -1567,6 +1577,16 @@
       "pattern": "/agents/battle/conversation/[setId]",
       "status": "live",
       "source": "app/(core)/agents/battle/conversation/[setId]/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/matrix",
+      "status": "live",
+      "source": "app/(core)/agents/battle/matrix/page.tsx"
+    },
+    {
+      "pattern": "/agents/battle/matrix/[setId]",
+      "status": "live",
+      "source": "app/(core)/agents/battle/matrix/[setId]/page.tsx"
     },
     {
       "pattern": "/agents/battle/model",
@@ -2264,6 +2284,16 @@
       "source": "app/(core)/data-v2/[tableId]/page.tsx"
     },
     {
+      "pattern": "/data-v2/[tableId]/r/[recordId]",
+      "status": "live",
+      "source": "app/(core)/data-v2/[tableId]/r/[recordId]/page.tsx"
+    },
+    {
+      "pattern": "/data-v2/connect",
+      "status": "live",
+      "source": "app/(core)/data-v2/connect/page.tsx"
+    },
+    {
       "pattern": "/data-v2/try-everything",
       "status": "live",
       "source": "app/(core)/data-v2/try-everything/page.tsx"
@@ -2872,6 +2902,21 @@
       "pattern": "/error",
       "status": "live",
       "source": "app/error/page.tsx"
+    },
+    {
+      "pattern": "/esign",
+      "status": "live",
+      "source": "app/(core)/esign/page.tsx"
+    },
+    {
+      "pattern": "/esign/[envelopeId]",
+      "status": "live",
+      "source": "app/(core)/esign/[envelopeId]/page.tsx"
+    },
+    {
+      "pattern": "/esign/new",
+      "status": "live",
+      "source": "app/(core)/esign/new/page.tsx"
     },
     {
       "pattern": "/exports",
@@ -5952,6 +5997,11 @@
       "source": "app/(core)/resources/term-lists/page.tsx"
     },
     {
+      "pattern": "/review/page-cleanup",
+      "status": "live",
+      "source": "app/(core)/review/page-cleanup/page.tsx"
+    },
+    {
       "pattern": "/rsvp/[secret]",
       "status": "live",
       "source": "app/(link)/rsvp/[secret]/page.tsx"
@@ -6202,6 +6252,11 @@
       "source": "app/(link)/sign/[token]/page.tsx"
     },
     {
+      "pattern": "/sign/e/[envelopeId]",
+      "status": "live",
+      "source": "app/(link)/sign/e/[envelopeId]/page.tsx"
+    },
+    {
       "pattern": "/sms",
       "status": "live",
       "source": "app/(public)/sms/page.tsx"
@@ -6250,6 +6305,16 @@
       "pattern": "/teams/id/[teamId]",
       "status": "live",
       "source": "app/(core)/teams/id/[teamId]/page.tsx"
+    },
+    {
+      "pattern": "/templates",
+      "status": "live",
+      "source": "app/(public)/templates/page.tsx"
+    },
+    {
+      "pattern": "/templates/[catalogueId]",
+      "status": "live",
+      "source": "app/(public)/templates/[catalogueId]/page.tsx"
     },
     {
       "pattern": "/terms-and-conditions",
@@ -6587,6 +6652,11 @@
       "source": "app/(core)/workflows/battle/page.tsx"
     },
     {
+      "pattern": "/workflows/builder/[tableId]",
+      "status": "live",
+      "source": "app/(core)/workflows/builder/[tableId]/page.tsx"
+    },
+    {
       "pattern": "/workflows/runs",
       "status": "live",
       "source": "app/(core)/workflows/runs/page.tsx"
@@ -6605,6 +6675,11 @@
       "pattern": "/workflows/waiting",
       "status": "live",
       "source": "app/(core)/workflows/waiting/page.tsx"
+    },
+    {
+      "pattern": "/x/sign",
+      "status": "live",
+      "source": "app/(link)/x/sign/page.tsx"
     }
   ]
 }

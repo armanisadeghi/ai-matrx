@@ -17,11 +17,11 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 import { getAdminSupabaseClient } from "../utils/supabase/getScriptClient";
-import type { RouteManifest } from "../lib/route-manifest/generate";
+import { generateRouteManifest, type RouteManifest } from "../lib/route-manifest/generate";
 import {
   resolveRouteManifestSourceSha,
   ROUTE_MANIFEST_SOURCE_SHA_ENV,
@@ -57,8 +57,36 @@ function verifiedCommitSha(sha: string): string {
   }
 }
 
+/**
+ * 🚨 PUBLISH A FRESH WALK, NEVER THE CHECKED-IN COPY (2026-10-04). This used to push
+ * `manifest.generated.json` as committed — which only moves when someone remembers
+ * `pnpm route-manifest:generate`. Nobody did for two days, so every route added in that
+ * time (the e-signature pages among them) was "unbuilt" to the notification spine, and a
+ * signature request went out pointing at the homepage instead of the signing link. The
+ * release runs this from the commit it ships, so walking `app/` here IS the serving truth.
+ * A stale lockfile is rewritten and named, so the next commit carries it.
+ */
+async function freshManifest(): Promise<RouteManifest> {
+  const manifest = await generateRouteManifest(REPO_ROOT);
+  const next = JSON.stringify(manifest, null, 2) + "\n";
+  let committed = "";
+  try {
+    committed = readFileSync(MANIFEST, "utf8");
+  } catch {
+    // no lockfile yet — the fresh walk is still the truth
+  }
+  if (committed !== next) {
+    writeFileSync(MANIFEST, next, "utf8");
+    console.warn(
+      "route manifest: the checked-in lockfile was stale — published a fresh walk of app/ " +
+        "and rewrote lib/route-manifest/manifest.generated.json; commit it.",
+    );
+  }
+  return manifest;
+}
+
 async function main() {
-  const manifest = JSON.parse(readFileSync(MANIFEST, "utf8")) as RouteManifest;
+  const manifest = await freshManifest();
   const sourceSha = resolveRouteManifestSourceSha(
     process.env[ROUTE_MANIFEST_SOURCE_SHA_ENV],
     headSha,
