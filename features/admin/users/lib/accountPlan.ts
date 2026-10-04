@@ -63,7 +63,9 @@ export function toAdminUserPlan(
       : null;
   const source = organization
     ? "organization"
-    : row.plan_source === "guest" || row.plan_source === "grant"
+    : row.plan_source === "guest" ||
+        row.plan_source === "grant" ||
+        row.plan_source === "organization"
       ? row.plan_source
       : "default";
   return {

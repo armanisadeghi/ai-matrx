@@ -289,7 +289,7 @@ export function UsageLimitsClient() {
               </AppLink>
             ) : (
               <div className="truncate text-[11px] text-muted-foreground">
-                {row.plan.source === "grant" ? "assigned" : row.plan.source === "guest" ? "guest allowance" : "default plan"}
+                {row.plan.source === "grant" ? "assigned" : row.plan.source === "guest" ? "guest allowance" : row.plan.source === "organization" ? "organization plan" : "default plan"}
               </div>
             )}
           </div>
