@@ -5,6 +5,12 @@ import type { LucideIcon } from "lucide-react";
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 import {
   AppWindow,
+  MessagesSquare,
+  StickyNote,
+  File,
+  Rows3,
+  UsersRound,
+  Type,
   Aperture,
   ArrowLeftRight,
   ArrowUpRight,
@@ -262,6 +268,12 @@ export const shellIconComponents = {
   Wrench,
   X,
   Zap,
+  MessagesSquare,
+  StickyNote,
+  File,
+  Rows3,
+  UsersRound,
+  Type,
 } satisfies Record<string, LucideIcon>;
 
 /** Icon names that are guaranteed to render in every main-shell surface. */

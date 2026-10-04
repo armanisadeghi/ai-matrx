@@ -20,6 +20,7 @@
 
 import { type ComponentType, type DragEvent, useEffect, useRef, useState } from "react";
 import { ExternalLink, PanelRight, Plus } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { EntityCommentPopover } from "@/components/comments/EntityCommentPopover";
 import { BOARD_TOKEN } from "../persistence/boardsService";
 import { cn } from "@/lib/utils";
@@ -280,6 +281,30 @@ export function UserBoard({
   const bringIn = (type: BoardItemType) => {
     if (type.bringIn) setPicking({ title: `Bring in: ${type.bringIn.label}`, Picker: type.bringIn.Picker, type });
   };
+
+  // THE MENU'S SUB-OPTIONS: `/board?add=<item key>` starts that item at once — its first "new"
+  // entry, else its "bring in" picker — then drops the parameter so a reload adds nothing.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const addKey = guest ? null : searchParams.get("add");
+  const addHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!addKey || !store || addHandled.current === addKey) return;
+    addHandled.current = addKey;
+    const rest = new URLSearchParams(searchParams.toString());
+    rest.delete("add");
+    router.replace(rest.size > 0 ? `${pathname}?${rest}` : pathname, { scroll: false });
+    const type = addableTypes.find((t) => t.key === addKey);
+    if (!type) {
+      toast.error(`A board cannot add "${addKey}"`);
+      return;
+    }
+    const [entry] = startNewEntries(type);
+    if (entry) startNew(type, entry);
+    else bringIn(type);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addKey, store]);
 
   const onCreate = (c: Creation) => {
     const id = `${c.tool}:${crypto.randomUUID().slice(0, 8)}`;

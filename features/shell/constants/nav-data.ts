@@ -1302,7 +1302,7 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/dashboard",
         guestHref: "/features",
         iconName: "LayoutDashboard",
-        description: "Dashboard, launchpad and boards",
+        description: "Dashboard and launchpad",
         color: "sky",
         children: [
           {
@@ -1325,9 +1325,21 @@ export const primaryNavItems: ShellNavItem[] = [
             // A launchpad stays open while what it launches opens beside it.
             openInNewTab: true,
           },
+        ],
+      },
+      {
+        // THE BOARD — its own menu item (owner: "the user's master one and it's got it's own menu
+        // item… show all of the supported features as suboptions"). Every item a board supports is
+        // one click away: `/board?add=<item key>` starts it on the person's board (UserBoard).
+        // Keys = BOARD_ITEM_TYPES; features/spatial/__tests__/board-menu-items.test.ts holds them.
+        label: "Board",
+        href: "/board",
+        iconName: "LayoutGrid",
+        description: "Your canvas — every feature side by side",
+        color: "teal",
+        guestHidden: true,
+        children: [
           {
-            // The person's own board: the one canvas where anything the platform
-            // supports is put side by side (features/spatial).
             label: "My board",
             href: "/board",
             iconName: "LayoutGrid",
@@ -1339,6 +1351,23 @@ export const primaryNavItems: ShellNavItem[] = [
             guestHidden: true,
           },
           { label: "All boards", href: "/board/all", iconName: "Layers", guestHidden: true },
+          { label: "Chat", href: "/board?add=chat", iconName: "MessagesSquare", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "File", href: "/board?add=file", iconName: "File", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Table", href: "/board?add=data-table", iconName: "Database", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Record", href: "/board?add=record", iconName: "Rows3", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Task", href: "/board?add=task", iconName: "ListTodo", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "War Room", href: "/board?add=war-room", iconName: "UsersRound", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Meeting", href: "/board?add=meeting", iconName: "Video", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Meeting notes", href: "/board?add=meeting_part", iconName: "NotebookPen", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Workflow run", href: "/board?add=workflow-run", iconName: "Workflow", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Research", href: "/board?add=research", iconName: "FlaskConical", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Project", href: "/board?add=project", iconName: "FolderKanban", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Web page", href: "/board?add=web-page", iconName: "Globe", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Image", href: "/board?add=image", iconName: "Image", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Label", href: "/board?add=label", iconName: "Type", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Page", href: "/board?add=page", iconName: "AppWindow", group: "Add to your board", actionItem: true, guestHidden: true },
         ],
       },
       {
