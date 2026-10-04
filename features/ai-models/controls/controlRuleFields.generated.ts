@@ -17,16 +17,17 @@ export const SERVER_RULE_FIELDS = [
   "processor",
   "processor_config",
   "ui_values",
-] as const;
-
-/** Contract K6 fields the server model does not define yet. */
-export const CONTRACT_RULE_FIELDS = [
   "off",
   "from_number",
   "to_number",
   "accepts",
   "drop",
   "why",
+  "context",
+] as const;
+
+/** Contract K6 fields the server model does not define yet. */
+export const CONTRACT_RULE_FIELDS = [
 ] as const;
 
 /** Every valid ControlRule field — what frontend readers accept. */

@@ -198,6 +198,8 @@ export type ControlRule = {
   to_number?: Record<string, number>;
   /** Capability: values the provider accepts (ui_values = what the UI offers). */
   accepts?: unknown[];
+  /** Applies only when every pair matches the request context (e.g. one media operation). */
+  context?: Record<string, unknown>;
   /** Declared drop: `{"drop": true, "why": ...}`. */
   drop?: boolean;
   why?: string;
