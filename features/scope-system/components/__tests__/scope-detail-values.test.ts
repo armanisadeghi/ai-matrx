@@ -13,7 +13,7 @@ const row = (over: Partial<ScopeContextRow>): ScopeContextRow =>
     key: "primary_contact",
     slug: "primary-contact",
     display_name: "Primary contact",
-    value_type: "text",
+    value_type: "short_text" as never,
     has_value: false,
     value_text: null,
     value_number: null,
@@ -37,10 +37,10 @@ describe("scope detail surface values", () => {
   });
 
   it("sets only text-shaped items from text", () => {
-    expect(settableByText(row({ value_type: "text" }))).toBe(true);
-    expect(settableByText(row({ value_type: "number" }))).toBe(true);
-    expect(settableByText(row({ value_type: "reference" }))).toBe(false);
-    expect(settableByText({ value_type: "text", custom_component: { type: "picker" } as never })).toBe(false);
+    expect(settableByText(row({ value_type: "short_text" as never }))).toBe(true);
+    expect(settableByText(row({ value_type: "number" as never }))).toBe(true);
+    expect(settableByText(row({ value_type: "reference" as never }))).toBe(false);
+    expect(settableByText({ value_type: "short_text" as never, custom_component: { type: "picker" } as never })).toBe(false);
   });
 
   it("finds an item by id first, then by slug or key, and never by nothing", () => {

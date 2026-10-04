@@ -8,6 +8,9 @@
  * personal notification surface at all. The employee's own channels carry their alert.
  */
 
+import { useState } from "react";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
+import { readOf } from "@/components/read-state/ReadGate";
 import { useRouter } from "next/navigation";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";
@@ -23,13 +26,16 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 export function OvertimeQueuePage() {
   const hr = useHrContext();
   const mockCase = useMockCase();
-  const queue = useOvertimeQueue({}, mockCase);
+  const [query, setQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: 50, search: "", anyOf: "", columnFilters: {}, sort: null });
+  // Keep the original watchlist source stable while paging/filtering the table.
+  const watchlistQueue = useOvertimeQueue({}, mockCase);
+  const queue = useOvertimeQueue({}, mockCase, { page: query.page, pageSize: query.pageSize });
   const router = useRouter();
 
   const organizationId = hr.active?.organization_id ?? null;
   // One watched employment in this build: the queue's first row. The scan that produces the full
   // watchlist is E-56 on the dedicated worker lane, and it is not this lane's to run.
-  const watched = queue.page?.rows[0] ?? null;
+  const watched = watchlistQueue.page?.rows[0] ?? null;
   const evaluation = useOvertimeEvaluation(
     { organizationId, employmentId: watched?.employmentId ?? null },
     mockCase,
@@ -75,10 +81,10 @@ export function OvertimeQueuePage() {
 
         <OvertimeQueueTable
           rows={queue.page?.rows ?? []}
+          sourceTotal={queue.page?.totalRows}
+          query={{ mode: "controlled", state: query, onStateChange: setQuery, totalItems: queue.page?.totalRows ?? 0, sourceProcessing: { search: "local", sort: "local", columnFilters: "local" } }}
           isLoading={queue.isLoading}
-          // The queue's failure is said once, above — it also empties the watchlist —
-          // so the table carries only the read's wait.
-          read={{ status: queue.isLoading && !queue.page ? "loading" : "ready", what: "overtime requests", hasData: queue.page != null }}
+          read={readOf({ isLoading: queue.isLoading, error: queue.failure?.userMessage ?? null }, { what: "overtime requests", onRetry: queue.reload })}
           hrefFor={(row) => hrTimeOvertimeRequestHref(row.id, hr.orgRef)}
         />
       </div>

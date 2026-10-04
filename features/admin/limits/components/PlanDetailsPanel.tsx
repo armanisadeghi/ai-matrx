@@ -12,7 +12,9 @@
 // pair (the RPC refuses one without the other): clearing the monthly price
 // clears both (custom pricing — "Talk to sales"); setting a monthly price on a
 // plan with no annual price sets the annual one to match (no discount) until
-// it is edited. Cells save on Enter or blur, then re-read the rows.
+// it is edited. Cells save on Enter or blur, then re-read the rows. A save that
+// touches a price, the name or active re-syncs Stripe (new prices under the
+// plan's product, old ones archived) so checkout charges what this page shows.
 
 import { useCallback, useEffect, useState } from "react";
 import { Field, Switch } from "@ai-matrx/design-system/controls";
@@ -22,6 +24,9 @@ import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { fetchPlans, setPlanFields } from "../service";
 import { groupPlansByAudience, type Plan, type PlanFields } from "../types";
+
+/** Saving any of these re-syncs Stripe (prices, product name, sellable set). */
+const STRIPE_FIELDS: ReadonlyArray<keyof PlanFields> = ["monthly_cents", "annual_cents", "name", "active"];
 
 function centsToDollars(cents: number | null): string {
   if (cents === null) return "";
@@ -265,7 +270,15 @@ export function PlanDetailsPanel({ onChanged }: { onChanged?: () => void }) {
       }
       await load();
       onChanged?.();
-      toast.success("Plan saved");
+      if (!STRIPE_FIELDS.some((f) => f in fields)) {
+        toast.success("Plan saved");
+        return;
+      }
+      // Stripe follows the plan: new prices, archived old ones, portal lists.
+      const res = await fetch("/api/admin/billing/sync-stripe-prices", { method: "POST" });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; mode?: string; created?: number };
+      if (res.ok) toast.success(`Plan saved · Stripe ${body.mode ?? ""} updated`.trim());
+      else toast.error(`Plan saved, but Stripe did not update: ${body.error ?? res.statusText}`);
     },
     [load, onChanged],
   );

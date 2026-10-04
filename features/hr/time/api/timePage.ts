@@ -7,3 +7,6 @@ export function toTimePage(page: PageRequest): {
 } {
   return { page: page.page, pageSize: page.pageSize };
 }
+
+/** Offered sizes match hr._time_page's actual request contract (maximum 500). */
+export const HR_TIME_PAGE_SIZES = [10, 25, 50, 100, 250, 500];

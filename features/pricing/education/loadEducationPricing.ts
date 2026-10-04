@@ -37,7 +37,15 @@ export interface FreePacing {
   limit: number;
 }
 
+/** The free plan's own name and tagline (billing.plan, audience = free). */
+export interface FreePlan {
+  name: string;
+  tagline: string | null;
+}
+
 export interface EducationPricing {
+  /** `null` only when the catalog lists no free plan; the card then says so. */
+  free: FreePlan | null;
   premium: PremiumPlan | null;
   freeHighlights: FreeHighlight[];
   /** `null` when no rolling_5h row exists for the pacing capability. */
@@ -144,7 +152,10 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
     throw new Error(
       "The pricing catalog could not be loaded: " + catalogError.message,
     );
-  const entry = parsePlanCatalog(catalog)
+  const plans = parsePlanCatalog(catalog);
+  const freeRow = plans.find((p) => p.audience === "free");
+  const free: FreePlan | null = freeRow ? { name: freeRow.name, tagline: freeRow.tagline } : null;
+  const entry = plans
     .filter(
       (p) =>
         p.audience === "personal" &&
@@ -207,5 +218,5 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
   const freePacing: FreePacing | null =
     pacingLimit == null ? null : { unit: PACING.unit, limit: pacingLimit };
 
-  return { premium, freeHighlights, freePacing };
+  return { free, premium, freeHighlights, freePacing };
 }

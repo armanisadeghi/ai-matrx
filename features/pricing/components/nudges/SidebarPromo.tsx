@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
+import { defaultPlan } from "@/features/entitlements/catalog/format";
 
 interface SidebarPromoProps {
   /** Optional fraction 0..1 of free quota used. */
@@ -19,6 +21,8 @@ export function SidebarPromo({
   className,
 }: SidebarPromoProps) {
   const [dismissed, setDismissed] = useState(false);
+  const catalog = usePlanCatalog();
+  const freePlanName = (catalog.status === "ready" && defaultPlan(catalog.plans)?.name) || "Current";
   if (dismissed) return null;
 
   const pct = Math.max(0, Math.min(1, usagePct));
@@ -42,7 +46,7 @@ export function SidebarPromo({
 
       <div className="flex flex-col gap-1.5">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-background/60">
-          Free plan
+          {freePlanName} plan
         </span>
         <p className="text-sm font-medium leading-snug tracking-tight">
           You've used {pctLabel}% of this month's messages.

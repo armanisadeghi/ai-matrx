@@ -14,6 +14,7 @@ import {
   requiredStripeMode,
 } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
+import { syncPlanPrices } from "@/features/entitlements/stripe/planCatalog";
 import { openSubscriptionPortal } from "@/features/entitlements/stripe/portal";
 import {
   CheckoutBusyError,
@@ -122,7 +123,8 @@ export async function POST(request: NextRequest) {
         { error: "This plan does not require checkout." },
         { status: 400 },
       );
-    const priceQuery = admin
+    const priceQuery = () =>
+      admin
       .schema("billing")
       .from("price")
       .select(
@@ -132,12 +134,21 @@ export async function POST(request: NextRequest) {
       .eq("active", true)
       .is("deleted_at", null)
       .not("metadata->>plan_key", "is", null);
-    const { data: price, error: priceError } = await priceQuery
-      .contains("metadata", { plan_key: plan.plan_key })
-      .eq("interval", cycle === "monthly" ? "month" : "year")
-      .eq("unit_amount", amount)
-      .maybeSingle();
+    const findPrice = () =>
+      priceQuery()
+        .contains("metadata", { plan_key: plan.plan_key })
+        .eq("interval", cycle === "monthly" ? "month" : "year")
+        .eq("unit_amount", amount)
+        .maybeSingle();
+    let { data: price, error: priceError } = await findPrice();
     if (priceError) throw priceError;
+    if (!price) {
+      // The plan's price is the truth (set in admin); Stripe follows it. A
+      // price edited since the last sync gets its Stripe price here, once.
+      await syncPlanPrices(getStripe(), admin, requiredStripeMode(), plan.plan_key);
+      ({ data: price, error: priceError } = await findPrice());
+      if (priceError) throw priceError;
+    }
     if (!price?.stripe_price_id || !price.active) {
       return NextResponse.json(
         { error: "Unknown or inactive price" },

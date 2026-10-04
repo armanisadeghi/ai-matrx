@@ -16,13 +16,14 @@
  */
 
 import { useState } from "react";
+import { HR_TIME_PAGE_SIZES } from "../../api/timePage";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxColumnDef, MatrxDataTableQueryControl } from "@ai-matrx/design-system/data-table/types";
 import { formatLocalDate } from "../../shared/format";
 import type { PayPeriodRow, PayPeriodState } from "../../api/types";
 import { PERIOD_STATE_LABEL, rowProgressSentence } from "../periodStateMachine";
@@ -42,13 +43,15 @@ const PERIOD_STATES: PayPeriodState[] = [
 export interface PayPeriodsTableProps {
   rows: PayPeriodRow[];
   isLoading: boolean;
+  query?: MatrxDataTableQueryControl<PayPeriodRow>;
+  sourceTotal?: number;
   /** Built by `hrTimePeriodHref` — never hand-assembled, so `?org_filter=` always travels. */
   hrefFor: (row: PayPeriodRow) => string;
   /** The pay-periods read these rows answer (the page owns it). */
   read?: ReadOutcome | undefined;
 }
 
-export function PayPeriodsTable({ rows, isLoading, hrefFor, read }: PayPeriodsTableProps) {
+export function PayPeriodsTable({ rows, isLoading, hrefFor, read, query, sourceTotal }: PayPeriodsTableProps) {
   const router = useRouter();
   const [clickedRow, setClickedRow] = useState<PayPeriodRow | null>(null);
 
@@ -181,6 +184,9 @@ export function PayPeriodsTable({ rows, isLoading, hrefFor, read }: PayPeriodsTa
       getRowId={(row) => row.id}
       isLoading={isLoading}
       read={read}
+      query={query}
+      pageSizeOptions={HR_TIME_PAGE_SIZES}
+      coverage={sourceTotal === undefined ? undefined : { answeredBy: "client", noun: "record", total: sourceTotal, cap: rows.length }}
       zebra
       searchText={(row) =>
         `${row.payGroupName} ${row.periodStartOn} ${row.periodEndOn} ${row.state}`

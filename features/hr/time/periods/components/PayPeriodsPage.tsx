@@ -18,6 +18,8 @@
  * component's own org-wide mode; this lane mounts it and owns no second copy.
  */
 
+import { useState } from "react";
+import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
 import { useSearchParams } from "next/navigation";
 
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
@@ -40,7 +42,8 @@ export function useMockCase(): HrFixtureCase | undefined {
 export function PayPeriodsPage() {
   const hr = useHrContext();
   const mockCase = useMockCase();
-  const { page, isLoading, failure, reload } = usePayPeriods({}, { page: 1, pageSize: 50 }, mockCase);
+  const [query, setQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: 50, search: "", anyOf: "", columnFilters: {}, sort: null });
+  const { page, isLoading, failure, reload } = usePayPeriods({}, { page: query.page, pageSize: query.pageSize }, mockCase);
 
   return (
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
@@ -69,6 +72,8 @@ export function PayPeriodsPage() {
 
         <PayPeriodsTable
           rows={page?.rows ?? []}
+          sourceTotal={page?.totalRows}
+          query={{ mode: "controlled", state: query, onStateChange: setQuery, totalItems: page?.totalRows ?? 0, sourceProcessing: { search: "local", sort: "local", columnFilters: "local" } }}
           isLoading={isLoading}
           // The server's sentence, verbatim — said once, by the table.
           read={readOf({ isLoading, error: failure?.userMessage ?? null }, { what: "the pay periods", onRetry: reload })}

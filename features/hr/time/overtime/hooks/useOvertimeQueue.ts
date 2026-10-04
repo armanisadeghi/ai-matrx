@@ -42,6 +42,7 @@ const DEFAULT_PAGE: PageRequest = { page: 1, pageSize: 50 };
 export function useOvertimeQueue(
   filters: OvertimeListFilters,
   mockCase?: HrFixtureCase,
+  request: PageRequest = DEFAULT_PAGE,
 ): {
   page: Paged<OvertimeRequestRow> | null;
   isLoading: boolean;
@@ -53,12 +54,13 @@ export function useOvertimeQueue(
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(0);
   const filterKey = JSON.stringify(filters);
+  const pageKey = JSON.stringify(request);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     setFailure(null);
-    listOvertimePreapprovals(JSON.parse(filterKey) as OvertimeListFilters, DEFAULT_PAGE, { mockCase })
+    listOvertimePreapprovals(JSON.parse(filterKey) as OvertimeListFilters, JSON.parse(pageKey) as PageRequest, { mockCase })
       .then((next) => {
         if (!cancelled) setPage(next);
       })
@@ -73,7 +75,7 @@ export function useOvertimeQueue(
     return () => {
       cancelled = true;
     };
-  }, [filterKey, mockCase, token]);
+  }, [filterKey, pageKey, mockCase, token]);
 
   return { page, isLoading, failure, reload: useCallback(() => setToken((t) => t + 1), []) };
 }

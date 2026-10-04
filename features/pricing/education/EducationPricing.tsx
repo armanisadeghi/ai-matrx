@@ -207,6 +207,10 @@ export function EducationPricing({
   };
 
   const premium = pricing.premium;
+  // Card names are the plans' own names (billing.plan); the tier words stand
+  // in only when the catalog has no such plan, and say what they are.
+  const freeName = pricing.free?.name ?? "Free tier";
+  const paidName = premium?.productName ?? "Paid tier";
 
   // The Premium card's one action.
   let premiumAction: ReactNode;
@@ -229,7 +233,7 @@ export function EducationPricing({
         className={CTA}
       >
         {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        {premium ? "Upgrade to Premium" : "Not available yet"}
+        {premium ? `Upgrade to ${premium.productName}` : "Not available yet"}
         {premium && !checkingOut ? (
           <ArrowRight className="h-3.5 w-3.5" />
         ) : null}
@@ -245,7 +249,7 @@ export function EducationPricing({
           {PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
             <>
               <Gift className="h-4 w-4" />
-              Get Premium free before launch
+              Get {paidName} free before launch
             </>
           ) : (
             <>
@@ -277,7 +281,7 @@ export function EducationPricing({
         <div className={cn(CARD, "border border-border")}>
           <div className="flex flex-col gap-1">
             <PlanLabel
-              name="Free"
+              name={freeName}
               badge={
                 isFreeMember
                   ? "Your plan"
@@ -292,9 +296,9 @@ export function EducationPricing({
               </span>
               <span className="text-sm text-muted-foreground">forever</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Enough to finish real study work every month.
-            </p>
+            {pricing.free?.tagline ? (
+              <p className="text-sm text-muted-foreground">{pricing.free.tagline}</p>
+            ) : null}
           </div>
 
           {isPremium ? (
@@ -336,7 +340,7 @@ export function EducationPricing({
         >
           <div className="flex flex-col gap-1">
             <PlanLabel
-              name="Premium"
+              name={paidName}
               emphasis
               badge={
                 isPremium
@@ -383,7 +387,7 @@ export function EducationPricing({
 
           <p className="text-sm text-muted-foreground">
             {!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM
-              ? "Every new account gets Premium at no charge until launch."
+              ? `Every new account gets ${paidName} at no charge until launch.`
               : isComplimentary
                 ? "Nothing is charged while it is complimentary."
                 : "Cancel anytime from the billing portal."}

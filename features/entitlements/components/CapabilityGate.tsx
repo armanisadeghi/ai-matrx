@@ -26,13 +26,16 @@ import {
 } from "@/features/settings/route-shell/routing";
 import { cn } from "@/lib/utils";
 import { useOrgEntitlement } from "../hooks";
+import { usePlanCatalog } from "../catalog/usePlanCatalog";
+import { tierPlanName } from "../catalog/format";
 import type { Capability } from "../registry";
 import type { EntitlementTier } from "../types";
 
-const TIER_LABEL: Record<EntitlementTier, string> = {
-  free: "Free",
-  trial: "Trial",
-  premium: "Premium",
+// While the catalog loads (or if it cannot be read) the tier itself is said.
+const TIER_WORD: Record<EntitlementTier, string> = {
+  free: "free",
+  trial: "trial",
+  premium: "a paid plan",
 };
 
 export interface CapabilityGateProps {
@@ -71,6 +74,7 @@ export function CapabilityGate({
   className,
 }: CapabilityGateProps) {
   const entitlement = useOrgEntitlement(capability, organizationId);
+  const catalog = usePlanCatalog();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   if (entitlement.isLoading) {
@@ -111,8 +115,10 @@ export function CapabilityGate({
   // The tier that unlocks it is the resolver's answer (billing.capability
   // min_tier, returned as required_tier) — never a client copy.
   const required = entitlement.requiredTier ?? null;
-  const requiredLabel = (required && TIER_LABEL[required]) || "a paid";
-  const heldLabel = TIER_LABEL[entitlement.tier] ?? "Free";
+  // Said as plan names from billing.plan_catalog() — never a hand-typed name.
+  const plans = catalog.status === "ready" ? catalog.plans : [];
+  const requiredLabel = (required && (tierPlanName(plans, required) ?? TIER_WORD[required])) || "a paid plan";
+  const heldLabel = tierPlanName(plans, entitlement.tier) ?? TIER_WORD[entitlement.tier] ?? "free";
   const resetsAt = entitlement.windows[0]?.resetsAt ?? null;
   const resetsLabel = resetsAt
     ? new Date(resetsAt).toLocaleDateString(undefined, {
@@ -184,12 +190,12 @@ export function CapabilityGate({
             ) : (
               // Never a bare "upgrade": say which tier, so the choice is real.
               <p className="mt-2 text-xs text-muted-foreground">
-                This organization is on {heldLabel}. {requiredLabel} unlocks it.
+                This organization is on {heldLabel}. {requiredLabel.charAt(0).toUpperCase() + requiredLabel.slice(1)} unlocks it.
               </p>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button type="button" size="sm" onClick={() => setUpgradeOpen(true)}>
-                {capReached ? "Get more now" : `See ${requiredLabel} plans`}
+                {capReached ? "Get more now" : "See plans"}
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Button>
               {/* A cap always has a second door: see exactly where you stand. */}

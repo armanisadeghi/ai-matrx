@@ -167,6 +167,19 @@ export function upgradePlans(plans: CatalogPlan[], group: PricingGroupId): Catal
   );
 }
 
+/**
+ * The name to say for a tier: the first plan (by rank) that a person can buy
+ * at that tier — the default plan for `free`. `null` when no plan carries it.
+ * Tiers are an entitlement level; people only ever see plan names.
+ */
+export function tierPlanName(plans: CatalogPlan[], tier: CatalogPlan["tier"]): string | null {
+  if (tier === "free") return defaultPlan(plans)?.name ?? plans.find((p) => p.audience === "free")?.name ?? null;
+  const plan = plans
+    .filter((p) => p.tier === tier && p.listedOnPricing && p.audience !== "guest")
+    .sort((a, b) => a.rank - b.rank)[0];
+  return plan?.name ?? null;
+}
+
 /** The plan a person with no subscription is on (`is_default`). */
 export function defaultPlan(plans: CatalogPlan[]): CatalogPlan | null {
   return plans.find((p) => p.isDefault) ?? null;

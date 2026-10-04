@@ -26,6 +26,7 @@
  */
 
 import { useState } from "react";
+import { HR_TIME_PAGE_SIZES } from "../api/timePage";
 import Link from "next/link";
 import { CheckCheck } from "lucide-react";
 
@@ -247,10 +248,12 @@ export function ExceptionsQueue({
               isFetching={queue.refreshing}
               query={{
                 mode: "controlled",
+                sourceProcessing: { sort: "local", columnFilters: { source: ["resolutionState", "severity", "exceptionKind"] } },
                 state: query,
                 totalItems: queue.data?.totalRows ?? 0,
                 onStateChange: setQuery,
               }}
+              pageSizeOptions={HR_TIME_PAGE_SIZES}
               pageSize={prefs.pageSize}
               toolbar={{ search: false }}
               selection={

@@ -15,11 +15,12 @@
  */
 
 import { useState } from "react";
+import { HR_TIME_PAGE_SIZES } from "../../api/timePage";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ShieldAlert } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import type { MatrxColumnDef, MatrxDataTableQueryControl } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
@@ -58,12 +59,14 @@ const FILTERABLE_STATES: OvertimeQueueState[] = [
 export interface OvertimeQueueTableProps {
   rows: OvertimeRequestRow[];
   isLoading: boolean;
+  query?: MatrxDataTableQueryControl<OvertimeRequestRow>;
+  sourceTotal?: number;
   hrefFor: (row: OvertimeRequestRow) => string;
   /** The queue read these rows answer (the page owns it). */
   read?: ReadOutcome | undefined;
 }
 
-export function OvertimeQueueTable({ rows, isLoading, hrefFor, read }: OvertimeQueueTableProps) {
+export function OvertimeQueueTable({ rows, isLoading, hrefFor, read, query, sourceTotal }: OvertimeQueueTableProps) {
   const router = useRouter();
   const [clickedRow, setClickedRow] = useState<OvertimeRequestRow | null>(null);
 
@@ -212,6 +215,9 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor, read }: OvertimeQ
         getRowId={(row) => row.id}
         isLoading={isLoading}
         read={read}
+        query={query}
+        pageSizeOptions={HR_TIME_PAGE_SIZES}
+        coverage={sourceTotal === undefined ? undefined : { answeredBy: "client", noun: "record", total: sourceTotal, cap: rows.length }}
         zebra
         searchText={(row) => `${row.employeeDisplayName} ${row.state} ${row.reasonNote ?? ""}`}
         toolbar={{ search: true, searchPlaceholder: "Search overtime requests…" }}
