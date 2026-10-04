@@ -110,6 +110,9 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
   };
 
   const completed = cells.filter((c) => c.status === "completed").length;
+  const conversationCount = new Set(
+    cells.flatMap((c) => [c.conversationId, ...c.history.map((h) => h.conversationId)]).filter(Boolean),
+  ).size;
   const actions: BattleAction[] = [
     { icon: "Library", label: "Open a saved battle", onPress: () => setLoaderOpen(true) },
     {
@@ -233,7 +236,7 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
         open={archiveConfirm}
         onOpenChange={(o) => !o && setArchiveConfirm(false)}
         title="Archive this battle?"
-        description={`Archives the battle and its ${cells.length} cell conversations. Restore them from Trash.`}
+        description={`Archives the battle and its ${conversationCount} conversations, earlier attempts included. Restore them from Trash.`}
         confirmLabel="Archive"
         variant="destructive"
         onConfirm={() => void archive()}

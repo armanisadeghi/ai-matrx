@@ -19,7 +19,7 @@ import {
   breakEven,
   cellMetrics,
   cellStatusLabel,
-  failedCellCount,
+  unfinishedLabel,
   isBundleLister,
   realToolCalls,
   rowUsedTools,
@@ -86,7 +86,7 @@ export function MatrixResults({
   // Totals are real spend: every current attempt whatever its status, plus
   // earlier attempts when asked. Averages compare completed runs only.
   const colSpend = colCells.map((list) => spendOf(list, withHistory));
-  const colFailed = colCells.map(failedCellCount);
+  const colUnfinished = colCells.map(unfinishedLabel);
   const colAvgs = colCells.map((list) => avgMetrics(sumMetrics(list.map(cellMetrics))));
   const first = colAvgs[0];
 
@@ -174,7 +174,7 @@ export function MatrixResults({
                         <Cost usd={rowSum.cost} short />
                         <div className="text-muted-foreground">{tokens(rowSum.total)} tok</div>
                         {rowSum.unfinished > 0 && (
-                          <div className="text-rose-600">{rowSum.unfinished} unfinished</div>
+                          <div className="text-rose-600">{unfinishedLabel(rowCells)}</div>
                         )}
                       </>
                     ) : (
@@ -189,7 +189,7 @@ export function MatrixResults({
             <FootRow
               label={withHistory ? "Total · all attempts" : "Total"}
               values={colSpend.map((s) => (s.n ? s : null))}
-              failed={colFailed}
+              unfinished={colUnfinished}
             />
             <FootRow label="Average · completed" values={colAvgs} />
             <tr className="border-t border-border">
@@ -227,11 +227,11 @@ function deltaClass(a: number, b: number): string {
 function FootRow({
   label,
   values,
-  failed,
+  unfinished,
 }: {
   label: string;
   values: (Metrics | null)[];
-  failed?: number[];
+  unfinished?: string[];
 }) {
   return (
     <tr className="border-t border-border">
@@ -246,9 +246,7 @@ function FootRow({
           ) : (
             "—"
           )}
-          {failed && failed[i] > 0 && (
-            <span className="block text-rose-600">{failed[i]} failed</span>
-          )}
+          {unfinished?.[i] && <span className="block text-rose-600">{unfinished[i]}</span>}
         </td>
       ))}
       <td />

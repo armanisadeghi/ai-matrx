@@ -380,6 +380,15 @@ export function failedCellCount(cells: MatrixCell[]): number {
   return cells.filter((c) => c.status === "failed" || c.status === "cancelled" || c.stalled).length;
 }
 
+/** "1 failed · 2 cancelled" — what a total leaves unfinished, by kind. Empty when none. */
+export function unfinishedLabel(cells: MatrixCell[]): string {
+  const failed = cells.filter((c) => c.status === "failed" || c.stalled).length;
+  const cancelled = cells.filter((c) => c.status === "cancelled" && !c.stalled).length;
+  return [failed ? `${failed} failed` : "", cancelled ? `${cancelled} cancelled` : ""]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function sumMetrics(list: (Metrics | null)[]): Metrics {
   const out = { ...ZERO_METRICS };
   for (const m of list) {

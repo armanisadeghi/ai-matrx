@@ -5,6 +5,7 @@ import {
   cellStatusLabel,
   entryToCell,
   failedCellCount,
+  unfinishedLabel,
   spendOf,
   sumMetrics,
 } from "../model";
@@ -48,6 +49,7 @@ describe("totals are real spend (finding 1)", () => {
     expect(total.inputAll).toBe(4544);
     expect(total.unfinished).toBe(1);
     expect(failedCellCount([done, failed])).toBe(1);
+    expect(unfinishedLabel([done, failed, cell({ status: "cancelled" })])).toBe("1 failed · 1 cancelled");
   });
 
   it("adds earlier attempts only when asked", () => {
