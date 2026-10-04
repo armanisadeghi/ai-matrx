@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import { MeasuredBare, Scale } from "../../_components/one-control";
+import { MeasuredBare } from "../../_components/one-control";
 import {
   ALL_LAYERS,
   PEEK_CLASS,
@@ -29,7 +29,7 @@ import {
   smartToast,
 } from "../../_components/toast-system";
 import { Group, Section } from "./kit";
-import { Button, ControlRow, Field } from "@ai-matrx/design-system/controls";
+import { Button, ControlRow, ControlScope, Field } from "@ai-matrx/design-system/controls";
 
 const FIRE: ReadonlyArray<{ label: string; run: () => void }> = [
   { label: "Success", run: () => smartToast.success("Note saved") },
@@ -42,7 +42,7 @@ function RenameDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <Scale scale={28} pad="matched">
+        <ControlScope>
           <DialogHeader>
             <DialogTitle className="text-base">Rename form</DialogTitle>
             <DialogDescription className="text-xs">Everyone with access sees the new name.</DialogDescription>
@@ -60,7 +60,7 @@ function RenameDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
               </Button>
             </ControlRow>
           </DialogFooter>
-        </Scale>
+        </ControlScope>
       </DialogContent>
     </Dialog>
   );

@@ -96,7 +96,7 @@ export function ProjectSettingsSample() {
             <ControlRow className="ml-auto py-0.5">
               {projectOptions.length > 1 && id ? (
                 <div className="hidden sm:contents">
-                  <Select value={id} options={projectOptions} onValueChange={setChosen} aria-label="Project" icon={FolderKanban} style={{ width: "12rem" }} align="end" />
+                  <Select value={id} options={projectOptions} onValueChange={setChosen} aria-label="Project" icon={<FolderKanban aria-hidden />} style={{ width: "12rem" }} align="end" />
                 </div>
               ) : null}
               {project ? (

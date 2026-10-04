@@ -32,7 +32,7 @@ import { ChevronDown, Download, Plus, Search } from "lucide-react";
 import { Button as LegacyButton } from "@/components/ui/button";
 import { Badge as LegacyBadge } from "@/components/ui/badge";
 import {
-  Select,
+  Select as LegacySelect,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -181,7 +181,7 @@ export function OneToday() {
           <PlusGlyph /> New
         </LegacyButton>
         <Input placeholder="Search" className="w-44" />
-        <Select defaultValue="open">
+        <LegacySelect defaultValue="open">
           <SelectTrigger className="w-28">
             <SelectValue />
           </SelectTrigger>
@@ -189,7 +189,7 @@ export function OneToday() {
             <SelectItem value="open">Open</SelectItem>
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
-        </Select>
+        </LegacySelect>
         <Tabs defaultValue="all">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>

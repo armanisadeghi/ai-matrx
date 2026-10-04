@@ -204,8 +204,7 @@ import {
 import { Search, X } from "lucide-react";
 import { CrumbTrailHeader, type CrumbOption } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { EDUCATION_NAV_ITEMS } from "@/features/education/components/EducationHeader";
-import { ControlScope, SearchField } from "@ai-matrx/design-system/controls";
-import { Button as ControlButton, ControlRow, SearchField, SegmentedControl, SplitButton } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, ControlRow, ControlScope, SearchField, SegmentedControl, SplitButton } from "@ai-matrx/design-system/controls";
 
 
 const SAMPLE_PATH = "/demos/ui-unification/samples/education-flashcards";
