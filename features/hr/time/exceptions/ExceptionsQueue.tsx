@@ -154,7 +154,10 @@ export function ExceptionsQueue({
   );
 
   const rows = queue.data?.rows ?? [];
-  const selected = rows.filter((row) => selectedIds.includes(row.id));
+  // Copy selection is independent of acknowledgement eligibility.
+  const selected = rows.filter(
+    (row) => selectedIds.includes(row.id) && row.allowedResolutions.includes("acknowledged"),
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 py-3 sm:px-4">
@@ -255,9 +258,6 @@ export function ExceptionsQueue({
                       selectedIds,
                       onSelectedIdsChange: setSelectedIds,
                       noun: "exception",
-                      // Only rows the server will actually accept an acknowledgement on.
-                      isRowSelectable: (row) =>
-                        row.allowedResolutions.includes("acknowledged"),
                     }
               }
               mobileCardsBreakpoint="lg"

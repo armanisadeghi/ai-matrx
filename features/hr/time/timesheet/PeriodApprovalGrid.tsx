@@ -175,7 +175,12 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   if (!payPeriodId) return <NoPeriodChosen org={orgRef} />;
 
   const rows = grid.data?.rows ?? [];
-  const selectedRows = rows.filter((row) => selectedIds.includes(row.employmentId));
+  // The table can copy every row; the review action counts only approvable timecards.
+  const selectedRows = rows.filter(
+    (row) => selectedIds.includes(row.employmentId) &&
+      row.openExceptionCount === 0 &&
+      row.openStepId !== null,
+  );
 
   const resolveRowContext = (target: HTMLElement | null) => {
     const id = target?.closest("[data-row-id]")?.getAttribute("data-row-id");
@@ -279,8 +284,6 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
                   selectedIds,
                   onSelectedIdsChange: setSelectedIds,
                   noun: "timecard",
-                  // Rows with an open exception cannot ride a bulk decision (§6.3).
-                  isRowSelectable: (row) => row.openExceptionCount === 0 && row.openStepId !== null,
                 }}
                 mobileCardsBreakpoint="lg"
                 mobileCards={(row) => <MobileRow row={row} org={orgRef} />}

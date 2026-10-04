@@ -116,7 +116,10 @@ export function PunchRegister({
   );
 
   const rows = register.data?.rows ?? [];
-  const selected = rows.filter((row) => selectedIds.includes(row.id));
+  // Copy selection includes closed records; correction actions still use live punches only.
+  const selected = rows.filter(
+    (row) => selectedIds.includes(row.id) && row.voidedAt === null,
+  );
 
   function exportCsv() {
     const csv = punchRegisterToCsv(rows, {});
@@ -227,8 +230,6 @@ export function PunchRegister({
                         selectedIds,
                         onSelectedIdsChange: setSelectedIds,
                         noun: "punch",
-                        // A correction on an already-voided punch is not a thing — the record is closed.
-                        isRowSelectable: (row) => row.voidedAt === null,
                       }
                     : undefined
                 }
