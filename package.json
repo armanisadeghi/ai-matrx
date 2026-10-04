@@ -701,6 +701,8 @@
     "check:motion-standard": "node scripts/check-motion-standard.mjs",
     "check:motion-standard:self-test": "node scripts/check-motion-standard.mjs --self-test",
     "check:cursor-law": "node scripts/check-cursor-law.mjs",
+    "check:agent-traffic-marker": "node scripts/check-agent-traffic-marker.mjs",
+    "check:agent-traffic-marker:self-test": "node scripts/check-agent-traffic-marker.mjs --self-test",
     "check:cursor-law:self-test": "node scripts/check-cursor-law.mjs --self-test",
     "preview:start": "bash scripts/agent-dev-server.sh start",
     "preview:stop": "bash scripts/agent-dev-server.sh stop",
