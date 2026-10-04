@@ -31301,6 +31301,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      _back_link_relation: {
+        Args: { p_key: string; p_organization_id: string; p_table_id: string }
+        Returns: Json
+      }
       _booking_availability: {
         Args: { p_organization_id: string; p_raw: Json }
         Returns: Json
