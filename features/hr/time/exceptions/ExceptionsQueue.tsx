@@ -68,8 +68,9 @@ import { ExceptionResolveControls } from "../shared/ExceptionsStrip";
 import { formatLocalDate, formatVariance, pluralize } from "../shared/format";
 import { HrTimeReadState, RefusalNotice } from "../shared/RefusalNotice";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
-import { EXCEPTION_KIND_LABELS, RESOLUTION_LABELS } from "../shared/vocabulary";
+import { EXCEPTION_KIND_LABELS, RESOLUTION_LABELS, SEVERITY_LABELS } from "../shared/vocabulary";
 import { listAttendanceExceptions } from "./api";
+import { readExceptionFilters } from "./readExceptionFilters";
 import { readOf } from "@/components/read-state/ReadGate";
 
 const DEFAULT_PAGE_SIZE = 50;
@@ -135,7 +136,7 @@ export function ExceptionsQueue({
           // A work DATE, not an instant — `from`/`to` bracket the single day.
           from: day ?? undefined,
           to: day ?? undefined,
-          ...readFilters(query),
+          ...readExceptionFilters(query),
         },
         {
           page: query.page,
@@ -298,29 +299,6 @@ export function ExceptionsQueue({
   );
 }
 
-function readFilters(query: MatrxDataTableQueryState) {
-  const filters: Record<string, unknown> = {};
-  for (const [id, value] of Object.entries(query.columnFilters)) {
-    if (!value) continue;
-    /*
-     * The live contract takes ONE value per axis, not a set. A multi-select column filter therefore
-     * narrows to its first choice rather than silently sending an array the server ignores — and
-     * the table still shows the user what they picked, so the narrowing is visible rather than a
-     * result set that quietly disagrees with the control.
-     */
-    if (id === "resolutionState" && value.kind === "select") {
-      filters.resolutionState = value.values?.[0] ?? value.value;
-    }
-    if (id === "severity" && value.kind === "select") {
-      filters.severity = value.values?.[0] ?? value.value;
-    }
-    if (id === "exceptionKind" && value.kind === "select") {
-      filters.exceptionKind = value.values?.[0] ?? value.value;
-    }
-  }
-  return filters;
-}
-
 function exceptionColumns({
   readOnly,
   mockCase,
@@ -354,6 +332,7 @@ function exceptionColumns({
       accessorKey: "exceptionKind",
       header: "What happened",
       filter: "select",
+      filterOptions: Object.entries(EXCEPTION_KIND_LABELS).map(([value, label]) => ({ value, label })),
       cell: (row) => (
         <span>
           <span className="font-medium">{EXCEPTION_KIND_LABELS[row.exceptionKind]}</span>
@@ -367,6 +346,7 @@ function exceptionColumns({
       accessorKey: "severity",
       header: "Severity",
       filter: "select",
+      filterOptions: Object.entries(SEVERITY_LABELS).map(([value, label]) => ({ value, label })),
       cell: (row) => <SeverityChip severity={row.severity} />,
     },
     {
@@ -374,6 +354,10 @@ function exceptionColumns({
       accessorKey: "resolutionState",
       header: "State",
       filter: "select",
+      filterOptions: Object.entries(RESOLUTION_LABELS).map(([value, label]) => ({
+        value,
+        label: value === "open" ? "Open" : label,
+      })),
       cell: (row) => (
         <span>
           {RESOLUTION_LABELS[row.resolutionState] === "Reopen"
