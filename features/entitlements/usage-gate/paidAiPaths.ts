@@ -8,7 +8,7 @@
 // 10-12) and the refusal handling for exactly these.
 //
 // Templates are the generated API schema's path keys, so a renamed or removed
-// endpoint fails `paid-ai-paths-are-real.test.ts`. A resume, rejoin,
+// endpoint fails `usage-refusal-reaches-the-right-door.test.ts`. A resume, rejoin,
 // tool-result post or cancel is never listed: it continues a running request,
 // which is never stopped (rule 5).
 
