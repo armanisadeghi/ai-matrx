@@ -14,8 +14,17 @@
 
 "use client";
 
+import { useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { GoogleContactsImportPanel } from "@/features/connectors/import/GoogleContactsImportPanel";
+import { DirectoryReview } from "@/features/google-workspace/directory/DirectoryReview";
+import { canUseGoogleOAuthInternalTest } from "@/features/marketing/google/internal-test-reviewer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectIsSuperAdmin,
+  selectUserEmail,
+} from "@/lib/redux/selectors/userSelectors";
 
 export interface GoogleContactsImportWindowProps {
   isOpen: boolean;
@@ -30,6 +39,13 @@ export default function GoogleContactsImportWindow({
   organizationId,
   initialExternalId,
 }: GoogleContactsImportWindowProps) {
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const email = useAppSelector(selectUserEmail);
+  const canReviewDirectory = canUseGoogleOAuthInternalTest(isSuperAdmin, email);
+  const [selectedTab, setSelectedTab] = useState<"contacts" | "directory">(
+    "contacts",
+  );
+  const activeTab = canReviewDirectory ? selectedTab : "contacts";
   if (!isOpen) return null;
   return (
     <WindowPanel
@@ -48,10 +64,43 @@ export default function GoogleContactsImportWindow({
       minHeight={360}
       bodyClassName="overflow-hidden"
     >
-      <GoogleContactsImportPanel
-        organizationId={organizationId}
-        initialExternalId={initialExternalId}
-      />
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          if (value === "contacts" || value === "directory") {
+            setSelectedTab(value);
+          }
+        }}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        {canReviewDirectory ? (
+          <TabsList className="mx-2 mt-2 grid h-auto grid-cols-2">
+            <TabsTrigger value="contacts" className="min-h-11 text-xs">
+              Google Contacts
+            </TabsTrigger>
+            <TabsTrigger value="directory" className="min-h-11 text-xs">
+              Directory
+            </TabsTrigger>
+          </TabsList>
+        ) : null}
+        <TabsContent
+          value="contacts"
+          className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+        >
+          <GoogleContactsImportPanel
+            organizationId={organizationId}
+            initialExternalId={initialExternalId}
+          />
+        </TabsContent>
+        {canReviewDirectory ? (
+          <TabsContent
+            value="directory"
+            className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+          >
+            <DirectoryReview organizationId={organizationId} />
+          </TabsContent>
+        ) : null}
+      </Tabs>
     </WindowPanel>
   );
 }

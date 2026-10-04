@@ -440,6 +440,7 @@ const READ_SHAPED_GOOGLE_POSTS: readonly string[] = [
   "/api/google-integrations/calendar/agenda",
   "/api/google-integrations/tasks/preview",
   "/api/google-integrations/tag-manager/inventory",
+  "/google-integrations/directory/people/preview",
   "/api/google-workspace/sheets/read",
 ];
 

@@ -112,16 +112,18 @@ describe("Google backend transport — organization gate", () => {
     expect(organizationHeaderOf(fetchMock)).toBe(CHOSEN_ORG);
   });
 
-  it("a read-shaped POST (Gmail search on mount) never opens the picker", async () => {
+  it.each([
+    ["/api/google-integrations/gmail/search", { query: "invoice" }],
+    [
+      "/google-integrations/directory/people/preview",
+      { connection_id: "connection-harbor" },
+    ],
+  ])("read-shaped POST %s never opens the picker", async (path, body) => {
     const fetchMock = mockFetchJson({ messages: [] });
     const opened = mountPickerAnswering(CHOSEN_ORG);
 
     await expect(
-      postGoogleBackend(
-        "/api/google-integrations/gmail/search",
-        { query: "invoice" },
-        "Unable to search Gmail.",
-      ),
+      postGoogleBackend(path, body, "Unable to read Google."),
     ).rejects.toMatchObject({ code: "organization_context_required" });
     expect(opened).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
