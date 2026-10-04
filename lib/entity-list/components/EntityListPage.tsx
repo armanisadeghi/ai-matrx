@@ -25,6 +25,7 @@ import {
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ControlScope } from "@ai-matrx/design-system/controls";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import {
   effectiveHiddenColumns,
@@ -1327,16 +1328,17 @@ export function EntityListPage<TRow>({
             </div>
           )}
           {headerActions && (
-            // A page's actions take the header's one control height whatever
-            // size the page asked for: the shell owns this row's geometry.
-            <div
+            // A page's actions are the 28px controls (`@ai-matrx/design-system/controls`
+            // Button); the scope makes a tap button among them match. The shell never forces a
+            // height onto what the page passes (THE CANONICAL-OVERRIDE LAW).
+            <ControlScope
               data-entity-list-actions=""
-              className="flex shrink-0 items-center gap-1.5 sm:gap-2 [&_a]:h-7 [&_button]:h-7 [&_button]:min-h-0"
+              className="flex shrink-0 items-center gap-1.5 sm:gap-2"
             >
               {typeof headerActions === "function"
                 ? headerActions(list)
                 : headerActions}
-            </div>
+            </ControlScope>
           )}
           {phoneWidth
             ? renderToolbar({ searchOpen: phoneSearchOpen, onSearchOpenChange: setPhoneSearchOpen })

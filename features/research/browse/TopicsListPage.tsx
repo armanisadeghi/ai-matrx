@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -32,14 +32,14 @@ function newTopicHref(name?: string): string {
 function NewTopicButton({ name }: { name?: string }) {
   const trimmed = name?.trim();
   return (
-    <Button asChild size="sm">
+    <ControlButton variant="primary" asChild>
       <Link href={newTopicHref(trimmed)} aria-label="New research topic">
         <Plus className="h-4 w-4" />
         <span className={trimmed ? undefined : "max-sm:sr-only"}>
           {trimmed ? `New topic "${trimmed}"` : "New topic"}
         </span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 }
 

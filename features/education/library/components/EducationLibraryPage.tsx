@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FilePlus2, LibraryBig } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { educationLibraryListConfig } from "../listConfig";
@@ -10,12 +10,12 @@ import { EDUCATION_LIBRARY_SURFACE } from "../librarySurface";
 
 export function EducationLibraryPage() {
   const createButton = (
-    <Button asChild size="sm">
+    <ControlButton variant="primary" asChild>
       <Link href="/education/start">
         <FilePlus2 className="h-4 w-4" />
         <span className="max-sm:sr-only">Create kit</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   return (
@@ -33,12 +33,12 @@ export function EducationLibraryPage() {
         surface={EDUCATION_LIBRARY_SURFACE}
         headerActions={
           <>
-            <Button asChild variant="outline" size="sm">
+            <ControlButton variant="outline" asChild>
               <Link href="/education/library/community">
                 <LibraryBig className="h-4 w-4" />
                 <span className="max-sm:sr-only">Community</span>
               </Link>
-            </Button>
+            </ControlButton>
             {createButton}
           </>
         }

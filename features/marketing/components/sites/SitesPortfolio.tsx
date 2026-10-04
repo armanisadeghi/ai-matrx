@@ -7,6 +7,7 @@ import { ArrowRight, Plus, SearchCheck } from "lucide-react";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { GovernedActionDialog } from "@/features/access-gate/components/GovernedActionDialog";
 import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActionError";
@@ -296,14 +297,12 @@ export function SitesPortfolio({
   };
 
   const addSiteButton = (
-    <Button
-      size="sm"
-      className="h-11 gap-1.5 lg:h-7"
+    <ControlButton variant="primary"
       onClick={() => router.push("/marketing/sites/new")}
     >
       <Plus className="h-3.5 w-3.5" />
       <span className="max-sm:sr-only">Add site</span>
-    </Button>
+    </ControlButton>
   );
 
   return (

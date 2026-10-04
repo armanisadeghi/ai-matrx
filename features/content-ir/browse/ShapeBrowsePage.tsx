@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -41,12 +41,12 @@ function ShapeAssistProducer({
  */
 export function ShapeBrowsePage() {
   const newShapeButton = (
-    <Button asChild size="sm">
+    <ControlButton variant="primary" asChild>
       <Link href={SHAPES_NEW_HREF} aria-label="New shape">
         <Plus className="h-4 w-4" />
         <span className="max-sm:sr-only">New shape</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   return (

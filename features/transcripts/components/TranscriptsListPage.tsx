@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { Library, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { transcriptListConfig } from "../browse/listConfig";
@@ -22,12 +22,12 @@ import { LIBRARIES_PATH } from "@/features/knowledge/modulePaths";
 
 export function TranscriptsListPage() {
   const newButton = (
-    <Button asChild size="sm">
+    <ControlButton variant="primary" asChild>
       <Link href="/transcripts/new" aria-label="New transcript">
         <Plus className="h-4 w-4" />
         <span className="max-sm:sr-only">New</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   // A WHOLE CHANNEL IS NOT FOUR MORE CLICKS OF "New". The four capture
@@ -41,7 +41,7 @@ export function TranscriptsListPage() {
   // the wrong audience can reach is a dead end with extra steps. The header
   // keeps its one-button density on phones (label collapses like "New").
   const wholeChannelButton = (
-    <Button asChild size="sm" variant="outline">
+    <ControlButton variant="outline" asChild>
       <Link
         href={LIBRARIES_PATH}
         aria-label="Catalogue a whole YouTube channel in Libraries"
@@ -49,7 +49,7 @@ export function TranscriptsListPage() {
         <Library className="h-4 w-4" />
         <span className="max-sm:sr-only">Whole channel</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   const headerActions = (

@@ -29,6 +29,8 @@ tester.run("no-canonical-component-override", rule, {
     { filename: file, code: '<div className="ml-auto flex min-w-0 shrink-0 items-center empty:hidden" />;' },
     // a host's own descendant hook (not a package internal)
     { filename: file, code: '<div className="contents [&_[data-row-id]:focus-visible]:bg-accent" />;' },
+    // a wrapper colouring its links is not geometry
+    { filename: file, code: '<div className="[&_a]:underline [&_button]:text-primary" />;' },
     // a host's own raw table styling its own cells
     { filename: file, code: '<tbody className="[&_td]:py-1.5 [&_tr:last-child]:border-0" />;' },
     // the package's declared per-row presentation hook
@@ -52,6 +54,8 @@ tester.run("no-canonical-component-override", rule, {
       code: '<div className="flex min-w-0 [&>*]:w-auto [&_[data-matrx-table-toolbar]]:flex-nowrap sm:[&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem] [&_[data-matrx-table-tabs]]:border-b-0" />;',
       errors: [{ messageId: "reach" }],
     },
+    // lib/entity-list/components/EntityListPage.tsx (the page actions' forced height)
+    { filename: file, code: '<div className="flex shrink-0 items-center [&_a]:h-7 [&_button]:h-7 [&_button]:min-h-0" />;', errors: [{ messageId: "reach" }] },
     // a class helper built outside JSX
     { filename: file, code: 'const c = cn("flex", "[&_tbody_tr]:h-8");', errors: [{ messageId: "reach" }] },
     // a class prop on another canonical component

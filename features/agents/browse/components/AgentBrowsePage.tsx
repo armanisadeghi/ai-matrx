@@ -23,7 +23,7 @@
 
 import Link from "next/link";
 import { Plus, Network } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListController } from "@/lib/entity-list/config";
 import { agentListConfig } from "../listConfig";
@@ -76,7 +76,7 @@ export function AgentBrowsePage({
   const newAgentButton = (list: EntityListController<AgentBrowseRow>) => {
     const system = systemAdmin && list.query.scope.kind === "system";
     return (
-      <Button asChild size="sm">
+      <ControlButton variant="primary" asChild>
         <Link
           href={newAgentHref(system)}
           aria-label={system ? "New system agent" : "New agent"}
@@ -86,7 +86,7 @@ export function AgentBrowsePage({
             {system ? "New system agent" : "New agent"}
           </span>
         </Link>
-      </Button>
+      </ControlButton>
     );
   };
 
@@ -129,12 +129,12 @@ export function AgentBrowsePage({
           </span>
         ) : (
         <>
-          <Button asChild variant="outline" size="sm">
+          <ControlButton variant="outline" asChild>
             <Link href="/agents/orchestras" aria-label="Orchestras">
               <Network className="h-4 w-4" />
               <span className="max-sm:sr-only">Orchestras</span>
             </Link>
-          </Button>
+          </ControlButton>
           {newAgentButton(list)}
         </>
         )

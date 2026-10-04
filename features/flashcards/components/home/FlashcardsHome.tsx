@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { INTELLIGENCE_ICON_NAME } from "@/components/icons/domain-icons";
 import { Flame, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import {
   EducationToolHeader,
   type EducationToolAction,
@@ -211,14 +212,12 @@ export function FlashcardsHome() {
   ];
 
   const createButton = (
-    <Button
-      size="sm"
-      className="h-11 min-w-11 lg:h-7 lg:min-w-0"
+    <ControlButton variant="primary"
       onClick={() => goTo(`${EDU_BASE}/new`)}
     >
       <Plus className="h-4 w-4" />
       <span className="max-sm:sr-only">Create deck</span>
-    </Button>
+    </ControlButton>
   );
   // The streak rides the scope-tab row, beside Create deck — never a row of
   // its own.

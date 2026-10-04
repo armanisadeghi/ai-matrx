@@ -23,7 +23,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrainCircuit, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import {
   ADMIN_MANDATES_HOME,
   adminMandateRecordHref,
@@ -364,10 +364,7 @@ export function MandateAdminListPage({
           ) : (
             <>
               {safeDefaults.length > 0 ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1"
+                <ControlButton variant="outline"
                   disabled={writes.busy !== null}
                   title="Move every mandate whose own pin is behind its Mandate Holder's newest version and graded safe"
                   onClick={() => void writes.advance(safeDefaults, "Mandate list: all safe")}
@@ -376,7 +373,7 @@ export function MandateAdminListPage({
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : null}
                   Advance all safe ({safeDefaults.length})
-                </Button>
+                </ControlButton>
               ) : null}
               <ImpactLegend />
               <MandateAdminPagesNav />

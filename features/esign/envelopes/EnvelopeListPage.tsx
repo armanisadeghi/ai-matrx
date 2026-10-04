@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -19,12 +19,12 @@ export function EnvelopeListPage() {
   const mayLoad = Boolean(authReady && userId && accessToken);
 
   const sendButton = (
-    <Button size="sm" asChild>
+    <ControlButton variant="primary" asChild>
       <Link href="/esign/new">
         <Send className="h-4 w-4" />
         <span className="max-sm:sr-only">Send for signature</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   return (

@@ -7,7 +7,7 @@
 // selected) and opens it.
 
 import { Loader2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -23,10 +23,10 @@ export function BoardsListPage() {
   const mayLoad = Boolean(authReady && userId && accessToken);
 
   const newButton = (
-    <Button size="sm" onClick={() => void newBoard()} disabled={creating}>
+    <ControlButton variant="primary" onClick={() => void newBoard()} disabled={creating}>
       {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
       <span className="max-sm:sr-only">New board</span>
-    </Button>
+    </ControlButton>
   );
 
   return (

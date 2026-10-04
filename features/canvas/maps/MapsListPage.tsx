@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -35,10 +35,10 @@ export function MapsListPage() {
   const mayLoad = canLoadMaps({ authReady, userId, accessToken });
 
   const newButton = (
-    <Button size="sm" onClick={() => setCreating(true)}>
+    <ControlButton variant="primary" onClick={() => setCreating(true)}>
       <Plus className="h-4 w-4" />
       <span className="max-sm:sr-only">New map</span>
-    </Button>
+    </ControlButton>
   );
 
   return (

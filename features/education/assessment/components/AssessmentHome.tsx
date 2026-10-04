@@ -17,6 +17,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { Building2, Plus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListSurfaceController } from "@/lib/entity-list/components/EntityListPage";
@@ -85,12 +86,12 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
   // Navigation is a link. In the tab row the label hides on a phone (the
   // accessible name stays); the empty state always shows it.
   const createButton = (showLabel: boolean) => (
-    <Button asChild size="sm">
+    <ControlButton variant="primary" asChild>
       <Link href={newHref} aria-label={`New ${config.noun}`}>
         <Plus className="h-4 w-4" />
         <span className={showLabel ? undefined : "max-sm:sr-only"}>New {config.noun}</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   // Each lane's empty state offers what fits THAT lane: a new quiz lands in

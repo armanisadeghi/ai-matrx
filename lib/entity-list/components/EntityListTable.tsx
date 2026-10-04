@@ -586,6 +586,9 @@ export function EntityListTable<TRow>({
       emptyHeader="hide"
       query={{
         mode: "controlled",
+        // The list's source sorts every row (the sort rides the fetch), so the table never
+        // re-sorts a page locally nor claims it did.
+        sourceProcessing: { sort: "source" },
         // 🚨 A PAGE THE URL NAMES SURVIVES THE LOAD (list-shell fix D,
         // 2026-09-28). The table clamps `page` to the page count it can see
         // and reports the clamp as a state change. While the rows are still

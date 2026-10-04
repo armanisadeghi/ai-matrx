@@ -53,6 +53,7 @@ export function isRestylingProp(name) {
 
 // An arbitrary variant whose selector names a package hook (`data-matrx-…`) or a table element.
 const PACKAGE_HOOK = /data-matrx-/;
+const CONTROL_ELEMENT = /\[&(?:_|>)(?:button|\[role=button\])(?:[\]_:.[>]|$)/;
 const TABLE_ELEMENT = /\[&(?:_|>)(?:table|thead|tbody|tfoot|tr|td|th)(?:[\]_:.[>]|$)/;
 
 /**
@@ -83,7 +84,14 @@ function arbitraryVariants(token) {
  */
 export function reachesIntoPackage(token, onElement = "") {
   const hostTable = /^(table|thead|tbody|tfoot|tr)$/.test(onElement);
-  return arbitraryVariants(token).some((v) => PACKAGE_HOOK.test(v) || (!hostTable && TABLE_ELEMENT.test(v)));
+  if (arbitraryVariants(token).some((v) => PACKAGE_HOOK.test(v) || (!hostTable && TABLE_ELEMENT.test(v)))) return true;
+  // FORCING A CONTROL'S GEOMETRY from a wrapper (`[&_button]:h-7`, `[&_button]:min-h-0`): the controls
+  // inside are package Buttons / tap buttons with one geometry — use them, never resize them.
+  const base = token.slice(token.lastIndexOf(":") + 1).replace(/^!/, "");
+  return (
+    /^(h|min-h|max-h|size|w|min-w)-/.test(base) &&
+    arbitraryVariants(token).some((v) => CONTROL_ELEMENT.test(v))
+  );
 }
 
 /** Files that ARE the package side (vendored copies, the guard's own fixtures) — never flagged. */

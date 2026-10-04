@@ -10,7 +10,7 @@ import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
@@ -23,12 +23,12 @@ export function CertifiedPrintersPage() {
   const config = useMemo(() => buildCertifiedPrinterListConfig(), []);
 
   const actions = (
-    <Button size="sm" asChild>
+    <ControlButton variant="primary" asChild>
       <Link href={certifyPrinterHref()}>
         <BadgeCheck className="h-4 w-4" />
         <span className="max-sm:sr-only">Certify a printer</span>
       </Link>
-    </Button>
+    </ControlButton>
   );
 
   return (

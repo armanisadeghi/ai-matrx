@@ -20,7 +20,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -116,12 +116,12 @@ export function MandateMemberListPage({
       }
       headerActions={
         canCreate ? (
-          <Button asChild size="sm" className="h-8 gap-1">
+          <ControlButton variant="primary" asChild>
             <Link href={newSoftMandateHref(level, orgId)}>
               <Plus className="h-3.5 w-3.5" />
               New mandate
             </Link>
-          </Button>
+          </ControlButton>
         ) : null
       }
     />

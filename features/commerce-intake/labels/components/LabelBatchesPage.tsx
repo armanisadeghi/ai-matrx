@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BadgeCheck, FileUp, Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -31,29 +31,26 @@ export function LabelBatchesPage() {
 
   const actions = (
     <div className="flex gap-2">
-      <Button variant="outline" size="sm" asChild>
+      <ControlButton variant="outline" asChild>
         <Link href="/commerce/labels/printers">
           <BadgeCheck className="h-4 w-4" />
           <span className="max-sm:sr-only">Printers</span>
         </Link>
-      </Button>
+      </ControlButton>
       {organizationId && (
         <>
-          <Button
-            variant="outline"
-            size="sm"
+          <ControlButton variant="outline"
             onClick={() => setImporting(true)}
           >
             <FileUp className="h-4 w-4" />
             <span className="max-sm:sr-only">Import IDs</span>
-          </Button>
-          <Button
-            size="sm"
+          </ControlButton>
+          <ControlButton variant="primary"
             onClick={() => setCreating(true)}
           >
             <Plus className="h-4 w-4" />
             <span className="max-sm:sr-only">New batch</span>
-          </Button>
+          </ControlButton>
         </>
       )}
     </div>
