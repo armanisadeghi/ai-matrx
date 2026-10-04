@@ -28,6 +28,7 @@ export interface CalendarCreateRecoveryRecord {
   request: CalendarCreateRequest;
   intent: CalendarCreateIntent | null;
   result: CalendarCreateResult | null;
+  problem: string | null;
   phase: CalendarCreatePhase;
 }
 
@@ -153,7 +154,50 @@ export function calendarCreateResultMatches(
     sameInstant(actual.ends_at, expected.ends_at) && sameAttendees(actual.attendees, expected.attendees) &&
     actual.send_updates === expected.send_updates &&
     actual.guest_notification_behavior === expected.guest_notification_behavior &&
-    actual.undo_notice === expected.undo_notice && nonempty(actual.provider_event_id);
+    actual.undo_notice === expected.undo_notice && actual.provider_event_id === expected.event_id;
+}
+
+function calendarCreateResultShape(value: unknown): value is CalendarCreateResult {
+  if (!record(value) || !nonempty(value.intent_id) || !record(value.result)) return false;
+  const result = value.result;
+  return (result.account_email === null || typeof result.account_email === "string") &&
+    nonempty(result.calendar_id) && nonempty(result.calendar_summary) &&
+    ["owner", "writer", "writerWithoutPrivateAccess"].includes(String(result.access_role)) &&
+    nonempty(result.event_id) && nonempty(result.summary) &&
+    (result.description === null || result.description === undefined || typeof result.description === "string") &&
+    typeof result.starts_at === "string" && Number.isFinite(Date.parse(result.starts_at)) &&
+    typeof result.ends_at === "string" && Number.isFinite(Date.parse(result.ends_at)) &&
+    normalizedAttendees(result.attendees) !== null &&
+    ["all", "externalOnly", "none"].includes(String(result.send_updates)) &&
+    nonempty(result.guest_notification_behavior) && nonempty(result.undo_notice) &&
+    nonempty(result.provider_event_id) &&
+    (result.provider_etag === null || result.provider_etag === undefined || typeof result.provider_etag === "string") &&
+    (result.reconciled_after_uncertain_insert === undefined || typeof result.reconciled_after_uncertain_insert === "boolean");
+}
+
+function validRecoveryRecord(saved: CalendarCreateRecoveryRecord): boolean {
+  const request = validateCalendarCreateRequest(saved.request);
+  if (!request || !nonempty(saved.actor_id) || !nonempty(saved.account_label) ||
+    !nonempty(saved.calendar_summary) || !nonempty(saved.time_zone) || !PHASES.includes(saved.phase) ||
+    !(saved.problem === null || (nonempty(saved.problem) && saved.problem.length <= 500))) return false;
+  const identity = { accountLabel: saved.account_label, calendarSummary: saved.calendar_summary };
+  const intentValid = saved.intent !== null &&
+    calendarCreateIntentMatchesRequest(saved.intent, request, identity);
+  const resultValid = saved.result !== null && calendarCreateResultShape(saved.result);
+  switch (saved.phase) {
+    case "preview_unavailable":
+      return saved.intent === null && saved.result === null && nonempty(saved.problem);
+    case "reviewed_unattempted":
+    case "attempting":
+    case "retryable_same_intent":
+      return intentValid && saved.result === null && saved.problem === null;
+    case "uncertain":
+      return intentValid && saved.result === null && nonempty(saved.problem);
+    case "reconciliation_required":
+      return intentValid && resultValid && !calendarCreateResultMatches(saved, saved.result) && nonempty(saved.problem);
+    case "consumed":
+      return intentValid && resultValid && calendarCreateResultMatches(saved, saved.result) && saved.problem === null;
+  }
 }
 
 export function readCalendarCreateRecovery(
@@ -181,6 +225,8 @@ export function readCalendarCreateRecovery(
   const identity = { accountLabel: value.account_label, calendarSummary: value.calendar_summary };
   const intent = value.intent === null ? null : calendarCreateIntentMatchesRequest(value.intent, request, identity) ? value.intent : null;
   if (value.intent !== null && !intent) return { record: null, warning: "An invalid calendar recovery record was ignored." };
+  const result = value.result === null ? null : calendarCreateResultShape(value.result) ? value.result : null;
+  if (value.result !== null && !result) return { record: null, warning: "An invalid calendar recovery record was ignored." };
   const saved: CalendarCreateRecoveryRecord = {
     version: 1,
     actor_id: actorId,
@@ -189,17 +235,23 @@ export function readCalendarCreateRecovery(
     time_zone: value.time_zone,
     request,
     intent,
-    result: record(value.result) ? value.result as CalendarCreateResult : null,
+    result,
+    problem: value.problem === null || typeof value.problem === "string" ? value.problem : null,
     phase: value.phase as CalendarCreatePhase,
   };
+  if (!validRecoveryRecord(saved)) return { record: null, warning: "An invalid calendar recovery record was ignored." };
   if (saved.phase !== "attempting") return { record: saved, warning: null };
-  const uncertain = { ...saved, phase: "uncertain" as const };
+  const uncertain = {
+    ...saved,
+    phase: "uncertain" as const,
+    problem: "This event create may have reached Google before the page reloaded.",
+  };
   writeCalendarCreateRecovery(storage, uncertain);
   return { record: uncertain, warning: "This event create may have reached Google before the page reloaded." };
 }
 
 export function writeCalendarCreateRecovery(storage: StorageDoor, saved: CalendarCreateRecoveryRecord): boolean {
-  if (!validateCalendarCreateRequest(saved.request) || !nonempty(saved.actor_id) || !PHASES.includes(saved.phase)) return false;
+  if (!validRecoveryRecord(saved)) return false;
   const raw = JSON.stringify(saved);
   try {
     storage.setItem(CALENDAR_CREATE_RECOVERY_KEY, raw);

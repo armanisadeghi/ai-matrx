@@ -23,7 +23,7 @@ import { googleCalendarHref } from "../record";
 import { calendarEventRow } from "./fixtures";
 
 function payloadOf(href: string): string {
-  const match = /\?eid=([^&]+)$/.exec(href);
+  const match = /\?eid=([^&]+)/.exec(href);
   if (!match) throw new Error(`no eid= payload in ${href}`);
   return match[1];
 }
@@ -31,6 +31,11 @@ function payloadOf(href: string): string {
 function decode(payload: string): string {
   const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
   return Buffer.from(base64, "base64").toString("utf8");
+}
+
+function requireHref(value: string | null): string {
+  if (!value) throw new Error("expected a Google Calendar event door");
+  return value;
 }
 
 test("the link is the event's VIEW, never Google's edit form", () => {
@@ -43,12 +48,12 @@ test("the link is the event's VIEW, never Google's edit form", () => {
 test("the payload is the documented pair, and `primary` is left to Google to resolve", () => {
   // `primary` is not a calendar id Google would accept in the payload; the
   // connected account's own calendar is what it resolves without one.
-  expect(decode(payloadOf(googleCalendarHref(calendarEventRow())!))).toBe("google-event-1");
+  expect(decode(payloadOf(requireHref(googleCalendarHref(calendarEventRow()))))).toBe("google-event-1");
   const shared = calendarEventRow({
     external_id: "google-event-2",
     calendar_id: "team@clinic.com",
   });
-  expect(decode(payloadOf(googleCalendarHref(shared)!))).toBe("google-event-2 team@clinic.com");
+  expect(decode(payloadOf(requireHref(googleCalendarHref(shared))))).toBe("google-event-2 team@clinic.com");
 });
 
 test("an id whose base64 carries `+` or `/` is base64url — the URL is not corrupted", () => {
@@ -58,7 +63,7 @@ test("an id whose base64 carries `+` or `/` is base64url — the URL is not corr
     const href = googleCalendarHref(
       calendarEventRow({ external_id: externalId, calendar_id: "cal>?1" }),
     );
-    const payload = payloadOf(href!);
+    const payload = payloadOf(requireHref(href));
     expect(payload).not.toContain("+");
     expect(payload).not.toContain("/");
     expect(payload).not.toContain("=");
@@ -69,4 +74,13 @@ test("an id whose base64 carries `+` or `/` is base64url — the URL is not corr
 
 test("an event with no Google id gets no door at all, rather than a broken one", () => {
   expect(googleCalendarHref(calendarEventRow({ external_id: "" }))).toBeNull();
+});
+
+test("a create result opens through the exact original Google account", () => {
+  const href = googleCalendarHref(
+    { external_id: "google-event-1", calendar_id: "team@clinic.com" },
+    "admin@admin.com",
+  );
+  expect(href).toContain("authuser=admin%40admin.com");
+  expect(decode(payloadOf(requireHref(href)))).toBe("google-event-1 team@clinic.com");
 });

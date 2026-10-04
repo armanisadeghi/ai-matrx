@@ -62,6 +62,7 @@ function saved(phase: CalendarCreateRecoveryRecord["phase"] = "reviewed_unattemp
     request,
     intent: preview,
     result: null,
+    problem: phase === "uncertain" ? "The confirmation outcome is unknown." : null,
     phase,
   };
 }
@@ -107,7 +108,7 @@ describe("calendar create recovery", () => {
       intent_id: preview.intent_id,
       result: {
         ...preview.preview,
-        provider_event_id: "google-provider-event-1",
+        provider_event_id: request.event_id,
         provider_etag: "etag-1",
         reconciled_after_uncertain_insert: false,
       },
@@ -131,5 +132,32 @@ describe("calendar create recovery", () => {
     };
     expect(writeCalendarCreateRecovery(storage, saved("attempting"))).toBe(false);
     expect(storage.getItem(CALENDAR_CREATE_RECOVERY_KEY)).toBeNull();
+  });
+
+  it("rejects fake consumed and impossible phase combinations on read and write", () => {
+    const fakeConsumed = { ...saved("consumed"), intent: null, result: null };
+    const storage = memoryStorage(JSON.stringify(fakeConsumed));
+    expect(readCalendarCreateRecovery(storage, "admin-user")).toEqual({
+      record: null,
+      warning: "An invalid calendar recovery record was ignored.",
+    });
+    expect(writeCalendarCreateRecovery(memoryStorage(), fakeConsumed)).toBe(false);
+    expect(writeCalendarCreateRecovery(memoryStorage(), {
+      ...saved("preview_unavailable"),
+      intent: preview,
+      problem: "Preview failed.",
+    })).toBe(false);
+  });
+
+  it("requires the returned provider event id to equal the reviewed stable id", () => {
+    const result = {
+      intent_id: preview.intent_id,
+      result: {
+        ...preview.preview,
+        provider_event_id: "another-provider-event",
+        provider_etag: "etag-1",
+      },
+    } satisfies CalendarCreateResult;
+    expect(calendarCreateResultMatches(saved(), result)).toBe(false);
   });
 });

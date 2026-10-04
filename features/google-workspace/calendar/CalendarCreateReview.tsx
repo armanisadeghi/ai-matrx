@@ -25,6 +25,7 @@ import {
   type StorageDoor,
 } from "./calendarCreateRecovery";
 import type { SelectedCalendar } from "./selectedCalendarService";
+import { googleCalendarHref } from "./record";
 
 export interface CalendarCreateTransport {
   preview(request: CalendarCreateRequest): Promise<CalendarCreateIntent>;
@@ -77,8 +78,12 @@ function sourceUrl(saved: CalendarCreateRecoveryRecord): string {
   return "https://calendar.google.com/calendar/";
 }
 
-function unavailable(error: unknown): boolean {
+function confirmUnavailable(error: unknown): boolean {
   return error instanceof BackendApiError && error.code === "calendar_create_unavailable";
+}
+
+function previewExpired(error: unknown): boolean {
+  return error instanceof BackendApiError && error.code === "calendar_create_preview_expired";
 }
 
 export function CalendarCreateReview({
@@ -110,6 +115,7 @@ export function CalendarCreateReview({
   const [timeZone, setTimeZone] = useState("");
   const [attendees, setAttendees] = useState("");
   const [sendUpdates, setSendUpdates] = useState<"" | CalendarCreateRequest["send_updates"]>("");
+  const [stableEventId, setStableEventId] = useState<string | null>(null);
   const [busy, setBusy] = useState<"preview" | "confirm" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const epoch = useRef(0);
@@ -147,7 +153,7 @@ export function CalendarCreateReview({
       organization_id: organizationId,
       connection_id: connectionId,
       calendar_id: calendar.id,
-      event_id: createEventId(),
+      event_id: stableEventId ?? createEventId(),
       summary: summary.trim(),
       description: description.trim() || null,
       starts_at: startsAt,
@@ -158,7 +164,9 @@ export function CalendarCreateReview({
     const pending: CalendarCreateRecoveryRecord = {
       version: 1, actor_id: actorId, account_label: accountLabel,
       calendar_summary: calendar.summary, time_zone: requestOverride ? saved?.time_zone ?? timeZone : timeZone,
-      request, intent: null, result: null, phase: "preview_unavailable",
+      request, intent: null, result: null,
+      problem: "Event review has not completed.",
+      phase: "preview_unavailable",
     };
     if (!writeCalendarCreateRecovery(storageDoor, pending)) {
       setError("This tab could not save recovery. Nothing was sent.");
@@ -174,13 +182,16 @@ export function CalendarCreateReview({
         accountLabel: pending.account_label,
         calendarSummary: pending.calendar_summary,
       })) {
-        const held = { ...pending, phase: "reconciliation_required" as const };
+        const held = {
+          ...pending,
+          problem: "Google returned an event review that does not match these details.",
+        };
         writeCalendarCreateRecovery(storageDoor, held);
         setSaved(held);
-        setError("Google returned a different event review. Check the original source before continuing.");
+        setError(held.problem);
         return;
       }
-      const reviewed = { ...pending, intent, phase: "reviewed_unattempted" as const };
+      const reviewed = { ...pending, intent, problem: null, phase: "reviewed_unattempted" as const };
       if (!writeCalendarCreateRecovery(storageDoor, reviewed)) {
         setSaved(pending);
         setError("The review could not be saved. The event cannot be confirmed.");
@@ -189,29 +200,38 @@ export function CalendarCreateReview({
       setSaved(reviewed);
     } catch (cause) {
       if (callEpoch !== epoch.current) return;
-      const failed = { ...pending, phase: unavailable(cause) ? "preview_unavailable" as const : "uncertain" as const };
+      const problem = getUserMessage(cause);
+      const failed = { ...pending, problem };
       if (!writeCalendarCreateRecovery(storageDoor, failed)) {
         setWarning("The review failure could not be saved in this tab. Do not create this event.");
       }
       setSaved(failed);
-      setError(getUserMessage(cause));
+      setError(problem);
     } finally {
       if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
     }
   }
 
   async function send() {
-    if (!saved?.intent || !scopeMatches || busyRef.current || expired(saved.intent)) return;
+    if (!saved?.intent || !scopeMatches || busyRef.current) return;
     if (!["reviewed_unattempted", "retryable_same_intent"].includes(saved.phase)) return;
+    if (expired(saved.intent)) {
+      requireFreshReview("This event review expired. Review it again before creating.");
+      return;
+    }
     const approvalEpoch = epoch.current;
     const serverPreview = saved.intent.preview;
     const approved = await confirmAction({
       title: "Create this Google Calendar event?",
       description: `${serverPreview.account_email} · ${serverPreview.calendar_summary} · ${serverPreview.starts_at} · ${serverPreview.attendees.length} guests · ${serverPreview.send_updates}`,
-      confirmText: "Create event",
+      confirmLabel: "Create event",
     });
     if (!approved || busyRef.current || approvalEpoch !== epoch.current) return;
-    const attempting = { ...saved, phase: "attempting" as const };
+    if (expired(saved.intent)) {
+      requireFreshReview("This event review expired while confirmation was open. Review it again.");
+      return;
+    }
+    const attempting = { ...saved, problem: null, phase: "attempting" as const };
     if (!writeCalendarCreateRecovery(storageDoor, attempting)) {
       setError("This tab could not save the attempt. Nothing was sent.");
       return;
@@ -224,27 +244,74 @@ export function CalendarCreateReview({
       const settled = {
         ...attempting,
         result,
+        problem: calendarCreateResultMatches(attempting, result)
+          ? null
+          : "Google returned a different event after confirmation. Check the original source.",
         phase: calendarCreateResultMatches(attempting, result) ? "consumed" as const : "reconciliation_required" as const,
       };
       if (!writeCalendarCreateRecovery(storageDoor, settled)) {
         setWarning("The result could not be saved in this tab. Do not create the event again.");
-        setSaved({ ...settled, phase: "reconciliation_required" });
+        setSaved(settled);
         return;
       }
       setSaved(settled);
       if (settled.phase === "reconciliation_required") setError("Google returned a different event. Check the original source before doing anything else.");
     } catch (cause) {
       if (callEpoch !== epoch.current) return;
-      let failed = { ...attempting, phase: unavailable(cause) ? "retryable_same_intent" as const : "uncertain" as const };
+      if (previewExpired(cause)) {
+        requireFreshReview("This event review expired before Google accepted it. Review it again.", attempting);
+        setError(getUserMessage(cause));
+        return;
+      }
+      const problem = getUserMessage(cause);
+      let failed = {
+        ...attempting,
+        problem: confirmUnavailable(cause) ? null : problem,
+        phase: confirmUnavailable(cause) ? "retryable_same_intent" as const : "uncertain" as const,
+      };
       if (!writeCalendarCreateRecovery(storageDoor, failed)) {
-        failed = { ...attempting, phase: "uncertain" as const };
+        failed = { ...attempting, problem: "The confirmation outcome could not be saved.", phase: "uncertain" as const };
         setWarning("The confirmation failure could not be saved in this tab. Do not retry it.");
       }
       setSaved(failed);
-      setError(getUserMessage(cause));
+      setError(problem);
     } finally {
       if (callEpoch === epoch.current) { setBusy(null); busyRef.current = false; }
     }
+  }
+
+  function requireFreshReview(
+    problem: string,
+    current: CalendarCreateRecoveryRecord | null = saved,
+  ) {
+    if (!current) return;
+    const fresh: CalendarCreateRecoveryRecord = {
+      ...current,
+      intent: null,
+      result: null,
+      problem,
+      phase: "preview_unavailable",
+    };
+    if (!writeCalendarCreateRecovery(storageDoor, fresh)) {
+      setError("This tab could not save the expired review. Nothing was sent.");
+      return;
+    }
+    setSaved(fresh);
+    setError(problem);
+  }
+
+  function editEvent() {
+    if (!saved || saved.phase !== "preview_unavailable" || !scopeMatches) return;
+    setSummary(saved.request.summary);
+    setDescription(saved.request.description ?? "");
+    setStartsAt(saved.request.starts_at);
+    setEndsAt(saved.request.ends_at);
+    setTimeZone(saved.time_zone);
+    setAttendees(saved.request.attendees?.map((guest) => guest.email).join(", ") ?? "");
+    setSendUpdates(saved.request.send_updates);
+    setStableEventId(saved.request.event_id);
+    setSaved(null);
+    setError(null);
   }
 
   function startAnother() {
@@ -254,7 +321,7 @@ export function CalendarCreateReview({
       return;
     }
     setSaved(null); setError(null); setWarning(null);
-    setSummary(""); setDescription(""); setStartsAt(""); setEndsAt(""); setTimeZone(""); setAttendees(""); setSendUpdates("");
+    setSummary(""); setDescription(""); setStartsAt(""); setEndsAt(""); setTimeZone(""); setAttendees(""); setSendUpdates(""); setStableEventId(null);
   }
 
   return (
@@ -292,20 +359,48 @@ export function CalendarCreateReview({
             <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>Review again</Button>
           ) : null}
           {saved.phase === "preview_unavailable" ? (
-            <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>{busy === "preview" ? "Reviewing…" : "Retry review"}</Button>
+            <div className="flex flex-wrap gap-2">
+              <p className="w-full text-destructive">{saved.problem}<ErrorAlchemyMenu error={saved.problem ?? undefined} /></p>
+              <Button type="button" size="sm" variant="outline" onClick={editEvent} disabled={!scopeMatches || busy !== null}>Edit event</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>{busy === "preview" ? "Reviewing…" : "Review again"}</Button>
+            </div>
           ) : null}
-          {(saved.phase === "reviewed_unattempted" && !expired(saved.intent)) || saved.phase === "retryable_same_intent" ? (
+          {(saved.phase === "reviewed_unattempted" || saved.phase === "retryable_same_intent") && !expired(saved.intent) ? (
             <Button type="button" size="sm" onClick={() => void send()} disabled={!scopeMatches || busy !== null}>{busy === "confirm" ? "Creating…" : saved.phase === "retryable_same_intent" ? "Retry same confirmation" : "Confirm create"}</Button>
+          ) : null}
+          {saved.phase === "retryable_same_intent" && expired(saved.intent) ? (
+            <Button type="button" size="sm" variant="outline" onClick={() => requireFreshReview("This event review expired. Review it again before creating.")}>Prepare fresh review</Button>
           ) : null}
           {["attempting", "uncertain", "reconciliation_required"].includes(saved.phase) ? (
             <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+              {saved.problem ? <p>{saved.problem}<ErrorAlchemyMenu error={saved.problem} /></p> : null}
               <p>This event may already exist. Check the original Google source before continuing.</p>
               <p>Review {saved.request.summary} at {saved.request.starts_at} in {saved.account_label} · {saved.calendar_summary}.</p>
               <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={sourceUrl(saved)} target="_blank" rel="noreferrer">Open Google Calendar for manual check <ExternalLink className="h-3.5 w-3.5" /></a>
             </div>
           ) : null}
           {saved.phase === "consumed" ? (
-            <div className="space-y-2"><p className="font-medium text-foreground">This event is settled.</p><Button type="button" size="sm" variant="outline" onClick={startAnother}>Create another event</Button></div>
+            <div className="space-y-2">
+              <p className="font-medium text-foreground">Event created in Google Calendar.</p>
+              <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                Google event ID
+                <Input readOnly value={saved.result?.result.provider_event_id ?? ""} className="font-mono" />
+              </label>
+              {saved.result ? (
+                <a
+                  className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline"
+                  href={googleCalendarHref({
+                    external_id: saved.result.result.provider_event_id,
+                    calendar_id: saved.result.result.calendar_id,
+                  }, saved.result.result.account_email) ?? undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open event in Google Calendar <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
+              <Button type="button" size="sm" variant="outline" onClick={startAnother}>Create another event</Button>
+            </div>
           ) : null}
         </div>
       ) : canCreateHere ? (

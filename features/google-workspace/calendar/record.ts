@@ -454,7 +454,10 @@ export function refreshedPhrase(syncedAt: string | null, now: Date): string {
  * segment). Google's documented view link is `?eid=<base64url of
  * "<eventId> <calendarId>">`, unpadded, and that is what this builds.
  */
-export function googleCalendarHref(event: CalendarEventRow): string | null {
+export function googleCalendarHref(
+  event: Pick<CalendarEventRow, "external_id" | "calendar_id">,
+  accountEmail?: string | null,
+): string | null {
   if (!event.external_id) return null;
   // The calendar id is part of the payload whenever it is a real calendar; Google
   // resolves the connected account's own calendar when it is absent.
@@ -473,7 +476,8 @@ export function googleCalendarHref(event: CalendarEventRow): string | null {
     return null;
   }
   const eid = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  return `https://calendar.google.com/calendar/u/0/r/event?eid=${eid}`;
+  const account = accountEmail ? `&authuser=${encodeURIComponent(accountEmail)}` : "";
+  return `https://calendar.google.com/calendar/u/0/r/event?eid=${eid}${account}`;
 }
 
 // ─── Frozen rows: the ONE set of words, list and record alike ────────────────
