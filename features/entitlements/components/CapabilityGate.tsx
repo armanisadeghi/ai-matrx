@@ -124,7 +124,6 @@ export function CapabilityGate({
       open={upgradeOpen}
       onOpenChange={setUpgradeOpen}
       reason={entitlement.definition.upgradeMessage}
-      onSelect={() => setUpgradeOpen(false)}
     />
   );
 

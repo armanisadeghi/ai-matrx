@@ -12,12 +12,11 @@
 //   capability regardless of tier/usage. Flip to `true` ONLY once the backend
 //   limit rows + the aidream-side spend re-check both exist. This is the
 //   per-capability rollout switch the brief mandates.
-// - `defaultFreeLimit` is a DESCRIPTIVE annotation only — it is NOT the source
-//   of any number the UI or resolver reads. The SINGLE SOURCE for every limit is
-//   `billing.capability_limit` in the DB: the `entitlement_snapshot` /
-//   `resolve_capability` RPCs report a capability's live limits + windows (for
+// - No limit lives here. The SINGLE SOURCE for every limit is the database
+//   (`billing.capability_limit`, `billing.plan_limit`): the `entitlement_snapshot`
+//   / `resolve_capability` RPCs report a capability's live limits + windows (for
 //   EVERY registered capability, enforced or not — F1), and the hook/meter read
-//   those. Keeping a limit here too would be a second source of truth; don't.
+//   those. A number here would be a second source of truth; don't add one.
 //
 // FLIPPED 2026-08-22 (education): all 16 `education.*` capabilities are
 // `enforced: true`, per Arman's Q2 ruling (2026-08-19 — "$5–8/mo billed
@@ -76,13 +75,6 @@ export interface CapabilityDefinition {
   description: string;
   /** Metering window. `null` = a pure gate (tier unlocks it; no usage count). */
   period: EntitlementPeriod;
-  /**
-   * DESCRIPTIVE design-intent annotation only — NOT read by the resolver, hook,
-   * or any meter. The authoritative free-tier numbers live in
-   * `billing.capability_limit` and reach the client via the snapshot RPC. Kept
-   * here purely as human-readable documentation of intent; never a second source.
-   */
-  defaultFreeLimit: number | null;
   /** Minimum tier for ANY access (a gate). Most capabilities are `free`. */
   minTier: EntitlementTier;
   /**
@@ -124,9 +116,8 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "platform.points",
     label: "AI points",
     description:
-      "The platform's unit of AI cost. Every model has a points price (points = $ per million tokens x 20,000, so 20,000 points = $1 of model spend) — which means one budget covers every model instead of a separate allowance per model.",
+      "The platform's unit of AI cost. Every model has a points price, so one budget covers every model instead of a separate allowance per model.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     scope: "org",
     enforced: false,
@@ -138,7 +129,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Messages",
     description: "Messages sent to an agent this month.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     scope: "org",
     enforced: false,
@@ -151,7 +141,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "How many agents can be live at once. A standing quota, not a monthly meter — counted by the agent system itself, not by billing.",
     period: null,
-    defaultFreeLimit: null,
     minTier: "free",
     scope: "org",
     enforced: false,
@@ -164,7 +153,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Total file storage. A standing quota, measured by the file system itself — billing reports the limit, not the usage.",
     period: null,
-    defaultFreeLimit: null,
     minTier: "free",
     scope: "org",
     enforced: false,
@@ -177,7 +165,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Outreach messages sent this month, across every connected mailbox. Enforced — outreach volume is what gets a sending domain blocklisted, so it is capped by plan on purpose.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "trial",
     scope: "org",
     enforced: true,
@@ -190,7 +177,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Runs of an automated marketing pipeline (crawls, audits, content generation). These are the expensive multi-step jobs, so they are capped by plan.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     scope: "org",
     enforced: true,
@@ -219,7 +205,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Send outreach email from a verified, warmed mailbox on the organization's own domain. Gated because free accounts are what get sending infrastructure blocklisted.",
     period: null,
-    defaultFreeLimit: null,
     minTier: "trial",
     scope: "org",
     enforced: true,
@@ -231,7 +216,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate flashcards",
     description: "AI-generate a flashcard deck from your material.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -243,7 +227,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "An agent finds an expert image on the open web for a card face — search plus a vision judgment per card.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -255,7 +238,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "AI-generate a verified image for a card face — generation plus adversarial accuracy checking, with retries.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -267,7 +249,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Per-card AI enrichment (mnemonics, examples, hints) — one model call per card, metered by card count.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -278,7 +259,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "AI tutor message",
     description: "Send a message to the grounded AI tutor.",
     period: "day",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -289,7 +269,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate study audio",
     description: "Generate an audio study session / podcast from your material.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -300,7 +279,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate a quiz",
     description: "AI-generate a quiz from your material.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -311,7 +289,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate a practice test",
     description: "AI-generate a full practice test / mock exam.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -322,7 +299,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate a mind map",
     description: "AI-generate a mind map from your material.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -334,7 +310,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "AI-generate mnemonics, analogies, and a memory-palace scaffold from your material.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -345,7 +320,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate smart notes",
     description: "AI-generate structured notes from your material.",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -357,7 +331,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Real-time AI grading of a free-response / spoken answer. The most compute-heavy AI path — burst-limited.",
     period: "day",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -369,7 +342,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "A voice-first oral-exam / interview / debate session: AI generates grounded prompts and grades each spoken answer on meaning. Metered as one generation-heavy session.",
     period: "day",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -381,7 +353,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Vision-AI grading of a PHOTOGRAPHED handwritten/typed worked answer — reads the image, grades on meaning, and returns a per-step breakdown. A compute-heavy vision path (photograph-your-work item answers + the standalone Grade My Work tool).",
     period: "day",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:
@@ -395,7 +366,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     period: null,
     // Generous default so we never recreate the 'Kahoot tax' resentment
     // (brief Coordinates: P10). Free rooms are large.
-    defaultFreeLimit: 50,
     minTier: "free",
     enforced: true,
     upgradeMessage: "Upgrade to host larger game rooms.",
@@ -406,7 +376,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     description:
       "Upload/import a document to turn into a study kit (the AI kit fan-out is the metered cost, not storage).",
     period: "month",
-    defaultFreeLimit: null,
     minTier: "free",
     enforced: true,
     upgradeMessage:

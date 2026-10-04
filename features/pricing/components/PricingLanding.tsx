@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowRight, Eye, GitBranch, Layers, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PricingGrid } from "./PricingGrid";
-import { type Plan } from "@/features/pricing/data";
+import type { CatalogPlan } from "@/features/entitlements/catalog/types";
 
 interface PricingLandingProps {
-  onSelect?: (plan: Plan) => void;
+  onSelect?: (plan: CatalogPlan) => void;
   className?: string;
 }
 
@@ -35,18 +36,6 @@ const PILLARS = [
 ];
 
 const FAQS = [
-  {
-    q: "Do I get charged when the trial ends?",
-    a: "No. We email you 3 days before. If you don't pick a plan, you drop to Free and keep your data.",
-  },
-  {
-    q: "Can I bring my own API key?",
-    a: "Yes — on Pro and above. Route to any frontier model with your own keys, or use ours.",
-  },
-  {
-    q: "What does annual billing actually save?",
-    a: "20% off the monthly price, billed once. Same plan, same features.",
-  },
   {
     q: "How is this different from LangChain or CrewAI?",
     a: "Those are toolkits — you assemble the harness. We are the harness, with observability, memory, and orchestration shipped as one production runtime.",
@@ -184,26 +173,20 @@ export function PricingLanding({ onSelect, className }: PricingLandingProps) {
             The frontier labs build the engines. <br />
             We build the vehicle.
           </h3>
-          <p className="text-pretty text-background/70">
-            Spend 14 days inside the harness. If it doesn't make your agents
-            more reliable, more observable, and more useful, we'll be surprised.
-          </p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => onSelect?.({ id: "pro" } as Plan)}
+            <Link
+              href="/sign-up"
               className="inline-flex items-center gap-2 rounded-lg bg-background px-5 py-2.5 text-sm font-medium text-foreground transition-transform hover:scale-[1.02] active:scale-[0.99]"
             >
-              Start free trial
+              Start free
               <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelect?.({ id: "enterprise" } as Plan)}
+            </Link>
+            <Link
+              href="/contact"
               className="inline-flex items-center gap-2 rounded-lg border border-background/30 px-5 py-2.5 text-sm font-medium text-background transition-colors hover:bg-background/10"
             >
               Talk to enterprise
-            </button>
+            </Link>
           </div>
         </div>
       </section>

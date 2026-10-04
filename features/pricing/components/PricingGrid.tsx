@@ -1,130 +1,114 @@
 "use client";
 
+// features/pricing/components/PricingGrid.tsx
+//
+// THE plan ladder: every listed plan from billing.plan_catalog(), grouped
+// Personal (Free + personal plans) and Business (company + Enterprise). Used
+// by the public /pricing page (seeded with the server read) and the demos.
+// The guest plan is never listed (listed_on_pricing = false).
+
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
 import { BillingToggle } from "./BillingToggle";
 import { PlanCard } from "./PlanCard";
+import { useChoosePlan } from "./useChoosePlan";
+import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
 import {
-  PLANS,
-  PLAN_CATEGORIES,
-  type BillingCycle,
-  type Plan,
-  type PlanCategory,
-} from "@/features/pricing/data";
+  maxAnnualSavingsPercent,
+  pricingGroups,
+  type PricingGroupId,
+} from "@/features/entitlements/catalog/format";
+import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
+import { Spinner } from "@/components/ui/spinner";
 
 interface PricingGridProps {
+  /** A server read of the catalog — renders with no client fetch. */
+  initialPlans?: CatalogPlan[];
   initialCycle?: BillingCycle;
-  initialCategory?: PlanCategory;
-  onSelect?: (plan: Plan) => void;
+  initialGroup?: PricingGroupId;
+  /** Override what choosing a plan does (demos). Defaults to useChoosePlan. */
+  onSelect?: (plan: CatalogPlan) => void;
   showHeader?: boolean;
-  showCategoryTabs?: boolean;
-  density?: "comfortable" | "compact";
   className?: string;
 }
 
-const CATEGORY_ORDER: PlanCategory[] = [
-  "free",
-  "individual",
-  "company",
-  "enterprise",
-];
-
 export function PricingGrid({
+  initialPlans,
   initialCycle = "annual",
-  initialCategory = "individual",
+  initialGroup = "personal",
   onSelect,
   showHeader = true,
-  showCategoryTabs = true,
   className,
 }: PricingGridProps) {
+  const catalog = usePlanCatalog(initialPlans);
+  const { signedIn, choose } = useChoosePlan();
   const [cycle, setCycle] = useState<BillingCycle>(initialCycle);
-  const [category, setCategory] = useState<PlanCategory>(initialCategory);
+  const [groupId, setGroupId] = useState<PricingGroupId>(initialGroup);
 
-  const visiblePlans = PLANS.filter((p) =>
-    category === "individual"
-      ? p.category === "individual" || p.category === "free"
-      : p.category === category,
-  );
+  if (catalog.status === "error") {
+    return (
+      <div className={cn("flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground", className)}>
+        <AlertTriangle className="h-4 w-4 text-destructive" />
+        Plans could not be loaded. Refresh to try again.
+      </div>
+    );
+  }
+  if (catalog.status !== "ready") {
+    return (
+      <div className={cn("flex items-center justify-center py-12", className)}>
+        <Spinner />
+      </div>
+    );
+  }
+
+  const groups = pricingGroups(catalog.plans);
+  const group = groups.find((g) => g.id === groupId) ?? groups[0];
+  const savings = maxAnnualSavingsPercent(catalog.plans.filter((p) => p.listedOnPricing));
+  const visiblePlans = group?.plans ?? [];
+  const handleSelect = onSelect ?? choose;
 
   return (
     <div className={cn("flex flex-col gap-8", className)}>
       {showHeader && (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col items-center text-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              14-day trial on every paid plan
-            </span>
-            <h2 className="text-balance text-3xl font-semibold tracking-tight md:text-5xl">
-              Pricing for the harness, <br className="hidden sm:block" />
-              not the model.
-            </h2>
-            <p className="max-w-xl text-pretty text-muted-foreground md:text-base">
-              Frontier models are extraordinary. Wrapped in AI Matrx, they
-              compound. Pick the plan that matches the load — graduate when you
-              outgrow it.
-            </p>
-          </div>
-
-          <div className="mx-auto flex flex-col items-center gap-4">
-            <BillingToggle value={cycle} onChange={setCycle} />
-            {showCategoryTabs && (
-              <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-border/60 bg-card/40 p-1 text-sm">
-                {CATEGORY_ORDER.map((c) => {
-                  const active = c === category;
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setCategory(c)}
-                      className={cn(
-                        "rounded-full px-4 py-1.5 font-medium transition-colors",
-                        active
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      {PLAN_CATEGORIES[c].label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground/80">
-              {PLAN_CATEGORIES[category].description}
-            </p>
-          </div>
+        <div className="mx-auto flex flex-col items-center gap-4">
+          <BillingToggle value={cycle} onChange={setCycle} savingsPercent={savings} />
+          {groups.length > 1 && (
+            <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-border/60 bg-card/40 p-1 text-sm">
+              {groups.map((g) => {
+                const active = g.id === group?.id;
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setGroupId(g.id)}
+                    className={cn(
+                      "rounded-full px-4 py-1.5 font-medium transition-colors",
+                      active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
       <div
         className={cn(
           "grid gap-4",
-          visiblePlans.length === 1 && "max-w-md mx-auto",
-          visiblePlans.length === 2 && "sm:grid-cols-2 max-w-3xl mx-auto",
-          visiblePlans.length === 3 && "sm:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto",
+          visiblePlans.length === 1 && "mx-auto max-w-md",
+          visiblePlans.length === 2 && "mx-auto max-w-3xl sm:grid-cols-2",
+          visiblePlans.length === 3 && "mx-auto max-w-5xl sm:grid-cols-2 lg:grid-cols-3",
           visiblePlans.length === 4 && "sm:grid-cols-2 lg:grid-cols-4",
           visiblePlans.length >= 5 && "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
         )}
       >
         {visiblePlans.map((plan) => (
-          <PlanCard key={plan.id} plan={plan} cycle={cycle} onSelect={onSelect} />
+          <PlanCard key={plan.planKey} plan={plan} cycle={cycle} signedIn={signedIn} onSelect={handleSelect} />
         ))}
-      </div>
-
-      <div className="flex flex-col items-center gap-1.5 text-center">
-        <p className="text-sm text-muted-foreground">
-          Need 20+ seats, custom redlines, or self-hosted?
-        </p>
-        <button
-          type="button"
-          onClick={() => onSelect?.(PLANS.find((p) => p.id === "enterprise")!)}
-          className="inline-flex items-center gap-1 text-sm font-medium underline-offset-4 hover:underline"
-        >
-          Talk to enterprise
-          <ArrowRight className="h-3.5 w-3.5" />
-        </button>
       </div>
     </div>
   );

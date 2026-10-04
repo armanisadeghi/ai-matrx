@@ -21,9 +21,9 @@ const POSITIONS = {
 } as const;
 
 export function UpgradeToast({
-  title = "You're hitting Pro features",
-  body = "Tool execution, replayable trajectories, and Sonnet-class models — all free for 14 days.",
-  ctaLabel = "Start trial",
+  title = "You're using paid features",
+  body = "Tool execution and replayable runs come with a paid plan.",
+  ctaLabel = "See plans",
   onCta,
   position = "bottom-right",
   className,

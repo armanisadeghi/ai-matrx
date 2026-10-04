@@ -1,12 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { BillingCycle } from "@/features/pricing/data";
-import { ANNUAL_DISCOUNT } from "@/features/pricing/data";
+import type { BillingCycle } from "@/features/entitlements/catalog/types";
 
 interface BillingToggleProps {
   value: BillingCycle;
   onChange: (cycle: BillingCycle) => void;
+  /** The largest annual saving the catalog offers (`maxAnnualSavingsPercent`); `null` hides the note. */
+  savingsPercent: number | null;
   size?: "sm" | "md";
   className?: string;
 }
@@ -14,11 +15,11 @@ interface BillingToggleProps {
 export function BillingToggle({
   value,
   onChange,
+  savingsPercent,
   size = "md",
   className,
 }: BillingToggleProps) {
   const isAnnual = value === "annual";
-  const pct = Math.round(ANNUAL_DISCOUNT * 100);
 
   return (
     <div
@@ -75,14 +76,16 @@ export function BillingToggle({
           Annual
         </button>
       </div>
-      <span
-        className={cn(
-          "font-medium tracking-tight transition-opacity",
-          isAnnual ? "text-emerald-600 dark:text-emerald-400 opacity-100" : "text-muted-foreground opacity-70",
-        )}
-      >
-        Save {pct}%
-      </span>
+      {savingsPercent != null && (
+        <span
+          className={cn(
+            "font-medium tracking-tight transition-opacity",
+            isAnnual ? "text-emerald-600 dark:text-emerald-400 opacity-100" : "text-muted-foreground opacity-70",
+          )}
+        >
+          Save up to {savingsPercent}%
+        </span>
+      )}
     </div>
   );
 }

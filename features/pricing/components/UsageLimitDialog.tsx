@@ -12,26 +12,35 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
 import {
-  PLANS,
-  formatPrice,
-  type BillingCycle,
-  type Plan,
-} from "@/features/pricing/data";
+  formatPoints,
+  planPrice,
+  pointsWindows,
+  upgradePlans,
+} from "@/features/entitlements/catalog/format";
+import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
+import { useChoosePlan } from "./useChoosePlan";
+
+/** How many paid plans the dialog offers side by side. */
+const OFFERED_PLAN_COUNT = 3;
 
 interface UsageLimitDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** What was hit (e.g. "Messages", "Tool calls", "Active agents"). */
-  meter?: string;
-  used?: number;
-  limit?: number;
-  /** When the meter resets — ISO string or Date. */
+  /** What was hit (e.g. "Messages", "AI points") — the capability label. */
+  meter: string;
+  used: number;
+  limit: number;
+  /** When the meter resets — ISO string or Date. Absent = no countdown shown. */
   resetsAt?: string | Date;
+  /** The person's plan name, when known. */
   currentPlan?: string;
-  recommendedPlanIds?: string[];
+  /** Plan keys to offer; defaults to the first paid personal plans in the catalog. */
+  recommendedPlanKeys?: string[];
   cycle?: BillingCycle;
-  onSelect?: (plan: Plan) => void;
+  /** Override what choosing a plan does (demos). Defaults to useChoosePlan. */
+  onSelect?: (plan: CatalogPlan) => void;
 }
 
 /**
@@ -57,38 +66,40 @@ function formatResetDate(date: Date) {
 export function UsageLimitDialog({
   open,
   onOpenChange,
-  meter = "Messages",
-  used = 100,
-  limit = 100,
+  meter,
+  used,
+  limit,
   resetsAt,
-  currentPlan = "Free",
-  recommendedPlanIds = ["entry", "pro", "plus"],
+  currentPlan,
+  recommendedPlanKeys,
   cycle = "annual",
   onSelect,
 }: UsageLimitDialogProps) {
   const reset =
-    resetsAt instanceof Date
-      ? resetsAt
-      : resetsAt
-        ? new Date(resetsAt)
-        : new Date(Date.now() + 6 * 86400 * 1000 + 4 * 3600 * 1000);
+    resetsAt instanceof Date ? resetsAt : resetsAt ? new Date(resetsAt) : null;
+  const resetMs = reset?.getTime() ?? null;
 
   const [countdown, setCountdown] = useState(() =>
-    formatCountdown(reset.getTime() - Date.now()),
+    resetMs == null ? null : formatCountdown(resetMs - Date.now()),
   );
 
   useEffect(() => {
-    if (!open) return undefined;
-    const tick = () =>
-      setCountdown(formatCountdown(reset.getTime() - Date.now()));
+    if (!open || resetMs == null) return undefined;
+    const tick = () => setCountdown(formatCountdown(resetMs - Date.now()));
     tick();
     const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
-  }, [open, reset]);
+  }, [open, resetMs]);
 
-  const recommended = recommendedPlanIds
-    .map((id) => PLANS.find((p) => p.id === id))
-    .filter((p): p is Plan => !!p);
+  const catalog = usePlanCatalog();
+  const { choose } = useChoosePlan();
+  const handleSelect = onSelect ?? choose;
+  const plans = catalog.status === "ready" ? catalog.plans : [];
+  const recommended = recommendedPlanKeys
+    ? recommendedPlanKeys
+        .map((key) => plans.find((p) => p.planKey === key))
+        .filter((p): p is CatalogPlan => !!p)
+    : upgradePlans(plans, "personal").slice(0, OFFERED_PLAN_COUNT);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,8 +133,8 @@ export function UsageLimitDialog({
                 </button>
               </div>
               <p className="text-sm text-muted-foreground">
-                You're on the {currentPlan} plan. Either wait for the reset or
-                step up — both work. No data is lost either way.
+                {currentPlan ? `You're on the ${currentPlan} plan. ` : ""}
+                Wait for the reset, or pick a bigger plan.
               </p>
             </div>
           </div>
@@ -146,84 +157,78 @@ export function UsageLimitDialog({
               <div
                 className="h-full rounded-full bg-foreground"
                 style={{
-                  width: `${Math.min(100, (used / limit) * 100)}%`,
+                  width: `${limit > 0 ? Math.min(100, (used / limit) * 100) : 100}%`,
                 }}
               />
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
-                Resets in{" "}
-                <span className="font-medium text-foreground tabular-nums">
-                  {countdown}
+            {reset && countdown && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Resets in{" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {countdown}
+                  </span>
                 </span>
-              </span>
-              <span className="hidden sm:inline">
-                {formatResetDate(reset)}
-              </span>
-            </div>
+                <span className="hidden sm:inline">
+                  {formatResetDate(reset)}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Plan options */}
+          {/* Plan options — from billing.plan_catalog(); hidden until it answers. */}
+          {recommended.length > 0 && (
           <div className="px-7 pb-6">
             <div className="mb-3 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <Crown className="h-3 w-3" />
                 Or skip the wait
               </span>
-              <span className="text-xs text-muted-foreground">
-                14-day trial · cancel anytime
-              </span>
             </div>
 
             <div className="grid gap-2.5 sm:grid-cols-3">
               {recommended.map((plan) => {
-                const { value, suffix } = formatPrice(plan, cycle);
+                const price = planPrice(plan, cycle);
+                const monthPoints = pointsWindows(plan).find((w) => w.period === "month");
                 return (
                   <button
-                    key={plan.id}
+                    key={plan.planKey}
                     type="button"
-                    onClick={() => onSelect?.(plan)}
+                    onClick={() => handleSelect(plan)}
                     className={cn(
                       "group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all",
-                      plan.recommended
+                      plan.badge
                         ? "border-foreground bg-foreground/[0.03]"
                         : "border-border/70 hover:border-foreground/40 hover:bg-accent/30",
                     )}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold">{plan.name}</span>
-                      {plan.recommended && (
+                      {plan.badge && (
                         <span className="rounded-full bg-foreground px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-background">
-                          Pick
+                          {plan.badge}
                         </span>
                       )}
                     </div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-xl font-semibold tabular-nums">
-                        {value}
+                        {price.kind === "paid" ? price.value : price.kind === "free" ? "$0" : "Custom"}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {suffix}
-                      </span>
+                      {price.kind === "paid" && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {price.suffix}
+                        </span>
+                      )}
                     </div>
-                    <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
-                      {plan.features
-                        .filter((f) => f.included)
-                        .slice(0, 2)
-                        .map((f) => (
-                          <li
-                            key={f.label}
-                            className="flex items-start gap-1.5"
-                          >
-                            <Check
-                              className="mt-0.5 h-3 w-3 shrink-0 text-foreground"
-                              strokeWidth={3}
-                            />
-                            <span className="line-clamp-1">{f.label}</span>
-                          </li>
-                        ))}
-                    </ul>
+                    {monthPoints && (
+                      <span className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                        <Check className="mt-0.5 h-3 w-3 shrink-0 text-foreground" strokeWidth={3} />
+                        {monthPoints.limit == null
+                          ? "Custom AI points"
+                          : `${formatPoints(monthPoints.limit)} AI points / month`}
+                      </span>
+                    )}
                     <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium">
                       Upgrade to {plan.name}
                       <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -233,6 +238,7 @@ export function UsageLimitDialog({
               })}
             </div>
           </div>
+          )}
 
           <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-muted/20 px-7 py-3">
             <button
@@ -243,7 +249,7 @@ export function UsageLimitDialog({
               I'll wait for the reset
             </button>
             <a
-              href="#"
+              href="/pricing"
               className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
             >
               See full pricing

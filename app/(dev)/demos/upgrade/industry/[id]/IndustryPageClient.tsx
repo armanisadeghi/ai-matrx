@@ -9,7 +9,7 @@ export function IndustryPageClient({ industry }: { industry: IndustryId }) {
     <IndustryUpgrade
       industry={industry}
       onSelect={(plan) => {
-        toast.success(`${plan.name ?? plan.id} selected`, {
+        toast.success(`${plan.name} selected`, {
           description: "Demo only — would route to checkout in production.",
         });
       }}

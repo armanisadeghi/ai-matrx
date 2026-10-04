@@ -9,30 +9,36 @@ import {
   ShieldCheck,
   Crown,
   X,
-  Zap
 } from "lucide-react";
 import { BillingToggle } from "./BillingToggle";
+import { useChoosePlan } from "./useChoosePlan";
+import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
 import {
-  PLANS,
-  TRIAL_DAYS,
-  formatPrice,
-  type BillingCycle,
-  type Plan,
-} from "@/features/pricing/data";
+  formatPoints,
+  maxAnnualSavingsPercent,
+  planFeatureRows,
+  planPrice,
+  pointsWindows,
+  upgradePlans,
+  type PricingGroupId,
+} from "@/features/entitlements/catalog/format";
+import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
+import { Spinner } from "@/components/ui/spinner";
 
 interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Restrict the visible plans (e.g. "individual" only). Defaults to individual + free. */
-  category?: "individual" | "company";
+  /** Which plan family to offer. Defaults to personal plans. */
+  group?: PricingGroupId;
   initialCycle?: BillingCycle;
-  initialPlanId?: string;
+  /** Plan key to preselect; defaults to the badged plan, else the first. */
+  initialPlanKey?: string;
   reason?: string;
-  onSelect?: (plan: Plan, cycle: BillingCycle) => void;
+  /** Override what choosing a plan does (demos). Defaults to useChoosePlan. */
+  onSelect?: (plan: CatalogPlan, cycle: BillingCycle) => void;
 }
 
 const TRUST_POINTS = [
-  { icon: Zap, label: `${TRIAL_DAYS}-day trial` },
   { icon: ShieldCheck, label: "Cancel anytime" },
   { icon: Crown, label: "All frontier models" },
 ];
@@ -40,24 +46,26 @@ const TRUST_POINTS = [
 export function UpgradeModal({
   open,
   onOpenChange,
-  category = "individual",
+  group = "personal",
   initialCycle = "annual",
-  initialPlanId,
+  initialPlanKey,
   reason,
   onSelect,
 }: UpgradeModalProps) {
   const [cycle, setCycle] = useState<BillingCycle>(initialCycle);
-  const visible = PLANS.filter((p) =>
-    category === "individual"
-      ? p.category === "individual"
-      : p.category === "company",
-  );
-  const defaultId =
-    initialPlanId ??
-    visible.find((p) => p.recommended)?.id ??
-    visible[0]?.id;
-  const [selectedId, setSelectedId] = useState<string | undefined>(defaultId);
-  const selected = visible.find((p) => p.id === selectedId);
+  const catalog = usePlanCatalog();
+  const { choose } = useChoosePlan();
+  const visible = catalog.status === "ready" ? upgradePlans(catalog.plans, group) : [];
+  const savings = maxAnnualSavingsPercent(visible);
+  const defaultKey =
+    initialPlanKey ?? visible.find((p) => p.badge)?.planKey ?? visible[0]?.planKey;
+  const [pickedKey, setPickedKey] = useState<string | undefined>(undefined);
+  const selectedKey = pickedKey ?? defaultKey;
+  const selected = visible.find((p) => p.planKey === selectedKey);
+  const confirm = (plan: CatalogPlan) => {
+    if (onSelect) onSelect(plan, cycle);
+    else choose(plan);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -128,13 +136,6 @@ export function UpgradeModal({
               <h2 className="text-balance text-3xl font-semibold leading-[1.1] tracking-tight lg:text-4xl">
                 Wrap the frontier in a harness that ships.
               </h2>
-              <p className="max-w-md text-pretty text-sm leading-relaxed text-background/70">
-                The model reasons. We give it memory, tools, observability, and
-                state that survives every context window.{" "}
-                <span className="text-background">
-                  Start with {TRIAL_DAYS} days on us.
-                </span>
-              </p>
 
               <ul className="mt-2 grid gap-2.5 text-sm">
                 {[
@@ -173,22 +174,31 @@ export function UpgradeModal({
                 <h3 className="text-base font-semibold tracking-tight">
                   Choose your tier
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  Switch or cancel anytime during the trial.
-                </p>
               </div>
-              <BillingToggle value={cycle} onChange={setCycle} size="sm" />
+              <BillingToggle value={cycle} onChange={setCycle} savingsPercent={savings} size="sm" />
             </div>
 
             <div className="flex max-h-[360px] flex-col gap-2 overflow-y-auto pr-1 -mr-1">
+              {catalog.status === "loading" || catalog.status === "idle" ? (
+                <div className="flex justify-center py-8">
+                  <Spinner />
+                </div>
+              ) : null}
+              {catalog.status === "error" ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Plans could not be loaded. Try again later.
+                </p>
+              ) : null}
               {visible.map((plan) => {
-                const active = plan.id === selectedId;
-                const { value, suffix } = formatPrice(plan, cycle);
+                const active = plan.planKey === selectedKey;
+                const price = planPrice(plan, cycle);
+                const value = price.kind === "paid" ? price.value : price.kind === "free" ? "$0" : "Custom";
+                const suffix = price.kind === "paid" ? price.suffix : "";
                 return (
                   <button
-                    key={plan.id}
+                    key={plan.planKey}
                     type="button"
-                    onClick={() => setSelectedId(plan.id)}
+                    onClick={() => setPickedKey(plan.planKey)}
                     className={cn(
                       "group flex items-center justify-between gap-4 rounded-xl border px-4 py-3 text-left transition-all",
                       active
@@ -247,19 +257,22 @@ export function UpgradeModal({
                   What's included in {selected.name}
                 </div>
                 <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                  {selected.features
+                  {pointsWindows(selected).map((w) => (
+                    <li key={w.period} className="flex items-start gap-2 text-xs">
+                      <Check className="mt-0.5 h-3 w-3 shrink-0 text-foreground" strokeWidth={3} />
+                      <span>
+                        {w.limit == null ? "Custom" : formatPoints(w.limit)} AI points · {w.label}
+                      </span>
+                    </li>
+                  ))}
+                  {planFeatureRows(selected)
                     .filter((f) => f.included)
-                    .slice(0, 6)
                     .map((f) => (
-                      <li
-                        key={f.label}
-                        className="flex items-start gap-2 text-xs"
-                      >
-                        <Check
-                          className="mt-0.5 h-3 w-3 shrink-0 text-foreground"
-                          strokeWidth={3}
-                        />
-                        <span>{f.label}</span>
+                      <li key={f.capability} className="flex items-start gap-2 text-xs">
+                        <Check className="mt-0.5 h-3 w-3 shrink-0 text-foreground" strokeWidth={3} />
+                        <span>
+                          {f.label} · {f.value}
+                        </span>
                       </li>
                     ))}
                 </ul>
@@ -270,15 +283,12 @@ export function UpgradeModal({
               <button
                 type="button"
                 disabled={!selected}
-                onClick={() => selected && onSelect?.(selected, cycle)}
+                onClick={() => selected && confirm(selected)}
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background transition-all hover:bg-foreground/90 active:scale-[0.99] disabled:opacity-40"
               >
-                Start {TRIAL_DAYS}-day trial of {selected?.name ?? "—"}
+                Choose {selected?.name ?? "a plan"}
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </button>
-              <p className="text-center text-[11px] text-muted-foreground">
-                No charge today. We'll remind you 3 days before the trial ends.
-              </p>
             </div>
           </div>
         </div>

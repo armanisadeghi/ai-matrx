@@ -7,18 +7,21 @@ import {
   ShieldCheck,
   Crown,
   X,
-  Zap
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { BillingToggle } from "../BillingToggle";
+import { useChoosePlan } from "../useChoosePlan";
+import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
 import {
-  PLANS,
-  TRIAL_DAYS,
-  formatPrice,
-  type BillingCycle,
-  type Plan,
-} from "@/features/pricing/data";
+  formatPoints,
+  maxAnnualSavingsPercent,
+  planFeatureRows,
+  planPrice,
+  pointsWindows,
+  upgradePlans,
+} from "@/features/entitlements/catalog/format";
+import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
 import { INDUSTRIES, type IndustryId } from "./industries";
 
 interface IndustryUpgradeModalProps {
@@ -28,13 +31,12 @@ interface IndustryUpgradeModalProps {
   initialCycle?: BillingCycle;
   /** Override the recommended plan from industries.ts. */
   initialPlanId?: string;
-  /** Allow trial CTA copy override. */
+  /** Extra words after the CTA label. */
   ctaSuffix?: string;
-  onSelect?: (plan: Plan, cycle: BillingCycle) => void;
+  onSelect?: (plan: CatalogPlan, cycle: BillingCycle) => void;
 }
 
 const TRUST_POINTS = [
-  { icon: Zap, label: `${TRIAL_DAYS}-day trial` },
   { icon: ShieldCheck, label: "Cancel anytime" },
   { icon: Crown, label: "All frontier models" },
 ];
@@ -52,19 +54,21 @@ export function IndustryUpgradeModal({
   const Icon = cfg.icon;
 
   const recommendedId = initialPlanId ?? cfg.recommendedPlanId;
-  const recommendedPlan = PLANS.find((p) => p.id === recommendedId);
+  const catalog = usePlanCatalog();
+  const { choose } = useChoosePlan();
+  const plans = catalog.status === "ready" ? catalog.plans : [];
+  const recommendedPlan = plans.find((p) => p.planKey === recommendedId);
 
-  // Show recommended + neighboring tiers in the same category, capped at 4 picks.
-  const sameCategory = recommendedPlan
-    ? PLANS.filter((p) => p.category === recommendedPlan.category)
-    : [];
-  const visible = sameCategory.length ? sameCategory.slice(0, 4) : PLANS.slice(0, 4);
+  // Show the recommended plan's paid family (personal or business), capped at 4.
+  const family = recommendedPlan?.perSeat ? "business" : "personal";
+  const visible = upgradePlans(plans, family).slice(0, 4);
+  const savings = maxAnnualSavingsPercent(visible);
 
   const [cycle, setCycle] = useState<BillingCycle>(initialCycle);
   const [selectedId, setSelectedId] = useState<string | undefined>(
     recommendedId,
   );
-  const selected = visible.find((p) => p.id === selectedId) ?? recommendedPlan;
+  const selected = visible.find((p) => p.planKey === selectedId) ?? recommendedPlan;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,22 +190,24 @@ export function IndustryUpgradeModal({
                   Recommended for {cfg.label.toLowerCase()} teams
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Switch or cancel anytime during the trial.
+                  Switch or cancel anytime.
                 </p>
               </div>
-              <BillingToggle value={cycle} onChange={setCycle} size="sm" />
+              <BillingToggle value={cycle} onChange={setCycle} savingsPercent={savings} size="sm" />
             </div>
 
             <div className="flex flex-col gap-2">
               {visible.map((plan) => {
-                const active = plan.id === selectedId;
-                const isRecommended = plan.id === recommendedId;
-                const { value, suffix } = formatPrice(plan, cycle);
+                const active = plan.planKey === selectedId;
+                const isRecommended = plan.planKey === recommendedId;
+                const price = planPrice(plan, cycle);
+                const value = price.kind === "paid" ? price.value : price.kind === "free" ? "$0" : "Custom";
+                const suffix = price.kind === "paid" ? price.suffix : "";
                 return (
                   <button
-                    key={plan.id}
+                    key={plan.planKey}
                     type="button"
-                    onClick={() => setSelectedId(plan.id)}
+                    onClick={() => setSelectedId(plan.planKey)}
                     className={cn(
                       "group flex items-center justify-between gap-4 rounded-xl border px-4 py-3 text-left transition-all",
                       active
@@ -260,19 +266,22 @@ export function IndustryUpgradeModal({
                   What {cfg.label.toLowerCase()} teams use in {selected.name}
                 </div>
                 <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                  {selected.features
+                  {pointsWindows(selected).map((w) => (
+                    <li key={w.period} className="flex items-start gap-2 text-xs">
+                      <Check className="mt-0.5 h-3 w-3 shrink-0 text-foreground" strokeWidth={3} />
+                      <span>
+                        {w.limit == null ? "Custom" : formatPoints(w.limit)} AI points · {w.label}
+                      </span>
+                    </li>
+                  ))}
+                  {planFeatureRows(selected)
                     .filter((f) => f.included)
-                    .slice(0, 6)
                     .map((f) => (
-                      <li
-                        key={f.label}
-                        className="flex items-start gap-2 text-xs"
-                      >
-                        <Check
-                          className="mt-0.5 h-3 w-3 shrink-0 text-foreground"
-                          strokeWidth={3}
-                        />
-                        <span>{f.label}</span>
+                      <li key={f.capability} className="flex items-start gap-2 text-xs">
+                        <Check className="mt-0.5 h-3 w-3 shrink-0 text-foreground" strokeWidth={3} />
+                        <span>
+                          {f.label} · {f.value}
+                        </span>
                       </li>
                     ))}
                 </ul>
@@ -283,16 +292,17 @@ export function IndustryUpgradeModal({
               <button
                 type="button"
                 disabled={!selected}
-                onClick={() => selected && onSelect?.(selected, cycle)}
+                onClick={() => {
+                  if (!selected) return;
+                  if (onSelect) onSelect(selected, cycle);
+                  else choose(selected);
+                }}
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background transition-all hover:bg-foreground/90 active:scale-[0.99] disabled:opacity-40"
               >
-                Start {TRIAL_DAYS}-day {cfg.label} trial
+                Choose {selected?.name ?? "a plan"}
                 {ctaSuffix ? ` · ${ctaSuffix}` : ""}
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </button>
-              <p className="text-center text-[11px] text-muted-foreground">
-                No charge today. We'll remind you 3 days before the trial ends.
-              </p>
             </div>
           </div>
         </div>

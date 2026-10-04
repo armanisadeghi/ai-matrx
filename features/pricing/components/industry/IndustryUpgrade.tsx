@@ -5,16 +5,16 @@ import { ArrowRight, Check, Quote, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BillingToggle } from "../BillingToggle";
 import { PlanCard } from "../PlanCard";
-import {
-  PLANS,
-  type BillingCycle,
-  type Plan,
-} from "@/features/pricing/data";
+import { useChoosePlan } from "../useChoosePlan";
+import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
+import { annualSavingsPercent } from "@/features/entitlements/catalog/format";
+import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
 import { INDUSTRIES, type IndustryId } from "./industries";
 
 interface IndustryUpgradeProps {
   industry: IndustryId;
-  onSelect?: (plan: Plan) => void;
+  /** Override what choosing a plan does (demos). Defaults to useChoosePlan. */
+  onSelect?: (plan: CatalogPlan) => void;
   /** Show as inline page section (default) or compact card. */
   variant?: "page" | "compact";
   className?: string;
@@ -28,7 +28,13 @@ export function IndustryUpgrade({
 }: IndustryUpgradeProps) {
   const cfg = INDUSTRIES[industry];
   const [cycle, setCycle] = useState<BillingCycle>("annual");
-  const recommended = PLANS.find((p) => p.id === cfg.recommendedPlanId);
+  const catalog = usePlanCatalog();
+  const { signedIn, choose } = useChoosePlan();
+  const handleSelect = onSelect ?? choose;
+  const recommended =
+    catalog.status === "ready"
+      ? catalog.plans.find((p) => p.planKey === cfg.recommendedPlanId)
+      : undefined;
   const Icon = cfg.icon;
 
   if (variant === "compact") {
@@ -58,7 +64,7 @@ export function IndustryUpgrade({
         {recommended && (
           <button
             type="button"
-            onClick={() => onSelect?.(recommended)}
+            onClick={() => handleSelect(recommended)}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-transform hover:scale-[1.01]"
           >
             Try {recommended.name} for {cfg.label}
@@ -90,10 +96,10 @@ export function IndustryUpgrade({
             {recommended && (
               <button
                 type="button"
-                onClick={() => onSelect?.(recommended)}
+                onClick={() => handleSelect(recommended)}
                 className="inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.02]"
               >
-                Start 14-day trial of {recommended.name}
+                Choose {recommended.name}
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             )}
@@ -186,18 +192,13 @@ export function IndustryUpgrade({
             Recommended for {cfg.label.toLowerCase()}
           </span>
           <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-            Start on {recommended?.name ?? "Pro"}.
+            {recommended ? `Start on ${recommended.name}.` : "Start on the right plan."}
             <br />
             Move up if your trajectory says so.
           </h2>
-          <p className="text-sm text-muted-foreground">
-            14 days free, no card, full feature parity with the paid tier. We
-            email you 3 days before the trial ends — never a surprise charge.
-          </p>
           <div className="mt-3 flex flex-col gap-2">
             {[
               "Cancel or downgrade anytime",
-              "Bring your own API keys on Pro and above",
               "Migrate workspaces & memory between tiers",
             ].map((line) => (
               <div
@@ -213,11 +214,15 @@ export function IndustryUpgrade({
             ))}
           </div>
           <div className="mt-2">
-            <BillingToggle value={cycle} onChange={setCycle} />
+            <BillingToggle
+              value={cycle}
+              onChange={setCycle}
+              savingsPercent={recommended ? annualSavingsPercent(recommended) : null}
+            />
           </div>
         </div>
         {recommended && (
-          <PlanCard plan={recommended} cycle={cycle} onSelect={onSelect} />
+          <PlanCard plan={recommended} cycle={cycle} signedIn={signedIn} onSelect={handleSelect} />
         )}
       </section>
     </div>

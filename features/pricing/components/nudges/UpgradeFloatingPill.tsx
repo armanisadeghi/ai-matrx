@@ -12,8 +12,8 @@ interface UpgradeFloatingPillProps {
 }
 
 export function UpgradeFloatingPill({
-  message = "Try Pro free for 14 days",
-  ctaLabel = "Start trial",
+  message = "More AI points on a bigger plan",
+  ctaLabel = "See plans",
   onCta,
   className,
 }: UpgradeFloatingPillProps) {

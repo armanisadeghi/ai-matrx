@@ -446,6 +446,19 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "The live Stripe checkout endpoint returns 503 until Education Premium billing is configured.",
     surfaces: ["/pricing Premium plan action"],
   },
+  "billing.plan-checkout": {
+    id: "billing.plan-checkout",
+    label: "Upgrade your plan",
+    owner: "entitlements",
+    promise:
+      "Pick any paid plan, pay securely, and get its bigger allowances on your account right away.",
+    stage: "planned",
+    // 2026-10-03: the plan ladder (billing.plan_catalog) is live and shown on
+    // /pricing and in every upgrade dialog, but no plan has a Stripe price and
+    // there are zero subscriptions — there is no checkout to open.
+    blockedBy: "No plan has a Stripe price yet, so there is no checkout to open.",
+    surfaces: ["/pricing plan cards", "Usage limit dialog", "Upgrade dialogs"],
+  },
   "content-plan.design-vision-agent": {
     id: "content-plan.design-vision-agent",
     label: "Generate a design vision",

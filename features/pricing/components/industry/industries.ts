@@ -26,7 +26,7 @@ export type IndustryConfig = {
   eyebrow: string;
   headline: string;
   subhead: string;
-  /** Recommended plan id from PLANS. */
+  /** Recommended plan — a billing.plan plan_key from billing.plan_catalog(). */
   recommendedPlanId: string;
   /** Two-column proof points. */
   proof: { metric: string; label: string }[];
@@ -89,7 +89,7 @@ export const INDUSTRIES: Record<IndustryId, IndustryConfig> = {
       "An engineer that ships, reviews, and never forgets the architecture you wrote down on Monday.",
     subhead:
       "Multi-step refactors, full-PR reviews, on-call triage, repo-wide migrations — backed by externalized memory and reliable tools.",
-    recommendedPlanId: "pro",
+    recommendedPlanId: "personal-pro",
     tag: "Coding",
     icon: Code,
     proof: [
@@ -129,7 +129,7 @@ export const INDUSTRIES: Record<IndustryId, IndustryConfig> = {
       "A scribe, a researcher, and a triage assistant — operating under HIPAA, never on the patient.",
     subhead:
       "Chart review, intake summaries, prior-auth drafting, literature surveys. Determinism at the edges so the model proposes, your protocols decide.",
-    recommendedPlanId: "premium",
+    recommendedPlanId: "company-premium",
     tag: "Medical",
     icon: Stethoscope,
     proof: [
@@ -168,7 +168,7 @@ export const INDUSTRIES: Record<IndustryId, IndustryConfig> = {
     headline: "A patient tutor that explains, quizzes, and adapts — never just hands you the answer.",
     subhead:
       "Personalized tutors, study companions, grading helpers, and curriculum builders — with memory that follows the learner across sessions.",
-    recommendedPlanId: "entry",
+    recommendedPlanId: "personal-entry",
     tag: "Education",
     icon: GraduationCap,
     proof: [

@@ -1,23 +1,19 @@
 // features/entitlements/components/CapabilityPaywallDialog.tsx
 //
 // The contextual cap-hit paywall — tone: helpful, never hostage (TRUST mandate).
-// Maps an entitlement verdict onto the existing UsageLimitDialog. Shown ONLY
+// Maps an entitlement verdict onto the existing UsageLimitDialog, whose plan
+// offers come from billing.plan_catalog() and whose upgrade action is the
+// tracked plan-checkout promise (no checkout exists yet). Shown ONLY
 // when a metered action was blocked; it tells the user exactly what reset and
 // when, and offers the upgrade — it never interrupts work already in progress.
 
 "use client";
 
-import { useRouter } from "next/navigation";
 import { UsageLimitDialog } from "@/features/pricing/components/UsageLimitDialog";
-import type { Plan } from "@/features/pricing/data";
+import { usePlanCatalog } from "../catalog/usePlanCatalog";
+import { defaultPlan } from "../catalog/format";
 import { getCapability, type Capability } from "../registry";
 import type { EntitlementResult } from "../types";
-
-const TIER_LABEL: Record<string, string> = {
-  free: "Free",
-  trial: "Free trial",
-  premium: "Premium",
-};
 
 export function CapabilityPaywallDialog({
   open,
@@ -30,14 +26,16 @@ export function CapabilityPaywallDialog({
   capability: Capability;
   verdict: EntitlementResult;
 }) {
-  const router = useRouter();
   const def = getCapability(capability);
   const binding = verdict.windows.find((w) => w.period === verdict.period);
-
-  const onSelect = (_plan: Plan) => {
-    onOpenChange(false);
-    router.push("/pricing");
-  };
+  // The verdict carries a tier, not a plan. A free-tier person is on the
+  // catalog's default plan; for any other tier the plan is not known here, so
+  // the dialog names none rather than guessing.
+  const catalog = usePlanCatalog();
+  const currentPlan =
+    verdict.tier === "free" && catalog.status === "ready"
+      ? defaultPlan(catalog.plans)?.name
+      : undefined;
 
   return (
     <UsageLimitDialog
@@ -47,8 +45,7 @@ export function CapabilityPaywallDialog({
       used={verdict.used}
       limit={verdict.limit ?? binding?.limit ?? 0}
       resetsAt={binding?.resetsAt ?? undefined}
-      currentPlan={TIER_LABEL[verdict.tier] ?? "Free"}
-      onSelect={onSelect}
+      currentPlan={currentPlan}
     />
   );
 }

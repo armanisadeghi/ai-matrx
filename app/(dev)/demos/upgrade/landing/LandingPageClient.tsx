@@ -7,7 +7,7 @@ export function LandingPageClient() {
   return (
     <PricingLanding
       onSelect={(plan) => {
-        toast.success(`${plan.name ?? plan.id} selected`, {
+        toast.success(`${plan.name} selected`, {
           description: "Demo only — would route to checkout in production.",
         });
       }}

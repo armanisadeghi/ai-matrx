@@ -2,14 +2,16 @@ import Link from "next/link";
 import { ArrowRight, CalendarX2, Eye, Gauge, ShieldCheck } from "lucide-react";
 import { EducationPricing } from "@/features/pricing/education/EducationPricing";
 import { loadEducationPricing } from "@/features/pricing/education/loadEducationPricing";
+import { PricingGrid } from "@/features/pricing/components/PricingGrid";
+import { readPlanCatalogServer } from "@/features/entitlements/catalog/server";
 
-// P8 F5: /pricing is now EDUCATION-FIRST and DB-BACKED — Free-tier caps from
-// billing.capability_limit, Premium from billing.product/price (the seeded TEST
-// row today; real numbers are Arman's call — seed the real billing.price and
-// this page reflects it with no code change). The generic agent-harness PLANS[]
-// (features/pricing/data.ts + PricingGrid/PricingLanding) is retained ONLY for
-// the (dev)/demos/upgrade demos that still consume it — see
-// features/entitlements/FEATURE.md for the structure decision.
+// /pricing is DB-BACKED end to end:
+//  - the plan ladder comes from billing.plan_catalog() (every listed plan, its
+//    exact prices in cents and its AI points per window), read here on the
+//    server and handed to the client grid so the first paint needs no fetch;
+//    a failed read falls through to the grid's own read and its error state.
+//  - the education section keeps its own DB read (billing.capability_limit +
+//    billing.product/price) — see features/pricing/FEATURE.md.
 
 // The billing-integrity promises shown under the plans — each one is true
 // today (the pledge page marks the ones still being built "Before paid
@@ -38,7 +40,7 @@ const PLEDGE = [
 ];
 
 export default async function PricingPage() {
-  const pricing = await loadEducationPricing();
+  const [pricing, catalog] = await Promise.all([loadEducationPricing(), readPlanCatalogServer()]);
 
   return (
     <div className="h-full overflow-y-auto bg-textured">
@@ -48,15 +50,21 @@ export default async function PricingPage() {
             Pricing
           </span>
           <h1 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-            Study free. Go unlimited with Premium.
+            Pick the plan that fits your work
           </h1>
-          <p className="text-pretty text-base text-muted-foreground">
-            The free plan covers real study work every month. Premium removes
-            every limit on AI generation.
-          </p>
         </header>
 
-        <EducationPricing pricing={pricing} />
+        <PricingGrid initialPlans={catalog.ok ? catalog.plans : undefined} />
+
+        <section
+          aria-labelledby="pricing-education"
+          className="flex flex-col gap-6 border-t border-border/60 pt-10"
+        >
+          <h2 id="pricing-education" className="text-xl font-semibold tracking-tight">
+            Studying? Education plans
+          </h2>
+          <EducationPricing pricing={pricing} />
+        </section>
 
         <section
           aria-labelledby="pricing-pledge"

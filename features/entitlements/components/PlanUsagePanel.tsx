@@ -37,6 +37,7 @@ import {
   type PlanStatus,
 } from "../plan-service";
 import { CAPABILITY_REGISTRY, isCapability } from "../registry";
+import { formatCents } from "../catalog/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -272,7 +273,7 @@ export function PlanUsagePanel({
       ? "Custom"
       : plan.monthlyCents === 0
         ? "Free"
-        : `$${(plan.monthlyCents / 100).toFixed(0)}${plan.perSeat ? " per seat" : ""} / month`;
+        : `${formatCents(plan.monthlyCents)}${plan.perSeat ? " per seat" : ""} / month`;
 
   return (
     <div className={cn("rounded-md border border-border bg-card", className)}>

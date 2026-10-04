@@ -15,7 +15,7 @@ interface UpgradeInlineCardProps {
 
 export function UpgradeInlineCard({
   feature = "Tool execution",
-  description = "Run sandboxed tools, browse, query, and write files — included on Pro and above.",
+  description = "Run sandboxed tools, browse, query, and write files — included on paid plans.",
   ctaLabel = "Upgrade to unlock",
   onCta,
   variant = "card",
@@ -42,7 +42,7 @@ export function UpgradeInlineCard({
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold tracking-tight">{feature}</h4>
             <span className="rounded-full bg-foreground/[0.06] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-foreground/70">
-              Pro
+              Paid
             </span>
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">

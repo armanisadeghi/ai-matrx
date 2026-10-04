@@ -62,22 +62,12 @@ export interface PlanStatus {
   dimensions: PlanDimension[];
 }
 
-/** A public plan plus what it includes — what /pricing renders. */
-export interface PublicPlan extends PlanRecord {
-  limits: Array<{
-    capability: string;
-    period: string | null;
-    limit: number | null;
-    note: string | null;
-  }>;
-}
-
 interface PlanRow {
   /**
    * The plan SLUG ('personal-pro', 'free', …) — what Stripe checkout and
    * `billing.org_plan_assign` take. DD-173 (B-103) moved that value off
    * `billing.plan.id` to `billing.plan.plan_key` and gave the table a canonical
-   * uuid `id`; both `public_plans()` and `plan_status()` still emit it under the
+   * uuid `id`; `plan_status()` still emits it under the
    * key `id`, so this contract is unchanged and the uuid never reaches a client.
    */
   id: string;
@@ -213,20 +203,6 @@ export async function fetchPlanStatus(
 ): Promise<PlanStatus | null> {
   const read = await readPlanStatus(organizationId);
   return read.ok ? read.status : null;
-}
-
-/** Every purchasable plan + what it includes. Readable signed-out (pricing page). */
-export async function fetchPublicPlans(): Promise<PublicPlan[]> {
-  try {
-    const supabase = createClient();
-    const { data, error } = await supabase.schema("billing").rpc("public_plans");
-    if (error || !data) return [];
-    return (data as unknown as Array<PlanRow & { limits: PublicPlan["limits"] }>).map(
-      (row) => ({ ...(mapPlan(row) as PlanRecord), limits: row.limits ?? [] }),
-    );
-  } catch {
-    return [];
-  }
 }
 
 /**

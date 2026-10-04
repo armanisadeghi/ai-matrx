@@ -13,8 +13,8 @@ interface UpgradeBannerProps {
 }
 
 export function UpgradeBanner({
-  message = "You're on the Free plan. Unlock frontier models with a 14-day Pro trial.",
-  ctaLabel = "Try Pro free",
+  message = "Need more room? Bigger plans raise every limit.",
+  ctaLabel = "See plans",
   onCta,
   variant = "subtle",
   className,

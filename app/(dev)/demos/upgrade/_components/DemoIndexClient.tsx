@@ -33,9 +33,9 @@ import {
 } from "@/features/pricing/components/industry/industries";
 import { DemoSection } from "./DemoSection";
 
-function notify(plan: { name?: string; id?: string } | undefined) {
+function notify(plan: { name: string } | undefined) {
   if (!plan) return;
-  toast.success(`${plan.name ?? plan.id} selected`, {
+  toast.success(`${plan.name} selected`, {
     description: "Demo only — would route to checkout in production.",
   });
 }
@@ -130,7 +130,7 @@ export function DemoIndexClient() {
                 Individual upgrade modal
               </span>
               <span className="text-sm text-muted-foreground">
-                Free → Entry · Pro · Plus · Max. With trial offer.
+                Personal plans from the live plan catalog.
               </span>
             </div>
             <span className="inline-flex items-center gap-1 text-sm font-medium">
@@ -151,7 +151,7 @@ export function DemoIndexClient() {
                 Company upgrade modal
               </span>
               <span className="text-sm text-muted-foreground">
-                Team · Pro · Premium. Per-seat pricing. 3-seat minimum.
+                Business plans from the live plan catalog.
               </span>
             </div>
             <span className="inline-flex items-center gap-1 text-sm font-medium">
@@ -374,7 +374,7 @@ export function DemoIndexClient() {
           <UpgradeInlineCard
             variant="card"
             feature="Tool execution"
-            description="Run sandboxed tools, browse, query, and write files — included on Pro and above."
+            description="Run sandboxed tools, browse, query, and write files — included on paid plans."
             icon={Lock}
             onCta={() => setUpgradeOpen(true)}
           />
@@ -388,7 +388,7 @@ export function DemoIndexClient() {
           <UpgradeInlineCard
             variant="outline"
             feature="Image generation"
-            description="Frontier image models with brand-style memory — included on Pro and above."
+            description="Frontier image models with brand-style memory — included on paid plans."
             icon={ImageIcon}
             onCta={() => setUpgradeOpen(true)}
           />
@@ -453,10 +453,10 @@ export function DemoIndexClient() {
       <UpgradeModal
         open={upgradeOpen}
         onOpenChange={setUpgradeOpen}
-        category="individual"
-        reason="14-day Pro trial — no card"
+        group="personal"
+        reason="Your plan's limit was reached"
         onSelect={(plan, cycle) => {
-          toast.success(`Starting ${plan.name} (${cycle}) trial`, {
+          toast.success(`${plan.name} (${cycle}) selected`, {
             description: "Demo only — checkout would happen here.",
           });
           setUpgradeOpen(false);
@@ -465,10 +465,10 @@ export function DemoIndexClient() {
       <UpgradeModal
         open={companyOpen}
         onOpenChange={setCompanyOpen}
-        category="company"
-        reason="3 seat minimum on company plans"
+        group="business"
+        reason="Plans for the whole team"
         onSelect={(plan, cycle) => {
-          toast.success(`Starting ${plan.name} (${cycle}) team trial`, {
+          toast.success(`${plan.name} (${cycle}) selected`, {
             description: "Demo only — checkout would happen here.",
           });
           setCompanyOpen(false);
@@ -479,7 +479,7 @@ export function DemoIndexClient() {
         onOpenChange={(open) => !open && setIndustryModal(null)}
         industry={industryModal ?? "legal"}
         onSelect={(plan, cycle) => {
-          toast.success(`Starting ${plan.name} (${cycle}) trial`, {
+          toast.success(`${plan.name} (${cycle}) selected`, {
             description: `Tuned for ${INDUSTRIES[industryModal ?? "legal"].label} teams.`,
           });
           setIndustryModal(null);
@@ -491,7 +491,6 @@ export function DemoIndexClient() {
         meter="Messages"
         used={100}
         limit={100}
-        currentPlan="Free"
         onSelect={(plan) => {
           notify(plan);
           setUsageOpen(false);
