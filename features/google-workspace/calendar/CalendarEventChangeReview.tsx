@@ -40,6 +40,7 @@ import {
   attemptIsHeld,
   calendarChangeActionMatchesSource,
   calendarChangeResultMatches,
+  calendarChangeResultShape,
   canAppendCalendarChangeAttempt,
   readCalendarChangeCollection,
   reconcileCalendarChangeSource,
@@ -171,8 +172,12 @@ function ReturnedResultFacts({ attempt }: { attempt: CalendarChangeAttempt }) {
     <p className="font-medium text-foreground">Returned result differs</p>
     <p>Reviewed account: {attempt.action.preview.account_email}</p>
     <p>Returned account: {result.account_email}</p>
-    <p>Reviewed event: {attempt.action.preview.event_id}</p>
-    <p>Returned event: {result.event_id}</p>
+    <label className="grid gap-1 font-medium text-muted-foreground">Reviewed event
+      <Input readOnly value={attempt.action.preview.event_id} className="font-mono" />
+    </label>
+    <label className="grid gap-1 font-medium text-muted-foreground">Returned event
+      <Input readOnly value={result.event_id} className="font-mono" />
+    </label>
     <p>Reviewed version: {attempt.action.preview.etag}</p>
     <p>Returned version: {result.etag}</p>
   </div>;
@@ -439,6 +444,14 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
       else if (attempt.action.kind === "cancel") result = await transport.confirmCancel({ organizationId, request: attempt.action.request });
       else result = await transport.confirmRsvp({ organizationId, request: attempt.action.request });
       if (callEpoch !== epoch.current) return;
+      if (!calendarChangeResultShape(attempt.action.kind, result)) {
+        const message = "Google returned a result this review cannot validate. Check the source before another action.";
+        const held: CalendarChangeAttempt = { ...attempting, phase: "uncertain", problem: message };
+        const latest = replaceCalendarChangeAttempt(withAttempting, held);
+        if (!latest || !saveCollection(latest, "The unvalidated result could not be saved. Do not repeat this action.")) return;
+        setProblem(message);
+        return;
+      }
       const action = { ...attempt.action, result } as CalendarChangeAction;
       const matches = calendarChangeResultMatches(action, result);
       const settled: CalendarChangeAttempt = {

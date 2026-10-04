@@ -1,9 +1,11 @@
 import type { StorageDoor } from "./calendarCreateRecovery";
 import type { CalendarEventSourceResult } from "./calendarEventSourceService";
+import type { CalendarCancelResult, CalendarRescheduleResult, CalendarRsvpResult } from "./calendarChangeService";
 import type { CalendarChangeAction, CalendarChangeAttempt, CalendarChangeCollection, CalendarChangeScope } from "./calendarChangeRecovery";
 import {
   appendCalendarChangeAttempt,
   calendarChangeActionMatchesSource,
+  calendarChangeResultShape,
   calendarChangeResultMatches,
   canAppendCalendarChangeAttempt,
   readCalendarChangeCollection,
@@ -202,6 +204,54 @@ describe("calendar change recovery", () => {
     expect(calendarChangeResultMatches(rsvpAction, { ...result, provider_etag: "" })).toBe(false);
     expect(calendarChangeResultMatches(rsvpAction, { ...result, already_applied: "yes" })).toBe(false);
     expect(calendarChangeResultMatches(rsvpAction, { ...result, event_id: "wrong-event" })).toBe(false);
+  });
+
+  it("accepts omitted generated optional notices for all three returned result kinds", () => {
+    const moveResult: CalendarRescheduleResult = {
+      ...moveAction.preview,
+      provider_etag: '"move-v2"',
+      reconciliation_pending: false,
+    };
+    delete moveResult.recovery_notice;
+    expect(calendarChangeResultShape("reschedule", moveResult)).toBe(true);
+    expect(calendarChangeResultMatches(moveAction, moveResult)).toBe(true);
+
+    const cancelAction = {
+      kind: "cancel",
+      request: { connection_id: scope.connectionId, calendar_id: scope.calendarId, event_id: source.target_event_id!,
+        occurrence: source.occurrence, expected_etag: source.target_etag!, send_updates: "none" },
+      preview: { account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
+        access_role: "owner", event_id: source.target_event_id!, occurrence: source.occurrence, event_summary: source.event_summary!,
+        etag: source.target_etag!, starts_at: source.starts_at!, ends_at: source.ends_at!, attendees: [], send_updates: "none",
+        guest_notification_behavior: "No updates.", action_notice: "Cancel organizer event.", recovery_notice: "No recreation." },
+      result: null,
+    } satisfies CalendarChangeAction;
+    const cancelResult: CalendarCancelResult = { ...cancelAction.preview, source_state: "cancelled" };
+    delete cancelResult.action_notice;
+    delete cancelResult.recovery_notice;
+    expect(calendarChangeResultShape("cancel", cancelResult)).toBe(true);
+    expect(calendarChangeResultMatches(cancelAction, cancelResult)).toBe(true);
+
+    const rsvpAction = {
+      kind: "rsvp",
+      request: { connection_id: scope.connectionId, calendar_id: scope.calendarId, event_id: source.target_event_id!,
+        occurrence: source.occurrence, expected_etag: source.target_etag!, response_status: "accepted", send_updates: "none" },
+      preview: { account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
+        access_role: "owner", event_id: source.target_event_id!, occurrence: source.occurrence, event_summary: source.event_summary!,
+        organizer_email: source.organizer_email!, etag: source.target_etag!, old_response_status: "tentative",
+        new_response_status: "accepted", send_updates: "none", guest_notification_behavior: "No updates.",
+        action_notice: "Only this response changes.", recovery_notice: "Fresh version required." }, result: null,
+    } satisfies CalendarChangeAction;
+    const rsvpResult: CalendarRsvpResult = { ...rsvpAction.preview, provider_etag: '"rsvp-v2"', already_applied: false };
+    delete rsvpResult.action_notice;
+    delete rsvpResult.recovery_notice;
+    expect(calendarChangeResultShape("rsvp", rsvpResult)).toBe(true);
+    expect(calendarChangeResultMatches(rsvpAction, rsvpResult)).toBe(true);
+
+    const storage = new MemoryStorage();
+    const succeeded = attempt({ action: { ...moveAction, result: moveResult }, phase: "succeeded" });
+    expect(writeCalendarChangeCollection(storage, scope, collection([succeeded]))).toBe(true);
+    expect(readCalendarChangeCollection(storage, scope).collection.attempts[0].phase).toBe("succeeded");
   });
 
   it("durably retains a well-shaped returned disagreement through source proof", () => {

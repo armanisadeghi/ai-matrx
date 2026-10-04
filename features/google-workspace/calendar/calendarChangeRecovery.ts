@@ -221,7 +221,7 @@ export function calendarChangeResultShape(kind: CalendarChangeAction["kind"], va
     !nonempty(value.calendar_summary) || !["owner", "writer", "writerWithoutPrivateAccess"].includes(String(value.access_role)) ||
     !nonempty(value.event_id) || !OCCURRENCES.has(String(value.occurrence)) || !nonempty(value.event_summary) ||
     !nonempty(value.etag) || !SEND_UPDATES.has(String(value.send_updates)) || !nonempty(value.guest_notification_behavior) ||
-    !nonempty(value.recovery_notice)) return false;
+    !(value.recovery_notice === undefined || nonempty(value.recovery_notice))) return false;
   if (kind === "reschedule") {
     return jsonMap(value.old_start) && jsonMap(value.old_end) && jsonMap(value.new_start) && jsonMap(value.new_end) &&
       Array.isArray(value.attendees) && value.attendees.every((item) => typeof item === "string") &&
@@ -230,11 +230,15 @@ export function calendarChangeResultShape(kind: CalendarChangeAction["kind"], va
   if (kind === "cancel") {
     return jsonMap(value.starts_at) && jsonMap(value.ends_at) &&
       Array.isArray(value.attendees) && value.attendees.every((item) => typeof item === "string") &&
-      nonempty(value.action_notice) && ["absent", "cancelled"].includes(String(value.source_state));
+      (value.action_notice === undefined || nonempty(value.action_notice)) && ["absent", "cancelled"].includes(String(value.source_state));
   }
   return nonempty(value.organizer_email) && RSVP.has(String(value.old_response_status)) && RSVP.has(String(value.new_response_status)) &&
-    nonempty(value.action_notice) && nonempty(value.provider_etag) &&
+    (value.action_notice === undefined || nonempty(value.action_notice)) && nonempty(value.provider_etag) &&
     (value.already_applied === undefined || typeof value.already_applied === "boolean");
+}
+
+function suppliedValueMatches(returned: unknown, reviewed: unknown): boolean {
+  return returned === undefined || returned === reviewed;
 }
 
 export function calendarChangeResultMatches(action: CalendarChangeAction, value: unknown): boolean {
@@ -251,18 +255,18 @@ export function calendarChangeResultMatches(action: CalendarChangeAction, value:
       sameSourceTimes(value.old_start, value.old_end, preview.old_start, preview.old_end) &&
       sameInstant((value.new_start as Record<string, unknown> | undefined)?.dateTime, action.request.starts_at) &&
       sameInstant((value.new_end as Record<string, unknown> | undefined)?.dateTime, action.request.ends_at) &&
-      sameStringArray(value.attendees, preview.attendees) && value.recovery_notice === preview.recovery_notice;
+      sameStringArray(value.attendees, preview.attendees) && suppliedValueMatches(value.recovery_notice, preview.recovery_notice);
   }
   if (action.kind === "cancel") {
     return ["absent", "cancelled"].includes(String(value.source_state)) &&
       sameSourceTimes(value.starts_at, value.ends_at, preview.starts_at, preview.ends_at) &&
-      sameStringArray(value.attendees, preview.attendees) && value.action_notice === preview.action_notice &&
-      value.recovery_notice === preview.recovery_notice;
+      sameStringArray(value.attendees, preview.attendees) && suppliedValueMatches(value.action_notice, preview.action_notice) &&
+      suppliedValueMatches(value.recovery_notice, preview.recovery_notice);
   }
   return value.organizer_email === preview.organizer_email &&
     value.old_response_status === preview.old_response_status && value.new_response_status === preview.new_response_status &&
     nonempty(value.provider_etag) && (value.already_applied === undefined || typeof value.already_applied === "boolean") &&
-    value.action_notice === preview.action_notice && value.recovery_notice === preview.recovery_notice;
+    suppliedValueMatches(value.action_notice, preview.action_notice) && suppliedValueMatches(value.recovery_notice, preview.recovery_notice);
 }
 
 export function sourceIdentityMatchesAttempt(attempt: CalendarChangeAttempt, value: unknown): value is CalendarEventSourceResult {

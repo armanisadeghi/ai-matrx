@@ -278,7 +278,8 @@ describe("CalendarEventChangeReview", () => {
     await act(async () => button(host, "Review move").click());
     await act(async () => button(host, "Confirm move").click());
     expect(host.textContent).toContain("Returned result differs");
-    expect(host.textContent).toContain("wrong-returned-event");
+    expect(Array.from(host.querySelectorAll("label")).find((label) => label.textContent?.includes("Returned event"))
+      ?.querySelector("input")?.value).toBe("wrong-returned-event");
 
     const scope = { actorId: "admin-reviewer", organizationId: "organization-cedar", connectionId: "connection-cedar", calendarId: calendar.id };
     let saved = readCalendarChangeCollection(storage, scope).collection.attempts[0];
@@ -288,7 +289,8 @@ describe("CalendarEventChangeReview", () => {
     act(() => root.unmount());
     root = createRoot(host);
     await act(async () => root.render(<CalendarEventChangeReview {...baseProps(changeTransport)} />));
-    expect(host.textContent).toContain("wrong-returned-event");
+    expect(Array.from(host.querySelectorAll("label")).find((label) => label.textContent?.includes("Returned event"))
+      ?.querySelector("input")?.value).toBe("wrong-returned-event");
     await act(async () => button(host, "Check current source").click());
     expect(host.textContent).toContain("Notification delivery remains unverified");
     saved = readCalendarChangeCollection(storage, scope).collection.attempts[0];
@@ -298,5 +300,33 @@ describe("CalendarEventChangeReview", () => {
     await act(async () => button(host, "Prepare prior time").click());
     expect(host.querySelector('[role="status"]')?.textContent).toContain("Prior values loaded");
     expect(host.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it("immediately holds a malformed post-confirm result without replaying it", async () => {
+    const confirmReschedule = jest.fn(async () => ({ unexpected: "payload" }) as never);
+    const changeTransport = transport({ confirmReschedule });
+    await loadSource(changeTransport);
+    const start = host.querySelector<HTMLInputElement>('input[aria-label="New start"]')!;
+    const end = host.querySelector<HTMLInputElement>('input[aria-label="New end"]')!;
+    const notifications = Array.from(host.querySelectorAll("select")).find((item) => item.parentElement?.textContent?.includes("Guest notifications"))!;
+    act(() => {
+      setInput(start, "2026-10-08T11:00:00-07:00");
+      setInput(end, "2026-10-08T12:00:00-07:00");
+      setSelect(notifications, "all");
+    });
+    await act(async () => button(host, "Review move").click());
+    await act(async () => button(host, "Confirm move").click());
+    expect(host.textContent).toContain("cannot validate");
+    expect(host.textContent).toContain("Check current source");
+    expect(confirmReschedule).toHaveBeenCalledTimes(1);
+
+    const scope = { actorId: "admin-reviewer", organizationId: "organization-cedar", connectionId: "connection-cedar", calendarId: calendar.id };
+    expect(readCalendarChangeCollection(storage, scope).collection.attempts[0].phase).toBe("uncertain");
+    act(() => root.unmount());
+    root = createRoot(host);
+    await act(async () => root.render(<CalendarEventChangeReview {...baseProps(changeTransport)} />));
+    expect(host.textContent).toContain("cannot validate");
+    expect(host.textContent).toContain("Check current source");
+    expect(confirmReschedule).toHaveBeenCalledTimes(1);
   });
 });
