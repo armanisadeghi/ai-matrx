@@ -39,6 +39,7 @@ const readMock = readUsageSnapshot as jest.MockedFunction<
 function snapshot(state: UsageSnapshot["state"]): UsageSnapshot {
   return {
     state,
+    freePeriod: null,
     planKey: "free",
     planName: "Free",
     bindingPeriod: "week",

@@ -19,6 +19,7 @@ import { SettingsSubHeader } from "@/components/official/settings/layout/Setting
 import { PlanUsagePanel } from "@/features/entitlements/components/PlanUsagePanel";
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 import { MyUsageCard } from "@/features/entitlements/usage-gate/MyUsageCard";
+import { RedeemCodeField } from "@/features/entitlements/coupons/RedeemCodeField";
 
 export function PlanUsageTab() {
   const organizationId = useAppSelector(selectOrganizationId);
@@ -30,6 +31,8 @@ export function PlanUsageTab() {
         icon={Gauge}
       />
       <MyUsageCard />
+      {/* Free-time coupons for this account (rule 18): POST /api/billing/coupons/redeem. */}
+      <RedeemCodeField />
       <SettingsSubHeader
         title="Organization"
         icon={Building2}

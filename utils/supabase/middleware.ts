@@ -17,6 +17,7 @@ import {
   readAuthDestination,
 } from "@/utils/auth/auth-destination";
 import { routeRequiresAuthentication } from "@/utils/auth/protected-routes";
+import { couponAwareDestination } from "@/utils/auth/coupon-links";
 import { GOOGLE_OAUTH_REDIRECT_STATE_COOKIE } from "@/providers/google-provider/oauthRedirect";
 
 /**
@@ -156,7 +157,11 @@ export async function updateSession(
       pathname === "/sign-up" ||
       pathname === "/check-email";
     if (isBounceablePage) {
-      const destination = readAuthDestination(request.nextUrl.searchParams);
+      // A coupon link (`/sign-up?coupon=`) opened while signed in still goes
+      // to /redeem, which says in one line whether this account can use it.
+      const destination =
+        readAuthDestination(request.nextUrl.searchParams) ??
+        couponAwareDestination(request.nextUrl.searchParams);
       if (destination && destination !== pathname + request.nextUrl.search) {
         return redirectWithSessionCookies(
           new URL(destination, request.nextUrl.origin),

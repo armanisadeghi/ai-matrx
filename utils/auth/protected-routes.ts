@@ -53,6 +53,9 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     // with this address kept as the destination instead of reading a "not yours" that is only
     // true because nobody is signed in.
     pathname === "/o" ||
-    pathname.startsWith("/o/")
+    pathname.startsWith("/o/") ||
+    // `/redeem?code=` redeems a free-time coupon for the signed-in person; a
+    // guest signs in (or up) first and the code comes back as the destination.
+    pathname === "/redeem"
   );
 }

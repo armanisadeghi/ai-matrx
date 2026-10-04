@@ -36,6 +36,30 @@ import {
   refreshUsageInBackground,
 } from "./usageGate";
 import { usageNoticeKey } from "./usageState";
+import { supabase } from "@/utils/supabase/client";
+import { selectUsageGateFreePeriod } from "../state/selectors";
+import {
+  FREE_PERIOD_WARNING_DAYS_FALLBACK,
+  freePeriodNoticeFor,
+} from "../coupons/freePeriodNotice";
+
+const FREE_PERIOD_NOTICE_STORAGE = "matrx:free-period-notice";
+
+function readShownDay(): string | null {
+  try {
+    return window.localStorage.getItem(FREE_PERIOD_NOTICE_STORAGE);
+  } catch {
+    return null;
+  }
+}
+
+function writeShownDay(key: string): void {
+  try {
+    window.localStorage.setItem(FREE_PERIOD_NOTICE_STORAGE, key);
+  } catch {
+    // Storage blocked: the notice may show again on the next load — harmless.
+  }
+}
 
 /** Notices already shown this session, keyed by `usageNoticeKey`. */
 const shownNotices = new Set<string>();
@@ -82,6 +106,7 @@ export function UsageGateBridge() {
   const fetchedAt = useAppSelector(selectUsageGateFetchedAt);
   const planName = useAppSelector(selectUsageGatePlanName);
   const refusal = useAppSelector(selectUsageGateRefusal);
+  const freePeriod = useAppSelector(selectUsageGateFreePeriod);
   const bootReadFor = useRef<string | null>(null);
 
   // Boot fallback: no landing answer for this person → one background read.
@@ -124,6 +149,48 @@ export function UsageGateBridge() {
       },
     );
   }, [level, bindingPeriod, resetsAt]);
+
+  // Free time ends (rule 18): a reminder N days before (knob
+  // billing/free_period_warning_days), then a "choose a plan" prompt once it
+  // ended — once per day, dismissible, a door to checkout and never a block.
+  useEffect(() => {
+    if (!userId || !freePeriod?.endsAt) return undefined;
+    let live = true;
+    void (async () => {
+      let warningDays = FREE_PERIOD_WARNING_DAYS_FALLBACK;
+      if (freePeriod.status === "active") {
+        const { data, error } = await supabase
+          .schema("platform")
+          .rpc("knob_resolve", {
+            p_feature: "billing",
+            p_key: "free_period_warning_days",
+            // A platform-wide knob: no organization rung. The generator types
+            // every param without a SQL default as non-null; the function
+            // takes NULL here (the server's own call does the same).
+            p_organization_id: null as unknown as string,
+            p_user_id: userId,
+          });
+        if (error) {
+          console.warn("[usage-gate] free_period_warning_days unreadable; using the fallback.", error.message);
+        } else if (typeof data === "number" && data > 0) {
+          warningDays = data;
+        }
+      }
+      if (!live) return;
+      const notice = freePeriodNoticeFor(freePeriod, warningDays, new Date());
+      if (!notice || readShownDay() === notice.dayKey) return;
+      writeShownDay(notice.dayKey);
+      const show = notice.kind === "ended" ? toast.warning : toast.info;
+      show(notice.title, {
+        id: "free-period-notice",
+        duration: Infinity,
+        action: { label: "Choose a plan", onClick: () => router.push("/pricing") },
+      });
+    })();
+    return () => {
+      live = false;
+    };
+  }, [userId, freePeriod, router]);
 
   if (!refusal) return null;
   return (

@@ -28,6 +28,12 @@ import {
   withInviteToken,
 } from "@/utils/auth/invitation-links";
 import { lookupInvitedEmail } from "@/utils/auth/invited-email-lookup";
+import {
+  couponAwareDestination,
+  readCouponToken,
+} from "@/utils/auth/coupon-links";
+import { lookupCouponPreview } from "@/features/entitlements/coupons/couponPreview";
+import { CouponOfferBanner } from "@/features/entitlements/coupons/CouponOfferBanner";
 
 interface SignUpProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -38,7 +44,18 @@ export default async function SignUp({ searchParams }: SignUpProps) {
   const awaitedSearchParams = await searchParams;
   console.log("Awaited search params:", awaitedSearchParams);
 
-  const redirectTo = readAuthDestination(awaitedSearchParams);
+  // A new-account coupon link (`?coupon=<token>`) becomes the destination
+  // `/redeem?code=<token>`, so every hop that keeps `redirectTo` keeps the
+  // coupon (utils/auth/coupon-links.ts). An explicit destination still wins.
+  const redirectTo =
+    readAuthDestination(awaitedSearchParams) ??
+    couponAwareDestination(awaitedSearchParams);
+  const couponPreview = await lookupCouponPreview(
+    readCouponToken(awaitedSearchParams),
+  );
+  const couponEmail = couponPreview?.valid
+    ? couponPreview.recipientEmail
+    : null;
   // An invitation link sent them here (DD-091). The link carries the invitation
   // TOKEN, never the address — an address in a query string is stable PII in
   // browser history and edge logs — so we resolve the address from the token
@@ -87,6 +104,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
       }
       message={message as AuthMessageType}
     >
+      <CouponOfferBanner preview={couponPreview} />
       <HardRedirectForm
         action={signUpAction}
         className="space-y-6"
@@ -107,7 +125,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
               type="email"
               autoComplete="email"
               required
-              defaultValue={invitedEmail ?? undefined}
+              defaultValue={invitedEmail ?? couponEmail ?? undefined}
               className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
               placeholder="you@example.com"
               data-lpignore="true"
