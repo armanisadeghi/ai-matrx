@@ -22,7 +22,7 @@ between its min and max — chat 440 (340–760), properties 250 (220–420) —
 person across canvas pages; dragging a panel past its minimum closes it. A MODULE can be hosted too: its layout
 renders the workspace with the module's pages as the canvas (education does, for signed-in people), and every
 `<PageHeader>` / `<RouteHeader>` inside portals into the workspace header — the module's own menu sits in the
-canvas header, the app's menu is the shell sidebar. Generic: any canvas (a spatial board, a document, a Matrx UI) is a host. There must be only one
+canvas header, the app's menu is the shell sidebar. Generic: any canvas (a Board, a document, a Matrx UI) is a host. There must be only one
 such layout in the app.
 
 ---
@@ -57,7 +57,7 @@ such layout in the app.
   + `CANVAS_CHROME_ROUTES` (`features/shell/constants/canvas-chrome-routes.ts`) + `styles/shell.css` §13c.
 - **Floating chat** — `MatrxFloatingFrame` with its `container` prop (bounded to the canvas region);
   size from the `agents.chat_composer.floating_panel_size` knob.
-- **Demos** — `/demos/canvas-workspace` (the spatial demo board as host) and
+- **Demos** — `/demos/canvas-workspace` (the demo board as host) and
   `/demos/canvas-workspace/properties` (a real Properties tab).
 
 ---
@@ -103,19 +103,21 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **The workspace owns ⌘\\ here** (show / hide the chat); the global canvas side sheet stands down while
   `data-shell-chrome="canvas"` is present.
 - **Below 1024px it is one pane** — the canvas; chat, nav and properties are sheets.
-- **A canvas that publishes its OWN surface passes no `getCanvasContext`.** The spatial board is the
-  `matrx-user/spatial-board` surface (values `board_title` / `board_tiles` / `selected_tile` + the `board_*`
-  agent tools, `features/spatial/components/SpatialBoardSurface.tsx`); a page-level snapshot of it would send
+- **A canvas that publishes its OWN surface passes no `getCanvasContext`.** The Board is the
+  `matrx-user/board` surface (values `board_title` / `board_tiles` / `selected_tile` + the `board_*`
+  agent tools, `features/board/components/SpatialBoardSurface.tsx`); a page-level snapshot of it would send
   the board twice. `getCanvasContext` is for canvases with no surface of their own.
-- **Spatial board contract** (`features/spatial` is owned by another session): the board draws its own
+- **Board contract** (`features/board` is owned by another session): the board draws its own
   ToolBar + ZoomMenu inside its canvas and its own surface; it still owes — once it exposes its store outside
   its viewport — its LayersPanel as a Properties tab and an insets callback so fit-to-view avoids the
-  floating chat. `/demos/spatial` and `/board` render the workspace; the interim `features/spatial/chat/`
+  floating chat. `/demos/spatial` and `/board` render the workspace; the interim `features/board/chat/`
   split was deleted 2026-09-27.
 - **Open:** Share/comments are unexercised (no demo has a record); at 390px the board's own ToolBar and
-  ZoomMenu overlap (spatial-owned); the Error Inspector badge sits over the nav's user row bottom-left.
+  ZoomMenu overlap (Board-owned); the Error Inspector badge sits over the nav's user row bottom-left.
 
 ---
+
+> The Board (`/board`) is owned by [`features/board/FEATURE.md`](../../../../../features/board/FEATURE.md); this doc owns the workspace host only.
 
 ## Change Log
 
@@ -142,12 +144,12 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **2026-09-27** — Built: workspace, canvas nav + user row + org drop-up, shell canvas chrome, floating
   chat, properties panel, demos; the chat panel is the compact composer with agent switching;
   `contextKey` dedupes the canvas pill; `/demos/spatial` unlisted until it hosts the workspace.
-- **2026-09-27** — `/demos/spatial` hosts the workspace (listed in `CANVAS_CHROME_ROUTES` again); the spatial
-  host passes no snapshot — the board's own surface carries it; `matrx-user/spatial-board` registered in
+- **2026-09-27** — `/demos/spatial` hosts the workspace (listed in `CANVAS_CHROME_ROUTES` again); the Board
+  host passes no snapshot — the board's own surface carries it; `matrx-user/board` registered in
   `ui.ui_surface` (it was unregistered, so every send beside a board failed 422).
 - **2026-09-27** — `useCanvasWorkspaceConversation(surfaceKey, start?)`: an optional mount request (`new` /
   `agent` / `open`), so a host owning several conversations — one per Board chat tile
-  (`features/spatial/items/work-items.tsx`) — reuses this hook and `CanvasChatColumn` instead of a copy.
+  (`features/board/items/work-items.tsx`) — reuses this hook and `CanvasChatColumn` instead of a copy.
 - **2026-09-27** — Every side panel is a `DockedSidePanel` (slide + drag-resize + remembered width); the chat
   can be hidden completely (Chat button / ⌘\ reopens it) and starts closed where the host says
   (`defaultChatOpen`), launching only on first open; properties can be hidden; hosts pass `initialLayout`.

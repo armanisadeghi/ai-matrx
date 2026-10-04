@@ -125,10 +125,10 @@ the shell marked `body`, `.shell-root` and `.shell-main` "affected by :has()", a
 `.shell-root:has(.note-detail-active)`, `.shell-root:…:has(.shell-main [data-matrx-table-sticky-header])`,
 `.shell-sidebar-brand-route:has(> *)`) plus compiled utilities such as
 `:is(:where(.group\/menu-item):has([data-sidebar="menu-action"]) *)`. Any surface that inserts nodes
-at stream rate (chat, run pages, the spatial view) pays a full restyle per insertion. Fix: move each
+at stream rate (chat, run pages, the Board) pays a full restyle per insertion. Fix: move each
 route/state fact to a data attribute on `.shell-root` or `<html>` set by the component that owns it
 (the pattern `data-pathname` already uses), so no `:has()` must watch the whole tree; then re-trace.
-The spatial view works around it (one text node per label, updates held during camera motion).
+The Board works around it (one text node per label, updates held during camera motion).
 Owner: shell.
 
 ### D348 — "Stop sandbox" sits beside "Delete" in the sandbox list and stops a running sandbox with no confirmation (2026-09-23)

@@ -418,7 +418,7 @@ By absolute volume, features/marketing carries 2,821 arbitrary values on its own
 
 **Named inspiration does not predict drift.** Across 87 directories with ≥20 `.tsx` files, the Spearman correlation between inspiration mentions per 100 files ("Notion-style", "after Linear", "champion", Airtable, Figma …) and a composite drift index is **−0.10** (−0.16 without hex). That is noise.
 - **Weak evidence for inspiration-driven drift:** features/knowledge (Linear/Raycast) and features/code (Cursor) do run about 2× the average for raw buttons.
-- **Evidence against it:** features/data-tables (Airtable), features/education (Linear/Notion posture) and features/spatial (Figma) are at or below average on every metric. The heaviest drift sits in directories with few or no named references.
+- **Evidence against it:** features/data-tables (Airtable), features/education (Linear/Notion posture) and features/board (Figma) are at or below average on every metric. The heaviest drift sits in directories with few or no named references.
 - **A closer look at the mentions:** many "after Linear" lines are recent page-pass changelog entries describing a polish pass, not the original authoring.
 - **Conclusion:** the per-page-champion habit is a real *process* risk (§4.2), but the drift in the code today is explained by missing variants and zero enforcement, not by inspiration.
 

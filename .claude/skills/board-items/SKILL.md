@@ -1,11 +1,11 @@
 ---
 name: board-items
-description: "Putting a platform feature on the Board (/board) as an Add-menu item with its real component and full agent surface. Use when adding a feature, record type or 'X on the board', or editing features/spatial/items/** or a tile body."
+description: "Putting a platform feature on the Board (/board) as an Add-menu item with its real component and full agent surface. Use when adding a feature, record type or 'X on the board', or editing features/board/items/** or a tile body."
 ---
 
 # board-items — a feature on the Board, for real
 
-The Board (`/board`, `features/spatial/`) is the person's own canvas and is meant to become the ONE
+The Board (`/board`, `features/board/`) is the person's own canvas and is meant to become the ONE
 UI: they drop in anything the platform supports and do their actual work there. Two laws decide
 whether an item is done:
 
@@ -18,11 +18,11 @@ whether an item is done:
    A record item without its full surface is a defect, and so is a gap the page's surface already had
    (e.g. an agent can't read or edit a document's body): closing it is part of this task.
 
-Mechanics live in `features/spatial/FEATURE.md` (The Board section). Read it once.
+Mechanics live in `features/board/FEATURE.md`. Read it once.
 
-## The contract — `features/spatial/items/types.ts`
+## The contract — `features/board/items/types.ts`
 
-A `BoardItemType` registered in `features/spatial/items/catalog.ts` (through `work-items.tsx`,
+A `BoardItemType` registered in `features/board/items/catalog.ts` (through `work-items.tsx`,
 `feature-items.tsx`, `content-items.tsx`, `data-items.tsx`, or a new `<area>-items.tsx` you add to the
 catalog) appears in every board's Add menu, Start panel and agent tools with no other change.
 
@@ -35,6 +35,10 @@ catalog) appears in every board's Add menu, Start panel and agent tools with no 
 | `startNew` | One entry or a list (`startNewEntries()` reads both). Each is `create` — synchronous, returns the item to place NOW; the body creates the record through the feature's canonical create path (with the organization gate) on the person's FIRST ACTION (a Create click, or the first words typed), never in a mount effect (a remount or a removed tile would leave stray records; `NoteItemBody` only starts a client-side draft on mount) — or a `Picker` (e.g. chat's "Chat with an agent" uses the one agent picker) |
 | `bringIn` | A picker built from the feature's canonical picker; most already exist in `features/resource-manager/resource-picker/` (Documents, Notes, Tables, Tasks, Files…) |
 | `href` | The record's page — no dead ends |
+| `comments` | REQUIRED. `entityComments(token)` for a record item (its own thread, the same one its page shows); `null` for board-only content, whose door then posts on the Board and says so. `every-tile-has-one-comment-door.test.ts` fails without it |
+| `sleeps` | Opt-in, and only after the type's remount-safety case passes (see "Sleeping tiles" below) |
+| `Keep` | Optional. Mounted for as long as the tile is on the Board, outside the part that sleeps: what must outlive the body (a chat holds its live run and keeps the tile awake while replying) |
+| `guestSafe` | Set only for board-only content or a meeting's own parts: a meeting guest with no account may add it |
 
 The saved form is a REFERENCE (`{ kind: "entity", entity, id, meta? }`, `board/document.ts`), never a
 copy of the record. `id` is null until the record exists; `meta.seed` carries pasted text for a record
@@ -68,13 +72,20 @@ not created yet. A body changes what the tile refers to only through `onSource`.
 5. **Prove it in the browser with real data** (docs/official/browser-testing.md): add one of each
    (new and brought in), do one real task in the tile, see the change on the feature's own page.
    Select the tile and confirm exactly ONE registration of its surface, scoped to that record. Then,
-   with a DIFFERENT tile live, ask the board agent to change your item: it must find it in
+   with a DIFFERENT tile live, ask the Board agent to change your item: it must find it in
    `board_items` (with its basics), read it with `board_open_item`, and change it with
    `board_item_act` (through the approval card where the target asks first) — in one turn.
-6. **Record it:** `features/spatial/FEATURE.md` change log; the feature's FEATURE.md notes its board
+6. **Record it:** `features/board/FEATURE.md`; the feature's FEATURE.md notes its board
    item and shared host.
 
-## How the board keeps surfaces honest
+## Laws a new type must also meet
+
+- **A record is on a Board once.** `recordKeyOf` (`board/document.ts`) keys every reference; a second tile of the same record on one Board is refused. A tile that shows one PART of a record (`meta.part`) is its own key. Add a case for a new source kind.
+- **Sleeping tiles (the remount law).** A tile an unneeded Board freezes or discards must wake with every effect re-run and nothing reloaded or reset. A type may set `sleeps: true` only when its remount-safety case passes; `__tests__/remount-ledger.test.ts` fails otherwise, and the ledger (`cases.ts`) is the one list of which types sleep and which laws each passes. Never list sleepers in prose.
+- **Until your feature is a native item, it is a Page tile.** `items/page-items.tsx` puts ANY page of the app on a Board (the page runs in the tile; agents see it by title only). That is the stopgap, never the finish: the native item replaces it, and the item's `href` must be a real page.
+- **A tile error stays in its tile.** Every tile sits in its own error boundary; never catch around the tile body to hide a failure.
+
+## How the Board keeps surfaces honest
 
 - `packages/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx` `SurfaceActivity`: everything under
   `active={false}` registers nothing. The board wraps every tile; only the LIVE tile (selected, being
@@ -89,7 +100,7 @@ not created yet. A body changes what the tile refers to only through `onSource`.
      it; `board_item_act(id, target+value | tool+input)` applies one through the ONE writeback /
      client-tool runtime, approval card included.
   So an item whose surface is registered by its Body or `Host` is fully reachable with no board
-  code. Never write per-item agent tools on the board. `features/spatial/tools/item-surfaces.ts`.
+  code. Never write per-item agent tools on the board. `features/board/tools/item-surfaces.ts`.
 - `board_read` gives positions, excerpts, each tile's `surface` and `live_tile_id`; `board_focus`
   makes a tile live (shows it to the person).
 - A component that registers a side door outside the surface runtime (like custom fields'
@@ -109,4 +120,4 @@ not created yet. A body changes what the tile refers to only through `onSource`.
 - "Agents can already move and arrange the tile, that's enough." → Arranging is the board's job; the
   item's job is the feature's own reads and writes.
 - "I'll add a board tool so agents can edit my item." → Declare it on the feature's surface; the
-  bridge reaches it. A board-specific tool is a second path that drifts.
+  bridge reaches it. A Board-specific tool is a second path that drifts.
