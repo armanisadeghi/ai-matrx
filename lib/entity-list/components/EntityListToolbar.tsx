@@ -428,12 +428,13 @@ export function EntityListToolbar<TRow>({
     // on the search row and the view-tab strip scrolls inside its own box.
     <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
       {/* The table's saved-view tabs open the row, far left (`toolbar.tabsPortalInto`); the
-          package draws them and bounds their strip — this slot only places it. */}
+          package draws them and scrolls its strip — this slot only places it, at the strip's own
+          width (a 16rem cap let two tabs and their "+" run over the search, /research/topics). */}
       {tableTabsRef && (
         <div
           ref={tableTabsRef}
           data-entity-list-table-tabs=""
-          className="flex min-w-0 max-w-[16rem] shrink-0 items-center empty:hidden"
+          className="flex min-w-0 max-w-full shrink-0 items-center empty:hidden"
         />
       )}
 
