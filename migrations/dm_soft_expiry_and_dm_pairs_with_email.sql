@@ -2,7 +2,7 @@
 -- based-on: public.get_dm_unread_count(uuid, uuid) d9ce120d569bac59c466e4b7fddc39ff15a315ae9221554c6f7cbef5b12d4ca4
 -- based-on: communication.notification_user_channels(uuid, text, uuid, jsonb, boolean) 35135eeee5d692e87d5aefc9b244e8e3ac709d4b42b7a617fd9c61f780d3b75a
 -- based-on: communication.notify_from_sql(uuid, text, uuid, text, text, jsonb, text, text, uuid, text) 7510107182dc09fb91601ba12bced08b9177ffb4e4033214d326b2c44f0ba25e
--- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) e3ad77c0b89d6b98c73ebdde6c71a368b7e42dd99ff1bb431c14f984e8fecd40
+-- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) 9362490a6452fc524a08e07fdb80ac8f594b823c1f4a1a069af73ab6837e473b
 -- based-on: iam._notify_door(uuid, text, uuid, jsonb, uuid, text, text) 6727eebbe9779ee0bd45b91c5e676830ced54ed5109c9e73dc911013f5cb90be
 -- based-on: public.org_admin_take_over_account(uuid, uuid, text, text, text) b5d40e915824b176e50393ea1864e8114455f6af2ef4c8bbb82d1f89dc01d92b
 -- based-on: public.org_admin_take_over_member_records(uuid, uuid, text, text, uuid) 3b1bfeae05d3a074440d8ff471c94552d79672d485abf94801e3477ecf55731c
@@ -759,13 +759,10 @@ begin
     -- THE PERSON WHO SENT IT (2026-10-04). A signer is asked by a person, not by "AI Matrx":
     -- `{{sender.name}}` words the email, and the email channel shows "<name> via AI Matrx" as the
     -- From name and makes the sender the Reply-To (SPEC-NOTIFICATIONS: payload.sender).
-    || coalesce((select jsonb_build_object('sender', jsonb_build_object(
-                   'name', coalesce(nullif(btrim(u.raw_user_meta_data ->> 'full_name'), ''),
-                                    nullif(btrim(u.raw_user_meta_data ->> 'name'), ''),
-                                    split_part(u.email, '@', 1)),
-                   'email', u.email))
-                   from esign.envelope e join auth.users u on u.id = e.created_by
-                  where e.id = p_envelope_id), '{}'::jsonb);
+    -- An envelope no person sent (a workflow, an automation) is sent by its organization: the
+    -- templates require `sender.name`, so it is never absent (2026-10-04 review).
+    || jsonb_build_object('sender', coalesce(esign.envelope_sender(p_envelope_id),
+                                             jsonb_build_object('name', 'AI Matrx')));
   v_status := case when p_channel in ('email', 'sms')
                     and nullif(btrim(coalesce(p_body, '')), '') is null
                    then 'render_pending' else 'pending' end;
