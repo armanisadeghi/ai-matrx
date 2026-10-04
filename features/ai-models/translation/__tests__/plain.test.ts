@@ -11,7 +11,9 @@ describe("plain words for the review queue", () => {
 
   it("says what off sends without JSON", () => {
     const rule = { off: { send: { type: "disabled" } }, provider_key: "thinking" };
-    expect(plainRule(rule, "reasoning_effort")).toBe("Off → sends thinking disabled");
+    expect(plainRule(rule, "reasoning_effort")).toBe(
+      "Not set → nothing sent · Off → sends thinking disabled · A value → sent as thinking",
+    );
   });
 
   it("reads a number ladder as ranges", () => {
@@ -22,12 +24,14 @@ describe("plain words for the review queue", () => {
         { lte: null, to: "high" },
       ],
     };
-    expect(plainRule(rule, "thinking_budget")).toBe("up to 4,999 → low · 5,000–11,000 → medium · over 11,000 → high");
+    expect(plainRule(rule, "thinking_budget")).toBe(
+      "Not set → nothing sent · up to 4,999 → low · 5,000–11,000 → medium · over 11,000 → high",
+    );
   });
 
-  it("an empty rule is the engine guessing, never 'Dropped'", () => {
-    expect(plainRule({}, "reasoning_effort")).toBe("No rule — the engine guesses");
-    expect(plainRule(null, "reasoning_effort")).toBe("No rule — the engine guesses");
+  it("an empty rule is no rule yet, never 'Dropped'", () => {
+    expect(plainRule({}, "reasoning_effort")).toBe("No rule yet");
+    expect(plainRule(null, "reasoning_effort")).toBe("No rule yet");
     expect(plainRule({ drop: true }, "reasoning_effort")).toBe("Not sent");
   });
 });

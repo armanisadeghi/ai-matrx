@@ -33,15 +33,14 @@ import {
   buildQueue,
   plainRule,
   plainSetting,
-  type GridCell,
   type GridColumn,
   type GridRow,
   type QueueItem,
 } from "../model";
-import type { TranslationCellRow, TranslationOffering } from "../types";
 import { CellStateBadge, ConflictBadge } from "./CellStateBadge";
 import NeedsYouQueue from "./NeedsYouQueue";
 import TranslationCellEditor, { type EditorTarget } from "./TranslationCellEditor";
+import { overrideTarget, queueTarget, targetFor } from "./editorTargets";
 
 export const TRANSLATION_GRID_QUERY_KEY = ["ai-models", "translation-grid"] as const;
 type View = "needs" | "missing" | "all";
@@ -68,56 +67,6 @@ function writeSkipped(ids: Set<string>) {
   } catch {
     // per-viewer convenience only
   }
-}
-
-function targetFor(gc: GridCell): EditorTarget {
-  const column = gc.column;
-  const overridden = new Set(gc.overrides.map((o) => o.offering.id));
-  const missing = !gc.cell && gc.status === "missing";
-  return {
-    layer: column.kind,
-    ownerId: column.ownerId,
-    ownerLabel: column.label,
-    settingKey: gc.key,
-    cell: gc.cell,
-    initialRule: gc.cell || missing ? undefined : gc.fallback?.rule,
-    covers: gc.cell ? gc.covers : missing ? gc.missing : column.members.filter((m) => !overridden.has(m.id)),
-    fallbackLabel: column.kind === "profile" && gc.fallback ? "The API rule" : "The computed default",
-    overrides: gc.overrides,
-    missing,
-  };
-}
-
-function queueTarget(item: QueueItem): EditorTarget {
-  if (item.gridCell) return targetFor(item.gridCell);
-  const cell = item.cell as TranslationCellRow;
-  return {
-    layer: cell.layer,
-    ownerId: cell.layer_owner_id,
-    ownerLabel: item.groupLabel,
-    settingKey: item.key,
-    cell,
-    covers: item.reach,
-    fallbackLabel: item.without ? "The rule below it" : "The computed default",
-    overrides: [],
-  };
-}
-
-function overrideTarget(
-  column: GridColumn,
-  key: string,
-  o: { offering: TranslationOffering; cell: TranslationCellRow },
-): EditorTarget {
-  return {
-    layer: "offering",
-    ownerId: o.offering.id,
-    ownerLabel: o.offering.model_name,
-    settingKey: key,
-    cell: o.cell,
-    covers: [o.offering],
-    fallbackLabel: `The ${column.label} rule`,
-    overrides: [],
-  };
 }
 
 function GroupPicker({

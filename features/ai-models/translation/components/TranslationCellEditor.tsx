@@ -40,6 +40,7 @@ import {
   plainRule,
   plainSetting,
   previewValues,
+  type RuleContext,
   type WireOutcome,
 } from "../model";
 import type {
@@ -67,6 +68,10 @@ export type EditorTarget = {
   overrides: { offering: TranslationOffering; cell: TranslationCellRow }[];
   /** No rule at any layer: the editor opens empty and says the engine is guessing. */
   missing?: boolean;
+  /** The setting whose server-side processor reads this key itself. */
+  consumedBy?: string | null;
+  /** What the engine does today without this rule, in words. */
+  today?: string;
 };
 
 const TONE_CLASS: Record<WireOutcome["tone"], string> = {
@@ -97,12 +102,14 @@ function WirePreview({
   rule,
   setting,
   settingKey,
+  ctx,
 }: {
   rule: ControlRule;
   setting: TranslationSetting | undefined;
   settingKey: string;
+  ctx: RuleContext;
 }) {
-  const off = describeOff(rule, settingKey, setting);
+  const off = describeOff(rule, settingKey, setting, ctx);
   const ladder = describeFromNumber(rule);
   return (
     <div className="overflow-hidden rounded-md border border-border">
@@ -112,14 +119,14 @@ function WirePreview({
         <WireLine
           key={typeof v === "string" ? v : JSON.stringify(v)}
           label={typeof v === "string" ? v : JSON.stringify(v)}
-          outcome={describeValue(rule, settingKey, v)}
+          outcome={describeValue(rule, settingKey, v, ctx)}
         />
       ))}
       {setting &&
       (setting.value_type === "integer" || setting.value_type === "number") ? (
         <WireLine
           label={`${rule.clamp?.min ?? setting.canonical_min ?? "—"}–${rule.clamp?.max ?? setting.canonical_max ?? "max"}`}
-          outcome={describeValue(rule, settingKey, "n")}
+          outcome={describeValue(rule, settingKey, "n", ctx)}
         />
       ) : null}
       {ladder.map((step) => (
@@ -168,9 +175,9 @@ export default function TranslationCellEditor({
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [confirmNoReach, setConfirmNoReach] = useState(false);
-  const [confirmUnchanged, setConfirmUnchanged] = useState(false);
-  // A missing rule opens EMPTY: no way of reaching the model is chosen until the owner picks one.
-  const isMissing = !target.cell && target.missing === true;
+  // A missing rule opens EMPTY, from every entry point: no way of reaching the model is chosen,
+  // and nothing can be approved, until the owner picks one.
+  const isMissing = !target.cell && (target.missing === true || target.initialRule === undefined);
   const [picked, setPicked] = useState(false);
   const blank = isMissing && !picked;
   const onRuleChange = (next: ControlRule) => {
@@ -213,7 +220,6 @@ export default function TranslationCellEditor({
       setBusy(false);
       setConfirmApprove(false);
       setConfirmNoReach(false);
-      setConfirmUnchanged(false);
     }
   };
 
@@ -240,9 +246,8 @@ export default function TranslationCellEditor({
   };
 
   const requestApprove = () => {
-    // "Save & approve" on a rule the owner did not touch always asks first.
-    if (!cell && !edited) setConfirmUnchanged(true);
-    else if (reach === 0) setConfirmNoReach(true);
+    if (blank) return;
+    if (reach === 0) setConfirmNoReach(true);
     else if (reach > 1) setConfirmApprove(true);
     else void save();
   };
@@ -281,13 +286,16 @@ export default function TranslationCellEditor({
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-3">
-          {!cell && target.missing && !edited ? (
-            <p className="rounded-md border border-dashed border-amber-500/50 bg-amber-500/[0.06] px-2.5 py-2 text-sm">
-              No rule yet — the engine is guessing
-            </p>
+          {blank ? (
+            <div className="rounded-md border border-dashed border-amber-500/50 bg-amber-500/[0.06] px-2.5 py-2">
+              <p className="text-sm font-medium">No rule yet</p>
+              {target.today ? (
+                <p className="text-xs text-muted-foreground">Today: {target.today}</p>
+              ) : null}
+            </div>
           ) : (
             <p className="text-sm font-medium">
-              {plainRule(draft, target.settingKey, setting)}
+              {plainRule(draft, target.settingKey, setting, { consumedBy: target.consumedBy })}
             </p>
           )}
           {cell?.rationale ? (
@@ -303,6 +311,7 @@ export default function TranslationCellEditor({
               rule={draft}
               setting={setting}
               settingKey={target.settingKey}
+              ctx={{ consumedBy: target.consumedBy }}
             />
           )}
 
@@ -394,7 +403,7 @@ export default function TranslationCellEditor({
           ) : (
             <span />
           )}
-          {alreadyApproved && !edited ? null : (
+          {blank || (alreadyApproved && !edited) ? null : (
             <Button
               type="button"
               size="sm"
@@ -437,14 +446,6 @@ export default function TranslationCellEditor({
           }
           confirmLabel="Save anyway"
           busy={busy}
-          onConfirm={save}
-        />
-        <ConfirmDialog
-          open={confirmUnchanged}
-          onOpenChange={setConfirmUnchanged}
-          title="Approve without a rule?"
-          description={`Nothing was chosen. ${plainSetting(target.settingKey)} would be sent to ${reach === 1 ? "1 model" : `${reach} models`} as given.`}
-          confirmLabel="Approve as given"
           onConfirm={save}
         />
         <ConfirmDialog

@@ -78,8 +78,16 @@ function bundle(cells: TranslationCellRow[], compiled: TranslationBundle["compil
 describe("describeValue / describeUnset / describeOff", () => {
   it("maps, renames and declares a not-sent value", () => {
     const rule = { provider_key: "effort", value_map: { low: "minimal", high: "high", none: null } };
-    expect(describeValue(rule, "reasoning_effort", "low")).toEqual({ text: "effort = minimal", tone: "send" });
-    expect(describeValue(rule, "reasoning_effort", "none")).toEqual({ text: "Nothing sent", tone: "nothing" });
+    expect(describeValue(rule, "reasoning_effort", "low")).toEqual({
+      text: "effort = minimal",
+      tone: "send",
+      claim: { kind: "value", value: "minimal" },
+    });
+    expect(describeValue(rule, "reasoning_effort", "none")).toEqual({
+      text: "Nothing sent",
+      tone: "nothing",
+      claim: { kind: "nothing" },
+    });
     expect(describeValue(rule, "reasoning_effort", "medium").tone).toBe("computed");
   });
 
@@ -88,9 +96,10 @@ describe("describeValue / describeUnset / describeOff", () => {
     expect(describeValue({ supported: false }, "k", "low").text).toBe("Converts via family");
   });
 
-  it("unset sends nothing unless a default is sent when unset", () => {
+  it("unset sends nothing unless the rule has a default (the engine sends it whenever nothing is set)", () => {
     expect(describeUnset({}, "k").tone).toBe("nothing");
     expect(describeUnset({ default: 1, send_when_unset: true }, "k").text).toBe("1 (default)");
+    expect(describeUnset({ default: "auto" }, "visualization").claim).toEqual({ kind: "value", value: "auto" });
   });
 
   it("off is distinct from unset when declared", () => {

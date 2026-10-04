@@ -125,12 +125,50 @@ function dominantModality(serverWords: string[]): Modality {
 }
 
 // ── Wire description ────────────────────────────────────────────────────────
+//
+// ONE renderer for what a rule puts on the wire in each state the owner decides:
+// NOT SET, OFF, and a value. It mirrors the engine's own order (aidream
+// matrx_ai/catalog/controls.py `CompiledControlsMap.outbound`): const, declared
+// drop and "via family" first; then OFF (`off`); then the per-value map; and a
+// rule's `default` is sent whenever the caller set nothing (`send_when_unset`
+// only ALSO backfills a value the map eliminated). A processor rule's `default`
+// is run through the processor as if the caller had sent it. Every outcome
+// carries a `claim` the guard (`__tests__/wire_cases.test.ts`) checks against
+// the engine's computed wire for live cells, so the words cannot drift from it.
 
 export type WireTone = "send" | "nothing" | "drop" | "computed" | "server";
 
-export type WireOutcome = { text: string; tone: WireTone };
+/** What the description promises about the wire. */
+export type WireClaim =
+  | { kind: "nothing" }
+  /** This exact provider value (or object) reaches the wire. */
+  | { kind: "value"; value: unknown }
+  /** Something reaches the wire, shaped by the server (a processor, the lowest accepted level). */
+  | { kind: "something" }
+  /** Decided at request time (nearest accepted value, a related setting). */
+  | { kind: "unknown" };
+
+export type WireOutcome = { text: string; tone: WireTone; claim: WireClaim };
+
+/**
+ * Where the rule sits: `consumedBy` names the setting whose server-side processor
+ * reads this key itself (its own rule's values are then not what goes out).
+ */
+export type RuleContext = { consumedBy?: string | null };
+
+/** The provider value a processor sends when the caller set nothing, when the rule declares one. */
+function processorUnsetDefault(rule: ControlRule): { value: unknown; limit: boolean } | null {
+  if (hasDefault(rule) && rule.default !== "auto") return { value: rule.default, limit: false };
+  const cfg = rule.processor_config ?? {};
+  if (cfg.default !== undefined && cfg.default !== null) return { value: cfg.default, limit: false };
+  for (const [k, v] of Object.entries(cfg)) {
+    if (k.startsWith("default_") && typeof v === "number") return { value: v, limit: true };
+  }
+  return null;
+}
 
 const OFF_WORDS = new Set(["none", "off", "never"]);
+const NOTHING: WireClaim = { kind: "nothing" };
 
 function show(v: unknown): string {
   if (typeof v === "string") return v;
@@ -141,54 +179,112 @@ function sentKey(rule: ControlRule, key: string): string {
   return rule.provider_key && rule.provider_key !== key ? `${rule.provider_key} = ` : "";
 }
 
-/** Rule-wide outcomes that win over any per-value mapping. */
+function hasDefault(rule: ControlRule): boolean {
+  return rule.default !== undefined && rule.default !== null;
+}
+
+/** Rule-wide outcomes that win over any per-value mapping (engine pass 1 order). */
 function ruleWide(rule: ControlRule, key: string): WireOutcome | null {
-  if (rule.drop === true) return { text: "Dropped", tone: "drop" };
-  if (rule.supported === false) return { text: "Converts via family", tone: "computed" };
-  if (rule.processor) return { text: "Shaped by the server", tone: "server" };
+  if (rule.drop === true) return { text: "Dropped", tone: "drop", claim: NOTHING };
+  if (rule.supported === false)
+    return { text: "Converts via family", tone: "computed", claim: { kind: "unknown" } };
   if (rule.const !== undefined)
-    return { text: `${sentKey(rule, key)}${show(rule.const)} (fixed)`, tone: "send" };
+    return {
+      text: `${sentKey(rule, key)}${show(rule.const)} (fixed)`,
+      tone: "send",
+      claim: { kind: "value", value: rule.const },
+    };
   return null;
 }
 
+function sendDefault(rule: ControlRule, key: string): WireOutcome {
+  return {
+    text: `${sentKey(rule, key)}${show(rule.default)} (default)`,
+    tone: "send",
+    claim: { kind: "value", value: rule.default },
+  };
+}
+
 /** What the target receives for one canonical value, as this rule declares it. */
-export function describeValue(rule: ControlRule, key: string, value: unknown): WireOutcome {
+export function describeValue(
+  rule: ControlRule,
+  key: string,
+  value: unknown,
+  ctx: RuleContext = {},
+): WireOutcome {
   const wide = ruleWide(rule, key);
   if (wide) return wide;
+  if (ctx.consumedBy && ctx.consumedBy !== key)
+    return {
+      text: `Decided with ${plainSetting(ctx.consumedBy).toLowerCase()}`,
+      tone: "server",
+      claim: { kind: "unknown" },
+    };
+  if (rule.context && typeof rule.context === "object")
+    return {
+      text: `Only when ${Object.values(rule.context).map(String).join(", ")}`,
+      tone: "computed",
+      claim: { kind: "unknown" },
+    };
+  if (rule.processor) {
+    const allowed = rule.processor_config?.allowed;
+    const taken = !Array.isArray(allowed) || allowed.map(String).includes(String(value));
+    return taken
+      ? { text: "Shaped by the server", tone: "server", claim: { kind: "something" } }
+      : { text: "Not taken — the server decides", tone: "computed", claim: { kind: "unknown" } };
+  }
   const prefix = sentKey(rule, key);
   const token = typeof value === "string" ? value : JSON.stringify(value);
   const map = rule.value_map;
   if (map && typeof map === "object" && !Array.isArray(map)) {
     if (token in map) {
       const mapped = map[token];
-      return mapped === null
-        ? { text: "Nothing sent", tone: "nothing" }
-        : { text: `${prefix}${show(mapped)}`, tone: "send" };
+      if (mapped === null) {
+        return rule.send_when_unset && hasDefault(rule)
+          ? sendDefault(rule, key)
+          : { text: "Nothing sent", tone: "nothing", claim: NOTHING };
+      }
+      return { text: `${prefix}${show(mapped)}`, tone: "send", claim: { kind: "value", value: mapped } };
     }
     if (Array.isArray(rule.to_default) && rule.to_default.map(String).includes(token)) {
-      return rule.default !== undefined
-        ? { text: `${prefix}${show(rule.default)} (default)`, tone: "send" }
-        : { text: "Nothing sent", tone: "nothing" };
+      return hasDefault(rule)
+        ? sendDefault(rule, key)
+        : { text: "Nothing sent", tone: "nothing", claim: NOTHING };
     }
     return {
       text: rule.on_unmapped ? `Unmapped: ${rule.on_unmapped}` : "Unmapped — nearest",
       tone: "computed",
+      claim: { kind: "unknown" },
     };
   }
   if (Array.isArray(rule.accepts) && !rule.accepts.map(String).includes(token)) {
-    return { text: "Not accepted — nearest", tone: "computed" };
+    return { text: "Not accepted — nearest", tone: "computed", claim: { kind: "unknown" } };
   }
-  return { text: `${prefix}${token}`, tone: "send" };
+  if (typeof value === "number" && rule.clamp) {
+    const { min, max } = rule.clamp;
+    if ((min != null && value < min) || (max != null && value > max)) {
+      const clamped = min != null && value < min ? min : max;
+      return { text: `${prefix}${show(clamped)} (capped)`, tone: "send", claim: { kind: "value", value: clamped } };
+    }
+  }
+  return { text: `${prefix}${token}`, tone: "send", claim: { kind: "value", value } };
 }
 
 /** What the target receives when the caller never set the key. */
 export function describeUnset(rule: ControlRule, key: string): WireOutcome {
-  if (rule.drop === true || rule.supported === false) return { text: "Nothing sent", tone: "nothing" };
-  if (rule.const !== undefined)
-    return { text: `${sentKey(rule, key)}${show(rule.const)} (fixed)`, tone: "send" };
-  if (rule.send_when_unset && rule.default !== undefined)
-    return { text: `${sentKey(rule, key)}${show(rule.default)} (default)`, tone: "send" };
-  return { text: "Nothing sent", tone: "nothing" };
+  if (rule.drop === true || rule.supported === false)
+    return { text: "Nothing sent", tone: "nothing", claim: NOTHING };
+  const wide = ruleWide(rule, key);
+  if (wide) return wide;
+  if (rule.processor) {
+    const d = processorUnsetDefault(rule);
+    if (!d) return { text: "Nothing sent", tone: "nothing", claim: NOTHING };
+    // A processor's default output limit is fitted to the model's maximum at request time.
+    if (d.limit) return { text: "Output limit only", tone: "server", claim: { kind: "something" } };
+    return { text: `Runs at ${show(d.value)} (default)`, tone: "server", claim: { kind: "value", value: d.value } };
+  }
+  if (hasDefault(rule)) return sendDefault(rule, key);
+  return { text: "Nothing sent", tone: "nothing", claim: NOTHING };
 }
 
 /** The canonical OFF value of a setting, when its vocabulary has one. */
@@ -206,17 +302,29 @@ export function describeOff(
   rule: ControlRule,
   key: string,
   setting: TranslationSetting | undefined,
+  ctx: RuleContext = {},
 ): WireOutcome | null {
   const off = rule.off;
-  if (off && typeof off === "object") {
-    if ("send" in off) return { text: `${sentKey(rule, key)}${show(off.send)}`, tone: "send" };
-    if ("floor" in off && off.floor) return { text: "Lowest it accepts", tone: "send" };
-    if ("omit" in off && off.omit)
-      return { text: off.why ? `Nothing sent — ${off.why}` : "Nothing sent", tone: "nothing" };
-  }
   const offValue = offValueOf(setting);
+  if (off === undefined && offValue === undefined) return null;
+  const wide = ruleWide(rule, key);
+  if (wide) return wide;
+  if (off && typeof off === "object") {
+    if ("send" in off)
+      return { text: `${sentKey(rule, key)}${show(off.send)}`, tone: "send", claim: { kind: "value", value: off.send } };
+    if ("floor" in off && off.floor)
+      return { text: "Lowest it accepts", tone: "send", claim: { kind: "something" } };
+    if ("omit" in off && off.omit) {
+      // Off behaves exactly as not set (K6): the rule's default still applies.
+      const unset = describeUnset(rule, key);
+      if (unset.claim.kind !== "nothing") return unset;
+      return { text: off.why ? `Nothing sent — ${off.why}` : "Nothing sent", tone: "nothing", claim: NOTHING };
+    }
+  }
+  if (rule.processor)
+    return { text: "Switched off by the server", tone: "server", claim: { kind: "unknown" } };
   if (offValue === undefined) return null;
-  return describeValue(rule, key, offValue);
+  return describeValue(rule, key, offValue, ctx);
 }
 
 /** Number → value ladder lines ("≤ 4096 → low"), as declared. */
@@ -232,7 +340,9 @@ export function describeFromNumber(rule: ControlRule): { range: string; outcome:
           : `${lower + 1}–${step.lte}`;
     if (step.lte !== null) lower = step.lte;
     const outcome: WireOutcome =
-      step.to === null ? { text: "Dropped", tone: "drop" } : { text: show(step.to), tone: "send" };
+      step.to === null
+        ? { text: "Dropped", tone: "drop", claim: { kind: "nothing" } }
+        : { text: show(step.to), tone: "send", claim: { kind: "value", value: step.to } };
     return { range, outcome };
   });
 }
@@ -590,33 +700,71 @@ function sentAs(rule: ControlRule, key: string): string {
   return plainSetting(last).toLowerCase();
 }
 
+/** Level words a non-technical reader knows ("xhigh" → "extra-high"). */
+const LEVEL_WORDS: Record<string, string> = { xhigh: "extra-high", max: "maximum" };
+
+function plainLevel(v: unknown): string {
+  return typeof v === "string" && LEVEL_WORDS[v] ? LEVEL_WORDS[v] : plainValue(v);
+}
+
+/** One state's outcome in words ("nothing sent", "sends auto", "runs at extra-high effort"). */
+export function plainOutcome(
+  o: WireOutcome,
+  rule: ControlRule,
+  key: string,
+  opts: { runs?: boolean } = {},
+): string {
+  const claim = o.claim;
+  if (claim.kind === "nothing") return "nothing sent";
+  if (claim.kind === "something") {
+    if (o.text === "Lowest it accepts") return "its lowest level";
+    if (o.text === "Output limit only") return "only the output limit is sent";
+    return "shaped by the server";
+  }
+  if (claim.kind === "unknown") {
+    if (o.text.startsWith("Decided with")) return o.text.toLowerCase();
+    if (o.text.startsWith("Only when")) return o.text.toLowerCase();
+    return o.tone === "server" ? "switched off by the server" : "the nearest it accepts";
+  }
+  if (opts.runs && /effort|level/.test(key)) return `runs at ${plainLevel(claim.value)} effort`;
+  if (opts.runs) return `sends ${plainLevel(claim.value)}`;
+  const renamed = rule.provider_key && rule.provider_key !== key;
+  return renamed ? `sends ${sentAs(rule, key)} ${plainValue(claim.value)}` : `sends ${plainLevel(claim.value)}`;
+}
+
 /**
- * One short line saying what a rule does, in words:
- * "Off → sends thinking disabled · 5,000–11,000 → medium".
+ * What a rule does in every state, in words, from the same renderer the editor
+ * and the engine guard use: "Not set → runs at extra-high effort · Off → sends
+ * thinking disabled · A value → runs at that level".
  */
-export function plainRule(rule: ControlRule | null | undefined, key: string, setting?: TranslationSetting): string {
-  if (!rule || Object.keys(rule).length === 0) return "No rule — the engine guesses";
+export function plainRule(
+  rule: ControlRule | null | undefined,
+  key: string,
+  setting?: TranslationSetting,
+  ctx: RuleContext = {},
+): string {
+  if (!rule || Object.keys(rule).length === 0) return "No rule yet";
   if (rule.drop === true) return "Not sent";
   if (rule.supported === false) return "Not sent — a related setting carries it";
   if (rule.const !== undefined) return `Always sends ${sentAs(rule, key)} ${plainValue(rule.const)}`;
   const parts: string[] = [];
-  const off = rule.off;
-  if (off && typeof off === "object") {
-    if ("send" in off) parts.push(`Off → sends ${sentAs(rule, key)} ${plainValue(off.send)}`);
-    else if ("floor" in off && off.floor) parts.push("Off → its lowest level");
-    else if ("omit" in off && off.omit) parts.push("Off → nothing sent");
-  } else {
-    const offValue = offValueOf(setting);
-    if (offValue !== undefined) {
-      const o = describeValue(rule, key, offValue);
-      if (o.tone === "nothing") parts.push("Off → nothing sent");
-    }
+  const unset = describeUnset(rule, key);
+  parts.push(`Not set → ${plainOutcome(unset, rule, key, { runs: Boolean(rule.processor) })}`);
+  const off = describeOff(rule, key, setting, ctx);
+  if (off) parts.push(`Off → ${plainOutcome(off, rule, key)}`);
+  const valueParts: string[] = [];
+  if (ctx.consumedBy && ctx.consumedBy !== key) {
+    valueParts.push(`A value → decided with ${plainSetting(ctx.consumedBy).toLowerCase()}`);
+    return [...parts, ...valueParts].join(" · ");
   }
-  if (rule.send_when_unset && rule.default !== undefined) parts.push(`Not set → ${plainValue(rule.default)}`);
+  if (rule.context && typeof rule.context === "object") {
+    valueParts.push(`A value → sent only when ${Object.values(rule.context).map(String).join(", ")}`);
+    return [...parts, ...valueParts].join(" · ");
+  }
   const ladder = Array.isArray(rule.from_number) ? rule.from_number : [];
   let lower: number | null = null;
   for (const step of ladder) {
-    const to = step.to === null ? "not sent" : plainValue(step.to);
+    const to = step.to === null ? "not sent" : plainLevel(step.to);
     const range =
       step.lte === null
         ? `over ${plainValue(lower ?? 0)}`
@@ -624,24 +772,42 @@ export function plainRule(rule: ControlRule | null | undefined, key: string, set
           ? `up to ${plainValue(step.lte)}`
           : `${plainValue(lower + 1)}–${plainValue(step.lte)}`;
     if (step.lte !== null) lower = step.lte;
-    parts.push(`${range} → ${to}`);
+    valueParts.push(`${range} → ${to}`);
   }
   const map = rule.value_map && typeof rule.value_map === "object" ? rule.value_map : null;
   if (map) {
-    const changed = Object.entries(map).filter(([k, v]) => k !== "auto" && v !== null && String(v) !== k);
-    for (const [k, v] of changed.slice(0, 3)) parts.push(`${k} → ${plainValue(v)}`);
-    if (changed.length > 3) parts.push(`${changed.length - 3} more`);
+    const changed = Object.entries(map).filter(
+      ([k, v]) => k !== "auto" && !OFF_WORDS.has(k) && v !== null && String(v) !== k,
+    );
+    for (const [k, v] of changed.slice(0, 3)) valueParts.push(`${plainLevel(k)} → ${plainLevel(v)}`);
+    if (changed.length > 3) valueParts.push(`${changed.length - 3} more`);
   }
   if (rule.clamp && (rule.clamp.min != null || rule.clamp.max != null)) {
-    if (rule.clamp.max != null) parts.push(`capped at ${plainValue(rule.clamp.max)}`);
-    else parts.push(`at least ${plainValue(rule.clamp.min)}`);
+    if (rule.clamp.max != null) valueParts.push(`capped at ${plainValue(rule.clamp.max)}`);
+    else valueParts.push(`at least ${plainValue(rule.clamp.min)}`);
   }
-  if (parts.length === 0) {
-    return rule.provider_key && rule.provider_key !== key
-      ? `Sent as ${sentAs(rule, key)}, unchanged`
-      : "Sent unchanged";
+  if (valueParts.length === 0) {
+    valueParts.push(
+      rule.processor
+        ? "A value → runs at that level"
+        : rule.provider_key && rule.provider_key !== key
+          ? `A value → sent as ${sentAs(rule, key)}`
+          : "A value → sent as given",
+    );
   }
-  return parts.join(" · ");
+  return [...parts, ...valueParts].join(" · ");
+}
+
+/**
+ * What the engine does for a setting when NO rule exists at any layer (aidream
+ * `CompiledControlsMap.translate_foreign`, setting families on): not set sends
+ * nothing; a value converts into a related setting of its family the models
+ * carry, else it is dropped and the person is warned.
+ */
+export function plainNoRule(carrier: string | null): string {
+  return carrier
+    ? `Not set → nothing sent · A value → carried by ${plainSetting(carrier).toLowerCase()}`
+    : "Not set → nothing sent · A value → dropped, with a warning";
 }
 
 
@@ -660,8 +826,12 @@ export type QueueItem = {
   groupKind: CellLayer;
   /** The cell to decide (null for a missing rule). */
   cell: TranslationCellRow | null;
-  /** The rule the next layer down would use instead (null = the engine computes). */
+  /** The rule the next layer down would use instead (null = no rule at any layer). */
   without: TranslationCellRow | null;
+  /** What happens without this cell, in words: the rule below it, else what the engine does with no rule. */
+  withoutText: string;
+  /** The setting whose server-side processor reads this key itself on the models it reaches. */
+  consumedBy: string | null;
   /** Models an approval reaches (for a missing rule: the models with no rule). */
   reach: TranslationOffering[];
   /** The grid cell it came from, for opening the editor. */
@@ -688,6 +858,43 @@ export function buildQueue(bundle: TranslationBundle, model: GridModel): QueueIt
   }
   const profileApi = new Map(bundle.profiles.map((p) => [p.id, p.api_id]));
   const items: QueueItem[] = [];
+
+  // With no rule at any layer the engine converts a value into a related setting of the
+  // same family that the model carries (translate_foreign); this finds that setting.
+  const compiledKeys = new Map<string, Map<string, string>>();
+  for (const r of bundle.compiled) {
+    let m = compiledKeys.get(r.offering_id);
+    if (!m) compiledKeys.set(r.offering_id, (m = new Map()));
+    m.set(r.setting_key, r.cell_id);
+  }
+  const cellRule = new Map(bundle.cells.map((c) => [c.id, c.rule]));
+  const carrierFor = (key: string, reach: TranslationOffering[]): string | null => {
+    const family = model.settingByKey.get(key)?.family;
+    if (!family || family.toLowerCase() === "none") return null;
+    for (const o of reach) {
+      for (const [k, cellId] of compiledKeys.get(o.id) ?? []) {
+        if (k === key || model.settingByKey.get(k)?.family !== family) continue;
+        const rule = cellRule.get(cellId);
+        if (rule && rule.drop !== true && rule.supported !== false) return k;
+      }
+    }
+    return null;
+  };
+  const consumedFor = (key: string, reach: TranslationOffering[]): string | null => {
+    for (const o of reach) {
+      for (const [k, cellId] of compiledKeys.get(o.id) ?? []) {
+        if (k === key) continue;
+        const rule = cellRule.get(cellId);
+        if (!rule?.processor || rule.supported === false || rule.drop === true) continue;
+        if (consumedKeys(rule).includes(key)) return k;
+      }
+    }
+    return null;
+  };
+  const withoutText = (key: string, setting: TranslationSetting | undefined, without: TranslationCellRow | null, reach: TranslationOffering[]) =>
+    without
+      ? plainRule(without.rule, key, setting, { consumedBy: consumedFor(key, reach) })
+      : plainNoRule(carrierFor(key, reach));
 
   for (const c of bundle.cells) {
     if (!cellNeedsYou(c)) continue;
@@ -718,6 +925,8 @@ export function buildQueue(bundle: TranslationBundle, model: GridModel): QueueIt
       groupKind: c.layer,
       cell: c,
       without,
+      withoutText: withoutText(c.setting_key, setting, without, reachOf.get(c.id) ?? []),
+      consumedBy: consumedFor(c.setting_key, reachOf.get(c.id) ?? []),
       reach: reachOf.get(c.id) ?? [],
       gridCell: null,
     });
@@ -736,6 +945,8 @@ export function buildQueue(bundle: TranslationBundle, model: GridModel): QueueIt
         groupKind: gc.column.kind,
         cell: null,
         without: gc.fallback,
+        withoutText: withoutText(gc.key, row.setting, gc.fallback, gc.missing),
+        consumedBy: consumedFor(gc.key, gc.missing),
         reach: gc.missing,
         gridCell: gc,
       });

@@ -31,6 +31,13 @@ import type { TranslationSetting } from "../types";
 
 type Mode = "native" | "fixed" | "family" | "drop";
 
+const MODE_OPTIONS: { value: Mode; label: string }[] = [
+  { value: "native", label: "Native" },
+  { value: "fixed", label: "Fixed" },
+  { value: "family", label: "Via family" },
+  { value: "drop", label: "Dropped" },
+];
+
 export function modeOf(rule: ControlRule): Mode {
   if (rule.drop === true) return "drop";
   if (rule.supported === false) return "family";
@@ -175,19 +182,27 @@ export default function RuleFields({
 
   return (
     <div className="space-y-4">
-      <Section title="Reaches the target">
-        <SegmentedControl
-          size="sm"
-          fullWidth
-          value={blank ? "" : mode}
-          onValueChange={setMode}
-          data={[
-            { value: "native", label: "Native" },
-            { value: "fixed", label: "Fixed" },
-            { value: "family", label: "Via family" },
-            { value: "drop", label: "Dropped" },
-          ]}
-        />
+      <Section title={blank ? "Pick how it reaches the model" : "Reaches the target"}>
+        {blank ? (
+          // Nothing is chosen yet: plain buttons, never a segmented control whose hover
+          // state reads as a selection (V3 verifier saw "Dropped" look pre-selected).
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4" data-testid="rule-mode-pick">
+            {MODE_OPTIONS.map((o) => (
+              <Button
+                key={o.value}
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => setMode(o.value)}
+              >
+                {o.label}
+              </Button>
+            ))}
+          </div>
+        ) : (
+          <SegmentedControl size="sm" fullWidth value={mode} onValueChange={setMode} data={MODE_OPTIONS} />
+        )}
       </Section>
 
       {blank ? null : (

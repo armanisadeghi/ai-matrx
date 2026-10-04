@@ -138,20 +138,20 @@ export default function NeedsYouQueue({
     },
     {
       id: "proposed",
-      accessorFn: (r) => (r.cell ? plainRule(r.cell.rule, r.key, r.setting) : ""),
+      accessorFn: (r) => (r.cell ? plainRule(r.cell.rule, r.key, r.setting, { consumedBy: r.consumedBy }) : ""),
       header: "Proposed",
       label: "Proposed",
-      width: "15rem",
+      width: "17rem",
       cell: (r) => {
-        const text = r.cell ? plainRule(r.cell.rule, r.key, r.setting) : "No rule yet";
-        const without = r.without ? plainRule(r.without.rule, r.key, r.setting) : "the engine's guess";
+        const text = r.cell ? plainRule(r.cell.rule, r.key, r.setting, { consumedBy: r.consumedBy }) : "No rule yet";
+        const sub = `${r.cell ? "Without it" : "Today"}: ${r.withoutText}`;
         return (
           <div className="flex min-w-0 flex-col gap-0.5">
             <span className="line-clamp-2 text-sm" title={text}>
               {text}
             </span>
-            <span className="truncate text-xs text-muted-foreground" title={without}>
-              Without it: {without}
+            <span className="line-clamp-2 text-xs text-muted-foreground" title={sub}>
+              {sub}
             </span>
           </div>
         );
@@ -276,7 +276,10 @@ export default function NeedsYouQueue({
             <div className="text-xs text-muted-foreground">
               {r.groupLabel} · {modelsWord(r.reach.length)}
             </div>
-            <div className="text-sm">{r.cell ? plainRule(r.cell.rule, r.key, r.setting) : "No rule yet"}</div>
+            <div className="text-sm">{r.cell ? plainRule(r.cell.rule, r.key, r.setting, { consumedBy: r.consumedBy }) : "No rule yet"}</div>
+            <div className="text-xs text-muted-foreground">
+              {r.cell ? "Without it" : "Today"}: {r.withoutText}
+            </div>
             {r.cell?.rationale ? (
               <div className="line-clamp-2 text-xs text-muted-foreground">{r.cell.rationale}</div>
             ) : null}
