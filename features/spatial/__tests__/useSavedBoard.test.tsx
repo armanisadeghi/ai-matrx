@@ -147,7 +147,7 @@ it("debounces saves to one guarded write of the latest document, based on the op
   expect(id).toBe("board-1");
   expect(doc.nodes[0].id).toBe("b");
   // touchOpened moved the version to 2; the save must be based on it
-  expect(guard).toEqual({ expectedVersion: 2, baseFingerprint: "fp-1" });
+  expect(guard).toEqual({ expectedVersion: 2, baseFingerprint: "fp-1", base: expect.objectContaining({ nodes: expect.any(Array) }) });
   expect(ready(result.current).lastSavedAt).not.toBeNull();
 });
 
@@ -266,7 +266,7 @@ it("Reload board after a conflict reopens the newer board and saving resumes", a
   act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS));
   await settle();
   expect(saveBoardDocument).toHaveBeenCalledTimes(2);
-  expect(saveBoardDocument.mock.calls[1][2]).toEqual({ expectedVersion: 6, baseFingerprint: "fp-5" });
+  expect(saveBoardDocument.mock.calls[1][2]).toEqual({ expectedVersion: 6, baseFingerprint: "fp-5", base: expect.objectContaining({ nodes: expect.any(Array) }) });
 });
 
 it("a refused organization choice is a failed state whose retry asks again", async () => {

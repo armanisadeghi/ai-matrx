@@ -76,6 +76,31 @@ describe("saveBoardDocument", () => {
     ).rejects.toMatchObject({ code: "conflict" });
   });
 
+  it("with the tab's base, content another tab changed is MERGED and saved, never refused", async () => {
+    const theirsNodes = [
+      ...(nodes as unknown[]),
+      { id: "n2", rect: { x: 9, y: 9, w: 3, h: 4 }, title: "Theirs", source: { kind: "text", markdown: "yo" } },
+    ];
+    replies.push({ data: null, error: null }); // CAS missed
+    replies.push({ data: { version: 9, nodes: theirsNodes, edges: [] }, error: null }); // what is stored now
+    replies.push({ data: { version: 10 }, error: null }); // the merged write lands
+    const ours = parseBoardDocument({
+      camera: { x: 0, y: 0, z: 1 },
+      nodes: [
+        ...(nodes as unknown[]),
+        { id: "n3", rect: { x: 5, y: 5, w: 3, h: 4 }, title: "Ours", source: { kind: "text", markdown: "me" } },
+      ],
+      edges: [],
+    }).doc;
+    const saved = await saveBoardDocument("b1", ours, { expectedVersion: 7, baseFingerprint: base, base: doc });
+    expect(saved.version).toBe(10);
+    expect(saved.merged?.conflicts).toBe(0);
+    expect(saved.merged?.doc.nodes.map((n) => n.id).sort()).toEqual(["n1", "n2", "n3"]);
+    const writes = calls.flat().filter((c) => c.op === "update");
+    const written = writes[writes.length - 1].args[0] as { nodes: { id: string }[] };
+    expect(written.nodes.map((n) => n.id).sort()).toEqual(["n1", "n2", "n3"]);
+  });
+
   it("the urgent save is a keepalive PATCH to the same guarded row, as the person", async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://db.example.test";
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "pk_test";

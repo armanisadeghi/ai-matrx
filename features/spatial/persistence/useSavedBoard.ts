@@ -152,7 +152,9 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
 
   // The guard for the next write, outside React state: every save reads and
   // advances it, and a rename / open stamp moves the version too.
-  const guard = useRef<{ id: string; version: number; fingerprint: string } | null>(null);
+  // `base` is the document this tab last knew the stored board to hold (what it loaded, then what
+  // it last wrote): the common ancestor a save merges another tab's changes against.
+  const guard = useRef<{ id: string; version: number; fingerprint: string; base: BoardDocument } | null>(null);
   const blocked = useRef(false);
   const saver = useRef<Autosaver<() => BoardDocument> | null>(null);
   const conflictToast = useRef<string | number | null>(null);
@@ -172,7 +174,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW home board; it never picks which board opens
       (board) => {
         if (!alive) return;
-        guard.current = { id: board.id, version: board.version, fingerprint: board.fingerprint };
+        guard.current = { id: board.id, version: board.version, fingerprint: board.fingerprint, base: board.doc };
         blocked.current = false;
         setSaveError(null);
         setLastSavedAt(null);
@@ -219,10 +221,11 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
         const g = guard.current;
         if (!g || g.id !== boardId) return;
         const token = accessTokenRef.current;
+        const built = build();
         const saved = await saveBoardDocument(
           boardId,
-          build(),
-          { expectedVersion: g.version, baseFingerprint: g.fingerprint },
+          built,
+          { expectedVersion: g.version, baseFingerprint: g.fingerprint, base: g.base },
           urgent && token ? { keepalive: { accessToken: token } } : undefined,
         );
         if (guard.current?.id === boardId) {
@@ -230,7 +233,17 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
             id: boardId,
             version: Math.max(saved.version, guard.current.version),
             fingerprint: saved.fingerprint,
+            // What THIS tab holds (not the merge): the next save carries only this tab's own
+            // changes on top of whatever is stored, so another tab's tiles are never undone.
+            base: built,
           };
+        }
+        // Another tab's changes were merged in. Say so only when both tabs changed the SAME
+        // tile and this tab's version was kept; a clean merge needs no words.
+        if (saved.merged && saved.merged.conflicts > 0) {
+          toast.warning(
+            `Another tab changed ${saved.merged.conflicts === 1 ? "a tile" : `${saved.merged.conflicts} tiles`} you also changed here. Yours was kept.`,
+          );
         }
       },
       onSavingChange: setSaving,

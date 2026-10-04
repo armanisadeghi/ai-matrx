@@ -46,6 +46,7 @@ import {
   serializeBoardDocument,
   type BoardDocument,
 } from "../board/document";
+import { mergeBoardDocuments } from "../board/merge";
 
 type BoardRow = Database["projects"]["Tables"]["spatial_boards"]["Row"];
 /** What a save reads back: the version always; the content only when a CAS missed. */
@@ -654,11 +655,19 @@ export interface SaveGuard {
   expectedVersion: number;
   /** Fingerprint of the document that version held (`LoadedBoard.fingerprint` or the last save's). */
   baseFingerprint: string;
+  /**
+   * The document this tab last knew the stored board to hold. With it, a board another tab
+   * changed is MERGED per tile (`mergeBoardDocuments`) and saved, never refused; without it the
+   * old behaviour stands (a conflict).
+   */
+  base?: BoardDocument;
 }
 
 export interface SavedDocument {
   version: number;
   fingerprint: string;
+  /** Set when another tab's changes were merged in: tiles both tabs changed (ours kept). */
+  merged?: { conflicts: number; doc: BoardDocument };
 }
 
 export interface SaveOptions {
@@ -744,48 +753,73 @@ export async function saveBoardDocument(
   guard: SaveGuard,
   options: SaveOptions = {},
 ): Promise<SavedDocument> {
-  const { nodes, edges } = documentColumns(doc);
-  const fingerprint = documentFingerprint({ nodes, edges });
-  const keepalive = options.keepalive;
-  let result;
-  try {
-    result = await guardedUpdate<SaveRow>({
-      expectedVersion: guard.expectedVersion,
-      applyUpdate: ({ expectedVersion, nextVersion }) =>
-        keepalive
-          ? keepalivePatch(id, { nodes, edges, version: nextVersion }, expectedVersion, keepalive.accessToken)
-          : db
-              .from(TABLE)
-              .update({ nodes, edges, version: nextVersion })
-              .eq("id", id)
-              .eq("version", expectedVersion)
-              .is("deleted_at", null)
-              .select("version")
-              .maybeSingle(),
-      fetchCurrent: () =>
-        db.from(TABLE).select("version, nodes, edges").eq("id", id).is("deleted_at", null).maybeSingle(),
-      rebase: {
-        isPhantom: (current) =>
-          documentFingerprint({ nodes: current.nodes, edges: current.edges }) === guard.baseFingerprint,
-      },
-    });
-  } catch (error) {
-    throw writeFailed("save the board", error);
-  }
-  switch (result.status) {
-    case "saved":
-      return { version: result.row.version, fingerprint };
-    case "conflict":
-      throw new BoardError(
-        "conflict",
-        "This board was changed in another tab or window, so your latest change was not saved.",
-        "Reload the board to see the newer version.",
-      );
-    case "not_found":
-      throw new BoardError(
-        "not_found",
-        "This board was deleted, so your change could not be saved.",
-        "Open another board from your boards list.",
-      );
+  let toWrite = doc;
+  let expectedVersion = guard.expectedVersion;
+  let baseFingerprint = guard.baseFingerprint;
+  let merged: SavedDocument["merged"];
+  // A merge can lose the race to a third write: take what is stored again, a few times.
+  for (let attempt = 0; ; attempt += 1) {
+    const { nodes, edges } = documentColumns(toWrite);
+    const fingerprint = documentFingerprint({ nodes, edges });
+    const keepalive = options.keepalive;
+    let result;
+    try {
+      result = await guardedUpdate<SaveRow>({
+        expectedVersion,
+        applyUpdate: ({ expectedVersion: expected, nextVersion }) =>
+          keepalive
+            ? keepalivePatch(id, { nodes, edges, version: nextVersion }, expected, keepalive.accessToken)
+            : db
+                .from(TABLE)
+                .update({ nodes, edges, version: nextVersion })
+                .eq("id", id)
+                .eq("version", expected)
+                .is("deleted_at", null)
+                .select("version")
+                .maybeSingle(),
+        fetchCurrent: () =>
+          db.from(TABLE).select("version, nodes, edges").eq("id", id).is("deleted_at", null).maybeSingle(),
+        rebase: {
+          isPhantom: (current) =>
+            documentFingerprint({ nodes: current.nodes, edges: current.edges }) === baseFingerprint,
+        },
+      });
+    } catch (error) {
+      throw writeFailed("save the board", error);
+    }
+    switch (result.status) {
+      case "saved":
+        return { version: result.row.version, fingerprint, ...(merged ? { merged } : {}) };
+      case "conflict": {
+        if (!guard.base || attempt >= MERGE_ATTEMPTS) {
+          throw new BoardError(
+            "conflict",
+            "This board was changed in another tab or window, so your latest change was not saved.",
+            "Reload the board to see the newer version.",
+          );
+        }
+        // Another tab changed the board: apply its changes, put this tab's on top, per tile.
+        const theirs = parseBoardDocument({
+          camera: null,
+          nodes: result.currentRow.nodes,
+          edges: result.currentRow.edges,
+        }).doc;
+        const outcome = mergeBoardDocuments(guard.base, theirs, doc);
+        toWrite = outcome.doc;
+        expectedVersion = result.currentVersion;
+        baseFingerprint = documentFingerprint({ nodes: result.currentRow.nodes, edges: result.currentRow.edges });
+        merged = { conflicts: (merged?.conflicts ?? 0) + outcome.conflicts, doc: outcome.doc };
+        break;
+      }
+      case "not_found":
+        throw new BoardError(
+          "not_found",
+          "This board was deleted, so your change could not be saved.",
+          "Open another board from your boards list.",
+        );
+    }
   }
 }
+
+/** Times a save re-merges against a board that moved again while it was merging. */
+const MERGE_ATTEMPTS = 4;
