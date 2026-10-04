@@ -59,6 +59,14 @@
 - Table: toolbar gaps/radius/padding/search width restored in lib/entity-list; design-system 0.60.1 actions column fits its controls. Pager solid-dot + joined header row kept (deliberate) — Arman to say if those are what he misses.
 - Honest samples live: samples/{agents-all,education-overview,education-kit,education-flashcards,agent-builder}; page-top kit in samples/_components/page-top/{feature-cards,kpi-row,promo-banner}.tsx. Builder: 8 proposals in the demo, awaiting Arman's pick — real builder untouched.
 
+## OWNER FEEDBACK 2026-10-04 (in flight)
+- Kit sample DESTROYED a page he called beautiful: restore the real page; only header, 5 top buttons → below banner and identical, drop "Your study path" pill, drop the progress-provenance sentence. Inviting pages are NOT packed — density is for functional pages.
+- Flashcards "Also made from": sentence-length pills. Class = long text in a pill; fix the real component + clamp in package + dev guard + findings check.
+- Table: the list shell modifies the canonical table; rows must never join; saved-view tabs far left. Guard page-level customization of canonical components (ESLint + findings), loudly.
+- Pill buttons: left inset too small / off-centre on samples + real pages. Root-cause + symmetry test + dev guard.
+- No "Replaces…" line on samples (done); classic-view notice hidden on the agents sample (done).
+- Stay in lane: never raise other lanes' problems (security etc.) to him until this UI is perfect.
+
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
   - the system moves into `@ai-matrx/design-system` at the proper CSS layer (the prototype's unlayered `uc-*` beats Tailwind utilities, and the density scope's `!important` padding fights pages);
