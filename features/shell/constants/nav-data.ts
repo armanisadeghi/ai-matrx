@@ -1126,6 +1126,8 @@ export const primaryNavItems: ShellNavItem[] = [
           { label: "Recents", href: "/files/recents", iconName: "CalendarClock", guestHidden: true },
           { label: "Starred", href: "/files/starred", iconName: "Star", guestHidden: true },
           { label: "Shared", href: "/files/shared", iconName: "Share2", guestHidden: true },
+          { label: "E-Signatures", href: "/esign", iconName: "FileSignature", guestHidden: true },
+          { label: "Send for Signature", href: "/esign/new", iconName: "FileSignature", actionItem: true, guestHidden: true },
           { label: "Folders", href: "/files/folders", iconName: "Folder", guestHidden: true },
           { label: "Photos", href: "/files/photos", iconName: "Image", guestHidden: true },
           { label: "Google Drive", href: "/files/google-drive", iconName: "FolderOpen", guestHidden: true },
