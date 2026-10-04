@@ -107,8 +107,8 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
       conversationId: id,
       serverHasIt,
       savedId,
-      agentId: selectAgentIdFromInstance(id)(store.getState()),
-      chosenAgentId,
+      agentId: selectAgentIdFromInstance(id)(store.getState()) ?? null,
+      chosenAgentId: chosenAgentId ?? null,
     });
     if (next) {
       onSource(next, nextTitle ?? undefined);

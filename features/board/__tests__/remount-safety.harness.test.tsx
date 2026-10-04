@@ -52,6 +52,7 @@ function itemType(Body: BoardItemType["Body"]): BoardItemType {
     matches: () => true,
     Body,
     surface: { none: "harness probe" },
+    comments: null,
   };
 }
 
