@@ -527,11 +527,13 @@ export function ComposerFoldedSection({ children }: { children: ReactNode }) {
     <>
       <ComposerMenuDivider />
       <ComposerMenuLabel>From the toolbar</ComposerMenuLabel>
+      {/* Each moved control glows on its own, 4px apart — never one block. */}
       <div
         data-composer-folded-section=""
         className={cn(
-          "rounded-md transition-[background-color,box-shadow] duration-1000 ease-out motion-reduce:transition-none",
-          fresh ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : "bg-transparent ring-0",
+          "flex flex-col gap-1",
+          "[&>*]:rounded-md [&>*]:transition-[background-color,box-shadow] [&>*]:duration-1000 [&>*]:ease-out motion-reduce:[&>*]:transition-none",
+          fresh ? "[&>*]:bg-primary/10 [&>*]:ring-1 [&>*]:ring-inset [&>*]:ring-primary/30" : "[&>*]:bg-transparent",
         )}
       >
         {children}
