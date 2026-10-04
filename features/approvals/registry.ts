@@ -21,6 +21,7 @@ import { contactImportKind } from "./kinds/contact-import";
 import { documentAppendKind } from "./kinds/document-append";
 import { documentCreateKind } from "./kinds/document-create";
 import { gmailSendKind } from "./kinds/gmail-send";
+import { gmailDraftKind } from "./kinds/gmail-draft";
 import { keywordMeaningKind } from "./kinds/seo/keyword-meaning";
 import { placementDriftKind } from "./kinds/seo/placement-drift";
 import { topicPlacementKind } from "./kinds/seo/topic-placement";
@@ -34,6 +35,7 @@ import type { ApprovalKind } from "./types";
 export const APPROVAL_KINDS: readonly ApprovalKind[] = [
   // Things that leave the building first — a message nobody can recall.
   gmailSendKind,
+  gmailDraftKind,
   // Then changes to the organization's own tables (chair ruling 2026-10-03, ONE approval
   // queue): the record store's `work_approval` rows, read from `custom.work_inbox` across every
   // organization and decided only through `custom.work_approval_decide`.

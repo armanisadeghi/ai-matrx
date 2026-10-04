@@ -365,3 +365,52 @@ export async function sendReviewedGmail(
   );
   return narrowReviewedSendOutcome(await responseRecord(response));
 }
+
+/** A private Gmail draft is prepared under one stable operation id. */
+export interface ReviewedGmailDraftResult {
+  approvalId: string;
+  accountEmail: string;
+  to: string;
+  cc: string[];
+  subject: string;
+  body: string;
+}
+
+export async function reviewGmailDraft(input: {
+  operationId: string;
+  connectionId: string;
+  organizationId?: string | null;
+  to: string;
+  cc: string[];
+  subject: string;
+  body: string;
+}): Promise<ReviewedGmailDraftResult> {
+  const organizationId = await ensureOrganizationContext({ organizationId: input.organizationId ?? null });
+  const response = await postGoogleBackend(
+    "/api/google-workspace/gmail/drafts/review",
+    {
+      operation_id: input.operationId,
+      connection_id: input.connectionId,
+      organization_id: organizationId,
+      to: input.to,
+      cc: input.cc,
+      subject: input.subject,
+      body: input.body,
+    },
+    "Unable to prepare the Gmail draft.",
+    organizationId,
+  );
+  const body = await responseRecord(response);
+  if (body.state !== "reviewed" || !Array.isArray(body.cc) ||
+      body.cc.some((entry) => typeof entry !== "string")) {
+    throw new Error("Gmail returned an invalid draft review. Check Gmail before trying again.");
+  }
+  return {
+    approvalId: requiredString(body, "approval_id"),
+    accountEmail: requiredString(body, "account_email"),
+    to: requiredString(body, "to"),
+    cc: body.cc as string[],
+    subject: requiredString(body, "subject"),
+    body: requiredString(body, "body"),
+  };
+}

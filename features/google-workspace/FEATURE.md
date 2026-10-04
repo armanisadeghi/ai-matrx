@@ -48,7 +48,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
   a second GIS popup or exposes the refresh token.
 - The durable refresh token is encrypted in aidream's canonical user secrets vault and is never persisted in the browser.
 - When GIS popup consent cannot be controlled, the shared connect panel offers an explicit same-tab redirect-code fallback. It uses the current registered origin as the callback, binds the request to a one-time HttpOnly `SameSite=Lax` state cookie plus bounded session metadata, and bypasses the root Supabase recovery-code redirect only while that cookie is present. The callback exchanges the code through the same aidream endpoint and scope contract and stores neither codes nor tokens in browser storage.
-- The reviewed-send workflow uses only `gmail.send`. A separate `gmail.readonly` internal-test row opens an on-demand search/message reader; it cannot delete, organize, or send Gmail.
+- The reviewed-send workflow uses only `gmail.send`. Saving a private Gmail draft requires `gmail.modify` on the chosen connection. A separate `gmail.readonly` internal-test row opens an on-demand search/message reader; it cannot delete, organize, or send Gmail.
 - Gmail sending requires visible recipients, subject, body, and an unchecked user confirmation immediately before the send action.
 - Google Workspace content is not persisted by these endpoints and is not used to train generalized AI models.
 - `/privacy-policy` affirmatively states that Google Workspace API data use adheres to the Google User Data Policy, including Limited Use requirements.
@@ -90,6 +90,16 @@ user has changed them. There is no "always send", no pre-checked consent, and no
 path that sends without a click; approval covers ONE message. On the server side
 the tool has no executor binding at all, so an agent cannot assert consent even
 in principle. Preview every state at `/demos/agent-cards`.
+
+The same card offers **Save to Gmail** for a connection with `gmail.modify`.
+That click reviews the exact current account and fields through
+`POST /api/google-workspace/gmail/drafts/review`, then applies its returned
+approval through the canonical Google door. The operation UUID stays fixed for
+an explicit retry of unchanged input; changing a field or account starts a new
+intent. A saved draft leaves the composition editable and does not resolve the
+send ask or write a CRM sent record. An uncertain apply offers Check status on
+the same approval ID. The `gmail_draft` approval kind renders the reviewed
+fields from the stored `gmail_draft_dry_run` payload in the shared queue.
 
 🚨 **THE CARD PARSES RECIPIENT FIELDS WITH THE ONE PARSER, AND REPORTS WHO GOOGLE
 GOT.** Its Cc goes through `splitMailboxField` from `features/crm/gmail/mailbox.ts`

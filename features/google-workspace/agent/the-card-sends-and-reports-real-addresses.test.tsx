@@ -43,10 +43,18 @@ import type { EligibilityVerdict } from "@/features/crm/compliance/types";
 import { preflightGmailRecipients } from "@/features/crm/gmail/preflight";
 
 const mockSend = jest.fn();
+const mockReview = jest.fn();
+const mockApply = jest.fn();
+let mockScopes = ["gmail-send", "gmail-draft"];
+let mockConnections = [{ id: "conn-1", account_email: "me@example.com", scopes: ["gmail-send", "gmail-draft"] }];
 const resolved: { callId: string; response: Record<string, unknown> }[] = [];
 
 jest.mock("@/features/google-workspace/service", () => ({
   sendReviewedGmail: (...args: unknown[]) => mockSend(...args),
+  reviewGmailDraft: (...args: unknown[]) => mockReview(...args),
+}));
+jest.mock("@/features/approvals/google-door", () => ({
+  applyGoogleApproval: (...args: unknown[]) => mockApply(...args),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => undefined,
@@ -62,8 +70,8 @@ jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hook
 /** The body editor brings a whole AI assist tree with it; the card's subject is
  *  the addresses, so it stands in as a plain textarea. */
 jest.mock("@/components/official/ProTextarea", () => ({
-  ProTextarea: (props: { value?: string }) => (
-    <textarea defaultValue={props.value} />
+  ProTextarea: (props: { id?: string; value?: string; onChange?: React.ChangeEventHandler<HTMLTextAreaElement> }) => (
+    <textarea id={props.id} value={props.value} onChange={props.onChange} />
   ),
 }));
 jest.mock("@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry", () => ({
@@ -75,14 +83,7 @@ jest.mock("@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry", ()
 jest.mock("@/features/marketing/google/hooks", () => ({
   useGoogleConnectionInventory: () => ({
     data: {
-      connections: [
-        {
-          id: "conn-1",
-          account_email: "me@example.com",
-          granted_scopes: ["https://www.googleapis.com/auth/gmail.send"],
-          status: "connected",
-        },
-      ],
+      connections: mockConnections,
     },
     isLoading: false,
   }),
@@ -102,15 +103,23 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 jest.mock("@/features/google-workspace/connection", () => ({
-  eligibleGoogleConnections: (connections: { id: string }[]) => connections,
+  eligibleGoogleConnections: (connections: { id: string; scopes?: string[] }[], capability: string) =>
+    mockScopes.includes(capability)
+      ? connections.filter((connection) => connection.scopes?.includes(capability) ?? true)
+      : [],
   preferredGoogleConnectionId: () => "conn-1",
   rememberGoogleConnection: () => undefined,
 }));
 jest.mock("@/features/google-workspace/GoogleAccountSelect", () => ({
-  GoogleAccountSelect: () => null,
+  GoogleAccountSelect: ({ connections, connectionId, onConnectionChange }: {
+    connections: { id: string; account_email: string }[];
+    connectionId: string;
+    onConnectionChange: (id: string) => void;
+  }) => <select aria-label="Google account" value={connectionId} onChange={(event) => onConnectionChange(event.target.value)}>
+    {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.account_email}</option>)}
+  </select>,
 }));
 
-// eslint-disable-next-line import/first -- after the mocks above
 import { GmailReviewCard } from "./GmailReviewCard";
 import type { ReviewedGmailSendOutcome } from "@/features/crm/gmail/reviewed-send-contract";
 
@@ -207,6 +216,10 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   mockSend.mockReset();
+  mockReview.mockReset();
+  mockApply.mockReset();
+  mockScopes = ["gmail-send", "gmail-draft"];
+  mockConnections = [{ id: "conn-1", account_email: "me@example.com", scopes: ["gmail-send", "gmail-draft"] }];
 });
 
 afterEach(() => {
@@ -282,6 +295,115 @@ async function press(cc: string[], plan?: Parameters<typeof GmailReviewCard>[0][
   await settle();
   return { text: container.textContent ?? "" };
 }
+
+describe("saving a reviewed Gmail draft", () => {
+  const savedReply = { receipt: { state: "applied", output: { __kind: "gmail_draft_saved", draft_id: "draft-1", message_id: "message-1", account_email: "me@example.com" } } };
+
+  async function click(label: string) {
+    const button = [...container.querySelectorAll("button")].find(
+      (entry) => (entry.textContent ?? "").trim() === label,
+    );
+    if (!button) throw new Error(`Missing ${label}`);
+    await act(async () => button.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    await settle();
+  }
+
+  async function change(selector: string, value: string) {
+    const field = container.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | null;
+    if (!field) throw new Error(`Missing ${selector}`);
+    const prototype = field instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(prototype, "value")?.set?.call(field, value);
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  }
+
+  it("a modify-only mailbox saves without sending or resolving the ask", async () => {
+    mockScopes = ["gmail-draft"];
+    mockReview.mockResolvedValue({ approvalId: "approval-1" });
+    mockApply.mockResolvedValue({ receipt: { state: "applied", output: { __kind: "gmail_draft_saved", draft_id: "draft-1", message_id: "message-1", account_email: "me@example.com" } } });
+    await act(async () => root.render(<GmailReviewCard ask={ask([])} organizationId="org-1" />));
+    const send = [...container.querySelectorAll("button")].find((entry) => entry.textContent?.trim() === "Send");
+    expect(send?.disabled).toBe(true);
+    await click("Save to Gmail");
+    expect(mockReview).toHaveBeenCalledTimes(1);
+    expect(mockApply).toHaveBeenCalledWith("approval-1");
+    expect(mockSend).not.toHaveBeenCalled();
+    expect(resolved).toHaveLength(0);
+    expect(container.textContent).toContain("Saved in Gmail Drafts");
+    await click("Saved");
+    expect(mockReview).toHaveBeenCalledTimes(1);
+  });
+
+  it("a send-only mailbox keeps Send and names missing draft access", async () => {
+    mockScopes = ["gmail-send"];
+    await act(async () => root.render(<GmailReviewCard ask={ask([])} />));
+    expect(container.textContent).toContain("lacks Gmail draft access");
+    expect([...container.querySelectorAll("button")].find((entry) => entry.textContent?.trim() === "Send")?.disabled).toBe(false);
+    expect([...container.querySelectorAll("button")].find((entry) => entry.textContent?.trim() === "Save to Gmail")?.disabled).toBe(true);
+  });
+
+  it("an uncertain apply checks the same approval without another prepare", async () => {
+    mockReview.mockResolvedValue({ approvalId: "approval-1" });
+    mockApply.mockResolvedValueOnce({ receipt: { state: "applied_unconfirmed" } }).mockResolvedValueOnce({ receipt: { state: "applied", output: { __kind: "gmail_draft_saved", draft_id: "draft-1", message_id: "message-1", account_email: "me@example.com" } } });
+    await act(async () => root.render(<GmailReviewCard ask={ask([])} />));
+    await click("Save to Gmail");
+    expect(container.textContent).toContain("Check Gmail Drafts");
+    await click("Check status");
+    expect(mockReview).toHaveBeenCalledTimes(1);
+    expect(mockApply).toHaveBeenNthCalledWith(2, "approval-1");
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it.each(["lost response", "refused prepare"])("retries a %s with the same operation id", async (failure) => {
+    mockReview.mockRejectedValueOnce(new Error(failure)).mockResolvedValueOnce({ approvalId: "approval-1" });
+    mockApply.mockResolvedValue(savedReply);
+    await act(async () => root.render(<GmailReviewCard ask={ask([])} />));
+    await click("Save to Gmail");
+    expect(mockApply).not.toHaveBeenCalled();
+    await click("Save to Gmail");
+    expect(mockReview).toHaveBeenCalledTimes(2);
+    const first = mockReview.mock.calls[0]?.[0] as { operationId: string };
+    const second = mockReview.mock.calls[1]?.[0] as { operationId: string };
+    expect(first.operationId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(second.operationId).toBe(first.operationId);
+    expect(mockApply).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves the exact edited fields and selected account, then starts a new operation only for later edits", async () => {
+    mockConnections = [
+      { id: "conn-1", account_email: "me@example.com", scopes: ["gmail-send", "gmail-draft"] },
+      { id: "conn-2", account_email: "other@example.com", scopes: ["gmail-draft"] },
+    ];
+    mockReview.mockResolvedValueOnce({ approvalId: "approval-1" }).mockResolvedValueOnce({ approvalId: "approval-2" });
+    mockApply.mockResolvedValue(savedReply);
+    await act(async () => root.render(<GmailReviewCard ask={ask([])} organizationId="org-1" />));
+    await change('input[id^="gmail-to-"]', "new@example.com");
+    await change('input[id^="gmail-subject-"]', "Updated subject");
+    await change('textarea[id^="gmail-body-"]', "Updated body");
+    const account = container.querySelector('select[aria-label="Google account"]') as HTMLSelectElement;
+    await act(async () => {
+      account.value = "conn-2";
+      account.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await click("Save to Gmail");
+    expect(mockReview.mock.calls[0]?.[0]).toMatchObject({
+      connectionId: "conn-2", organizationId: "org-1", to: "new@example.com",
+      subject: "Updated subject", body: "Updated body", cc: [],
+    });
+    expect(container.textContent).toContain("Saved in Gmail Drafts");
+    await click("Saved");
+    expect(mockReview).toHaveBeenCalledTimes(1);
+    await change('input[id^="gmail-subject-"]', "Another subject");
+    expect(container.textContent).toContain("Current edits are unsaved");
+    await click("Save to Gmail");
+    expect(mockReview).toHaveBeenCalledTimes(2);
+    expect(mockReview.mock.calls[1]?.[0]).toMatchObject({ connectionId: "conn-2", subject: "Another subject" });
+    expect((mockReview.mock.calls[0]?.[0] as { operationId: string }).operationId)
+      .not.toBe((mockReview.mock.calls[1]?.[0] as { operationId: string }).operationId);
+    expect(resolved).toHaveLength(0);
+  });
+});
 
 describe("there is ONE parser for a recipient field", () => {
   it("a Cc written `\"Doe, John\" <john@x.com>` is ONE recipient, and the send goes", async () => {

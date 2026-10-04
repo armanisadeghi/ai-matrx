@@ -21,7 +21,7 @@ import {
   resetGate,
   selectOrganization,
 } from "@/lib/organization/__tests__/gate-harness";
-import { createGoogleDocument, sendReviewedGmail } from "./service";
+import { createGoogleDocument, reviewGmailDraft, sendReviewedGmail } from "./service";
 
 describe("Google Workspace writes — organization gate", () => {
   beforeEach(() => {
@@ -53,6 +53,22 @@ describe("Google Workspace writes — organization gate", () => {
     } as unknown as Parameters<typeof sendReviewedGmail>[0]).catch(() => undefined);
 
     expect(opened).not.toHaveBeenCalled();
+    expect(postGoogleBackend.mock.calls[0]?.[3]).toBe(SELECTED_ORG);
+  });
+
+  it("a draft review preserves the operation and CRM organization in body and header", async () => {
+    const opened = mountPickerAnswering(CHOSEN_ORG);
+    await reviewGmailDraft({
+      operationId: "operation-1", connectionId: "draft-connection",
+      organizationId: SELECTED_ORG, to: "ada@example.com", cc: [],
+      subject: "Hello", body: "Draft",
+    }).catch(() => undefined);
+    expect(opened).not.toHaveBeenCalled();
+    expect(postGoogleBackend).toHaveBeenCalledTimes(1);
+    expect(postGoogleBackend.mock.calls[0]?.[0]).toBe("/api/google-workspace/gmail/drafts/review");
+    expect(postGoogleBackend.mock.calls[0]?.[1]).toMatchObject({
+      operation_id: "operation-1", connection_id: "draft-connection", organization_id: SELECTED_ORG,
+    });
     expect(postGoogleBackend.mock.calls[0]?.[3]).toBe(SELECTED_ORG);
   });
 });

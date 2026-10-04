@@ -13,8 +13,8 @@
  * and any path that sends without a click. Approval here covers ONE message.
  */
 
-import { useState } from "react";
-import { Send, ExternalLink } from "lucide-react";
+import { useRef, useState } from "react";
+import { Send, ExternalLink, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
@@ -30,7 +30,8 @@ import {
 } from "@ai-matrx/chat/agents/ui-first-tools/redux/ask-resolver-registry";
 import { EMPTY_ASK_RESPONSE } from "@ai-matrx/chat/agents/ui-first-tools/tools/schemas";
 import { AgentCardShell } from "@ai-matrx/chat/agents/ui-first-tools/ui/AgentCardShell";
-import { sendReviewedGmail } from "@/features/google-workspace/service";
+import { reviewGmailDraft, sendReviewedGmail } from "@/features/google-workspace/service";
+import { applyGoogleApproval } from "@/features/approvals/google-door";
 import { splitMailboxField } from "@/features/crm/gmail/mailbox";
 import {
   deliveredAddressDisagreement,
@@ -55,6 +56,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface GmailReviewCardProps {
   ask: PendingAsk;
+  organizationId?: string | null;
   /**
    * 🚨 THE LAST GATE, RUN AGAINST WHAT IS ON THIS SCREEN.
    *
@@ -96,7 +98,7 @@ interface GmailReviewCardProps {
   plan?: (draft: { to: string; cc: string[] }) => ReviewedGmailSendPlan;
 }
 
-export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) {
+export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailReviewCardProps) {
   const dispatch = useAppDispatch();
   const draft = ask.email;
   const inventory = useGoogleConnectionInventory();
@@ -113,11 +115,18 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
     string | null
   >(() => draft?.connectionId ?? preferredGoogleConnectionId("gmail-send"));
 
-  const mailboxes = eligibleGoogleConnections(
-    inventory.data?.connections ?? [],
-    "gmail-send",
-    selectedConnectionId,
-  );
+  type SaveAttempt = { fingerprint: string; operationId: string; approvalId?: string; state: "idle" | "busy" | "applying" | "saved" | "uncertain" };
+  const attemptRef = useRef<SaveAttempt | null>(null);
+  const [saveAttempt, setSaveAttempt] = useState<SaveAttempt | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const allConnections = inventory.data?.connections ?? [];
+  const mailboxes = [
+    ...eligibleGoogleConnections(allConnections, "gmail-send", selectedConnectionId),
+    ...eligibleGoogleConnections(allConnections, "gmail-draft", selectedConnectionId).filter(
+      (entry) => !eligibleGoogleConnections(allConnections, "gmail-send", selectedConnectionId).some((send) => send.id === entry.id),
+    ),
+  ];
   const selectedMailbox =
     mailboxes.find((mailbox) => mailbox.id === selectedConnectionId) ??
     mailboxes[0] ??
@@ -132,13 +141,84 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
     cc !== draft.cc.join(", ") ||
     subject !== draft.subject ||
     body !== draft.body;
-  const canSend = Boolean(
-    selectedMailbox && to.trim().includes("@") && subject.trim() && body.trim(),
-  );
+  const hasSendGrant = Boolean(selectedMailbox && eligibleGoogleConnections(allConnections, "gmail-send", selectedMailbox.id).some((entry) => entry.id === selectedMailbox.id));
+  const hasDraftGrant = Boolean(selectedMailbox && eligibleGoogleConnections(allConnections, "gmail-draft", selectedMailbox.id).some((entry) => entry.id === selectedMailbox.id));
+  const complete = Boolean(to.trim().includes("@") && subject.trim() && body.trim());
+  const canSend = hasSendGrant && complete;
+  const canSave = hasDraftGrant && complete;
+  const saveFingerprint = JSON.stringify([selectedMailbox?.id, to.trim(), splitMailboxField(cc), subject, body]);
+  const currentSave = saveAttempt?.fingerprint === saveFingerprint ? saveAttempt : null;
+
+  function publishAttempt(next: SaveAttempt) {
+    attemptRef.current = next;
+    setSaveAttempt(next);
+  }
+
+  function readSaveReceipt(
+    reply: Awaited<ReturnType<typeof applyGoogleApproval>>,
+    attempt: SaveAttempt,
+    approvalId: string,
+  ) {
+    const receipt = reply.receipt;
+    const output = receipt.output;
+    if (receipt.state === "applied" && typeof output === "object" && output !== null && !Array.isArray(output) && output.__kind === "gmail_draft_saved" && typeof output.draft_id === "string" && typeof output.message_id === "string" && typeof output.account_email === "string") {
+      publishAttempt({ ...attempt, approvalId, state: "saved" });
+    } else if (receipt.state === "applied_unconfirmed") {
+      publishAttempt({ ...attempt, approvalId, state: "uncertain" });
+    } else if (receipt.state === "applying") {
+      publishAttempt({ ...attempt, approvalId, state: "applying" });
+    } else {
+      publishAttempt({ ...attempt, approvalId, state: "idle" });
+      setSaveError(reply.sentence ?? "Gmail could not save this draft. Try again.");
+    }
+  }
+
+  async function checkDraftStatus() {
+    const attempt = attemptRef.current;
+    if (!attempt?.approvalId || attempt.fingerprint !== saveFingerprint || attempt.state === "busy") return;
+    publishAttempt({ ...attempt, state: "busy" });
+    setSaveError(null);
+    try {
+      // The approval id is the door's idempotency key. Never prepare a new row.
+      const reply = await applyGoogleApproval(attempt.approvalId);
+      readSaveReceipt(reply, attempt, attempt.approvalId);
+    } catch (cause) {
+      publishAttempt({ ...attempt, state: "uncertain" });
+      setSaveError(extractErrorMessage(cause));
+    }
+  }
+
+  async function saveDraft() {
+    if (!selectedMailbox || !canSave || resolved || sending || attemptRef.current?.state === "busy") return;
+    const existing = attemptRef.current?.fingerprint === saveFingerprint ? attemptRef.current : null;
+    if (existing?.state === "saved" || existing?.state === "uncertain" || existing?.state === "applying") return;
+    const attempt: SaveAttempt = existing ?? { fingerprint: saveFingerprint, operationId: crypto.randomUUID(), state: "idle" };
+    publishAttempt({ ...attempt, state: "busy" });
+    setSaveError(null);
+    try {
+      const reviewed = attempt.approvalId ? null : await reviewGmailDraft({
+        operationId: attempt.operationId,
+        connectionId: selectedMailbox.id,
+        organizationId: organizationId ?? null,
+        to: to.trim(), cc: splitMailboxField(cc), subject, body,
+      });
+      const approvalId = attempt.approvalId ?? reviewed?.approvalId;
+      if (!approvalId) throw new Error("Gmail did not identify the reviewed draft.");
+      publishAttempt({ ...attempt, approvalId, state: "busy" });
+      const reply = await applyGoogleApproval(approvalId);
+      readSaveReceipt(reply, attempt, approvalId);
+    } catch (cause) {
+      // A lost prepare response keeps the same operation id for an explicit retry.
+      // A lost apply response is uncertain: never blindly repeat a provider write.
+      publishAttempt({ ...attempt, state: attemptRef.current?.approvalId ? "uncertain" : "idle", approvalId: attemptRef.current?.approvalId });
+      setSaveError(extractErrorMessage(cause));
+    }
+  }
 
   function selectMailbox(connectionId: string) {
     setSelectedConnectionId(connectionId);
-    rememberGoogleConnection("gmail-send", connectionId);
+    if (eligibleGoogleConnections(allConnections, "gmail-send", connectionId).some((entry) => entry.id === connectionId)) rememberGoogleConnection("gmail-send", connectionId);
+    if (eligibleGoogleConnections(allConnections, "gmail-draft", connectionId).some((entry) => entry.id === connectionId)) rememberGoogleConnection("gmail-draft", connectionId);
   }
 
   function finish(response: Parameters<typeof resolveAskByCallId>[1]) {
@@ -298,6 +378,13 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
         <Button variant="ghost" size="sm" onClick={decline} disabled={sending}>
           Don&apos;t send
         </Button>
+        <Button variant="outline" size="sm" onClick={saveDraft} disabled={!canSave || sending || resolved || currentSave?.state === "busy" || currentSave?.state === "applying" || currentSave?.state === "saved" || currentSave?.state === "uncertain"}>
+          <Save className="mr-1.5 h-4 w-4" />
+          {currentSave?.state === "busy" || currentSave?.state === "applying" ? "Saving…" : currentSave?.state === "saved" ? "Saved" : "Save to Gmail"}
+        </Button>
+        {(currentSave?.state === "applying" || currentSave?.state === "uncertain") && currentSave.approvalId ? (
+          <Button variant="ghost" size="sm" onClick={checkDraftStatus} disabled={sending || resolved}>Check status</Button>
+        ) : null}
         <Button size="sm" onClick={send} disabled={sending || !canSend}>
           <Send className="mr-1.5 h-4 w-4" />
           {sending ? "Sending…" : "Send"}
@@ -329,14 +416,16 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
             connections={mailboxes}
             connectionId={selectedMailbox.id}
             onConnectionChange={selectMailbox}
-            label="Send from"
+            label="Google account"
             disabled={sending || resolved}
           />
         ) : (
           <p className="text-sm text-red-600 dark:text-red-400">
-            No connected Google account currently has Gmail sending access.
+            No connected Google account has Gmail send or draft access.
           </p>
         )}
+        {selectedMailbox && !hasDraftGrant ? <p className="text-xs text-muted-foreground">This account lacks Gmail draft access.</p> : null}
+        {selectedMailbox && !hasSendGrant ? <p className="text-xs text-muted-foreground">This account cannot send Gmail.</p> : null}
         <div className="grid gap-1.5">
           <Label htmlFor={`gmail-to-${ask.callId}`}>To</Label>
           <Input
@@ -387,12 +476,17 @@ export function GmailReviewCard({ ask, preflight, plan }: GmailReviewCardProps) 
             <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
+        {currentSave?.state === "saved" ? <p className="text-xs text-muted-foreground">Saved in Gmail Drafts.</p> : null}
+        {saveAttempt?.state === "saved" && !currentSave ? <p className="text-xs text-muted-foreground">Current edits are unsaved.</p> : null}
+        {currentSave?.state === "uncertain" ? <p className="text-xs text-warning">Check Gmail Drafts before trying again. <ErrorAlchemyMenu error={saveError ?? "Gmail draft status is uncertain."} /></p> : null}
+        {currentSave?.state === "applying" ? <p className="text-xs text-muted-foreground">Gmail is saving this draft.</p> : null}
+        {saveError && currentSave?.state !== "uncertain" && currentSave ? <p className="text-xs text-destructive">{saveError} <ErrorAlchemyMenu error={saveError} /></p> : null}
         {refusal ? (
           <div className="rounded-md border border-red-600/40 bg-red-500/5 p-2 text-sm text-red-600 dark:text-red-400">
             <p>
               {refusal.userMessage}{" "}
               {refusal.sent
-                ? "The server did not confirm that nothing was sent — check the mailbox's Sent folder."
+                ? "Delivery is unconfirmed; check the Sent folder."
                 : "Nothing was sent."}
             </p>
             {reviewedSendRefusalFixes(refusal).length > 0 ? (

@@ -221,11 +221,14 @@ export function GmailComposePanel({
         )
       : null) ?? null;
 
-  const mailboxes = eligibleGoogleConnections(
-    inventory.data?.connections ?? [],
-    "gmail-send",
-    connectionId,
-  );
+  const connections = inventory.data?.connections ?? [];
+  const sendMailboxes = eligibleGoogleConnections(connections, "gmail-send", connectionId);
+  const mailboxes = [
+    ...sendMailboxes,
+    ...eligibleGoogleConnections(connections, "gmail-draft", connectionId).filter(
+      (entry) => !sendMailboxes.some((send) => send.id === entry.id),
+    ),
+  ];
   const mailbox =
     mailboxes.find((entry) => entry.id === connectionId) ?? mailboxes[0] ?? null;
 
@@ -247,7 +250,6 @@ export function GmailComposePanel({
   const spineUnreadable = eligibility.isError;
   // 🚨 "No verdict yet" is never permission (the same rule the approval queue
   // learned the hard way): review opens only once the checks have answered.
-  const refused = gated && (spineUnreadable || (verdict ? !verdict.allowed : true));
 
   const composed = Boolean(
     mailbox && to.trim().includes("@") && subject.trim() && body.trim(),
@@ -255,7 +257,8 @@ export function GmailComposePanel({
 
   function selectMailbox(next: string) {
     setConnectionId(next);
-    rememberGoogleConnection("gmail-send", next);
+    if (sendMailboxes.some((entry) => entry.id === next)) rememberGoogleConnection("gmail-send", next);
+    if (eligibleGoogleConnections(connections, "gmail-draft", next).some((entry) => entry.id === next)) rememberGoogleConnection("gmail-draft", next);
   }
 
   function selectAddress(option: GmailRecipientOption) {
@@ -432,15 +435,28 @@ export function GmailComposePanel({
         </div>
         {/* THE CONSEQUENCE, before the click that causes it. */}
         <p className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs text-foreground">
-          Pressing Send delivers this message to {to.trim()} from{" "}
-          {mailbox.account_email ?? "your connected Google account"}. Email
-          cannot be unsent. It will be recorded on {partyLabel}&apos;s timeline
-          with the message id, the account it went out through, and your name as
-          the person who approved it.
+          Send checks the recipient and may file on this timeline.
         </p>
+        {spineUnreadable ? (
+          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-xs text-foreground">
+            Outbound checks are unavailable; sending is blocked. <ErrorAlchemyMenu />
+          </p>
+        ) : null}
+        {verdict && !verdict.allowed ? (
+          <div className="space-y-1 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2">
+            <p className="text-xs font-medium text-foreground">Sending is refused for this address.</p>
+            {verdict.blocks.map((block) => (
+              <p key={block.code} className="break-words text-[11px]">
+                <span className="text-foreground">{block.message}</span>{" "}
+                <span className="text-muted-foreground">{block.fix}</span>
+              </p>
+            ))}
+          </div>
+        ) : null}
         {associations}
         <GmailReviewCard
           ask={ask}
+          organizationId={recordOrganizationId || null}
           /* THE LAST GATE, on the card's own recipients, at Send time. The
              compose step's check was about the address that was in ITS To
              field; this one is about whoever is about to receive it. */
@@ -471,18 +487,18 @@ export function GmailComposePanel({
             connections={mailboxes}
             connectionId={mailbox.id}
             onConnectionChange={selectMailbox}
-            label="Send from"
+            label="Google account"
           />
           <p className="text-[11px] text-muted-foreground">
             {mailbox.owner_type === "organization"
-              ? "Shared by your organization — everyone here can send from it."
+              ? "Shared by your organization."
               : "Your own connected Google account."}
           </p>
         </div>
       ) : (
         <div className="rounded-md border border-border bg-muted/40 p-2.5 text-xs">
           <p className="text-foreground">
-            No connected Google account currently has permission to send mail.
+            No connected Google account has Gmail send or draft access.
           </p>
           <a
             href={GOOGLE_WORKSPACE_SETTINGS_HREF}
@@ -521,10 +537,8 @@ export function GmailComposePanel({
         ) : null}
         {!gated && to.trim().includes("@") ? (
           <p className="text-xs text-warning">
-            This address is not one this record holds. It is still checked
-            against your organization&apos;s unsubscribes and blocklist before it
-            sends — but the message will be recorded on no record&apos;s
-            timeline, because we cannot tell whose address it is.
+            This address is not on this record. Send still checks opt-outs; the
+            message will not appear on this record&apos;s timeline.
           </p>
         ) : null}
       </div>
@@ -570,14 +584,12 @@ export function GmailComposePanel({
       {/* The gate's verdict, in its own words and with its own fixes. */}
       {checking ? (
         <p className="text-xs text-muted-foreground">
-          Checking this recipient against the unsubscribes, the blocklist and
-          this sender&apos;s standing…
+          Checking this recipient&apos;s send eligibility…
         </p>
       ) : null}
       {spineUnreadable ? (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-xs text-foreground">
-          The outbound checks could not be read, so this message is not offered
-          for sending. Nothing has been sent — try again in a moment.
+          Outbound checks are unavailable; sending is blocked.
           <ErrorAlchemyMenu />
         </p>
       ) : null}
@@ -608,10 +620,10 @@ export function GmailComposePanel({
           <Button
             size="sm"
             onClick={() => setStep("review")}
-            disabled={!composed || refused || checking}
+            disabled={!composed}
           >
             <Mail className="mr-1.5 h-4 w-4" />
-            Review before sending
+            Review message
           </Button>
         </div>
       </div>

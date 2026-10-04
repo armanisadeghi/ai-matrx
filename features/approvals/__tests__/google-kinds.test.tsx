@@ -133,6 +133,7 @@ jest.mock("@/components/official/entity-ref/EntityRef", () => ({
 import { contactImportKind } from "../kinds/contact-import";
 import { documentAppendKind } from "../kinds/document-append";
 import { documentCreateKind } from "../kinds/document-create";
+import { gmailDraftKind } from "../kinds/gmail-draft";
 import { sheetWriteKind } from "../kinds/sheet-write";
 import { spreadsheetCreateKind } from "../kinds/spreadsheet-create";
 import { taskImportKind } from "../kinds/task-import";
@@ -223,6 +224,35 @@ function text(node: HTMLElement, testId: string): string {
 }
 
 describe("the Google proposal kinds render the producer's dry run", () => {
+  it("gmail_draft shows every reviewed field and account", async () => {
+    mockPayload = {
+      __kind: "gmail_draft_dry_run",
+      preview: {
+        account_email: "drafts@example.com",
+        to: "Ada <ada@example.com>",
+        cc: ["Bo <bo@example.com>"],
+        subject: "Reviewed subject",
+        body: "Reviewed body\nSecond line",
+      },
+      arguments: {
+        connection_id: "connection-1",
+        account_email: "drafts@example.com",
+        to: "Ada <ada@example.com>",
+        cc: ["Bo <bo@example.com>"],
+        subject: "Reviewed subject",
+        body: "Reviewed body\nSecond line",
+        raw: "reviewed MIME bytes",
+      },
+    } as unknown as Json;
+    const node = await mount(gmailDraftKind);
+    const body = text(node, "body");
+    for (const field of ["drafts@example.com", "Ada <ada@example.com>", "Bo <bo@example.com>", "Reviewed subject", "Reviewed body", "Second line"]) {
+      expect(body).toContain(field);
+    }
+    expect(text(node, "blocked")).toBe("");
+    expect(APPROVAL_KINDS).toContain(gmailDraftKind);
+  });
+
   it("document_append shows the exact block and where it lands", async () => {
     mockPayload = {
       __kind: "document_append_dry_run",
@@ -563,10 +593,19 @@ const READABLE_PAYLOAD: Record<string, Json> = {
     },
     arguments: { task_list_id: "list-1", task_ids: ["g2"] },
   } as unknown as Json,
+  gmail_draft: {
+    __kind: "gmail_draft_dry_run",
+    preview: {
+      account_email: "drafts@example.com", to: "Ada <ada@example.com>",
+      cc: ["Bo <bo@example.com>"], subject: "Reviewed subject", body: "Reviewed body",
+    },
+    arguments: { connection_id: "connection-1", raw: "reviewed MIME bytes" },
+  } as unknown as Json,
 };
 
 describe("there is ONE approve path", () => {
   const googleKinds: ApprovalKind[] = [
+    gmailDraftKind,
     sheetWriteKind,
     documentAppendKind,
     documentCreateKind,
@@ -619,6 +658,7 @@ describe("the registry and the producer agree", () => {
     // `services/google_workspace/approvals.py`. A row of a kind missing here is
     // durable and INVISIBLE, which is the defect this lane closed.
     const produced = [
+      "gmail_draft",
       "sheet_write",
       "document_append",
       "document_create",
@@ -635,6 +675,7 @@ describe("the registry and the producer agree", () => {
     // them — so a site-scoped mount must name them, never repeat them.
     for (const kind of APPROVAL_KINDS.filter((entry) =>
       [
+        "gmail_draft",
         "sheet_write",
         "document_append",
         "document_create",

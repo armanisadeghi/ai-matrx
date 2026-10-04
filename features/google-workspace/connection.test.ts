@@ -93,6 +93,13 @@ describe("Google account selection", () => {
     ).toEqual([driveBrowse]);
   });
 
+  it("offers modify-only mailboxes for drafts and send-only mailboxes for sends", () => {
+    const draft = connection("draft", "draft@example.com", { scopes: [GOOGLE_SCOPE.gmailModify] });
+    const send = connection("send", "send@example.com", { scopes: [GOOGLE_SCOPE.gmailSend] });
+    expect(eligibleGoogleConnections([draft, send], "gmail-draft")).toEqual([draft]);
+    expect(eligibleGoogleConnections([draft, send], "gmail-send")).toEqual([send]);
+  });
+
   it("honors an explicit valid account and safely falls back when it disappears", () => {
     const first = connection("first", "first@example.com");
     const second = connection("second", "second@example.com");
