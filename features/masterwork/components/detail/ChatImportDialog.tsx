@@ -159,6 +159,7 @@ export function ChatImportDialog({
   onOpenChange,
   rulebook,
   initialTab,
+  initialSelectedConversationIds,
   onIngested,
   onFollowupSeed,
   variant = "dialog",
@@ -167,6 +168,9 @@ export function ChatImportDialog({
   onOpenChange: (open: boolean) => void;
   rulebook: Rulebook;
   initialTab?: ChatTab;
+  /** AI Matrx conversations to start selected ("Make an agent from this chat" →
+   *  Masterwork arrives with its one chat already ticked). */
+  initialSelectedConversationIds?: readonly string[];
   onIngested?: () => void;
   onFollowupSeed?: (seed: string) => void;
   /** "page" renders the same lane bare for /masterwork/[id]/import. */
@@ -416,8 +420,25 @@ export function ChatImportDialog({
         .order("updated_at", { ascending: false })
         .limit(200);
       if (error) throw operationFailed("load your conversations", error);
+      const listed = data ?? [];
+      // A preselected chat older than the newest 200 is read on its own so it is
+      // never silently left out of the selection the person arrived with.
+      const preselected = initialSelectedConversationIds ?? [];
+      const missing = preselected.filter((id) => !listed.some((c) => c.id === id));
+      let extra: typeof listed = [];
+      if (missing.length > 0) {
+        const older = await supabase
+          .schema("chat")
+          .from("conversation")
+          .select("id, title, message_count, updated_at, source_app")
+          .in("id", missing)
+          .is("deleted_at", null);
+        if (older.error) throw operationFailed("load your conversations", older.error);
+        extra = older.data ?? [];
+      }
+      const all = [...extra, ...listed];
       setRows(
-        (data ?? []).map((c) => ({
+        all.map((c) => ({
           key: c.id,
           title: c.title?.trim() || "Untitled conversation",
           provider: c.source_app || "ai-matrx",
@@ -426,14 +447,14 @@ export function ChatImportDialog({
           updatedAt: c.updated_at ?? null,
         })),
       );
-      setSelected(new Set());
+      setSelected(new Set(preselected.filter((id) => all.some((c) => c.id === id))));
       setRowsError(null);
     } catch (err) {
       setRowsError(err ?? new Error("Could not load your conversations."));
     } finally {
       setPreparing(false);
     }
-  }, []);
+  }, [initialSelectedConversationIds]);
 
   // The AI Matrx tab needs no upload — offer the corpus the moment it opens.
   useEffect(() => {
