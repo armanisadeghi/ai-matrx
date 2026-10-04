@@ -121,14 +121,21 @@ export async function fetchEnvelope(envelopeId: string): Promise<EnvelopeState |
   };
 }
 
-/** Whether the stored documents and signatures still match their certificate. */
-export async function verifyEnvelope(envelopeId: string): Promise<Record<string, unknown> | null> {
-  const { data, error } = await supabase.rpc("esign_verify_envelope", {
-    p_envelope_id: envelopeId,
-    p_observed: [],
-  });
-  if (error) throw operationFailed("check this envelope", error);
-  return (data as Record<string, unknown> | null) ?? null;
+/**
+ * Whether the stored documents still hash to what was signed and the certificate verifies. The
+ * server re-reads the frozen bytes (a check with no observed hashes would check nothing).
+ */
+export async function verifyEnvelope(dispatch: AppDispatch, envelopeId: string): Promise<EnvelopeActAnswer> {
+  return read<EnvelopeActAnswer>(
+    await dispatch(
+      callApi({
+        path: "/esign/envelopes/{envelope_id}/verify",
+        method: "POST",
+        pathParams: { envelope_id: envelopeId },
+        expectedErrorStatuses: [403, 409],
+      }),
+    ),
+  );
 }
 
 // ─── writes ────────────────────────────────────────────────────────────────────

@@ -26,8 +26,9 @@ export interface EnvelopeListRow {
   signer_names: string | null;
 }
 
-export function envelopeHref(row: Pick<EnvelopeListRow, "id">): string {
-  return `/esign/${row.id}`;
+/** Where a row opens: the envelope page for whoever may manage it, the signing door for a signer. */
+export function envelopeHref(row: Pick<EnvelopeListRow, "id"> & Partial<Pick<EnvelopeListRow, "i_manage">>): string {
+  return row.i_manage === false ? signHref(row.id) : `/esign/${row.id}`;
 }
 
 /** Where a signer opens their own copy (the signing surface's signed-in door). */

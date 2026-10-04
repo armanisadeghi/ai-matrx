@@ -19,7 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
 import { EnvelopeRefusal, sendEnvelope } from "./service";
@@ -59,6 +60,9 @@ export function SendForSignature() {
   const [expiry, setExpiry] = useState(14);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // An envelope is filed in the active organization (every write carries it), and that decides
+  // which signers are colleagues (they sign with their account) — so the page names it.
+  const organizationName = useAppSelector(selectActiveOrganizationName);
 
   function addDocument(choice: DocumentChoice) {
     setDocuments((current) => (current.some((d) => d.fileId === choice.fileId) ? current : [...current, choice]));
@@ -123,7 +127,12 @@ export function SendForSignature() {
   return (
     <>
       <PageHeader>
-        <h1 className="truncate text-sm font-semibold text-foreground">Send for signature</h1>
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-sm font-semibold text-foreground">Send for signature</h1>
+          {organizationName && (
+            <span className="hidden truncate text-xs text-muted-foreground sm:inline">From {organizationName}</span>
+          )}
+        </div>
       </PageHeader>
       <div className="h-full overflow-y-auto">
         <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6 pb-safe">
@@ -261,7 +270,7 @@ export function SendForSignature() {
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="esign-expiry">Expires after</Label>
               <Select value={String(expiry)} onValueChange={(v) => setExpiry(Number(v))}>
-                <SelectTrigger id="esign-expiry" className="w-40">
+                <SelectTrigger id="esign-expiry" className="w-40 text-base sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

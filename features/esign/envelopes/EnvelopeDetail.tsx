@@ -47,6 +47,7 @@ import {
   resendToSigner,
   verifyEnvelope,
   voidEnvelope,
+  type EnvelopeActAnswer,
   type EnvelopeState,
 } from "./service";
 import { SIGNER_STATUS_LABEL, signHref, statusLabel } from "./types";
@@ -103,11 +104,11 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
   const userId = useAppSelector(selectUserId);
   const [state, setState] = useState<EnvelopeState | null | undefined>(undefined);
   const [failed, setFailed] = useState<string | null>(null);
-  const [verdict, setVerdict] = useState<Record<string, unknown> | null>(null);
+  const [verdict, setVerdict] = useState<EnvelopeActAnswer | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
-  const [resendFor, setResendFor] = useState<{ id: string; email: string } | null>(null);
+  const [resendFor, setResendFor] = useState<{ id: string; email: string; outsider: boolean } | null>(null);
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
@@ -117,16 +118,19 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
         if (!live) return;
         setState(next);
         if (next && text(next.envelope, "status") === "completed") {
-          void verifyEnvelope(envelopeId)
+          void verifyEnvelope(dispatch, envelopeId)
             .then((v) => live && setVerdict(v))
-            .catch(() => undefined);
+            .catch((err: unknown) => {
+              console.error("[esign] verification failed", err);
+              if (live) setVerdict({ granted: false, reason: "unavailable" });
+            });
         }
       })
       .catch((err: unknown) => live && setFailed(err instanceof Error ? err.message : "This envelope could not be loaded."));
     return () => {
       live = false;
     };
-  }, [envelopeId, reload]);
+  }, [dispatch, envelopeId, reload]);
 
   async function run(key: string, action: () => Promise<{ granted: boolean; reason?: string | null }>, done: string) {
     setBusy(key);
@@ -163,7 +167,15 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
   const status = text(e, "status") ?? "sent";
   const isOpen = OPEN_STATUSES.has(status);
   const mySigner = state.signers.find((s) => s.signer_user_id === userId && s.status !== "signed");
-  const verified = verdict?.granted === true && (verdict.valid === true || verdict.intact === true || verdict.ok === true);
+  // Verified = the certificate's signature checks AND every document re-hashed to its sealed hash.
+  const verdictDocs = Array.isArray(verdict?.documents) ? (verdict.documents as Record<string, unknown>[]) : [];
+  const certificate = (verdict?.certificate ?? null) as Record<string, unknown> | null;
+  const verified =
+    verdict?.granted === true &&
+    verdict.intact === true &&
+    certificate?.signature_verifies === true &&
+    verdictDocs.length > 0 &&
+    verdictDocs.every((d) => d.result === "match");
 
   return (
     <>
@@ -247,7 +259,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
                       aria-label={`Send again to ${text(s, "full_name") ?? "this signer"}`}
                       className="print:hidden"
                       disabled={busy !== null}
-                      onClick={() => setResendFor({ id, email: text(s, "email") ?? "" })}
+                      onClick={() => setResendFor({ id, email: text(s, "email") ?? "", outsider: text(s, "actor_type") !== "internal_user" })}
                     >
                       <RotateCw className="h-4 w-4" />
                     </Button>
@@ -281,7 +293,13 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
               <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm">
                 <ShieldCheck className={verified ? "h-4 w-4 text-primary" : "h-4 w-4 text-muted-foreground"} />
                 <span>
-                  {verdict === null ? "Checking…" : verified ? "Documents and signatures verified" : "Could not verify"}
+                  {verdict === null
+                    ? "Checking…"
+                    : verified
+                      ? "Documents and signatures verified"
+                      : verdict.reason === "unavailable"
+                        ? "Could not check right now"
+                        : "Does not verify"}
                 </span>
                 <span className="ml-auto truncate text-xs text-muted-foreground">{text(e, "certificate_id")}</span>
               </div>
@@ -315,7 +333,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Void this envelope</DialogTitle>
-            <DialogDescription>Every signing link stops working. Signers are told your reason.</DialogDescription>
+            <DialogDescription>Every signing link stops working. You can send a new envelope later.</DialogDescription>
           </DialogHeader>
           <Textarea
             value={voidReason}
@@ -347,8 +365,11 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Send again</DialogTitle>
-            <DialogDescription>Fix the address if it was wrong; the old link stops working.</DialogDescription>
+            <DialogDescription>
+              {resendFor?.outsider ? "A fresh link replaces the old one. Fix the address if it was wrong." : "They get the request again in their email and notifications."}
+            </DialogDescription>
           </DialogHeader>
+          {resendFor?.outsider && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="esign-resend-email">Email</Label>
             <Input
@@ -359,18 +380,19 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
               onChange={(ev) => setResendFor((r) => (r ? { ...r, email: ev.target.value } : r))}
             />
           </div>
+          )}
           <DialogFooter>
             <Button variant="ghost" disabled={busy === "resend"} onClick={() => setResendFor(null)}>
               Cancel
             </Button>
             <Button
-              disabled={busy === "resend" || !resendFor?.email.trim()}
+              disabled={busy === "resend" || (resendFor?.outsider === true && !resendFor.email.trim())}
               onClick={() => {
                 const target = resendFor;
                 if (!target) return;
                 void run(
                   "resend",
-                  () => resendToSigner(dispatch, envelopeId, target.id, target.email.trim() || null),
+                  () => resendToSigner(dispatch, envelopeId, target.id, target.outsider ? target.email.trim() || null : null),
                   "Sent again.",
                 ).then(() => setResendFor(null));
               }}
