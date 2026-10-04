@@ -25,7 +25,8 @@ import { useEffect, useState } from "react";
 import { Loader2, Paperclip } from "lucide-react";
 import { PickerSearchField } from "@host/features/resource-manager/resource-picker/ResourcePickerSubViewHeader";
 import { Switch } from "@host/components/ui/switch";
-import { cn } from "@ai-matrx/design-system";
+import { ConnectorMark } from "@host/features/connectors/ConnectorMark";
+import { connectorDefinitionFromMcp } from "@host/features/connectors/live-connectors";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { useMcpCatalog, type McpServerState } from "../../../../hooks/useMcpTools";
 import { selectAgentReadyForCustomExecution, selectAgentMcpServers } from "../../../../redux/agent-definition/selectors";
@@ -102,7 +103,9 @@ export function ComposerConnectorsPanel({
       attachments.status === "succeeded" ? attachments.items.filter((i) => i.provider === s.entry.slug).length : 0;
     return (
       <div key={s.entry.slug} className="flex min-h-9 min-w-0 items-center gap-2.5 rounded-lg px-1.5 text-sm hover:bg-accent pointer-coarse:min-h-11">
-        <ConnectorMark name={s.entry.name} iconUrl={s.entry.iconUrl} />
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
+          <ConnectorMark connector={connectorDefinitionFromMcp(s.entry)} className="h-5 w-5" />
+        </span>
         {/* A broken connection says so on its own second line, under the
             name — the right side keeps only actions. */}
         <span className="flex min-w-0 flex-1 flex-col">
@@ -211,29 +214,5 @@ export function ComposerConnectorsPanel({
         }}
       />
     </>
-  );
-}
-
-/** The connector's own mark, else its initials — never a generic icon standing in for a brand. */
-function ConnectorMark({ name, iconUrl }: { name: string; iconUrl: string | null }) {
-  if (iconUrl) {
-    return (
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted">
-        <img src={iconUrl} alt="" className="h-5 w-5 rounded" />
-      </span>
-    );
-  }
-  const initials = name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? "")
-    .join("");
-  return (
-    <span
-      aria-hidden="true"
-      className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground")}
-    >
-      {initials}
-    </span>
   );
 }

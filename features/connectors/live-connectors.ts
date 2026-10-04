@@ -88,7 +88,7 @@ export function isLiveChatMcpConnector(entry: McpCatalogEntry): boolean {
   return route === "github" || route === "oauth" || route === "none";
 }
 
-function definitionFromMcp(entry: McpCatalogEntry): ConnectorDefinition {
+export function connectorDefinitionFromMcp(entry: McpCatalogEntry): ConnectorDefinition {
   const known = getConnector(entry.slug);
   if (known) return known;
 
@@ -117,7 +117,7 @@ export function buildLiveConnectorDefinitions(
 
   for (const entry of catalog) {
     if (!isLiveChatMcpConnector(entry) || seen.has(entry.slug)) continue;
-    definitions.push(definitionFromMcp(entry));
+    definitions.push(connectorDefinitionFromMcp(entry));
     seen.add(entry.slug);
   }
 
