@@ -183,6 +183,20 @@ describe("buildGrid", () => {
     expect(effort.needsYou).toBe(true);
   });
 
+  it("a declared drop never makes a key relevant: no 'missing' image setting on text models", () => {
+    // Llama's offering carries a declared drop for reasoning_effort ("no such setting"); Qwen has
+    // no rule at all. A drop is an answer, not a reason to ask about every other text model.
+    const effortDrop = cell({ id: "d1", layer: "offering", layer_owner_id: OFF_A, setting_key: "reasoning_effort", rule: { drop: true, why: "no such setting" } });
+    const withDrop: TranslationBundle["compiled"] = [
+      { offering_id: OFF_A, setting_key: "temperature", cell_id: "t1", layer: "api", state: "inherited" },
+      { offering_id: OFF_A, setting_key: "reasoning_effort", cell_id: "d1", layer: "offering", state: "inherited" },
+      { offering_id: OFF_B, setting_key: "temperature", cell_id: "t1", layer: "api", state: "inherited" },
+    ];
+    const model = buildGrid(bundle([groqTemp, effortDrop], withDrop));
+    const effort = model.rows.find((r) => r.key === "reasoning_effort")?.cells.get(`api:${API_GROQ}`);
+    expect(effort?.missing.map((m) => m.id) ?? []).toEqual([]);
+  });
+
   it("an approved, quiet cell never reaches Needs you; a conflict brings it back", () => {
     const approved = cell({ id: "t1", state: "approved", approved_by: "u" });
     const tempOnly = compiled.filter((r) => r.setting_key === "temperature");

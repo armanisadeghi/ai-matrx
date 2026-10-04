@@ -331,6 +331,15 @@ function consumedKeys(rule: ControlRule | undefined): string[] {
   return Array.isArray(consumes) ? consumes.map(String) : [];
 }
 
+/**
+ * A declared drop says "this model has no such setting", so it never makes a key relevant to a
+ * modality (a text api's image_size drop must not make image_size a missing rule on every other
+ * text model). Mirror of aidream `relevant_keys_by_modality` (aidream/testing/settings_grid.py).
+ */
+export function ruleMakesKeyRelevant(rule: ControlRule | null | undefined): boolean {
+  return rule != null && rule.drop !== true;
+}
+
 export function buildGrid(bundle: TranslationBundle): GridModel {
   const settingByKey = new Map(bundle.settings.map((s) => [s.key, s]));
   const cellById = new Map(bundle.cells.map((c) => [c.id, c]));
@@ -408,12 +417,18 @@ export function buildGrid(bundle: TranslationBundle): GridModel {
       a.label.localeCompare(b.label),
   );
 
-  // Keys relevant to each modality (T1: any available offering of it declares one).
+  // Keys relevant to each modality (T1: any available offering of it declares a rule for it
+  // that is not a declared drop — the same rule as aidream `relevant_keys_by_modality`).
   const relevant = new Map<string, Set<string>>();
   for (const o of bundle.offerings) {
     const mod = offeringModality.get(o.id) ?? "other";
     const set = relevant.get(mod) ?? new Set<string>();
-    for (const k of declaredByOffering.get(o.id) ?? []) if (settingByKey.has(k)) set.add(k);
+    for (const [key, row] of compiledByOffering.get(o.id) ?? []) {
+      const rule = cellById.get(row.cell_id)?.rule;
+      if (!ruleMakesKeyRelevant(rule)) continue;
+      if (settingByKey.has(key)) set.add(key);
+      for (const k of consumedKeys(rule)) if (settingByKey.has(k)) set.add(k);
+    }
     relevant.set(mod, set);
   }
 
@@ -629,15 +644,6 @@ export function plainRule(rule: ControlRule | null | undefined, key: string, set
   return parts.join(" · ");
 }
 
-/** A rationale without build codes ("C7: …", "(K6)") — the owner never sees those. */
-export function plainWhy(text: string | null | undefined): string {
-  if (!text) return "";
-  return text
-    .replace(/^\s*[A-Z]{1,2}\d+[a-z]?\b[^:]{0,24}:\s*/, "")
-    .replace(/\s*\((?:[A-Z]{1,2}\d+[a-z]?[,\s]*)+\)/g, "")
-    .replace(/\b[A-Z]{1,2}\d+[a-z]?\s*:\s*/g, "")
-    .trim();
-}
 
 // ── The "Needs you" queue: one decision per row ────────────────────────────
 

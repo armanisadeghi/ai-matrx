@@ -26,7 +26,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { reloadAiCatalog } from "@/features/ai-models/catalogReload";
-import { validateAutoNoneLaw, validateRuleShape } from "@/features/ai-models/controls/resolveControls";
+import {
+  validateAutoNoneLaw,
+  validateRuleShape,
+} from "@/features/ai-models/controls/resolveControls";
 import type { ControlRule } from "../../types";
 import { archiveTranslationCell, saveTranslationCell } from "../data";
 import {
@@ -36,11 +39,15 @@ import {
   describeValue,
   plainRule,
   plainSetting,
-  plainWhy,
   previewValues,
   type WireOutcome,
 } from "../model";
-import type { CellLayer, TranslationCellRow, TranslationOffering, TranslationSetting } from "../types";
+import type {
+  CellLayer,
+  TranslationCellRow,
+  TranslationOffering,
+  TranslationSetting,
+} from "../types";
 import { CellStateBadge, ConflictBadge } from "./CellStateBadge";
 import RuleFields from "./RuleFields";
 
@@ -73,15 +80,28 @@ const TONE_CLASS: Record<WireOutcome["tone"], string> = {
 function WireLine({ label, outcome }: { label: string; outcome: WireOutcome }) {
   return (
     <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] gap-2 border-b border-border/60 px-2 py-1 last:border-b-0">
-      <span className="truncate font-mono text-xs text-muted-foreground">{label}</span>
-      <span className={`truncate font-mono text-xs ${TONE_CLASS[outcome.tone]}`} title={outcome.text}>
+      <span className="truncate font-mono text-xs text-muted-foreground">
+        {label}
+      </span>
+      <span
+        className={`truncate font-mono text-xs ${TONE_CLASS[outcome.tone]}`}
+        title={outcome.text}
+      >
         {outcome.text}
       </span>
     </div>
   );
 }
 
-function WirePreview({ rule, setting, settingKey }: { rule: ControlRule; setting: TranslationSetting | undefined; settingKey: string }) {
+function WirePreview({
+  rule,
+  setting,
+  settingKey,
+}: {
+  rule: ControlRule;
+  setting: TranslationSetting | undefined;
+  settingKey: string;
+}) {
   const off = describeOff(rule, settingKey, setting);
   const ladder = describeFromNumber(rule);
   return (
@@ -95,7 +115,8 @@ function WirePreview({ rule, setting, settingKey }: { rule: ControlRule; setting
           outcome={describeValue(rule, settingKey, v)}
         />
       ))}
-      {setting && (setting.value_type === "integer" || setting.value_type === "number") ? (
+      {setting &&
+      (setting.value_type === "integer" || setting.value_type === "number") ? (
         <WireLine
           label={`${rule.clamp?.min ?? setting.canonical_min ?? "—"}–${rule.clamp?.max ?? setting.canonical_max ?? "max"}`}
           outcome={describeValue(rule, settingKey, "n")}
@@ -113,7 +134,11 @@ function stable(rule: ControlRule): string {
     Array.isArray(v)
       ? v.map(sort)
       : v && typeof v === "object"
-        ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, sort((v as Record<string, unknown>)[k])]))
+        ? Object.fromEntries(
+            Object.keys(v)
+              .sort()
+              .map((k) => [k, sort((v as Record<string, unknown>)[k])]),
+          )
         : v;
   return JSON.stringify(sort(rule));
 }
@@ -129,24 +154,38 @@ export default function TranslationCellEditor({
   setting: TranslationSetting | undefined;
   onClose: () => void;
   onChanged: () => void;
-  onOpenOverride: (o: { offering: TranslationOffering; cell: TranslationCellRow }) => void;
+  onOpenOverride: (o: {
+    offering: TranslationOffering;
+    cell: TranslationCellRow;
+  }) => void;
 }) {
   const dispatch = useAppDispatch();
-  const original: ControlRule = target.cell?.rule ?? (target.missing ? {} : (target.initialRule ?? {}));
+  const original: ControlRule =
+    target.cell?.rule ?? (target.missing ? {} : (target.initialRule ?? {}));
   const [draft, setDraft] = useState<ControlRule>(original);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [confirmNoReach, setConfirmNoReach] = useState(false);
+  const [confirmUnchanged, setConfirmUnchanged] = useState(false);
+  // A missing rule opens EMPTY: no way of reaching the model is chosen until the owner picks one.
+  const isMissing = !target.cell && target.missing === true;
+  const [picked, setPicked] = useState(false);
+  const blank = isMissing && !picked;
+  const onRuleChange = (next: ControlRule) => {
+    setPicked(true);
+    setDraft(next);
+  };
 
-  const edited = stable(draft) !== stable(original);
+  const edited = stable(draft) !== stable(original) || (isMissing && picked);
   // Shape problems quarantine the rule server-side, so they hold the save;
   // the auto/none law is shown as a warning only.
   const blocking = validateRuleShape(draft);
   const issues = [...blocking, ...validateAutoNoneLaw(draft)];
   const cell = target.cell;
-  const alreadyApproved = cell?.state === "approved" && !cell.conflict && !cell.rejection_fingerprint;
+  const alreadyApproved =
+    cell?.state === "approved" && !cell.conflict && !cell.rejection_fingerprint;
   const reach = target.covers.length;
 
   const save = async () => {
@@ -164,11 +203,17 @@ export default function TranslationCellEditor({
       onChanged();
       onClose();
     } catch (error) {
-      toast.error("Not saved", { description: error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error) });
+      toast.error("Not saved", {
+        description:
+          error instanceof Error
+            ? error.message
+            : String((error as { message?: unknown })?.message ?? error),
+      });
     } finally {
       setBusy(false);
       setConfirmApprove(false);
       setConfirmNoReach(false);
+      setConfirmUnchanged(false);
     }
   };
 
@@ -182,7 +227,12 @@ export default function TranslationCellEditor({
       onChanged();
       onClose();
     } catch (error) {
-      toast.error("Not archived", { description: error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error) });
+      toast.error("Not archived", {
+        description:
+          error instanceof Error
+            ? error.message
+            : String((error as { message?: unknown })?.message ?? error),
+      });
     } finally {
       setBusy(false);
       setConfirmArchive(false);
@@ -190,7 +240,9 @@ export default function TranslationCellEditor({
   };
 
   const requestApprove = () => {
-    if (reach === 0) setConfirmNoReach(true);
+    // "Save & approve" on a rule the owner did not touch always asks first.
+    if (!cell && !edited) setConfirmUnchanged(true);
+    else if (reach === 0) setConfirmNoReach(true);
     else if (reach > 1) setConfirmApprove(true);
     else void save();
   };
@@ -200,16 +252,23 @@ export default function TranslationCellEditor({
 
   return (
     <Sheet open onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
+      >
         <SheetHeader className="border-b border-border px-4 py-3">
           <SheetTitle className="flex min-w-0 items-center gap-2 text-base">
             <span className="truncate">{plainSetting(target.settingKey)}</span>
-            <span className="truncate text-sm font-normal text-muted-foreground">{target.ownerLabel}</span>
+            <span className="truncate text-sm font-normal text-muted-foreground">
+              {target.ownerLabel}
+            </span>
           </SheetTitle>
           <div className="flex flex-wrap items-center gap-1.5">
             <CellStateBadge status={status} />
             {cell?.conflict ? <ConflictBadge kind="conflict" /> : null}
-            {cell?.rejection_fingerprint ? <ConflictBadge kind="rejection" /> : null}
+            {cell?.rejection_fingerprint ? (
+              <ConflictBadge kind="rejection" />
+            ) : null}
             {cell?.confidence != null ? (
               <span className="text-xs tabular-nums text-muted-foreground">
                 {Math.round(cell.confidence * 100)}% confident
@@ -227,27 +286,45 @@ export default function TranslationCellEditor({
               No rule yet — the engine is guessing
             </p>
           ) : (
-            <p className="text-sm font-medium">{plainRule(draft, target.settingKey, setting)}</p>
+            <p className="text-sm font-medium">
+              {plainRule(draft, target.settingKey, setting)}
+            </p>
           )}
           {cell?.rationale ? (
-            <p className="line-clamp-3 text-xs text-muted-foreground" title={plainWhy(cell.rationale)}>
-              {plainWhy(cell.rationale)}
+            <p
+              className="line-clamp-3 text-xs text-muted-foreground"
+              title={cell.rationale}
+            >
+              {cell.rationale}
             </p>
           ) : null}
-          <WirePreview rule={draft} setting={setting} settingKey={target.settingKey} />
+          {blank ? null : (
+            <WirePreview
+              rule={draft}
+              setting={setting}
+              settingKey={target.settingKey}
+            />
+          )}
 
           {cell?.conflict?.sources?.length ? (
             <div className="space-y-1 rounded-md border border-rose-500/30 bg-rose-500/[0.06] px-2.5 py-2">
               {cell.conflict.sources.map((s, i) => (
                 <div key={i} className="text-xs">
                   <span className="font-medium">{s.name ?? "Source"}</span>{" "}
-                  <span className="font-mono text-muted-foreground">{JSON.stringify(s.says)}</span>
+                  <span className="font-mono text-muted-foreground">
+                    {JSON.stringify(s.says)}
+                  </span>
                 </div>
               ))}
             </div>
           ) : null}
 
-          <RuleFields rule={draft} setting={setting} onChange={setDraft} />
+          <RuleFields
+            rule={draft}
+            setting={setting}
+            onChange={onRuleChange}
+            blank={blank}
+          />
 
           {issues.length > 0 ? (
             <ul className="space-y-0.5 text-xs text-amber-700 dark:text-amber-300">
@@ -268,7 +345,9 @@ export default function TranslationCellEditor({
 
           {target.overrides.length > 0 ? (
             <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">Models with their own rule</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Models with their own rule
+              </span>
               {target.overrides.map((o) => (
                 <button
                   key={o.cell.id}
@@ -358,6 +437,14 @@ export default function TranslationCellEditor({
           }
           confirmLabel="Save anyway"
           busy={busy}
+          onConfirm={save}
+        />
+        <ConfirmDialog
+          open={confirmUnchanged}
+          onOpenChange={setConfirmUnchanged}
+          title="Approve without a rule?"
+          description={`Nothing was chosen. ${plainSetting(target.settingKey)} would be sent to ${reach === 1 ? "1 model" : `${reach} models`} as given.`}
+          confirmLabel="Approve as given"
           onConfirm={save}
         />
         <ConfirmDialog

@@ -2,7 +2,7 @@
  * The owner reads rules in words, never JSON or build codes (settings-translation
  * screen, V1 verifier §1). These pin the phrasing the queue shows.
  */
-import { plainRule, plainSetting, plainWhy } from "../model";
+import { plainRule, plainSetting } from "../model";
 
 describe("plain words for the review queue", () => {
   it("names settings in words", () => {
@@ -29,11 +29,5 @@ describe("plain words for the review queue", () => {
     expect(plainRule({}, "reasoning_effort")).toBe("No rule — the engine guesses");
     expect(plainRule(null, "reasoning_effort")).toBe("No rule — the engine guesses");
     expect(plainRule({ drop: true }, "reasoning_effort")).toBe("Not sent");
-  });
-
-  it("strips build codes from a rationale", () => {
-    expect(plainWhy("C7: OFF must reach OpenAI as a real off.")).toBe("OFF must reach OpenAI as a real off.");
-    expect(plainWhy("C3 migration: exact copy of the rule")).toBe("exact copy of the rule");
-    expect(plainWhy("Declared per contract (K6).")).toBe("Declared per contract.");
   });
 });

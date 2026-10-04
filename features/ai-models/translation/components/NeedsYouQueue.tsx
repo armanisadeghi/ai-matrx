@@ -17,7 +17,7 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { reloadAiCatalog } from "@/features/ai-models/catalogReload";
 import { saveTranslationCell } from "../data";
-import { plainRule, plainSetting, plainWhy, type QueueItem } from "../model";
+import { plainRule, plainSetting, type QueueItem } from "../model";
 import type { TranslationOffering } from "../types";
 import { CellStateBadge, ConflictBadge } from "./CellStateBadge";
 
@@ -159,12 +159,12 @@ export default function NeedsYouQueue({
     },
     {
       id: "why",
-      accessorFn: (r) => plainWhy(r.cell?.rationale),
+      accessorFn: (r) => r.cell?.rationale ?? "",
       header: "Why",
       label: "Why",
       width: "11rem",
       cell: (r) => {
-        const why = plainWhy(r.cell?.rationale);
+        const why = r.cell?.rationale ?? "";
         const sure = r.cell?.confidence != null ? `${Math.round(r.cell.confidence * 100)}% sure · ` : "";
         return (
           <span className="line-clamp-2 text-xs text-muted-foreground" title={why}>
@@ -278,7 +278,7 @@ export default function NeedsYouQueue({
             </div>
             <div className="text-sm">{r.cell ? plainRule(r.cell.rule, r.key, r.setting) : "No rule yet"}</div>
             {r.cell?.rationale ? (
-              <div className="line-clamp-2 text-xs text-muted-foreground">{plainWhy(r.cell.rationale)}</div>
+              <div className="line-clamp-2 text-xs text-muted-foreground">{r.cell.rationale}</div>
             ) : null}
             <div className="flex items-center gap-1 pt-1">
               {r.cell ? (
