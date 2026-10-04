@@ -174,9 +174,9 @@ never a copy of a number:
   (a capability with no registry label is not shown). A null price is "Custom".
   `listed_on_pricing = false` (guest) is never listed.
 - `catalog/planAction.ts` decides what choosing a plan does: free → sign-up
-  (keeps the destination), custom price → `/contact`, paid → the tracked
-  Coming Soon `billing.plan-checkout` (no plan has a Stripe price yet). A plan
-  button never closes silently or claims a trial.
+  (keeps the destination), custom price → `/contact`, paid → Stripe Checkout
+  (`useChoosePlan` → `/api/stripe/checkout`). A plan button never closes
+  silently or claims a trial.
 
 | Piece | Role |
 |---|---|
@@ -561,6 +561,8 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-10-04** — Coupon client (rule 18). `coupons/`: a new-account link `/sign-up?coupon=<token>` shows an offer banner (`billing.coupon_preview`) and prefills the coupon's email (editable; every sign-up method incl. OAuth); the token rides the canonical destination as `redirectTo=/redeem?code=<token>` (`utils/auth/coupon-links.ts`), so confirm / OAuth / error re-renders / an authed bounce keep it. `/redeem?code=` (auth-required) redeems once through `POST /api/billing/coupons/redeem` (`redeemCoupon` dedupes per code) and shows "Pro free until …" or a one-line refusal; Settings → Plan & usage has the "Redeem code" field. The usage-gate slice carries `free_period` (`selectUsageGateFreePeriod`); `UsageGateBridge` raises a dismissible notice `billing/free_period_warning_days` (knob, 14, created live) before `ends_at`, and a "choose a plan" prompt once ended → `/pricing`; marked seen per day on dismiss/action. Removed Coming Soon `billing.plan-checkout` (checkout is live for every priced plan). Tests: `utils/auth/__tests__/coupon-links.test.ts`, `coupons/__tests__/*` (red on planted breaks).
 
 - **2026-10-04** — Free time is never endless (Arman). DB (live, via MCP): `billing._free_months_grant` (stacking + `billing/free_period_max_months` ceiling, ledger `billing.free_period_grant`), doors `free_months_grant` / `free_months_apply` / `free_months_apply_to_all_current` (not run), coupons `billing.coupon` + `billing.coupon_redemption` with `coupon_create` / `coupon_redeem` / `coupon_revoke` / `coupon_preview` / `coupon_claim_for_subscription` / `coupon_claim_settle`, signup trigger `billing.signup_free_months` (knob `new_signup_free_months` = 0), `user_usage_state().free_period`. New route `POST /api/billing/coupons/redeem` (+ `route.test.ts`, red on a planted break). `PRELAUNCH_COMPLIMENTARY_PREMIUM` and `pricingPolicy.ts` deleted; signed-out Premium card says "Sign in to upgrade". Live checks: 28 rolled-back DB forcing cases, two parallel PostgREST redemptions (one granted, one `coupon_already_redeemed`), the subscriber path end to end on localhost in Stripe TEST mode (2-month 100% coupon on the test subscription, settled `stripe_applied`, discount removed after).
 

@@ -113,6 +113,11 @@ sales page after signing in.
   returns ONLY the email and only for a pending, unaccepted, unexpired
   invitation. It grants nothing: acceptance is still gated by
   `inv_get_by_token` matching the signed-in `auth.email()`.
+- **A free-time coupon rides the destination.** `/sign-up?coupon=<token>`
+  becomes `redirectTo=/redeem?code=<token>` ([`coupon-links.ts`](./coupon-links.ts));
+  nothing else carries it. An authed visitor on `/sign-up?coupon=` is forwarded
+  to `/redeem` by the same middleware destination check (`couponAwareDestination`),
+  where a too-old account reads "This link is for new accounts only."
 - **A remembered account is display data, never authority.**
   [`remembered-account.ts`](./remembered-account.ts) stores only a display name,
   optional avatar URL, and timestamp. Tokens, ids, email addresses, roles, and
