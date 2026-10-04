@@ -31,6 +31,12 @@ export function withPolicy(row: ParticipantOut, policy: ViewPolicy): Participant
   return row.participant ? { ...row, participant: { ...row.participant, policy } } : row;
 }
 
+/** The server's own refusal, kept to one toast line. */
+function refusal(message: string | undefined): string {
+  const said = (message ?? "").replace(/\s+/g, " ").trim();
+  return said.length > 110 ? `${said.slice(0, 107)}...` : said;
+}
+
 export function useGroupChat(anchorType: string, anchorId: string) {
   const dispatch = useAppDispatch();
   const [state, setState] = useState<GroupChatState>({ status: "loading" });
@@ -55,7 +61,7 @@ export function useGroupChat(anchorType: string, anchorId: string) {
 
   const reload = () => setGeneration((g) => g + 1);
 
-  /** `row` is the record as the person saw it when editing — its version is the one sent. */
+/** `row` is the record as the person saw it when editing — its version is the one sent. */
   const savePolicy = async (row: ParticipantOut, policy: ViewPolicy) => {
     const participant = row.participant;
     if (!participant) return;
@@ -67,12 +73,13 @@ export function useGroupChat(anchorType: string, anchorId: string) {
     setSaving(null);
     if (result.error) {
       if (result.error.status === 409) {
-        toast.error(`${participant.label}: changed elsewhere, reloaded`);
+        const said = refusal(result.error.message);
+        toast.error(`${participant.label}: ${said ? `${said}; reloaded` : "changed elsewhere, reloaded"}`);
         reload();
         return;
       }
       setState((s) => withParticipant(s, row));
-      toast.error(`${participant.label}: not saved. ${result.error.message}`);
+      toast.error(`${participant.label}: not saved. ${refusal(result.error.message)}`.trimEnd());
       return;
     }
     setState((s) => withParticipant(s, result.data as ParticipantOut));

@@ -92,7 +92,7 @@ it("a 409 reloads the roster and says so — the stale edit never lands", async 
   await act(() => result.current.savePolicy(ADVERSARY, { sees: "none" }));
   await flush();
   expect(getCount).toBe(2);
-  expect(toastError).toHaveBeenCalledWith("Adversary: changed elsewhere, reloaded");
+  expect(toastError).toHaveBeenCalledWith("Adversary: stale policy_version; reloaded");
   expect(adversaryPolicy(result)?.policy).toEqual({ sees: "everyone" });
 });
 

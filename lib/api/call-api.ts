@@ -94,6 +94,7 @@ import {
   executeMatrxCall,
   fetchWithMatrxProtocolFallback,
   normalizeMatrxError,
+  isGenericUserMessage,
   buildSafeRequestLog,
   redactUrlForRequestLog,
   shouldReportMatrxCallError,
@@ -768,9 +769,37 @@ function maybeLogRequest(
 // SECTION 12 — ERROR NORMALIZATION
 // ============================================================================
 
+/**
+ * The server's precise sentence beats its generic one. The server's error
+ * envelope can carry `user_message: "Something went wrong"` beside a `message`
+ * or `detail` that says exactly what refused (409 "changed elsewhere", 422 "not
+ * a valid policy", 403 "not yours"); the shared core prefers `user_message`, so
+ * every caller printed the generic line. When the chosen message is generic and
+ * the body holds a specific one, say the specific one. Status, code and body are
+ * untouched.
+ */
+export function withPreciseServerMessage<T extends ApiCallError>(error: T): T {
+  if (!isGenericUserMessage(error.message)) return error;
+  const body = error.serverDetail;
+  if (!body || typeof body !== "object" || Array.isArray(body)) return error;
+  const record = body as Record<string, unknown>;
+  const detail = record.detail;
+  const candidates: unknown[] = [
+    record.message,
+    detail,
+    detail && typeof detail === "object" && !Array.isArray(detail)
+      ? (detail as Record<string, unknown>).message
+      : undefined,
+  ];
+  const precise = candidates.find(
+    (c): c is string => typeof c === "string" && !isGenericUserMessage(c),
+  );
+  return precise ? { ...error, message: precise } : error;
+}
+
 /** THE one classifier — the shared core's `normalizeMatrxError`. */
 export function normalizeError(err: unknown): ApiCallError {
-  return normalizeMatrxError(err);
+  return withPreciseServerMessage(normalizeMatrxError(err));
 }
 
 // ============================================================================
@@ -1042,7 +1071,9 @@ export function callApi<
           requestId: result.requestId,
         });
       }
-      return result;
+      return result.error
+        ? { ...result, error: withPreciseServerMessage(result.error) }
+        : result;
     } catch (err) {
       // The person was asked which workspace this belongs to and said "not
       // now". That is an ANSWER, not a failure: no request was sent, nothing
