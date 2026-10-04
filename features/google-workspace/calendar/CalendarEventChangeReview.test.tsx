@@ -10,6 +10,7 @@ import {
   type CalendarEventChangeTransport,
 } from "./CalendarEventChangeReview";
 import type { CalendarEventSourceResult } from "./calendarEventSourceService";
+import { readCalendarChangeCollection, writeCalendarChangeCollection, type CalendarChangeAttempt } from "./calendarChangeRecovery";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -191,6 +192,45 @@ describe("CalendarEventChangeReview", () => {
     await act(async () => button(host, "Confirm cancellation").click());
     expect(host.textContent).toContain("Cancellation cannot be settled from a missing event");
     expect(host.textContent).not.toContain("Prepare prior");
+  });
+
+  it("marks a reloaded in-flight confirmation uncertain without replaying it", async () => {
+    const action = { kind: "reschedule" as const, request: {
+      connection_id: "connection-cedar", calendar_id: calendar.id, event_id: source.target_event_id!,
+      occurrence: "series" as const, expected_etag: source.target_etag!, starts_at: "2026-10-08T11:00:00-07:00",
+      ends_at: "2026-10-08T12:00:00-07:00", send_updates: "all" as const,
+    }, preview: movePreview, result: null };
+    const pending: CalendarChangeAttempt = {
+      version: 1, attempt_id: "attempt-in-flight", actor_id: "admin-reviewer", organization_id: "organization-cedar",
+      connection_id: "connection-cedar", account_label: source.account_email, calendar_id: calendar.id,
+      calendar_summary: calendar.summary, selected_event_id: source.selected_event_id,
+      target_event_id: source.target_event_id!, occurrence: "series", original_source: source,
+      action, phase: "attempting", problem: null, source_proof: null,
+    };
+    const scope = { actorId: "admin-reviewer", organizationId: "organization-cedar", connectionId: "connection-cedar", calendarId: calendar.id };
+    expect(writeCalendarChangeCollection(storage, scope, {
+      version: 1, actor_id: scope.actorId, organization_id: scope.organizationId,
+      connection_id: scope.connectionId, calendar_id: scope.calendarId, attempts: [pending],
+    })).toBe(true);
+    const changeTransport = transport();
+    await act(async () => root.render(<CalendarEventChangeReview {...baseProps(changeTransport)} />));
+    expect(host.textContent).toContain("reloaded after confirmation started");
+    expect(changeTransport.confirmReschedule).not.toHaveBeenCalled();
+    expect(readCalendarChangeCollection(storage, scope).collection.attempts[0].phase).toBe("uncertain");
+  });
+
+  it("reviews and confirms this account's RSVP with a fresh version", async () => {
+    const changeTransport = transport();
+    await loadSource(changeTransport);
+    const action = Array.from(host.querySelectorAll("select")).find((item) => item.parentElement?.textContent?.includes("Action"))!;
+    act(() => setSelect(action, "rsvp"));
+    const response = Array.from(host.querySelectorAll("select")).find((item) => item.parentElement?.textContent?.includes("My response"))!;
+    const notifications = Array.from(host.querySelectorAll("select")).find((item) => item.parentElement?.textContent?.includes("Guest notifications"))!;
+    act(() => { setSelect(response, "accepted"); setSelect(notifications, "none"); });
+    await act(async () => button(host, "Review RSVP").click());
+    await act(async () => button(host, "Confirm RSVP").click());
+    expect(changeTransport.confirmRsvp).toHaveBeenCalledTimes(1);
+    expect(host.textContent).toContain("Prepare prior response");
   });
 
   it("discards a late source response after the account context changes", async () => {

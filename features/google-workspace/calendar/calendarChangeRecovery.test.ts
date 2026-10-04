@@ -140,6 +140,19 @@ describe("calendar change recovery", () => {
     });
     expect(canAppendCalendarChangeAttempt(withBoth, sameSeriesFromAnotherInstance)).toBe(false);
     expect(appendCalendarChangeAttempt(withBoth, sameSeriesFromAnotherInstance)).toBeNull();
+
+    const sameTargetDifferentOccurrence = attempt({
+      attempt_id: "attempt-cedar-4",
+      selected_event_id: source.target_event_id,
+      occurrence: "single",
+      original_source: { ...source, selected_event_id: source.target_event_id, occurrence: "single" },
+      action: {
+        ...moveAction,
+        request: { ...moveAction.request, occurrence: "single" },
+        preview: { ...moveAction.preview, occurrence: "single" },
+      },
+    });
+    expect(canAppendCalendarChangeAttempt(withBoth, sameTargetDifferentOccurrence)).toBe(true);
   });
 
   it("compares aware instants across offsets and rejects naive move times", () => {
