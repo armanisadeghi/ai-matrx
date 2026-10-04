@@ -30,8 +30,9 @@ import {
 } from "node:util";
 import type { ChatRootState } from "../../../../store/root-state";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
-  true;
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
   TextDecoder?: typeof NodeTextDecoder;
@@ -59,7 +60,9 @@ jest.mock("../../../../store/hooks", () => ({
   useAppStore: () => ({ getState: () => stateForComponents() }),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+jest.mock("@host/lib/redux/hooks", () =>
+  jest.requireMock("../../../../store/hooks"),
+);
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => () => null,
@@ -69,7 +72,10 @@ jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: jest.requireActual("@host/components/MarkdownStreamImpl").default,
 }));
-jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
 jest.mock("../../../../host/navigation", () => ({
   ...jest.requireActual("../../../../host/navigation"),
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), prefetch: jest.fn() }),
@@ -86,13 +92,21 @@ jest.mock(
     }: {
       entries: Array<{ callId: string; status: string }>;
     }) => (
-      <div data-tool-card={entries[0]?.callId} data-status={entries[0]?.status} />
+      <div
+        data-tool-card={entries[0]?.callId}
+        data-status={entries[0]?.status}
+      />
     ),
   }),
 );
-jest.mock("../../../../tool-call-visualization/components/ToolCallBatch", () => ({
-  ToolCallBatch: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+jest.mock(
+  "../../../../tool-call-visualization/components/ToolCallBatch",
+  () => ({
+    ToolCallBatch: ({ children }: { children: React.ReactNode }) => (
+      <>{children}</>
+    ),
+  }),
+);
 jest.mock(
   "@host/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer",
   () => ({ SafeBlockRenderer: () => null }),
@@ -110,9 +124,11 @@ jest.mock("../../shared/transcript-audience", () => ({
 }));
 jest.mock("../assistant/AssistantMessageFooter", () => ({
   AssistantMessageFooter: () => null,
-  AssistantMessageContextMenu: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
+  AssistantMessageContextMenu: ({
+    children,
+  }: {
+    children: React.ReactNode;
+  }) => <>{children}</>,
 }));
 jest.mock("@host/features/code/views/history/MessageFilesStrip", () => ({
   MessageFilesStrip: () => null,
@@ -124,18 +140,15 @@ import activeRequestsReducer, {
 import messagesReducer from "../../../redux/execution-system/messages/messages.slice";
 import observabilityReducer from "../../../redux/execution-system/observability/observability.slice";
 import { processStream } from "../../../redux/execution-system/thunks/process-stream";
-import {
-  buildDisplayEntries,
-  groupDisplayEntries,
-} from "../display-groups";
+import { buildDisplayEntries, groupDisplayEntries } from "../display-groups";
 import { AssistantTurnGroup } from "../assistant/AssistantTurnGroup";
+import { ChatHostTestProvider } from "../../../../host/__tests__/chat-host-test-provider";
 import { configureServerForTest } from "../../../../host/__tests__/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {
   configureServerForTest({});
 });
-
 
 const encoder = new TextEncoder();
 const CONV = "3d2e1f0a-7b6c-4d5e-8f9a-0b1c2d3e4f5a";
@@ -178,7 +191,8 @@ function steppedResponse(events: unknown[]) {
     async advance() {
       await ready;
       const next = release;
-      if (!next) throw new Error("stream reader did not stop at its checkpoint");
+      if (!next)
+        throw new Error("stream reader did not stop at its checkpoint");
       ready = new Promise<void>((resolve) => {
         notify = resolve;
       });
@@ -190,7 +204,12 @@ function steppedResponse(events: unknown[]) {
   };
 }
 
-const reserved = (table: string, id: string, metadata: Record<string, unknown>, parent: Record<string, unknown> = {}) => ({
+const reserved = (
+  table: string,
+  id: string,
+  metadata: Record<string, unknown>,
+  parent: Record<string, unknown> = {},
+) => ({
   event: "record_reserved",
   data: {
     db_project: "main",
@@ -220,7 +239,12 @@ const dataTool = (event: string, data: Record<string, unknown> = {}) => ({
 // answer's row is announced only after its iteration ran (iteration_persist).
 const EVENTS: unknown[] = [
   reserved("message", ROW1, { role: "assistant", position: 1 }),
-  reserved("request", "req-iter-1", { iteration: 1 }, { user_request_id: "ur_1" }),
+  reserved(
+    "request",
+    "req-iter-1",
+    { iteration: 1 },
+    { user_request_id: "ur_1" },
+  ),
   // The model reasons without streaming any reasoning text (the production
   // wire): a live reasoning run with nothing in it, which the committed
   // record drops.
@@ -233,14 +257,25 @@ const EVENTS: unknown[] = [
     { user_request_id: "ur_1", call_id: CALL },
   ),
   dataTool("tool_started", {
-    arguments: { action: "patch", target: "note", old_text: "4. Take blood pressure" },
+    arguments: {
+      action: "patch",
+      target: "note",
+      old_text: "4. Take blood pressure",
+    },
   }),
   dataTool("tool_completed", { result: { ok: true, edits: 1 } }),
   rowActive(ROW1),
-  reserved("request", "req-iter-2", { iteration: 2 }, { user_request_id: "ur_1" }),
+  reserved(
+    "request",
+    "req-iter-2",
+    { iteration: 2 },
+    { user_request_id: "ur_1" },
+  ),
   {
     event: "chunk",
-    data: { text: "Step 4 of the intake checklist now also records allergies." },
+    data: {
+      text: "Step 4 of the intake checklist now also records allergies.",
+    },
   },
   reserved("message", ROW3, {
     role: "assistant",
@@ -343,7 +378,11 @@ test("the intake-checklist patch card is one DOM node from its first frame throu
   const render = (streamActive: boolean) =>
     act(() => {
       currentState = h.getState();
-      root.render(<Turns streamActive={streamActive} />);
+      root.render(
+        <ChatHostTestProvider>
+          <Turns streamActive={streamActive} />
+        </ChatHostTestProvider>,
+      );
     });
 
   // Up to the tool finishing: the card is on screen.
@@ -354,7 +393,8 @@ test("the intake-checklist patch card is one DOM node from its first frame throu
   for (let i = 0; i <= toolDone; i++) await h.stream.advance();
   render(true);
   const first = card();
-  if (!first) throw new Error(`no card rendered: ${host.innerHTML.slice(0, 1500)}`);
+  if (!first)
+    throw new Error(`no card rendered: ${host.innerHTML.slice(0, 1500)}`);
 
   // The answer streams, and the server announces the answer's row late.
   for (let i = toolDone + 1; i < EVENTS.length - 1; i++) {
@@ -367,7 +407,8 @@ test("the intake-checklist patch card is one DOM node from its first frame throu
   // lands (the drawer and the Chat window do, most runs): the live reading
   // must not be re-folded for that beat.
   render(false);
-  if (card() !== first) throw new Error(`gap render: ${host.innerHTML.slice(0, 3000)}`);
+  if (card() !== first)
+    throw new Error(`gap render: ${host.innerHTML.slice(0, 3000)}`);
 
   // `end`: the turn commits and settles onto its stored rows.
   await h.stream.advance();

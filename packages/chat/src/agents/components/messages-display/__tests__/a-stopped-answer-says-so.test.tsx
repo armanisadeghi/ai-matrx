@@ -15,7 +15,10 @@
  */
 
 import React, { act } from "react";
-import { TextDecoder as NodeTextDecoder, TextEncoder as NodeTextEncoder } from "node:util";
+import {
+  TextDecoder as NodeTextDecoder,
+  TextEncoder as NodeTextEncoder,
+} from "node:util";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -30,6 +33,7 @@ import {
   setRequestStatus,
 } from "../../../redux/execution-system/active-requests/active-requests.slice";
 import { TooltipProvider } from "@ai-matrx/design-system";
+import { ChatHostTestProvider } from "../../../../host/__tests__/chat-host-test-provider";
 import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";
 import { AgentAssistantMessage } from "../assistant/AgentAssistantMessage";
 
@@ -42,12 +46,16 @@ jest.mock("next/dynamic", () => ({
           default: React.ComponentType<Record<string, unknown>>;
         }
       ).default;
-      return (props: Record<string, unknown>) => React.createElement(Impl, props);
+      return (props: Record<string, unknown>) =>
+        React.createElement(Impl, props);
     }
     return () => null;
   },
 }));
-jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), revalidateTag: jest.fn() }));
+jest.mock("next/cache", () => ({
+  revalidatePath: jest.fn(),
+  revalidateTag: jest.fn(),
+}));
 
 const globals = globalThis as {
   TextEncoder?: typeof NodeTextEncoder;
@@ -91,7 +99,11 @@ async function render(
   const store = configureStore({
     reducer: createSlimRootReducer(),
     middleware: (g) =>
-      g({ serializableCheck: false, immutableCheck: false, actionCreatorCheck: false }),
+      g({
+        serializableCheck: false,
+        immutableCheck: false,
+        actionCreatorCheck: false,
+      }),
   });
   store.dispatch(
     createInstance({
@@ -102,10 +114,16 @@ async function render(
       status: "ready",
     } as never),
   );
-  store.dispatch(hydrateMessages({ conversationId: CONV, messages: [row(metadata)] }));
+  store.dispatch(
+    hydrateMessages({ conversationId: CONV, messages: [row(metadata)] }),
+  );
   if (live) {
-    store.dispatch(createRequest({ requestId: live.requestId, conversationId: CONV }));
-    store.dispatch(setRequestStatus({ requestId: live.requestId, status: live.status }));
+    store.dispatch(
+      createRequest({ requestId: live.requestId, conversationId: CONV }),
+    );
+    store.dispatch(
+      setRequestStatus({ requestId: live.requestId, status: live.status }),
+    );
   }
   const host = document.createElement("div");
   document.body.append(host);
@@ -113,16 +131,18 @@ async function render(
   await act(async () => {
     root.render(
       <Provider store={store}>
-        <AlchemyActionsTestHost>
-          <TooltipProvider>
-            <AgentAssistantMessage
-              conversationId={CONV}
-              messageId={MESSAGE_ID}
-              requestId={live?.requestId}
-              isStreamActive={false}
-            />
-          </TooltipProvider>
-        </AlchemyActionsTestHost>
+        <ChatHostTestProvider store={store}>
+          <AlchemyActionsTestHost>
+            <TooltipProvider>
+              <AgentAssistantMessage
+                conversationId={CONV}
+                messageId={MESSAGE_ID}
+                requestId={live?.requestId}
+                isStreamActive={false}
+              />
+            </TooltipProvider>
+          </AlchemyActionsTestHost>
+        </ChatHostTestProvider>
       </Provider>,
     );
   });
@@ -145,12 +165,18 @@ describe("a stopped answer says so", () => {
   });
 
   it("live, from the cancelled request", async () => {
-    const text = await render({}, { requestId: "req_whitcombe", status: "cancelled" });
+    const text = await render(
+      {},
+      { requestId: "req_whitcombe", status: "cancelled" },
+    );
     expect(text).toContain("Stopped here");
   });
 
   it("never on an answer that finished", async () => {
-    const text = await render({ provider_iteration: 1 }, { requestId: "req_done", status: "complete" });
+    const text = await render(
+      { provider_iteration: 1 },
+      { requestId: "req_done", status: "complete" },
+    );
     expect(text).not.toContain("<message did not mount>");
     expect(text).not.toContain("Stopped here");
   });

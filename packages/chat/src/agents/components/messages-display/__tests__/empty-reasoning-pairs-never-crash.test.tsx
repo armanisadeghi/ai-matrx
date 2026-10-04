@@ -49,6 +49,7 @@ jest.mock("../../inputs/smart-input/SmartAgentInput", () => ({
 import { TooltipProvider } from "@ai-matrx/design-system";
 // The app root's one Alchemy action registry (AlchemyHost, ALC-15): the
 // assistant turn's rich-document action bar reads it.
+import { ChatHostTestProvider } from "../../../../host/__tests__/chat-host-test-provider";
 import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";
 import { configureServerForTest } from "../../../../host/__tests__/server-test-host";
 
@@ -56,7 +57,6 @@ import { configureServerForTest } from "../../../../host/__tests__/server-test-h
 beforeAll(() => {
   configureServerForTest({});
 });
-
 
 // The user bubble's variable chips need the associations store; this test is
 // about the assistant turn, so that one leaf is stubbed.
@@ -125,7 +125,9 @@ function loadGrokLines(): string[] {
 
 /** The Grok capture with its reasoning brackets replaced by `pairs` empty pairs. */
 function withEmptyPairs(lines: string[], pairs: number): string[] {
-  const firstReasoning = lines.findIndex((l) => l.includes('"event":"reasoning"'));
+  const firstReasoning = lines.findIndex((l) =>
+    l.includes('"event":"reasoning"'),
+  );
   const rest = lines.filter((l) => !l.includes('"event":"reasoning"'));
   const bracket: string[] = [];
   for (let i = 0; i < pairs; i++) {
@@ -220,15 +222,17 @@ async function replay(lines: string[], burst: boolean) {
     });
     root.render(
       <Provider store={store}>
-        <AlchemyActionsTestHost>
-          <TooltipProvider>
-            <BoundColumn
-              conversationId={conversationId}
-              surfaceKey="agent-comparison-model"
-              hideInput
-            />
-          </TooltipProvider>
-        </AlchemyActionsTestHost>
+        <ChatHostTestProvider store={store}>
+          <AlchemyActionsTestHost>
+            <TooltipProvider>
+              <BoundColumn
+                conversationId={conversationId}
+                surfaceKey="agent-comparison-model"
+                hideInput
+              />
+            </TooltipProvider>
+          </AlchemyActionsTestHost>
+        </ChatHostTestProvider>
       </Provider>,
     );
   });
@@ -263,8 +267,14 @@ async function replay(lines: string[], burst: boolean) {
 
 function depthErrors(errors: unknown[]): string[] {
   return errors
-    .map((e) => (e instanceof Error ? e.message : JSON.stringify(e, (_k, v) => (v instanceof Error ? v.message : v))))
-    .filter((m) => /Maximum update depth|getSnapshot should be cached/.test(m ?? ""));
+    .map((e) =>
+      e instanceof Error
+        ? e.message
+        : JSON.stringify(e, (_k, v) => (v instanceof Error ? v.message : v)),
+    )
+    .filter((m) =>
+      /Maximum update depth|getSnapshot should be cached/.test(m ?? ""),
+    );
 }
 
 beforeAll(() => {
@@ -296,20 +306,36 @@ beforeAll(() => {
 });
 
 const CASES: Array<[string, () => string[], boolean]> = [
-  ["captured Grok stream (119 empty pairs), one event per read", loadGrokLines, false],
+  [
+    "captured Grok stream (119 empty pairs), one event per read",
+    loadGrokLines,
+    false,
+  ],
   ["captured Grok stream (119 empty pairs), one read", loadGrokLines, true],
-  ["200 empty pairs, one event per read", () => withEmptyPairs(loadGrokLines(), 200), false],
-  ["200 empty pairs, one read", () => withEmptyPairs(loadGrokLines(), 200), true],
+  [
+    "200 empty pairs, one event per read",
+    () => withEmptyPairs(loadGrokLines(), 200),
+    false,
+  ],
+  [
+    "200 empty pairs, one read",
+    () => withEmptyPairs(loadGrokLines(), 200),
+    true,
+  ],
 ];
 
 describe("a stream of empty reasoning brackets", () => {
-  it.each(CASES)("renders without an update-depth crash — %s", async (_label, lines, burst) => {
-    const { text, errors } = await replay(lines(), burst);
-    expect(depthErrors(errors)).toEqual([]);
-    // No section of the turn fell to its error boundary (a crash inside the
-    // answer is a crash, whatever message it carries).
-    expect(text).not.toContain("This section could not be displayed");
-    // The column finishes with its Answers card: the holder that answered.
-    expect(text).toContain("grok-4.7");
-  }, 60_000);
+  it.each(CASES)(
+    "renders without an update-depth crash — %s",
+    async (_label, lines, burst) => {
+      const { text, errors } = await replay(lines(), burst);
+      expect(depthErrors(errors)).toEqual([]);
+      // No section of the turn fell to its error boundary (a crash inside the
+      // answer is a crash, whatever message it carries).
+      expect(text).not.toContain("This section could not be displayed");
+      // The column finishes with its Answers card: the holder that answered.
+      expect(text).toContain("grok-4.7");
+    },
+    60_000,
+  );
 });
