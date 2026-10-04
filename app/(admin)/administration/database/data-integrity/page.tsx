@@ -19,6 +19,7 @@ import {
   Play,
   RefreshCw,
   ShieldAlert,
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { peekSelectedOrganizationId } from "@/lib/api/organization-admission";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
@@ -54,6 +56,8 @@ interface CheckMeta {
   severity: Severity;
   kind: CheckKind;
   remediation: string | null;
+  /** A registered fix for this check's findings (run + re-check). */
+  repair: { label: string; consequence: string } | null;
 }
 
 interface CheckResult {
@@ -252,7 +256,15 @@ function checkRowContent(r: IntegrityRow): string {
     .join("\n");
 }
 
-function CheckDetail({ row }: { row: IntegrityRow }) {
+function CheckDetail({
+  row,
+  repairing,
+  onRepair,
+}: {
+  row: IntegrityRow;
+  repairing: boolean;
+  onRepair: (row: IntegrityRow) => void;
+}) {
   const r = row.result;
   return (
     <div className="space-y-3 text-sm">
@@ -293,6 +305,21 @@ function CheckDetail({ row }: { row: IntegrityRow }) {
           <span className="font-medium text-foreground">Fix: </span>
           <span className="text-muted-foreground">{row.remediation}</span>
         </div>
+      )}
+      {row.repair && (r?.count ?? 0) > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onRepair(row)}
+          disabled={repairing}
+        >
+          {repairing ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Wrench className="mr-1.5 h-3.5 w-3.5" />
+          )}
+          {row.repair.label}
+        </Button>
       )}
       {r && r.sample.length > 0 && (
         <>
@@ -409,6 +436,55 @@ export default function DataIntegrityPage() {
     },
     [run, checks],
   );
+
+  const [repairingId, setRepairingId] = useState<string | null>(null);
+  const repairCheck = useCallback(async (row: IntegrityRow) => {
+    if (!row.repair) return;
+    const count = row.result?.count ?? 0;
+    const ok = await confirm({
+      title: `${row.repair.label}: ${count} finding(s)?`,
+      description: row.repair.consequence,
+      confirmLabel: row.repair.label,
+    });
+    if (!ok) return;
+    setError(null);
+    setRepairingId(row.id);
+    try {
+      const res = await fetch("/api/admin/integrity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repairCheckId: row.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? res.statusText);
+      const outcome = data.repair as {
+        repaired: Record<string, unknown>[];
+        result: CheckResult;
+      };
+      setReport((prev) => {
+        const fresh = outcome.result;
+        if (!prev) return prev;
+        const exists = prev.results.some((x) => x.id === fresh.id);
+        const results = exists
+          ? prev.results.map((x) => (x.id === fresh.id ? fresh : x))
+          : [...prev.results, fresh];
+        return { ...prev, results };
+      });
+      if (outcome.result.count === 0 && !outcome.result.error) {
+        toast.success(`${row.title}: repaired and confirmed clean`);
+      } else {
+        toast.warning(
+          `${row.title}: ${outcome.result.count} finding(s) remain after repair`,
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setRepairingId(null);
+    }
+  }, []);
 
   const copyReport = useCallback(() => {
     if (!report) return;
@@ -653,7 +729,7 @@ export default function DataIntegrityPage() {
         >
           <MatrxDataTable
             tableId="data-integrity"
-          window={{ renderView: (row) => <CheckDetail row={row} />, renderEdit: false, defaultTab: "view" }}
+          window={{ renderView: (row) => <CheckDetail row={row} repairing={repairingId === row.id} onRepair={(x) => void repairCheck(x)} />, renderEdit: false, defaultTab: "view" }}
             urlState={{ id: "data-integrity", selectedRow: false }}
             data={rows}
             columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => {
@@ -715,7 +791,7 @@ export default function DataIntegrityPage() {
             detail={{
               title: (r) => r.title,
               description: (r) => <code className="text-[11px]">{r.id}</code>,
-              render: (r) => <CheckDetail row={r} />,
+              render: (r) => <CheckDetail row={r} repairing={repairingId === r.id} onRepair={(x) => void repairCheck(x)} />,
             }}
           />
         </NonEditableContextMenu>

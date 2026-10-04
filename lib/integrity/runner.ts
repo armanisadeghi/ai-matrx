@@ -9,6 +9,7 @@ import type {
   IntegrityCheckDef,
   IntegrityCheckResult,
   IntegrityFinding,
+  IntegrityRepairOutcome,
   IntegrityReport,
   IntegrityRunContext,
 } from "./types";
@@ -237,6 +238,10 @@ function metaOf(def: IntegrityCheckDef) {
     severity: def.severity,
     kind: def.kind,
     remediation: def.remediation,
+    repair:
+      def.kind === "sql" && def.repair
+        ? { label: def.repair.label, consequence: def.repair.consequence }
+        : undefined,
   };
 }
 
@@ -311,4 +316,22 @@ export async function runIntegrityChecks(
     results,
     totals,
   };
+}
+
+/**
+ * Run a check's registered repair, then re-run the check so the caller gets
+ * the confirmed state. Throws when the check has no repair; a repair SQL
+ * failure propagates (never reported as a clean result).
+ */
+export async function runIntegrityRepair(
+  ctx: IntegrityRunContext,
+  checkId: string,
+): Promise<IntegrityRepairOutcome> {
+  const def = INTEGRITY_CHECKS.find((c) => c.id === checkId);
+  if (!def || def.kind !== "sql" || !def.repair) {
+    throw new Error(`Check "${checkId}" has no registered repair.`);
+  }
+  const repaired = await ctx.sql(def.repair.sql);
+  const result = await runSqlCheck(def, ctx);
+  return { repaired, result };
 }

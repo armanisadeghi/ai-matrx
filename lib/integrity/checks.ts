@@ -690,6 +690,41 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
     `,
   },
   // ── Repo gates (on-demand; see repoGate above) ─────────────────────────────
+  // ── Agents: message flags (2026-10-04) ───────────────────────────────────
+  // The builder's rebuild path stored strict-output flags raw
+  // ({example: null, prefill: null, cache_boundary: null}); the agent reader
+  // screamed "flag must be true or false" on every agent page. Fixed at the
+  // server write gate (aidream clean_messages_for_write) and enforced by the
+  // agent.canonical_message_flags trigger on all three tables. The detector and
+  // repair are DB functions so this check and any operator read the same rule.
+  {
+    id: "agent-message-flags-canonical",
+    kind: "sql",
+    title: "Agent messages with non-canonical flags",
+    category: "Agents",
+    severity: "error",
+    description:
+      "Agent definitions, versions or templates whose message flags hold " +
+      "null/false values or are not true/false. Readers log a loud error " +
+      "and ignore the flag.",
+    remediation:
+      "Run the repair. Null and false already meant 'off', so no agent " +
+      "behavior changes and no new version is created.",
+    repair: {
+      label: "Repair flags",
+      consequence:
+        "Rewrites each listed message's flags to keep only the ones set to " +
+        "true. No agent behaves differently and no new version is created.",
+      sql: `select source, rows_repaired from agent.repair_message_flags()`,
+    },
+    sql: `
+      select source, row_id, agent_id, version_number, name, message_index,
+             flags, count(*) over() as _total
+      from agent.message_flag_problems()
+      order by source, name, version_number, message_index
+      limit ${SAMPLE_LIMIT}
+    `,
+  },
   repoGate({
     id: "gate-migrations",
     script: "check:migrations:strict",

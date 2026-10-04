@@ -4,7 +4,8 @@
 //   GET  — list the registered checks (metadata only).
 //   POST — run checks and return a report. Body (all optional):
 //            { checkIds?: string[], includeProbe?: boolean }
-//          Read-only: integrity checks never mutate data.
+//          Checks are read-only. The one write is { repairCheckId } — it runs
+//          that check's registered repair SQL, then re-runs the check.
 //
 // SQL runs through the admin client (RLS-bypassed, cross-user). The opt-in byte
 // probe uses the caller's session token, so it only covers files that token can
@@ -13,7 +14,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { listChecks, runIntegrityChecks } from "@/lib/integrity/runner";
+import {
+  listChecks,
+  runIntegrityChecks,
+  runIntegrityRepair,
+} from "@/lib/integrity/runner";
 import {
   createAdminSqlRunner,
   createDownloadProbe,
@@ -45,6 +50,10 @@ export async function GET() {
     severity: c.severity,
     kind: c.kind,
     remediation: c.remediation ?? null,
+    repair:
+      c.kind === "sql" && c.repair
+        ? { label: c.repair.label, consequence: c.repair.consequence }
+        : null,
   }));
   return NextResponse.json({ checks });
 }
@@ -56,11 +65,27 @@ export async function POST(request: NextRequest) {
     return errorResponse(e);
   }
 
-  let body: { checkIds?: string[]; includeProbe?: boolean } = {};
+  let body: {
+    checkIds?: string[];
+    includeProbe?: boolean;
+    repairCheckId?: string;
+  } = {};
   try {
     body = await request.json();
   } catch {
     // empty body → run all (non-probe) checks
+  }
+
+  if (body.repairCheckId) {
+    try {
+      const outcome = await runIntegrityRepair(
+        { sql: await createAdminSqlRunner() },
+        body.repairCheckId,
+      );
+      return NextResponse.json({ repair: outcome });
+    } catch (e) {
+      return errorResponse(e);
+    }
   }
 
   try {

@@ -41,8 +41,26 @@ interface IntegrityCheckBase {
   remediation?: string;
 }
 
+/**
+ * A registered fix for a check's findings. When data corruption is found, the
+ * detector AND its repair become a check here, so the fix is something an
+ * admin can run and confirm — never a one-off script. The repair SQL runs
+ * through the same super-admin path; the check is re-run right after so the
+ * page shows the confirmed result.
+ */
+export interface IntegrityRepair {
+  /** Button label, e.g. "Repair flags". */
+  label: string;
+  /** What the repair changes, stated before the click (≤2 sentences). */
+  consequence: string;
+  /** SQL that performs the repair and returns one row per touched area. */
+  sql: string;
+}
+
 export interface SqlIntegrityCheck extends IntegrityCheckBase {
   kind: "sql";
+  /** Optional registered fix for this check's findings. */
+  repair?: IntegrityRepair;
   /**
    * SQL returning offending rows. MUST include `count(*) over() as _total` and
    * a `LIMIT` so the sample stays bounded. Zero rows = no findings.
@@ -88,6 +106,8 @@ export interface IntegrityCheckResult {
   severity: IntegritySeverity;
   kind: IntegrityCheckDef["kind"];
   remediation?: string;
+  /** Present when the check has a registered repair (SQL never leaves the server). */
+  repair?: { label: string; consequence: string };
   /** Total offending rows (full count from the window, not just the sample). */
   count: number;
   /** Bounded sample of offending rows (already limited by the SQL). */
@@ -139,4 +159,11 @@ export interface IntegrityRunContext {
   probe?: FileProbe;
   /** When absent (e.g. serverless), script-kind checks are reported skipped. */
   script?: ScriptRunner;
+}
+
+export interface IntegrityRepairOutcome {
+  /** Rows the repair SQL returned (e.g. per-table counts). */
+  repaired: IntegrityFinding[];
+  /** The check re-run immediately after the repair. */
+  result: IntegrityCheckResult;
 }
