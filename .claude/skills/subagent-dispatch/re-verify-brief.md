@@ -8,7 +8,8 @@ timestamp: 2026-09-10T00:00:00Z
 
 # Scoped re-verify brief template (one fix round)
 
-Dispatch: `quick` (sonnet) for small mechanical fix diffs with a clear oracle; `standard` otherwise.
+Dispatch: `quick` (sonnet) for small mechanical fix diffs with a clear oracle; `standard` (sonnet) otherwise.
+Budget: [N tool calls; lane default]. Only the listed findings and new breakage in the fix diff.
 A FRESH seat every time — never the implementer, never the reviewer that raised these findings.
 
 🚨 **This brief narrows the SCOPE, not the verdict count.** You still return Verdict A (vision/spec on

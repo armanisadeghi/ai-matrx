@@ -4,7 +4,7 @@ type: Skill
 title: "subagent-dispatch — delegate down, check hard, close the loop"
 description: "Delegating work down to subagents: briefs, report statuses, independent review. Use when writing an implementer or verifier brief, dispatching a subagent to build, fix, or verify work you own, or a subagent reports DONE, blocked, or concerns. NOT for campaign-scale doctrine (use campaign-pattern)."
 tags: [agents, delegation, verification, doctrine]
-timestamp: 2026-09-12T00:00:00Z
+timestamp: 2026-10-03T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -23,6 +23,26 @@ Templates: [implementer-brief.md](implementer-brief.md) · [verifier-brief.md](v
 [re-verify-brief.md](re-verify-brief.md).
 
 ## 1. Compose the dispatch (context is the product)
+
+- **Do new work yourself when it is small.** A known file, under ~20 lines, or a brief that would be
+  as long as the work: no dispatch. (Review findings on dispatched work still go to a fixer, §4.)
+- **Every brief has a "Done when", a budget and an out-of-scope line.** "Done when" is the one
+  observable result that ends the job; the budget is in tool calls (lane defaults quick 40,
+  standard 120, deep 200); out-of-scope names what the worker must report, not fix. A brief with
+  "fix the class, census siblings, verify, review" and no end never finishes.
+- **Model: Sonnet unless the brief says why Opus** ([ladder § Claude routing](/policies/subagent-model-ladder.md)):
+  Opus for a large build handed over whole, design judgment, or a bug with no known cause. At
+  most 2 Opus workers running at once. Workers cannot dispatch; a whole program handed down goes
+  to the `coordinator` lane with a dispatch budget.
+- **Test, then fix.** For a surface whose defects are unknown, dispatch a Sonnet tester that
+  returns a defect list (repro · expected · actual) and fixes nothing. Confirm the list, then
+  send each defect or one batch to a fixer with a short exact brief. One long run that explores
+  and fixes at once is the expensive shape.
+- **Browser runs:** one agent per tab; the brief names the tab id or tells the agent to open its
+  own; no two agents ever share a tab. Before the first full run, a one-step smoke check
+  (open, click once, see the change) proves the pane takes input. A worker returns
+  `BLOCKED_ENV` after two environment failures; fix the environment before re-dispatching, never
+  re-run blind.
 
 - **A brief describes the situation, the result wanted, and the mistakes to avoid — never the
   method, never the inventory.** Anything sent out to find or check must be able to return what
@@ -44,7 +64,8 @@ Templates: [implementer-brief.md](implementer-brief.md) · [verifier-brief.md](v
 - **Batch same-shape work.** N tiny identical edits = ONE dispatch listing every file; the reviewer
   checks the list file by file (an untouched listed file is a Missing finding). A review's findings
   list = ONE fix dispatch, never one fixer per finding.
-- **Name the lane; record the agent id** — fix rounds resume it via SendMessage.
+- **Name the lane; record the agent id** — a short fix round may resume it via SendMessage; a
+  worker that returned `HANDOFF` or used more than half its budget is replaced by a fresh agent given its handoff.
 - **Parallel is the default when ownership is disjoint** (frozen contract + exclusive paths).
   Overlapping files or an unfrozen interface → serialize, or freeze the interface first.
 - 🚨 **NEVER END YOUR TURN WHILE A BACKGROUND SUBAGENT IS RUNNING.** A completion notice has no idle
@@ -71,8 +92,10 @@ worker's own commits (short SHA + subject), evidence, and what it could NOT veri
 |---|---|---|
 | `DONE` | Outcome exists; fresh evidence run for each claim | Build the review package (§3), dispatch review. Never flip on the report. |
 | `DONE_WITH_CONCERNS` | Done, with a named doubt | Correctness/scope doubt → resolve before review. Observation → hand it to the reviewer as a named risk. |
+| `HANDOFF` | Budget reached or two different attempts failed | Read the handoff; sharpen the brief; fresh agent (or one lane/model up with a reason). Never resume the long seat. |
 | `NEEDS_CONTEXT` | A specific fact the owner holds is missing | Answer exactly; resume the same agent. |
 | `ESCALATE` | Needs a stronger lane, more effort, or a ruling | Change something: more context, split the task, a ruling, or one lane up. Never re-run the same lane unchanged. |
+| `BLOCKED_ENV` | Browser, server, login or data failed twice | Fix the environment yourself (or with one small dispatch), smoke-check it, then re-dispatch. |
 | `BLOCKED_HUMAN_ONLY` | One human-only gate, after recovery was exhausted | Verify the gate is real ([defect-ownership](/policies/reality-is-the-referee.md) § The decision before ending an execution task, item 3). Login, tooling, tests, preview, deploy lag → send back as repair work. |
 
 A worker never dispatches a reviewer of its own work — it counts for nothing and duplicates your seat.
@@ -97,7 +120,9 @@ and the binding constraints copied verbatim from spec/DECISIONS.
   passing while B fails, or the reverse, is common; separate verdicts are the only thing that stops
   one masking the other. A single list headed "findings by severity" is a merged verdict even when it
   contains doctrine checks, because a doctrine failure can no longer fail on its own.
-  Large lanes: run A and B as two parallel seats (B needs no browser).
+  One seat returns both verdicts; split A and B into two seats only for a large lane. Verifiers
+  run on Sonnet; Opus only for a large or high-risk change, with the reason in the brief.
+  Reviewers report only gaps against the brief, vision and doctrine — not taste or polish.
 - **Never pre-judge for the reviewer.** A brief containing "don't flag", "at most Minor", or "the plan
   chose X" is you sparing yourself a loop. Let it be raised; adjudicate it.
 
@@ -105,7 +130,8 @@ and the binding constraints copied verbatim from spec/DECISIONS.
 
 Triggers: Verdict A FAIL/PARTIAL, any Critical/Important in B, or a confirmed ⚠ item. Minor → ledger
 as deferred and point the final review at the list (a roll-up nobody reads is a silent discard).
-- **Rounds 1–2:** resume the original implementer with the findings verbatim. It fixes, re-runs
+- **Rounds 1–2:** resume the original implementer with the findings verbatim (if it ran long or
+  handed off, a fresh fixer with the findings and its report instead). It fixes, re-runs
   covering evidence, appends to its report file.
 - **Round 3:** a fresh implementer one lane up (`standard` → `deep`, or `model: fable` only if you
   would struggle yourself), framed "a prior implementer tried twice; you own it; read the report file."
@@ -115,6 +141,8 @@ as deferred and point the final review at the list (a roll-up nobody reads is a 
   🚨 A re-verify narrows the SCOPE, never the verdict count: it still returns **Verdict A and Verdict B
   separately** (§3), with the ADDRESSED / NOT ADDRESSED list in front of them. A reopened finding that
   comes back as one merged list has lost Verdict B.
+- **Two rounds with no new real defect end the loop** — accept, or adjudicate what is left (§5).
+  No third polish round.
 - **Breaker after round 3:** stop dispatching; adjudicate each open finding (§5). A structural failure
   that later work builds on is never parked silently.
 - Never fix findings yourself in the owner session — owner fixes skip review.
