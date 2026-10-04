@@ -172,8 +172,17 @@ export function SigningSurface({
   const [activeDoc, setActiveDoc] = useState(0);
   const [step, setStep] = useState<Step>("review");
   const [typedName, setTypedName] = useState("");
-  const [mark, setMark] = useState<"typed" | "drawn">("typed");
+  const [mark, setMark] = useState<SignatureMark>("typed");
   const [drawing, setDrawing] = useState<string | null>(null);
+  const [myId, setMyId] = useState<string | null>(null);
+  // Placed fields: the signer adopts once (in a dialog) and every one of their fields fills.
+  const [adopted, setAdopted] = useState(false);
+  const [adoptOpen, setAdoptOpen] = useState(false);
+  const [pendingField, setPendingField] = useState<string | null>(null);
+  const [guideId, setGuideId] = useState<string | null>(null);
+  const [focusNonce, setFocusNonce] = useState(0);
+  const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
+  const [pageByDoc, setPageByDoc] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState<"consent" | "sign" | "decline" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [declineOpen, setDeclineOpen] = useState(false);
@@ -199,6 +208,7 @@ export function SigningSurface({
           return;
         }
         const me = load.me ?? {};
+        setMyId(text(me, "id"));
         setTypedName(text(me, "typed_name") ?? text(me, "full_name") ?? "");
         // On a phone a finger is the natural pen: draw first there, when the sender allows it.
         const options = load.signature_options ?? {};
@@ -217,8 +227,17 @@ export function SigningSurface({
           rendered: false,
           previewed: false,
           failed: null,
+          fields: readFieldMap(d),
         }));
         setDocs(listed);
+        // Reopened on the sign step: start at the signer's first field, wherever it is.
+        const meId = text(me, "id");
+        const firstDoc = listed.findIndex((d) => d.fields.some((f) => f.signerId === meId));
+        if (firstDoc >= 0 && !text(me, "signed_at") && !envelopeDone && text(me, "consented_at")) {
+          const first = listed[firstDoc].fields.find((f) => f.signerId === meId);
+          setActiveDoc(firstDoc);
+          if (first) setPageByDoc({ [listed[firstDoc].id]: first.page });
+        }
         setPhase({ kind: "ready", load });
       })
       .catch((err: unknown) => {
@@ -302,13 +321,104 @@ export function SigningSurface({
     setStep("consent");
   }
 
+  // ── Placed fields ────────────────────────────────────────────────────────
+  const myFields: MyField[] = docs.flatMap((d, docIndex) =>
+    d.fields.filter((field) => field.signerId === myId).map((field) => ({ docIndex, field })),
+  );
+  const hasMyFields = myFields.length > 0;
+  // The field the guide points at: the one "Next field" last moved to, else the first not yet done.
+  const guide =
+    myFields.find((m) => m.field.id === guideId) ?? myFields.find((m) => !visited.has(m.field.id)) ?? null;
+
+  /** Bring one of the signer's fields on screen: its document, its page, scrolled into view. */
+  function goTo(entry: MyField) {
+    const doc = docs[entry.docIndex];
+    setActiveDoc(entry.docIndex);
+    if (doc) setPageByDoc((pages) => ({ ...pages, [doc.id]: entry.field.page }));
+    setGuideId(entry.field.id);
+    setFocusNonce((n) => n + 1);
+  }
+
+  /** The first of the signer's fields after `fromId` (wrapping round) not yet done. */
+  function nextAfter(fromId: string | null, done: ReadonlySet<string>): MyField | null {
+    const start = fromId ? myFields.findIndex((m) => m.field.id === fromId) : -1;
+    for (let step = 1; step <= myFields.length; step += 1) {
+      const entry = myFields[(start + step) % myFields.length];
+      if (entry && !done.has(entry.field.id)) return entry;
+    }
+    return null;
+  }
+
+  /** A field is done: mark it and move the guide on (or off, when it was the last). */
+  function complete(fieldId: string) {
+    const done = new Set(visited);
+    done.add(fieldId);
+    setVisited(done);
+    const next = nextAfter(fieldId, done);
+    if (next) goTo(next);
+    else setGuideId(null);
+  }
+
+  function pressField(field: PlacedField) {
+    if (step === "review") {
+      setNotice("Review the document, then continue.");
+      return;
+    }
+    if (step === "consent") {
+      setNotice(REASON_TEXT.no_consent);
+      return;
+    }
+    setNotice(null);
+    if (!adopted) {
+      setPendingField(field.id);
+      setAdoptOpen(true);
+      return;
+    }
+    complete(field.id);
+  }
+
+  function openAdopt() {
+    setPendingField(guide?.field.id ?? null);
+    setAdoptOpen(true);
+  }
+
+  /** Adopt in the dialog: every one of the signer's fields fills from it. */
+  function confirmAdopt() {
+    if (!typedName.trim()) {
+      setNotice(REASON_TEXT.typed_name_required);
+      return;
+    }
+    if (mark === "drawn" && !drawing) {
+      setNotice("Draw your signature before you adopt it.");
+      return;
+    }
+    setNotice(null);
+    setAdopted(true);
+    setAdoptOpen(false);
+    if (pendingField) complete(pendingField);
+    setPendingField(null);
+  }
+
+  const fieldValues: FieldValues | null = adopted
+    ? {
+        signature:
+          mark === "drawn" && drawing ? { kind: "drawn", src: drawing } : { kind: "typed", name: typedName.trim() },
+        initials: initialsOf(typedName),
+        date: signingDate(),
+        name: typedName.trim(),
+      }
+    : null;
+
   async function agree(disclosureId: string) {
     setBusy("consent");
     setNotice(null);
     try {
       const answer = await act("consent", { disclosure_id: disclosureId });
-      if (answer.granted) setStep("sign");
-      else setNotice(reasonText(answer.reason));
+      if (answer.granted) {
+        setStep("sign");
+        const first = myFields[0];
+        if (first) goTo(first);
+      } else setNotice(reasonText(answer.reason));
     } catch (err) {
       setNotice(err instanceof SigningRefusal ? err.message : "We could not save that. Try again in a moment.");
     } finally {
@@ -320,6 +430,10 @@ export function SigningSurface({
     const name = typedName.trim();
     if (!name) {
       setNotice(REASON_TEXT.typed_name_required);
+      return;
+    }
+    if (hasMyFields && !adopted) {
+      openAdopt();
       return;
     }
     if (docs.some((d) => !d.seenHash || !d.previewed)) {
@@ -440,7 +554,30 @@ export function SigningSurface({
             </div>
           )}
           <div className="flex min-h-0 flex-1 bg-muted/40">
-            {current && <DocumentFrame doc={current} onShown={() => markRendered(current)} />}
+            {current && (
+              <DocumentFrame
+                doc={current}
+                onShown={() => markRendered(current)}
+                page={pageByDoc[current.id] ?? 1}
+                onPage={(page) => setPageByDoc((pages) => ({ ...pages, [current.id]: page }))}
+                renderFields={(pageNumber, rotation) => (
+                  <SigningFields
+                    // After signing, a reopened document shows only what this screen adopted.
+                    fields={current.fields.filter(
+                      (f) => f.page === pageNumber && (step !== "done" || fieldValues !== null || f.signerId !== myId),
+                    )}
+                    rotation={rotation}
+                    myId={myId}
+                    values={fieldValues}
+                    pressable={step !== "done"}
+                    activeId={step === "sign" ? (guide?.field.id ?? null) : null}
+                    focusNonce={focusNonce}
+                    done={step === "done" ? new Set(current.fields.map((f) => f.id)) : visited}
+                    onPress={pressField}
+                  />
+                )}
+              />
+            )}
           </div>
         </section>
 
@@ -468,40 +605,68 @@ export function SigningSurface({
             </>
           )}
 
-          {step === "sign" && (
+          {step === "sign" && !hasMyFields && (
             <>
               <StepTitle icon={PenLine} label="Sign" />
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="esign-typed-name">Your full name</Label>
-                <Input
-                  id="esign-typed-name"
-                  value={typedName}
-                  autoComplete="name"
-                  className="text-base"
-                  onChange={(e) => setTypedName(e.target.value)}
-                />
-              </div>
-              {canType && canDraw && (
-                <div className="flex gap-1">
-                  <Button size="sm" variant={mark === "typed" ? "secondary" : "ghost"} onClick={() => setMark("typed")}>
-                    <TypeIcon className="mr-1 h-3.5 w-3.5" />
-                    Type
-                  </Button>
-                  <Button size="sm" variant={mark === "drawn" ? "secondary" : "ghost"} onClick={() => setMark("drawn")}>
-                    <PenLine className="mr-1 h-3.5 w-3.5" />
-                    Draw
-                  </Button>
-                </div>
-              )}
-              {mark === "typed" ? (
-                <div className="flex h-20 items-center justify-center rounded-md border border-dashed border-border bg-card px-3">
-                  <span className="truncate font-serif text-3xl italic text-foreground">{typedName.trim() || " "}</span>
-                </div>
-              ) : (
-                <SignaturePad value={drawing} onChange={setDrawing} disabled={busy !== null} />
-              )}
+              <AdoptSignature
+                typedName={typedName}
+                onTypedName={setTypedName}
+                mark={mark}
+                onMark={setMark}
+                drawing={drawing}
+                onDrawing={setDrawing}
+                canType={canType}
+                canDraw={canDraw}
+                disabled={busy !== null}
+              />
               <Button
                 disabled={busy !== null || !typedName.trim() || (mark === "drawn" && !drawing)}
+                onClick={() => void sign()}
+              >
+                {busy === "sign" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Sign
+              </Button>
+            </>
+          )}
+
+          {step === "sign" && hasMyFields && (
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <StepTitle icon={PenLine} label="Sign" />
+                <span className="text-xs text-muted-foreground">
+                  {visited.size} of {myFields.length} fields
+                </span>
+              </div>
+              {adopted && fieldValues ? (
+                <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    {fieldValues.signature.kind === "drawn" ? (
+                      // The signer's own drawing, a data URL from the pad on this screen.
+                      <img src={fieldValues.signature.src} alt="Your signature" className="h-10 max-w-full object-contain" />
+                    ) : (
+                      <span className="block truncate font-serif text-2xl italic text-foreground">
+                        {fieldValues.signature.name}
+                      </span>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" disabled={busy !== null} onClick={openAdopt}>
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={openAdopt}>
+                  <PenLine className="mr-2 h-4 w-4" />
+                  Adopt your signature
+                </Button>
+              )}
+              {adopted && guide && (
+                <Button onClick={() => complete(guide.field.id)}>
+                  Next field
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant={adopted && !guide ? "default" : "outline"}
+                disabled={busy !== null || !adopted}
                 onClick={() => void sign()}
               >
                 {busy === "sign" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Sign
@@ -528,6 +693,35 @@ export function SigningSurface({
           {notice && <p className="text-sm text-destructive">{notice}</p>}
         </aside>
       </div>
+
+      <Dialog open={adoptOpen} onOpenChange={setAdoptOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adopt your signature</DialogTitle>
+            <DialogDescription>It fills every field marked for you.</DialogDescription>
+          </DialogHeader>
+          <AdoptSignature
+            typedName={typedName}
+            onTypedName={setTypedName}
+            mark={mark}
+            onMark={setMark}
+            drawing={drawing}
+            onDrawing={setDrawing}
+            canType={canType}
+            canDraw={canDraw}
+            disabled={busy !== null}
+          />
+          {notice && adoptOpen && <p className="text-sm text-destructive">{notice}</p>}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAdoptOpen(false)}>
+              Cancel
+            </Button>
+            <Button disabled={!typedName.trim() || (mark === "drawn" && !drawing)} onClick={confirmAdopt}>
+              Adopt
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={declineOpen} onOpenChange={(open) => busy !== "decline" && setDeclineOpen(open)}>
         <DialogContent>
@@ -568,7 +762,20 @@ function StepTitle({ icon: Icon, label }: { icon: typeof FileText; label: string
   );
 }
 
-function DocumentFrame({ doc, onShown }: { doc: DocView; onShown: () => void }) {
+function DocumentFrame({
+  doc,
+  onShown,
+  page,
+  onPage,
+  renderFields,
+}: {
+  doc: DocView;
+  onShown: () => void;
+  page: number;
+  onPage: (page: number) => void;
+  /** The placed fields for one drawn page, laid over it at the viewer's rotation. */
+  renderFields: (pageNumber: number, rotation: number) => React.ReactNode;
+}) {
   if (doc.failed) {
     return <p className="m-auto px-6 text-center text-sm text-muted-foreground">{doc.failed}</p>;
   }
@@ -584,7 +791,14 @@ function DocumentFrame({ doc, onShown }: { doc: DocView; onShown: () => void }) 
           blobUrl={doc.url}
           fileName={doc.name}
           className="h-full w-full"
-          renderOverlay={() => <Shown onShown={onShown} />}
+          pageNumber={page}
+          onPageChange={onPage}
+          renderOverlay={({ pageNumber, rotation }) => (
+            <>
+              <Shown onShown={onShown} />
+              {renderFields(pageNumber, rotation)}
+            </>
+          )}
         />
       </Suspense>
     );

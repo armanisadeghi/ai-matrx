@@ -32,6 +32,7 @@ export function SigningFields({
   pressable,
   activeId,
   focusNonce,
+  done,
   onPress,
 }: {
   fields: PlacedField[];
@@ -44,6 +45,8 @@ export function SigningFields({
   activeId: string | null;
   /** Bumped by "Next field": the active field scrolls into view even when it already was active. */
   focusNonce: number;
+  /** The signer's fields they have already been walked through. */
+  done: ReadonlySet<string>;
   onPress: (field: PlacedField) => void;
 }) {
   if (fields.length === 0) return null;
@@ -80,6 +83,7 @@ export function SigningFields({
             pressable={pressable}
             active={field.id === activeId}
             focusNonce={focusNonce}
+            done={done.has(field.id)}
             onPress={onPress}
           />
         );
@@ -95,6 +99,7 @@ function MyField({
   pressable,
   active,
   focusNonce,
+  done,
   onPress,
 }: {
   field: PlacedField;
@@ -103,6 +108,7 @@ function MyField({
   pressable: boolean;
   active: boolean;
   focusNonce: number;
+  done: boolean;
   onPress: (field: PlacedField) => void;
 }) {
   const ref = useRef<HTMLButtonElement>(null);
@@ -130,13 +136,14 @@ function MyField({
         "focus-visible:ring-2 focus-visible:ring-primary",
       )}
     >
-      {active && pressable && (
-        <span className="pointer-events-none absolute bottom-full left-0 mb-1 whitespace-nowrap rounded-sm bg-primary px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary-foreground shadow-sm">
-          {filled ? "Next" : FIELD_PROMPT[field.kind]}
+      {/* An empty field already says what to do; a filled one the guide points at says "Next". */}
+      {active && pressable && filled && (
+        <span className="pointer-events-none absolute right-full top-1/2 mr-1.5 -translate-y-1/2 whitespace-nowrap rounded-sm bg-primary px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary-foreground shadow-sm">
+          Next
         </span>
       )}
       <FieldContent field={field} values={values} />
-      {filled && (
+      {filled && done && (
         <Check className="pointer-events-none absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-primary p-0.5 text-primary-foreground" />
       )}
     </button>
@@ -157,7 +164,7 @@ function FieldContent({ field, values }: { field: PlacedField; values: FieldValu
       return <img src={values.signature.src} alt="" className="h-full w-full object-contain object-left" />;
     }
     return (
-      <span className="w-full truncate px-1 font-serif italic leading-none" style={{ fontSize: "75cqh" }}>
+      <span className="w-full truncate px-1 font-serif italic leading-none" style={{ fontSize: fit(values.signature.name, 75, 150) }}>
         {values.signature.name}
       </span>
     );
@@ -167,9 +174,19 @@ function FieldContent({ field, values }: { field: PlacedField; values: FieldValu
   return (
     <span
       className={cn("w-full truncate px-1 leading-none", serif && "text-center font-serif italic")}
-      style={{ fontSize: serif ? "70cqh" : "62cqh" }}
+      style={{ fontSize: serif ? fit(text, 70, 120) : fit(text, 62, 135) }}
     >
       {text}
     </span>
   );
+}
+
+/**
+ * A font size that keeps `text` on one line inside its field: no taller than `heightPct` of the
+ * field, and narrow enough that its characters fit the field's width (`widthBudget` ÷ length, in
+ * container-width units — roughly 100cqw over an average glyph width of ~0.55em).
+ */
+function fit(text: string, heightPct: number, widthBudget: number): string {
+  const perChar = widthBudget / Math.max(Array.from(text).length, 1);
+  return `min(${heightPct}cqh, ${perChar.toFixed(2)}cqw)`;
 }
