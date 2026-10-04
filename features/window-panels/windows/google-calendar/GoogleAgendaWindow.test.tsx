@@ -31,10 +31,13 @@ jest.mock("@/features/google-workspace/calendar/CalendarView", () => ({
 jest.mock("@/features/google-workspace/calendar/SelectedCalendarReview", () => ({
   SelectedCalendarReview: () => <div>Selected review body</div>,
 }));
+jest.mock("@/features/google-workspace/meet/MeetReview", () => ({
+  MeetReview: () => <div>Meet review body</div>,
+}));
 jest.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TabsList: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TabsTrigger: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+  TabsList: ({ children, className }: { children: React.ReactNode; className?: string }) => <div data-tabs-list className={className}>{children}</div>,
+  TabsTrigger: ({ children, className, value }: { children: React.ReactNode; className?: string; value: string }) => <button data-tab={value} className={className}>{children}</button>,
   TabsContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -59,6 +62,8 @@ describe("GoogleAgendaWindow selected-calendar admission", () => {
     expect(host.textContent).toContain("Agenda");
     expect(host.textContent).not.toContain("Selected calendar");
     expect(host.textContent).not.toContain("Selected review body");
+    expect(host.textContent).not.toContain("Meet review");
+    expect(host.querySelectorAll("[data-tab]")).toHaveLength(2);
   });
 
   it("shows the reviewer only for the server-matched OAuth review identity", () => {
@@ -66,11 +71,17 @@ describe("GoogleAgendaWindow selected-calendar admission", () => {
     act(() => root.render(<GoogleAgendaWindow isOpen />));
     expect(host.textContent).toContain("Selected calendar");
     expect(host.textContent).toContain("Selected review body");
+    expect(host.textContent).toContain("Meet review");
+    expect(host.textContent).toContain("Meet review body");
+    expect(host.querySelectorAll("[data-tab]")).toHaveLength(4);
+    expect(host.querySelector("[data-tabs-list]")?.className).toContain("sm:grid-cols-4");
+    for (const tab of host.querySelectorAll("[data-tab]")) expect(tab.className).toContain("min-h-11");
   });
 
   it("shows the reviewer for a super admin in the admin lane", () => {
     mockAdmission = { isSuperAdmin: true, email: "admin@example.com" };
     act(() => root.render(<GoogleAgendaWindow isOpen />));
     expect(host.textContent).toContain("Selected calendar");
+    expect(host.textContent).toContain("Meet review");
   });
 });

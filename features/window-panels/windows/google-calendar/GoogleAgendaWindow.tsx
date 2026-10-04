@@ -16,6 +16,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgendaPanel } from "@/features/google-workspace/calendar/AgendaPanel";
 import { CalendarView } from "@/features/google-workspace/calendar/CalendarView";
 import { SelectedCalendarReview } from "@/features/google-workspace/calendar/SelectedCalendarReview";
+import { MeetReview } from "@/features/google-workspace/meet/MeetReview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -61,15 +62,20 @@ export function GoogleAgendaWindow({
         className="flex min-h-0 flex-1 flex-col"
       >
         <TabsList
-          className={`mx-2 mt-2 grid h-auto ${canReviewSelectedCalendar ? "grid-cols-3" : "grid-cols-2"}`}
+          className={`mx-2 mt-2 grid h-auto ${canReviewSelectedCalendar ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}
         >
-          <TabsTrigger value="calendar" className="min-h-9 text-xs">Calendar</TabsTrigger>
-          <TabsTrigger value="agenda" className="min-h-9 text-xs">
+          <TabsTrigger value="calendar" className="min-h-11 text-xs">Calendar</TabsTrigger>
+          <TabsTrigger value="agenda" className="min-h-11 text-xs">
             Agenda
           </TabsTrigger>
           {canReviewSelectedCalendar ? (
-            <TabsTrigger value="selected" className="min-h-9 text-xs">
+            <TabsTrigger value="selected" className="min-h-11 text-xs">
               Selected calendar
+            </TabsTrigger>
+          ) : null}
+          {canReviewSelectedCalendar ? (
+            <TabsTrigger value="meet" className="min-h-11 text-xs">
+              Meet review
             </TabsTrigger>
           ) : null}
         </TabsList>
@@ -92,6 +98,11 @@ export function GoogleAgendaWindow({
             className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
           >
             <SelectedCalendarReview />
+          </TabsContent>
+        ) : null}
+        {canReviewSelectedCalendar ? (
+          <TabsContent value="meet" className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+            <MeetReview />
           </TabsContent>
         ) : null}
       </Tabs>
