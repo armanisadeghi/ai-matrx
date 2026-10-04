@@ -24,6 +24,11 @@
  *                            written inside a solid surface (Card, DialogContent, SheetContent,
  *                            PopoverContent, a Table…) in the same file, with no sticky/fixed bar or
  *                            data-matrx-glass-plane between them. Only what is statically visible.
+ *   unclamped-text-pill      a hand-rolled pill (`rounded-full` + `px-*`, not a fixed circle) whose
+ *                            dynamic text (`{item.title}`, `{label}`, a template…) is not inside a
+ *                            `truncate`/`line-clamp-1` + `max-w-*` clamp, or a Badge whose className
+ *                            defeats the design-system clamp (`whitespace-normal`, `max-w-none`…).
+ *                            A sentence-length value in a capsule is the owner's 2026-10-04 defect.
  *
  * ITEMS: one per rule × file, key `<rule>|<file>` (no line, so edits never move it), its count =
  * the sites in it. (One item per site was ~44,700 rows a day; the store held ~1,900 in all.)
@@ -91,6 +96,10 @@ export const RULES = {
   "glass-tap-on-solid": {
     title: "glass tap button on a solid surface",
     fix: "Glass only floats: on a card, dialog, popover or table use variant=\"transparent\" (or outline/solid) and TapTargetButtonGroup surface=\"solid\".",
+  },
+  "unclamped-text-pill": {
+    title: "dynamic text in an unclamped pill",
+    fix: "A pill holds a short label. Use the design-system Badge (it clamps: max width, one line, title tooltip) or wrap the value in `truncate` with a `max-w-*` and a `title`; if the value can be a sentence, render a list row instead of a pill.",
   },
 };
 
@@ -204,6 +213,74 @@ function attrString(a) {
   return null; // dynamic
 }
 
+// ── unclamped-text-pill ───────────────────────────────────────────────────────────────────────
+// Values that are short by construction (numbers, enum-ish fields) — never a sentence.
+const COUNTISH = /(count|num|total|length|size|index|idx|pct|percent|score|secondsLeft|status|statusLabel|priority|mode|difficulty|icon|kind|type|typeLabel|severity|level|tone|variant|role|state|plan|tier|grade|unit|code|lang|locale|initials|shortcut|^n$|^i$|^k$)$/i;
+/** A JSX child expression that renders text of unknown length (not a number, not JSX, not a list). */
+function isTextyExpression(e) {
+  if (!e) return false;
+  if (ts.isParenthesizedExpression(e)) return isTextyExpression(e.expression);
+  if (ts.isTemplateExpression(e)) return true;
+  if (ts.isIdentifier(e)) return !COUNTISH.test(e.text) && !/^[A-Z]/.test(e.text);
+  if (ts.isPropertyAccessExpression(e)) return !COUNTISH.test(e.name.text) && !/^[A-Z]/.test(e.name.text);
+  if (ts.isElementAccessExpression(e)) return true;
+  if (ts.isBinaryExpression(e)) {
+    const op = e.operatorToken.kind;
+    if (op === ts.SyntaxKind.QuestionQuestionToken || op === ts.SyntaxKind.BarBarToken) return isTextyExpression(e.left) || isTextyExpression(e.right);
+    if (op === ts.SyntaxKind.AmpersandAmpersandToken) return isTextyExpression(e.right);
+    return false;
+  }
+  if (ts.isConditionalExpression(e)) return isTextyExpression(e.whenTrue) || isTextyExpression(e.whenFalse);
+  if (ts.isCallExpression(e)) {
+    const callee = e.expression.getText();
+    return !/\.map$|toLocaleString$|toFixed$|format(Number|Count|Bytes|Duration)|^(t|cn|pluralize)$/.test(callee) && !/^[A-Z]/.test(callee);
+  }
+  return false;
+}
+function classBasesOf(open) {
+  const a = attr(open.attributes.properties, "className");
+  if (!a?.initializer) return [];
+  const s = [];
+  collectStrings(a.initializer, s);
+  return tokens(s).map((t) => stripVariants(t).base);
+}
+const isClampText = (b) => b.includes("truncate") || b.includes("line-clamp-1");
+// A pill's clamp is a WIDTH a short label fits in: at most 20rem (320px — the runtime pill guard's
+// threshold in @ai-matrx/design-system). `max-w-full` / `sm:max-w-[24rem]` is no clamp: that is the
+// owner's 2026-10-04 "pills a quarter of the page wide, each holding a sentence".
+const PILL_MAX_PX = 320;
+function pillMaxPx(x) {
+  const named = { "max-w-3xs": 256, "max-w-2xs": 288, "max-w-xs": 320, "max-w-20": 80, "max-w-24": 96, "max-w-28": 112, "max-w-32": 128, "max-w-36": 144, "max-w-40": 160, "max-w-44": 176, "max-w-48": 192, "max-w-52": 208, "max-w-56": 224, "max-w-60": 240, "max-w-64": 256, "max-w-72": 288, "max-w-80": 320 };
+  if (named[x]) return named[x];
+  const m = x.match(/^max-w-\[(\d+(?:\.\d+)?)(rem|px|ch|em)\]$/);
+  if (!m) return Infinity;
+  const n = Number(m[1]);
+  return m[2] === "px" ? n : m[2] === "ch" ? n * 7 : n * 16;
+}
+const hasMaxW = (b) => b.some((x) => /^max-w-/.test(x) && pillMaxPx(x) <= PILL_MAX_PX);
+function isHandRolledPill(bases) {
+  return bases.includes("rounded-full") && bases.some((b) => /^px-/.test(b)) && !bases.some((b) => /^(size-|w-\d|w-\[)/.test(b));
+}
+/** The first dynamic-text child of a pill that no clamp reaches, or null. */
+function unclampedText(el, pillBases) {
+  let found = null;
+  const walk = (node, clamp, maxW) => {
+    if (found) return;
+    if (ts.isJsxExpression(node)) {
+      if (node.expression && isTextyExpression(node.expression) && !(clamp && maxW)) found = node;
+      return; // never descend into an expression's own JSX (a nested element is its own concern)
+    }
+    if (ts.isJsxElement(node)) {
+      const b = classBasesOf(node.openingElement);
+      if (isHandRolledPill(b)) return; // a nested pill is judged on its own
+      for (const c of node.children) walk(c, clamp || isClampText(b), maxW || hasMaxW(b));
+    }
+  };
+  for (const c of el.children) walk(c, isClampText(pillBases), hasMaxW(pillBases));
+  return found;
+}
+const DEFEATS_CLAMP = new Set(["whitespace-normal", "whitespace-pre-wrap", "max-w-none", "break-words", "break-all", "text-wrap"]);
+
 const SPINNER_FILE = /(spinner|loader|loading)[^/]*\.tsx$/i;
 const DEF_LAYER = /^components\/(ui|official)\//;
 
@@ -315,6 +392,17 @@ export function scanSource(file, text) {
             }
           }
         }
+      }
+    }
+    if (ts.isJsxElement(node) && !defLayer) {
+      const open = node.openingElement;
+      const tag = open.tagName.getText();
+      const bases = classBasesOf(open);
+      if (local[tag] === "Badge") {
+        const bad = bases.filter((b) => DEFEATS_CLAMP.has(b));
+        if (bad.length) add("unclamped-text-pill", open, `<Badge> ${[...new Set(bad)].sort().join(" ")}`);
+      } else if (isHandRolledPill(bases) && unclampedText(node, bases)) {
+        add("unclamped-text-pill", open, `<${tag}> rounded-full {${unclampedText(node, bases).expression.getText().slice(0, 40)}}`);
       }
     }
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && CLASS_CALLS.test(node.expression.text) && !handledCalls.has(node)) {
@@ -491,6 +579,7 @@ function writeBaseline(counts, previous) {
 const PLANTED = `
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
 export function Bad() {
   return (
@@ -505,6 +594,9 @@ export function Bad() {
       <CopyTapButton ariaLabel="Copy" />
       <TapTargetButtonGroup><span /></TapTargetButtonGroup>
       <div style={{ color: "#ff0000" }} />
+      <a className="inline-flex rounded-full px-2 py-0.5">{item.title}</a>
+      <a className="inline-flex max-w-full rounded-full px-2 sm:max-w-[24rem]"><span className="truncate">{s.title}</span></a>
+      <Badge className="whitespace-normal">{item.title}</Badge>
     </Card>
   );
 }
@@ -512,6 +604,7 @@ export function Bad() {
 const COMPLIANT = `
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
 export function Good() {
   return (
@@ -524,6 +617,9 @@ export function Good() {
       <CopyTapButton variant="transparent" ariaLabel="Copy" />
       <TapTargetButtonGroup surface="solid"><span /></TapTargetButtonGroup>
       <div className="sticky top-0"><CopyTapButton ariaLabel="Copy" /></div>
+      <a className="inline-flex max-w-[12rem] rounded-full px-2 py-0.5"><span className="truncate">{item.title}</span></a>
+      <span className="rounded-full px-1.5">{count}</span>
+      <Badge>{item.title}</Badge>
     </Card>
   );
 }
@@ -542,6 +638,9 @@ const PLANTED_SITES = [
   "glass-tap-on-solid :: <CopyTapButton> in <Card>",
   "glass-tap-on-solid :: <TapTargetButtonGroup> in <Card>",
   "raw-color :: <div> style #ff0000",
+  "unclamped-text-pill :: <a> rounded-full {item.title}",
+  "unclamped-text-pill :: <a> rounded-full {s.title}",
+  "unclamped-text-pill :: <Badge> whitespace-normal",
 ];
 
 export function selfTest() {
@@ -563,7 +662,7 @@ export function selfTest() {
   const same = judge(groupSites(scanSource("a.tsx", PLANTED)), { counts }, () => before);
   if (same.some((j) => j.status !== "known")) problems.push("an unchanged file read as new against its own counts");
   const grown = judge(groupSites(after), { counts }, () => before).filter((j) => j.status === "new");
-  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 12) {
+  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 13) {
     problems.push(`a grown count did not name exactly its one new site: ${JSON.stringify(grown.map((g) => [g.key, g.fresh.map((f) => f.line)]))}`);
   }
   const shrunk = judge(groupSites(after.filter((x) => x.rule !== "raw-color")), { counts }, () => before);
