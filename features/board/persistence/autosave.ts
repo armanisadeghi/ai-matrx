@@ -1,4 +1,4 @@
-// features/spatial/persistence/autosave.ts
+// features/board/persistence/autosave.ts
 //
 // The debounce/flush core of board autosave, with no React in it so its timing
 // rules are testable on their own:

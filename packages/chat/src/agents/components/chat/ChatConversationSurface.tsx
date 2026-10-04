@@ -8,7 +8,7 @@
  * through the SAME function the chat's own control calls.
  *
  * ONE component, two consumers: `ChatRoomClient` (every `/chat` room) and the
- * Board's chat tile (`features/spatial/items/work-items.tsx`). The conversation
+ * Board's chat tile (`features/board/items/work-items.tsx`). The conversation
  * it shows is the host's OWN (`ownConversationId`): it never receives this
  * surface as context nor its tools — only OUTSIDE agents (a window, a
  * sidebar, the chat beside the board) read and write it. On a board only the

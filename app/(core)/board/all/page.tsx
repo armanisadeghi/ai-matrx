@@ -1,9 +1,9 @@
 // app/(core)/board/all/page.tsx
 //
 // Boards LIST page — every board the person made. The board itself opens at
-// /board (home) and /board/<id>; see features/spatial/FEATURE.md.
+// /board (home) and /board/<id>; see features/board/FEATURE.md.
 
-import { BoardsListPage } from "@/features/spatial/boards/BoardsListPage";
+import { BoardsListPage } from "@/features/board/boards/BoardsListPage";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/board/all", {

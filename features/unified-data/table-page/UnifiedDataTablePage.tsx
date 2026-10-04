@@ -144,7 +144,7 @@ export function UnifiedDataTablePage({ tableId }: { tableId: string }) {
    *
    * Everything below the address — where the table lives, the store switch, the mount, the
    * agent surface — is `useUnifiedTable` / `UnifiedTableBody`, the SAME component a Board tile
-   * renders (`features/spatial/items/data-items.tsx`). This route adds only its chrome.
+   * renders (`features/board/items/data-items.tsx`). This route adds only its chrome.
    */
   const searchParams = useSearchParams();
   const rawFilter = searchParams.get("filter");

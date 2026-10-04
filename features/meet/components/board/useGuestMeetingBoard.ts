@@ -9,12 +9,12 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import type { Camera } from "@/features/spatial/engine/camera";
+import type { Camera } from "@/features/board/engine/camera";
 import {
   parseBoardDocument,
   serializeBoardDocument,
   type BoardDocument,
-} from "@/features/spatial/board/document";
+} from "@/features/board/board/document";
 
 const SAVE_DELAY_MS = 600;
 

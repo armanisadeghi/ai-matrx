@@ -4,7 +4,7 @@
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
-import type { DemoKindExample } from "@/features/spatial/demo/SpatialDemoBoard";
+import type { DemoKindExample } from "@/features/board/demo/SpatialDemoBoard";
 import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { SpatialCanvasWorkspaceDemo } from "./SpatialCanvasWorkspaceDemo";
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 /** Kinds shown in the study pack, in board order (missing ones are skipped). */
 const BOARD_KINDS = ["flashcard_set", "quiz_set", "study_notes", "presentation_deck"] as const;
 
-// Copied from app/(dev)/demos/spatial/page.dev.tsx (a page module exports nothing reusable).
+// Copied from app/(dev)/demos/board/page.dev.tsx (a page module exports nothing reusable).
 async function loadCanonicalExamples(): Promise<{
   kinds: DemoKindExample[];
   note: string | null;

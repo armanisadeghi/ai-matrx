@@ -27,7 +27,7 @@
     "features/research/browse/listConfig.tsx",
     "features/source-library/browse/listConfig.tsx",
     "features/source-library/catalog/listConfig.tsx",
-    "features/spatial/boards/listConfig.tsx",
+    "features/board/boards/listConfig.tsx",
     "features/transcripts/browse/listConfig.tsx",
     "features/unified-data/home/DataHomeList.tsx",
     "features/vision-interview/browse/listConfig.tsx"

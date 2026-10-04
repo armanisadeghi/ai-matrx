@@ -3,7 +3,7 @@
  * may read — so the registry renders kinds for a guest instead of capturing
  * `permission denied for table kind_definition`.
  *
- * Live 2026-10-01 (/demos/spatial, signed out): ~13 "kind-registry cold fetch
+ * Live 2026-10-01 (/demos/board, signed out): ~13 "kind-registry cold fetch
  * failed … permission denied for table kind_definition". DD-230 bounded
  * `anon` on `content_ir.kind_definition` to a column list
  * (`lib/security/public-exposure.ts#ANON_COLUMN_SURFACE`) WITHOUT `metadata`,

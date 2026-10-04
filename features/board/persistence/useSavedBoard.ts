@@ -1,6 +1,6 @@
 "use client";
 
-// features/spatial/persistence/useSavedBoard.ts
+// features/board/persistence/useSavedBoard.ts
 //
 // Open a saved board (the person's home board, or one by id) and keep it
 // saved. The board page renders from `board.doc` and reports every change to

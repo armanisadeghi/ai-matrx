@@ -1,6 +1,6 @@
 # FEATURE.md — `spatial` (working name: Spatial view)
 
-> **Status:** proof of concept, live at `/demos/spatial` (demos build). Working name only — "desk" is
+> **Status:** proof of concept, live at `/demos/board` (demos build). Working name only — "desk" is
 > retired vocabulary and "Canvas" is the side-sheet artifact host (`features/canvas`); the product
 > name goes to Arman before this leaves demos. Project plan and research:
 > `../common-docs/systems/workspace/boards/projects/spatial-view/PLAN.md`.
@@ -38,7 +38,7 @@ stale text. By construction a batched tile renders once per interval instead of 
 | Stream sources: `ReplayStream` (real `StreamBlockAccumulator`), `RequestStream` (live `activeRequests` row) | `streams/stream-source.ts` |
 | The read-side throttle | `streams/usePacedSnapshot.ts` |
 | Tile bodies: stream → `BlockRenderer`; sandboxed HTML; image; video | `tiles/` |
-| Demo board | `demo/`, route `app/(dev)/demos/spatial/page.dev.tsx` |
+| Demo board | `demo/`, route `app/(dev)/demos/board/page.dev.tsx` |
 
 ## Rules for this directory
 
@@ -301,7 +301,7 @@ and `read().removed` lists tiles off the board that `board_park parked:false` re
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
 Note in the notes core (`items/NoteItemBody.tsx`; its `text` is the note's seed while no note exists
-yet, and a real note's text changes through `note_content`). Wired: the demo; `/board` and the meeting board (which renders `UserBoard` itself); the workflow run board (`features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx`
+yet, and a real note's text changes through `note_content`). Wired: the demo; `/board` and the meeting board (which renders `UserBoard` itself); the workflow run board (`features/workflow-runtime/components/board/WorkflowRunSpatialView.tsx`
 — real Note / markdown / text / html / image beside the steps; a step refuses content edits, and
 `describe` gives its family + declared kind and live status). Both render `board.frames` and
 `board.connections`; the War Room board (`features/war-room/components/board/roomBoardAgent.ts`, an

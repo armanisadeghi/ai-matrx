@@ -1,20 +1,20 @@
 /**
  * Surface manifest — Spatial board (`matrx-user/spatial-board`).
  *
- * Any spatial board (features/spatial): the /demos/spatial proof, and every
+ * Any spatial board (features/board): the /demos/board proof, and every
  * host that mounts `SpatialBoardSurface` — War Room's Board view, the meeting
  * Board layout, a workflow run's Board view. Its job is the ACTION vocabulary:
- * the board's agent tools (`features/spatial/tools/board-tools.ts`) are
+ * the board's agent tools (`features/board/tools/board-tools.ts`) are
  * declared here once, so every agent working while a board is on screen can
  * read it and add, edit, move, arrange, group, connect, park and remove tiles.
  * A board inside another surface (a War Room) stacks on top of it — the host
  * surface keeps its own values and tools.
  *
- * Runtime emitter: `features/spatial/components/SpatialBoardSurface.tsx`.
+ * Runtime emitter: `features/board/components/SpatialBoardSurface.tsx`.
  */
 
 import type { SurfaceManifest, SurfaceValue, SurfaceValueGroup } from "@ai-matrx/chat/surfaces/types";
-import { BOARD_CLIENT_TOOLS } from "@/features/spatial/tools/board-tools";
+import { BOARD_CLIENT_TOOLS } from "@/features/board/tools/board-tools";
 import { mergeBaselineValues } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 
 export const SPATIAL_BOARD_SURFACE_NAME = "matrx-user/spatial-board";
@@ -73,7 +73,7 @@ export const spatialBoardManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     "Board agent tools live on every mounted board (read, add, edit, move, arrange, group, connect, focus, open item, act on item, park, remove, undo). board_items names every item with its basics; board_open_item / board_item_act reach any item's own surface on the person's Board (hosts that keep no per-tile capture list identity only); board_read carries positions and excerpts.",
-  urlPattern: "/demos/spatial",
+  urlPattern: "/demos/board",
   intro: `<surface_intro>
 The person is looking at a spatial board: an infinite, zoomable plane of tiles (live AI results, notes, rendered markdown, generated pages, images, meeting parts, workflow steps) grouped into named frames. They pan and zoom it like a map.
 You can WORK ON THE BOARD with the board_* tools, and every change you make lands on the person's undo stack like their own:

@@ -110,7 +110,7 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **Board contract** (`features/board` is owned by another session): the board draws its own
   ToolBar + ZoomMenu inside its canvas and its own surface; it still owes — once it exposes its store outside
   its viewport — its LayersPanel as a Properties tab and an insets callback so fit-to-view avoids the
-  floating chat. `/demos/spatial` and `/board` render the workspace; the interim `features/board/chat/`
+  floating chat. `/demos/board` and `/board` render the workspace; the interim `features/board/chat/`
   split was deleted 2026-09-27.
 - **Open:** Share/comments are unexercised (no demo has a record); at 390px the board's own ToolBar and
   ZoomMenu overlap (Board-owned); the Error Inspector badge sits over the nav's user row bottom-left.
@@ -143,8 +143,8 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
   (`ConversationContextChip`, turning it back on re-reads the page). Every panel/header border line removed.
 - **2026-09-27** — Built: workspace, canvas nav + user row + org drop-up, shell canvas chrome, floating
   chat, properties panel, demos; the chat panel is the compact composer with agent switching;
-  `contextKey` dedupes the canvas pill; `/demos/spatial` unlisted until it hosts the workspace.
-- **2026-09-27** — `/demos/spatial` hosts the workspace (listed in `CANVAS_CHROME_ROUTES` again); the Board
+  `contextKey` dedupes the canvas pill; `/demos/board` unlisted until it hosts the workspace.
+- **2026-09-27** — `/demos/board` hosts the workspace (listed in `CANVAS_CHROME_ROUTES` again); the Board
   host passes no snapshot — the board's own surface carries it; `matrx-user/board` registered in
   `ui.ui_surface` (it was unregistered, so every send beside a board failed 422).
 - **2026-09-27** — `useCanvasWorkspaceConversation(surfaceKey, start?)`: an optional mount request (`new` /

@@ -2257,7 +2257,7 @@ body:has(.shell-root[data-pathname^="/administration"]) {
 /* ---------------------------------------------------------------------------
    13d. Board embed — `<html data-board-embed>`
 
-   An app page placed on a /board as a tile (features/spatial/items/
+   An app page placed on a /board as a tile (features/board/items/
    page-items.tsx) is the page alone: the board around it is the chrome, so the
    shell's sidebar, header, account rail, phone trigger and dock step aside and
    the main area fills the frame. Stamped before paint by

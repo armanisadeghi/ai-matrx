@@ -4,7 +4,7 @@
  * DocumentRecord — ONE document, with every control `/documents/[id]` offers
  * for it, as one shared component. Two consumers render it: the route
  * (`app/(core)/documents/[id]/page.tsx`, which adds only its RouteHeader and
- * back button) and the Board's Document tile (`features/spatial/items/
+ * back button) and the Board's Document tile (`features/board/items/
  * document-items.tsx`). Never a second copy.
  *
  * It owns the load, the edit gate, rename, Copy reference, Share, the
@@ -410,7 +410,7 @@ export function DocumentRecord({
           className="mx-2 mt-2 shrink-0"
         />
         {/* The editor is one control: Univer draws on a canvas, so a board
-            tile (features/spatial) cannot tell a press in it from a press on
+            tile (features/board) cannot tell a press in it from a press on
             empty body. `data-spatial-interactive` says so — a click places the
             caret instead of selecting the tile. No effect off the board. */}
         <div className="min-h-0 flex-1" data-spatial-interactive="">

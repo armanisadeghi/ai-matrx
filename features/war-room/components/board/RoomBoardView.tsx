@@ -7,7 +7,7 @@
 // entity type (the tabs `useThreadTabs` derives, minus the stacked "All") — is
 // its own tile inside the frame. Notes, files, audio and chat can all be out
 // at once, side by side, nothing on top of anything. A CONSUMER of
-// `features/spatial` (the engine is never forked here); each tile body is the
+// `features/board` (the engine is never forked here); each tile body is the
 // thread's own tab renderer, `ThreadTabContent`, with that one tab.
 //
 // One path per action:
@@ -56,20 +56,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { screenToWorld, type Rect } from "@/features/spatial/engine/camera";
-import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
-import { useSpatialStore } from "@/features/spatial/engine/react";
-import type { ThrowAction, ThrowDirection } from "@/features/spatial/engine/throw";
-import type { TileStatusValue } from "@/features/spatial/streams/useSourceStatus";
-import { useWheelModePreference } from "@/features/spatial/board/useWheelModePreference";
-import { SpatialViewport } from "@/features/spatial/components/SpatialViewport";
-import { SpatialTile } from "@/features/spatial/components/SpatialTile";
-import { SpatialFrame } from "@/features/spatial/components/SpatialFrame";
-import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
-import { ParkedShelf, type ParkedChip } from "@/features/spatial/components/ParkedShelf";
-import { Minimap, ZoomHud } from "@/features/spatial/components/SpatialChrome";
-import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
-import type { BoardToolHost, Failure } from "@/features/spatial/tools/useBoardAgentTools";
+import { screenToWorld, type Rect } from "@/features/board/engine/camera";
+import type { SpatialStore } from "@/features/board/engine/spatial-store";
+import { useSpatialStore } from "@/features/board/engine/react";
+import type { ThrowAction, ThrowDirection } from "@/features/board/engine/throw";
+import type { TileStatusValue } from "@/features/board/streams/useSourceStatus";
+import { useWheelModePreference } from "@/features/board/board/useWheelModePreference";
+import { SpatialViewport } from "@/features/board/components/SpatialViewport";
+import { SpatialTile } from "@/features/board/components/SpatialTile";
+import { SpatialFrame } from "@/features/board/components/SpatialFrame";
+import { SpatialBoardMenu } from "@/features/board/components/SpatialBoardMenu";
+import { ParkedShelf, type ParkedChip } from "@/features/board/components/ParkedShelf";
+import { Minimap, ZoomHud } from "@/features/board/components/SpatialChrome";
+import { SpatialBoardSurface } from "@/features/board/components/SpatialBoardSurface";
+import type { BoardToolHost, Failure } from "@/features/board/tools/useBoardAgentTools";
 import {
   selectActiveNoteId,
   selectAssignmentTokenSummary,

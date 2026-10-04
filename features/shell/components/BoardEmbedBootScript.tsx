@@ -1,5 +1,5 @@
 // Inline <script> that runs before first paint: an app page framed by the app
-// itself (a page placed on a /board as a tile — features/spatial/items/
+// itself (a page placed on a /board as a tile — features/board/items/
 // page-items.tsx) marks <html data-board-embed>, and styles/shell.css §13d
 // drops the shell's sidebar, header, rail and dock so the page fills its tile.
 // Before paint, so the chrome never flashes. A page framed by another origin is

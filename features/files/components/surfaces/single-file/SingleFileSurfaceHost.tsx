@@ -4,7 +4,7 @@
  * THE host of the `matrx-user/file` surface (features/surfaces/manifests/
  * file.manifest.ts) for ONE file — used by the single-file page
  * (`SingleFileShell`, `/files/f/[fileId]`) AND by a File tile on a Board
- * (`features/spatial/items/work-items.tsx`, `surface.Host`). One component, two
+ * (`features/board/items/work-items.tsx`, `surface.Host`). One component, two
  * consumers, so an agent can do in a tile exactly what it can do on the page.
  *
  * It owns the viewer state the surface reads and writes — the open tab and the

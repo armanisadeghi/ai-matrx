@@ -1,7 +1,7 @@
 // features/war-room/components/board/roomBoardAgent.ts
 //
 // The War Room board as a `BoardToolTarget` — how the spatial board's agent
-// tools (`features/spatial/tools/useBoardAgentTools.ts`) act on a board that
+// tools (`features/board/tools/useBoardAgentTools.ts`) act on a board that
 // keeps its OWN layout model (`boardLayout.ts`) instead of `useBoard`.
 //
 // Tiles are the thread PARTS (`<threadId>:<tab>`), frames are the THREADS (id =
@@ -16,9 +16,9 @@
 // Pure — the host passes its layout, its commit and the Redux-bound bits — so
 // it is unit-tested in `__tests__/roomBoardAgent.test.ts`.
 
-import type { Rect } from "@/features/spatial/engine/camera";
-import type { BoardTileBase } from "@/features/spatial/board/useBoard";
-import type { BoardToolHost, BoardToolTarget, Failure } from "@/features/spatial/tools/useBoardAgentTools";
+import type { Rect } from "@/features/board/engine/camera";
+import type { BoardTileBase } from "@/features/board/board/useBoard";
+import type { BoardToolHost, BoardToolTarget, Failure } from "@/features/board/tools/useBoardAgentTools";
 import type { ThreadTab } from "@/features/war-room/types";
 import {
   type BoardLayout,

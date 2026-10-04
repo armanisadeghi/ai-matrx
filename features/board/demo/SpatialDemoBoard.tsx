@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The /demos/spatial proof board: many live results at once on one plane.
+ * The /demos/board proof board: many live results at once on one plane.
  *
  *   Research & study — a research report streaming as prose, beside real
  *     structured kinds (flashcards, quiz, notes, deck…) streaming their
@@ -13,7 +13,7 @@
  *     culling hold the frame rate.
  *
  * Every stream here is a REPLAY and every tile says so. Wiring a real run is
- * the `RequestStream` source (features/spatial/streams/stream-source.ts).
+ * the `RequestStream` source (features/board/streams/stream-source.ts).
  */
 
 import { useEffect, useState } from "react";

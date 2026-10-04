@@ -4742,7 +4742,7 @@
      "detail": "<p>{step.body}"
     },
     {
-     "file": "features/spatial/items/feature-items.tsx",
+     "file": "features/board/items/feature-items.tsx",
      "line": 962,
      "detail": "<p>{project.description}"
     },
@@ -8056,7 +8056,7 @@
   "features/skills/components/SkillDetailView.tsx": {"shared":false,"surfaces":[81]},
   "features/skills/components/SkillsBrowser.tsx": {"shared":false,"surfaces":[64,282,477]},
   "features/source-onboarding/components/SourceGuidePage.tsx": {"shared":false,"surfaces":[820]},
-  "features/spatial/items/feature-items.tsx": {"shared":false,"surfaces":[542,543]},
+  "features/board/items/feature-items.tsx": {"shared":false,"surfaces":[542,543]},
   "features/structured-lists/StructuredListLanding.tsx": {"shared":false,"surfaces":[854]},
   "features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx": {"shared":false,"surfaces":[236,433]},
   "features/surfaces/admin/columns/AgentColumn.tsx": {"shared":false,"surfaces":[296,493]},

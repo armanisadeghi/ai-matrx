@@ -6,7 +6,7 @@
  * stage by stage (`run-board-layout.ts`), and each one comes to life as the
  * run reaches it.
  *
- * It CONSUMES the spatial engine (features/spatial) and the run runtime; it
+ * It CONSUMES the spatial engine (features/board) and the run runtime; it
  * renders nothing of its own:
  *   - a step holding a streaming lane → `StreamTileBody` over
  *     `useRequestSource(laneRequestId)` — the one pipeline, paced by zoom;
@@ -54,41 +54,41 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import { selectRequestCarriesKindEnvelope } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 
-import type { Rect } from "@/features/spatial/engine/camera";
-import type { PaceTier } from "@/features/spatial/engine/lod";
-import type { SpatialStore } from "@/features/spatial/engine/spatial-store";
+import type { Rect } from "@/features/board/engine/camera";
+import type { PaceTier } from "@/features/board/engine/lod";
+import type { SpatialStore } from "@/features/board/engine/spatial-store";
 import {
   DEFAULT_THROW_ACTIONS,
   type ThrowAction,
   type ThrowDirection,
-} from "@/features/spatial/engine/throw";
+} from "@/features/board/engine/throw";
 
-import { useBoard, type BoardFrame } from "@/features/spatial/board/useBoard";
-import { useWheelModePreference } from "@/features/spatial/board/useWheelModePreference";
-import { SpatialBoardMenu } from "@/features/spatial/components/SpatialBoardMenu";
-import { ParkedShelf } from "@/features/spatial/components/ParkedShelf";
-import { SpatialViewport } from "@/features/spatial/components/SpatialViewport";
-import { SpatialTile } from "@/features/spatial/components/SpatialTile";
-import { SpatialFrame } from "@/features/spatial/components/SpatialFrame";
-import { SpatialEdge } from "@/features/spatial/components/SpatialEdge";
-import { Minimap, ZoomHud } from "@/features/spatial/components/SpatialChrome";
-import type { StatusFrom, TileStatusValue } from "@/features/spatial/streams/useSourceStatus";
-import { useRequestSource } from "@/features/spatial/streams/useRequestSource";
-import { StreamTileBody } from "@/features/spatial/tiles/StreamTileBody";
-import { MarkdownTileBody } from "@/features/spatial/tiles/MarkdownTileBody";
-import { HtmlTileBody, ImageTileBody } from "@/features/spatial/tiles/MediaTileBodies";
-import { TextTileBody } from "@/features/spatial/tiles/TextTileBody";
-import { NoteItemBody } from "@/features/spatial/items/NoteItemBody";
-import { entityId, noteSeedEdit } from "@/features/spatial/items/work-sources";
-import type { NodeSource } from "@/features/spatial/board/document";
+import { useBoard, type BoardFrame } from "@/features/board/board/useBoard";
+import { useWheelModePreference } from "@/features/board/board/useWheelModePreference";
+import { SpatialBoardMenu } from "@/features/board/components/SpatialBoardMenu";
+import { ParkedShelf } from "@/features/board/components/ParkedShelf";
+import { SpatialViewport } from "@/features/board/components/SpatialViewport";
+import { SpatialTile } from "@/features/board/components/SpatialTile";
+import { SpatialFrame } from "@/features/board/components/SpatialFrame";
+import { SpatialEdge } from "@/features/board/components/SpatialEdge";
+import { Minimap, ZoomHud } from "@/features/board/components/SpatialChrome";
+import type { StatusFrom, TileStatusValue } from "@/features/board/streams/useSourceStatus";
+import { useRequestSource } from "@/features/board/streams/useRequestSource";
+import { StreamTileBody } from "@/features/board/tiles/StreamTileBody";
+import { MarkdownTileBody } from "@/features/board/tiles/MarkdownTileBody";
+import { HtmlTileBody, ImageTileBody } from "@/features/board/tiles/MediaTileBodies";
+import { TextTileBody } from "@/features/board/tiles/TextTileBody";
+import { NoteItemBody } from "@/features/board/items/NoteItemBody";
+import { entityId, noteSeedEdit } from "@/features/board/items/work-sources";
+import type { NodeSource } from "@/features/board/board/document";
 import { SurfaceActivity } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { useIsEditing } from "@/features/spatial/engine/react";
-import { SpatialBoardSurface } from "@/features/spatial/components/SpatialBoardSurface";
+import { useIsEditing } from "@/features/board/engine/react";
+import { SpatialBoardSurface } from "@/features/board/components/SpatialBoardSurface";
 import type {
   AddTileInput,
   BoardToolHost,
   EditTileInput,
-} from "@/features/spatial/tools/useBoardAgentTools";
+} from "@/features/board/tools/useBoardAgentTools";
 
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
 import { useFloatingWorkflowRun } from "../../floating/useFloatingWorkflowRun";

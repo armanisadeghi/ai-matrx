@@ -1,6 +1,6 @@
 "use client";
 
-// features/spatial/boards/useBoardRowActions.tsx
+// features/board/boards/useBoardRowActions.tsx
 //
 // The ONE action list for a board row — the kebab, the phone card and the
 // right-click menu all read this builder. Delete is a soft delete: the board

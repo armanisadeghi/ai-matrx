@@ -1,4 +1,4 @@
-// features/spatial/persistence/boardsService.ts
+// features/board/persistence/boardsService.ts
 //
 // The ONE client path for saved boards (`projects.spatial_boards`, entity
 // token `spatial_board`). React → Supabase directly; RLS is the authority

@@ -4,13 +4,13 @@
  * MeetingBoard — the meeting as a BOARD instead of a wall of faces.
  *
  * The board IS the person's own Board (`UserBoard`, the host `/board`
- * renders — features/spatial, consumed, never forked): every item type in the
+ * renders — features/board, consumed, never forked): every item type in the
  * catalog, the tools, shapes, frames, layers, shelf, undo, drop and paste, the
  * agent tools and the item bridge. A meeting's board is a SAVED BOARD: the
  * viewer's own `projects.spatial_boards` row linked to the meeting
  * (`settings.meeting_id`, `getMeetingBoard`), opened with a "Meeting notes"
  * frame whose tiles are the meeting's live parts (item type `meeting_part`,
- * features/spatial/items/meeting-items.tsx) — which can also go on any other
+ * features/board/items/meeting-items.tsx) — which can also go on any other
  * board. It is listed with the person's boards and opens at /board/<id> too.
  * A guest has no account to save a board in: the same document is kept in
  * this browser (`useGuestMeetingBoard`).
@@ -52,17 +52,17 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
-import type { BoardDocument } from "@/features/spatial/board/document";
-import type { Camera } from "@/features/spatial/engine/camera";
-import { useSavedBoard } from "@/features/spatial/persistence/useSavedBoard";
-import { meetingNotesDocument } from "@/features/spatial/items/meeting-items.logic";
+import type { BoardDocument } from "@/features/board/board/document";
+import type { Camera } from "@/features/board/engine/camera";
+import { useSavedBoard } from "@/features/board/persistence/useSavedBoard";
+import { meetingNotesDocument } from "@/features/board/items/meeting-items.logic";
 import { LayoutSwitch, type MeetingLayoutChoice } from "./LayoutSwitch";
 import { PeopleStrip } from "./PeopleStrip";
 import { useGuestMeetingBoard } from "./useGuestMeetingBoard";
 
 const OPENING = "Opening the board…";
 
-const UserBoard = dynamic(() => import("@/features/spatial/home/UserBoard").then((m) => m.UserBoard), {
+const UserBoard = dynamic(() => import("@/features/board/home/UserBoard").then((m) => m.UserBoard), {
   ssr: false,
   loading: () => <BoardMessage>{<ShimmerText text={OPENING} />}</BoardMessage>,
 });

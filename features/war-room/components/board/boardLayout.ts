@@ -16,7 +16,7 @@
 // restoring puts it back exactly there). The v1 per-thread `tiles` map is
 // ignored (pre-launch — no shim).
 
-import { type Camera, type Rect, rectsIntersect } from "@/features/spatial/engine/camera";
+import { type Camera, type Rect, rectsIntersect } from "@/features/board/engine/camera";
 import type { ThreadTab } from "@/features/war-room/types";
 import type { Json } from "@/types/database.types";
 

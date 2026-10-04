@@ -2302,7 +2302,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/agents/components/previews/ConversationHoverPreview.tsx:142` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{conv.description}`
 - [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/research/components/document/DocumentViewer.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/spatial/items/feature-items.tsx:962` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
+- [ ] `features/board/items/feature-items.tsx:962` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
 - [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/workflow-runtime/interrupt/RunDecisions.tsx:94` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{answer}`
 
@@ -2311,7 +2311,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/agents/components/previews/ConversationHoverPreview.tsx:142` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{conv.description}`
 - [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/research/components/document/DocumentViewer.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/spatial/items/feature-items.tsx:962` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
+- [ ] `features/board/items/feature-items.tsx:962` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
 - [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/workflow-runtime/interrupt/RunDecisions.tsx:94` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{answer}`
 

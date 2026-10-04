@@ -1,6 +1,6 @@
 "use client";
 
-// features/spatial/boards/columns.tsx — the /board/all column registry.
+// features/board/boards/columns.tsx — the /board/all column registry.
 // Plain words: "Tiles", never "nodes".
 
 import { Badge } from "@/components/ui/badge";

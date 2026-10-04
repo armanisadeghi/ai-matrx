@@ -32,7 +32,7 @@ export type NodeSource =
   | { kind: "thread"; threadId: string }
   /**
    * Any platform record a registered board item type renders
-   * (`features/spatial/items`): `entity` is the item type key ("note",
+   * (`features/board/items`): `entity` is the item type key ("note",
    * "chat", "task", "war-room"…), `id` the record's id. `id` is null while
    * the record does not exist yet (a draft note is created by its first
    * words; a new chat by its first launch). `meta` carries small strings the

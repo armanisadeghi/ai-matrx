@@ -1,6 +1,6 @@
 "use client";
 
-// features/spatial/boards/listConfig.tsx — /board/all on the canonical
+// features/board/boards/listConfig.tsx — /board/all on the canonical
 // entity-list shell.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";

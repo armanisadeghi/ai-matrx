@@ -1331,7 +1331,7 @@ export const primaryNavItems: ShellNavItem[] = [
         // THE BOARD — its own menu item (owner: "the user's master one and it's got it's own menu
         // item… show all of the supported features as suboptions"). Every item a board supports is
         // one click away: `/board?add=<item key>` starts it on the person's board (UserBoard).
-        // Keys = BOARD_ITEM_TYPES; features/spatial/__tests__/board-menu-items.test.ts holds them.
+        // Keys = BOARD_ITEM_TYPES; features/board/__tests__/board-menu-items.test.ts holds them.
         label: "Board",
         href: "/board",
         iconName: "LayoutGrid",

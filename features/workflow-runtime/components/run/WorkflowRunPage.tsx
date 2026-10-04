@@ -41,14 +41,14 @@ import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigati
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { SegmentedControl } from "@ai-matrx/design-system";
-import { useRunViewPreference } from "../spatial/useRunViewPreference";
+import { useRunViewPreference } from "../board/useRunViewPreference";
 
 /**
  * The Board view — one `ssr:false` edge, fetched only when a viewer picks it
  * (the spatial engine is browser-only and most viewers never open it).
  */
 const WorkflowRunSpatialView = dynamic(
-  () => import("../spatial/WorkflowRunSpatialView"),
+  () => import("../board/WorkflowRunSpatialView"),
   {
     ssr: false,
     loading: () => <div className="h-full animate-pulse bg-muted/30" />,

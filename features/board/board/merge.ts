@@ -1,4 +1,4 @@
-// features/spatial/board/merge.ts
+// features/board/board/merge.ts
 //
 // The three-way merge that keeps BOTH tabs' edits when two tabs change one board.
 // Pure — no React, no network.

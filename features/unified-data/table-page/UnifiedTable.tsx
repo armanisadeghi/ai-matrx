@@ -3,7 +3,7 @@
 /**
  * ONE RECORD-STORE TABLE, MOUNTED — the part of `/data-v2/[tableId]` that is not route chrome.
  *
- * `/data-v2/[tableId]` and a Board tile (`features/spatial/items/data-items.tsx`) render the SAME
+ * `/data-v2/[tableId]` and a Board tile (`features/board/items/data-items.tsx`) render the SAME
  * table page: records-ui's `TablePage` inside `RecordsMount`, reading as the TABLE's organization,
  * with the same ports, realtime, Sheet layout, merged-grid knob, table action list and
  * `matrx-user/data-tables` agent surface (`RecordStoreTableSurface`). Only the route adds route

@@ -84503,7 +84503,7 @@
       "detail": "secondary slot: 75 chars, budget 60"
     },
     {
-      "file": "features/spatial/boards/listConfig.tsx",
+      "file": "features/board/boards/listConfig.tsx",
       "line": 52,
       "rule": "over-budget",
       "severity": 2,
@@ -84513,7 +84513,7 @@
       "detail": "secondary slot: 117 chars, budget 60"
     },
     {
-      "file": "features/spatial/boards/listConfig.tsx",
+      "file": "features/board/boards/listConfig.tsx",
       "line": 52,
       "rule": "multi-sentence",
       "severity": 2,
@@ -84523,7 +84523,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/home/AddMenu.tsx",
+      "file": "features/board/home/AddMenu.tsx",
       "line": 80,
       "rule": "over-budget",
       "severity": 2,
@@ -84533,7 +84533,7 @@
       "detail": "secondary slot: 108 chars, budget 60"
     },
     {
-      "file": "features/spatial/home/AddMenu.tsx",
+      "file": "features/board/home/AddMenu.tsx",
       "line": 80,
       "rule": "multi-sentence",
       "severity": 2,
@@ -84543,7 +84543,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/home/AddMenu.tsx",
+      "file": "features/board/home/AddMenu.tsx",
       "line": 124,
       "rule": "over-budget",
       "severity": 2,
@@ -84553,7 +84553,7 @@
       "detail": "secondary slot: 66 chars, budget 60"
     },
     {
-      "file": "features/spatial/home/UnavailableItemBody.tsx",
+      "file": "features/board/home/UnavailableItemBody.tsx",
       "line": 17,
       "rule": "over-budget",
       "severity": 1,
@@ -84563,7 +84563,7 @@
       "detail": "secondary slot: 160 chars, budget 60"
     },
     {
-      "file": "features/spatial/home/UnavailableItemBody.tsx",
+      "file": "features/board/home/UnavailableItemBody.tsx",
       "line": 17,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84573,7 +84573,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/items/DocumentDraftBody.tsx",
+      "file": "features/board/items/DocumentDraftBody.tsx",
       "line": 71,
       "rule": "over-budget",
       "severity": 2,
@@ -84583,7 +84583,7 @@
       "detail": "secondary slot: 73 chars, budget 60"
     },
     {
-      "file": "features/spatial/items/feature-items.tsx",
+      "file": "features/board/items/feature-items.tsx",
       "line": 122,
       "rule": "over-budget",
       "severity": 2,
@@ -84593,7 +84593,7 @@
       "detail": "secondary slot: 61 chars, budget 60"
     },
     {
-      "file": "features/spatial/items/feature-items.tsx",
+      "file": "features/board/items/feature-items.tsx",
       "line": 394,
       "rule": "over-budget",
       "severity": 2,
@@ -84603,7 +84603,7 @@
       "detail": "secondary slot: 87 chars, budget 60"
     },
     {
-      "file": "features/spatial/items/feature-items.tsx",
+      "file": "features/board/items/feature-items.tsx",
       "line": 394,
       "rule": "multi-sentence",
       "severity": 2,
@@ -84613,7 +84613,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/items/work-items.tsx",
+      "file": "features/board/items/work-items.tsx",
       "line": 244,
       "rule": "over-budget",
       "severity": 2,
@@ -84623,7 +84623,7 @@
       "detail": "secondary slot: 65 chars, budget 60"
     },
     {
-      "file": "features/spatial/items/work-items.tsx",
+      "file": "features/board/items/work-items.tsx",
       "line": 244,
       "rule": "multi-sentence",
       "severity": 2,
@@ -84633,7 +84633,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 24,
       "rule": "over-budget",
       "severity": 2,
@@ -84643,7 +84643,7 @@
       "detail": "secondary slot: 76 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 24,
       "rule": "multi-sentence",
       "severity": 2,
@@ -84653,7 +84653,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 31,
       "rule": "over-budget",
       "severity": 1,
@@ -84663,7 +84663,7 @@
       "detail": "secondary slot: 611 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 31,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84673,7 +84673,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 31,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84683,7 +84683,7 @@
       "detail": "backticks, snake_case identifier"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 45,
       "rule": "over-budget",
       "severity": 1,
@@ -84693,7 +84693,7 @@
       "detail": "secondary slot: 741 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 45,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84703,7 +84703,7 @@
       "detail": "6 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 45,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84713,7 +84713,7 @@
       "detail": "backticks, snake_case identifier"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 53,
       "rule": "over-budget",
       "severity": 2,
@@ -84723,7 +84723,7 @@
       "detail": "secondary slot: 77 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 68,
       "rule": "over-budget",
       "severity": 1,
@@ -84733,7 +84733,7 @@
       "detail": "secondary slot: 281 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 68,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84743,7 +84743,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 68,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84753,7 +84753,7 @@
       "detail": "backticks"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 87,
       "rule": "over-budget",
       "severity": 1,
@@ -84763,7 +84763,7 @@
       "detail": "secondary slot: 235 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 87,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84773,7 +84773,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 99,
       "rule": "over-budget",
       "severity": 1,
@@ -84783,7 +84783,7 @@
       "detail": "secondary slot: 186 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 99,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84793,7 +84793,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 120,
       "rule": "over-budget",
       "severity": 1,
@@ -84803,7 +84803,7 @@
       "detail": "secondary slot: 476 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 120,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84813,7 +84813,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 120,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84823,7 +84823,7 @@
       "detail": "backticks"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 141,
       "rule": "over-budget",
       "severity": 1,
@@ -84833,7 +84833,7 @@
       "detail": "secondary slot: 187 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 141,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84843,7 +84843,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 157,
       "rule": "over-budget",
       "severity": 1,
@@ -84853,7 +84853,7 @@
       "detail": "secondary slot: 159 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 157,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84863,7 +84863,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 172,
       "rule": "over-budget",
       "severity": 1,
@@ -84873,7 +84873,7 @@
       "detail": "secondary slot: 318 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 172,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84883,7 +84883,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 172,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84893,7 +84893,7 @@
       "detail": "backticks, snake_case identifier"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 187,
       "rule": "over-budget",
       "severity": 1,
@@ -84903,7 +84903,7 @@
       "detail": "secondary slot: 834 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 187,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84913,7 +84913,7 @@
       "detail": "6 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 187,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84923,7 +84923,7 @@
       "detail": "backticks, snake_case identifier"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 201,
       "rule": "over-budget",
       "severity": 1,
@@ -84933,7 +84933,7 @@
       "detail": "secondary slot: 756 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 201,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84943,7 +84943,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 201,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84953,7 +84953,7 @@
       "detail": "backticks, snake_case identifier"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 210,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84963,7 +84963,7 @@
       "detail": "backticks"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 222,
       "rule": "over-budget",
       "severity": 1,
@@ -84973,7 +84973,7 @@
       "detail": "secondary slot: 204 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 222,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84983,7 +84983,7 @@
       "detail": "backticks"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 234,
       "rule": "over-budget",
       "severity": 2,
@@ -84993,7 +84993,7 @@
       "detail": "secondary slot: 138 chars, budget 60"
     },
     {
-      "file": "features/spatial/tools/board-tools.ts",
+      "file": "features/board/tools/board-tools.ts",
       "line": 234,
       "rule": "multi-sentence",
       "severity": 2,

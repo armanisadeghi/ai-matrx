@@ -1,4 +1,4 @@
-import { rectsIntersect, type Rect } from "@/features/spatial/engine/camera";
+import { rectsIntersect, type Rect } from "@/features/board/engine/camera";
 import type { ThreadTab } from "@/features/war-room/types";
 import {
   BOARD_LAYOUT_KEY,

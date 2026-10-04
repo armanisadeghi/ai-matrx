@@ -1,4 +1,4 @@
-// features/spatial/persistence/viewerCamera.ts
+// features/board/persistence/viewerCamera.ts
 //
 // Where each person last looked at each board — a VIEW preference, not board
 // content (Figma, Miro: your viewport is yours; a collaborator panning never

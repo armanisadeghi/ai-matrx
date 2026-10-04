@@ -118,7 +118,7 @@ Owner: meet package.
 
 ### D349 — Global `:has()` rules turn ordinary DOM changes into whole-document restyles (2026-09-25)
 
-Traced on `/demos/spatial` (Chrome trace, invalidation tracking): a text-node insertion anywhere under
+Traced on `/demos/board` (Chrome trace, invalidation tracking): a text-node insertion anywhere under
 the shell marked `body`, `.shell-root` and `.shell-main` "affected by :has()", and the following
 `UpdateLayoutTree` restyled every element on the page (2,730). The anchors are descendant-argument
 `:has()` rules in `styles/shell.css` (`body:has(.shell-show-dock)`, `body:not(:has(.shell-show-dock))`,

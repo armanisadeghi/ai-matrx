@@ -1,6 +1,6 @@
 "use client";
 
-// features/spatial/boards/BoardsListPage.tsx
+// features/board/boards/BoardsListPage.tsx
 //
 // /board/all — every board you made, on the canonical list shell. "New board"
 // creates one in the selected organization (the gate asks when none is

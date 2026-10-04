@@ -1,8 +1,8 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { rectsIntersect } from "@/features/spatial/engine/camera";
+import { rectsIntersect } from "@/features/board/engine/camera";
 import { getRegisteredSurfaceClientTools } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { type BoardToolHost, useBoardAgentTools } from "@/features/spatial/tools/useBoardAgentTools";
+import { type BoardToolHost, useBoardAgentTools } from "@/features/board/tools/useBoardAgentTools";
 import type { ThreadTab } from "@/features/war-room/types";
 import {
   type BoardLayout,

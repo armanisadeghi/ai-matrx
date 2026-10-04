@@ -1,12 +1,12 @@
-// /demos/spatial — the spatial view proof: many live AI results on one
+// /demos/board — the spatial view proof: many live AI results on one
 // pannable, zoomable plane, with streaming paced by zoom level — hosted in the
 // ONE chat-beside-a-canvas layout (features/canvas/workspace/FEATURE.md): the
 // platform chat docks beside it (or floats over it) and receives the board as
-// ONE `spatial_board` context entry. Engine + doctrine: features/spatial/FEATURE.md.
+// ONE `spatial_board` context entry. Engine + doctrine: features/board/FEATURE.md.
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
-import type { DemoKindExample } from "@/features/spatial/demo/SpatialDemoBoard";
+import type { DemoKindExample } from "@/features/board/demo/SpatialDemoBoard";
 import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
 import { SpatialCanvasWorkspaceDemo } from "../canvas-workspace/SpatialCanvasWorkspaceDemo";

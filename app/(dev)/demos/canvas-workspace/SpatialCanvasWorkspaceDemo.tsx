@@ -10,7 +10,7 @@
  * placeholder panel would be a screen that lies.
  */
 
-import { type DemoKindExample, SpatialDemoBoard } from "@/features/spatial/demo/SpatialDemoBoard";
+import { type DemoKindExample, SpatialDemoBoard } from "@/features/board/demo/SpatialDemoBoard";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
 import type { ComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";

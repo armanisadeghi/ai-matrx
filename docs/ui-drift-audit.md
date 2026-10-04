@@ -489,7 +489,7 @@ No primitive restricts `className` by type, and no runtime filter exists.
 |---|---|---|---|
 | ESLint (`eslint.config.mjs`, 2,385 lines; custom `matrx/*` rules for banned icons, raw storage media, bespoke stream renderers, bare ids; `no-alert`; bare-sonner import ban) | No rule touches `className`, arbitrary values, hex, or primitives. No Tailwind plugin is installed. | **Nowhere.** CI and repo-only-checks have 0 lint steps; `scripts/run-release-gates.sh:237-240`: "`pnpm lint` runs in neither CI nor this script". About 2,344 standing errors. | No |
 | `check:ui-primitives` (`scripts/check-ui-primitives.ts`) | Raw checkbox/radio/range inputs, fake checkbox, fake switch, raw `role=dialog`, direct Radix dialog imports. Exempts all of `components/ui/**`. | Release runner, after the push, advisory (exit 0) | No: **53 findings today** |
-| `check:reserved-icons` | `BrainCircuit` outside its home | Release runner, advisory | No: **failing today** on `features/workflow-runtime/components/spatial/WorkflowRunSpatialView.tsx` |
+| `check:reserved-icons` | `BrainCircuit` outside its home | Release runner, advisory | No: **failing today** on `features/workflow-runtime/components/board/WorkflowRunSpatialView.tsx` |
 | `check:scroll-chain` | Broken flex scroll chains | Release runner, advisory | No: 4 findings today |
 | `check:interface-text` | Copy length and shape | **Nowhere** (honour system, "before every commit") | No: 8,952 findings |
 | `check:theme-color-literals` | Raw hex/rgb/hsl, light-only neutrals | **Nowhere**; `DEFAULT_ROOTS = ["features/masterwork"]` | No: 13 findings in its one feature; **1,608 repo-wide**, never in scope |

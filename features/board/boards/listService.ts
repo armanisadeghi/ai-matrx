@@ -1,4 +1,4 @@
-// features/spatial/boards/listService.ts
+// features/board/boards/listService.ts
 //
 // The /board/all list over the person's own boards (scope `mine`). A person
 // holds a handful of boards, so the whole set is read COMPLETELY

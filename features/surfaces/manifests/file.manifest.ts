@@ -2,7 +2,7 @@
  * Surface manifest — File (`matrx-user/file`).
  *
  * ONE file, worked on: the dedicated single-file page `/files/f/[fileId]`
- * (`SingleFileShell`) and a File tile on a Board (`features/spatial/items/
+ * (`SingleFileShell`) and a File tile on a Board (`features/board/items/
  * work-items.tsx`). Both mount the SAME host —
  * `features/files/components/surfaces/single-file/SingleFileSurfaceHost.tsx` —
  * around the same body (`FileTabsBody`: Preview / Edit / Knowledge / Analysis /

@@ -1,6 +1,6 @@
 "use client";
 
-// features/spatial/persistence/useCreateBoard.ts
+// features/board/persistence/useCreateBoard.ts
 //
 // The ONE way a person makes a new board: create it in the selected
 // organization (the gate asks when none is selected), then OPEN it. The board

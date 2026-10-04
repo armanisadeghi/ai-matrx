@@ -2,7 +2,7 @@
 
 /**
  * The "Meeting notes" parts on a board (item type `meeting_part`,
- * features/spatial/items/meeting-items.tsx): transcript, notes, decisions,
+ * features/board/items/meeting-items.tsx): transcript, notes, decisions,
  * action items and summary of ONE meeting.
  *
  * Two sources, one rule — nothing is computed here:
@@ -35,7 +35,7 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
-import type { MeetingPart } from "@/features/spatial/items/meeting-items.logic";
+import type { MeetingPart } from "@/features/board/items/meeting-items.logic";
 import { ActionItemsSection } from "@/features/meet/components/record/ActionItemsSection";
 import { useMeetingById, type LoadedMeeting } from "@/features/meet/hooks/useMeetingById";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";

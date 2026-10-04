@@ -82,7 +82,7 @@ async function getSupabase() {
  * in it. PostgREST refuses the WHOLE request when one selected column is not
  * granted, so a registry read that names `metadata` answered every guest
  * `42501 permission denied for table kind_definition` and no kind rendered
- * (live 2026-10-01, /demos/spatial). Signed out, the registry asks only for
+ * (live 2026-10-01, /demos/board). Signed out, the registry asks only for
  * granted columns; the declared loading slug (in `metadata`) is simply null
  * and the loading layer derives one. Guard: kind-tables-signed-out.test.ts.
  *
