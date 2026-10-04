@@ -113,6 +113,7 @@ full snapshot refresh.
 | [`components/CapabilityPaywallDialog.tsx`](./components/CapabilityPaywallDialog.tsx) | Contextual cap-hit paywall (helpful, never hostage). Never a `toast.error`. |
 | [`components/CapabilityGate.tsx`](./components/CapabilityGate.tsx) | The TIER gate surface — tier held + tier required + one click there. Fails open while loading/on error. The ONLY tier-lock UI; never hand-roll a second. |
 | [`usage-gate/`](./usage-gate) | THE USAGE GATE, client half — see the section below. |
+| [`stripe/couponDiscount.ts`](./stripe/couponDiscount.ts) | Free-time coupon for a PAYING person: one 100%-off repeating Stripe coupon for X months added beside the subscription's existing discounts (idempotency keys from the redemption id). Called only by `app/api/billing/coupons/redeem/route.ts` — the one client door for redeeming a coupon. Rules: `common-docs/systems/platform/entitlements-knobs/FEATURE.md` rule 18. |
 
 ## The usage gate — client half (2026-10-03)
 
@@ -560,6 +561,8 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-10-04** — Free time is never endless (Arman). DB (live, via MCP): `billing._free_months_grant` (stacking + `billing/free_period_max_months` ceiling, ledger `billing.free_period_grant`), doors `free_months_grant` / `free_months_apply` / `free_months_apply_to_all_current` (not run), coupons `billing.coupon` + `billing.coupon_redemption` with `coupon_create` / `coupon_redeem` / `coupon_revoke` / `coupon_preview` / `coupon_claim_for_subscription` / `coupon_claim_settle`, signup trigger `billing.signup_free_months` (knob `new_signup_free_months` = 0), `user_usage_state().free_period`. New route `POST /api/billing/coupons/redeem` (+ `route.test.ts`, red on a planted break). `PRELAUNCH_COMPLIMENTARY_PREMIUM` and `pricingPolicy.ts` deleted; signed-out Premium card says "Sign in to upgrade". Live checks: 28 rolled-back DB forcing cases, two parallel PostgREST redemptions (one granted, one `coupon_already_redeemed`), the subscriber path end to end on localhost in Stripe TEST mode (2-month 100% coupon on the test subscription, settled `stripe_applied`, discount removed after).
 
 - **2026-10-03** — Usage gate review fixes: guest refusals reach only the guest reminder (HTTP 402/403 and mid-stream); a mid-stream `usage_limit_reached` error holds `over` + opens the dialog; notice keyed per window (rolling resets ignored); after-call refresh 8 s and cancelled by the settled directive; `callApi` pre-check covers the paid-AI census; Settings → Plan & usage leads with the person's own usage card.
 

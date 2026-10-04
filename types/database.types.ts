@@ -5863,6 +5863,173 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+          kind: string
+          link_token_hash: string | null
+          max_redemptions: number
+          metadata: Json
+          months: number
+          note: string | null
+          organization_id: string
+          plan_key: string
+          recipient_email: string | null
+          recipient_phone: string | null
+          recipient_user_id: string | null
+          redeemed_count: number
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          kind: string
+          link_token_hash?: string | null
+          max_redemptions?: number
+          metadata?: Json
+          months: number
+          note?: string | null
+          organization_id: string
+          plan_key: string
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recipient_user_id?: string | null
+          redeemed_count?: number
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          link_token_hash?: string | null
+          max_redemptions?: number
+          metadata?: Json
+          months?: number
+          note?: string | null
+          organization_id?: string
+          plan_key?: string
+          recipient_email?: string | null
+          recipient_phone?: string | null
+          recipient_user_id?: string | null
+          redeemed_count?: number
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["plan_key"]
+          },
+        ]
+      }
+      coupon_redemption: {
+        Row: {
+          coupon_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          grant_id: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          redeemed_at: string
+          redeemer_user_id: string
+          status: string
+          stripe_coupon_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          coupon_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          grant_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          redeemed_at?: string
+          redeemer_user_id: string
+          status: string
+          stripe_coupon_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          coupon_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          grant_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          redeemed_at?: string
+          redeemer_user_id?: string
+          status?: string
+          stripe_coupon_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_redemption_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemption_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "free_period_grant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer: {
         Row: {
           beneficiary_user_id: string | null
@@ -5895,6 +6062,99 @@ export type Database = {
           stripe_customer_id?: string
         }
         Relationships: []
+      }
+      free_period_grant: {
+        Row: {
+          capped: boolean
+          coupon_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ends_at: string
+          granted_by: string | null
+          id: string
+          metadata: Json
+          months: number
+          note: string | null
+          organization_id: string
+          plan_key: string
+          previous_expires_at: string | null
+          previous_plan_key: string | null
+          source: string
+          starts_at: string
+          subject_organization_id: string | null
+          subject_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          capped?: boolean
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ends_at: string
+          granted_by?: string | null
+          id?: string
+          metadata?: Json
+          months: number
+          note?: string | null
+          organization_id: string
+          plan_key: string
+          previous_expires_at?: string | null
+          previous_plan_key?: string | null
+          source: string
+          starts_at: string
+          subject_organization_id?: string | null
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          capped?: boolean
+          coupon_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ends_at?: string
+          granted_by?: string | null
+          id?: string
+          metadata?: Json
+          months?: number
+          note?: string | null
+          organization_id?: string
+          plan_key?: string
+          previous_expires_at?: string | null
+          previous_plan_key?: string | null
+          source?: string
+          starts_at?: string
+          subject_organization_id?: string | null
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "free_period_grant_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupon"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "free_period_grant_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["plan_key"]
+          },
+        ]
       }
       org_plan: {
         Row: {
@@ -6721,6 +6981,58 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _coupon_code: { Args: never; Returns: string }
+      _coupon_take: {
+        Args: { p_code: string; p_user: string }
+        Returns: {
+          code: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          expires_at: string | null
+          id: string
+          kind: string
+          link_token_hash: string | null
+          max_redemptions: number
+          metadata: Json
+          months: number
+          note: string | null
+          organization_id: string
+          plan_key: string
+          recipient_email: string | null
+          recipient_phone: string | null
+          recipient_user_id: string | null
+          redeemed_count: number
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "coupon"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _free_months_grant: {
+        Args: {
+          p_coupon_id?: string
+          p_granted_by?: string
+          p_months: number
+          p_note: string
+          p_plan: string
+          p_source: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      _free_period_state: {
+        Args: { p_plan: string; p_user: string }
+        Returns: Json
+      }
       _points_usage_state: {
         Args: { p_org: string; p_plan: string; p_user: string }
         Returns: Json
@@ -6729,6 +7041,7 @@ export type Database = {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
       }
+      _signup_free_months: { Args: { p_user: string }; Returns: undefined }
       addon_grant: {
         Args: {
           p_capability: string
@@ -6745,6 +7058,49 @@ export type Database = {
         Args: { p_customer: string; p_livemode: boolean; p_token: string }
         Returns: boolean
       }
+      coupon_claim_for_subscription: {
+        Args: {
+          p_code: string
+          p_stripe_subscription_id: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      coupon_claim_settle: {
+        Args: {
+          p_error?: string
+          p_redemption_id: string
+          p_stripe_coupon_id: string
+        }
+        Returns: Json
+      }
+      coupon_create: {
+        Args: {
+          p_count?: number
+          p_expires_at?: string
+          p_kind: string
+          p_months: number
+          p_note?: string
+          p_plan_key: string
+          p_recipients?: Json
+        }
+        Returns: {
+          code: string
+          expires_at: string
+          id: string
+          kind: string
+          link_path: string
+          link_token: string
+          months: number
+          plan_key: string
+          recipient_email: string
+          recipient_phone: string
+          recipient_user_id: string
+        }[]
+      }
+      coupon_preview: { Args: { p_token: string }; Returns: Json }
+      coupon_redeem: { Args: { p_code: string }; Returns: Json }
+      coupon_revoke: { Args: { p_id: string }; Returns: Json }
       entitlement_check:
         | { Args: { p_capability: string }; Returns: Json }
         | { Args: { p_capability: string; p_org: string }; Returns: Json }
@@ -6760,6 +7116,29 @@ export type Database = {
       entitlement_snapshot:
         | { Args: never; Returns: Json }
         | { Args: { p_org: string }; Returns: Json }
+      free_months_apply: {
+        Args: {
+          p_months: number
+          p_note: string
+          p_plan: string
+          p_users: string[]
+        }
+        Returns: Json
+      }
+      free_months_apply_to_all_current: {
+        Args: { p_months: number; p_note: string }
+        Returns: Json
+      }
+      free_months_grant: {
+        Args: {
+          p_months: number
+          p_note: string
+          p_plan: string
+          p_source: string
+          p_user: string
+        }
+        Returns: Json
+      }
       org_capability_status: { Args: { p_org: string }; Returns: Json }
       org_custom_limit_remove: {
         Args: {

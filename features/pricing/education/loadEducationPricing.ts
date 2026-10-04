@@ -101,9 +101,6 @@ const HEADLINE_FREE: ReadonlyArray<{
   },
 ];
 
-// PRELAUNCH_COMPLIMENTARY_PREMIUM lives in ./pricingPolicy.ts — a plain module,
-// because the client card needs it and this loader is server-only.
-
 // The capability whose rolling 5-hour cap stands for the Free tier's pacing.
 const PACING = {
   capability: "education.generate_cards" as Capability,

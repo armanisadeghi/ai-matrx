@@ -206,8 +206,8 @@ export async function fetchPlanStatus(
 }
 
 /**
- * How an organization's plan was granted — `'complimentary'` for the pre-launch
- * grant (PRELAUNCH_COMPLIMENTARY), otherwise the `billing.org_plan.source`
+ * How an organization's plan was granted — `'complimentary'` for free time
+ * (dated since 2026-10-04: free time is never endless), otherwise the `billing.org_plan.source`
  * value. A tier belongs to an organization (DD-047; the per-person
  * `billing.user_plan` retired 2026-09-29), so this reads the plan of the
  * organization the person is in. `entitlement_snapshot().is_subscribed` is NOT

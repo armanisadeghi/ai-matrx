@@ -9,9 +9,9 @@
 // upgrade demos — see FEATURE.md for the structure decision).
 //
 // Actions by state (one destination per outcome):
-//  - signed out → both cards go to sign-up, which returns here (/pricing);
-//    while pre-launch signup grants Premium (PRELAUNCH_COMPLIMENTARY_PREMIUM)
-//    the Premium card says so instead of selling a checkout;
+//  - signed out → Free goes to sign-up and Premium to sign-in, both returning
+//    here (/pricing); a new account gets no endless free plan (free time is
+//    always dated — billing/new_signup_free_months, 2026-10-04);
 //  - signed in → the current plan carries a "Your plan" badge (a status, never
 //    a button); Free users get a real Stripe Checkout (/api/stripe/checkout);
 //    everyone signed in gets a real link into the study tools.
@@ -33,7 +33,6 @@ import {
   Check,
   Infinity as InfinityIcon,
   Loader2,
-  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +42,6 @@ import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { selectEntitlementTier } from "@/features/entitlements/state/selectors";
 import { readPlanSource } from "@/features/entitlements/plan-service";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { PRELAUNCH_COMPLIMENTARY_PREMIUM } from "./pricingPolicy";
 import type { EducationPricing as EducationPricingData } from "./loadEducationPricing";
 import { useLoginHref } from "@/hooks/auth/useLoginHref";
 
@@ -242,21 +240,9 @@ export function EducationPricing({
   } else {
     premiumAction = (
       <Button asChild size="lg" className={CTA}>
-        <Link
-          href={PRELAUNCH_COMPLIMENTARY_PREMIUM ? signUpHref : loginHref}
-          data-tap-target
-        >
-          {PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
-            <>
-              <Gift className="h-4 w-4" />
-              Get {paidName} free before launch
-            </>
-          ) : (
-            <>
-              Sign in to upgrade
-              <ArrowRight className="h-3.5 w-3.5" />
-            </>
-          )}
+        <Link href={loginHref} data-tap-target>
+          Sign in to upgrade
+          <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </Button>
     );
@@ -350,8 +336,7 @@ export function EducationPricing({
                   : undefined
               }
             />
-            {isComplimentary ||
-            (!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM) ? (
+            {isComplimentary ? (
               <div className="text-4xl font-semibold tracking-tight">$0</div>
             ) : premium ? (
               <div className="flex items-baseline gap-1.5">
@@ -369,7 +354,7 @@ export function EducationPricing({
             )}
             <p className="text-sm text-muted-foreground">
               {isComplimentary
-                ? "Complimentary before launch — no card on file."
+                ? "Complimentary for now — no card on file."
                 : "No limits on AI generation, in any study tool."}
             </p>
           </div>
@@ -386,9 +371,7 @@ export function EducationPricing({
           </ul>
 
           <p className="text-sm text-muted-foreground">
-            {!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM
-              ? `Every new account gets ${paidName} at no charge until launch.`
-              : isComplimentary
+            {isComplimentary
                 ? "Nothing is charged while it is complimentary."
                 : "Cancel anytime from the billing portal."}
           </p>
