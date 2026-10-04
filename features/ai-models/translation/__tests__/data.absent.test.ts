@@ -15,10 +15,11 @@ const probeResult: { data: unknown; error: unknown; status: number } = {
 };
 
 jest.mock("@/utils/supabase/client", () => {
-  const builder = {
-    select: () => builder,
-    limit: () => Promise.resolve(probeResult),
-  };
+  // Every chain step returns the builder; awaiting it answers like PostgREST.
+  const builder: Record<string, unknown> = {};
+  for (const m of ["select", "limit", "is", "eq", "order", "range"]) builder[m] = () => builder;
+  builder.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) =>
+    Promise.resolve(probeResult).then(res, rej);
   return {
     supabase: {
       schema: () => ({ from: () => builder }),
@@ -28,7 +29,9 @@ jest.mock("@/utils/supabase/client", () => {
 });
 
 jest.mock("@ai-matrx/data/db", () => ({
-  readAllRows: () => Promise.reject(new Error("readAllRows(ai.translation_cell): query failed — not found")),
+  IncompleteReadError: class extends Error {},
+  // Small reads (offerings, models) go through readAllRows; they exist here.
+  readAllRows: () => Promise.resolve([]),
 }));
 
 import { isAbsentRelationError, readTranslationBundle } from "../data";

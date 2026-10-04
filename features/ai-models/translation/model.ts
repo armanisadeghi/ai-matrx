@@ -633,7 +633,7 @@ export function plainRule(rule: ControlRule | null | undefined, key: string, set
 export function plainWhy(text: string | null | undefined): string {
   if (!text) return "";
   return text
-    .replace(/^\s*[A-Z]{1,2}\d+[a-z]?\s*:\s*/, "")
+    .replace(/^\s*[A-Z]{1,2}\d+[a-z]?\b[^:]{0,24}:\s*/, "")
     .replace(/\s*\((?:[A-Z]{1,2}\d+[a-z]?[,\s]*)+\)/g, "")
     .replace(/\b[A-Z]{1,2}\d+[a-z]?\s*:\s*/g, "")
     .trim();
@@ -685,6 +685,8 @@ export function buildQueue(bundle: TranslationBundle, model: GridModel): QueueIt
 
   for (const c of bundle.cells) {
     if (!cellNeedsYou(c)) continue;
+    // A model that is not available takes no request: its rule decides nothing today.
+    if (c.layer === "offering" && !offeringById.has(c.layer_owner_id)) continue;
     let groupLabel = c.layer_owner_id;
     let without: TranslationCellRow | null = null;
     if (c.layer === "profile") {

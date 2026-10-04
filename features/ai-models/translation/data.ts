@@ -61,7 +61,8 @@ async function readAllRowsParallel<T>(
   label: string,
 ): Promise<T[]> {
   const first = await page({ from: 0, to: PAGE - 1 }, true);
-  if (first.error) throw new Error(`${label}: ${first.error.message}`);
+  // The raw PostgREST error is rethrown so "this relation is not here" keeps its code.
+  if (first.error) throw first.error;
   const rows = [...(first.data ?? [])];
   const total = typeof first.count === "number" ? first.count : null;
   if (total === null) {
@@ -269,23 +270,23 @@ async function readSettings(): Promise<TranslationSetting[]> {
 
 /** The whole grid's read. `absent` when the translation tables are not on this database. */
 export async function readTranslationBundle(): Promise<TranslationRead> {
-  // Probe with a plain read first: `readAllRows` rewraps a failure as a bare
-  // Error and drops the PostgREST code, so "the table is not here" could never
-  // be told apart from a real failure through it.
-  const probe = await ai().from("translation_cell").select("id").limit(1);
-  if (probe.error) {
-    // PGRST205 = "not in the schema cache" (the table does not exist here).
-    if (isAbsentRelationError(probe.error) || probe.status === 404) return { status: "absent" };
-    throw probe.error;
+  // No separate existence probe: the first page of each read carries the
+  // PostgREST code, so "the tables are not here" is told apart in one round trip.
+  let parts: [TranslationCellRow[], CompiledRow[], SettingProfileRow[], TranslationApi[], TranslationOffering[], TranslationSetting[]];
+  try {
+    parts = await Promise.all([
+      readCells(),
+      readCompiled(),
+      readProfiles(),
+      readApis(),
+      readOfferings(),
+      readSettings(),
+    ]);
+  } catch (error) {
+    if (isAbsentRelationError(error) || (error as { status?: unknown })?.status === 404) return { status: "absent" };
+    throw error;
   }
-  const [cells, compiled, profiles, apis, offerings, settings] = await Promise.all([
-    readCells(),
-    readCompiled(),
-    readProfiles(),
-    readApis(),
-    readOfferings(),
-    readSettings(),
-  ]);
+  const [cells, compiled, profiles, apis, offerings, settings] = parts;
   const bundle: TranslationBundle = { cells, compiled, profiles, apis, offerings, settings };
   return { status: "ready", bundle };
 }

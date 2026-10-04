@@ -8,7 +8,7 @@
  * (the honest bulk-approve pattern).
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@ai-matrx/design-system";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { Check, Pencil, SkipForward } from "lucide-react";
@@ -67,7 +67,7 @@ export default function NeedsYouQueue({
   const [pending, setPending] = useState<QueueItem[] | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
+  const byId = new Map(items.map((i) => [i.id, i]));
   const pendingModels = pending ? uniqueModels(pending) : [];
 
   const approve = async (batch: QueueItem[]) => {
@@ -111,7 +111,7 @@ export default function NeedsYouQueue({
       accessorFn: (r) => r.groupLabel,
       header: "Applies to",
       label: "Applies to",
-      width: "13rem",
+      width: "9.5rem",
       sortable: true,
       cell: (r) => (
         <div className="flex min-w-0 flex-col leading-tight">
@@ -127,7 +127,7 @@ export default function NeedsYouQueue({
       accessorFn: (r) => plainSetting(r.key),
       header: "Setting",
       label: "Setting",
-      width: "10rem",
+      width: "8.5rem",
       sortable: true,
       cell: (r) => (
         <div className="flex min-w-0 flex-col items-start gap-0.5">
@@ -141,28 +141,19 @@ export default function NeedsYouQueue({
       accessorFn: (r) => (r.cell ? plainRule(r.cell.rule, r.key, r.setting) : ""),
       header: "Proposed",
       label: "Proposed",
-      width: "16rem",
+      width: "15rem",
       cell: (r) => {
         const text = r.cell ? plainRule(r.cell.rule, r.key, r.setting) : "No rule yet";
+        const without = r.without ? plainRule(r.without.rule, r.key, r.setting) : "the engine's guess";
         return (
-          <span className="line-clamp-2 text-sm" title={text}>
-            {text}
-          </span>
-        );
-      },
-    },
-    {
-      id: "without",
-      accessorFn: (r) => plainRule(r.without?.rule, r.key, r.setting),
-      header: "Without it",
-      label: "Without it",
-      width: "13rem",
-      cell: (r) => {
-        const text = plainRule(r.without?.rule, r.key, r.setting);
-        return (
-          <span className="line-clamp-2 text-xs text-muted-foreground" title={text}>
-            {text}
-          </span>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="line-clamp-2 text-sm" title={text}>
+              {text}
+            </span>
+            <span className="truncate text-xs text-muted-foreground" title={without}>
+              Without it: {without}
+            </span>
+          </div>
         );
       },
     },
@@ -171,15 +162,15 @@ export default function NeedsYouQueue({
       accessorFn: (r) => plainWhy(r.cell?.rationale),
       header: "Why",
       label: "Why",
-      width: "16rem",
+      width: "11rem",
       cell: (r) => {
         const why = plainWhy(r.cell?.rationale);
-        const sure = r.cell?.confidence != null ? `${Math.round(r.cell.confidence * 100)}% sure` : null;
+        const sure = r.cell?.confidence != null ? `${Math.round(r.cell.confidence * 100)}% sure · ` : "";
         return (
-          <div className="flex min-w-0 flex-col gap-0.5" title={why}>
-            {sure ? <span className="text-xs font-medium tabular-nums">{sure}</span> : null}
-            <span className="line-clamp-2 text-xs text-muted-foreground">{why || "—"}</span>
-          </div>
+          <span className="line-clamp-2 text-xs text-muted-foreground" title={why}>
+            {sure ? <span className="font-medium text-foreground tabular-nums">{sure}</span> : null}
+            {why || "—"}
+          </span>
         );
       },
     },
@@ -187,14 +178,14 @@ export default function NeedsYouQueue({
       id: "decide",
       header: "",
       label: "Decide",
-      width: "15rem",
+      width: "9.5rem",
       cell: (r) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-0.5 whitespace-nowrap">
           {r.cell ? (
             <Button
               type="button"
               size="sm"
-              className="h-7 gap-1 px-2 text-xs"
+              className="h-7 shrink-0 gap-1 whitespace-nowrap px-2 text-xs"
               disabled={busy}
               onClick={() => requestApprove([r])}
             >
@@ -205,24 +196,26 @@ export default function NeedsYouQueue({
           <Button
             type="button"
             size="sm"
-            variant="outline"
-            className="h-7 gap-1 px-2 text-xs"
+            variant="ghost"
+            className="h-7 w-7 p-0"
             disabled={busy}
+            aria-label={r.cell ? "Change" : "Write rule"}
+            title={r.cell ? "Change" : "Write rule"}
             onClick={() => onOpen(r)}
           >
             <Pencil className="h-3.5 w-3.5" />
-            {r.cell ? "Change" : "Write rule"}
           </Button>
           <Button
             type="button"
             size="sm"
             variant="ghost"
-            className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+            className="h-7 w-7 p-0 text-muted-foreground"
             disabled={busy}
+            aria-label="Skip"
+            title="Skip"
             onClick={() => onSkip(r)}
           >
             <SkipForward className="h-3.5 w-3.5" />
-            Skip
           </Button>
         </div>
       ),
@@ -268,6 +261,7 @@ export default function NeedsYouQueue({
             );
           },
         }}
+        copy={false}
         defaultSort={null}
         pageSize={50}
         stickyHeader

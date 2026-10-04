@@ -9,7 +9,7 @@
  * at once. Contracts: common-docs/projects/settings-translation CONTRACTS.md.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -173,8 +173,8 @@ export default function TranslationGrid() {
   });
 
   const bundle = query.data?.status === "ready" ? query.data.bundle : null;
-  const model = useMemo(() => (bundle ? buildGrid(bundle) : null), [bundle]);
-  const queue = useMemo(() => (bundle && model ? buildQueue(bundle, model) : []), [bundle, model]);
+  const model = bundle ? buildGrid(bundle) : null;
+  const queue = bundle && model ? buildQueue(bundle, model) : [];
 
   const setParam = (name: string, value: string | null) => {
     const next = new URLSearchParams(searchParams.toString());
