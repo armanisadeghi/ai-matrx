@@ -34,6 +34,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { getUserOrganizations } from "@/features/organizations/service";
+import { pairedChannels } from "./notification-channel-pairing";
 
 export type NotificationEventTypeRow =
   Database["communication"]["Tables"]["notification_event_type"]["Row"];
@@ -44,6 +45,9 @@ export type NotificationPreferenceRow =
  * when its registry configuration actually has that channel's template. */
 export const NOTIFICATION_CHANNELS: ReadonlyArray<{ key: string; label: string }> = [
   { key: "email", label: "Email" },
+  // A direct message in the person's AI Matrx inbox. Paired with email (an email never goes
+  // without it, and turning it off turns the email off too): ./notification-channel-pairing.ts.
+  { key: "dm", label: "Message" },
   { key: "in_app", label: "In-app" },
   { key: "sms", label: "Text message" },
 ];
@@ -76,6 +80,10 @@ export interface NotificationEventSetting {
    * enforces it; the screen says so.
    */
   mandatory: boolean;
+  /** `config.pair_dm_with_email` — this notice's email always brings its Message. */
+  pairsMessage: boolean;
+  /** The person wants email, but turned Message off: email is off until Message is on. */
+  emailNeedsMessage: boolean;
 }
 
 function asBooleanMap(value: unknown): Record<string, boolean> {
@@ -109,6 +117,9 @@ export function notificationChannelAvailability(config: unknown): Record<string,
 
   return {
     email: hasTemplate("email"),
+    // A message says what the in-app notice says unless the event has its own words
+    // (aidream registry.template_for_channel — the one rule both renderers use).
+    dm: hasTemplate("dm") || hasTemplate("in_app"),
     in_app: hasTemplate("in_app"),
     sms: hasTemplate("sms") && eventConfig.sms_locked !== true,
   };
@@ -191,12 +202,25 @@ export async function loadNotificationSettings(
     if (!NOTIFICATION_CHANNELS.some(({ key }) => availableChannels[key])) return [];
     const channels: Record<string, boolean> = {};
     const inherited: Record<string, boolean> = {};
+    const choice: Record<string, boolean | undefined> = {};
     for (const { key } of NOTIFICATION_CHANNELS) {
       const mapKey = `${event.event_key}:${key}`;
       const own = scoped.get(mapKey);
       inherited[key] = own === undefined;
-      channels[key] = own ?? latestElsewhere.get(mapKey)?.enabled ?? Boolean(defaults[key]);
+      choice[key] = own ?? latestElsewhere.get(mapKey)?.enabled;
+      channels[key] = choice[key] ?? Boolean(defaults[key]);
     }
+    // THE PAIRING RULE, exactly as the send path applies it, so no switch lies.
+    const pairsMessage = asRecord(event.config).pair_dm_with_email !== false;
+    const paired = pairedChannels({
+      defaultEmail: Boolean(defaults.email),
+      defaultDm: Boolean(defaults.dm),
+      ownEmail: choice.email,
+      ownDm: choice.dm,
+      pairs: pairsMessage,
+    });
+    channels.email = paired.email;
+    channels.dm = paired.dm;
     return [{
       eventKey: event.event_key,
       label: event.label,
@@ -206,6 +230,8 @@ export async function loadNotificationSettings(
       availableChannels,
       inherited,
       mandatory: asRecord(event.config).mandatory === true,
+      pairsMessage,
+      emailNeedsMessage: paired.emailNeedsMessage,
     }];
   });
 }

@@ -1,5 +1,3 @@
-import "server-only";
-
 /**
  * THE frontend server's door to the notification spine.
  *
@@ -10,6 +8,10 @@ import "server-only";
  * user recipient — an email to a platform user never goes without a DM.
  *
  * Never render an email or call Resend from a route for a notice; declare the event instead.
+ *
+ * Server code only: every caller passes the SERVICE-ROLE client it built. No `server-only`
+ * import here — a `"use server"` actions file reaches this module, and its client-side import
+ * chain (settings → FeedbackSettingsPage → feedback.actions) must stay loadable in tests.
  * Canonical: `aidream/aidream/services/notifications/FEATURE.md`.
  */
 

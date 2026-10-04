@@ -88,6 +88,11 @@ export interface SendDirectActionMessageArgs {
   organizationId?: string | null;
   content: string;
   actionData?: MessageActionData;
+  /**
+   * SOFT EXPIRY: an ISO instant after which the message is lapsed — still
+   * readable, no longer unread. Omit for a message that never lapses.
+   */
+  softExpiresAt?: string;
 }
 
 /**
@@ -100,6 +105,7 @@ export async function sendDirectActionMessage({
   content,
   actionData,
   organizationId,
+  softExpiresAt,
 }: SendDirectActionMessageArgs): Promise<{
   conversationId: string;
   messageId: string;
@@ -112,6 +118,7 @@ export async function sendDirectActionMessage({
     {
       conversationId: asConversationId(conversationId),
       content,
+      ...(softExpiresAt !== undefined ? { softExpiresAt } : {}),
       ...(actionData !== undefined
         ? {
             action: {

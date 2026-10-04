@@ -97,6 +97,11 @@ export interface SendDmOptions {
    * item's. Required: it used to be answered with the sender's own organization.
    */
   organizationId: string;
+  /**
+   * SOFT EXPIRY: an ISO instant after which the message is lapsed — still
+   * readable, no longer unread. Omit for a message that never lapses.
+   */
+  softExpiresAt?: string;
 }
 
 export interface SendDmResult {
@@ -131,6 +136,10 @@ export async function sendDm(options: SendDmOptions): Promise<SendDmResult> {
         status: "sent",
         action_data: (options.actionData ?? null) as Json,
         client_message_id: options.clientMessageId ?? null,
+        // Written only when set: lapsed is derived from it, never stamped.
+        ...(options.softExpiresAt !== undefined
+          ? { soft_expires_at: options.softExpiresAt }
+          : {}),
       });
     if (error?.code === "23505" &&
         error.message.includes("dm_task_assignment_client_message_id_uidx") &&

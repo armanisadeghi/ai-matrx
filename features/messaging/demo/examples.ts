@@ -38,6 +38,7 @@ function example(
       editedAt: null,
       deletedAt: null,
       deletedForEveryone: false,
+      softExpiresAt: null,
       action: null,
       attachments: [],
       references: [],

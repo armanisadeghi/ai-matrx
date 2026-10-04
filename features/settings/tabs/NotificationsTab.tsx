@@ -34,6 +34,7 @@ import {
   type NotificationEventSetting,
   type NotificationScope,
 } from "../notification-preferences";
+import { pairedWrites } from "../notification-channel-pairing";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useSurfaceScopeContribution, useSurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -153,22 +154,48 @@ export default function NotificationsTab() {
   const handleToggle = useCallback(
     (eventKey: string, channel: string, enabled: boolean) => {
       if (!scopeId) return;
+      const target = settings?.find((event) => event.eventKey === eventKey);
+      if (!target) return;
       const toggleKey = `${eventKey}:${channel}`;
+      // THE PAIRING RULE: email requires Message. Turning email on while Message is off means
+      // both; turning Message off takes the email with it (the server rule decides the same).
+      const writes = pairedWrites(channel, enabled, {
+        dm: Boolean(target.channels.dm),
+        pairs: target.pairsMessage,
+      });
       setSavingKey(toggleKey);
       setSettings((current) =>
-        (current ?? []).map((event) =>
-          event.eventKey === eventKey
-            ? {
-                ...event,
-                channels: { ...event.channels, [channel]: enabled },
-                // Setting a switch creates this organization's own row — it
-                // stops inheriting the moment it is touched.
-                inherited: { ...event.inherited, [channel]: false },
-              }
-            : event,
-        ),
+        (current ?? []).map((event) => {
+          if (event.eventKey !== eventKey) return event;
+          const channels = { ...event.channels };
+          const inherited = { ...event.inherited };
+          for (const write of writes) {
+            channels[write.channel] = write.enabled;
+            // Setting a switch creates this organization's own row — it
+            // stops inheriting the moment it is touched.
+            inherited[write.channel] = false;
+          }
+          let emailNeedsMessage = event.emailNeedsMessage;
+          if (event.pairsMessage && channel === "dm" && !enabled) {
+            emailNeedsMessage = Boolean(event.channels.email) || event.emailNeedsMessage;
+            channels.email = false;
+          }
+          if (channels.dm) emailNeedsMessage = false;
+          return { ...event, channels, inherited, emailNeedsMessage };
+        }),
       );
-      setNotificationPreference(eventKey, channel, enabled, scopeId)
+      writes
+        .reduce<Promise<void>>(
+          (chain, write) =>
+            chain.then(() =>
+              setNotificationPreference(eventKey, write.channel, write.enabled, scopeId),
+            ),
+          Promise.resolve(),
+        )
+        .then(() => {
+          // The pairing changes a sibling switch; re-read so every switch is the server's answer.
+          if (target.pairsMessage && (channel === "dm" || channel === "email")) reload();
+        })
         .catch((error: unknown) => {
           reload();
           toast.error(
@@ -177,7 +204,7 @@ export default function NotificationsTab() {
         })
         .finally(() => setSavingKey((k) => (k === toggleKey ? null : k)));
     },
-    [scopeId, reload],
+    [scopeId, reload, settings],
   );
 
   const handleReset = useCallback(
@@ -289,7 +316,14 @@ export default function NotificationsTab() {
         validateNotificationWrites(value);
         const writes = value as Array<{ event_key: string; channel: string; enabled: boolean }>;
         for (const w of writes) {
-          await setNotificationPreference(w.event_key, w.channel, w.enabled, scopeId);
+          const event = settings?.find((e) => e.eventKey === w.event_key);
+          const paired = pairedWrites(w.channel, w.enabled, {
+            dm: Boolean(event?.channels.dm),
+            pairs: event?.pairsMessage ?? true,
+          });
+          for (const write of paired) {
+            await setNotificationPreference(w.event_key, write.channel, write.enabled, scopeId);
+          }
         }
         // Re-read before answering, so the agent's next look at the page
         // shows what landed rather than the pre-write copy.
@@ -386,7 +420,7 @@ export default function NotificationsTab() {
             // overflow-clip (not hidden) keeps the rounded frame without making a
             // scroll container, so the column header can stick.
             <div className="matrx-touch-targets overflow-clip rounded-lg border border-border bg-card">
-              <div className="sticky top-[var(--shell-header-h)] z-10 hidden grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] items-center border-b border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid">
+              <div className="sticky top-[var(--shell-header-h)] z-10 hidden grid-cols-[minmax(0,1fr)_repeat(4,4.5rem)_calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] items-center border-b border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid">
                 <span>Notice</span>
                 {channelColumns.map((c) => (
                   <span key={c.key} className="text-center">{c.short}</span>
@@ -419,7 +453,7 @@ export default function NotificationsTab() {
                             key={event.eventKey}
                             // Phone: the notice on top, its channels in a row under it
                             // (labelled). Wider: one grid row under the column header.
-                            className="border-b border-border/50 px-3 py-2 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_repeat(3,4.5rem)_calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] sm:items-center sm:py-1.5"
+                            className="border-b border-border/50 px-3 py-2 last:border-b-0 sm:grid sm:grid-cols-[minmax(0,1fr)_repeat(4,4.5rem)_calc(var(--matrx-tap-pill-size)+var(--matrx-tap-gap))] sm:items-center sm:py-1.5"
                           >
                             <div className="min-w-0 py-1">
                               <div className="flex flex-wrap items-center gap-1.5 text-sm text-foreground">
@@ -446,6 +480,9 @@ export default function NotificationsTab() {
                               }
                               const checked = Boolean(event.channels[key]);
                               const lastRequired = event.mandatory && checked && onChannels.length === 1;
+                              // Email is off only because Message is: the state says so in its
+                              // tooltip, and switching email on turns Message on with it.
+                              const needsMessage = key === "email" && event.emailNeedsMessage;
                               const id = `notif-${event.eventKey}-${key}`;
                               return (
                                 <label
@@ -457,7 +494,9 @@ export default function NotificationsTab() {
                                       ? "Choose an organization above to change this."
                                       : lastRequired
                                         ? "Required notice: turn another channel on first."
-                                        : `${label}, default ${event.defaults[key] ? "on" : "off"}`
+                                        : needsMessage
+                                          ? "Off because Message is off. Turning email on turns Message on."
+                                          : `${label}, default ${event.defaults[key] ? "on" : "off"}`
                                   }
                                 >
                                   <Switch
@@ -466,7 +505,11 @@ export default function NotificationsTab() {
                                     checked={checked}
                                     disabled={!scopeId || savingKey === `${event.eventKey}:${key}` || lastRequired}
                                     onCheckedChange={(enabled: boolean) => handleToggle(event.eventKey, key, enabled)}
-                                    aria-label={`${event.label}: ${label}`}
+                                    aria-label={
+                                      needsMessage
+                                        ? `${event.label}: ${label}, off because Message is off`
+                                        : `${event.label}: ${label}`
+                                    }
                                   />
                                   <span className="text-xs text-muted-foreground sm:hidden">{short}</span>
                                 </label>

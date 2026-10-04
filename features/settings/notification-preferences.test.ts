@@ -10,7 +10,7 @@ describe("notification channel availability", () => {
           sms: { body: "Text body" },
         },
       }),
-    ).toEqual({ email: true, in_app: true, sms: true });
+    ).toEqual({ email: true, dm: true, in_app: true, sms: true });
   });
 
   test("does not offer SMS when the catalog locks it or it has no body", () => {
@@ -23,11 +23,17 @@ describe("notification channel availability", () => {
           sms: { body: "Text body" },
         },
       }),
-    ).toEqual({ email: true, in_app: true, sms: false });
+    ).toEqual({ email: true, dm: true, in_app: true, sms: false });
     expect(notificationChannelAvailability({ templates: { sms: {} } })).toEqual({
       email: false,
+      dm: false,
       in_app: false,
       sms: false,
     });
+  });
+
+  test("offers a message whenever there are in-app words or message words", () => {
+    expect(notificationChannelAvailability({ templates: { dm: { body: "Hi" } } }).dm).toBe(true);
+    expect(notificationChannelAvailability({ templates: { email: { body: "E" } } }).dm).toBe(false);
   });
 });
