@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-10-03`
+**Last updated:** `2026-10-04`
 
 ---
 
@@ -29,6 +29,9 @@ These are the links `esign._notify_actionable` / `esign_resend_signer` email. Ch
 - `SigningSurface.tsx` — the surface, given a `SigningDoor`. Review → Consent → Sign; Decline from the header.
 - `OutsiderSigning.tsx` — link → "Send me the code" → code → session (kept in `sessionStorage` per tab) → surface.
 - `InternalSigning.tsx` — the signed-in door.
+- `SigningFields.tsx` — the sender's placed fields drawn over one PDF page (the viewer's `renderOverlay` slot), from `fieldMap.ts` (`readFieldMap`, `initialsOf`, `rotateBox`).
+- `AdoptSignature.tsx` — name + Type/Draw; inline on a no-field sign step, in the adopt dialog otherwise.
+- `SignedCopy.tsx` — "Download signed copy" (the `signed_copy` act) on the done step, with "not ready yet" + retry.
 
 **Service**
 - `signingService.ts` — `callApi` wrappers, `organizationFreeRead: true` (a signer picks no organization).
@@ -48,11 +51,14 @@ These are the links `esign._notify_actionable` / `esign_resend_signer` email. Ch
 - **The link secret leaves the address bar on first read** (kept in this tab's `sessionStorage`), so it is not in history or in any error report's page URL.
 - **The code only goes out on a press.** Opening the page sends nothing (mail-scanner safe).
 - **This surface lets the server record the signer's IP** (evidence + outsider session pin); it never sends one of its own. The doors still take `p_ip` from any direct caller (filed as an observation, 2026-10-03).
+- **Placed fields are drawn, never typed into.** `documents[].field_map.fields` (fractions of the page, top-left origin, 1-based page) are positioned by percentage inside the viewer's overlay, so they follow zoom, width and rotation. The signer's own (`signer_id === me.id`) are highlighted and walked by "Next field"; any press before adoption opens the adopt dialog; once adopted every one of them shows its value (signature, initials from the full name, today's date, full name) before Sign. Other signers' fields are muted and inert. Adoption stays local until Sign, which sends `adopt` then `sign` exactly as a no-field document does. No fields = the old sign step, unchanged. A reopened signed document shows no boxes; the signed copy carries the marks.
 - **Type or draw.** Drawing uses THE platform pad (`SignaturePad`, `@ai-matrx/records-ui`); the server checks the PNG/JPEG by its bytes and files it as evidence on the envelope (owner = sender, organization = envelope's) before the adopt door names it. Phones open on Draw; the envelope's `signature_options` can turn either off.
 
 ---
 
 ## Change Log
+
+- 2026-10-04 — Placed fields on the signer's page (guide, adopt dialog, filled values, other signers muted) and "Download signed copy" via the `signed_copy` act. Checked in the shared preview against a constructed load (desktop + phone width, typed + drawn).
 
 - 2026-10-03 — Drawn signatures: Type/Draw on the sign step; aidream files the drawing (`esign.signature_owner`, migration `esign_a_drawn_signature_is_filed_on_its_envelope.sql`). Proven on live for both doors.
 - 2026-10-03 — Independent review fixes: pdf.js viewer instead of an iframe (script + Android), secret stripped from the URL, refusals shown as refusals, mid-walk session loss returns to the code step, per-tab lazy fetch, retryable preview.
