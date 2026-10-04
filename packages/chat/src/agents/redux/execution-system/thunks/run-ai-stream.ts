@@ -94,6 +94,13 @@ import {
   type MatrxLiveRunRejoin,
 } from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@ai-matrx/data/net";
+import {
+  applyServerUsageRefusal,
+  checkUsageBeforeAiCall,
+  isServerUsageRefusal,
+  noteAiCallEnded,
+  USAGE_LIMIT_REACHED,
+} from "@host/features/entitlements/usage-gate/usageGate";
 
 /**
  * Thrown when the underlying fetch is aborted (user cancel, heartbeat-driven
@@ -448,6 +455,19 @@ export async function fetchThroughDeploymentDrain(
 export async function runAiStream(
   args: RunAiStreamArgs,
 ): Promise<RunAiStreamResult> {
+  // THE USAGE GATE, after-call half (USAGE-GATE.md rule 8): whatever the
+  // outcome, the held usage answer is now possibly behind — mark it stale and
+  // refresh in the background. Never awaited.
+  try {
+    return await runAiStreamOnce(args);
+  } finally {
+    noteAiCallEnded(args.dispatch, args.getState);
+  }
+}
+
+async function runAiStreamOnce(
+  args: RunAiStreamArgs,
+): Promise<RunAiStreamResult> {
   const {
     requestId,
     conversationId,
@@ -544,6 +564,20 @@ export async function runAiStream(
         conversationId,
       });
     };
+    // THE USAGE GATE, request-path half (USAGE-GATE.md rules 10-12): zero work
+    // while the held answer is ok/unknown; while near/over, ONE fresh read, and
+    // only a fresh `over` stops the turn. Turns only — a resume or rejoin is the
+    // same running request, which is never stopped (rule 5). Thrown inside this
+    // try so the stop takes the exact path a server refusal takes.
+    if (kind === "turn") {
+      const verdict = await checkUsageBeforeAiCall(dispatch, getState);
+      if (!verdict.allowed) {
+        throw new ExpectedRequestConflictError(
+          USAGE_LIMIT_REACHED,
+          verdict.message,
+        );
+      }
+    }
     response =
       kind === "rejoin"
         ? await fetchRejoin(url, fetchInit, abortController.signal, () =>
@@ -610,6 +644,15 @@ export async function runAiStream(
       }
 
       const code = response.status;
+      // The server's usage refusal (USAGE-GATE.md rule 2): hold `over` and
+      // open the limit dialog; the request fails as an expected refusal.
+      if (kind !== "rejoin" && isServerUsageRefusal(code, rawErrorBody)) {
+        applyServerUsageRefusal(dispatch, getState, rawErrorBody);
+        throw new ExpectedRequestConflictError(
+          USAGE_LIMIT_REACHED,
+          userMessage || serverMessage || "You've reached your AI usage limit.",
+        );
+      }
       // A rejoin with nothing to replay: the operation is unknown (404) or its
       // journal is gone (409 live_stream_unavailable — the package decides).
       if (

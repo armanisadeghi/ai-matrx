@@ -54,6 +54,13 @@
 
 // ─── External dependencies ───────────────────────────────────────────────────
 
+import {
+  applyServerUsageRefusal,
+  checkUsageBeforeAiCall,
+  isServerUsageRefusal,
+  noteAiCallEnded,
+  USAGE_LIMIT_REACHED,
+} from "@/features/entitlements/usage-gate/usageGate";
 import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
 
@@ -990,6 +997,23 @@ export function callApi<
         return { data: config._testOverrides.mockResponse };
       }
 
+      // ── Step 6b: THE USAGE GATE (USAGE-GATE.md rules 10-12) ─────────────
+      // AI turns only. Zero work while the held answer is ok/unknown; while
+      // near/over, ONE fresh read, and only a fresh `over` stops the call.
+      const isAiTurn = isAiTurnPath(config.path as string);
+      if (isAiTurn) {
+        const verdict = await checkUsageBeforeAiCall(_dispatch, getState);
+        if (!verdict.allowed) {
+          return {
+            error: {
+              type: "http_error",
+              message: verdict.message,
+              code: USAGE_LIMIT_REACHED,
+            },
+          };
+        }
+      }
+
       // ── Step 7: Execute ─────────────────────────────────────────────────
       // A stream's header wait is the organization's run-wait knob for what
       // it produces, never the 15 s JSON default: prepared-streaming routes
@@ -1028,6 +1052,17 @@ export function callApi<
           parseStream: parseNdjsonStream,
         },
       );
+      if (isAiTurn) {
+        // The server's usage refusal → hold `over`, open the limit dialog.
+        if (
+          result.error?.status !== undefined &&
+          isServerUsageRefusal(result.error.status, result.error.serverDetail)
+        ) {
+          applyServerUsageRefusal(_dispatch, getState, result.error.serverDetail);
+        }
+        // Call ended — stale + background refresh, never awaited (rule 8).
+        noteAiCallEnded(_dispatch, getState);
+      }
       // Single capture chokepoint for backend failures that resolve with an
       // `{ error }` body (non-2xx). Feeds the systemwide Error Inspector.
       if (

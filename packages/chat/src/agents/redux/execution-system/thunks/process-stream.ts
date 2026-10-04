@@ -13,6 +13,7 @@
  *  - Old CompletionStats replaced with UserRequestResult from completion.result
  */
 
+import { applyServerUsageState } from "@host/features/entitlements/usage-gate/usageGate";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { CompletionStats } from "../../../types/instance.types";
 import type { ClientMetrics } from "../../../types/request.types";
@@ -2098,6 +2099,11 @@ export async function processStream({
       } else if (isInfoEvent(event)) {
         infoEvents++;
         dispatch(addInfoEvent({ requestId, info: event.data }));
+        // The server's usage answer, told on the stream the request already
+        // uses (USAGE-GATE.md rule 7) — replaces the held usage state.
+        if (event.data.code === "usage_state") {
+          applyServerUsageState(dispatch, event.data);
+        }
         dispatch(
           appendTimeline({
             requestId,

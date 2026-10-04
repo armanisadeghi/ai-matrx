@@ -152,3 +152,52 @@ export function makeSelectEntitlement(
   verdictSelectorCache.set(capability, selector);
   return selector;
 }
+
+// ── The usage gate (USAGE-GATE.md rules 9-12) — one property per selector. ──
+
+const selectUsageGate = createSelector(
+  selectEntitlementsState,
+  (e) => e.usageGate,
+);
+
+/** `ok | near | over | unknown` — the server's answer as held. */
+export const selectUsageGateLevel = createSelector(
+  selectUsageGate,
+  (u) => u.state,
+);
+
+export const selectUsageGateWindows = createSelector(
+  selectUsageGate,
+  (u) => u.windows,
+);
+
+export const selectUsageGateBindingPeriod = createSelector(
+  selectUsageGate,
+  (u) => u.bindingPeriod,
+);
+
+export const selectUsageGateResetsAt = createSelector(
+  selectUsageGate,
+  (u) => u.resetsAt,
+);
+
+export const selectUsageGatePlanName = createSelector(
+  selectUsageGate,
+  (u) => u.planName,
+);
+
+export const selectUsageGateStale = createSelector(
+  selectUsageGate,
+  (u) => u.stale,
+);
+
+export const selectUsageGateFetchedAt = createSelector(
+  selectUsageGate,
+  (u) => u.fetchedAt,
+);
+
+/** The window a fresh `over` stopped a call on, or null. */
+export const selectUsageGateRefusal = createSelector(
+  selectUsageGate,
+  (u) => u.refusal,
+);

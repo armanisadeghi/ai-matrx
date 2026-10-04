@@ -152,11 +152,23 @@ export type RefreshRequiredPayload = z.infer<
   typeof RefreshRequiredPayloadSchema
 >;
 
+/**
+ * `usage_state_changed` — the person's usage state (`billing.user_usage_state`
+ * jsonb, published per user after a request settles). Accepted as an object
+ * and read by the usage gate's one parser (features/entitlements/usage-gate),
+ * which ignores anything that is not a usage state. USAGE-GATE.md rule 7.
+ */
+export const UsageStateChangedPayloadSchema = z.record(z.string(), z.unknown());
+export type UsageStateChangedPayload = z.infer<
+  typeof UsageStateChangedPayloadSchema
+>;
+
 /** Every directive action, and the schema its payload must satisfy. */
 export const DIRECTIVE_PAYLOAD_SCHEMAS = {
   settings_changed: SettingsChangedPayloadSchema,
   app_config_changed: AppConfigChangedPayloadSchema,
   refresh_required: RefreshRequiredPayloadSchema,
+  usage_state_changed: UsageStateChangedPayloadSchema,
 } as const;
 
 export const DIRECTIVE_ACTIONS = Object.keys(

@@ -3,6 +3,7 @@
 // Entity-aware routes use `makeEntityStore` from `./entity-store.ts`.
 "use client";
 
+import { entitlementsStateWithUsage } from "@/features/entitlements/state/entitlementsSlice";
 import {
   configureStore,
   type ThunkAction,
@@ -199,6 +200,14 @@ export function resolveStoreBootstrapState(
   const out: Record<string, unknown> = {
     userAuth: { ...split.userAuth, adminLaneOpen: input.adminLaneOpen === true },
     userProfile: split.userProfile,
+    ...(input.usageSnapshot
+      ? {
+          entitlements: entitlementsStateWithUsage(
+            input.usageSnapshot,
+            Date.now(),
+          ),
+        }
+      : {}),
     userPreferences: resolveUserPreferencesForBootstrap(input, {
       userPreferences: baseUserPreferences,
     }),

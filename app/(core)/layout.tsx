@@ -8,6 +8,7 @@ import {
   type AdminLevel,
 } from "@/utils/supabase/userSessionData";
 import type { BaseReduxState } from "@/types/reduxTypes";
+import { readUsageSnapshotServer } from "@/features/entitlements/usage-gate/usageReadServer";
 // Phase 4 PR 4.C: removed `setGlobalUserIdAndToken` import — `lib/globalState.ts`
 // is deleted in this PR. The Redux preloaded state below carries the user data;
 // `lib/sync/identity::attachStore` (called from StoreProvider) wires the
@@ -106,12 +107,16 @@ export default async function AppLayout({
         data: { session },
       },
       adminStatus,
+      usageSnapshot,
     ] = await Promise.all([
       supabase.auth.getSession(),
       getAdminStatus(supabase, user.id).catch((err) => {
         console.error("getAdminStatus failed, defaulting to non-admin:", err);
         return { isAdmin: false, level: null as AdminLevel | null };
       }),
+      // THE USAGE GATE seed (USAGE-GATE.md rule 9): loaded WITH the reads this
+      // layout already makes, never as a request on the path of an AI call.
+      readUsageSnapshotServer(supabase),
     ]);
 
     const { isAdmin, level: adminLevel } = adminStatus;
@@ -125,6 +130,7 @@ export default async function AppLayout({
       // THE ADMIN LANE seed: the per-feature admin maps under (core) are admin
       // section; `proxy.ts` stamped the request (utils/supabase/adminLane.ts).
       adminLaneOpen: headersList.get(ADMIN_LANE_HEADER) === "1",
+      usageSnapshot,
     };
   } else {
     const guestUserData = mapUserData(null, undefined, false);

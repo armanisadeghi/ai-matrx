@@ -37,6 +37,7 @@ import { ensureScopeSkeleton } from "@/features/scopes/redux/thunks/ensureScopeS
 import { registerBlobCacheServiceWorker } from "@/features/files/cache/register-service-worker";
 import { resolveBaseUrl } from "@/lib/python-client";
 import { fetchEntitlementSnapshot } from "@/features/entitlements/service";
+import { UsageGateBridge } from "@/features/entitlements/usage-gate/UsageGateBridge";
 import {
   setEntitlementSnapshot,
   clearEntitlements,
@@ -123,6 +124,9 @@ export default function DeferredSingletonCore() {
           question can be raised by any API call, any upload, and any AI run, so
           it cannot live inside one feature. See lib/organization/organization-gate.ts. */}
       <OrganizationGateDialog />
+      {/* Render-free until a usage limit is hit: the usage gate's boot read,
+          server notifications, near/over notice and limit dialog. */}
+      <UsageGateBridge />
       {/* Render-free. THE reader/writer of `?panels=` — the deep-link channel
           for floating windows (`?panels=notes`, `?panels=vault:<id>`, …).
           Mounted GLOBALLY and unallowlisted: it owns every key that has a

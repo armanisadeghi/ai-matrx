@@ -14,6 +14,7 @@
 // path's static graph entirely.
 import type { UserData } from "@/utils/userDataMapper";
 import type { ContextMenuRow } from "@/utils/supabase/ssrShellData";
+import type { UsageSnapshot } from "@/features/entitlements/usage-gate/usageState";
 
 /**
  * Bootstrap state for the slim store (`makeStore`). Used by all routes that
@@ -28,6 +29,12 @@ export interface BaseReduxState {
    * every other page's does not. `AdminLaneSync` keeps it current afterwards.
    */
   adminLaneOpen?: boolean;
+  /**
+   * THE USAGE GATE seed: the person's `billing.user_usage_state` answer, read
+   * by the layout in parallel with its own session/admin reads (USAGE-GATE.md
+   * rule 9). Absent → the boot effect reads it off the request path.
+   */
+  usageSnapshot?: UsageSnapshot | null;
   // Preferences are no longer fetched server-side; the
   // `userPreferencesPolicy` warm-cache cold-boot path (IDB → LS → remote.fetch)
   // owns hydration entirely on the client. `resolveStoreBootstrapState` falls

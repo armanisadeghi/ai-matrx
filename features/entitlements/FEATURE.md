@@ -110,6 +110,30 @@ full snapshot refresh.
 | [`components/useEntitlementGuard.tsx`](./components/useEntitlementGuard.tsx) | `guard(action)` — server-truth check before spend; opens the paywall on a cap-hit. `commit()` — records usage on the SUCCESS path (see the consume-on-success contract above). |
 | [`components/CapabilityPaywallDialog.tsx`](./components/CapabilityPaywallDialog.tsx) | Contextual cap-hit paywall (helpful, never hostage). Never a `toast.error`. |
 | [`components/CapabilityGate.tsx`](./components/CapabilityGate.tsx) | The TIER gate surface — tier held + tier required + one click there. Fails open while loading/on error. The ONLY tier-lock UI; never hand-roll a second. |
+| [`usage-gate/`](./usage-gate) | THE USAGE GATE, client half — see the section below. |
+
+## The usage gate — client half (2026-10-03)
+
+Binding rules: `common-docs/systems/platform/entitlements-knobs/USAGE-GATE.md` (9-12). The client
+never derives a state; every level is `billing.user_usage_state` as written.
+
+- **Landing:** `app/(core)/layout.tsx` reads `user_usage_state` as a third leg of its existing
+  `Promise.all` (session + admin), seeded as `initialReduxState.usageSnapshot` →
+  `entitlements.usageGate`. Other shells: `UsageGateBridge` reads once in the background.
+- **Request path:** `checkUsageBeforeAiCall` runs inside `runAiStream` (turns only — a resume or
+  rejoin is the same running request) and in `callApi` for AI turn paths. Held `ok`/`unknown` →
+  no read. Held `near`/`over` → one fresh read; only a fresh `over` stops the call
+  (`usage_limit_reached`, the same path a server refusal takes) and opens `UsageLimitDialog`.
+- **After a call:** `noteAiCallEnded` marks stale and schedules one debounced background read;
+  nothing awaits it.
+- **Server notifications:** the `usage_state_changed` directive, an `info` stream event with
+  `code: "usage_state"` (state in `metadata` or flat), and a usage refusal (HTTP 402, code
+  `usage_limit_reached`, or `fix_action: "upgrade_plan"` beside a state) all go through
+  `parseUsageSnapshot` into Redux.
+- **Notice:** one toast per level + window + reset per session; a held `over` shows it, never blocks.
+- **Guests:** no browser Supabase session, so no client read — they get only server notifications
+  and refusals. Never invent a guest session for this.
+- **Guard:** `__tests__/usage-gate-request-path.test.ts` drives the real `runAiStream`.
 
 ## Plans — everything about a plan is DATA (2026-08-14)
 
@@ -511,6 +535,8 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-10-03** — Usage gate client half: `entitlements.usageGate` seeded at landing by the (core) layout, near/over fresh-read pre-check in `runAiStream` + `callApi`, stale + background refresh after each call, `usage_state_changed` directive + `usage_state` info event + usage refusal handling, `UsageGateBridge` (notice + `UsageLimitDialog`).
 
 - **2026-10-03** — Plan catalog: every plan surface reads `billing.plan_catalog()` via `catalog/`. `/pricing` shows the ladder (Personal / Business, exact cents, AI points per window) above the education section; paywall/upgrade/industry dialogs read the same rows; paid plans announce `billing.plan-checkout` (Coming Soon). Deleted `features/pricing/data.ts`, `PricingLandingRoute`, dead `fetchPublicPlans`; dropped registry `defaultFreeLimit` and the hardcoded points-rate sentence. Registry `minTier`/`enforced` still duplicate `billing.capability` (the resolver gate reads them) — open.
 
