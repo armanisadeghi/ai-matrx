@@ -3951,6 +3951,11 @@ export type Database = {
         Args: { p_id: string; p_values: Json }
         Returns: undefined
       }
+      translation_evidence_proven: {
+        Args: { p_evidence: Json }
+        Returns: boolean
+      }
+      translation_rationale_code: { Args: { p_text: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
