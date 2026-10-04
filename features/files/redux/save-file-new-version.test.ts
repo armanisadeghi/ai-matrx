@@ -25,6 +25,8 @@ const uploads: UploadCall[] = [];
 // id -> the service's row, keyed the way the by-id door looks it up.
 const serverRows = new Map<string, { version: number }>();
 let forceForeignAnswer = false;
+let routeMissing: number | null = null;
+const fallbackUploads: Array<{ filePath: string; body: string }> = [];
 
 jest.mock("@/features/files/api/files", () => ({
   uploadNewVersion: async (
@@ -43,6 +45,7 @@ jest.mock("@/features/files/api/files", () => ({
       changeSummary: p.changeSummary,
       keys: Object.keys(p).sort(),
     });
+    if (routeMissing) throw Object.assign(new Error("route missing"), { status: routeMissing });
     const row = serverRows.get(fileId);
     if (!row) throw new Error("not found");
     row.version += 1;
@@ -55,6 +58,29 @@ jest.mock("@/features/files/api/files", () => ({
         checksum: `sha-${body.length}`,
         url: null,
         is_new: forceForeignAnswer,
+      },
+      meta: {},
+    };
+  },
+  uploadFile: async (p: { file: File; filePath: string }) => {
+    const body = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(p.file);
+    });
+    fallbackUploads.push({ filePath: p.filePath, body });
+    const row = serverRows.get(FILE_ID)!;
+    row.version += 1;
+    return {
+      data: {
+        file_id: FILE_ID,
+        file_path: p.filePath,
+        version_number: row.version,
+        size_bytes: p.file.size,
+        checksum: "sha",
+        url: null,
+        is_new: false,
       },
       meta: {},
     };
@@ -146,6 +172,8 @@ beforeEach(() => {
   serverRows.set(FILE_ID, { version: 1 });
   serverRows.set(SHARED_ID, { version: 1 });
   forceForeignAnswer = false;
+  routeMissing = null;
+  fallbackUploads.length = 0;
 });
 
 describe("saving an edited file", () => {
@@ -226,6 +254,31 @@ describe("saving an edited file", () => {
       }),
     ]);
     expect(store.getState().cloudFiles.filesById[SHARED_ID]?.currentVersion).toBe(2);
+  });
+
+  // TEMPORARY-FALLBACK(2026-10-04): delete with the fallback in thunks.ts
+  it.each([404, 405])("falls back to the path upload, loudly, when the route answers %i", async (status) => {
+    const store = makeStore();
+    routeMissing = status;
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await store
+      .dispatch(saveFileNewVersion({ fileId: FILE_ID, content: "fallback body" }))
+      .unwrap();
+
+    expect(result).toEqual({ fileId: FILE_ID, versionNumber: 2 });
+    expect(fallbackUploads).toEqual([{ filePath: "Docs/notes.txt", body: "fallback body" }]);
+    expect(warn.mock.calls.some((c) => String(c[0]).includes("POST /files/{id}/versions"))).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("does not fall back on other errors", async () => {
+    const store = makeStore();
+    routeMissing = 500;
+    await expect(
+      store.dispatch(saveFileNewVersion({ fileId: FILE_ID, content: "x" })).unwrap(),
+    ).rejects.toMatchObject({ message: "route missing" });
+    expect(fallbackUploads).toHaveLength(0);
   });
 
   it("refuses an answer that names a different row — never reports Saved", async () => {
