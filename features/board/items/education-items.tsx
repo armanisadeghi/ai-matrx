@@ -171,6 +171,8 @@ export const EDUCATION_ITEMS: readonly BoardItemType[] = [
     key: FLASHCARD_ITEM_KEY,
     surface: { name: "matrx-user/education-flashcard-set" },
     comments: entityComments("fc_set"),
+    // The deck, its mastery, its access and its lineage are kept in Redux (`storeReads`): a wake reads nothing.
+    sleeps: true,
     label: "Flashcard deck",
     kindLabel: "flashcard deck",
     icon: Layers,
@@ -190,6 +192,8 @@ export const EDUCATION_ITEMS: readonly BoardItemType[] = [
     surface: { name: EDUCATION_KITS_SURFACE_NAME },
     // A kit is a source anchor plus association edges, not a registered record: no thread of its own.
     comments: null,
+    // The kit and its progress are kept in Redux (`storeReads`): a wake reads nothing.
+    sleeps: true,
     label: "Study kit",
     kindLabel: "study kit",
     icon: NotebookTabs,

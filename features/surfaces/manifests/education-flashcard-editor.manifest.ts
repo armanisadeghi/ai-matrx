@@ -205,7 +205,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * All four persist immediately through `fcService` (the same service the
  * learner's controls use) and so are `mode: "entity"` on `applyPolicy: "ask"`.
  */
-const writeTargets: SurfaceWriteTarget[] = [
+export const flashcardDeckWriteTargets: SurfaceWriteTarget[] = [
   {
     name: "set_details",
     label: "Set details",
@@ -287,7 +287,7 @@ card_mastery is DERIVED from the learner's real review history. Use it to aim yo
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
-  writeTargets,
+  writeTargets: flashcardDeckWriteTargets,
 };
 
 /** One entry in `cards`. */

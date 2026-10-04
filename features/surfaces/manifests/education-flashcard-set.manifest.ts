@@ -3,9 +3,15 @@
  *
  * The `/education/flashcards/[setId]` detail route: one loaded deck and the
  * cards the learner can study, enrich, export, or open in a focused card
- * window. It is deliberately separate from the library list and the editor:
- * agents here need the deck's actual content and retention signal, not the
- * library filters or editor-only write targets.
+ * window. It is deliberately separate from the library list: agents here need
+ * the deck's actual content and retention signal, not the library filters.
+ *
+ * WRITES (2026-10-04, Board parity): a person changes the deck's name, topic and
+ * description and its cards on the Edit page, which a Board tile only links to, so the
+ * same five targets the editor declares (`flashcardDeckWriteTargets`, one set, same
+ * names, one shared handler module `deckWriteHandlers.ts`) are declared here. Not
+ * targets, as on the editor: sharing / who can see it, the class, deleting the deck,
+ * reordering, and the study signal.
  */
 
 import type {
@@ -15,6 +21,7 @@ import type {
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
+import { flashcardDeckWriteTargets } from "./education-flashcard-editor.manifest";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -137,8 +144,10 @@ export const educationFlashcardSetManifest: SurfaceManifest = {
   intro: `<surface_intro>
 You are on one flashcard SET at /education/flashcards/[setId], not the flashcards library and not its editor. This page shows the deck's title and metadata, all cards, and the learner's real study signal so they can study, enrich, or understand this particular deck.
 Check set_loaded first. When it is false, do not describe the deck as empty: load_error may explain why it is unavailable. When it is true, cards is the complete deck visible on this page. Use card_kind to interpret each entry: matching cards use pairs, and cloze cards preserve deletion markup in front. card_mastery is evidence about learning, not content an agent may invent or change.
+To change the deck use its write targets, each asks the person first: set_details (name, topic, description), card_content and matching_card_content (rewrite one card), add_cards, delete_cards (archive one card). Do not use generic tools for this data.
 </surface_intro>`,
   groups,
+  writeTargets: flashcardDeckWriteTargets,
   values: mergeBaselineValues(
     pickBaseline("selection", "context"),
     surfaceSpecific,

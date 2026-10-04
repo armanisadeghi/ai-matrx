@@ -92,10 +92,7 @@ import { CardImageSlot } from "./CardImageSlot";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  parseMatchingCardUpdate,
-  parseNewMatchingCard,
-} from "./flashcardEditorAgentWrites";
+import { buildDeckWriteHandlers } from "./deckWriteHandlers";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -108,38 +105,6 @@ interface HeaderFields {
   topic: string;
 }
 
-// ─── Agent write-target input validation ─────────────────────────────────────
-// The seam turns a throw into the safe error envelope the agent reads, so these
-// throw loudly rather than coercing. The "plain text, not JSON" wording is
-// deliberate and load-bearing: the inline-tool layer PARSES a JSON-looking
-// argument before the handler sees it, and without being told, a model that
-// gets a shape error "fixes" it by double-encoding — which lands escaped \n and
-// stray quotes in the learner's card.
-const PLAIN_TEXT_RULE =
-  "It must be a plain text string, not JSON and not JSON-encoded — no code fence, no surrounding quotes.";
-
-function writeRecord(value: unknown, target: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${target} expects an object value.`);
-  }
-  return value as Record<string, unknown>;
-}
-
-/** A present-but-optional text field. Returns undefined when omitted. */
-function writeText(
-  obj: Record<string, unknown>,
-  key: string,
-  target: string,
-): string | undefined {
-  const raw = obj[key];
-  if (raw === undefined || raw === null) return undefined;
-  if (typeof raw !== "string") {
-    throw new Error(
-      `${target}: ${key} must be a string when provided. ${PLAIN_TEXT_RULE}`,
-    );
-  }
-  return raw;
-}
 
 export function EditSetView({ setId }: { setId: string }) {
   const router = useRouter();
@@ -389,219 +354,34 @@ export function EditSetView({ setId }: { setId: string }) {
   // or a failed save so the seam can hand the agent a real error. Local state is
   // re-seeded from the row the service RETURNS, so an applied write is visible
   // in the editor immediately without waiting on a refetch.
-  const buildWriteHandlers = (): SurfaceWriteHandlers => ({
-    set_details: async (value: unknown) => {
-      const obj = writeRecord(value, "set_details");
-      const name = writeText(obj, "name", "set_details");
-      const topic = writeText(obj, "topic", "set_details");
-      const description = writeText(obj, "description", "set_details");
-      if (name === undefined && topic === undefined && description === undefined) {
-        throw new Error(
-          "set_details: provide at least one of name, topic, or description.",
+  const buildWriteHandlers = (): SurfaceWriteHandlers =>
+    buildDeckWriteHandlers({
+      setId,
+      getData: () => data,
+      currentSetFields: () => header,
+      onSetSaved: (saved) => {
+        setData((prev) => (prev ? { ...prev, set: saved } : prev));
+        setHeader({
+          name: saved.name ?? "",
+          description: saved.description ?? "",
+          topic: saved.topic ?? "",
+        });
+      },
+      onCardSaved: (saved) => {
+        setData((prev) =>
+          prev
+            ? { ...prev, cards: prev.cards.map((c) => (c.id === saved.id ? { ...c, ...saved } : c)) }
+            : prev,
         );
-      }
-      if (name !== undefined && !name.trim()) {
-        throw new Error(
-          `set_details: name cannot be empty. ${PLAIN_TEXT_RULE}`,
-        );
-      }
-      // Omitted fields keep their CURRENT value — a topic proposal must never
-      // wipe the description the learner wrote.
-      const next: HeaderFields = {
-        name: name ?? header.name,
-        topic: topic ?? header.topic,
-        description: description ?? header.description,
-      };
-      const res = await fcService.updateSet(setId, {
-        name: next.name.trim() || "Untitled set",
-        description: next.description.trim() || null,
-        topic: next.topic.trim() || null,
-      });
-      if (res.error || !res.data) {
-        throw new Error(res.error ?? "Couldn't save the set details.");
-      }
-      const saved = res.data;
-      setData((prev) => (prev ? { ...prev, set: saved } : prev));
-      setHeader({
-        name: saved.name ?? "",
-        description: saved.description ?? "",
-        topic: saved.topic ?? "",
-      });
-    },
-
-    card_content: async (value: unknown) => {
-      const obj = writeRecord(value, "card_content");
-      const cardId = writeText(obj, "card_id", "card_content");
-      if (!cardId?.trim()) {
-        throw new Error(
-          "card_content: card_id is required — read the `cards` value to get the id of the card you mean.",
-        );
-      }
-      const card = data?.cards.find((c) => c.id === cardId.trim());
-      if (!card) {
-        throw new Error(
-          `card_content: no card with id "${cardId.trim()}" is in this set. Read the \`cards\` value for the ids actually on this page.`,
-        );
-      }
-      const kind = asCardKind(card.card_kind);
-      if (kind === CARD_KIND.matching) {
-        throw new Error(
-          "card_content: card " +
-            cardId.trim() +
-            " is a MATCHING card — its content is structured left/right pairs, not a front/back, so it can only be edited on the page.",
-        );
-      }
-      const front = writeText(obj, "front", "card_content");
-      const back = writeText(obj, "back", "card_content");
-      if (front === undefined && back === undefined) {
-        throw new Error(
-          `card_content: provide front and/or back. ${PLAIN_TEXT_RULE}`,
-        );
-      }
-      if (front !== undefined && !front.trim()) {
-        throw new Error(
-          `card_content: front cannot be empty — a card with no question is unstudyable. ${PLAIN_TEXT_RULE}`,
-        );
-      }
-      const res = await fcService.updateCard(card.id, {
-        front: (front ?? card.front).trim(),
-        back: (back ?? card.back ?? "").trim(),
-        ...(kind === CARD_KIND.cloze ? { card_kind: CARD_KIND.cloze } : {}),
-      });
-      if (res.error || !res.data) {
-        throw new Error(res.error ?? "Couldn't save the card.");
-      }
-      const saved = res.data;
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              cards: prev.cards.map((c) =>
-                c.id === saved.id ? { ...c, ...saved } : c,
-              ),
-            }
-          : prev,
-      );
-      // Remount ONLY this card's editor so it re-seeds from the saved row.
-      setCardRevisions((r) => ({ ...r, [saved.id]: (r[saved.id] ?? 0) + 1 }));
-    },
-
-    matching_card_content: async (value: unknown) => {
-      if (!data) throw new Error("matching_card_content: the set has not loaded.");
-      const plan = parseMatchingCardUpdate(value, data.cards);
-      const card = data.cards.find((current) => current.id === plan.id);
-      if (!card) throw new Error("matching_card_content: this card is no longer in the open set.");
-      const result = await fcService.updateCardVersioned(card.id, plan.expectedVersion, {
-        ...(plan.prompt === undefined ? {} : { front: plan.prompt }),
-        ...(plan.pairs === undefined
-          ? {}
-          : { dynamic_content: matchingDynamicContent(plan.pairs) }),
-        card_kind: CARD_KIND.matching,
-      });
-      if (result.error || !result.data)
-        throw new Error(result.error ?? "Couldn't save the matching card.");
-      const saved = result.data;
-      setData((previous) =>
-        previous
-          ? {
-              ...previous,
-              cards: previous.cards.map((current) =>
-                current.id === saved.id ? { ...current, ...saved } : current,
-              ),
-            }
-          : previous,
-      );
-      setCardRevisions((revisions) => ({
-        ...revisions,
-        [saved.id]: (revisions[saved.id] ?? 0) + 1,
-      }));
-    },
-
-    add_cards: async (value: unknown) => {
-      const obj = writeRecord(value, "add_cards");
-      const raw = obj.cards;
-      if (!Array.isArray(raw) || raw.length === 0) {
-        throw new Error(
-          "add_cards: cards must be a non-empty array of { front, back?, card_kind? }.",
-        );
-      }
-      const cards = raw.map((entry, index): NewCardInput => {
-        const record = writeRecord(entry, `add_cards: cards[${index}]`);
-        const front = writeText(record, "front", `add_cards: cards[${index}]`);
-        if (!front?.trim()) {
-          throw new Error(
-            `add_cards: cards[${index}].front must be a non-empty string. ${PLAIN_TEXT_RULE}`,
-          );
-        }
-        const back =
-          writeText(record, "back", `add_cards: cards[${index}]`) ?? "";
-        const rawKind = writeText(
-          record,
-          "card_kind",
-          `add_cards: cards[${index}]`,
-        );
-        // Enum check against the real vocabulary constant, never a re-typed
-        // literal. Matching cards carry structured pairs in dynamic_content.
-        const kind = rawKind?.trim();
-        if (
-          kind !== undefined &&
-          kind !== CARD_KIND.basic &&
-          kind !== CARD_KIND.cloze &&
-          kind !== CARD_KIND.matching
-        ) {
-          throw new Error(
-            `add_cards: cards[${index}].card_kind must be "${CARD_KIND.basic}", "${CARD_KIND.cloze}", or "${CARD_KIND.matching}".`,
-          );
-        }
-        if (kind === CARD_KIND.matching) {
-          const matching = parseNewMatchingCard(
-            record,
-            `add_cards: cards[${index}]`,
-          );
-          return {
-            front: matching.front,
-            back: "",
-            card_kind: CARD_KIND.matching,
-            dynamic_content: matchingDynamicContent(matching.pairs),
-          };
-        }
-        return {
-          front: front.trim(),
-          back: back.trim(),
-          ...(kind ? { card_kind: kind } : {}),
-        };
-      });
-      const res = await fcService.addCards(setId, cards);
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      // Positions are assigned server-side, so refetch for the true order.
-      setReloadKey((k) => k + 1);
-    },
-    delete_cards: async (value: unknown) => {
-      if (!data) throw new Error("delete_cards: the set has not loaded.");
-      const request = writeRecord(value, "delete_cards");
-      const id = writeText(request, "card_id", "delete_cards")?.trim();
-      const version = request.version;
-      if (!id || !Number.isSafeInteger(version) || Object.keys(request).some((key) => key !== "card_id" && key !== "version")) {
-        throw new Error("delete_cards: provide { card_id, version } from this loaded set.");
-      }
-      const current = data.cards.find((card) => card.id === id);
-      if (!current) {
-        throw new Error(`delete_cards: card ${id} is no longer in the open set.`);
-      }
-      if (current.version !== version) {
-        throw new Error("delete_cards: this card changed. Reload before deleting it.");
-      }
-      const result = await fcService.deleteCard(id, current.version);
-      if (result.error) throw new Error(`delete_cards: ${result.error}`);
-      setData((previous) => previous ? {
-        ...previous,
-        cards: previous.cards.filter((card) => card.id !== id),
-      } : previous);
-      setReloadKey((key) => key + 1);
-    },
-  });
+        // Remount ONLY this card's editor so it re-seeds from the saved row.
+        setCardRevisions((r) => ({ ...r, [saved.id]: (r[saved.id] ?? 0) + 1 }));
+      },
+      onCardsChanged: () => setReloadKey((k) => k + 1),
+      onCardDeleted: (id) => {
+        setData((prev) => (prev ? { ...prev, cards: prev.cards.filter((card) => card.id !== id) } : prev));
+        setReloadKey((k) => k + 1);
+      },
+    });
 
   return (
     <SurfaceRuntimeProvider

@@ -178,7 +178,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  useSurfaceRuntimeRegistration,
+  type SurfaceWriteHandlers,
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { buildDeckWriteHandlers } from "../editor/deckWriteHandlers";
 import {
   createEducationFlashcardSetScope,
   type FlashcardSetSurfaceCard,
@@ -1080,9 +1084,40 @@ export function SetDetailView({
     });
   };
 
+  // The deck's writes (name, topic, description, cards): the SAME handlers the Edit page registers,
+  // through the same fcService calls. A view-only person gets the refusal the page's own controls give.
+  const buildWriteHandlers = (): SurfaceWriteHandlers =>
+    buildDeckWriteHandlers({
+      setId,
+      getData: () => data,
+      currentSetFields: () => ({
+        name: data?.set.name ?? "",
+        topic: data?.set.topic ?? "",
+        description: data?.set.description ?? "",
+      }),
+      onSetSaved: (saved) => setData((prev) => (prev ? { ...prev, set: saved } : prev)),
+      onCardSaved: (saved) =>
+        setData((prev) =>
+          prev
+            ? { ...prev, cards: prev.cards.map((c) => (c.id === saved.id ? { ...c, ...saved } : c)) }
+            : prev,
+        ),
+      onCardsChanged: () => reload(),
+      onCardDeleted: (id) => {
+        setData((prev) => (prev ? { ...prev, cards: prev.cards.filter((c) => c.id !== id) } : prev));
+        reload();
+      },
+      assertWritable: (target) => {
+        if (viewOnly) {
+          throw new Error(`${target}: this deck is view only for the person, who can make an editable copy first.`);
+        }
+      },
+    });
+
   useSurfaceRuntimeRegistration({
     surfaceName: SURFACE_NAME,
     getScope: buildScope,
+    getWriteHandlers: buildWriteHandlers,
   });
 
   /** The chat this deck was made in, when it was made in one. */
