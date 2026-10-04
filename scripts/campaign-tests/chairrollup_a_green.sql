@@ -99,12 +99,12 @@ $t$;
 do $t$
 declare
   v_org uuid := (select v::uuid from cr_fx where k='org');
-  v jsonb;
+  vv jsonb;
 begin
-  v := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
+  vv := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
   insert into cr_res values
-    ('0a baseline: 3 booked visits', (v ->> 'booked_visits') = '3', coalesce(v ->> 'booked_visits', 'null')),
-    ('0b baseline: billed 545',      (v ->> 'billed_so_far')::numeric = 545, coalesce(v ->> 'billed_so_far', 'null'));
+    ('0a baseline: 3 booked visits', (vv ->> 'booked_visits') = '3', coalesce(vv ->> 'booked_visits', 'null')),
+    ('0b baseline: billed 545',      (vv ->> 'billed_so_far')::numeric = 545, coalesce(vv ->> 'billed_so_far', 'null'));
 end;
 $t$;
 
@@ -114,7 +114,7 @@ declare
   c_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_org  uuid := (select v::uuid from cr_fx where k='org');
   v_link uuid := (select v::uuid from cr_fx where k='link');
-  v jsonb; s jsonb;
+  vv jsonb; s jsonb;
 begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text, true);
   perform set_config('role','authenticated', true);
@@ -129,16 +129,16 @@ begin
   end;
   reset role;
 
-  v := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
+  vv := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
   insert into cr_res values
     ('1a link archived: booked visits is the typed state, never 0',
-       v -> 'booked_visits' ->> '__unavailable' = 'source_archived'
-       and v -> 'booked_visits' ->> 'reads' = 'link'
-       and v -> 'booked_visits' ->> 'field_id' = v_link::text
-       and v -> 'booked_visits' ->> 'table' = 'Appointments',
-       coalesce((v -> 'booked_visits')::text, 'null')),
+       vv -> 'booked_visits' ->> '__unavailable' = 'source_archived'
+       and vv -> 'booked_visits' ->> 'reads' = 'link'
+       and vv -> 'booked_visits' ->> 'field_id' = v_link::text
+       and vv -> 'booked_visits' ->> 'table' = 'Appointments',
+       coalesce((vv -> 'booked_visits')::text, 'null')),
     ('1b link archived: billed so far names the link too',
-       v -> 'billed_so_far' ->> 'label' = 'Patient', coalesce((v -> 'billed_so_far')::text, 'null'));
+       vv -> 'billed_so_far' ->> 'label' = 'Patient', coalesce((vv -> 'billed_so_far')::text, 'null'));
 end;
 $t$;
 
@@ -148,34 +148,34 @@ declare
   c_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_org  uuid := (select v::uuid from cr_fx where k='org');
   v_fee  uuid := (select v::uuid from cr_fx where k='fee');
-  v jsonb; w jsonb;
+  vv jsonb; ww jsonb;
 begin
   perform set_config('request.jwt.claims', jsonb_build_object('sub', c_admin, 'role', 'authenticated')::text, true);
   perform set_config('role','authenticated', true);
   perform custom.field_restore(v_org, (select v::uuid from cr_fx where k='link'));
   reset role;
-  v := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
+  vv := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
   insert into cr_res values
-    ('2a link restored: 3 booked visits again', (v ->> 'booked_visits') = '3', coalesce((v -> 'booked_visits')::text, 'null')),
-    ('2b link restored: billed 545 again', (v ->> 'billed_so_far') ~ '^545(\.0+)?$', coalesce((v -> 'billed_so_far')::text, 'null'));
+    ('2a link restored: 3 booked visits again', (vv ->> 'booked_visits') = '3', coalesce((vv -> 'booked_visits')::text, 'null')),
+    ('2b link restored: billed 545 again', (vv ->> 'billed_so_far') ~ '^545(\.0+)?$', coalesce((vv -> 'billed_so_far')::text, 'null'));
 
   perform set_config('role','authenticated', true);
   perform custom.field_retire(v_org, v_fee);
   reset role;
-  w := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
+  ww := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
   insert into cr_res values
     ('2c fee archived: billed so far names Fee (reads: column)',
-       w -> 'billed_so_far' ->> 'reads' = 'column' and w -> 'billed_so_far' ->> 'field_id' = v_fee::text,
-       coalesce((w -> 'billed_so_far')::text, 'null')),
-    ('2d fee archived: the count needs no column and still reads 3', (w ->> 'booked_visits') = '3',
-       coalesce((w -> 'booked_visits')::text, 'null'));
+       ww -> 'billed_so_far' ->> 'reads' = 'column' and ww -> 'billed_so_far' ->> 'field_id' = v_fee::text,
+       coalesce((ww -> 'billed_so_far')::text, 'null')),
+    ('2d fee archived: the count needs no column and still reads 3', (ww ->> 'booked_visits') = '3',
+       coalesce((ww -> 'booked_visits')::text, 'null'));
 
   perform set_config('role','authenticated', true);
   perform custom.field_restore(v_org, v_fee);
   reset role;
-  w := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
+  ww := custom.record_values(v_org, (select v::uuid from cr_fx where k='marcus'));
   insert into cr_res values
-    ('2e fee restored: billed 545 again', (w ->> 'billed_so_far') ~ '^545(\.0+)?$', coalesce((w -> 'billed_so_far')::text, 'null'));
+    ('2e fee restored: billed 545 again', (ww ->> 'billed_so_far') ~ '^545(\.0+)?$', coalesce((ww -> 'billed_so_far')::text, 'null'));
 exception when others then
   insert into cr_res values ('2 restore and the far column', false, sqlerrm);
 end;
