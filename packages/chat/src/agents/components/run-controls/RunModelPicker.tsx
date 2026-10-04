@@ -18,6 +18,7 @@
 import { RotateCcw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
+import { useEffectiveClassPin } from "../../redux/execution-system/instance-model-overrides/useEffectiveClassPin";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { selectAgentModelId } from "../../redux/agent-definition/selectors";
 import { selectAgentIdFromInstance } from "../../redux/execution-system/conversations/conversations.selectors";
@@ -27,7 +28,6 @@ import {
   resetOverride,
 } from "../../redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import {
-  effectiveOfferingPin,
   resetModelChoice,
   setOfferingPin,
 } from "../../redux/execution-system/instance-model-overrides/offering-pin";
@@ -54,8 +54,8 @@ function useModelOverride(conversationId: string) {
   const effectiveModel = overrideModel ?? baseModel;
   // The class (offering) pin travels with the model — a different class of
   // the agent's own model is an override too.
-  const pinnedOfferingId = effectiveOfferingPin(overrideState);
-  const baseOfferingId = overrideState?.baseSettings?.offering_id ?? undefined;
+  const { effectivePin: pinnedOfferingId, basePin: baseOfferingId } =
+    useEffectiveClassPin(conversationId);
   const isOverridden =
     effectiveModel !== baseModel || pinnedOfferingId !== baseOfferingId;
 

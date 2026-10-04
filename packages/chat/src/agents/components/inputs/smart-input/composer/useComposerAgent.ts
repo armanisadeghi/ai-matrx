@@ -29,7 +29,7 @@ import {
 } from "@host/features/ai-models/redux/modelRegistrySlice";
 import { useModelOptions } from "@host/features/ai-models/hooks/useModels";
 import { useModelClassLabels } from "@host/features/ai-models/hooks/useModelClassLabel";
-import { effectiveOfferingPin } from "../../../../redux/execution-system/instance-model-overrides/offering-pin";
+import { useEffectiveClassPin } from "../../../../redux/execution-system/instance-model-overrides/useEffectiveClassPin";
 import { initializeChatAgents } from "../../../../redux/agent-definition/thunks";
 
 /** The tag that makes an agent a Chat-mode preset (A2: "rules later; for now read the tag"). */
@@ -100,10 +100,9 @@ export function useComposerAgent(conversationId: string): ComposerAgentInfo {
   const effectiveModelId = useEffectiveModelId(conversationId);
   // A model offered in several classes is named with the class it runs on.
   useModelClassLabels();
-  const overrideState = useAppSelector(selectInstanceOverrideState(conversationId));
-  const effectivePin = effectiveOfferingPin(overrideState) ?? null;
-  const basePinRaw = overrideState?.baseSettings?.offering_id;
-  const agentOwnPin = typeof basePinRaw === "string" && basePinRaw ? basePinRaw : null;
+  const classPins = useEffectiveClassPin(conversationId);
+  const effectivePin = classPins.effectivePin ?? null;
+  const agentOwnPin = classPins.basePin ?? null;
   const effectiveModelLabel =
     useAppSelector((state) => selectModelLabelWithClass(state, effectiveModelId, effectivePin)) ?? null;
   const agentOwnModelId = useAgentOwnModelId(conversationId);
