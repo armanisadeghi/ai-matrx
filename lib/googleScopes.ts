@@ -31,6 +31,8 @@ export const GOOGLE_SCOPE = {
     "https://www.googleapis.com/auth/contacts.other.readonly",
   // Internal reviewer Workspace directory product; never included in legacy bundles.
   directoryReadonly: "https://www.googleapis.com/auth/directory.readonly",
+  // Restricted selected-space Chat preview; excluded from default consent bundles.
+  chatMessagesReadonly: "https://www.googleapis.com/auth/chat.messages.readonly",
   // Meet review is requested only through its dedicated internal-test product.
   meetingsSpaceReadonly:
     "https://www.googleapis.com/auth/meetings.space.readonly",
