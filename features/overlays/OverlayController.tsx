@@ -7152,6 +7152,8 @@ export default function OverlayController() {
               token: raw.token,
               id: raw.id,
               title: typeof raw.title === "string" ? raw.title : "",
+              ...(typeof raw.tableId === "string" ? { tableId: raw.tableId } : {}),
+              ...(typeof raw.organizationId === "string" ? { organizationId: raw.organizationId } : {}),
             }}
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "linkRecordSheet" }))

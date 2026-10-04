@@ -100,7 +100,15 @@ export function LinkRecordPickerSheet({
         // entityRegistry `record.listCandidates`). They are offered only where the host asks.
         const listable = new Set<string>(listableTokens());
         const canList = (t: string) => listable.has(t) || (storeRecords && t === STORE_RECORD_TOKEN);
-        if (live) setKinds(tokens.filter(canList) as EntityTypeToken[]);
+        // RECORD ↔ RECORD is not a free edge the relationship rules list: it is written through
+        // a link column of the two tables (`storeRecordLink.ts`), so a store record is offered
+        // first on a store record whenever the host asks (CHAIR-UI-STORE item 3).
+        const offered = tokens.filter(canList);
+        const recordFirst =
+          storeRecords && targetToken === STORE_RECORD_TOKEN
+            ? [STORE_RECORD_TOKEN, ...offered.filter((t) => t !== STORE_RECORD_TOKEN)]
+            : offered;
+        if (live) setKinds(recordFirst as EntityTypeToken[]);
       })
       .catch((e: unknown) => { if (live) setKindsError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };

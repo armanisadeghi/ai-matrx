@@ -9,7 +9,16 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  alreadyLinked,
+  linkReplaces,
+  newColumnLabel,
+  planStoreRecordLink,
+  writeStoreRecordLink,
+  type StoreLinkPlan,
+} from "./storeRecordLink";
 import { attachedKey } from "@ai-matrx/associations/react";
 import { toast } from "@/components/ui/use-toast";
 import { LinkRecordPickerSheet, STORE_RECORD_TOKEN } from "./LinkRecordSheet";
@@ -22,6 +31,25 @@ export interface LinkRecordTarget {
   token: string;
   id: string;
   title: string;
+  /** A store record's table and organization, when the host knows them (the grid, a card). */
+  tableId?: string | undefined;
+  organizationId?: string | undefined;
+}
+
+/** What the one confirm says before a store link changes a table or replaces a link. */
+function confirmWords(plan: StoreLinkPlan): { title: string; description: string; confirm: string } {
+  if (plan.kind === "new_column") {
+    return {
+      title: `Link through a new column on ${plan.holder.tableName}?`,
+      description: `${plan.holder.tableName} gets a "${newColumnLabel(plan)}" column pointing at ${plan.pointsAt.tableName}, and this link is its first.`,
+      confirm: "Add column and link",
+    };
+  }
+  return {
+    title: `Replace ${plan.field.label}?`,
+    description: `${plan.field.label} holds one record, so this link replaces the one it holds now.`,
+    confirm: "Replace",
+  };
 }
 
 function asSource(target: LinkRecordTarget): AnnotationSource {
@@ -54,7 +82,36 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
     .map((e) => attachedKey(e.otherType, e.otherId));
   const attachedKeys = linkedOutward.length > 0 ? new Set([...attached, ...linkedOutward]) : attached;
 
+  // RECORD ↔ RECORD (CHAIR-UI-STORE item 3): through a link column the two tables share, or a new
+  // one after ONE confirm. The picker waits on `asking` until the person answers.
+  const isStoreTarget = target.token === STORE_RECORD_TOKEN;
+  const [asking, setAsking] = useState<StoreLinkPlan | null>(null);
+  const answer = useRef<((yes: boolean) => void) | null>(null);
+  const ask = (plan: StoreLinkPlan) =>
+    new Promise<boolean>((resolve) => {
+      answer.current = resolve;
+      setAsking(plan);
+    });
+  const settle = (yes: boolean) => {
+    answer.current?.(yes);
+    answer.current = null;
+    setAsking(null);
+  };
+
+  const words = asking ? confirmWords(asking) : null;
   return (
+    <>
+    <ConfirmDialog
+      open={asking !== null}
+      onOpenChange={(open) => {
+        if (!open) settle(false);
+      }}
+      title={words?.title ?? ""}
+      description={words?.description ?? ""}
+      confirmLabel={words?.confirm ?? "Link"}
+      cancelLabel="Cancel"
+      onConfirm={() => settle(true)}
+    />
     <LinkRecordPickerSheet
       open
       onOpenChange={(open) => {
@@ -63,11 +120,33 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
       targetToken={target.token}
       title={target.title ? `Link to ${target.title}` : "Link a record"}
       attachedKeys={attachedKeys}
-      // Record ↔ record is the store's own relation columns (it refuses a free edge between two
-      // records), so a store record is offered on every other kind of record only.
-      storeRecords={target.token !== STORE_RECORD_TOKEN}
+      // Record ↔ record goes through the store's own relation columns (it refuses a free edge
+      // between two records) — `storeRecordLink.ts` — so a store record is offered everywhere.
+      storeRecords={target.token !== STORE_RECORD_TOKEN || Boolean(target.organizationId)}
       onLink={async (token, id, title) => {
         try {
+          if (isStoreTarget && token === STORE_RECORD_TOKEN) {
+            const plan = await planStoreRecordLink({
+              organizationId: target.organizationId as string,
+              target: { recordId: target.id, tableId: target.tableId ?? null },
+              picked: { recordId: id },
+            });
+            if (alreadyLinked(plan)) {
+              toast({ title: "Already linked", description: title || undefined });
+              return true;
+            }
+            if ((plan.kind === "new_column" || linkReplaces(plan)) && !(await ask(plan))) return false;
+            await writeStoreRecordLink(plan);
+            setAttached((prev) => new Set(prev).add(attachedKey(token, id)));
+            toast({
+              title: "Linked",
+              description:
+                plan.kind === "new_column"
+                  ? `${title} · new ${newColumnLabel(plan)} column on ${plan.holder.tableName}`
+                  : `${title} · ${plan.field.label}`,
+            });
+            return true;
+          }
           // A STORE RECORD IS NEVER THE SOURCE OF A FREE LINK: the store refuses any edge out of
           // a record that names no relation field (custom._store_relation_edge_names_its_field).
           // A whole-record link has no direction — the Linked section lists `anchored_to` both
@@ -106,5 +185,6 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
         }
       }}
     />
+    </>
   );
 }
