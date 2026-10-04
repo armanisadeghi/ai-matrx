@@ -8,13 +8,14 @@ import { GoogleDriveLibrary } from "./GoogleDriveLibrary";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockBrowse = jest.fn();
+const mockCheckAccess = jest.fn();
 const mockImportFile = jest.fn();
 const mockOrganization = jest.fn();
 const mockOpenFilePreview = jest.fn();
 
 jest.mock("@/features/marketing/google/service", () => ({
   browseGoogleDrive: (...args: unknown[]) => mockBrowse(...args),
-  checkGoogleDriveFileAccess: jest.fn(),
+  checkGoogleDriveFileAccess: (...args: unknown[]) => mockCheckAccess(...args),
   importSelectedGoogleDriveFile: (...args: unknown[]) => mockImportFile(...args),
 }));
 jest.mock("@/features/marketing/google/hooks", () => ({
@@ -106,12 +107,25 @@ async function showFiles() {
   await click(button("Browse all accessible Drive files"));
 }
 
+async function submitSearch(value: string) {
+  const input = container.querySelector<HTMLInputElement>('input[aria-label="Search Google Drive file names or paste a link"]');
+  if (!input) throw new Error("Missing Drive search input");
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  const form = input.closest("form");
+  if (!form) throw new Error("Missing Drive search form");
+  await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+}
+
 beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   mockBrowse.mockReset().mockResolvedValue(page);
   mockImportFile.mockReset();
+  mockCheckAccess.mockReset();
   mockOrganization.mockReset().mockReturnValue({ organizationId: "destination-harbor" });
   mockOpenFilePreview.mockReset();
 });
@@ -151,12 +165,100 @@ it("imports the one selected file to the explicit destination and opens its save
     connectionId: "connection-harbor",
     fileId: "drive-intake-guide",
     filePath: "My Files/Imports/New patient intake guide.docx",
+    resourceKey: null,
   });
   expect(container.textContent).toContain("Saved to Matrx Files");
   await click(button("Open saved file"));
   expect(mockOpenFilePreview).toHaveBeenCalledWith("saved-intake-guide");
   await chooseAccount("connection-river");
   expect(container.textContent).not.toContain("Saved to Matrx Files");
+});
+
+it("looks up a pasted document through metadata and keeps its key through explicit import", async () => {
+  mockCheckAccess.mockResolvedValue({
+    connection_id: "connection-harbor",
+    source_account: "records@harbordental.test",
+    source_owner_type: "user",
+    source_owner_id: "owner-harbor",
+    accessible: true,
+    file: { ...page.files[0], id: "linked-file", name: "Linked plan" },
+  });
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await chooseAccount();
+  await submitSearch("https://docs.google.com/document/d/linked-file/edit?resourcekey=secret_key");
+  expect(mockBrowse).not.toHaveBeenCalled();
+  expect(mockCheckAccess).toHaveBeenCalledWith({
+    organizationId: "destination-harbor", connectionId: "connection-harbor",
+    fileId: "linked-file", resourceKey: "secret_key",
+  });
+  expect(container.textContent).toContain("Linked plan");
+  expect(mockImportFile).not.toHaveBeenCalled();
+  await click(button("Save to Matrx Files"));
+  mockImportFile.mockResolvedValue({ file_id: "saved-linked", file_path: "My Files/Imports/Linked plan.docx",
+    version_number: 1, created: true,
+    source: { provider: "google_drive", connection_id: "connection-harbor", source_ref: "linked-file" } });
+  await click(button("Import selected file"));
+  expect(mockImportFile).toHaveBeenCalledWith(expect.objectContaining({ fileId: "linked-file", resourceKey: "secret_key" }));
+});
+
+it("does not query malformed pasted links as file names", async () => {
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await chooseAccount();
+  await submitSearch("https://drive.google.com.evil.test/file/d/wrong/view");
+  expect(mockCheckAccess).not.toHaveBeenCalled();
+  expect(mockBrowse).not.toHaveBeenCalled();
+  expect(container.querySelector("[data-google-drive-error]")?.textContent).toContain("Google Drive");
+});
+
+it("refuses a metadata result for a different file", async () => {
+  mockCheckAccess.mockResolvedValue({ connection_id: "connection-harbor",
+    source_account: "records@harbordental.test", source_owner_type: "user", source_owner_id: "owner-harbor",
+    accessible: true, file: page.files[0] });
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await chooseAccount();
+  await submitSearch("https://drive.google.com/file/d/another-file/view");
+  expect(container.querySelector("[data-google-drive-error]")?.textContent).toContain("could not confirm this file");
+  expect(container.querySelector("[aria-label='Google Drive metadata results']")).toBeNull();
+  expect(mockImportFile).not.toHaveBeenCalled();
+});
+
+it("uses a linked folder key through pagination without assigning it to children", async () => {
+  const folder = { ...page.files[1], id: "linked-folder" };
+  mockCheckAccess.mockResolvedValue({ connection_id: "connection-harbor",
+    source_account: "records@harbordental.test", source_owner_type: "user", source_owner_id: "owner-harbor",
+    accessible: true, file: folder });
+  mockBrowse.mockResolvedValueOnce({ ...page, files: [page.files[0]], next_page_token: "next" })
+    .mockResolvedValueOnce({ ...page, files: [page.files[0]], next_page_token: null });
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await chooseAccount();
+  await submitSearch("https://drive.google.com/drive/folders/linked-folder?resourcekey=folder-key");
+  await click(button("Browse folder"));
+  expect(mockBrowse).toHaveBeenCalledWith(expect.objectContaining({
+    folderId: "linked-folder", resourceKey: "folder-key", pageToken: null,
+  }));
+  await click(button("Load next page"));
+  expect(mockBrowse).toHaveBeenLastCalledWith(expect.objectContaining({
+    folderId: "linked-folder", resourceKey: "folder-key", pageToken: "next",
+  }));
+  await click(button("Save to Matrx Files"));
+  mockImportFile.mockResolvedValue({ file_id: "saved-child", file_path: "My Files/Imports/New patient intake guide.docx",
+    version_number: 1, created: true,
+    source: { provider: "google_drive", connection_id: "connection-harbor", source_ref: "drive-intake-guide" } });
+  await click(button("Import selected file"));
+  expect(mockImportFile).toHaveBeenCalledWith(expect.objectContaining({ resourceKey: null }));
+});
+
+it("drops a stale access check after browsing a different result", async () => {
+  let finish: ((value: unknown) => void) | undefined;
+  mockCheckAccess.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  await act(async () => root.render(<GoogleDriveLibrary />));
+  await showFiles();
+  await click(button("Check access"));
+  await click(button("Browse all accessible Drive files"));
+  await act(async () => finish?.({ connection_id: "connection-harbor", accessible: true,
+    source_account: "records@harbordental.test", source_owner_type: "user", source_owner_id: "owner-harbor",
+    file: page.files[0] }));
+  expect(container.querySelector("[data-google-drive-access-confirmed]")).toBeNull();
 });
 
 it("does not blindly resend an uncertain import", async () => {

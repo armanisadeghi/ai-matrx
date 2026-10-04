@@ -5,7 +5,7 @@
  * restricted whole-Drive capability.
  */
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ExternalLink,
@@ -46,8 +46,10 @@ import {
   type DriveBrowseCapability,
   driveBrowseIsAvailable,
   driveFileTypeLabel,
+  driveFileResourceKey,
   incompleteSearchNotice,
   nextDriveBrowseInput,
+  parseDriveSearchSubmission,
   openFreshGoogleDriveFile,
   openGoogleDriveBlankTab,
 } from "./drive-browser";
@@ -81,6 +83,7 @@ type ImportSelection = {
   file: DriveBrowsePage["files"][number];
   connectionId: string;
   sourceAccount: string;
+  resourceKey: string | null;
 };
 
 type ImportReceipt = {
@@ -158,6 +161,8 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
   const [attemptedImportKeys, setAttemptedImportKeys] = useState<string[]>([]);
   const inFlightImport = useRef(false);
   const browseGeneration = useRef(0);
+  const accessGeneration = useRef(0);
+  const previousOrganizationId = useRef(selectedOrganizationId);
   const [unconfirmedAttempt, setUnconfirmedAttempt] = useState<string | null>(null);
 
   const connections = eligibleGoogleConnections(
@@ -173,6 +178,20 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
   const driveBrowse = environment.driveBrowse;
   const capabilityAvailable = driveBrowseIsAvailable(driveBrowse);
 
+  useEffect(() => {
+    if (previousOrganizationId.current === selectedOrganizationId) return;
+    previousOrganizationId.current = selectedOrganizationId;
+    browseGeneration.current += 1;
+    accessGeneration.current += 1;
+    setLoading(false);
+    setCheckingFileId(null);
+    setPage(null);
+    setAccess(null);
+    setImportSelection(null);
+    setReceipt(null);
+    setError(null);
+  }, [selectedOrganizationId]);
+
   async function load(
     next: {
       pageToken?: string | null;
@@ -186,9 +205,11 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
     }
     const nextCriteria = next.criteria ?? criteria;
     const generation = ++browseGeneration.current;
+    accessGeneration.current += 1;
     setLoading(true);
     setError(null);
     setAccess(null);
+    setImportSelection(null);
     try {
       const result = await environment.browse({
         organizationId,
@@ -213,6 +234,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
   function chooseConnection(id: string) {
     if (inFlightImport.current) return;
     browseGeneration.current += 1;
+    accessGeneration.current += 1;
     setLoading(false);
     setConnectionId(id);
     const reset = allAccessibleDriveBrowseState();
@@ -231,7 +253,8 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
     if (!page || page.connection_id !== connectionId || !importableFile(file) || inFlightImport.current) return;
     try {
       setDestinationPath(suggestedImportPath(file));
-      setImportSelection({ file, connectionId, sourceAccount: page.source_account });
+      setImportSelection({ file, connectionId, sourceAccount: page.source_account,
+        resourceKey: driveFileResourceKey(file, criteria) });
       setImportError(null);
     } catch (caught) {
       setImportError(extractErrorMessage(caught));
@@ -285,6 +308,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
         connectionId: selected.connectionId,
         fileId: selected.file.id,
         filePath: destinationPath,
+        resourceKey: selected.resourceKey,
       });
       setReceipt({
         result,
@@ -308,31 +332,36 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
     : null;
   const alreadyAttempted = selectedAttemptKey !== null && attemptedImportKeys.includes(selectedAttemptKey);
 
-  async function checkAccess(fileId: string) {
+  async function checkAccess(fileId: string, resourceKey: string | null) {
     if (!connectionId) return;
     if (!organizationId) {
       setError(NO_ORGANIZATION_FOR_CONNECTION);
       return;
     }
+    const generation = ++accessGeneration.current;
     setCheckingFileId(fileId);
     setError(null);
     setAccess(null);
     try {
-      setAccess(
-        await environment.checkAccess({
+      const result = await environment.checkAccess({
           organizationId,
           connectionId,
           fileId,
-        }),
-      );
+          resourceKey,
+        });
+      if (generation !== accessGeneration.current) return;
+      if (!result.accessible || result.connection_id !== connectionId || result.file.id !== fileId) {
+        throw new Error("Google Drive could not confirm access to the selected file.");
+      }
+      setAccess(result);
     } catch (caught) {
-      setError(extractErrorMessage(caught));
+      if (generation === accessGeneration.current) setError(extractErrorMessage(caught));
     } finally {
-      setCheckingFileId(null);
+      if (generation === accessGeneration.current) setCheckingFileId(null);
     }
   }
 
-  async function openInGoogle(fileId: string) {
+  async function openInGoogle(fileId: string, resourceKey: string | null) {
     if (!connectionId) return;
     if (!organizationId) {
       setError(NO_ORGANIZATION_FOR_CONNECTION);
@@ -347,6 +376,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
       );
       return;
     }
+    const generation = ++accessGeneration.current;
     setCheckingFileId(fileId);
     setError(null);
     setAccess(null);
@@ -354,13 +384,15 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
       await openFreshGoogleDriveFile({
         selectedConnectionId: connectionId,
         check: () =>
-          environment.checkAccess({ organizationId, connectionId, fileId }),
+          environment.checkAccess({ organizationId, connectionId, fileId, resourceKey }),
+        expectedFileId: fileId,
+        isCurrent: () => generation === accessGeneration.current,
         tab,
       });
     } catch (caught) {
-      setError(extractErrorMessage(caught));
+      if (generation === accessGeneration.current) setError(extractErrorMessage(caught));
     } finally {
-      setCheckingFileId(null);
+      if (generation === accessGeneration.current) setCheckingFileId(null);
     }
   }
 
@@ -372,9 +404,59 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void load({
-      criteria: { search: search.trim(), folderId: null, folderName: null },
-    });
+    const submission = parseDriveSearchSubmission(search);
+    if (submission.kind === "invalid") {
+      browseGeneration.current += 1;
+      accessGeneration.current += 1;
+      setPage(null);
+      setImportSelection(null);
+      setAccess(null);
+      setLoading(false);
+      setCheckingFileId(null);
+      setError(submission.message);
+      return;
+    }
+    if (submission.kind === "name") {
+      void load({ criteria: { search: submission.search, folderId: null, folderName: null } });
+      return;
+    }
+    void lookupLinkedFile(submission.fileId, submission.resourceKey);
+  }
+
+  async function lookupLinkedFile(fileId: string, resourceKey: string | null) {
+    if (!connectionId || inFlightImport.current) return;
+    if (!organizationId) {
+      setError(NO_ORGANIZATION_FOR_CONNECTION);
+      return;
+    }
+    const generation = ++browseGeneration.current;
+    accessGeneration.current += 1;
+    setLoading(true);
+    setError(null);
+    setPage(null);
+    setAccess(null);
+    setImportSelection(null);
+    try {
+      const result = await environment.checkAccess({ organizationId, connectionId, fileId, resourceKey });
+      if (generation !== browseGeneration.current) return;
+      if (!result.accessible || result.connection_id !== connectionId || result.file.id !== fileId) {
+        throw new Error("Google Drive could not confirm this file in the selected account.");
+      }
+      setCriteria({ search: "", folderId: null, folderName: null, linkedFileId: fileId, resourceKey });
+      setPage({
+        connection_id: result.connection_id,
+        source_account: result.source_account,
+        source_owner_type: result.source_owner_type,
+        source_owner_id: result.source_owner_id,
+        files: [result.file],
+        next_page_token: null,
+        incomplete_search: false,
+      });
+    } catch (caught) {
+      if (generation === browseGeneration.current) setError(extractErrorMessage(caught));
+    } finally {
+      if (generation === browseGeneration.current) setLoading(false);
+    }
   }
 
   return (
@@ -391,9 +473,6 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
             <h1 className="mt-1 text-2xl font-semibold tracking-tight">
               Google Drive
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Browse Drive files. Save a copy only when you choose Import.
-            </p>
           </div>
           {page ? (
             <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
@@ -447,9 +526,8 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               disabled={!connectionId || loading}
-              placeholder="Search file names"
-              aria-label="Search Google Drive file names"
-              maxLength={200}
+              placeholder="File name or Google link"
+              aria-label="Search Google Drive file names or paste a link"
             />
             <Button
               type="submit"
@@ -538,7 +616,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
             <Input value={destinationPath} onChange={(event) => setDestinationPath(event.target.value)} disabled={importing} aria-label="Matrx Files destination path" />
           </label>
           <p className="text-xs text-muted-foreground">
-            Import downloads or exports this file. The saved copy stays in Matrx Files until you delete it.
+            Import saves a copy in Matrx Files.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => void importSelected()} disabled={importing || !selectedOrganizationId || alreadyAttempted}>
@@ -603,6 +681,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
                               criteria: folderDriveBrowseCriteria(
                                 file.id,
                                 file.name,
+                                driveFileResourceKey(file, criteria),
                               ),
                             })
                           }
@@ -615,7 +694,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
                           size="sm"
                           variant="outline"
                           disabled={checkingFileId !== null}
-                          onClick={() => void checkAccess(file.id)}
+                          onClick={() => void checkAccess(file.id, driveFileResourceKey(file, criteria))}
                         >
                           {checkingFileId === file.id ? (
                             <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
@@ -634,7 +713,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
                         type="button"
                         size="sm"
                         variant="ghost"
-                        onClick={() => void openInGoogle(file.id)}
+                        onClick={() => void openInGoogle(file.id, driveFileResourceKey(file, criteria))}
                       >
                         {checkingFileId === file.id ? (
                           <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />

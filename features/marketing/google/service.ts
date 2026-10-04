@@ -460,6 +460,7 @@ export async function browseGoogleDrive(input: {
   search?: string | null;
   folderId?: string | null;
   pageToken?: string | null;
+  resourceKey?: string | null;
 }): Promise<DriveBrowsePage> {
   const response = await postGoogleBackend(
     "/api/google-sync/drive/browse",
@@ -469,6 +470,7 @@ export async function browseGoogleDrive(input: {
       search: input.search?.trim() || null,
       folder_id: input.folderId ?? null,
       page_token: input.pageToken ?? null,
+      resource_key: input.resourceKey ?? null,
     },
     "Google Drive metadata could not load. Try again.",
     input.organizationId,
@@ -481,6 +483,7 @@ export async function checkGoogleDriveFileAccess(input: {
   organizationId: string;
   connectionId: string;
   fileId: string;
+  resourceKey?: string | null;
 }): Promise<DriveFileMetadata> {
   const response = await postGoogleBackend(
     "/api/google-sync/drive/file",
@@ -488,6 +491,7 @@ export async function checkGoogleDriveFileAccess(input: {
       organization_id: input.organizationId,
       connection_id: input.connectionId,
       file_id: input.fileId,
+      resource_key: input.resourceKey ?? null,
     },
     "Google Drive could not confirm access to this file. Try again.",
     input.organizationId,
@@ -501,6 +505,7 @@ export async function importSelectedGoogleDriveFile(input: {
   connectionId: string;
   fileId: string;
   filePath: string;
+  resourceKey?: string | null;
 }): Promise<DriveImportResult> {
   const response = await postGoogleBackend(
     "/api/google-sync/drive/import",
@@ -509,6 +514,7 @@ export async function importSelectedGoogleDriveFile(input: {
       connection_id: input.connectionId,
       file_id: input.fileId,
       file_path: input.filePath,
+      resource_key: input.resourceKey ?? null,
     },
     "Google Drive import could not be confirmed. Check Matrx Files before trying again.",
     input.organizationId,

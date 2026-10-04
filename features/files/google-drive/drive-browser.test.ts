@@ -13,6 +13,8 @@ import {
   nextDriveBrowseInput,
   openFreshGoogleDriveFile,
   openGoogleDriveBlankTab,
+  parseDriveSearchSubmission,
+  driveFileResourceKey,
 } from "./drive-browser";
 
 const file = {
@@ -49,6 +51,7 @@ describe("restricted Drive browser", () => {
       search: "",
       folderId: "folder-1",
       folderName: "Plans",
+      resourceKey: null,
     });
     expect(allAccessibleDriveBrowseState()).toEqual({
       criteria: ALL_ACCESSIBLE_DRIVE,
@@ -66,11 +69,51 @@ describe("restricted Drive browser", () => {
       search: "budget",
       folderId: "folder-1",
       pageToken: "opaque-next",
+      resourceKey: null,
     });
     expect(nextDriveBrowseInput(ALL_ACCESSIBLE_DRIVE)).toEqual({
       search: null,
       folderId: null,
       pageToken: null,
+      resourceKey: null,
+    });
+  });
+
+  it.each([
+    ["https://docs.google.com/document/d/doc_1/edit?resourcekey=key-1", "doc_1", "key-1"],
+    ["https://docs.google.com/spreadsheets/d/sheet_2/edit", "sheet_2", null],
+    ["https://docs.google.com/presentation/d/slides_3/edit", "slides_3", null],
+    ["https://drive.google.com/file/d/file_4/view", "file_4", null],
+    ["https://drive.google.com/drive/u/0/folders/folder_5?resourcekey=folder-key", "folder_5", "folder-key"],
+    ["https://drive.google.com/open?id=open_6", "open_6", null],
+  ])("recognizes a supported Google link %s", (url, fileId, resourceKey) => {
+    expect(parseDriveSearchSubmission(url)).toEqual({ kind: "link", fileId, resourceKey });
+  });
+
+  it.each([
+    "http://drive.google.com/file/d/file/view",
+    "https://drive.google.com:8443/file/d/file/view",
+    "https://user@drive.google.com/file/d/file/view",
+    "https://drive.google.com.evil.test/file/d/file/view",
+    "https://drive.google.com/open?id=one&id=two",
+    "https://drive.google.com/file/d/one/view?id=two",
+    "https://drive.google.com/open?id=one&resourcekey=a&resourcekey=b",
+    "https://docs.google.com/forms/d/one/edit",
+    "drive.google.com/file/d/one/view",
+  ])("rejects unsupported or malformed link %s", (url) => {
+    expect(parseDriveSearchSubmission(url).kind).toBe("invalid");
+  });
+
+  it("keeps filename search bounded and a linked key on its exact file only", () => {
+    expect(parseDriveSearchSubmission("  Plan  ")).toEqual({ kind: "name", search: "Plan" });
+    expect(parseDriveSearchSubmission("x".repeat(201)).kind).toBe("invalid");
+    const linked = { search: "", folderId: null, folderName: null, linkedFileId: "file-1", resourceKey: "link-key" };
+    expect(driveFileResourceKey(file, linked)).toBe("link-key");
+    expect(driveFileResourceKey({ ...file, id: "child" }, linked)).toBeNull();
+    const keyedFile = { ...file, resource_key: "own-key" };
+    expect(driveFileResourceKey(keyedFile, linked)).toBe("own-key");
+    expect(nextDriveBrowseInput(folderDriveBrowseCriteria("folder", "Folder", "folder-key"), "next")).toEqual({
+      search: null, folderId: "folder", pageToken: "next", resourceKey: "folder-key",
     });
   });
 
@@ -124,6 +167,24 @@ describe("restricted Drive browser", () => {
         tab,
       }),
     ).rejects.toThrow("could not confirm a current link");
+    expect(tab.location.replace).not.toHaveBeenCalled();
+    expect(tab.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes a pending open when the selection changes before metadata returns", async () => {
+    const tab = blankTab();
+    let current = true;
+    await expect(openFreshGoogleDriveFile({
+      selectedConnectionId: "connection-1",
+      expectedFileId: "file-1",
+      isCurrent: () => current,
+      check: async () => {
+        current = false;
+        return { connection_id: "connection-1", source_account: "reviewer@example.com",
+          source_owner_type: "user", source_owner_id: "user-1", file, accessible: true };
+      },
+      tab,
+    })).rejects.toThrow("could not confirm a current link");
     expect(tab.location.replace).not.toHaveBeenCalled();
     expect(tab.close).toHaveBeenCalledTimes(1);
   });
