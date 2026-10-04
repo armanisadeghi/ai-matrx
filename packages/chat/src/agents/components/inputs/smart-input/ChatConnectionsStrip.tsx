@@ -89,6 +89,8 @@ export interface ChatConnectionsStripProps {
    * with nothing chosen offers its chooser as a chip.
    */
   showResources?: boolean;
+  /** Chips only: what the row shows when this chat has no connections (the composer's promo). */
+  emptyChips?: React.ReactNode;
 }
 
 export function ChatConnectionsStrip({
@@ -97,6 +99,7 @@ export function ChatConnectionsStrip({
   hideWhenEmpty = false,
   variant = "rail",
   showResources = false,
+  emptyChips = null,
 }: ChatConnectionsStripProps) {
   const { serverStates } = useMcpCatalog();
   const openRunControlsWindow = useOpenRunControlsWindow();
@@ -176,7 +179,8 @@ export function ChatConnectionsStrip({
     ) : null;
 
   if (variant === "chips") {
-    if (connections.length === 0 || !conversationId) return null;
+    if (!conversationId) return null;
+    if (connections.length === 0) return <>{emptyChips}</>;
     // What was chosen is only spoken once the read ANSWERED: before that a
     // "+ Choose…" chip would claim nothing is chosen, and after a failed read
     // the chip says so and retries — never a count of 0 that is really an error.
