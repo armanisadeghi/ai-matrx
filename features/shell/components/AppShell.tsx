@@ -23,6 +23,7 @@ import GlassPortal from "@/features/shell/components/GlassPortal";
 import NavActiveSync from "@/features/shell/components/NavActiveSync";
 import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
+import FloatingClearanceSync from "@/features/shell/components/FloatingClearanceSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import { ShellChromeRouteSync } from "@/features/shell/components/ShellChromeMode";
 import { shellChromeAttributes } from "@/features/shell/constants/canvas-chrome-routes";
@@ -140,6 +141,7 @@ export default async function AppShell({
       <NavActiveSync />
       <MobileMenuPathSync />
       <VisualViewportSync />
+      <FloatingClearanceSync />
       <ShellSidebarCookieSync />
       <ShellChromeRouteSync />
       {/* Active-organization hydration is owned by the sync engine

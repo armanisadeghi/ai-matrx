@@ -213,6 +213,14 @@ export const CONVERTED = [
     keyShape: /^(broken-chain\|[^|]+\.tsx|route-clipper\|[^|]+\.tsx\|[^|]+\.tsx)$/,
   },
   {
+    // Accepted only by an inline `// ui-exception:` reason: all new, `<rule>|<file>`.
+    id: "floating-clearance",
+    cmd: "pnpm check:floating-clearance",
+    allowKeys: () => [],
+    keyShape: /^(hand-clearance|opt-out-without-reason)\|[^|]+\.tsx$/,
+    mayBeClean: true,
+  },
+  {
     // Accepted only by an inline `canonical-*-picker-exempt:` comment: all new, `<rule>|<file>`.
     id: "canonical-agent-model-pickers",
     cmd: "pnpm check:canonical-pickers",
