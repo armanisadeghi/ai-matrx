@@ -7,18 +7,21 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 import { toast } from "@/lib/toast";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A visible return path to invoices, payment methods and cancellation. */
 export function SubscriptionControls({ livemode }: { livemode: boolean }) {
   const userId = useAppSelector(selectUserId);
+  if (!userId) return null;
+  return <AccountSubscriptionControls key={`${userId}:${livemode}`} userId={userId} livemode={livemode} />;
+}
+
+function AccountSubscriptionControls({ userId, livemode }: { userId: string; livemode: boolean }) {
   const [hasCustomer, setHasCustomer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   useEffect(() => {
     let active = true;
-    setHasCustomer(false);
-    setError(false);
-    if (!userId) return;
     void createClient()
       .schema("billing")
       .from("customer")
@@ -64,9 +67,10 @@ export function SubscriptionControls({ livemode }: { livemode: boolean }) {
   }
   if (error)
     return (
-      <p role="alert" className="text-sm text-destructive">
+      <div role="alert" className="text-sm text-destructive">
         Billing could not be loaded. Refresh to try again.
-      </p>
+        <ErrorAlchemyMenu />
+      </div>
     );
   if (!hasCustomer) return null;
   return (
