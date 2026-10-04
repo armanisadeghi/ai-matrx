@@ -7,6 +7,7 @@
 // row (features/entitlements/catalog/format.ts). The action comes from
 // planAction(): sign-up, contact, or the tracked plan-checkout promise.
 
+import type { ReactNode } from "react";
 import { Check, Crown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
@@ -30,6 +31,8 @@ interface PlanCardProps {
   onSelect?: (plan: CatalogPlan, cycle: BillingCycle) => void;
   pending?: boolean;
   variant?: "card" | "compact";
+  /** Rendered in place of the plan name — the tier switch of a laddered slot. */
+  titleSlot?: ReactNode;
   className?: string;
 }
 
@@ -41,6 +44,7 @@ export function PlanCard({
   onSelect,
   pending = false,
   variant = "card",
+  titleSlot,
   className,
 }: PlanCardProps) {
   const price = planPrice(plan, cycle);
@@ -67,7 +71,7 @@ export function PlanCard({
 
       <div className={cn("flex flex-col gap-1 px-6 pt-6", variant === "compact" && "px-5 pt-5")}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
+          {titleSlot ?? <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>}
           {plan.badge && (
             <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
               <Crown className="h-3 w-3" strokeWidth={2.5} />
@@ -78,7 +82,11 @@ export function PlanCard({
         {seats && (
           <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">{seats}</span>
         )}
-        {plan.tagline && <p className="text-sm text-muted-foreground">{plan.tagline}</p>}
+        {plan.tagline && (
+          <p className={cn("text-sm text-muted-foreground", variant === "card" && "line-clamp-2 min-h-[2lh]")}>
+            {plan.tagline}
+          </p>
+        )}
       </div>
 
       <div className={cn("flex items-end gap-2 px-6 pt-5", variant === "compact" && "px-5 pt-4")}>
@@ -104,7 +112,9 @@ export function PlanCard({
             {price.kind === "free"
               ? "No card needed"
               : price.kind === "custom"
-                ? "Volume pricing and contracts"
+                ? plan.audience === "enterprise"
+                  ? "Volume pricing and contracts"
+                  : "Custom pricing"
                 : "Billed monthly"}
           </span>
         )}

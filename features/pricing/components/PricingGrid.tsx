@@ -3,7 +3,9 @@
 // features/pricing/components/PricingGrid.tsx
 //
 // THE plan ladder: every listed plan from billing.plan_catalog(), grouped
-// Personal (Free + personal plans) and Business (company + Enterprise). Used
+// Personal (Free + personal plans) and Business (company + Enterprise), at
+// most four cards per group — the fourth card steps up through every higher
+// plan (Plus → Max → Max Plus) with a switch in its title. Used
 // by the public /pricing page (seeded with the server read) and the demos.
 // The guest plan is never listed (listed_on_pricing = false).
 
@@ -11,7 +13,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BillingToggle } from "./BillingToggle";
+import { BillingToggle, PillSwitch } from "./BillingToggle";
 import { PlanCard } from "./PlanCard";
 import { useChoosePlan } from "./useChoosePlan";
 import { usePlanCatalog } from "@/features/entitlements/catalog/usePlanCatalog";
@@ -22,6 +24,9 @@ import {
 } from "@/features/entitlements/catalog/format";
 import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
 import { Spinner } from "@/components/ui/spinner";
+
+/** Cards per row on the pricing page; a group with more plans ladders its last card. */
+const VISIBLE_SLOTS = 4;
 
 interface PricingGridProps {
   /** A server read of the catalog — renders with no client fetch. */
@@ -47,6 +52,8 @@ export function PricingGrid({
   const searchParams = useSearchParams();
   const [cycle, setCycle] = useState<BillingCycle>(searchParams.get("cycle") === "annual" ? "annual" : initialCycle);
   const [groupId, setGroupId] = useState<PricingGroupId>(initialGroup);
+  /** Per laddered slot (keyed by its first plan): the plan the switch is on. */
+  const [ladderPick, setLadderPick] = useState<Record<string, string>>({});
 
   if (catalog.status === "error") {
     return (
@@ -67,51 +74,74 @@ export function PricingGrid({
   const groups = pricingGroups(catalog.plans);
   const group = groups.find((g) => g.id === groupId) ?? groups[0];
   const savings = maxAnnualSavingsPercent(catalog.plans.filter((p) => p.listedOnPricing));
-  const visiblePlans = group?.plans ?? [];
   const handleSelect = onSelect ?? choose;
+  const slots = planSlots(group?.plans ?? []);
 
   return (
-    <div className={cn("flex flex-col gap-8", className)}>
+    <div className={cn("flex flex-col gap-6", className)}>
       {showHeader && (
-        <div className="mx-auto flex flex-col items-center gap-4">
-          <BillingToggle value={cycle} onChange={setCycle} savingsPercent={savings} />
-          {groups.length > 1 && (
-            <div className="inline-flex flex-wrap justify-center gap-1 rounded-full border border-border/60 bg-card/40 p-1 text-sm">
-              {groups.map((g) => {
-                const active = g.id === group?.id;
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setGroupId(g.id)}
-                    className={cn(
-                      "rounded-full px-4 py-1.5 font-medium transition-colors",
-                      active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {g.label}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          {groups.length > 1 ? (
+            <PillSwitch
+              value={group?.id ?? groupId}
+              onChange={setGroupId}
+              options={groups.map((g) => ({ value: g.id, label: g.label }))}
+              aria-label="Plan type"
+            />
+          ) : (
+            <span />
           )}
+          <BillingToggle value={cycle} onChange={setCycle} savingsPercent={savings} />
         </div>
       )}
 
       <div
         className={cn(
           "grid gap-4",
-          visiblePlans.length === 1 && "mx-auto max-w-md",
-          visiblePlans.length === 2 && "mx-auto max-w-3xl sm:grid-cols-2",
-          visiblePlans.length === 3 && "mx-auto max-w-5xl sm:grid-cols-2 lg:grid-cols-3",
-          visiblePlans.length === 4 && "sm:grid-cols-2 lg:grid-cols-4",
-          visiblePlans.length >= 5 && "sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5",
+          slots.length === 1 && "mx-auto w-full max-w-md",
+          slots.length === 2 && "mx-auto w-full max-w-3xl sm:grid-cols-2",
+          slots.length === 3 && "mx-auto w-full max-w-5xl sm:grid-cols-2 lg:grid-cols-3",
+          slots.length >= 4 && "sm:grid-cols-2 lg:grid-cols-4",
         )}
       >
-        {visiblePlans.map((plan) => (
-          <PlanCard key={plan.planKey} plan={plan} cycle={cycle} signedIn={signedIn} pending={isPending} onSelect={handleSelect} />
-        ))}
+        {slots.map((slot) => {
+          const chosenKey = ladderPick[slot[0].planKey];
+          const plan = slot.find((p) => p.planKey === chosenKey) ?? slot[0];
+          return (
+            <PlanCard
+              key={slot[0].planKey}
+              plan={plan}
+              cycle={cycle}
+              signedIn={signedIn}
+              pending={isPending}
+              onSelect={handleSelect}
+              titleSlot={
+                slot.length > 1 ? (
+                  <PillSwitch
+                    value={plan.planKey}
+                    onChange={(key) => setLadderPick((prev) => ({ ...prev, [slot[0].planKey]: key }))}
+                    options={slot.map((p) => ({ value: p.planKey, label: p.name }))}
+                    aria-label={`${slot[0].name} level`}
+                    size="sm"
+                    equal={false}
+                    className="w-full"
+                  />
+                ) : undefined
+              }
+            />
+          );
+        })}
       </div>
     </div>
   );
+}
+
+/**
+ * A group shows at most VISIBLE_SLOTS cards. When it has more plans, the last
+ * slot becomes a ladder: its first plan by default, with a switch on the card
+ * to step up to every plan above it.
+ */
+function planSlots(plans: CatalogPlan[]): CatalogPlan[][] {
+  if (plans.length <= VISIBLE_SLOTS) return plans.map((p) => [p]);
+  return [...plans.slice(0, VISIBLE_SLOTS - 1).map((p) => [p]), plans.slice(VISIBLE_SLOTS - 1)];
 }

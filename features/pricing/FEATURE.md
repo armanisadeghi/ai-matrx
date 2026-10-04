@@ -21,8 +21,14 @@ usage-limit dialog, upgrade modal, industry upgrade, upgrade nudges).
   `billing.capability_limit` + `billing.product/price`) → the pledge strip.
 - The grid groups Personal (free + personal audiences) and Business (company +
   enterprise); the guest plan (`listed_on_pricing = false`) is never shown.
+- **At most four cards per group.** A group with more listed plans turns its
+  fourth card into a ladder: the card title is a switch over that plan and every
+  higher one (Personal: Plus · Max · Max Plus). The group switch and the billing
+  cycle share ONE control row (group left, cycle right).
 
 ## Change Log
 
+- **2026-10-04** — Four-card grid with a laddered fourth card; group and cycle
+  switches in one row (`PillSwitch`); Max Plus listed.
 - **2026-10-03** — Created. Plan surfaces moved off the hardcoded `data.ts` onto
   `billing.plan_catalog()`.
