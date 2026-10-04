@@ -1,6 +1,7 @@
 import { previewChatMessages, validateChatPreview, type ChatMessagesRequest } from "./service";
 
 const post = jest.fn();
+const organizationId = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 jest.mock("@/features/marketing/google/service", () => ({ postGoogleBackend: (...args: unknown[]) => post(...args) }));
 
 const request: ChatMessagesRequest = {
@@ -19,10 +20,10 @@ beforeEach(() => post.mockReset());
 
 it("sends exactly the selected query with organization in transport context", async () => {
   post.mockResolvedValue({ json: async () => page });
-  expect(await previewChatMessages(request, "org-review")).toEqual(page);
+  expect(await previewChatMessages(request, organizationId)).toEqual(page);
   expect(post).toHaveBeenCalledWith(
     "/google-workspace/chat/messages/preview", request,
-    "Google Chat messages could not load. Try again.", "org-review",
+    "Google Chat messages could not load. Try again.", organizationId,
   );
   expect(Object.keys(post.mock.calls[0][1]).sort()).toEqual([
     "connection_id", "end_time", "order_by", "page_size", "space_resource_name", "start_time",
@@ -31,7 +32,7 @@ it("sends exactly the selected query with organization in transport context", as
 
 it("sends the signed continuation only for a requested next page", async () => {
   post.mockResolvedValue({ json: async () => ({ ...page, continuation: null }) });
-  await previewChatMessages({ ...request, continuation: "signed-opaque-token" }, "org-review");
+  await previewChatMessages({ ...request, continuation: "signed-opaque-token" }, organizationId);
   expect(post.mock.calls[0][1]).toEqual({ ...request, continuation: "signed-opaque-token" });
 });
 
@@ -49,6 +50,6 @@ it.each([
   { ...request, start_time: request.end_time },
   { ...request, page_size: 1001 },
 ])("refuses invalid queries before transport", async (invalid) => {
-  await expect(previewChatMessages(invalid, "org-review")).rejects.toThrow("Check the space");
+  await expect(previewChatMessages(invalid, organizationId)).rejects.toThrow("Check the space");
   expect(post).not.toHaveBeenCalled();
 });

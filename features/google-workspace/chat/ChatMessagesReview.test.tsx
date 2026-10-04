@@ -42,7 +42,11 @@ describe("ChatMessagesReview", () => {
   };
   const change = (label: string, value: string) => act(() => {
     const node = field(label);
-    node.value = value;
+    const setter = Object.getOwnPropertyDescriptor(
+      node instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLSelectElement.prototype,
+      "value",
+    )?.set;
+    setter?.call(node, value);
     node.dispatchEvent(new Event("change", { bubbles: true }));
   });
   const click = async (name: string) => {
@@ -77,7 +81,7 @@ describe("ChatMessagesReview", () => {
     }, "org-clinic");
     expect(host.textContent).toContain("Intake queue handed off");
     expect(host.textContent).toContain("Other content omitted.");
-    expect(host.textContent).toContain("System messages omitted.");
+    expect(host.textContent).toContain("System messages and other content omitted");
   });
 
   it("uses exact continuation and exact failed request on retry", async () => {
@@ -101,6 +105,26 @@ describe("ChatMessagesReview", () => {
     await act(async () => resolve(result));
     expect(host.textContent).not.toContain("Intake queue handed off");
     expect(host.textContent).not.toContain("Next page");
+  });
+
+  it("drops a pending answer after the account changes", async () => {
+    let resolve!: (value: typeof result) => void;
+    preview.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(); fill(); await click("Read one page");
+    render({ ...connection, id: "another-personal-connection" });
+    await act(async () => resolve(result));
+    expect(host.textContent).not.toContain("Intake queue handed off");
+    expect(preview).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a pending answer after unmount", async () => {
+    let resolve!: (value: typeof result) => void;
+    preview.mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    render(); fill(); await click("Read one page");
+    act(() => root.unmount());
+    await act(async () => resolve(result));
+    expect(host.textContent).toBe("");
+    root = createRoot(host);
   });
 
   it("shows permission state without calling the preview", async () => {

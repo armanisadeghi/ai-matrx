@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
@@ -93,7 +94,7 @@ export function ChatMessagesReview({ connection, actorId, organizationId }: Prop
         </p>
       ) : (
         <>
-          <p className="mt-3 text-xs text-muted-foreground">Temporary text preview. No AI, save, or sync.</p>
+          <p className="mt-3 text-xs text-muted-foreground">Temporary text only · No AI, save or sync</p>
           <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
             <label className="min-w-0 text-xs">Space resource name
               <input className="mt-1 w-full min-w-0 rounded border bg-background p-2 text-sm" value={space}
@@ -127,10 +128,10 @@ export function ChatMessagesReview({ connection, actorId, organizationId }: Prop
             {failed ? <Button size="sm" variant="outline" disabled={busy} onClick={() => void read(failed)}>Retry</Button> : null}
           </div>
           {busy ? <p role="status" className="mt-3 text-sm">Reading messages…</p> : null}
-          {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
-          {page ? (
+          {error ? <ErrorNotice error={error} /> : null}
+          {!error && page ? (
             <div className="mt-4 min-w-0 space-y-3">
-              <p className="text-xs text-muted-foreground">System messages omitted. Other content omitted.</p>
+              <p className="text-xs text-muted-foreground">System messages and other content omitted</p>
               {page.messages.length === 0 ? <p role="status" className="text-sm">No messages in this page.</p> :
                 page.messages.map((message) => (
                   <article key={message.resource_name} className="min-w-0 rounded border p-3 text-sm">

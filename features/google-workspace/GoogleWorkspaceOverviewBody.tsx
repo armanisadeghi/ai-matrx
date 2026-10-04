@@ -322,7 +322,7 @@ function GoogleWorkspaceOverviewBodyContent({
             authorizationActionDisabled={authorizationActionDisabled}
           />
         )}
-        {capabilities.data?.some((capability) =>
+        {!capabilities.isLoading && !capabilities.isError && capabilities.data?.some((capability) =>
           capability.key === "chat_messages" &&
           capability.rollout_phase === "internal_test" && capability.eligible,
         ) ? (
