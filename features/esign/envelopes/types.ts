@@ -1,6 +1,7 @@
 // features/esign/envelopes/types.ts — the sender's view of an e-signature envelope.
 
 import type { ListScopeKind } from "@/lib/list-scope/types";
+import type { components } from "@ai-matrx/agents/generated/api-types";
 
 /** All = what I sent, was given, or must sign · Mine = what I sent. */
 export const ENVELOPE_LIST_SCOPES: ListScopeKind[] = ["all", "mine"];
@@ -66,7 +67,7 @@ export const SIGNER_STATUS_LABEL: Record<string, string> = {
 // ─── sending: recipients and placed fields ───────────────────────────────────────
 
 /** The four boxes a signer fills at signing, each from what they adopted (the frozen contract). */
-export type FieldKind = "signature" | "initials" | "date_signed" | "full_name";
+export type FieldKind = components["schemas"]["EsignFieldInput"]["kind"];
 
 export interface FieldKindSpec {
   kind: FieldKind;
@@ -114,16 +115,7 @@ export interface PlacedField {
 }
 
 /** A field as the send request carries it (indexes into `file_ids` and `signers`). */
-export interface EnvelopeFieldInput {
-  document_index: number;
-  signer_index: number;
-  kind: FieldKind;
-  page: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+export type EnvelopeFieldInput = components["schemas"]["EsignFieldInput"];
 
 /** Keep a box on its page: never smaller than a sliver, never past an edge. */
 export function clampBox(box: { x: number; y: number; w: number; h: number }) {

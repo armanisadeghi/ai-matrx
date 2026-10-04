@@ -138,6 +138,23 @@ export async function verifyEnvelope(dispatch: AppDispatch, envelopeId: string):
   );
 }
 
+/**
+ * The signed copy of each document of a completed envelope. The server makes any copy that is
+ * still missing, so this both reads and finishes the job; `not_completed` until the last signature.
+ */
+export async function requestSignedCopies(dispatch: AppDispatch, envelopeId: string): Promise<EnvelopeActAnswer> {
+  return read<EnvelopeActAnswer>(
+    await dispatch(
+      callApi({
+        path: "/esign/envelopes/{envelope_id}/signed-copy",
+        method: "POST",
+        pathParams: { envelope_id: envelopeId },
+        expectedErrorStatuses: [403, 409],
+      }),
+    ),
+  );
+}
+
 // ─── writes ────────────────────────────────────────────────────────────────────
 
 export async function sendEnvelope(dispatch: AppDispatch, body: SendBody): Promise<SendAnswer> {

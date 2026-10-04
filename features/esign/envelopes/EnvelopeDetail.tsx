@@ -48,6 +48,7 @@ import {
   EnvelopeRefusal,
   fetchEnvelope,
   remindEnvelope,
+  requestSignedCopies,
   resendToSigner,
   verifyEnvelope,
   voidEnvelope,
@@ -124,6 +125,8 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
   const [voidReason, setVoidReason] = useState("");
   const [resendFor, setResendFor] = useState<{ id: string; email: string; outsider: boolean } | null>(null);
   const [reload, setReload] = useState(0);
+  // document id → signed-copy file id, from the server's signed-copy door (it makes a missing one).
+  const [signedCopies, setSignedCopies] = useState<Record<string, string>>({});
   const [viewing, setViewing] = useState<{ fileId: string; name: string } | null>(null);
 
   useEffect(() => {
@@ -133,6 +136,19 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
         if (!live) return;
         setState(next);
         if (next && text(next.envelope, "status") === "completed") {
+          void requestSignedCopies(dispatch, envelopeId)
+            .then((answer) => {
+              if (!live || !answer.granted) return;
+              const copies: Record<string, string> = {};
+              const list: unknown[] = Array.isArray(answer.signed_copies) ? answer.signed_copies : [];
+              for (const c of list) {
+                const doc = text(asRecord(c), "document_id");
+                const file = text(asRecord(c), "file_id");
+                if (doc && file) copies[doc] = file;
+              }
+              setSignedCopies(copies);
+            })
+            .catch((err: unknown) => console.error("[esign] signed copy request failed", err));
           void verifyEnvelope(dispatch, envelopeId)
             .then((v) => live && setVerdict(v))
             .catch((err: unknown) => {
@@ -290,7 +306,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
           <Section title="Documents">
             {state.documents.map((d) => {
               const fileId = text(d, "content_file_id");
-              const signedCopy = text(asRecord(d.metadata), "signed_copy_file_id");
+              const signedCopy = signedCopies[String(d.id)] ?? text(asRecord(d.metadata), "signed_copy_file_id");
               return (
                 <div key={String(d.id)} className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2">
                   <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />

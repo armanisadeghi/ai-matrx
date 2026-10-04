@@ -29,7 +29,7 @@ import { formatFileSize } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 
 import { EnvelopeRefusal, sendEnvelope } from "./service";
-import type { PlacedField, Recipient } from "./types";
+import { fieldsForSend, type PlacedField, type Recipient } from "./types";
 import { RecipientPicker } from "./send/RecipientPicker";
 import { FieldPlacementCanvas } from "./send/FieldPlacementCanvas";
 
@@ -119,9 +119,16 @@ export function SendForSignature() {
         title: title.trim(),
         message: message.trim() || null,
         file_ids: documents.map((d) => d.fileId),
-        signers: recipients.map((r) => ({ full_name: r.fullName.trim(), email: r.email.trim() })),
+        // A picked member carries their user id: they sign as themself.
+        signers: recipients.map((r) => ({ full_name: r.fullName.trim(), email: r.email.trim(), user_id: r.userId })),
         signing_order: order,
         expires_in_days: Number(expiry),
+        // The boxes, indexed against exactly the documents and signers sent.
+        fields: fieldsForSend(
+          fields,
+          documents.map((d) => d.fileId),
+          recipients.map((r) => r.key),
+        ),
       });
       startNavigation(() => router.push(`/esign/${answer.envelope_id}`));
     } catch (err) {
