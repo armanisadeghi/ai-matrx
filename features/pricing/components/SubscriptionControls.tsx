@@ -19,28 +19,61 @@ export function SubscriptionControls({ livemode }: { livemode: boolean }) {
     setHasCustomer(false);
     setError(false);
     if (!userId) return;
-    void createClient().schema("billing").from("customer").select("id")
-      .eq("beneficiary_user_id", userId).eq("livemode", livemode).maybeSingle()
+    void createClient()
+      .schema("billing")
+      .from("customer")
+      .select("id")
+      .eq("beneficiary_user_id", userId)
+      .eq("livemode", livemode)
+      .maybeSingle()
       .then(({ data, error: readError }) => {
-        if (active) { setHasCustomer(!!data); setError(!!readError); }
+        if (active) {
+          setHasCustomer(!!data);
+          setError(!!readError);
+        }
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [userId, livemode]);
 
   async function manage() {
     setBusy(true);
     try {
-      const response = await fetchWithOrganization("/api/stripe/portal", { method: "POST" });
+      const response = await fetchWithOrganization("/api/stripe/portal", {
+        method: "POST",
+      });
       const body: unknown = await response.json();
-      if (!response.ok || !body || typeof body !== "object" || !("url" in body) || typeof body.url !== "string") {
+      if (
+        !response.ok ||
+        !body ||
+        typeof body !== "object" ||
+        !("url" in body) ||
+        typeof body.url !== "string"
+      ) {
         throw new Error("Couldn't open billing. Please try again.");
       }
       window.location.assign(body.url);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't open billing.");
-    } finally { setBusy(false); }
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't open billing.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
-  if (error) return <p role="alert" className="text-sm text-destructive">Billing could not be loaded. Refresh to try again.</p>;
+  if (error)
+    return (
+      <p role="alert" className="text-sm text-destructive">
+        Billing could not be loaded. Refresh to try again.
+      </p>
+    );
   if (!hasCustomer) return null;
-  return <div className="flex justify-center"><Button variant="outline" disabled={busy} onClick={manage}>{busy ? "Opening billing…" : "Manage subscription"}</Button></div>;
+  return (
+    <div className="flex justify-center">
+      <Button variant="outline" disabled={busy} onClick={manage}>
+        {busy ? "Opening billing…" : "Manage subscription"}
+      </Button>
+    </div>
+  );
 }

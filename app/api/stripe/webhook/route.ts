@@ -51,10 +51,15 @@ export async function POST(request: NextRequest) {
       // Old handlers acknowledged failed writes. A receipt without its
       // subscription is not fulfilment; replay it through the repaired writer.
       const object = event.data.object;
-      const subscription = object.object === "subscription" ? object.id
-        : object.object === "checkout.session" ? object.subscription : null;
-      const id = typeof subscription === "string" ? subscription : subscription?.id;
-      if (!id || await hasSyncedSubscription(id, event.livemode)) {
+      const subscription =
+        object.object === "subscription"
+          ? object.id
+          : object.object === "checkout.session"
+            ? object.subscription
+            : null;
+      const id =
+        typeof subscription === "string" ? subscription : subscription?.id;
+      if (!id || (await hasSyncedSubscription(id, event.livemode))) {
         return NextResponse.json({ received: true, deduped: true });
       }
     }
@@ -62,10 +67,18 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.trial_will_end":
-        await syncSubscription(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), event.created);
+        await syncSubscription(
+          await stripe.subscriptions.retrieve(
+            (event.data.object as Stripe.Subscription).id,
+          ),
+          event.created,
+        );
         break;
       case "customer.subscription.deleted":
-        await markSubscriptionCanceled(event.data.object as Stripe.Subscription, event.created);
+        await markSubscriptionCanceled(
+          event.data.object as Stripe.Subscription,
+          event.created,
+        );
         break;
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;

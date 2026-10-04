@@ -42,13 +42,26 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient();
     const origin = requestOrigin(request.headers) ?? request.nextUrl.origin;
     const livemode = requiredStripeMode() === "live";
-    const { data: personal, error: personalError } = await admin.schema("billing").from("customer")
-      .select("stripe_customer_id").eq("beneficiary_user_id", user.id).eq("livemode", livemode).maybeSingle();
+    const { data: personal, error: personalError } = await admin
+      .schema("billing")
+      .from("customer")
+      .select("stripe_customer_id")
+      .eq("beneficiary_user_id", user.id)
+      .eq("livemode", livemode)
+      .maybeSingle();
     if (personalError) throw personalError;
     const body: unknown = await request.json().catch(() => null);
-    const organizationPortal = body && typeof body === "object" && "scope" in body && body.scope === "organization";
+    const organizationPortal =
+      body &&
+      typeof body === "object" &&
+      "scope" in body &&
+      body.scope === "organization";
     if (personal && !organizationPortal) {
-      const session = await openSubscriptionPortal(personal.stripe_customer_id, true, `${origin}/pricing`);
+      const session = await openSubscriptionPortal(
+        personal.stripe_customer_id,
+        true,
+        `${origin}/pricing`,
+      );
       return NextResponse.json({ url: session.url });
     }
 
@@ -74,14 +87,28 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    const { data: membership, error: membershipError } = await supabase.schema("iam").from("organization_member")
-      .select("user_id,role").eq("organization_id", owner.value).eq("user_id", user.id).maybeSingle();
+    const { data: membership, error: membershipError } = await supabase
+      .schema("iam")
+      .from("organization_member")
+      .select("user_id,role")
+      .eq("organization_id", owner.value)
+      .eq("user_id", user.id)
+      .maybeSingle();
     if (membershipError) throw membershipError;
-    if (!membership || !["owner", "admin"].includes(membership.role ?? "")) return NextResponse.json({ error: "An organization owner or admin must manage its subscription." }, { status: 403 });
+    if (!membership || !["owner", "admin"].includes(membership.role ?? ""))
+      return NextResponse.json(
+        {
+          error: "An organization owner or admin must manage its subscription.",
+        },
+        { status: 403 },
+      );
     const { data, error } = await ownerEq(
       admin.schema("billing").from("customer").select("*"),
       owner,
-    ).eq("livemode", livemode).is("beneficiary_user_id", null).maybeSingle();
+    )
+      .eq("livemode", livemode)
+      .is("beneficiary_user_id", null)
+      .maybeSingle();
     if (error) throw error;
     const stripeCustomerId = asRowBag(data)?.["stripe_customer_id"];
     if (typeof stripeCustomerId !== "string" || !stripeCustomerId) {
@@ -91,7 +118,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await openSubscriptionPortal(stripeCustomerId, false, `${origin}/pricing`);
+    const session = await openSubscriptionPortal(
+      stripeCustomerId,
+      false,
+      `${origin}/pricing`,
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

@@ -17,7 +17,7 @@ try {
   assert.ok(subscription, 'Complete an admin sandbox Entry purchase first');
   const effective = async () => (await db.query('select billing.user_effective_plan($1) plan', [user])).rows[0].plan;
   const original = await effective();
-  const membership = (await db.query('select * from iam.organization_member where user_id=$1 limit 1', [user])).rows[0];
+  const membership = (await db.query("select * from iam.memberships where user_id=$1 and container_type='organization' and status='active' and deleted_at is null limit 1", [user])).rows[0];
   assert.ok(membership, 'Admin needs an existing organization for the authenticated snapshot');
   await db.query("update billing.subscription set livemode=true,status='active',current_period_end=now()+interval '1 month' where id=$1", [subscription]);
   assert.equal(await effective(), original, 'A less generous purchase must preserve the existing grant');
@@ -36,7 +36,7 @@ try {
   const capability = (await db.query("select billing.resolve_capability($1,'marketing.automation_run',$2) value", [user,resourceOrg])).rows[0].value;
   const planLimit = (await db.query("select limit_value from billing.plan_limit where plan_id='personal-entry' and capability='marketing.automation_run' and period='month'")).rows[0].limit_value;
   assert.equal(Number(capability.limit), Number(planLimit), 'The actual capability RPC must use the purchased allowance');
-  await db.query('insert into iam.organization_member select * from jsonb_populate_record(null::iam.organization_member,$1::jsonb)', [JSON.stringify(membership)]);
+  await db.query('insert into iam.memberships select * from jsonb_populate_record(null::iam.memberships,$1::jsonb)', [JSON.stringify(membership)]);
   const snapshot = (await db.query('select billing.entitlement_snapshot($1) value', [membership.organization_id])).rows[0].value;
   assert.equal(snapshot.tier, 'premium', 'The UI snapshot must recognize the personal purchase');
   await db.query('delete from iam.organization_member where user_id=$1', [user]);

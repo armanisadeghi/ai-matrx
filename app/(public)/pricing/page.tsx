@@ -42,7 +42,10 @@ const PLEDGE = [
 ];
 
 export default async function PricingPage() {
-  const [pricing, catalog] = await Promise.all([loadEducationPricing(), readPlanCatalogServer()]);
+  const [pricing, catalog] = await Promise.all([
+    loadEducationPricing(),
+    readPlanCatalogServer(),
+  ]);
 
   return (
     <div className="h-full overflow-y-auto bg-textured">
@@ -63,7 +66,10 @@ export default async function PricingPage() {
           aria-labelledby="pricing-education"
           className="flex flex-col gap-6 border-t border-border/60 pt-10"
         >
-          <h2 id="pricing-education" className="text-xl font-semibold tracking-tight">
+          <h2
+            id="pricing-education"
+            className="text-xl font-semibold tracking-tight"
+          >
             Studying? Education plans
           </h2>
           <EducationPricing pricing={pricing} />
@@ -74,7 +80,10 @@ export default async function PricingPage() {
           className="flex flex-col gap-6 border-t border-border/60 pt-10"
         >
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <h2 id="pricing-pledge" className="text-xl font-semibold tracking-tight">
+            <h2
+              id="pricing-pledge"
+              className="text-xl font-semibold tracking-tight"
+            >
               Priced to earn trust, not to trap you
             </h2>
             {/* Two siblings, one style: neither reads as primary or disabled. */}

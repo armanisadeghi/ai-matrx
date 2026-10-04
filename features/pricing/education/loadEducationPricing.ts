@@ -55,21 +55,52 @@ const HEADLINE_FREE: ReadonlyArray<{
   period: "month" | "day";
   unit: string;
 }> = [
-  { capability: "education.ingest_document", period: "month", unit: "documents to study from" },
-  { capability: "education.generate_cards", period: "month", unit: "flashcard decks" },
+  {
+    capability: "education.ingest_document",
+    period: "month",
+    unit: "documents to study from",
+  },
+  {
+    capability: "education.generate_cards",
+    period: "month",
+    unit: "flashcard decks",
+  },
   { capability: "education.quiz_generate", period: "month", unit: "quizzes" },
-  { capability: "education.mindmap_generate", period: "month", unit: "mind maps" },
-  { capability: "education.notes_generate", period: "month", unit: "sets of smart notes" },
-  { capability: "education.audio_generate", period: "month", unit: "study audio sessions" },
-  { capability: "education.tutor_message", period: "day", unit: "AI tutor messages" },
-  { capability: "education.live_grade", period: "day", unit: "live AI gradings" },
+  {
+    capability: "education.mindmap_generate",
+    period: "month",
+    unit: "mind maps",
+  },
+  {
+    capability: "education.notes_generate",
+    period: "month",
+    unit: "sets of smart notes",
+  },
+  {
+    capability: "education.audio_generate",
+    period: "month",
+    unit: "study audio sessions",
+  },
+  {
+    capability: "education.tutor_message",
+    period: "day",
+    unit: "AI tutor messages",
+  },
+  {
+    capability: "education.live_grade",
+    period: "day",
+    unit: "live AI gradings",
+  },
 ];
 
 // PRELAUNCH_COMPLIMENTARY_PREMIUM lives in ./pricingPolicy.ts — a plain module,
 // because the client card needs it and this loader is server-only.
 
 // The capability whose rolling 5-hour cap stands for the Free tier's pacing.
-const PACING = { capability: "education.generate_cards" as Capability, unit: "flashcard decks" };
+const PACING = {
+  capability: "education.generate_cards" as Capability,
+  unit: "flashcard decks",
+};
 
 /**
  * Every read here is BOUNDED. This loader runs inside the server render of a
@@ -109,14 +140,30 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
     "billing.plan_catalog",
     supabase.schema("billing").rpc("plan_catalog"),
   );
-  if (catalogError) throw new Error("The pricing catalog could not be loaded: " + catalogError.message);
+  if (catalogError)
+    throw new Error(
+      "The pricing catalog could not be loaded: " + catalogError.message,
+    );
   const entry = parsePlanCatalog(catalog)
-    .filter(p => p.audience === "personal" && p.tier === "premium" && p.monthlyCents != null && p.monthlyCents > 0)
+    .filter(
+      (p) =>
+        p.audience === "personal" &&
+        p.tier === "premium" &&
+        p.monthlyCents != null &&
+        p.monthlyCents > 0,
+    )
     .sort((a, b) => a.monthlyCents! - b.monthlyCents!)[0];
-  const premium: PremiumPlan | null = entry && entry.monthlyCents != null ? {
-    planKey: entry.planKey, productName: entry.name, description: entry.tagline,
-    amountCents: entry.monthlyCents, currency: "usd", interval: "month",
-  } : null;
+  const premium: PremiumPlan | null =
+    entry && entry.monthlyCents != null
+      ? {
+          planKey: entry.planKey,
+          productName: entry.name,
+          description: entry.tagline,
+          amountCents: entry.monthlyCents,
+          currency: "usd",
+          interval: "month",
+        }
+      : null;
 
   // --- Free-tier headline caps (month + day windows) + 5-hour pacing ---------
   const { data: limits, error: limitsError } = await bounded(
@@ -151,7 +198,9 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
   const freeHighlights: FreeHighlight[] = HEADLINE_FREE.flatMap((h) => {
     const limit = limitByCapPeriod.get(`${h.capability}:${h.period}`);
     if (limit == null) return [];
-    return [{ capability: h.capability, unit: h.unit, limit, period: h.period }];
+    return [
+      { capability: h.capability, unit: h.unit, limit, period: h.period },
+    ];
   });
 
   const pacingLimit = limitByCapPeriod.get(`${PACING.capability}:rolling_5h`);

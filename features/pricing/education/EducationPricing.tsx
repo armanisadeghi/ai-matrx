@@ -106,7 +106,10 @@ function PlanLabel({
         {name}
       </span>
       {badge ? (
-        <Badge variant="outline" className="gap-1 border-primary/40 text-xs font-medium text-primary">
+        <Badge
+          variant="outline"
+          className="gap-1 border-primary/40 text-xs font-medium text-primary"
+        >
           <Check className="h-3 w-3" />
           {badge}
         </Badge>
@@ -115,14 +118,26 @@ function PlanLabel({
   );
 }
 
-function Line({ icon: Icon, children, muted }: {
+function Line({
+  icon: Icon,
+  children,
+  muted,
+}: {
   icon: typeof Check;
   children: ReactNode;
   muted?: boolean;
 }) {
   return (
-    <li className={cn("flex items-start gap-2.5 text-sm", muted && "text-muted-foreground")}>
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={2.25} />
+    <li
+      className={cn(
+        "flex items-start gap-2.5 text-sm",
+        muted && "text-muted-foreground",
+      )}
+    >
+      <Icon
+        className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+        strokeWidth={2.25}
+      />
       <span>{children}</span>
     </li>
   );
@@ -166,7 +181,10 @@ export function EducationPricing({
       const res = await fetchWithOrganization("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planKey: pricing.premium.planKey, cycle: "monthly" }),
+        body: JSON.stringify({
+          planKey: pricing.premium.planKey,
+          cycle: "monthly",
+        }),
       });
       if (res.status === 401) {
         router.push(loginHref);
@@ -212,13 +230,18 @@ export function EducationPricing({
       >
         {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {premium ? "Upgrade to Premium" : "Not available yet"}
-        {premium && !checkingOut ? <ArrowRight className="h-3.5 w-3.5" /> : null}
+        {premium && !checkingOut ? (
+          <ArrowRight className="h-3.5 w-3.5" />
+        ) : null}
       </Button>
     );
   } else {
     premiumAction = (
       <Button asChild size="lg" className={CTA}>
-        <Link href={PRELAUNCH_COMPLIMENTARY_PREMIUM ? signUpHref : loginHref} data-tap-target>
+        <Link
+          href={PRELAUNCH_COMPLIMENTARY_PREMIUM ? signUpHref : loginHref}
+          data-tap-target
+        >
           {PRELAUNCH_COMPLIMENTARY_PREMIUM ? (
             <>
               <Gift className="h-4 w-4" />
@@ -255,10 +278,18 @@ export function EducationPricing({
           <div className="flex flex-col gap-1">
             <PlanLabel
               name="Free"
-              badge={isFreeMember ? "Your plan" : isPremium ? "Included in your plan" : undefined}
+              badge={
+                isFreeMember
+                  ? "Your plan"
+                  : isPremium
+                    ? "Included in your plan"
+                    : undefined
+              }
             />
             <div className="flex items-baseline gap-1.5">
-              <span className="text-4xl font-semibold tracking-tight tabular-nums">$0</span>
+              <span className="text-4xl font-semibold tracking-tight tabular-nums">
+                $0
+              </span>
               <span className="text-sm text-muted-foreground">forever</span>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -266,18 +297,25 @@ export function EducationPricing({
             </p>
           </div>
 
-          {isPremium ? <div aria-hidden className="hidden lg:block" /> : freeAction}
+          {isPremium ? (
+            <div aria-hidden className="hidden lg:block" />
+          ) : (
+            freeAction
+          )}
 
           <ul className="flex flex-col gap-2.5">
             {pricing.freeHighlights.map((h) => (
               <Line key={`${h.capability}:${h.period}`} icon={Check}>
-                <span className="font-medium tabular-nums">{h.limit}</span> {h.unit} / {h.period}
+                <span className="font-medium tabular-nums">{h.limit}</span>{" "}
+                {h.unit} / {h.period}
               </Line>
             ))}
             {pricing.freePacing ? (
               <Line icon={Check}>
                 Paced per 5 hours — up to{" "}
-                <span className="font-medium tabular-nums">{pricing.freePacing.limit}</span>{" "}
+                <span className="font-medium tabular-nums">
+                  {pricing.freePacing.limit}
+                </span>{" "}
                 {pricing.freePacing.unit} in any 5-hour window
               </Line>
             ) : null}
@@ -300,19 +338,30 @@ export function EducationPricing({
             <PlanLabel
               name="Premium"
               emphasis
-              badge={isPremium ? (isComplimentary ? "Your plan · complimentary" : "Your plan") : undefined}
+              badge={
+                isPremium
+                  ? isComplimentary
+                    ? "Your plan · complimentary"
+                    : "Your plan"
+                  : undefined
+              }
             />
-            {isComplimentary || (!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM) ? (
+            {isComplimentary ||
+            (!isAuthenticated && PRELAUNCH_COMPLIMENTARY_PREMIUM) ? (
               <div className="text-4xl font-semibold tracking-tight">$0</div>
             ) : premium ? (
               <div className="flex items-baseline gap-1.5">
                 <span className="text-4xl font-semibold tracking-tight tabular-nums">
                   {formatPrice(premium.amountCents, premium.currency)}
                 </span>
-                <span className="text-sm text-muted-foreground">/ {premium.interval}</span>
+                <span className="text-sm text-muted-foreground">
+                  / {premium.interval}
+                </span>
               </div>
             ) : (
-              <div className="text-4xl font-semibold tracking-tight">Coming soon</div>
+              <div className="text-4xl font-semibold tracking-tight">
+                Coming soon
+              </div>
             )}
             <p className="text-sm text-muted-foreground">
               {isComplimentary
@@ -343,7 +392,9 @@ export function EducationPricing({
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/60 px-6 py-4 lg:flex-row lg:items-center lg:gap-6 lg:px-8">
-        <span className="shrink-0 text-sm font-medium">Every plan includes</span>
+        <span className="shrink-0 text-sm font-medium">
+          Every plan includes
+        </span>
         <ul className="grid flex-1 gap-2 sm:grid-cols-2 lg:gap-x-6">
           {EVERY_PLAN.map((line) => (
             <Line key={line} icon={Check} muted>
