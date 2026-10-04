@@ -168,7 +168,7 @@ export async function setPlanLimit(
     p_capability: capability,
     p_period: period as MeterPeriod,
     // NULL is a real, supported value here — it is how a plan is marked
-    // unlimited (enterprise). The type generator renders every SQL argument as
+    // unlimited (never Enterprise, which has no plan rows). The type generator renders every SQL argument as
     // non-nullable, which it is not, so this cast is the generator's gap and
     // not a lie about the contract.
     p_limit_value: limitValue as number,

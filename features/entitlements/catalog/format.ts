@@ -68,7 +68,7 @@ const WINDOW_ORDER: PlanLimitPeriod[] = ["month", "week", "day", "rolling_5h", "
 export interface PointsWindow {
   period: PlanLimitPeriod;
   label: string;
-  /** `null` = unlimited / custom. */
+  /** `null` = unlimited (never Enterprise: custom per organization). */
   limit: number | null;
 }
 

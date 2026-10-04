@@ -21,7 +21,7 @@ export type PlanLimitPeriod =
 export interface CatalogLimit {
   capability: string;
   period: PlanLimitPeriod;
-  /** `null` = unlimited, or custom (enterprise). */
+  /** `null` = unlimited, or custom (Enterprise has no plan limits; entered per organization). */
   limit: number | null;
 }
 

@@ -72,6 +72,7 @@ row (~1,800) and a bare call stopped at 1000, showing the rest as "default".
 - 🚨 **Blank is UNLIMITED. `0` is "not included at all."** They are different
   facts and must never render the same way. A plan silently losing a capability
   because someone read a blank as a zero is the failure mode.
+- 🚨 **Enterprise is custom per organization and never unlimited.** The Enterprise plan has no plan rows; its numbers are `billing.account_addon` rows (source `enterprise_custom`) entered per organization, and members inherit them as their own allowance. Never leave an Enterprise number blank.
 - 🚨 **A money dimension is stored in micro-dollars** (1 USD = 1,000,000),
   because `limit_value` is an integer and provider costs run to fractions of a
   cent. The admin enters dollars; the conversion lives in `types.ts` beside

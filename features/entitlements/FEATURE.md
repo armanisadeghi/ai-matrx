@@ -429,6 +429,7 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
 
 ## Invariants
 
+- 🚨 **Enterprise is custom per organization and never unlimited.** The Enterprise plan has no `billing.plan_limit` rows; admin enters each number per organization as `billing.account_addon` (source `enterprise_custom`), `billing.user_effective_plan` / `billing._points_usage_state` pass them to each member (usage counted per person), and an Enterprise organization with no custom values gives members their normal plan. A `null` limit is never an Enterprise value.
 - 🚨 **CORE PRACTICE IS NEVER METERED (D-5).** No capability may meter or tier-gate
   studying, reviewing, recording an attempt, opening a deck, or running a study session in
   any mode. Guarded by `__tests__/core-practice-never-metered.test.ts` over a vocabulary

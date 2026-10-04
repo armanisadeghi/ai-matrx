@@ -5,6 +5,7 @@ usage-limit dialog, upgrade modal, industry upgrade, upgrade nudges).
 
 ## Rules
 
+- **Enterprise is never presented as Unlimited.** It has no catalog limits; its numbers are entered per organization in admin.
 - **No plan name, price, discount, trial length, points amount or limit is
   written here.** Every plan figure comes from `billing.plan_catalog()` through
   `features/entitlements/catalog/` (reader, formatters, plan action) — see
