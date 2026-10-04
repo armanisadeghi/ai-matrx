@@ -217,7 +217,7 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor, read, query, sour
         read={read}
         query={query}
         pageSizeOptions={HR_TIME_PAGE_SIZES}
-        coverage={sourceTotal === undefined ? undefined : { answeredBy: "client", noun: "record", total: sourceTotal, cap: rows.length }}
+        coverage={sourceTotal === undefined ? undefined : { answeredBy: "client", noun: "record", total: sourceTotal }}
         zebra
         searchText={(row) => `${row.employeeDisplayName} ${row.state} ${row.reasonNote ?? ""}`}
         toolbar={{ search: true, searchPlaceholder: "Search overtime requests…" }}

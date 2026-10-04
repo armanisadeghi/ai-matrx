@@ -186,7 +186,7 @@ export function PayPeriodsTable({ rows, isLoading, hrefFor, read, query, sourceT
       read={read}
       query={query}
       pageSizeOptions={HR_TIME_PAGE_SIZES}
-      coverage={sourceTotal === undefined ? undefined : { answeredBy: "client", noun: "record", total: sourceTotal, cap: rows.length }}
+      coverage={sourceTotal === undefined ? undefined : { answeredBy: "client", noun: "record", total: sourceTotal }}
       zebra
       searchText={(row) =>
         `${row.payGroupName} ${row.periodStartOn} ${row.periodEndOn} ${row.state}`
