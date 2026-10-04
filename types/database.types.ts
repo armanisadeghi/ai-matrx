@@ -17660,6 +17660,7 @@ export type Database = {
           organization_id: string
           reply_to_id: string | null
           sender_id: string
+          soft_expires_at: string | null
           status: string | null
           updated_at: string
           updated_by: string | null
@@ -17685,6 +17686,7 @@ export type Database = {
           organization_id: string
           reply_to_id?: string | null
           sender_id: string
+          soft_expires_at?: string | null
           status?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -17710,6 +17712,7 @@ export type Database = {
           organization_id?: string
           reply_to_id?: string | null
           sender_id?: string
+          soft_expires_at?: string | null
           status?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -20598,6 +20601,15 @@ export type Database = {
           session_id: string
         }[]
       }
+      lapse_superseded_notices: {
+        Args: {
+          p_event_keys: Json
+          p_recipient_user_id: string
+          p_target_id: string
+          p_target_kind: string
+        }
+        Returns: number
+      }
       mark_my_notifications_read: { Args: never; Returns: number }
       mark_notification_read: {
         Args: { p_channel: string; p_notification_id: string }
@@ -21580,6 +21592,40 @@ export type Database = {
           target_kind: string
         }[]
       }
+      notice_lapsed: { Args: { p_metadata: Json }; Returns: boolean }
+      notification_pair_channel_list: {
+        Args: {
+          p_channels: string[]
+          p_event_key: string
+          p_organization_id: string
+          p_recipient_user_id: string
+        }
+        Returns: string[]
+      }
+      notification_pair_channels: {
+        Args: {
+          p_channels: Json
+          p_event_key: string
+          p_honor_person?: boolean
+          p_organization_id: string
+          p_recipient_user_id: string
+        }
+        Returns: Json
+      }
+      notification_paired_dm_gaps: {
+        Args: { p_since?: string }
+        Returns: {
+          dm_missing: number
+          dm_not_delivered: number
+          emails_succeeded: number
+          event_key: string
+          example_notification_id: string
+        }[]
+      }
+      notification_person_dm_choice: {
+        Args: { p_event_key: string; p_organization_id: string; p_user: string }
+        Returns: boolean
+      }
       notification_user_channels: {
         Args: {
           p_base: Json
@@ -21590,21 +21636,38 @@ export type Database = {
         }
         Returns: Json
       }
-      notify_from_sql: {
-        Args: {
-          p_dedupe_key: string
-          p_deep_link: string
-          p_event_key: string
-          p_organization_id: string
-          p_payload: Json
-          p_recipient_label: string
-          p_recipient_user_id: string
-          p_target_id: string
-          p_target_kind: string
-          p_to_address: string
-        }
-        Returns: Json
-      }
+      notify_from_sql:
+        | {
+            Args: {
+              p_dedupe_key: string
+              p_deep_link: string
+              p_event_key: string
+              p_organization_id: string
+              p_payload: Json
+              p_recipient_label: string
+              p_recipient_user_id: string
+              p_target_id: string
+              p_target_kind: string
+              p_to_address: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_dedupe_key: string
+              p_deep_link: string
+              p_event_key: string
+              p_options: Json
+              p_organization_id: string
+              p_payload: Json
+              p_recipient_label: string
+              p_recipient_user_id: string
+              p_target_id: string
+              p_target_kind: string
+              p_to_address: string
+            }
+            Returns: Json
+          }
       person_notification_caps: {
         Args: {
           p_channel?: string
@@ -99904,6 +99967,10 @@ export type Database = {
           participants: Json
           unread_count: number
         }[]
+      }
+      get_dm_pending_soft_expiries: {
+        Args: { p_conversation_ids: string[] }
+        Returns: Json
       }
       get_dm_unread_count: {
         Args: { p_conversation_id: string; p_user_id: string }

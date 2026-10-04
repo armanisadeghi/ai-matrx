@@ -33754,6 +33754,10 @@ export type ChatDatabase = {
           unread_count: number
         }[]
       }
+      get_dm_pending_soft_expiries: {
+        Args: { p_conversation_ids: string[] }
+        Returns: Json
+      }
       get_dm_unread_count: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: number
