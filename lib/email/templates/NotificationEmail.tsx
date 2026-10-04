@@ -173,64 +173,6 @@ export function FeedbackAssignedEmail({
   );
 }
 
-// ─── Due Date Reminder ──────────────────────────────────────────────────────
-
-interface DueDateReminderEmailProps {
-  taskTitle: string;
-  dueDate: string;
-  taskUrl: string;
-  urgency: "upcoming" | "due_today" | "overdue";
-}
-
-const urgencyConfig = {
-  upcoming: { label: "Due Soon", color: "#3b82f6", bg: "#eff6ff" },
-  due_today: { label: "Due Today", color: "#f59e0b", bg: "#fffbeb" },
-  overdue: { label: "Overdue", color: "#ef4444", bg: "#fef2f2" },
-};
-
-export function DueDateReminderEmail({
-  taskTitle,
-  dueDate,
-  taskUrl,
-  urgency,
-}: DueDateReminderEmailProps) {
-  const config = urgencyConfig[urgency];
-
-  return (
-    <BaseLayout preview={`${config.label}: ${taskTitle}`}>
-      <Section style={{ marginBottom: "16px" }}>
-        <Text
-          style={{
-            display: "inline-block" as const,
-            backgroundColor: config.bg,
-            color: config.color,
-            borderRadius: "9999px",
-            padding: "4px 12px",
-            fontSize: "13px",
-            fontWeight: "600" as const,
-            margin: "0",
-          }}
-        >
-          {config.label}
-        </Text>
-      </Section>
-
-      <Heading style={heading}>Task Reminder</Heading>
-
-      <Section style={card}>
-        <Text style={cardTitle}>{taskTitle}</Text>
-        <Text style={{ ...cardBody, color: config.color }}>Due: {dueDate}</Text>
-      </Section>
-
-      <Section style={buttonSection}>
-        <Button href={taskUrl} style={button}>
-          View Task
-        </Button>
-      </Section>
-    </BaseLayout>
-  );
-}
-
 // ─── Shared Styles ──────────────────────────────────────────────────────────
 
 const heading = {

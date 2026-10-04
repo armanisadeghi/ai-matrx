@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { projectsDb } from "@/utils/supabase/projectsDb";
-import { sendDueDateReminderEmail } from "@/lib/email/notificationService";
+import { enqueueDueReminderEmail } from "@/features/tasks/services/dueReminderOutbox";
 import { sendDm } from "@/lib/services/system-dm";
 
 /**
@@ -45,21 +45,23 @@ export async function GET(request: Request) {
 
     const supabase = createAdminClient();
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const dayAfterTomorrow = new Date(today);
-    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    dayAfterTomorrow.setUTCDate(dayAfterTomorrow.getUTCDate() + 2);
 
     const results: {
       processed: number;
-      sent: number;
+      queued: number;
+      duplicates: number;
       skipped: number;
       errors: number;
       dmsSent?: number;
     } = {
       processed: 0,
-      sent: 0,
+      queued: 0,
+      duplicates: 0,
       skipped: 0,
       errors: 0,
     };
@@ -125,7 +127,8 @@ export async function GET(request: Request) {
     // Volume-aware: at most 3 reminder emails per user per run — a flooded
     // inbox trains users to ignore every reminder.
     const PER_USER_CAP = 3;
-    const perUserSent = new Map<string, number>();
+    const perUserQueued = new Map<string, number>();
+    const reminderDay = today.toISOString().slice(0, 10);
 
     // A digest is scoped to one recipient AND one organization. Putting tasks
     // from several organizations in the first task's DM discloses their titles
@@ -173,38 +176,25 @@ export async function GET(request: Request) {
       organizations.set(task.organization_id, bucket);
       perUserTasks.set(notifyUserId, organizations);
 
-      if ((perUserSent.get(notifyUserId) ?? 0) >= PER_USER_CAP) {
+      if ((perUserQueued.get(notifyUserId) ?? 0) >= PER_USER_CAP) {
         results.skipped++;
         continue;
       }
 
       try {
-        const result = await sendDueDateReminderEmail({
-          userId: notifyUserId,
-          organizationId: task.organization_id,
-          taskTitle: task.title,
-          taskId: task.id,
-          dueDate: dueDate,
-          urgency,
-        });
-
-        if (result.success) {
-          if (result.skipped) {
-            results.skipped++;
-          } else {
-            results.sent++;
-            perUserSent.set(
-              notifyUserId,
-              (perUserSent.get(notifyUserId) ?? 0) + 1,
-            );
-          }
+        const result = await enqueueDueReminderEmail(supabase, task.id, reminderDay);
+        if (result === "queued") {
+          results.queued++;
+          perUserQueued.set(notifyUserId, (perUserQueued.get(notifyUserId) ?? 0) + 1);
+        } else if (result === "duplicate") {
+          results.duplicates++;
+          perUserQueued.set(notifyUserId, (perUserQueued.get(notifyUserId) ?? 0) + 1);
         } else {
-          results.errors++;
-          console.error(`Failed to send reminder for task ${task.id}:`, result.error);
+          results.skipped++;
         }
       } catch (err) {
         results.errors++;
-        console.error(`Exception sending reminder for task ${task.id}:`, err);
+        console.error(`Exception queueing reminder for task ${task.id}:`, err);
       }
     }
 
@@ -263,7 +253,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      msg: `Processed ${results.processed} tasks, sent ${results.sent} reminders`,
+      msg: `Processed ${results.processed} tasks, queued ${results.queued} reminder emails`,
       results,
     });
   } catch (error) {

@@ -9,7 +9,7 @@ client. Two paths, two Resend keys: see `features/email/FEATURE.md`.
 
 - **client.ts** - Core email sending via Resend, email templates for welcome, invitations, sharing
 - **exportService.ts** - "Email to me" features for exporting content (chat responses, table exports, share links)
-- **notificationService.ts** - Legacy notification emails with user preference checking (task-assignment fallback, messages, due dates)
+- **notificationService.ts** - Legacy notification emails with user preference checking (task-assignment fallback, messages)
 
 ## Environment Variables
 
@@ -38,7 +38,7 @@ CRON_SECRET=              # optional — cron endpoints
 |----------|------|-------------|
 | `POST /api/notifications/task-assigned` | Required | Send assignment DM and legacy email fallback until the transactional outbox row exists |
 | `POST /api/notifications/message-received` | Required | Send offline message notification |
-| `GET /api/cron/due-date-reminders` | Cron Secret | Process and send due date reminders |
+| `GET /api/cron/due-date-reminders` | Cron Secret | Queue deduplicated due-date email intents and send the existing in-app reminder DM |
 
 ## User Preferences
 

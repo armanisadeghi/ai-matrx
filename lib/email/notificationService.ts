@@ -5,7 +5,6 @@ import { renderTemplate } from "./render";
 import {
   TaskAssignedEmail,
   MessageReceivedEmail,
-  DueDateReminderEmail,
   FeedbackAssignedEmail,
 } from "./templates/NotificationEmail";
 import { createAdminClient } from "@/utils/supabase/adminClient";
@@ -266,86 +265,6 @@ export async function sendMessageNotificationEmail(options: {
   return {
     success: false,
     message: "Failed to send message notification email",
-    error:
-      result.error instanceof Error
-        ? result.error.message
-        : String(result.error),
-  };
-}
-
-/**
- * Send due date reminder email
- */
-export async function sendDueDateReminderEmail(options: {
-  userId: string;
-  organizationId: string;
-  taskTitle: string;
-  taskId: string;
-  dueDate: Date;
-  urgency: "upcoming" | "due_today" | "overdue";
-}): Promise<NotificationResult> {
-  const { userId, organizationId, taskTitle, taskId, dueDate, urgency } = options;
-
-  // Check user preferences
-  const preferences = await getUserEmailPreferences(userId);
-  if (!preferences?.task_notifications) {
-    return {
-      success: true,
-      message: "User has disabled task notifications",
-      skipped: true,
-    };
-  }
-
-  // Get user details
-  const user = await getUserDetails(userId);
-  if (!user?.email) {
-    return { success: false, message: "Could not find user email" };
-  }
-
-  // Generate task URL
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://aimatrx.com";
-  const taskUrl = await linkCarriesItsOrganization(
-    `${baseUrl}/tasks?task=${taskId}`,
-    organizationId,
-  );
-
-  // Render React Email template
-  const dueDateFormatted = dueDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const html = await renderTemplate(
-    React.createElement(DueDateReminderEmail, {
-      taskTitle,
-      dueDate: dueDateFormatted,
-      taskUrl,
-      urgency,
-    }),
-  );
-
-  const urgencySubjects = {
-    upcoming: `Due soon: ${taskTitle}`,
-    due_today: `Due today: ${taskTitle}`,
-    overdue: `Overdue: ${taskTitle}`,
-  };
-
-  // Send email
-  const result = await sendEmail({
-    to: user.email,
-    subject: urgencySubjects[urgency],
-    html,
-  });
-
-  if (result.success) {
-    return { success: true, message: "Due date reminder email sent" };
-  }
-
-  return {
-    success: false,
-    message: "Failed to send due date reminder email",
     error:
       result.error instanceof Error
         ? result.error.message
