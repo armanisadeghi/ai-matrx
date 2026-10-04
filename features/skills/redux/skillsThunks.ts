@@ -101,6 +101,17 @@ export interface FetchSkillsArgs {
   limit?: number;
 }
 
+/** The key of one skills-list read — what `useSkills` compares to reuse a
+ * list already in Redux instead of reading it again on every mount. */
+export function skillsListKey(args: FetchSkillsArgs | undefined): string {
+  return JSON.stringify({
+    categoryId: args?.categoryId ?? null,
+    isPublicOnly: args?.isPublicOnly ?? false,
+    projectId: args?.projectId ?? null,
+    limit: args?.limit ?? null,
+  });
+}
+
 export const fetchSkills = createAsyncThunk<
   SkillRow[],
   FetchSkillsArgs | undefined,
@@ -136,6 +147,7 @@ export const fetchSkills = createAsyncThunk<
       .map((e) => e.sourceId);
     if (ids.length === 0) {
       dispatch(skillsActions.skillsReceived([]));
+      dispatch(skillsActions.skillsListLoaded(skillsListKey(args)));
       return [];
     }
     query = query.in("id", ids);
@@ -155,6 +167,7 @@ export const fetchSkills = createAsyncThunk<
   const projectIdsBySkill = await loadSkillProjectIds(rows.map((r) => r.id));
   for (const r of rows) r.projectIds = projectIdsBySkill[r.id] ?? [];
   dispatch(skillsActions.skillsReceived(rows));
+  dispatch(skillsActions.skillsListLoaded(skillsListKey(args)));
   return rows;
 });
 

@@ -22,6 +22,8 @@ export const selectAllSkillIds = (state: RootState) =>
   state.skills.skills.allIds;
 export const selectSkillsStatus = (state: RootState): AsyncStatus =>
   state.skills.skills.status;
+export const selectSkillsLoadedKey = (state: RootState): string | null =>
+  state.skills.skills.loadedKey;
 export const selectSkillsError = (state: RootState) =>
   state.skills.skills.error;
 export const selectActiveSkillId = (state: RootState) =>

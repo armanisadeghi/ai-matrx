@@ -57,6 +57,9 @@ export interface SkillsState {
      * useSkills hook compares this to its own last-seen value to decide
      * whether to refetch + toast. */
     lastIngestAt: number;
+    /** Filter key (`skillsListKey`) of the list in `allIds` — a mount with the
+     * same key reuses it instead of reading again (read once per tab). */
+    loadedKey: string | null;
   };
   categories: {
     byId: Record<string, CategoryRow>;
@@ -88,6 +91,7 @@ const initialState: SkillsState = {
     error: null,
     activeId: null,
     lastIngestAt: 0,
+    loadedKey: null,
   },
   categories: {
     byId: {},
@@ -124,6 +128,9 @@ const slice = createSlice({
     skillsLoading(state) {
       state.skills.status = "loading";
       state.skills.error = null;
+    },
+    skillsListLoaded(state, action: PayloadAction<string>) {
+      state.skills.loadedKey = action.payload;
     },
     skillsReceived(state, action: PayloadAction<SkillRow[]>) {
       const { byId, allIds } = indexById(action.payload);

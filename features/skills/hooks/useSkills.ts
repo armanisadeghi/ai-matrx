@@ -15,7 +15,7 @@ import { toast } from "@/lib/toast";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 
-import { fetchSkills } from "../redux/skillsThunks";
+import { fetchSkills, skillsListKey } from "../redux/skillsThunks";
 import {
   makeSelectSkillsByType,
   selectIngestLastReport,
@@ -23,6 +23,7 @@ import {
   selectSkillsError,
   selectSkillsGroupedByType,
   selectSkillsLastIngestAt,
+  selectSkillsLoadedKey,
   selectSkillsStatus,
 } from "../redux/skillsSelectors";
 import type { SkillRow, SkillType } from "../types";
@@ -57,6 +58,7 @@ export function useSkills(args: UseSkillsArgs = {}): UseSkillsResult {
   const lastIngestAt = useAppSelector(selectSkillsLastIngestAt);
   const lastReport = useAppSelector(selectIngestLastReport);
   const count = useAppSelector(selectSkillsCount);
+  const loadedKey = useAppSelector(selectSkillsLoadedKey);
   const grouped = useAppSelector(selectSkillsGroupedByType);
 
   const selectSkillsByType = useMemo(makeSelectSkillsByType, []);
@@ -75,10 +77,19 @@ export function useSkills(args: UseSkillsArgs = {}): UseSkillsResult {
     [args.isPublicOnly, args.projectId, args.types],
   );
 
-  // Initial load + reload when the filter args change.
+  // Initial load + reload when the filter args change. A list already read
+  // with these filters is reused — every composer mount (and every board
+  // chat tile waking) would otherwise read skill.definition again.
   useEffect(() => {
     if (args.skipAutoFetch) return;
     if (status === "loading") return;
+    if (
+      status === "ready" &&
+      loadedKey ===
+        skillsListKey({ projectId: args.projectId, isPublicOnly: args.isPublicOnly })
+    ) {
+      return;
+    }
     void dispatch(
       fetchSkills({
         projectId: args.projectId,
