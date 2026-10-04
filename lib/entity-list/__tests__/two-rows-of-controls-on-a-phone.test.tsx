@@ -1,4 +1,17 @@
-/** @jest-environment jsdom */
+/**
+ * TWO ROWS OF CONTROLS ON A PHONE, AS EVERYWHERE (owner, /agents/all 2026-10-04: "These two rows
+ * should never attempt to become one, regardless of space").
+ *
+ * DATA-HOME-3E (2026-10-01) cut four rows of chrome over the first card to one: lane select,
+ * organization filter, a search icon, Filters and View. That one row then wrapped unpredictably
+ * once page actions joined it. Now row 1 is lanes · filters · actions and row 2 is the compact
+ * toolbar (search icon that opens the box in place, Filters, View); the table's own row stays off
+ * the phone. jsdom has no layout, so the rows are read structurally (the live proof is
+ * `pnpm check:list-header-rows`). jest.setup's matchMedia answers width queries from `innerWidth`.
+ *
+ * RED AGAINST THE PRE-CHANGE SHELL: the compact toolbar sat INSIDE the lane row, and opening the
+ * search hid the lanes.
+ */
 /**
  * ONE ROW OF CONTROLS ABOVE THE FIRST CARD ON A PHONE (DATA-HOME-3E, 2026-10-01; VERIFY V5).
  *
@@ -97,26 +110,30 @@ afterEach(async () => {
   window.innerWidth = desktopWidth;
 });
 
-/** Visible controls in the list's header that are NOT inside its one control row. */
-function controlsOutsideTheRow(): string[] {
+/** Visible controls in the list's header that are in NEITHER of its two rows. */
+function controlsOutsideTheRows(): string[] {
   const header = document.querySelector("[data-entity-list-header]")!;
   const row = header.querySelector("[data-entity-list-control-row]")!;
+  const tools = header.querySelector("[data-entity-list-phone-controls]")!;
   return [...header.querySelectorAll<HTMLElement>("button, input, select, [role=combobox], [role=tab]")]
     .filter((el) => !el.closest("[hidden]") && !el.closest(".hidden"))
-    .filter((el) => !row.contains(el))
+    .filter((el) => !row.contains(el) && !tools.contains(el))
     .map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim() ?? el.tagName);
 }
+const lanes = () => document.querySelector<HTMLElement>("[data-entity-list-lanes]")!;
 
 describe("the list's controls on a phone (390 px)", () => {
-  it("are one row: lanes, search icon, Filters and View, nothing beneath", async () => {
+  it("are two rows: lanes above; search icon, Filters and View below, never inside the lane row", async () => {
     await render(390);
-    expect(document.querySelector("[data-entity-list-phone-controls]")).not.toBeNull();
-    expect(controlsOutsideTheRow()).toEqual([]);
+    const tools = document.querySelector("[data-entity-list-phone-controls]");
+    expect(tools).not.toBeNull();
+    expect(document.querySelector("[data-entity-list-control-row]")!.contains(tools)).toBe(false);
+    expect(controlsOutsideTheRows()).toEqual([]);
     // The box opens from its icon, in the same row.
     expect(document.querySelector("[data-entity-list-search]")).toBeNull();
   });
 
-  it("opens the search in place of the lanes, still one row", async () => {
+  it("opens the search in the toolbar row; the lanes stay", async () => {
     await render(390);
     const open = document.querySelector<HTMLButtonElement>("[data-entity-list-phone-controls] button[aria-label^='Search']")!;
     await act(async () => {
@@ -124,8 +141,9 @@ describe("the list's controls on a phone (390 px)", () => {
     });
     const box = document.querySelector("[data-entity-list-search]");
     expect(box).not.toBeNull();
-    expect(document.querySelector("[data-entity-list-control-row]")!.contains(box)).toBe(true);
-    expect(controlsOutsideTheRow()).toEqual([]);
+    expect(document.querySelector("[data-entity-list-phone-controls]")!.contains(box)).toBe(true);
+    expect(lanes().className).not.toMatch(/\bhidden\b/);
+    expect(controlsOutsideTheRows()).toEqual([]);
   });
 
   it("keeps the desktop toolbar its own row above the phone width", async () => {
