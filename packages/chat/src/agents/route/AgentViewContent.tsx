@@ -668,21 +668,6 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                 )}
               </div>
 
-              {/*
-               * Access truth: who can actually see this agent, and why —
-               * replaces the old "Private" badge, which read one flag and
-               * ignored org reach, direct shares, and container reach.
-               * Version rows are agent_definition_version, not `agent`, so
-               * only the live agent gets the panel.
-               */}
-              {!agent.isVersion && (
-                <AccessSummaryPanel
-                  entityType="agent"
-                  entityId={liveAgentId}
-                  className="px-0"
-                />
-              )}
-
               {tags && tags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -1035,6 +1020,23 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                   ))}
                 </CardContent>
               </Card>
+            )}
+
+            {/*
+             * Access truth: who can actually see this agent, and why. Lives at
+             * the bottom so it never crowds the agent itself. Version rows are
+             * agent_definition_version, not `agent`, so only the live agent
+             * gets the panel.
+             */}
+            {!agent.isVersion && (
+              <>
+                <Separator />
+                <AccessSummaryPanel
+                  entityType="agent"
+                  entityId={liveAgentId}
+                  className="px-0"
+                />
+              </>
             )}
           </>
         )}
