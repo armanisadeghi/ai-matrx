@@ -1,5 +1,10 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Picklist, Flashcard deck, Study kit and Scope items
+
+- New item types, each with the feature's own page component: Picklist (`TableRecordBody`, the `/lists/<id>` table page body), Flashcard deck (`SetDetailView embedded`, `CreateDeckPage embedded` to start), Study kit (`KitHub`, `ManualKitCreator` to start), Scope (`ScopeDetailEditor`, `NewScopeInline` to start). Board menu rows added. New surface `matrx-user/scope-detail` (synced and checked live); `briefValues` added to the flashcard-set and kits surfaces. Remount ledger: list and scope green; fc_set and study-kit red with reasons (see FEATURE.md Open 8).
+
+
 History moved out of FEATURE.md; each rule it taught lives in FEATURE.md. Older entries use the retired names where the surface key or table is meant.
 
 - 2026-10-04 — New board opens instantly; the Start panel clears the toolbar. "New board" mints the id in the browser (`beginBoardCreate`), navigates to `/board/<id>` at once and inserts in the background with an explicit `organization_id`; the page renders the empty board from the pending entry (`getPendingCreate`), a first save waits for the row, and a failed insert is the page's "could not be created" state with Try again (never a silent empty board). Browser on the shared preview: warm route change 0.3 s after the click, one board on a double click, row persisted on reload. Start panel: its frame now reserves the chrome band (72 px top, 56 px bottom, 160 px bottom between 768 and 1104 px for the minimap) and the panel scrolls inside what is left; measured 0 overlaps with the Add toolbar, zoom bar and minimap at 375, 800 and 1280 px. Guards: `__tests__/optimistic-board.test.tsx`, `create-board.test.tsx`, `start-panel-layout.test.tsx`.
