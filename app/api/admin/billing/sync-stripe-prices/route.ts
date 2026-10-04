@@ -24,13 +24,21 @@ export async function POST() {
 
   const mode = requiredStripeMode();
   try {
-    const rows = await syncAllPlanPrices(getStripe(mode), createAdminClient(), mode);
-    return NextResponse.json({
+    const { rows, retired, errors } = await syncAllPlanPrices(getStripe(mode), createAdminClient(), mode);
+    const body = {
       mode,
       created: rows.filter((r) => r.created).length,
-      archived: rows.reduce((n, r) => n + r.archived, 0),
+      archived: rows.reduce((n, r) => n + r.archived, 0) + retired.reduce((n, r) => n + r.archived, 0),
       rows,
-    });
+      retired,
+      errors,
+    };
+    if (errors.length)
+      return NextResponse.json(
+        { ...body, error: errors.map((e) => `${e.plan}: ${e.error}`).join("; ") },
+        { status: 500 },
+      );
+    return NextResponse.json(body);
   } catch (err) {
     console.error("[admin/billing/sync-stripe-prices]", err);
     return NextResponse.json(

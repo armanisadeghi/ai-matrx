@@ -56,8 +56,10 @@ export function usePayPeriods(
   filters: PayPeriodListFilters,
   page: PageRequest = EMPTY_PAGE,
   mockCase?: HrFixtureCase,
+  scopeKey: string | null = null,
 ): UsePayPeriodsResult {
   const [result, setResult] = useState<Paged<PayPeriodRow> | null>(null);
+  const [loadedScope, setLoadedScope] = useState(scopeKey);
   const [failure, setFailure] = useState<PeriodFailure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(0);
@@ -76,11 +78,12 @@ export function usePayPeriods(
       { mockCase },
     )
       .then((next) => {
-        if (!cancelled) setResult(next);
+        if (!cancelled) { setResult(next); setLoadedScope(scopeKey); }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setResult(null);
+        setLoadedScope(scopeKey);
         setFailure(toFailure(err));
       })
       .finally(() => {
@@ -89,9 +92,9 @@ export function usePayPeriods(
     return () => {
       cancelled = true;
     };
-  }, [filterKey, pageKey, mockCase, token]);
+  }, [filterKey, pageKey, mockCase, token, scopeKey]);
 
-  return { page: result, isLoading, failure, reload: useCallback(() => setToken((t) => t + 1), []) };
+  return { page: loadedScope === scopeKey ? result : null, isLoading: loadedScope !== scopeKey || isLoading, failure: loadedScope === scopeKey ? failure : null, reload: useCallback(() => setToken((t) => t + 1), []) };
 }
 
 export interface UsePayPeriodResult {

@@ -20,5 +20,8 @@ if (!key || !env.SUPABASE_SECRET_KEY) throw new Error("Required credentials are 
 const db = createClient<Database>("https://db.matrxserver.com", env.SUPABASE_SECRET_KEY, {
   auth: { persistSession: false },
 });
-const rows = await syncAllPlanPrices(new Stripe(key), db, mode);
+const { rows, retired, errors } = await syncAllPlanPrices(new Stripe(key), db, mode);
 for (const row of rows) console.log(JSON.stringify({ mode, ...row }));
+for (const row of retired) console.log(JSON.stringify({ mode, retired: row }));
+for (const row of errors) console.error(JSON.stringify({ mode, error: row }));
+if (errors.length) process.exitCode = 1;

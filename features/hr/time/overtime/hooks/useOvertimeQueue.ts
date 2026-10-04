@@ -43,6 +43,7 @@ export function useOvertimeQueue(
   filters: OvertimeListFilters,
   mockCase?: HrFixtureCase,
   request: PageRequest = DEFAULT_PAGE,
+  scopeKey: string | null = null,
 ): {
   page: Paged<OvertimeRequestRow> | null;
   isLoading: boolean;
@@ -51,6 +52,7 @@ export function useOvertimeQueue(
 } {
   const [page, setPage] = useState<Paged<OvertimeRequestRow> | null>(null);
   const [failure, setFailure] = useState<OvertimeFailure | null>(null);
+  const [loadedScope, setLoadedScope] = useState(scopeKey);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(0);
   const filterKey = JSON.stringify(filters);
@@ -62,11 +64,12 @@ export function useOvertimeQueue(
     setFailure(null);
     listOvertimePreapprovals(JSON.parse(filterKey) as OvertimeListFilters, JSON.parse(pageKey) as PageRequest, { mockCase })
       .then((next) => {
-        if (!cancelled) setPage(next);
+        if (!cancelled) { setPage(next); setLoadedScope(scopeKey); }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
         setPage(null);
+        setLoadedScope(scopeKey);
         setFailure(toFailure(err));
       })
       .finally(() => {
@@ -75,9 +78,9 @@ export function useOvertimeQueue(
     return () => {
       cancelled = true;
     };
-  }, [filterKey, pageKey, mockCase, token]);
+  }, [filterKey, pageKey, mockCase, token, scopeKey]);
 
-  return { page, isLoading, failure, reload: useCallback(() => setToken((t) => t + 1), []) };
+  return { page: loadedScope === scopeKey ? page : null, isLoading: loadedScope !== scopeKey || isLoading, failure: loadedScope === scopeKey ? failure : null, reload: useCallback(() => setToken((t) => t + 1), []) };
 }
 
 export function useOvertimeRequest(

@@ -28,8 +28,8 @@ export function OvertimeQueuePage() {
   const mockCase = useMockCase();
   const [query, setQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: 50, search: "", anyOf: "", columnFilters: {}, sort: null });
   // Keep the original watchlist source stable while paging/filtering the table.
-  const watchlistQueue = useOvertimeQueue({}, mockCase);
-  const queue = useOvertimeQueue({}, mockCase, { page: query.page, pageSize: query.pageSize });
+  const watchlistQueue = useOvertimeQueue({}, mockCase, undefined, hr.orgRef);
+  const queue = useOvertimeQueue({}, mockCase, { page: query.page, pageSize: query.pageSize }, hr.orgRef);
   const router = useRouter();
 
   const organizationId = hr.active?.organization_id ?? null;
@@ -53,14 +53,14 @@ export function OvertimeQueuePage() {
           </p>
         </header>
 
-        {queue.failure ? (
+        {watchlistQueue.failure ? (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
-            {queue.failure.userMessage}
-            <ErrorAlchemyMenu error={queue.failure.userMessage} />
+            {watchlistQueue.failure.userMessage}
+            <ErrorAlchemyMenu error={watchlistQueue.failure.userMessage} />
           </p>
         ) : null}
 
-        <ApproachingWatchlist
+        {!watchlistQueue.failure ? <ApproachingWatchlist
           entries={
             watched && evaluation.evaluation
               ? [
@@ -72,12 +72,12 @@ export function OvertimeQueuePage() {
                 ]
               : []
           }
-          isLoading={evaluation.isLoading}
+          isLoading={watchlistQueue.isLoading || evaluation.isLoading}
           onRaiseRequest={({ employmentId }) => {
             // The door from an alert. Pre-filling happens on the request surface itself.
             router.push(hrTimeOvertimeRequestHref(employmentId, hr.orgRef));
           }}
-        />
+        /> : null}
 
         <OvertimeQueueTable
           rows={queue.page?.rows ?? []}

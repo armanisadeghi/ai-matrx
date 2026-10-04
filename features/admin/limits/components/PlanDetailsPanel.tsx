@@ -16,7 +16,7 @@
 // touches a price, the name or active re-syncs Stripe (new prices under the
 // plan's product, old ones archived) so checkout charges what this page shows.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Field, Switch } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
@@ -24,6 +24,10 @@ import { cn } from "@/lib/utils";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { fetchPlans, setPlanFields } from "../service";
 import { groupPlansByAudience, type Plan, type PlanFields } from "../types";
+
+function toastError(err: unknown) {
+  toast.error(err instanceof Error ? err.message : String(err));
+}
 
 /** Saving any of these re-syncs Stripe (prices, product name, sellable set). */
 const STRIPE_FIELDS: ReadonlyArray<keyof PlanFields> = ["monthly_cents", "annual_cents", "name", "active"];
@@ -48,7 +52,7 @@ function savingsLabel(plan: Plan): string | null {
   return `${Math.round((1 - a / m) * 100)}% off`;
 }
 
-/** A text cell that saves on Enter or blur when its value changed. */
+/** A text cell that saves on Enter or blur when its value changed; Escape cancels. */
 function TextCell({
   value,
   label,
@@ -64,32 +68,36 @@ function TextCell({
   inputMode?: "decimal" | "numeric";
   onSave: (raw: string) => Promise<void>;
 }) {
-  const [draft, setDraft] = useState(value);
+  // `null` shows the stored value; a string is an edit in progress.
+  const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  // A re-read that changes the stored value resets the draft (no effect needed).
-  const [seen, setSeen] = useState(value);
-  if (seen !== value) {
-    setSeen(value);
-    setDraft(value);
-  }
+  const cancelled = useRef(false);
 
   const commit = async () => {
-    if (draft.trim() === value.trim()) return;
+    if (cancelled.current) {
+      cancelled.current = false;
+      setDraft(null);
+      return;
+    }
+    if (draft === null || draft.trim() === value.trim()) {
+      setDraft(null);
+      return;
+    }
     setSaving(true);
     try {
       await onSave(draft);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
-      setDraft(value);
     } finally {
       setSaving(false);
+      setDraft(null);
     }
   };
 
   return (
     <Field
       aria-label={label}
-      value={draft}
+      value={draft ?? value}
       placeholder={placeholder}
       inputMode={inputMode}
       disabled={saving}
@@ -99,7 +107,7 @@ function TextCell({
       onKeyDown={(e) => {
         if (e.key === "Enter") e.currentTarget.blur();
         if (e.key === "Escape") {
-          setDraft(value);
+          cancelled.current = true;
           e.currentTarget.blur();
         }
       }}
@@ -177,7 +185,7 @@ function PlanRow({ plan, onSave }: { plan: Plan; onSave: (fields: PlanFields) =>
         <Switch
           aria-label={`${plan.name} priced per seat`}
           checked={plan.per_seat}
-          onCheckedChange={(on) => void onSave({ per_seat: on }).catch(() => undefined)}
+          onCheckedChange={(on) => void onSave({ per_seat: on }).catch(toastError)}
         />
       </td>
       <td className="px-1.5 py-1.5 align-top">
@@ -210,14 +218,14 @@ function PlanRow({ plan, onSave }: { plan: Plan; onSave: (fields: PlanFields) =>
         <Switch
           aria-label={`${plan.name} listed on the pricing page`}
           checked={plan.listed_on_pricing}
-          onCheckedChange={(on) => void onSave({ listed_on_pricing: on }).catch(() => undefined)}
+          onCheckedChange={(on) => void onSave({ listed_on_pricing: on }).catch(toastError)}
         />
       </td>
       <td className="px-1.5 py-1.5 text-center align-top">
         <Switch
           aria-label={`${plan.name} active`}
           checked={plan.active}
-          onCheckedChange={(on) => void onSave({ active: on }).catch(() => undefined)}
+          onCheckedChange={(on) => void onSave({ active: on }).catch(toastError)}
         />
       </td>
     </tr>
@@ -260,14 +268,8 @@ export function PlanDetailsPanel({ onChanged }: { onChanged?: () => void }) {
 
   const save = useCallback(
     async (planKey: string, fields: PlanFields) => {
-      try {
-        await setPlanFields(planKey, fields);
-      } catch (err) {
-        // A switch has no draft to roll back; the toast names the refusal.
-        const message = err instanceof Error ? err.message : String(err);
-        toast.error(message);
-        throw err;
-      }
+      // A refusal propagates to the cell or switch, which names it in a toast.
+      await setPlanFields(planKey, fields);
       await load();
       onChanged?.();
       if (!STRIPE_FIELDS.some((f) => f in fields)) {

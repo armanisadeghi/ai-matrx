@@ -32,6 +32,8 @@ interface CatalogPlanRow {
   organization_id: string | null;
 }
 
+type OwnedPlan = CatalogPlanRow & { organization_id: string };
+
 export interface PlanPriceSyncRow {
   plan: string;
   cycle: Cycle;
@@ -53,7 +55,7 @@ function productIdFor(planKey: string): string {
   return `matrx_plan_${planKey.replaceAll("-", "_")}`;
 }
 
-async function ensureProduct(stripe: Stripe, db: Db, plan: CatalogPlanRow): Promise<{ productId: string; mirrorId: string }> {
+async function ensureProduct(stripe: Stripe, db: Db, plan: OwnedPlan): Promise<{ productId: string; mirrorId: string }> {
   const productId = productIdFor(plan.plan_key);
   const name = `AI Matrx ${plan.audience === "company" ? "Business " : ""}${plan.name}`;
   let product: Stripe.Product | null = null;
@@ -95,7 +97,7 @@ async function syncCycle(
   stripe: Stripe,
   db: Db,
   mode: StripeMode,
-  plan: CatalogPlanRow,
+  plan: OwnedPlan,
   product: { productId: string; mirrorId: string },
   cycle: Cycle,
   amount: number,
@@ -192,46 +194,90 @@ export async function syncPlanPrices(stripe: Stripe, db: Db, mode: StripeMode, p
 
 async function syncOne(stripe: Stripe, db: Db, mode: StripeMode, plan: CatalogPlanRow): Promise<PlanPriceSyncRow[]> {
   if (!plan.monthly_cents || plan.monthly_cents <= 0) return [];
-  const product = await ensureProduct(stripe, db, plan);
+  const { organization_id } = plan;
+  if (!organization_id) throw new Error(`organization_required: plan ${plan.plan_key} carries no organization`);
+  const owned: OwnedPlan = { ...plan, organization_id };
+  const product = await ensureProduct(stripe, db, owned);
   const rows: PlanPriceSyncRow[] = [];
   for (const cycle of ["monthly", "annual"] as const) {
     const amount = cycleAmount(plan, cycle);
     if (amount == null || amount <= 0) continue;
     if (!Number.isSafeInteger(amount)) throw new Error(`Invalid ${plan.plan_key} ${cycle} amount`);
-    rows.push(await syncCycle(stripe, db, mode, plan, product, cycle, amount));
+    rows.push(await syncCycle(stripe, db, mode, owned, product, cycle, amount));
   }
   return rows;
 }
 
+/** Archive every active price of a plan that is no longer sold (inactive, or custom/free priced). */
+async function archivePlanPrices(stripe: Stripe, db: Db, mode: StripeMode, planKey: string): Promise<number> {
+  const { data, error } = await db
+    .schema("billing")
+    .from("price")
+    .select("stripe_price_id")
+    .eq("livemode", mode === "live")
+    .eq("active", true)
+    .contains("metadata", { plan_key: planKey });
+  if (error) throw new Error(`billing.price read for ${planKey}: ${error.message}`);
+  for (const row of data ?? []) {
+    if (!row.stripe_price_id) continue;
+    await stripe.prices.update(row.stripe_price_id, { active: false });
+    const { error: archiveError } = await db
+      .schema("billing")
+      .from("price")
+      .update({ active: false })
+      .eq("stripe_price_id", row.stripe_price_id);
+    if (archiveError) throw new Error(`billing.price archive ${row.stripe_price_id}: ${archiveError.message}`);
+  }
+  return data?.length ?? 0;
+}
+
+export interface PlanCatalogSyncResult {
+  rows: PlanPriceSyncRow[];
+  /** Plans whose prices were archived because they are no longer sold. */
+  retired: Array<{ plan: string; archived: number }>;
+  /** One entry per plan that failed; the others (and the portal) still sync. */
+  errors: Array<{ plan: string; error: string }>;
+}
+
 /**
- * Every active paid plan, then the billing-portal "switch plan" lists so a
- * subscriber can move to the current prices. Returns one row per plan × cycle.
+ * Every plan: sold plans get current prices, retired ones (inactive, or no
+ * longer paid) have theirs archived; then the billing-portal "switch plan"
+ * lists so a subscriber can move to the current prices. One failing plan never
+ * stops the rest.
  */
-export async function syncAllPlanPrices(stripe: Stripe, db: Db, mode: StripeMode): Promise<PlanPriceSyncRow[]> {
+export async function syncAllPlanPrices(stripe: Stripe, db: Db, mode: StripeMode): Promise<PlanCatalogSyncResult> {
   const { data: plans, error } = await db
     .schema("billing")
     .from("plan")
-    .select(PLAN_COLUMNS)
-    .eq("active", true)
+    .select(`${PLAN_COLUMNS},active`)
     .is("deleted_at", null)
-    .gt("monthly_cents", 0)
     .order("rank");
   if (error) throw new Error(`billing.plan: ${error.message}`);
-  const rows: PlanPriceSyncRow[] = [];
+  const result: PlanCatalogSyncResult = { rows: [], retired: [], errors: [] };
   const portalProducts: Array<{ product: string; prices: string[]; audience: string }> = [];
   for (const plan of plans ?? []) {
-    const planRows = await syncOne(stripe, db, mode, plan);
-    rows.push(...planRows);
-    if (planRows.length) {
-      portalProducts.push({
-        product: productIdFor(plan.plan_key),
-        prices: planRows.map((r) => r.price),
-        audience: plan.audience,
-      });
+    try {
+      const sold = plan.active && plan.monthly_cents != null && plan.monthly_cents > 0;
+      if (!sold) {
+        const archived = await archivePlanPrices(stripe, db, mode, plan.plan_key);
+        if (archived) result.retired.push({ plan: plan.plan_key, archived });
+        continue;
+      }
+      const planRows = await syncOne(stripe, db, mode, plan);
+      result.rows.push(...planRows);
+      if (planRows.length) {
+        portalProducts.push({
+          product: productIdFor(plan.plan_key),
+          prices: planRows.map((r) => r.price),
+          audience: plan.audience,
+        });
+      }
+    } catch (err) {
+      result.errors.push({ plan: plan.plan_key, error: err instanceof Error ? err.message : String(err) });
     }
   }
   await syncPortalConfigurations(stripe, portalProducts);
-  return rows;
+  return result;
 }
 
 async function syncPortalConfigurations(

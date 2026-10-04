@@ -43,11 +43,28 @@ as expired — it never vanishes. `org_plan_list` is super-admin only; when it
 refuses, the list still renders and the plan column says *unreadable* with the
 real error, never a blank.
 
+## Plans & pricing — the plan's own columns (Arman, 2026-10-04)
+
+- **Route:** `/administration/billing/plans` (Billing → Plans): `PlanDetailsPanel` above the
+  allowances matrix. Every `billing.plan` field a customer sees is edited here — name, tagline,
+  badge, monthly and annual price (typed in dollars, stored in cents), per seat, min seats,
+  order (`rank`), listed on `/pricing`, active — through `billing.plan_set(p_plan_key, p_fields)`
+  (super-admin; whitelisted keys only; prices move as a pair, null both = custom pricing,
+  annual ≤ monthly). `/pricing`, upgrade dialogs and the gate read the same rows via
+  `billing.plan_catalog()`.
+- **Stripe follows the plan.** A save that touches a price, the name or active calls
+  `POST /api/admin/billing/sync-stripe-prices` → `features/entitlements/stripe/planCatalog.ts`
+  (new price under a deterministic lookup key, older prices archived, portal plan lists updated).
+  Checkout runs the same sync for one plan when no mirrored price matches, so a price edited here
+  is the price charged.
+- A limit cell accepts the word `unlimited` (stores NULL) — the way to create an unlimited window
+  where no row exists yet.
+
 ## Plan allowances is ONE matrix (Arman, 2026-10-03)
 
 - Every plan number is set here, never in code. Rows = plans grouped Guest, Free, Personal,
   Business (`audience = company`), Enterprise, ordered by `rank` (`groupPlansByAudience`).
-  Name and price are read-only `billing.plan` columns (`planPriceLabel`).
+  Name and price are read-only here (`planPriceLabel`, linking to Plans & pricing).
 - AI points has a column per window — Month, Week, 5-hour by default; Day and 1-hour behind a
   toggle; a window any plan already holds always shows. Limits are per person.
 - Other capabilities are a second matrix, one column per (capability, window) that exists, plus

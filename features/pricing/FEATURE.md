@@ -14,8 +14,10 @@ usage-limit dialog, upgrade modal, industry upgrade, upgrade nudges).
   which runs `planAction()`: sign-up, contact, or the tracked Coming Soon
   `billing.plan-checkout`. A component's `onSelect` override exists for the
   `(dev)/demos/upgrade` gallery only.
-- **No trial is promised.** No plan has a trial or a Stripe price yet; copy that
-  claims one is a defect.
+- **No trial is promised.** No plan has a trial; copy that claims one is a defect.
+- **Plan names are never typed in components.** Education cards, the capability gate and nudges
+  say plan names from the catalog (`tierPlanName`, `defaultPlan`); a tier word appears only while
+  the catalog is unavailable. Prices and listing are edited at `/administration/billing/plans`.
 - **`/pricing` layout:** header → `PricingGrid` seeded by the server read
   (`readPlanCatalogServer`) → education plans (`education/`, their own DB read of
   `billing.capability_limit` + `billing.product/price`) → the pledge strip.
@@ -29,6 +31,7 @@ usage-limit dialog, upgrade modal, industry upgrade, upgrade nudges).
 ## Change Log
 
 - **2026-10-04** — Four-card grid with a laddered fourth card; group and cycle
-  switches in one row (`PillSwitch`); Max Plus listed.
+  switches in one row (`PillSwitch`); Max Plus listed. Education cards, the capability gate and
+  the sidebar promo read plan names from the catalog; plans are edited in admin.
 - **2026-10-03** — Created. Plan surfaces moved off the hardcoded `data.ts` onto
   `billing.plan_catalog()`.

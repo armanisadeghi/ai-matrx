@@ -43,7 +43,7 @@ export function PayPeriodsPage() {
   const hr = useHrContext();
   const mockCase = useMockCase();
   const [query, setQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: 50, search: "", anyOf: "", columnFilters: {}, sort: null });
-  const { page, isLoading, failure, reload } = usePayPeriods({}, { page: query.page, pageSize: query.pageSize }, mockCase);
+  const { page, isLoading, failure, reload } = usePayPeriods({}, { page: query.page, pageSize: query.pageSize }, mockCase, hr.orgRef);
 
   return (
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
