@@ -210,6 +210,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "See the calendars Google makes available to this account. No changes to any calendar",
   [GOOGLE_SCOPE.calendarEventsReadonly]:
     "Read events on a calendar you explicitly select. No changes to any calendar",
+  [GOOGLE_SCOPE.calendarEventsWrite]:
+    "Google permits viewing and editing events on all your calendars. AI Matrx only runs the exact create, move, cancel, or RSVP you review",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
   [GOOGLE_SCOPE.tasksWrite]:
     "Google permits creating, editing, organizing and deleting your tasks. AI Matrx currently offers reviewed task creation and selected complete or reopen changes",
@@ -409,6 +411,29 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "overlay",
         label: "Open Calendar to review a selected calendar",
         overlayId: "googleAgendaWindow",
+      },
+    },
+    {
+      key: "calendar_changes",
+      name: "Calendar changes",
+      promise:
+        "Preview and confirm event creation, time changes, cancellation, or your RSVP. Guest notifications cannot be undone.",
+      group: WORKSPACE_GROUP,
+      icon: CalendarDays,
+      mark: GoogleCalendarMark,
+      capabilityKeys: ["calendar_write"],
+      scopes: [
+        ...GOOGLE_IDENTITY_SCOPES,
+        GOOGLE_SCOPE.calendarListReadonly,
+        GOOGLE_SCOPE.calendarEventsWrite,
+      ],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "reviewed Google Calendar event changes",
+      firstAction: {
+        kind: "overlay",
+        label: "Review Calendar changes",
+        overlayId: "googleAgendaWindow",
+        needs: ["organizationId"],
       },
     },
     {

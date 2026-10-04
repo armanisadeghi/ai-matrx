@@ -8,13 +8,31 @@
 import { GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { buildConsentPlan } from "../consent-plan";
 import type { ConnectorCapabilityRollout } from "../health";
-import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
+import { GOOGLE_CONNECTOR_PROVIDER, scopeLanguage } from "../provider-config";
 
 const writeProducts = [
+  {
+    key: "calendar_changes",
+    capabilityKey: "calendar_write",
+    scope: GOOGLE_SCOPE.calendarEventsWrite,
+    additionalScopes: [GOOGLE_SCOPE.calendarListReadonly],
+    forbiddenScopes: [
+      GOOGLE_SCOPE.calendarEventsReadonly,
+      GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+      GOOGLE_SCOPE.contactsWrite,
+      GOOGLE_SCOPE.tasksWrite,
+    ],
+    action: {
+      kind: "overlay",
+      overlayId: "googleAgendaWindow",
+      needs: ["organizationId"],
+    },
+  },
   {
     key: "contacts_edits",
     capabilityKey: "contacts_write",
     scope: GOOGLE_SCOPE.contactsWrite,
+    additionalScopes: [],
     forbiddenScopes: [GOOGLE_SCOPE.contactsReadonly, GOOGLE_SCOPE.tasksWrite],
     action: {
       kind: "overlay",
@@ -26,6 +44,7 @@ const writeProducts = [
     key: "tasks_changes",
     capabilityKey: "tasks_write",
     scope: GOOGLE_SCOPE.tasksWrite,
+    additionalScopes: [],
     forbiddenScopes: [GOOGLE_SCOPE.tasksReadonly, GOOGLE_SCOPE.contactsWrite],
     action: {
       kind: "overlay",
@@ -59,6 +78,7 @@ describe.each(writeProducts)("Google $key consent selection", (product) => {
     expect(selected?.capabilityKeys).toEqual([product.capabilityKey]);
     expect(selected?.scopes).toEqual([
       ...GOOGLE_IDENTITY_SCOPES,
+      ...product.additionalScopes,
       product.scope,
     ]);
     expect(selected?.firstAction).toMatchObject(product.action);
@@ -72,7 +92,11 @@ describe.each(writeProducts)("Google $key consent selection", (product) => {
 
     expect(plan.request?.capabilityKeys).toEqual([product.capabilityKey]);
     expect(new Set(plan.request?.scopes)).toEqual(
-      new Set([...GOOGLE_IDENTITY_SCOPES, product.scope]),
+      new Set([
+        ...GOOGLE_IDENTITY_SCOPES,
+        ...product.additionalScopes,
+        product.scope,
+      ]),
     );
     expect(plan.request?.scopes).toEqual(
       expect.not.arrayContaining(product.forbiddenScopes),
@@ -95,4 +119,10 @@ describe.each(writeProducts)("Google $key consent selection", (product) => {
       expect(plan.blocked.map((row) => row.productKey)).toEqual([product.key]);
     }
   });
+});
+
+it("explains Calendar event-write reach in plain language without overstating app actions", () => {
+  expect(scopeLanguage(GOOGLE_CONNECTOR_PROVIDER, GOOGLE_SCOPE.calendarEventsWrite)).toBe(
+    "Google permits viewing and editing events on all your calendars. AI Matrx only runs the exact create, move, cancel, or RSVP you review",
+  );
 });
