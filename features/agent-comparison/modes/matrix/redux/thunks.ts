@@ -19,7 +19,13 @@ import {
   updateComparisonSetMetadata,
 } from "../../../service/comparisonSetsService";
 import { autoBattleName } from "../../../shared/battlePersistence";
-import { entryToCell, metadataToSetup, setupProblems, setupToMetadata } from "../model";
+import {
+  allCellConversationIds,
+  entryToCell,
+  metadataToSetup,
+  setupProblems,
+  setupToMetadata,
+} from "../model";
 import {
   archiveMatrixEntries,
   cancelMatrixRun,
@@ -194,7 +200,8 @@ export const archiveMatrixBattle = createAsyncThunk<
   const setId = getState().agentComparisonMatrix.activeSetId;
   if (!setId) throw new Error("This battle has not been saved yet.");
   const rows = await listMatrixEntries(setId);
-  const conversationIds = [...new Set(rows.map((r) => r.conversation_id))];
+  // Every attempt's conversation, not only the current one (contract `history`).
+  const conversationIds = allCellConversationIds(rows);
   const results = await Promise.allSettled(
     conversationIds.map((conversationId) =>
       dispatch(softDeleteConversation({ conversationId })).unwrap(),

@@ -80,6 +80,17 @@ export interface MatrixCellResult {
   answer?: string;
 }
 
+/** An earlier attempt of a cell (contract `metadata.history`, newest last). */
+export interface MatrixAttempt {
+  attempt: number;
+  conversationId: string;
+  status: MatrixCellStatus;
+  startedAt: string | null;
+  finishedAt: string | null;
+  error: string | null;
+  result: MatrixCellResult | null;
+}
+
 /** One cell, read from its entry row. */
 export interface MatrixCell {
   entryId: string;
@@ -96,6 +107,8 @@ export interface MatrixCell {
   error: string | null;
   request: MatrixPatch | null;
   result: MatrixCellResult | null;
+  /** Earlier attempts, newest last. The fields above are the current attempt only. */
+  history: MatrixAttempt[];
 }
 
 export interface MatrixBattleState {

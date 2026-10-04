@@ -7,7 +7,8 @@
  * break-even share.
  */
 
-import { ExternalLink, Loader2, RotateCw } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, History, Loader2, RotateCw } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Cost } from "@/components/cost/Cost";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -17,9 +18,12 @@ import {
   avgMetrics,
   breakEven,
   cellMetrics,
+  cellStatusLabel,
+  failedCellCount,
   isBundleLister,
   realToolCalls,
   rowUsedTools,
+  spendOf,
   sumMetrics,
   type BreakEven,
   type Metrics,
@@ -33,6 +37,19 @@ const nf1 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 function tokens(n: number | null | undefined): string {
   if (n == null) return "—";
   return n >= 10_000 ? `${nf1.format(n / 1000)}k` : nf.format(n);
+}
+
+/** Total input, then its uncached and cached parts, then output. */
+function TokenLine({ m, className }: { m: Metrics; className?: string }) {
+  return (
+    <span className={cn("text-[11px] text-muted-foreground tabular-nums", className)}>
+      in {tokens(m.inputAll)}
+      <span className="text-muted-foreground/70">
+        {" "}({tokens(m.input)} new · {tokens(m.cached)} cached)
+      </span>
+      {" "}· out {tokens(m.output)} · {nf1.format(m.toolCalls)} tools
+    </span>
+  );
 }
 
 function pct(a: number, b: number): string {
@@ -52,6 +69,8 @@ export function MatrixResults({
   const cells = useAppSelector(selectMatrixCells);
   const rows = setup.rows.variants;
   const cols = setup.columns.variants;
+  const [withHistory, setWithHistory] = useState(false);
+  const hasHistory = cells.some((c) => c.history.length > 0);
 
   const byKey = new Map<string, MatrixCell[]>();
   for (const c of cells) {
@@ -63,8 +82,12 @@ export function MatrixResults({
   const cellsAt = (r: MatrixVariant, c: MatrixVariant) =>
     (byKey.get(`${r.id}|${c.id}`) ?? []).sort((a, b) => a.repeat - b.repeat);
 
-  const colSums = cols.map((c) => sumMetrics(cells.filter((x) => x.columnId === c.id).map(cellMetrics)));
-  const colAvgs = colSums.map(avgMetrics);
+  const colCells = cols.map((c) => cells.filter((x) => x.columnId === c.id));
+  // Totals are real spend: every current attempt whatever its status, plus
+  // earlier attempts when asked. Averages compare completed runs only.
+  const colSpend = colCells.map((list) => spendOf(list, withHistory));
+  const colFailed = colCells.map(failedCellCount);
+  const colAvgs = colCells.map((list) => avgMetrics(sumMetrics(list.map(cellMetrics))));
   const first = colAvgs[0];
 
   if (rows.length === 0 || cols.length === 0) {
@@ -73,6 +96,25 @@ export function MatrixResults({
 
   return (
     <div className="space-y-4">
+      {hasHistory && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            aria-pressed={withHistory}
+            onClick={() => setWithHistory((v) => !v)}
+            title="Count the spend of earlier attempts in the totals"
+            className={cn(
+              "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-xs",
+              withHistory
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+          >
+            <History className="w-3.5 h-3.5" />
+            Earlier attempts
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-xs border-collapse">
           <thead>
@@ -91,7 +133,7 @@ export function MatrixResults({
           <tbody>
             {rows.map((r) => {
               const rowCells = cells.filter((x) => x.rowId === r.id);
-              const rowSum = sumMetrics(rowCells.map(cellMetrics));
+              const rowSum = spendOf(rowCells, withHistory);
               const used = rowUsedTools(rowCells);
               return (
                 <tr key={r.id} className="border-b border-border/60 align-top">
@@ -131,6 +173,9 @@ export function MatrixResults({
                       <>
                         <Cost usd={rowSum.cost} short />
                         <div className="text-muted-foreground">{tokens(rowSum.total)} tok</div>
+                        {rowSum.unfinished > 0 && (
+                          <div className="text-rose-600">{rowSum.unfinished} unfinished</div>
+                        )}
                       </>
                     ) : (
                       "—"
@@ -141,8 +186,12 @@ export function MatrixResults({
             })}
           </tbody>
           <tfoot className="bg-muted/30">
-            <FootRow label="Total" values={colSums.map((s) => (s.n ? s : null))} />
-            <FootRow label="Average" values={colAvgs} />
+            <FootRow
+              label={withHistory ? "Total · all attempts" : "Total"}
+              values={colSpend.map((s) => (s.n ? s : null))}
+              failed={colFailed}
+            />
+            <FootRow label="Average · completed" values={colAvgs} />
             <tr className="border-t border-border">
               <th className="sticky left-0 z-10 bg-muted/30 text-left font-semibold px-2 py-1.5">
                 Δ vs {cols[0]?.label || "first"}
@@ -175,7 +224,15 @@ function deltaClass(a: number, b: number): string {
   return a < b ? "text-emerald-600" : "text-rose-600";
 }
 
-function FootRow({ label, values }: { label: string; values: (Metrics | null)[] }) {
+function FootRow({
+  label,
+  values,
+  failed,
+}: {
+  label: string;
+  values: (Metrics | null)[];
+  failed?: number[];
+}) {
   return (
     <tr className="border-t border-border">
       <th className="sticky left-0 z-10 bg-muted/30 text-left font-semibold px-2 py-1.5">{label}</th>
@@ -184,12 +241,13 @@ function FootRow({ label, values }: { label: string; values: (Metrics | null)[] 
           {m ? (
             <span className="flex flex-col">
               <Cost usd={m.cost} short />
-              <span className="text-muted-foreground">
-                {tokens(m.input)} in · {tokens(m.output)} out · {nf1.format(m.toolCalls)} tools
-              </span>
+              <TokenLine m={m} />
             </span>
           ) : (
             "—"
+          )}
+          {failed && failed[i] > 0 && (
+            <span className="block text-rose-600">{failed[i]} failed</span>
           )}
         </td>
       ))}
@@ -228,10 +286,13 @@ function CellButton({
   onRerun: (repeat: number) => void;
   expectedRepeats: number;
 }) {
-  const sum = sumMetrics(cells.map(cellMetrics));
-  const avg = avgMetrics(sum);
-  const live = cells.some((c) => (c.status === "running" || c.status === "queued") && !c.stalled);
+  const avg = avgMetrics(sumMetrics(cells.map(cellMetrics)));
+  // A failed or cancelled run that spent money still shows what it spent.
+  const spend = spendOf(cells, false);
+  const shown = avg ?? (spend.n > 0 ? spend : null);
+  const running = cells.some((c) => c.status === "running" && !c.stalled);
   const failed = cells.some((c) => c.status === "failed" || c.stalled);
+  const label = cellStatusLabel(cells);
   const repeats = Array.from({ length: expectedRepeats }, (_, i) => cells.find((c) => c.repeat === i));
 
   return (
@@ -249,18 +310,11 @@ function CellButton({
             {repeats.map((c, i) => (
               <span key={i} className={cn("w-2 h-2 rounded-full shrink-0", STATUS_DOT[statusOf(c)])} />
             ))}
-            {live && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-            {avg && <Cost usd={avg.cost} short className="ml-auto font-medium" />}
+            {running && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+            {!avg && <span className="text-[11px] text-muted-foreground">{label}</span>}
+            {shown && <Cost usd={shown.cost} short className="ml-auto font-medium" />}
           </div>
-          {avg ? (
-            <div className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
-              {tokens(avg.input)} in · {tokens(avg.output)} out · {nf1.format(avg.toolCalls)} tools
-            </div>
-          ) : (
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              {cells.length === 0 ? "Not run" : failed ? "Failed" : live ? "Running" : statusOf(cells[0])}
-            </div>
-          )}
+          {shown && <TokenLine m={shown} className="block mt-0.5" />}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[28rem] max-w-[90vw] p-0">
@@ -328,9 +382,10 @@ function CellDetail({
       {r && (
         <>
           <div className="grid grid-cols-4 gap-x-2 gap-y-0.5 tabular-nums">
-            <Stat label="Input" value={tokens(r.input_tokens)} />
-            <Stat label="Output" value={tokens(r.output_tokens)} />
+            <Stat label="Input" value={tokens((r.input_tokens ?? 0) + (r.cached_tokens ?? 0))} />
+            <Stat label="Uncached" value={tokens(r.input_tokens)} />
             <Stat label="Cached" value={tokens(r.cached_tokens)} />
+            <Stat label="Output" value={tokens(r.output_tokens)} />
             <Stat label="Cost" value={<Cost usd={r.cost ?? null} short />} />
             <Stat label="Tool calls" value={String(r.tool_calls ?? 0)} />
             <Stat label="Real tools" value={String(realToolCalls(r))} />
@@ -359,6 +414,35 @@ function CellDetail({
             </div>
           )}
         </>
+      )}
+      {cell && cell.history.length > 0 && (
+        <div className="pt-1 space-y-0.5">
+          <div className="text-[10px] text-muted-foreground">Earlier attempts</div>
+          {[...cell.history].reverse().map((h) => (
+            <div key={`${h.attempt}-${h.conversationId}`} className="flex items-center gap-2 tabular-nums">
+              <span className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT[h.status])} />
+              <span className="text-muted-foreground">#{h.attempt}</span>
+              <span className="capitalize">{h.status}</span>
+              {h.result && <Cost usd={h.result.cost ?? null} short />}
+              {h.result && (
+                <span className="text-muted-foreground">
+                  in {tokens((h.result.input_tokens ?? 0) + (h.result.cached_tokens ?? 0))}
+                </span>
+              )}
+              {h.conversationId && (
+                <a
+                  href={canonicalConversationHref(h.conversationId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="ml-auto text-primary hover:underline"
+                  title="Open this attempt's conversation in a new tab"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -422,8 +506,10 @@ function ToolsAnalysis({
               <th className="text-left font-medium px-3 py-1.5">{cols.length ? "Column" : ""}</th>
               <th className="text-right font-medium px-2 py-1.5">Cost · tools</th>
               <th className="text-right font-medium px-2 py-1.5">Cost · none</th>
-              <th className="text-right font-medium px-2 py-1.5">Tokens · tools</th>
-              <th className="text-right font-medium px-3 py-1.5">Tokens · none</th>
+              <th className="text-right font-medium px-2 py-1.5">Input · tools</th>
+              <th className="text-right font-medium px-2 py-1.5">Input · none</th>
+              <th className="text-right font-medium px-2 py-1.5">Output · tools</th>
+              <th className="text-right font-medium px-3 py-1.5">Output · none</th>
             </tr>
           </thead>
           <tbody>
@@ -432,8 +518,10 @@ function ToolsAnalysis({
                 <td className="px-3 py-1.5 font-medium truncate max-w-40">{s.col.label || "—"}</td>
                 <td className="px-2 py-1.5 text-right">{s.tools ? <Cost usd={s.tools.cost} short /> : "—"}</td>
                 <td className="px-2 py-1.5 text-right">{s.none ? <Cost usd={s.none.cost} short /> : "—"}</td>
-                <td className="px-2 py-1.5 text-right">{s.tools ? tokens(s.tools.total) : "—"}</td>
-                <td className="px-3 py-1.5 text-right">{s.none ? tokens(s.none.total) : "—"}</td>
+                <td className="px-2 py-1.5 text-right"><InputCell m={s.tools} /></td>
+                <td className="px-2 py-1.5 text-right"><InputCell m={s.none} /></td>
+                <td className="px-2 py-1.5 text-right">{s.tools ? tokens(s.tools.output) : "—"}</td>
+                <td className="px-3 py-1.5 text-right">{s.none ? tokens(s.none.output) : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -450,7 +538,9 @@ function ToolsAnalysis({
               <tr className="border-b border-border text-muted-foreground">
                 <th className="text-left font-medium px-3 py-1.5">Pair</th>
                 <th className="text-left font-medium px-2 py-1.5">By cost</th>
-                <th className="text-left font-medium px-3 py-1.5">By tokens</th>
+                <th className="text-left font-medium px-3 py-1.5" title="Input (cached included) plus output, so cache warmth does not move it">
+                  By all tokens
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -485,6 +575,18 @@ function ToolsAnalysis({
         </section>
       )}
     </div>
+  );
+}
+
+function InputCell({ m }: { m: Metrics | null }) {
+  if (!m) return <>—</>;
+  return (
+    <span className="flex flex-col items-end" title={`${tokens(m.input)} uncached + ${tokens(m.cached)} cached`}>
+      <span>{tokens(m.inputAll)}</span>
+      <span className="text-[10px] text-muted-foreground">
+        {tokens(m.input)} new · {tokens(m.cached)} cached
+      </span>
+    </span>
   );
 }
 

@@ -6,6 +6,7 @@
 
 import type { ComparisonEntryRow } from "../../types";
 import type {
+  MatrixAttempt,
   MatrixAxis,
   MatrixCell,
   MatrixCellResult,
@@ -210,7 +211,48 @@ export function entryToCell(row: ComparisonEntryRow, now: number): MatrixCell | 
     error: typeof md.error === "string" ? md.error : null,
     request: (md.request && typeof md.request === "object" ? md.request : null) as MatrixPatch | null,
     result: (md.result && typeof md.result === "object" ? md.result : null) as MatrixCellResult | null,
+    history: readHistory(md.history),
   };
+}
+
+function readHistory(raw: unknown): MatrixAttempt[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((h): h is Record<string, unknown> => !!h && typeof h === "object")
+    .map((h, i) => ({
+      attempt: typeof h.attempt === "number" ? h.attempt : i + 1,
+      conversationId: typeof h.conversation_id === "string" ? h.conversation_id : "",
+      status: STATUSES.includes(h.status as MatrixCellStatus) ? (h.status as MatrixCellStatus) : "failed",
+      startedAt: typeof h.started_at === "string" ? h.started_at : null,
+      finishedAt: typeof h.finished_at === "string" ? h.finished_at : null,
+      error: typeof h.error === "string" ? h.error : null,
+      result: (h.result && typeof h.result === "object" ? h.result : null) as MatrixCellResult | null,
+    }));
+}
+
+/** Every conversation a battle's cells ever made: current attempts and every earlier one. */
+export function allCellConversationIds(
+  rows: { conversation_id: string; metadata: Record<string, unknown> | null }[],
+): string[] {
+  const ids = new Set<string>();
+  for (const row of rows) {
+    if (row.conversation_id) ids.add(row.conversation_id);
+    for (const h of readHistory((row.metadata ?? {}).history)) {
+      if (h.conversationId) ids.add(h.conversationId);
+    }
+  }
+  return [...ids];
+}
+
+/** What a cell's grid label says. Queued is never called running. */
+export function cellStatusLabel(cells: MatrixCell[]): string {
+  if (cells.length === 0) return "Not run";
+  if (cells.some((c) => c.status === "running" && !c.stalled)) return "Running";
+  if (cells.some((c) => c.status === "queued")) return "Queued";
+  if (cells.some((c) => c.stalled)) return "Stalled";
+  if (cells.some((c) => c.status === "failed")) return "Failed";
+  if (cells.some((c) => c.status === "cancelled")) return "Cancelled";
+  return "Done";
 }
 
 export function isLive(cell: MatrixCell): boolean {
@@ -267,30 +309,75 @@ export function realToolCalls(result: MatrixCellResult | null): number {
   return 0;
 }
 
+/**
+ * Token counts follow the server: `input_tokens` is UNCACHED input, `cached_tokens`
+ * is cached input, so total input = input + cached. Comparing arms on uncached
+ * input alone rewards whichever ran second (cache warmth), so every view shows
+ * all three.
+ */
 export interface Metrics {
+  /** Results counted. */
   n: number;
   input: number;
+  cached: number;
+  inputAll: number;
   output: number;
   total: number;
   cost: number;
   toolCalls: number;
+  /** Counted results that were not a completed run (failed, cancelled, stalled). */
+  unfinished: number;
 }
 
-export const ZERO_METRICS: Metrics = { n: 0, input: 0, output: 0, total: 0, cost: 0, toolCalls: 0 };
+export const ZERO_METRICS: Metrics = {
+  n: 0, input: 0, cached: 0, inputAll: 0, output: 0, total: 0, cost: 0, toolCalls: 0, unfinished: 0,
+};
 
-export function cellMetrics(cell: MatrixCell): Metrics | null {
-  if (cell.status !== "completed" || !cell.result) return null;
-  const r = cell.result;
+function resultMetrics(r: MatrixCellResult, finished: boolean): Metrics {
   const input = r.input_tokens ?? 0;
+  const cached = r.cached_tokens ?? 0;
   const output = r.output_tokens ?? 0;
   return {
     n: 1,
     input,
+    cached,
+    inputAll: input + cached,
     output,
-    total: r.total_tokens ?? input + output,
+    total: r.total_tokens ?? input + cached + output,
     cost: r.cost ?? 0,
     toolCalls: r.tool_calls ?? 0,
+    unfinished: finished ? 0 : 1,
   };
+}
+
+/** A completed run's numbers — what averages and comparisons use. */
+export function cellMetrics(cell: MatrixCell): Metrics | null {
+  if (cell.status !== "completed" || cell.stalled || !cell.result) return null;
+  return resultMetrics(cell.result, true);
+}
+
+/**
+ * Real spend: the current attempt whatever its status (a failed or cancelled run
+ * that cost money still counts) and, when asked, every earlier attempt.
+ */
+export function cellSpend(cell: MatrixCell, withHistory: boolean): Metrics[] {
+  const out: Metrics[] = [];
+  if (cell.result) out.push(resultMetrics(cell.result, cell.status === "completed" && !cell.stalled));
+  if (withHistory) {
+    for (const h of cell.history) {
+      if (h.result) out.push(resultMetrics(h.result, h.status === "completed"));
+    }
+  }
+  return out;
+}
+
+export function spendOf(cells: MatrixCell[], withHistory: boolean): Metrics {
+  return sumMetrics(cells.flatMap((c) => cellSpend(c, withHistory)));
+}
+
+/** Cells whose current attempt failed, was cancelled, or stalled. */
+export function failedCellCount(cells: MatrixCell[]): number {
+  return cells.filter((c) => c.status === "failed" || c.status === "cancelled" || c.stalled).length;
 }
 
 export function sumMetrics(list: (Metrics | null)[]): Metrics {
@@ -299,10 +386,13 @@ export function sumMetrics(list: (Metrics | null)[]): Metrics {
     if (!m) continue;
     out.n += m.n;
     out.input += m.input;
+    out.cached += m.cached;
+    out.inputAll += m.inputAll;
     out.output += m.output;
     out.total += m.total;
     out.cost += m.cost;
     out.toolCalls += m.toolCalls;
+    out.unfinished += m.unfinished;
   }
   return out;
 }
@@ -312,6 +402,9 @@ export function avgMetrics(m: Metrics): Metrics | null {
   return {
     n: m.n,
     input: m.input / m.n,
+    cached: m.cached / m.n,
+    inputAll: m.inputAll / m.n,
+    unfinished: m.unfinished,
     output: m.output / m.n,
     total: m.total / m.n,
     cost: m.cost / m.n,
