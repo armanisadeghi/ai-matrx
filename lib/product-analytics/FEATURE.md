@@ -36,6 +36,21 @@ Localhost and loopback landing hosts or referrers are `local_test`. The admin
 surface retains those rows but excludes them and bots from headline people,
 account, conversion, and cost totals.
 
+**Our own traffic is marked, not guessed** (2026-10-03). The agent-traffic
+marker (`lib/agent-traffic/marker.ts`, twin of aidream `matrx_ai.agent_traffic`)
+is the header `X-Matrx-Agent-Traffic` or the cookie `matrx_agent_traffic`. The
+proxy sets the cookie on every local preview host and `/api/dev-login` sets it;
+scripts send the header (`scripts/lib/agent-traffic.mjs`). Marked requests
+record no first touch (proxy capture and `/api/acquisition/first-touch`).
+`AgentTrafficForwarder` sends the cookie to the Python server as the header on
+guest requests (each origin's CORS probed once; a refusal sends unmarked, never
+fails). aidream then stamps the minted guest `traffic_kind = "agent"` and tags it
+`app_metadata.test_fixture` (suite `agent-traffic`, expiry from knob
+`auth.guest_identity / agent_guest_ttl_days`), so the nightly fixture sweep
+deletes it and the Accounts roster shows kind Test, reason "Our agent". Label
+only: nothing is refused. Guard: `pnpm check:agent-traffic-marker`
+(`--self-test`), advisory. User-agent heuristics remain the fallback.
+
 `InternalGoogleAnalytics` is mounted by the `(core)` server layout only for a
 signed-in `super_admin`. It does not load for guests, ordinary customers, or a
 direct Education request, and it refuses to send Education page views after a
@@ -52,6 +67,9 @@ active users, five `page_view` events, and the real Marketing, Brand Assets,
 Keywords, and Settings page titles.
 
 ## Change log
+
+- 2026-10-03 — Agent-traffic marker: our agents' and scripts' traffic records no
+  first touch, and their guests are labelled and expired by aidream.
 
 - 2026-09-01 — Retried browser-only acquisition transport loss without
   misreporting it as durable first-touch failure; retained loud HTTP failures.
