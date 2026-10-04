@@ -6,47 +6,21 @@
 // creates one in the selected organization (the gate asks when none is
 // selected) and opens it.
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken, selectAuthReady, selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { toast } from "@/lib/toast";
-import { boardHref, createBoard, isBoardError } from "../persistence/boardsService";
+import { useCreateBoard } from "../persistence/useCreateBoard";
 import { boardListConfig } from "./listConfig";
 
 export function BoardsListPage() {
-  const router = useRouter();
-  const [creating, setCreating] = useState(false);
-  const [, startTransition] = useTransition();
+  const { creating, newBoard } = useCreateBoard();
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
-  const organizationId = useAppSelector(selectOrganizationId);
   const mayLoad = Boolean(authReady && userId && accessToken);
-
-  const newBoard = async () => {
-    if (creating) return;
-    setCreating(true);
-    try {
-      const board = await createBoard({ organizationId });
-      startTransition(() => router.push(boardHref(board)));
-    } catch (error) {
-      if (!isOrganizationSelectionCancelled(error)) {
-        toast.error(
-          isBoardError(error)
-            ? error.message
-            : `The board could not be created: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-      setCreating(false);
-    }
-  };
 
   const newButton = (
     <Button size="sm" onClick={() => void newBoard()} disabled={creating}>

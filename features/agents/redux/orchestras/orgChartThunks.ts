@@ -10,6 +10,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { orgChartService } from "@/features/agents/org-chart/orgChartService";
 import { orchestrasActions } from "./slice";
+import type { RecordedLinkKind } from "@/features/agents/org-chart/constants";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
 
@@ -102,12 +103,14 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
 
       // Add the new link FIRST, then drop the old ones: a failure part-way
       // never leaves the agent with no manager at all.
-      const temp = { edgeId: `pending:${managerId}:${reportId}`, managerId, reportId };
+      const temp = { edgeId: `pending:${managerId}:${reportId}`, managerId, reportId, kind: "reports_to" as const };
       dispatch(orchestrasActions.manualOrgEdgeAdded(temp));
-      const res = await orgChartService.add(managerId, reportId);
+      const res = await orgChartService.add(managerId, reportId, "reports_to");
       dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId, reportId }));
       if (isScopesRpcErr(res)) return { ok: false, error: res.error.message };
-      dispatch(orchestrasActions.manualOrgEdgeAdded({ edgeId: res.data.id, managerId, reportId }));
+      dispatch(
+        orchestrasActions.manualOrgEdgeAdded({ edgeId: res.data.id, managerId, reportId, kind: "reports_to" }),
+      );
 
       for (const e of current.data) {
         dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: e.managerId, reportId }));
@@ -127,7 +130,37 @@ export function setManualManager(managerId: string, reportId: string): AppThunk<
   };
 }
 
-/** Take `reportId` out from under `managerId` (manual links only). */
+/**
+ * Record a hand-off or dotted line from → to. Cross links don't place a box,
+ * so there is no one-manager rule and no loop check (work may come back around).
+ * A pair holds one recorded link, so this re-types an existing one.
+ */
+export function addCrossLink(
+  fromId: string,
+  toId: string,
+  kind: Exclude<RecordedLinkKind, "reports_to">,
+): AppThunk<Promise<OrgChartWriteResult>> {
+  return async (dispatch, getState) => {
+    if (fromId === toId) return { ok: false, error: "A box can't link to itself." };
+    const prev = getState().orchestras.manualOrgChart.edges.find(
+      (e) => e.managerId === fromId && e.reportId === toId,
+    );
+    dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: fromId, reportId: toId }));
+    dispatch(
+      orchestrasActions.manualOrgEdgeAdded({ edgeId: `pending:${fromId}:${toId}`, managerId: fromId, reportId: toId, kind }),
+    );
+    const res = await orgChartService.add(fromId, toId, kind);
+    dispatch(orchestrasActions.manualOrgEdgeRemoved({ managerId: fromId, reportId: toId }));
+    if (isScopesRpcErr(res)) {
+      if (prev) dispatch(orchestrasActions.manualOrgEdgeAdded(prev));
+      return { ok: false, error: res.error.message };
+    }
+    dispatch(orchestrasActions.manualOrgEdgeAdded({ edgeId: res.data.id, managerId: fromId, reportId: toId, kind }));
+    return { ok: true };
+  };
+}
+
+/** Remove the recorded link between this pair (any type). Orchestra links are changed in the Orchestra. */
 export function removeManualManager(managerId: string, reportId: string): AppThunk<Promise<OrgChartWriteResult>> {
   return async (dispatch, getState) => {
     const prev = getState().orchestras.manualOrgChart.edges.find(

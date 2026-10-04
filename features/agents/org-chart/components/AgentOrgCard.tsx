@@ -60,7 +60,11 @@ export function AgentOrgCard({
       tabIndex={interactive ? 0 : undefined}
       aria-label={name}
       aria-pressed={interactive ? state.selected : undefined}
-      onClick={interactive ? state.select : undefined}
+      onClick={
+        interactive
+          ? (e) => state.select({ additive: e.shiftKey || e.metaKey || e.ctrlKey })
+          : undefined
+      }
       onKeyDown={(e) => {
         if (interactive && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();

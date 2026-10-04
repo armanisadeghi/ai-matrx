@@ -55,7 +55,7 @@ import { AGENT_DND_MIME } from "./AgentLibraryRail";
 import type { OrchestraBuilderCanvasProps } from "./OrchestraBuilderCanvas";
 import type { OrchestraAccent } from "../constants";
 import { useAgentOrgChart } from "@/features/agents/org-chart/useAgentOrgChart";
-import { AGENT_ORG_EDGE_KINDS } from "@/features/agents/org-chart/constants";
+import { ORG_LINK_KIND_META } from "@/features/agents/org-chart/constants";
 import type { AgentOrgNodeData } from "@/features/agents/org-chart/buildAgentOrgForest";
 import { AgentOrgCard } from "@/features/agents/org-chart/components/AgentOrgCard";
 import {
@@ -226,7 +226,7 @@ function NestedNode({ data }: NodeProps) {
       <Handle id="right" type="target" position={Position.Right} className="!h-2 !w-2 !border-0 !bg-transparent" />
       <AgentOrgCard
         node={d.placed}
-        state={{ selected: false, matched: false, select: () => {} }}
+        state={{ selected: false, matched: false, select: () => {}, dropTarget: null, dragging: false }}
         memberCount={d.memberCount}
         readOnly
       />
@@ -333,7 +333,7 @@ function buildNestedGraph(
     const placedByKey = new Map(layout.nodes.map((n) => [n.key, n]));
     for (const n of team) {
       const parentKey = n.parentKey ?? member.key;
-      const manual = n.edgeKind === "manual";
+      const manual = n.edgeKind === "reports_to";
       const parent = placedByKey.get(parentKey);
       // Same test the shared layout uses: siblings side by side in one row = a
       // normal fan-out; siblings on several rows = a stacked team.
@@ -349,7 +349,7 @@ function buildNestedGraph(
         type: targetHandle === "top" ? "smoothstep" : "trunk",
         style: {
           stroke: manual
-            ? AGENT_ORG_EDGE_KINDS.manual.color
+            ? ORG_LINK_KIND_META.reports_to.color
             : accentClasses(accentOf.get(parentKey) ?? rootAccent).stroke,
           strokeWidth: 2,
           strokeDasharray: manual ? "7 6" : undefined,
@@ -694,7 +694,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
                     y1="4"
                     x2="25"
                     y2="4"
-                    stroke={AGENT_ORG_EDGE_KINDS.manual.color}
+                    stroke={ORG_LINK_KIND_META.reports_to.color}
                     strokeWidth={2.5}
                     strokeDasharray="5 4"
                     strokeLinecap="round"

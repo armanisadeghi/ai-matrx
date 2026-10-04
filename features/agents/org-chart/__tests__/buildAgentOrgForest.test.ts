@@ -1,4 +1,4 @@
-import { buildAgentOrgForest, type OrchestraShape } from "../buildAgentOrgForest";
+import { buildAgentOrgForest, crossLinksOf, type OrchestraShape } from "../buildAgentOrgForest";
 
 const orch = (...members: string[]): OrchestraShape => ({
   members: members.map((agentId) => ({ agentId, roleTitle: `${agentId}-role` })),
@@ -21,7 +21,7 @@ describe("buildAgentOrgForest", () => {
     expect(seo.children.map((c) => c.data.agentId)).toEqual(["content", "links"]);
     const content = seo.children[0];
     expect(content.data.isConductor).toBe(true);
-    expect(content.edgeKind).toBe("automatic");
+    expect(content.edgeKind).toBe("directs");
     expect(content.data.roleTitle).toBe("content-role");
     expect(content.children.map((c) => c.data.agentId)).toEqual(["writer", "editor"]);
     expect(content.children[0].key).toBe("seo/content/writer");
@@ -31,12 +31,12 @@ describe("buildAgentOrgForest", () => {
     const forest = buildAgentOrgForest({
       orchestras: new Map([["content", orch("writer")]]),
       conductorIds: new Set(["content"]),
-      manualEdges: [{ edgeId: "m1", managerId: "cmo", reportId: "content" }],
+      manualEdges: [{ edgeId: "m1", managerId: "cmo", reportId: "content", kind: "reports_to" }],
     });
     expect(forest.map((r) => r.data.agentId)).toEqual(["cmo"]);
     const content = forest[0].children[0];
-    expect(content.edgeKind).toBe("manual");
-    expect(content.children[0].edgeKind).toBe("automatic");
+    expect(content.edgeKind).toBe("reports_to");
+    expect(content.children[0].edgeKind).toBe("directs");
   });
 
   it("shows a shared agent under every parent and says how many other places it holds", () => {
@@ -57,10 +57,10 @@ describe("buildAgentOrgForest", () => {
     const forest = buildAgentOrgForest({
       orchestras: new Map([["a", orch("x")]]),
       conductorIds: new Set(["a"]),
-      manualEdges: [{ edgeId: "m", managerId: "a", reportId: "x" }],
+      manualEdges: [{ edgeId: "m", managerId: "a", reportId: "x", kind: "reports_to" }],
     });
     expect(forest[0].children).toHaveLength(1);
-    expect(forest[0].children[0].edgeKind).toBe("automatic");
+    expect(forest[0].children[0].edgeKind).toBe("directs");
   });
 
   it("cuts a loop where it closes and never drops an agent", () => {
@@ -100,6 +100,20 @@ describe("buildAgentOrgForest", () => {
     const sub = forest[0].children[0].data;
     expect(sub.pending).toBe(false);
     expect(sub.unavailable).toBe(true);
+  });
+
+  it("keeps hand-offs and dotted lines out of the tree but puts both ends on the chart", () => {
+    const manualEdges = [
+      { edgeId: "h", managerId: "intake", reportId: "expert", kind: "hands_off_to" as const },
+      { edgeId: "d", managerId: "lead", reportId: "advisor", kind: "dotted_line" as const },
+    ];
+    const forest = buildAgentOrgForest({ orchestras: new Map(), conductorIds: new Set(), manualEdges });
+    expect(forest.map((r) => r.data.agentId).sort()).toEqual(["advisor", "expert", "intake", "lead"]);
+    expect(forest.every((r) => r.children.length === 0)).toBe(true);
+    expect(crossLinksOf(manualEdges).map((l) => `${l.fromId}>${l.toId}:${l.kind}`)).toEqual([
+      "intake>expert:hands_off_to",
+      "lead>advisor:dotted_line",
+    ]);
   });
 
   it("builds only under the given roots", () => {

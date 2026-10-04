@@ -222,8 +222,15 @@ export function usePanZoom(
     setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
   };
 
+  /** Abandon the pan in progress (a long-press on a card became a drag instead). */
+  const cancelGesture = () => {
+    pointers.current.clear();
+    gesture.current = null;
+  };
+
   return {
     view,
+    cancelGesture,
     /** Viewport size in CSS pixels (state, so it is safe to read in render). */
     viewport,
     touched,

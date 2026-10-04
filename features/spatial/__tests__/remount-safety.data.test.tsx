@@ -43,7 +43,10 @@ jest.mock("@ai-matrx/records-ui", () => {
     };
   return {
     ...actual,
-    RecordsMount: ({ children }: { children: import("react").ReactNode }) => R.createElement(R.Fragment, null, children),
+    // The mount's real job is the provider: the tile's hooks read through the cache keyed on the
+    // client the provider builds, so the stand-in keeps the provider (and so the client identity).
+    RecordsMount: ({ children, config }: { children: import("react").ReactNode; config: never }) =>
+      R.createElement(jest.requireActual("@ai-matrx/records/react").RecordsProvider, { config }, children),
     TablePage: counted("gridMounts", `${RENT_ROLL.name} grid`),
     Peek: counted("peekMounts", `${UNIT_4B_ROW.unit} · ${UNIT_4B_ROW.tenant}`),
     useRecordRights: () => ({ data: { canEdit: true }, loading: false, error: null }),

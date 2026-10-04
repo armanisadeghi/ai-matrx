@@ -12,12 +12,14 @@
  *
  * Sits INSIDE `RecordsMount` (it reads through the mount's client, as this person).
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { gridContextSnapshot, useRecordRights } from "@ai-matrx/records-ui";
-import { useFields, useRecord, useRecordChangeRevision, useRecordsClient, useTable } from "@ai-matrx/records/react";
+import { useFields, useRecord, useRecordChangeRevision, useRowActions, useTable } from "@ai-matrx/records/react";
 import type { RowAction } from "@ai-matrx/records";
 
 import { RecordStoreTableSurface, useGridContextChannel } from "./RecordStoreTableSurface";
+
+const NO_ROW_ACTIONS: RowAction[] = [];
 
 export function RecordStoreRecordSurface({
   tableId,
@@ -29,13 +31,12 @@ export function RecordStoreRecordSurface({
   children: ReactNode;
 }) {
   const channel = useGridContextChannel();
-  const client = useRecordsClient();
   const table = useTable(tableId);
   const fields = useFields(tableId);
   const record = useRecord(recordId);
   const rights = useRecordRights(recordId);
   const revision = useRecordChangeRevision(recordId);
-  const [rowActions, setRowActions] = useState<RowAction[]>([]);
+  const actions = useRowActions(tableId as never);
   const { onGridContext } = channel;
   const reloadRecord = record.reload;
 
@@ -45,16 +46,10 @@ export function RecordStoreRecordSurface({
     if (revision > 0) reloadRecord();
   }, [revision, reloadRecord]);
 
-  // The table's row actions, each saying whether it can run here — what the grid lists too.
-  useEffect(() => {
-    let live = true;
-    void client.rowActions({ table_id: tableId as never }).then((answer) => {
-      if (live && answer.ok) setRowActions(answer.data.actions);
-    });
-    return () => {
-      live = false;
-    };
-  }, [client, tableId]);
+  // The table's row actions, each saying whether it can run here - what the grid lists too. Read
+  // through the records cache (one entry per table per tab), so a board tile that sleeps, wakes or
+  // remounts reads nothing again.
+  const rowActions: RowAction[] = actions.data?.actions ?? NO_ROW_ACTIONS;
 
   const tableRead = table.data;
   const fieldList = fields.data;

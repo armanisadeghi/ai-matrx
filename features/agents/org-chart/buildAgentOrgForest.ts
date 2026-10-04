@@ -13,7 +13,8 @@
 
 import type { OrgChartTreeNode } from "@/components/official/org-chart/layout";
 import type { OrchestraAccent, OrchestraMode } from "@/features/agents/orchestras/constants";
-import type { AgentOrgEdgeKind } from "./constants";
+import type { OrgLinkKind, RecordedLinkKind } from "./constants";
+import { ORG_LINK_KIND_META } from "./constants";
 
 export interface OrchestraShape {
   members: Array<{ agentId: string; roleTitle: string | null }>;
@@ -21,16 +22,36 @@ export interface OrchestraShape {
   mode?: OrchestraMode;
 }
 
+/**
+ * One recorded link. For a tree link (reports_to) `managerId` is the box above
+ * and `reportId` the box below; for a cross link it is from → to.
+ */
 export interface ManualOrgEdge {
   edgeId: string;
   managerId: string;
   reportId: string;
+  kind: RecordedLinkKind;
+}
+
+/** A hand-off or dotted line, drawn as an arrow across the tree. */
+export interface AgentCrossLink {
+  edgeId: string;
+  fromId: string;
+  toId: string;
+  kind: RecordedLinkKind;
+}
+
+/** The cross links among recorded edges (everything that is not a tree link). */
+export function crossLinksOf(manualEdges: readonly ManualOrgEdge[]): AgentCrossLink[] {
+  return manualEdges
+    .filter((e) => !ORG_LINK_KIND_META[e.kind].tree)
+    .map((e) => ({ edgeId: e.edgeId, fromId: e.managerId, toId: e.reportId, kind: e.kind }));
 }
 
 export interface AgentOrgNodeData {
   agentId: string;
   /** Kind of the link from its parent; null at a root. */
-  edgeKind: AgentOrgEdgeKind | null;
+  edgeKind: OrgLinkKind | null;
   /** The parent this appearance hangs under. */
   parentId: string | null;
   /** Role title inside the parent Orchestra (automatic links only). */
@@ -65,7 +86,7 @@ export interface BuildAgentOrgForestInput {
 
 interface ChildLink {
   agentId: string;
-  kind: AgentOrgEdgeKind;
+  kind: OrgLinkKind;
   roleTitle: string | null;
 }
 
@@ -95,14 +116,20 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
   for (const [conductorId, o] of orchestras) {
     all.add(conductorId);
     for (const m of o.members) {
-      link(conductorId, { agentId: m.agentId, kind: "automatic", roleTitle: m.roleTitle });
+      link(conductorId, { agentId: m.agentId, kind: "directs", roleTitle: m.roleTitle });
     }
   }
   const manualSorted = [...manualEdges].sort((a, b) =>
     nameOf(a.reportId).localeCompare(nameOf(b.reportId)),
   );
   for (const e of manualSorted) {
-    link(e.managerId, { agentId: e.reportId, kind: "manual", roleTitle: null });
+    if (ORG_LINK_KIND_META[e.kind].tree) {
+      link(e.managerId, { agentId: e.reportId, kind: e.kind, roleTitle: null });
+    } else {
+      // Cross links don't place a box, but both ends belong on the chart.
+      all.add(e.managerId);
+      all.add(e.reportId);
+    }
   }
   for (const id of conductorIds) all.add(id);
 

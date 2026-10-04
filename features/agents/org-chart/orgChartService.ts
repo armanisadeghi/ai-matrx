@@ -13,7 +13,14 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { isScopesRpcErr, type ScopesRpcResult } from "@/features/scopes/types";
 import { err, ok } from "@/features/scopes/service/rpcResult";
 import { AGENT_TOKEN, MEMBER_ROLE } from "@/features/agents/orchestras/constants";
-import { ORG_CHART_READ_CHUNK, ORG_CHART_ROLE } from "./constants";
+import {
+  ORG_CHART_READ_CHUNK,
+  ORG_CHART_ROLE,
+  ORG_LINK_KIND_KEY,
+  ORG_LINK_KIND_META,
+  recordedLinkKindOf,
+  type RecordedLinkKind,
+} from "./constants";
 import type { ManualOrgEdge } from "./buildAgentOrgForest";
 
 /** PostgREST answers at most this many rows and says nothing when it stops. */
@@ -48,7 +55,7 @@ async function readAgentEdgesWhole(ids: string[]): Promise<SourceEdges> {
 
 async function readAll(agentIds: readonly string[]) {
   const ids = [...new Set(agentIds)].filter(Boolean);
-  const edges: Array<{ id: string; sourceId: string; targetId: string; role: string | null }> = [];
+  const edges: Array<{ id: string; sourceId: string; targetId: string; role: string | null; metadata: unknown }> = [];
   for (let i = 0; i < ids.length; i += ORG_CHART_READ_CHUNK) {
     const res = await readAgentEdgesWhole(ids.slice(i, i + ORG_CHART_READ_CHUNK));
     if (isScopesRpcErr(res)) return res;
@@ -58,14 +65,19 @@ async function readAll(agentIds: readonly string[]) {
 }
 
 export const orgChartService = {
-  /** Every manual link whose MANAGER is one of `agentIds`. */
+  /** Every recorded link (any type) that STARTS at one of `agentIds`. */
   async listManualEdges(agentIds: readonly string[]): Promise<ScopesRpcResult<ManualOrgEdge[]>> {
     const res = await readAll(agentIds);
     if (isScopesRpcErr(res)) return res;
     return ok(
       res.data
         .filter((e) => e.role === ORG_CHART_ROLE && e.sourceId !== e.targetId)
-        .map((e) => ({ edgeId: e.id, managerId: e.sourceId, reportId: e.targetId })),
+        .map((e) => ({
+          edgeId: e.id,
+          managerId: e.sourceId,
+          reportId: e.targetId,
+          kind: recordedLinkKindOf(e.metadata),
+        })),
     );
   },
 
@@ -78,29 +90,51 @@ export const orgChartService = {
     if (isScopesRpcErr(res)) return res;
     return ok(
       res.data
-        .filter((e) => (e.role === ORG_CHART_ROLE || e.role === MEMBER_ROLE) && e.sourceId !== e.targetId)
+        // Only TREE links decide who sits under whom; hand-offs may loop.
+        .filter(
+          (e) =>
+            e.sourceId !== e.targetId &&
+            (e.role === MEMBER_ROLE ||
+              (e.role === ORG_CHART_ROLE && ORG_LINK_KIND_META[recordedLinkKindOf(e.metadata)].tree)),
+        )
         .map((e) => ({ parentId: e.sourceId, childId: e.targetId })),
     );
   },
 
-  /** The manual links that currently place `reportId` under someone. */
+  /** The recorded TREE links that currently place `reportId` under someone. */
   async listManagersOf(reportId: string): Promise<ScopesRpcResult<ManualOrgEdge[]>> {
     const res = await associationsService.listForTargets(AGENT_TOKEN, [reportId]);
     if (isScopesRpcErr(res)) return res;
     return ok(
       res.data.edges
-        .filter((e) => e.role === ORG_CHART_ROLE && e.sourceType === AGENT_TOKEN)
-        .map((e) => ({ edgeId: e.id, managerId: e.sourceId, reportId: e.targetId })),
+        .filter(
+          (e) =>
+            e.role === ORG_CHART_ROLE &&
+            e.sourceType === AGENT_TOKEN &&
+            ORG_LINK_KIND_META[recordedLinkKindOf(e.metadata)].tree,
+        )
+        .map((e) => ({
+          edgeId: e.id,
+          managerId: e.sourceId,
+          reportId: e.targetId,
+          kind: recordedLinkKindOf(e.metadata),
+        })),
     );
   },
 
-  async add(managerId: string, reportId: string): Promise<ScopesRpcResult<{ id: string }>> {
+  /** Record (or re-type) the one link between this pair — the edge is unique per pair. */
+  async add(
+    fromId: string,
+    toId: string,
+    kind: RecordedLinkKind = "reports_to",
+  ): Promise<ScopesRpcResult<{ id: string }>> {
     return associationsService.add({
       sourceType: AGENT_TOKEN,
-      sourceId: managerId,
+      sourceId: fromId,
       targetType: AGENT_TOKEN,
-      targetId: reportId,
+      targetId: toId,
       role: ORG_CHART_ROLE,
+      metadata: { [ORG_LINK_KIND_KEY]: kind },
     });
   },
 

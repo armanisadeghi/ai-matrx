@@ -42,11 +42,7 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "data-table": { status: "passing" },
   "data-table:quiet": { status: "passing" },
   "record": { status: "passing" },
-  "record:quiet": {
-    status: "failing",
-    owner: "board lane",
-    why: "wake/remount re-read row actions (records useRowActions → rpc row_actions)",
-  },
+  "record:quiet": { status: "passing" },
   "task": { status: "passing" },
   "task:quiet": { status: "passing" },
   "war-room": { status: "passing" },

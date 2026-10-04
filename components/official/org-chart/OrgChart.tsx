@@ -53,8 +53,23 @@ export interface OrgChartCardState {
   selected: boolean;
   /** Matches the current search. */
   matched: boolean;
-  /** Make this card the selected one (its links highlight). */
-  select: () => void;
+  /**
+   * Select this card. `additive` (shift / ⌘ / Ctrl click) adds or removes it
+   * from the selection instead of replacing it.
+   */
+  select: (opts?: { additive?: boolean }) => void;
+  /** A drag is hovering this card: would it accept the drop? */
+  dropTarget: "accept" | "refuse" | null;
+  /** This card is part of the drag in progress. */
+  dragging: boolean;
+}
+
+/** A link drawn as an arrow ACROSS the tree (it does not place a box). */
+export interface OrgChartCrossLink {
+  key: string;
+  fromKey: string;
+  toKey: string;
+  kind: string;
 }
 
 export interface OrgChartProps<T> {
@@ -63,8 +78,30 @@ export interface OrgChartProps<T> {
   renderCard: (node: PlacedOrgNode<T>, state: OrgChartCardState) => ReactNode;
   /** Text a search matches against. Omit to hide search. */
   getSearchText?: (data: T) => string;
-  selectedKey?: string | null;
-  onSelect?: (key: string | null) => void;
+  /** Controlled selection (keys). Omit to let the chart keep its own. */
+  selection?: readonly string[];
+  onSelectionChange?: (keys: string[]) => void;
+  /** Arrows over the tree, e.g. hand-offs. An end hidden in a collapsed team attaches to its nearest visible ancestor. */
+  crossLinks?: readonly OrgChartCrossLink[];
+  /**
+   * Turns on drag-and-drop: drag one card (or the selection) onto another.
+   * `targetKey` is null when dropped on empty canvas. `point` is in client px.
+   */
+  onDrop?: (dragKeys: string[], targetKey: string | null, point: { x: number; y: number }) => void;
+  /** Would `targetKey` accept these? A refused target shows red and drops nothing. */
+  canDrop?: (dragKeys: string[], targetKey: string) => boolean;
+  /** Short name of a card for the drag chip. */
+  dragLabel?: (data: T) => string;
+  /** Shows a "+" under every card. */
+  onAddBelow?: (key: string) => void;
+  /** Enter on the selected card. */
+  onOpen?: (key: string) => void;
+  /** Delete / Backspace with cards selected. */
+  onDelete?: (keys: string[]) => void;
+  /** Reveal, select and centre this card whenever the value changes (deep links). */
+  focusKey?: string | null;
+  /** Remembers collapsed teams and the minimap toggle in this browser under this name. */
+  persistKey?: string;
   /** Nodes at this depth or deeper start collapsed. Omit to start fully open. */
   collapseFromDepth?: number;
   cardWidth?: number;
@@ -123,8 +160,17 @@ export function OrgChart<T>({
   edgeKinds,
   renderCard,
   getSearchText,
-  selectedKey: selectedKeyProp = null,
-  onSelect: onSelectProp,
+  selection: selectionProp,
+  onSelectionChange,
+  crossLinks = [],
+  onDrop,
+  canDrop,
+  dragLabel,
+  onAddBelow,
+  onOpen,
+  onDelete,
+  focusKey = null,
+  persistKey,
   collapseFromDepth,
   cardWidth = DEFAULT_ORG_CHART_LAYOUT.cardWidth,
   cardHeight = DEFAULT_ORG_CHART_LAYOUT.cardHeight,
@@ -140,11 +186,51 @@ export function OrgChart<T>({
   const [query, setQuery] = useState("");
   const [matchIndex, setMatchIndex] = useState(0);
   const [showMinimap, setShowMinimap] = useState(true);
-  const { view, viewport, touched, smooth, fitTo, centerOn, zoomBy, panBy, handlers } = usePanZoom(viewportRef);
-  // Controlled when the caller passes onSelect; otherwise the chart keeps its own.
-  const [ownSelected, setOwnSelected] = useState<string | null>(null);
-  const selectedKey = onSelectProp ? selectedKeyProp : ownSelected;
-  const onSelect = onSelectProp ?? setOwnSelected;
+  const { view, viewport, touched, smooth, fitTo, centerOn, zoomBy, panBy, handlers, cancelGesture } =
+    usePanZoom(viewportRef);
+  // Controlled when the caller passes onSelectionChange; otherwise the chart keeps its own.
+  const [ownSelection, setOwnSelection] = useState<string[]>([]);
+  const selection = onSelectionChange ? (selectionProp ?? []) : ownSelection;
+  const setSelection = onSelectionChange ?? setOwnSelection;
+  const selectedSet = new Set(selection);
+  /** The card keyboard moves from: the last one selected. */
+  const selectedKey = selection.length ? selection[selection.length - 1] : null;
+  const onSelect = (key: string | null) => setSelection(key ? [key] : []);
+  const selectCard = (key: string, additive?: boolean) => {
+    if (!additive) return setSelection([key]);
+    setSelection(selectedSet.has(key) ? selection.filter((k) => k !== key) : [...selection, key]);
+  };
+
+  // ── remembered view (per browser; a convenience, never state that matters) ──
+  const storageKey = persistKey ? `matrx:org-chart:${persistKey}` : null;
+  const loadedPersist = useRef(false);
+  useEffect(() => {
+    if (!storageKey || loadedPersist.current) return;
+    loadedPersist.current = true;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { collapsed?: unknown; minimap?: unknown };
+      if (Array.isArray(saved.collapsed)) {
+        setCollapsed(new Set(saved.collapsed.filter((k): k is string => typeof k === "string")));
+      }
+      if (typeof saved.minimap === "boolean") setShowMinimap(saved.minimap);
+    } catch {
+      // Storage unavailable (private window, blocked site data): start fresh.
+    }
+  }, [storageKey]);
+  const collapsedKey = [...collapsed].sort().join("|");
+  useEffect(() => {
+    if (!storageKey || !loadedPersist.current) return;
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({ collapsed: collapsedKey ? collapsedKey.split("|") : [], minimap: showMinimap }),
+      );
+    } catch {
+      // Storage unavailable: the view simply isn't remembered.
+    }
+  }, [storageKey, collapsedKey, showMinimap]);
 
   const layout = layoutOrgForest(roots, {
     ...DEFAULT_ORG_CHART_LAYOUT,
@@ -219,12 +305,197 @@ export function OrgChart<T>({
       return next;
     });
 
+  // Deep link / outside request: reveal, select and centre a card.
+  const lastFocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusKey || lastFocus.current === focusKey) return;
+    if (!ancestorKeys(roots, focusKey)) return; // not in the chart (yet) — try again when it loads
+    lastFocus.current = focusKey;
+    pendingFocus.current = focusKey;
+    reveal(focusKey);
+  });
+
+  /** Keep the keyboard's card on screen. */
+  const ensureVisible = (key: string) => {
+    const n = byKey.get(key);
+    if (!n) return;
+    const sx = n.x * view.zoom + view.x;
+    const sy = n.y * view.zoom + view.y;
+    const margin = 40;
+    if (
+      sx < margin ||
+      sy < margin ||
+      sx + cardWidth * view.zoom > viewport.w - margin ||
+      sy + cardHeight * view.zoom > viewport.h - margin
+    ) {
+      centerOn(n.x + cardWidth / 2, n.y + cardHeight / 2);
+    }
+  };
+
+  /** Arrow-key neighbour of the selected card in the visible tree. */
+  const neighbour = (key: string, dir: "up" | "down" | "left" | "right"): string | null => {
+    const n = byKey.get(key);
+    if (!n) return null;
+    if (dir === "up") return n.parentKey;
+    if (dir === "down") {
+      if (n.collapsed) {
+        toggle(key);
+        return null;
+      }
+      return layout.nodes.find((c) => c.parentKey === key)?.key ?? null;
+    }
+    const siblings = layout.nodes.filter((c) => c.parentKey === n.parentKey);
+    const i = siblings.findIndex((c) => c.key === key);
+    const j = dir === "left" ? i - 1 : i + 1;
+    return siblings[j]?.key ?? null;
+  };
+
+  // ── drag and drop ────────────────────────────────────────────────────────
+  const [drag, setDrag] = useState<{
+    keys: string[];
+    x: number;
+    y: number;
+    target: string | null;
+    accept: boolean;
+  } | null>(null);
+  const dragRef = useRef<{
+    key: string;
+    startX: number;
+    startY: number;
+    pointerType: string;
+    active: boolean;
+    timer: number | null;
+  } | null>(null);
+  const swallowClick = useRef(false);
+  /** The drag as the pointer handlers see it (state is for rendering only). */
+  const liveDrag = useRef<typeof drag>(null);
+
+  const targetAt = (clientX: number, clientY: number, keys: string[]) => {
+    for (const el of document.elementsFromPoint(clientX, clientY)) {
+      const key = (el as HTMLElement).closest?.("[data-org-key]")?.getAttribute("data-org-key");
+      if (key && !keys.includes(key)) return key;
+      if (key) return null;
+    }
+    return null;
+  };
+
+  const beginDrag = (key: string, clientX: number, clientY: number) => {
+    const keys = selectedSet.has(key) ? selection.slice() : [key];
+    if (!selectedSet.has(key)) setSelection([key]);
+    liveDrag.current = { keys, x: clientX, y: clientY, target: null, accept: false };
+    setDrag(liveDrag.current);
+  };
+
+  const onCardPointerDown = (key: string) => (e: React.PointerEvent) => {
+    if (!onDrop) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if ((e.target as HTMLElement).closest("button, a, input, textarea, select, [data-no-drag]")) return;
+    const start = { key, startX: e.clientX, startY: e.clientY, pointerType: e.pointerType, active: false, timer: null as number | null };
+    if (e.pointerType === "touch") {
+      // A finger pans the canvas; holding still on a card for a moment picks it up instead.
+      start.timer = window.setTimeout(() => {
+        const d = dragRef.current;
+        if (!d || d.active) return;
+        d.active = true;
+        cancelGesture();
+        beginDrag(d.key, d.startX, d.startY);
+      }, 450);
+    } else {
+      e.stopPropagation(); // a mouse drag on a card moves the card, not the canvas
+    }
+    dragRef.current = start;
+
+    const move = (ev: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const dist = Math.hypot(ev.clientX - d.startX, ev.clientY - d.startY);
+      if (!d.active) {
+        if (d.pointerType === "touch") {
+          if (dist > 8 && d.timer) {
+            window.clearTimeout(d.timer); // it's a pan, not a hold
+            cleanup();
+          }
+          return;
+        }
+        if (dist < 5) return;
+        d.active = true;
+        beginDrag(d.key, ev.clientX, ev.clientY);
+      }
+      ev.preventDefault();
+      const cur = liveDrag.current;
+      if (!cur) return;
+      const target = targetAt(ev.clientX, ev.clientY, cur.keys);
+      const accept = target ? (canDrop ? canDrop(cur.keys, target) : true) : true;
+      liveDrag.current = { ...cur, x: ev.clientX, y: ev.clientY, target, accept };
+      setDrag(liveDrag.current);
+      // Nudge the canvas when the card is carried to an edge.
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (rect) {
+        const edge = 36;
+        const dx = ev.clientX < rect.left + edge ? 14 : ev.clientX > rect.right - edge ? -14 : 0;
+        const dy = ev.clientY < rect.top + edge ? 14 : ev.clientY > rect.bottom - edge ? -14 : 0;
+        if (dx || dy) panBy(dx, dy);
+      }
+    };
+    const up = (ev: PointerEvent) => {
+      const d = dragRef.current;
+      cleanup();
+      if (!d?.active) return;
+      swallowClick.current = true;
+      window.setTimeout(() => (swallowClick.current = false), 0);
+      const cur = liveDrag.current;
+      liveDrag.current = null;
+      setDrag(null);
+      if (cur && (!cur.target || cur.accept)) onDrop(cur.keys, cur.target, { x: ev.clientX, y: ev.clientY });
+    };
+    const key_ = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        cleanup();
+        liveDrag.current = null;
+        setDrag(null);
+      }
+    };
+    const cleanup = () => {
+      const d = dragRef.current;
+      if (d?.timer) window.clearTimeout(d.timer);
+      dragRef.current = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+      window.removeEventListener("keydown", key_);
+    };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    window.addEventListener("keydown", key_);
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     // Keys from a card's portaled menu or dialog bubble here through React;
     // only keys pressed on the chart itself steer it.
     if (!e.currentTarget.contains(e.target as Node)) return;
     if ((e.target as HTMLElement).closest("input, [role=menu], [role=dialog]")) return;
     const step = 80;
+    const arrow = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" } as const;
+    if (selectedKey && e.key in arrow && !e.metaKey && !e.ctrlKey) {
+      const next = neighbour(selectedKey, arrow[e.key as keyof typeof arrow]);
+      if (next) {
+        setSelection([next]);
+        ensureVisible(next);
+      }
+      e.preventDefault();
+      return;
+    }
+    if (selectedKey && e.key === "Enter" && onOpen) {
+      onOpen(selectedKey);
+      e.preventDefault();
+      return;
+    }
+    if (selection.length && (e.key === "Delete" || e.key === "Backspace") && onDelete) {
+      onDelete(selection.slice());
+      e.preventDefault();
+      return;
+    }
     switch (e.key) {
       case "+":
       case "=":
@@ -258,7 +529,27 @@ export function OrgChart<T>({
     e.preventDefault();
   };
 
-  const usedKinds = new Set(layout.edges.map((e) => e.kind ?? ""));
+  // Cross links: an end hidden inside a collapsed team attaches to the nearest
+  // visible ancestor, so a hand-off never silently disappears.
+  const visibleEnd = (key: string): string | null => {
+    if (byKey.has(key)) return key;
+    const path = ancestorKeys(roots, key);
+    if (!path) return null;
+    for (let i = path.length - 1; i >= 0; i--) if (byKey.has(path[i])) return path[i];
+    return null;
+  };
+  const drawnCross = crossLinks
+    .map((l) => {
+      const from = visibleEnd(l.fromKey);
+      const to = visibleEnd(l.toKey);
+      if (!from || !to || from === to) return null;
+      const a = byKey.get(from)!;
+      const b = byKey.get(to)!;
+      return { ...l, d: crossLinkPath(a, b, cardWidth, cardHeight), from, to };
+    })
+    .filter((l): l is NonNullable<typeof l> => l !== null);
+
+  const usedKinds = new Set([...layout.edges.map((e) => e.kind ?? ""), ...drawnCross.map((l) => l.kind)]);
   const kindsInUse = Object.entries(edgeKinds).filter(([k]) => usedKinds.has(k));
 
   if (roots.length === 0) {
@@ -306,9 +597,25 @@ export function OrgChart<T>({
             width={layout.width}
             height={layout.height}
           >
+            <defs>
+              {Object.entries(edgeKinds).map(([k, kind]) => (
+                <marker
+                  key={k}
+                  id={`oc-arrow-${k}`}
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill={kind.color} />
+                </marker>
+              ))}
+            </defs>
             {layout.edges.map((e) => {
               const kind = edgeKinds[e.kind ?? ""] ?? UNKNOWN_EDGE;
-              const hot = selectedKey !== null && (e.fromKey === selectedKey || e.toKey === selectedKey);
+              const hot = selectedKey !== null && (selectedSet.has(e.fromKey) || selectedSet.has(e.toKey));
               return (
                 <path
                   key={e.key}
@@ -323,21 +630,82 @@ export function OrgChart<T>({
                 />
               );
             })}
+            {drawnCross.map((l) => {
+              const kind = edgeKinds[l.kind] ?? UNKNOWN_EDGE;
+              const hot = selectedSet.has(l.from) || selectedSet.has(l.to);
+              return (
+                <path
+                  key={l.key}
+                  d={l.d}
+                  fill="none"
+                  stroke={kind.color}
+                  strokeWidth={hot ? 2.75 : 1.75}
+                  strokeDasharray={kind.dashed ? "4 5" : undefined}
+                  strokeLinecap="round"
+                  markerEnd={`url(#oc-arrow-${l.kind})`}
+                  opacity={selectedKey && !hot ? 0.35 : 0.85}
+                  style={{ transition: "d 300ms ease-out, opacity 150ms" }}
+                />
+              );
+            })}
           </svg>
 
           {layout.nodes.map((n) => {
-            const selected = n.key === selectedKey;
+            const selected = selectedSet.has(n.key);
+            const isTarget = drag?.target === n.key;
             return (
               <div
                 key={n.key}
-                className={cn("absolute left-0 top-0 max-w-none", glide)}
+                data-org-key={n.key}
+                onPointerDown={onCardPointerDown(n.key)}
+                onClickCapture={(e) => {
+                  if (!swallowClick.current) return;
+                  swallowClick.current = false;
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                className={cn(
+                  "group/oc absolute left-0 top-0 max-w-none",
+                  glide,
+                  drag?.keys.includes(n.key) && "opacity-40",
+                )}
                 style={{
                   transform: `translate(${n.x}px, ${n.y}px)`,
                   width: cardWidth,
                   height: cardHeight,
                 }}
               >
-                {renderCard(n, { selected, matched: matchSet.has(n.key), select: () => onSelect(n.key) })}
+                {renderCard(n, {
+                  selected,
+                  matched: matchSet.has(n.key),
+                  select: (opts) => selectCard(n.key, opts?.additive),
+                  dropTarget: isTarget ? (drag?.accept ? "accept" : "refuse") : null,
+                  dragging: Boolean(drag?.keys.includes(n.key)),
+                })}
+                {isTarget && (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "pointer-events-none absolute -inset-1.5 rounded-2xl border-2 border-dashed",
+                      drag?.accept ? "border-primary bg-primary/5" : "border-destructive bg-destructive/5",
+                    )}
+                  />
+                )}
+                {onAddBelow && !drag && (
+                  <button
+                    type="button"
+                    onClick={() => onAddBelow(n.key)}
+                    title="Add below"
+                    aria-label="Add below"
+                    className={cn(
+                      "absolute top-full z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:border-foreground/30 hover:text-foreground group-hover/oc:opacity-100 focus-visible:opacity-100",
+                      n.childCount > 0 ? "left-[calc(50%+1.75rem)]" : "left-1/2 -translate-x-1/2",
+                      selected && "opacity-100",
+                    )}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                )}
                 {n.childCount > 0 && (
                   <button
                     type="button"
@@ -364,6 +732,18 @@ export function OrgChart<T>({
             );
           })}
         </div>
+
+        {drag && (
+          <div
+            className="pointer-events-none fixed z-50 flex -translate-x-1/2 -translate-y-[140%] items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground shadow-lg"
+            style={{ left: drag.x, top: drag.y }}
+          >
+            {drag.keys.length > 1
+              ? `Moving ${drag.keys.length}`
+              : `Moving ${dragLabel ? dragLabel(nodeData(roots, drag.keys[0]) as T) : ""}`.trim()}
+            {drag.target && !drag.accept && <span className="text-destructive">· can&apos;t go there</span>}
+          </div>
+        )}
 
         {/* Top bar: caller's controls + search (left), view controls (right). */}
         <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-between gap-2">
@@ -563,4 +943,40 @@ function Minimap<T>({
       </svg>
     </div>
   );
+}
+
+
+/** The data of the node with this key, anywhere in the forest. */
+function nodeData<T>(roots: OrgChartTreeNode<T>[], key: string): T | undefined {
+  const stack = [...roots];
+  while (stack.length) {
+    const n = stack.pop() as OrgChartTreeNode<T>;
+    if (n.key === key) return n.data;
+    stack.push(...n.children);
+  }
+  return undefined;
+}
+
+/** A gentle arc between two cards, leaving and entering through the facing sides. */
+function crossLinkPath(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  w: number,
+  h: number,
+): string {
+  const ac = { x: a.x + w / 2, y: a.y + h / 2 };
+  const bc = { x: b.x + w / 2, y: b.y + h / 2 };
+  const dx = bc.x - ac.x;
+  const dy = bc.y - ac.y;
+  const horizontal = Math.abs(dx) * h > Math.abs(dy) * w;
+  const start = horizontal
+    ? { x: ac.x + Math.sign(dx) * (w / 2), y: ac.y }
+    : { x: ac.x, y: ac.y + Math.sign(dy) * (h / 2) };
+  const end = horizontal
+    ? { x: bc.x - Math.sign(dx) * (w / 2 + 4), y: bc.y }
+    : { x: bc.x, y: bc.y - Math.sign(dy) * (h / 2 + 4) };
+  const bend = Math.min(120, Math.hypot(dx, dy) / 3);
+  const c1 = horizontal ? { x: start.x + Math.sign(dx) * bend, y: start.y - bend / 2 } : { x: start.x + bend / 2, y: start.y + Math.sign(dy) * bend };
+  const c2 = horizontal ? { x: end.x - Math.sign(dx) * bend, y: end.y - bend / 2 } : { x: end.x + bend / 2, y: end.y - Math.sign(dy) * bend };
+  return `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${end.x} ${end.y}`;
 }

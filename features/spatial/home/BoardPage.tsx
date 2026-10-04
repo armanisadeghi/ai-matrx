@@ -12,8 +12,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { type ReactNode, useState, useTransition } from "react";
+import { type ReactNode, useState } from "react";
 import { LayoutGrid, Pencil, Plus } from "lucide-react";
 import { ChatCanvasWorkspace } from "@ai-matrx/chat/canvas/workspace/ChatCanvasWorkspace";
 import type { CanvasWorkspaceLayout } from "@ai-matrx/chat/canvas/workspace/workspace-cookies";
@@ -23,11 +22,9 @@ import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { toast } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoard";
-import { BOARD_TOKEN, boardHref, createBoard } from "../persistence/boardsService";
+import { BOARD_TOKEN } from "../persistence/boardsService";
+import { useCreateBoard } from "../persistence/useCreateBoard";
 
 const OPENING = "Opening your board…";
 
@@ -49,23 +46,11 @@ export function BoardPage({
   initialMode: ComposerMode | null;
 }) {
   const saved = useSavedBoard(target);
-  const router = useRouter();
   const [renaming, setRenaming] = useState(false);
-  const [creating, startCreating] = useTransition();
-  const activeOrgId = useAppSelector(selectOrganizationId);
+  const { creating, newBoard } = useCreateBoard();
 
   const ready = saved.state === "ready" ? saved : null;
   const title = ready?.board.title ?? "Board";
-
-  const newBoard = () =>
-    startCreating(async () => {
-      try {
-        const board = await createBoard({ organizationId: activeOrgId });
-        router.push(boardHref(board));
-      } catch (err) {
-        toast.error(`A new board could not be created: ${err instanceof Error ? err.message : String(err)}`);
-      }
-    });
 
   const byline = !ready
     ? undefined
@@ -97,7 +82,7 @@ export function BoardPage({
                 Rename…
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem disabled={creating} onSelect={newBoard}>
+            <DropdownMenuItem disabled={creating} onSelect={() => void newBoard()}>
               <Plus className="mr-2 h-4 w-4" />
               New board
             </DropdownMenuItem>
