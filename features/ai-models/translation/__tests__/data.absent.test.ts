@@ -22,7 +22,7 @@ jest.mock("@/utils/supabase/client", () => {
     Promise.resolve(probeResult).then(res, rej);
   return {
     supabase: {
-      schema: () => ({ from: () => builder }),
+      schema: () => ({ from: () => builder, rpc: () => Promise.resolve(probeResult) }),
       rpc: () => Promise.resolve({ data: false, error: null }),
     },
   };
