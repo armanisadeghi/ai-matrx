@@ -62,6 +62,7 @@ import { useMeetPlanningKnobs } from "@/features/meet/hooks/useMeetPlanningKnobs
 import { useFindTime } from "@/features/meet/hooks/useFindTime";
 import { useMeetTemplates } from "@/features/meet/hooks/useMeetTemplates";
 import { useMeetPrepStream } from "@/features/meet/hooks/useMeetPrepStream";
+import { UnassignedMandateCard } from "@/features/mandates/unassigned/UnassignedMandateCard";
 import { applyTemplate } from "@/features/meet/lib/meeting-template";
 import { FindTimePanel } from "@/features/meet/components/manage/FindTimePanel";
 import {
@@ -700,7 +701,13 @@ export function MeetingFormDialog({
                     rows={4}
                   />
                   {agendaDraft.run.status === "error" &&
-                  agendaDraft.run.error ? (
+                  agendaDraft.run.unassignedMandateKey ? (
+                    <UnassignedMandateCard
+                      mandateKey={agendaDraft.run.unassignedMandateKey}
+                      sentence={agendaDraft.run.error}
+                    />
+                  ) : agendaDraft.run.status === "error" &&
+                    agendaDraft.run.error ? (
                     <p role="alert" className="text-xs text-destructive">
                       {agendaDraft.run.error}
                     </p>

@@ -92,6 +92,7 @@ import {
 } from "@/features/meet/components/manage/AfterMeetingWorkflows";
 import { useMeetTemplates } from "@/features/meet/hooks/useMeetTemplates";
 import { useMeetPrepStream } from "@/features/meet/hooks/useMeetPrepStream";
+import { UnassignedMandateCard } from "@/features/mandates/unassigned/UnassignedMandateCard";
 import { useMeetingById } from "@/features/meet/hooks/useMeetingById";
 import { meetingSaved } from "@/features/meet/redux/meetingsSlice";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -496,6 +497,9 @@ export function MeetingDetail({
                   canManage={canManage && !ended && !inactive}
                   running={brief.run.status === "running"}
                   error={brief.run.status === "error" ? brief.run.error : null}
+                  unassignedMandateKey={
+                    brief.run.status === "error" ? brief.run.unassignedMandateKey : null
+                  }
                   onPrepare={() => void prepare(meeting)}
                 />
               }
@@ -663,12 +667,15 @@ function BriefBlock({
   canManage,
   running,
   error,
+  unassignedMandateKey,
   onPrepare,
 }: {
   meeting: MeetingRecord;
   canManage: boolean;
   running: boolean;
   error: string | null;
+  /** Nobody holds the brief job — offer to create or pick an agent. */
+  unassignedMandateKey: string | null;
   onPrepare: () => void;
 }) {
   const stored = (meeting.metadata as Record<string, unknown> | null)
@@ -704,7 +711,13 @@ function BriefBlock({
           </Button>
         ) : null}
       </div>
-      {error ? (
+      {unassignedMandateKey ? (
+        <UnassignedMandateCard
+          className="mt-1"
+          mandateKey={unassignedMandateKey}
+          sentence={error}
+        />
+      ) : error ? (
         <p role="alert" className="mt-1 text-sm text-destructive">
           {error}
           <ErrorAlchemyMenu error={error} size="xs" />

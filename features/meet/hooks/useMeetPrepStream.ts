@@ -8,8 +8,9 @@
 // the stream is ADOPTED into the execution system (`adoptForeignStream`) and
 // renders in the floating LiveRunWindow — never hand-parsed, never a spinner
 // (THE FLOATING LAW). A refusal arrives BEFORE the stream opens and is shown as
-// the server's own sentence and remedy ("Nobody is assigned to write meeting
-// briefs yet. An administrator assigns one in Administration → Mandates…").
+// the server's own sentence and remedy — except "nobody is assigned to this
+// job", which carries the job's key so the screen shows <UnassignedMandateCard>
+// (create an agent / use an existing one) instead of a paragraph.
 
 import { useRef, useState } from "react";
 import { callApi } from "@/lib/api/call-api";
@@ -18,6 +19,7 @@ import { adoptForeignStream } from "@ai-matrx/chat/agents/redux/execution-system
 import { selectAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { streamErrorText } from "@ai-matrx/agents/matrx";
+import { readUnassignedMandate } from "@/features/mandates/unassigned/read-unassigned";
 
 export interface AgendaDraftBody {
   organization_id: string;
@@ -44,6 +46,8 @@ export interface PrepRun {
   readonly status: "idle" | "running" | "done" | "error";
   readonly requestId: string | null;
   readonly error: string | null;
+  /** Set when the refusal is "nobody holds this job" — render <UnassignedMandateCard>. */
+  readonly unassignedMandateKey: string | null;
 }
 
 /** The server's `{message, remedy}` as one sentence; anything else, said plainly. */
@@ -74,12 +78,24 @@ export function refusalSentence(error: {
   return error.message || "It could not be started.";
 }
 
+/** The refusal's person-facing sentence only (`user_message`), without the remedy. */
+function oneLine(error: { serverDetail?: unknown }): string | null {
+  const detail = error.serverDetail as { detail?: unknown } | undefined;
+  const body = (
+    detail && typeof detail === "object" && "detail" in detail ? detail.detail : detail
+  ) as { user_message?: unknown } | undefined;
+  return typeof body?.user_message === "string" && body.user_message
+    ? body.user_message
+    : null;
+}
+
 export function useMeetPrepStream(instanceId: string, label: string) {
   const dispatch = useAppDispatch();
   const [run, setRun] = useState<PrepRun>({
     status: "idle",
     requestId: null,
     error: null,
+    unassignedMandateKey: null,
   });
   const abortRef = useRef<AbortController | null>(null);
 
@@ -98,7 +114,12 @@ export function useMeetPrepStream(instanceId: string, label: string) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    setRun({ status: "running", requestId: null, error: null });
+    setRun({
+      status: "running",
+      requestId: null,
+      error: null,
+      unassignedMandateKey: null,
+    });
     let requestId: string | null = null;
     let streamError: string | null = null;
     const consumeStream = dispatch(
@@ -137,23 +158,31 @@ export function useMeetPrepStream(instanceId: string, label: string) {
           }),
     );
     if (controller.signal.aborted) return null;
+    const unassignedMandateKey = response.error
+      ? readUnassignedMandate(response.error)
+      : null;
+    // An unassigned job shows the card, so the error is the one-line sentence
+    // alone — never the remedy paragraph the card replaces.
     const failure = response.error
-      ? refusalSentence(response.error)
+      ? unassignedMandateKey
+        ? (oneLine(response.error) ?? refusalSentence(response.error))
+        : refusalSentence(response.error)
       : streamError;
     if (failure) {
-      setRun({ status: "error", requestId, error: failure });
+      setRun({ status: "error", requestId, error: failure, unassignedMandateKey });
       return null;
     }
     const text = requestId
       ? dispatch((_d, getState) => selectAnswerText(requestId!)(getState()))
       : "";
-    setRun({ status: "done", requestId, error: null });
+    setRun({ status: "done", requestId, error: null, unassignedMandateKey: null });
     return text.trim() || null;
   };
 
   return {
     run,
     start,
-    reset: () => setRun({ status: "idle", requestId: null, error: null }),
+    reset: () =>
+      setRun({ status: "idle", requestId: null, error: null, unassignedMandateKey: null }),
   };
 }
