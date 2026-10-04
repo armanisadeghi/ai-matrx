@@ -116,6 +116,7 @@ const PLAN_SOURCE_LABEL: Record<NonNullable<AdminUserRow["plan"]>["source"], str
   grant: "Assigned to this person",
   default: "Default plan",
   guest: "Guest allowance",
+  organization: "From the organization's Enterprise values",
 };
 
 function usageTitle(plan: NonNullable<AdminUserRow["plan"]>): string | undefined {
@@ -456,7 +457,7 @@ export function AccountsTableClient() {
             >
               {row.plan.name}
               <span className="ml-1 text-muted-foreground">
-                {row.plan.source === "grant" ? "" : row.plan.source === "guest" ? "(guest)" : "(default)"}
+                {row.plan.source === "grant" ? "" : row.plan.source === "guest" ? "(guest)" : row.plan.source === "organization" ? `(${row.plan.organization?.name ?? "organization"})` : "(default)"}
               </span>
             </span>
           ) : (

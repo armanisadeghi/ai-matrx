@@ -195,7 +195,7 @@ export function UsageLimitDialog({
                   <button
                     key={plan.planKey}
                     type="button"
-                    onClick={() => handleSelect(plan)}
+                    onClick={() => handleSelect(plan, cycle)}
                     className={cn(
                       "group flex flex-col gap-2 rounded-xl border p-4 text-left transition-all",
                       plan.badge

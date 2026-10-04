@@ -27,7 +27,8 @@ interface PlanCardProps {
   signedIn?: boolean;
   /** Is this the most-recommended card in its row (the plan with a badge)? */
   emphasized?: boolean;
-  onSelect?: (plan: CatalogPlan) => void;
+  onSelect?: (plan: CatalogPlan, cycle: BillingCycle) => void;
+  pending?: boolean;
   variant?: "card" | "compact";
   className?: string;
 }
@@ -38,6 +39,7 @@ export function PlanCard({
   signedIn = false,
   emphasized = !!plan.badge,
   onSelect,
+  pending = false,
   variant = "card",
   className,
 }: PlanCardProps) {
@@ -155,8 +157,8 @@ export function PlanCard({
       <div className="border-t border-border/60 p-4">
         <button
           type="button"
-          disabled={action.kind === "included"}
-          onClick={() => onSelect?.(plan)}
+          disabled={pending || action.kind === "included"}
+          onClick={() => onSelect?.(plan, cycle)}
           className={cn(
             "w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-60",
             emphasized
@@ -164,7 +166,7 @@ export function PlanCard({
               : "border border-border/80 bg-background hover:border-foreground/40 hover:bg-accent/40",
           )}
         >
-          {action.label}
+          {pending ? "Opening checkout…" : action.label}
         </button>
       </div>
     </div>

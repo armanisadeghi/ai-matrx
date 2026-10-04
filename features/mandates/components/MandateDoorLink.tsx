@@ -20,7 +20,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 import { featureIntelligenceHref } from "../feature-intelligence/hrefs";
 import { registerPageIntelligenceDoor } from "../feature-intelligence/page-intelligence-doors";
 import type { IntelligenceContext } from "../feature-intelligence/types";
@@ -54,19 +54,19 @@ export function MandateDoorLink({
 
   if (variant === "inline") {
     return (
-      <Link
-        href={featureIntelligenceHref(feature, { context })}
-        target="_blank"
-        rel="noopener noreferrer"
-        prefetch={false}
-        data-tap-target
-        className={cn(
-          "inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground",
-          className,
-        )}
-      >
-        {label}
-      </Link>
+      // THE ONE CONTROL: a body action row's door is the quiet control, so it
+      // lines up with the controls beside it (2026-10-04, "Study agents" sat
+      // lower than "Progress" / "Open plan" on /education/overview at 375px).
+      <Button variant="quiet" asChild className={className}>
+        <Link
+          href={featureIntelligenceHref(feature, { context })}
+          target="_blank"
+          rel="noopener noreferrer"
+          prefetch={false}
+        >
+          {label}
+        </Link>
+      </Button>
     );
   }
 

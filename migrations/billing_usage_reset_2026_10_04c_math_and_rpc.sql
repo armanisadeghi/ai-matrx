@@ -118,8 +118,8 @@ begin
     raise exception 'billing.usage_reset_apply: name at least one window to reset' using errcode = '22023';
   end if;
   foreach v_period in array (select array_agg(distinct x) from unnest(p_periods) x) loop
-    insert into billing.usage_reset (organization_id, visibility, subject_user_id, period, reset_at, reset_by, note)
-    values ('39c38960-d30c-4840-b0c1-c9960de95582', 'internal', p_user, v_period, now(), auth.uid(), nullif(btrim(p_note), ''));
+    insert into billing.usage_reset (organization_id, subject_user_id, period, reset_at, reset_by, note)
+    values ('39c38960-d30c-4840-b0c1-c9960de95582', p_user, v_period, now(), auth.uid(), nullif(btrim(p_note), ''));
   end loop;
   return billing.user_usage_state(p_user);
 end;
@@ -130,7 +130,7 @@ revoke all on function billing.usage_reset_apply(uuid, billing.meter_period[], t
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, identity_argtypes, declared_by, reason, gate_predicate, anonymous_callers, signed_in_callers)
 select 'billing', 'usage_reset_apply',
-       pg_get_function_identity_arguments(p.oid), p.proargtypes::oid[],
+       pg_get_function_identity_arguments(p.oid), array['uuid'::regtype, 'billing.meter_period[]'::regtype, 'text'::regtype]::oid[],
        'usage-limits dashboard 2026-10-04',
        'SIGNED-IN door (super-admin gate): resets a person''s AI-points windows (5-hour / week / month …) by writing billing.usage_reset markers; p_user is any account; returns that person''s fresh billing.user_usage_state.',
        'public.is_super_admin()', false, true

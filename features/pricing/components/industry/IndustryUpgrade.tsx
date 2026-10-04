@@ -64,7 +64,7 @@ export function IndustryUpgrade({
         {recommended && (
           <button
             type="button"
-            onClick={() => handleSelect(recommended)}
+            onClick={() => handleSelect(recommended, cycle)}
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-transform hover:scale-[1.01]"
           >
             Try {recommended.name} for {cfg.label}
@@ -96,7 +96,7 @@ export function IndustryUpgrade({
             {recommended && (
               <button
                 type="button"
-                onClick={() => handleSelect(recommended)}
+                onClick={() => handleSelect(recommended, cycle)}
                 className="inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-transform hover:scale-[1.02]"
               >
                 Choose {recommended.name}

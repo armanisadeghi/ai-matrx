@@ -1076,6 +1076,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "AI usage limits",
+        description:
+          "Who is near or over their AI-points allowance, window by window — change a plan or reset a window in place.",
+        iconName: "Activity",
+        link: "/administration/users/usage-limits",
+        isNew: true,
+      },
+      {
         title: "Usage & Cost",
         description:
           "Per-user AI spend and token usage — the CX usage analytics surfaced inside user management.",

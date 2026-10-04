@@ -8,7 +8,7 @@
 
 import type Stripe from "stripe";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { getStripe } from "@/lib/stripe/server";
+import { getStripe, requiredStripeMode } from "@/lib/stripe/server";
 import type { Database } from "@/types/database.types";
 import {
   asRowBag,
@@ -45,13 +45,19 @@ export async function ensureStripeCustomer(input: {
   userId: string;
   organizationId?: string | null;
   email: string | null;
+  beneficiaryUserId?: string;
 }): Promise<string> {
   const owner = await billingOwnerRef(input);
   const admin = createAdminClient();
-  const { data: existing } = await ownerEq(
+  const livemode = requiredStripeMode() === "live";
+  const query = ownerEq(
     admin.schema("billing").from("customer").select("*"),
     owner,
-  ).maybeSingle();
+  ).eq("livemode", livemode);
+  const { data: existing, error: readError } = await (input.beneficiaryUserId
+    ? query.eq("beneficiary_user_id", input.beneficiaryUserId)
+    : query.is("beneficiary_user_id", null)).maybeSingle();
+  if (readError) throw readError;
   const existingId = asRowBag(existing)?.["stripe_customer_id"];
   if (typeof existingId === "string" && existingId) return existingId;
 
@@ -59,14 +65,17 @@ export async function ensureStripeCustomer(input: {
   const customer = await stripe.customers.create({
     email: input.email ?? undefined,
     // The organization is what owns this customer; the person is who acted.
-    metadata: { [owner.column]: owner.value, acting_user_id: input.userId },
-  });
-  await admin
+    metadata: { [owner.column]: owner.value, acting_user_id: input.userId,
+      ...(input.beneficiaryUserId ? { beneficiary_user_id: input.beneficiaryUserId } : {}) },
+  }, { idempotencyKey: `matrx-customer-${requiredStripeMode()}-${input.beneficiaryUserId ?? owner.value}-${input.beneficiaryUserId ? "personal" : "company"}` });
+  const { error: writeError } = await admin
     .schema("billing")
     .from("customer")
-    .upsert(ownerPayload(owner, { stripe_customer_id: customer.id }), {
-      onConflict: owner.column,
+    .upsert(ownerPayload(owner, { stripe_customer_id: customer.id, livemode,
+      beneficiary_user_id: input.beneficiaryUserId ?? null }), {
+      onConflict: "stripe_customer_id,livemode",
     });
+  if (writeError) throw writeError;
   return customer.id;
 }
 
@@ -77,31 +86,40 @@ export async function ensureStripeCustomer(input: {
  */
 export async function billingOwnerForCustomer(
   customerId: string,
+  livemode: boolean,
 ): Promise<BillingOwnerRef | null> {
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .schema("billing")
     .from("customer")
     .select("*")
     .eq("stripe_customer_id", customerId)
+    .eq("livemode", livemode)
     .maybeSingle();
+  if (error) throw error;
   return billingOwnerRefFromRow(asRowBag(data));
 }
 
 /** Resolve our price row + product tier for a Stripe price id. */
 async function tierForStripePrice(
   stripePriceId: string | null,
-): Promise<{ priceId: string | null; tier: Tier }> {
-  if (!stripePriceId) return { priceId: null, tier: "premium" };
+  livemode: boolean,
+): Promise<{ priceId: string; tier: Tier; planKey: string }> {
+  if (!stripePriceId) throw new Error("Subscription has no recurring price");
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .schema("billing")
     .from("price")
-    .select("id, product:product_id(tier)")
+    .select("id, metadata, product:product_id(tier)")
     .eq("stripe_price_id", stripePriceId)
+    .eq("livemode", livemode)
     .maybeSingle();
-  const tier = (data?.product as { tier?: Tier } | null)?.tier ?? "premium";
-  return { priceId: data?.id ?? null, tier };
+  if (error) throw error;
+  if (!data) throw new Error("Subscription price is not registered for this Stripe mode");
+  const tier = (data.product as { tier?: Tier } | null)?.tier;
+  const planKey = asRowBag(data.metadata)?.plan_key;
+  if (!tier || typeof planKey !== "string" || !planKey) throw new Error("Subscription price has no registered plan or tier");
+  return { priceId: data.id, tier, planKey };
 }
 
 /**
@@ -112,16 +130,19 @@ async function tierForStripePrice(
  */
 async function isStaleSubscriptionEvent(
   stripeSubscriptionId: string,
+  livemode: boolean,
   eventCreatedUnix: number | null | undefined,
 ): Promise<boolean> {
   if (!eventCreatedUnix) return false;
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .schema("billing")
     .from("subscription")
     .select("last_stripe_event_at")
     .eq("stripe_subscription_id", stripeSubscriptionId)
+    .eq("livemode", livemode)
     .maybeSingle();
+  if (error) throw error;
   const last = data?.last_stripe_event_at;
   return Boolean(last && new Date(last).getTime() > eventCreatedUnix * 1000);
 }
@@ -135,7 +156,7 @@ export async function syncSubscription(
   sub: Stripe.Subscription,
   eventCreatedUnix?: number,
 ): Promise<void> {
-  if (await isStaleSubscriptionEvent(sub.id, eventCreatedUnix)) return;
+  if (await isStaleSubscriptionEvent(sub.id, sub.livemode, eventCreatedUnix)) return;
 
   const admin = createAdminClient();
   const customerId =
@@ -154,28 +175,33 @@ export async function syncSubscription(
   // The metadata fallback follows the mapping: `ensureStripeCustomer` stamps the
   // owner on the Stripe customer under whichever name is live, so a subscription
   // whose mapping row is missing can still be attributed.
-  let owner = await billingOwnerForCustomer(customerId);
+  let owner = await billingOwnerForCustomer(customerId, sub.livemode);
   if (!owner) owner = billingOwnerRefFromRow(sub.metadata as Record<string, unknown> | null);
   if (!owner) {
-    console.error(
+    throw new Error(
       `[stripe/sync] LOUD: subscription ${sub.id} (customer ${customerId}) has no ` +
         `resolvable owner — premium will grant to nobody. Check billing.customer mapping.`,
     );
-    return;
   }
 
   // Period fields live on the subscription ITEM in Stripe SDK v22, not the
   // subscription itself (reading sub.current_period_* yields undefined -> null).
   const item = sub.items.data[0];
   const priceId = item?.price?.id ?? null;
-  const { priceId: localPriceId, tier } = await tierForStripePrice(priceId);
+  const { priceId: localPriceId, tier, planKey } = await tierForStripePrice(priceId, sub.livemode);
+  // The registered price is authoritative after a customer changes plans in
+  // Stripe's portal; Stripe does not rewrite our original checkout metadata.
 
-  await admin
+  const { error } = await admin
     .schema("billing")
     .from("subscription")
     .upsert(
       ownerPayload(owner, {
         stripe_subscription_id: sub.id,
+        livemode: sub.livemode,
+        beneficiary_user_id: sub.metadata.beneficiary_user_id || null,
+        plan_key: planKey,
+        metadata: sub.metadata,
         price_id: localPriceId,
         status: mapStatus(sub.status),
         tier: sub.status === "trialing" ? "trial" : tier,
@@ -190,8 +216,9 @@ export async function syncSubscription(
           : new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }),
-      { onConflict: "stripe_subscription_id" },
+      { onConflict: "stripe_subscription_id,livemode" },
     );
+  if (error) throw error;
 }
 
 /** Mark a subscription canceled (subscription.deleted). Idempotent + order-safe. */
@@ -199,9 +226,9 @@ export async function markSubscriptionCanceled(
   sub: Stripe.Subscription,
   eventCreatedUnix?: number,
 ): Promise<void> {
-  if (await isStaleSubscriptionEvent(sub.id, eventCreatedUnix)) return;
+  if (await isStaleSubscriptionEvent(sub.id, sub.livemode, eventCreatedUnix)) return;
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .schema("billing")
     .from("subscription")
     .update({
@@ -212,7 +239,8 @@ export async function markSubscriptionCanceled(
         : new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
-    .eq("stripe_subscription_id", sub.id);
+    .eq("stripe_subscription_id", sub.id).eq("livemode", sub.livemode);
+  if (error) throw error;
 }
 
 /**
@@ -226,20 +254,22 @@ export async function hasProcessedStripeEvent(
   eventId: string,
 ): Promise<boolean> {
   const admin = createAdminClient();
-  const { data } = await admin
+  const { data, error } = await admin
     .schema("billing")
     .from("stripe_event")
     .select("id")
     .eq("id", eventId)
     .maybeSingle();
+  if (error) throw error;
   return Boolean(data);
 }
 
 /** Record an event id AFTER its handler succeeded (idempotency marker). */
 export async function recordStripeEvent(event: Stripe.Event): Promise<void> {
   const admin = createAdminClient();
-  await admin
+  const { error } = await admin
     .schema("billing")
     .from("stripe_event")
     .upsert({ id: event.id, type: event.type }, { onConflict: "id" });
+  if (error) throw error;
 }

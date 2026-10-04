@@ -4,6 +4,7 @@
 
 import React from "react";
 import {
+  Activity,
   Building2,
   DollarSign,
   Gauge,
@@ -61,6 +62,11 @@ const NAV_ITEMS: AdminSectionTab[] = [
     label: "Limits & Knobs",
     href: "/administration/users/limits",
     icon: SlidersHorizontal,
+  },
+  {
+    label: "AI usage limits",
+    href: "/administration/users/usage-limits",
+    icon: Activity,
   },
   {
     label: "Usage & Cost",

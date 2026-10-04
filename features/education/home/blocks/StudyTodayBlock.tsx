@@ -16,6 +16,7 @@
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Coffee, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as ControlButton, ControlRow } from "@ai-matrx/design-system/controls";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { InstallStudyAppButton } from "../../components/InstallStudyAppButton";
 import type { EducationSnapshot } from "../types";
@@ -45,29 +46,25 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* One control row: every action here is the same quiet control, so the
+            three sit on one line (they used to be three differently built text
+            links at three heights on a phone). */}
+        <ControlRow>
           {/* Renders nothing unless this browser can actually install. */}
           <InstallStudyAppButton />
           {/* THE DOOR LAW — every AI step in education is a Mandate the learner
               may re-point at their own agent, and no education surface named
               that. Deep-linked to the `education` domain. */}
           <MandateDoorLink feature="education" label="Study agents" variant="inline" />
-          <Link
-            href="/education/progress"
-            data-tap-target
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            Progress
-          </Link>
-          <Link
-            href="/education/planner"
-            data-tap-target
-            className="inline-flex items-center gap-1 text-xs text-primary"
-          >
-            {study.plan ? "Open plan" : "Make a plan"}
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        </div>
+          <ControlButton variant="quiet" asChild>
+            <Link href="/education/progress">Progress</Link>
+          </ControlButton>
+          <ControlButton variant="quiet" asChild iconEnd={<ArrowRight />}>
+            <Link href="/education/planner">
+              {study.plan ? "Open plan" : "Make a plan"}
+            </Link>
+          </ControlButton>
+        </ControlRow>
       </div>
 
       {study.isRestDay && nextActions.length === 0 ? (

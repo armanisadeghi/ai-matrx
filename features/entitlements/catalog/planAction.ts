@@ -15,7 +15,7 @@ export type PlanAction =
   | { kind: "signup"; label: string; href: string }
   | { kind: "contact"; label: string; href: string }
   | { kind: "included"; label: string }
-  | { kind: "checkout-pending"; label: string };
+  | { kind: "checkout"; label: string };
 
 export function planAction(plan: CatalogPlan, signedIn: boolean): PlanAction {
   if (plan.monthlyCents == null) return { kind: "contact", label: "Talk to sales", href: "/contact" };
@@ -24,7 +24,7 @@ export function planAction(plan: CatalogPlan, signedIn: boolean): PlanAction {
       ? { kind: "included", label: "Included with your account" }
       : { kind: "signup", label: "Start free", href: "/sign-up" };
   }
-  return { kind: "checkout-pending", label: `Choose ${plan.name}` };
+  return { kind: "checkout", label: `Choose ${plan.name}` };
 }
 
 /** Run the honest half of a plan choice that has no destination yet. */

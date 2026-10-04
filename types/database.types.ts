@@ -5865,25 +5865,31 @@ export type Database = {
       }
       customer: {
         Row: {
+          beneficiary_user_id: string | null
           created_at: string
           custom_fields: Json
           id: string
+          livemode: boolean
           metadata: Json
           organization_id: string
           stripe_customer_id: string
         }
         Insert: {
+          beneficiary_user_id?: string | null
           created_at?: string
           custom_fields?: Json
           id?: string
+          livemode: boolean
           metadata?: Json
           organization_id: string
           stripe_customer_id: string
         }
         Update: {
+          beneficiary_user_id?: string | null
           created_at?: string
           custom_fields?: Json
           id?: string
+          livemode?: boolean
           metadata?: Json
           organization_id?: string
           stripe_customer_id?: string
@@ -6135,6 +6141,7 @@ export type Database = {
           id: string
           interval: string | null
           interval_count: number
+          livemode: boolean
           metadata: Json
           organization_id: string
           product_id: string
@@ -6159,6 +6166,7 @@ export type Database = {
           id?: string
           interval?: string | null
           interval_count?: number
+          livemode: boolean
           metadata?: Json
           organization_id: string
           product_id: string
@@ -6183,6 +6191,7 @@ export type Database = {
           id?: string
           interval?: string | null
           interval_count?: number
+          livemode?: boolean
           metadata?: Json
           organization_id?: string
           product_id?: string
@@ -6467,6 +6476,7 @@ export type Database = {
       }
       subscription: {
         Row: {
+          beneficiary_user_id: string | null
           cancel_at_period_end: boolean
           canceled_at: string | null
           created_at: string
@@ -6475,8 +6485,10 @@ export type Database = {
           custom_fields: Json
           id: string
           last_stripe_event_at: string | null
+          livemode: boolean
           metadata: Json
           organization_id: string
+          plan_key: string
           price_id: string | null
           status: Database["billing"]["Enums"]["subscription_status"]
           stripe_subscription_id: string | null
@@ -6486,6 +6498,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          beneficiary_user_id?: string | null
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -6494,8 +6507,10 @@ export type Database = {
           custom_fields?: Json
           id?: string
           last_stripe_event_at?: string | null
+          livemode: boolean
           metadata?: Json
           organization_id: string
+          plan_key: string
           price_id?: string | null
           status: Database["billing"]["Enums"]["subscription_status"]
           stripe_subscription_id?: string | null
@@ -6505,6 +6520,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          beneficiary_user_id?: string | null
           cancel_at_period_end?: boolean
           canceled_at?: string | null
           created_at?: string
@@ -6513,8 +6529,10 @@ export type Database = {
           custom_fields?: Json
           id?: string
           last_stripe_event_at?: string | null
+          livemode?: boolean
           metadata?: Json
           organization_id?: string
+          plan_key?: string
           price_id?: string | null
           status?: Database["billing"]["Enums"]["subscription_status"]
           stripe_subscription_id?: string | null
@@ -6524,6 +6542,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "subscription_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["plan_key"]
+          },
           {
             foreignKeyName: "subscription_price_id_fkey"
             columns: ["price_id"]
@@ -6581,6 +6606,60 @@ export type Database = {
           updated_by?: string | null
           user_id?: string | null
           version?: number
+        }
+        Relationships: []
+      }
+      usage_reset: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          period: Database["billing"]["Enums"]["meter_period"]
+          reset_at: string
+          reset_by: string | null
+          subject_user_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          period: Database["billing"]["Enums"]["meter_period"]
+          reset_at?: string
+          reset_by?: string | null
+          subject_user_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          period?: Database["billing"]["Enums"]["meter_period"]
+          reset_at?: string
+          reset_by?: string | null
+          subject_user_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -6678,6 +6757,22 @@ export type Database = {
         | { Args: never; Returns: Json }
         | { Args: { p_org: string }; Returns: Json }
       org_capability_status: { Args: { p_org: string }; Returns: Json }
+      org_custom_limit_remove: {
+        Args: {
+          p_org: string
+          p_period: Database["billing"]["Enums"]["meter_period"]
+        }
+        Returns: number
+      }
+      org_custom_limit_set: {
+        Args: {
+          p_limit: number
+          p_note: string
+          p_org: string
+          p_period: Database["billing"]["Enums"]["meter_period"]
+        }
+        Returns: Json
+      }
       org_plan_assign: {
         Args: { p_note: string; p_org: string; p_plan: string }
         Returns: Json
@@ -6863,6 +6958,14 @@ export type Database = {
           event_count: number
           total_quantity: number
         }[]
+      }
+      usage_reset_apply: {
+        Args: {
+          p_note: string
+          p_periods: Database["billing"]["Enums"]["meter_period"][]
+          p_user: string
+        }
+        Returns: Json
       }
       user_effective_plan: { Args: { p_user: string }; Returns: string }
       user_plan_set: {
@@ -128244,6 +128347,16 @@ export type Database = {
           plan_name: string
           plan_source: string
           usage: Json
+          user_id: string
+        }[]
+      }
+      admin_account_points: {
+        Args: never
+        Returns: {
+          last_points_at: string
+          month_points: number
+          plan_org_id: string
+          plan_org_name: string
           user_id: string
         }[]
       }

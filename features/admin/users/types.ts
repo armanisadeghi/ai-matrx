@@ -64,8 +64,14 @@ export type AdminUsageState = "ok" | "near" | "over";
 export interface AdminUserPlan {
   key: string;
   name: string;
-  /** guest = anonymous visitor; grant = per-person billing.user_plan row; default = the default plan. */
-  source: "guest" | "grant" | "default";
+  /**
+   * guest = anonymous visitor; organization = the custom values of the person's
+   * Enterprise organization (`organization` names it); grant = per-person
+   * billing.user_plan row; default = the default plan.
+   */
+  source: "guest" | "organization" | "grant" | "default";
+  /** The Enterprise organization the allowance comes from (users.admin_account_points). */
+  organization: { id: string; name: string } | null;
   grant_expires_at: string | null;
   grant_note: string | null;
   state: AdminUsageState;
@@ -76,6 +82,22 @@ export interface AdminUserPlan {
     limit: number | null;
     resets_at: string | null;
   } | null;
+  /** Every judged window, most constrained first (the database's order). */
+  windows: AdminUsageWindow[];
+  /** AI points spent this calendar month (users.admin_account_points). */
+  month_points: number;
+  /** The person's latest AI-points ledger row; null when never. */
+  last_points_at: string | null;
+}
+
+/** One window of billing._points_usage_state, read verbatim. */
+export interface AdminUsageWindow {
+  period: string;
+  used: number;
+  /** null = no limit for this window. */
+  limit: number | null;
+  resets_at: string | null;
+  state: AdminUsageState;
 }
 
 /** Organization membership shown inline on the global account roster. */

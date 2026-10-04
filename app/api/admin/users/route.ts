@@ -24,7 +24,11 @@ import { extractErrorMessage } from "@/utils/errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import { classifyPerson } from "@/features/admin/users/lib/personSegments";
 import { describeAcquisitionClient } from "@/lib/product-analytics/user-acquisition";
-import { toAdminUserPlan, type AccountPlanRow } from "@/features/admin/users/lib/accountPlan";
+import {
+  toAdminUserPlan,
+  type AccountPlanRow,
+  type AccountPointsRow,
+} from "@/features/admin/users/lib/accountPlan";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
@@ -104,6 +108,23 @@ function readAccountPlans(admin: AdminClient): Promise<AccountPlanRow[]> {
         .order("user_id")
         .range(from, to),
     { label: "users.admin_account_plans" },
+  );
+}
+
+/**
+ * The Enterprise organization each person's allowance comes from, and their
+ * AI points this month + latest spend (users.admin_account_points, one pass;
+ * only accounts with either fact have a row).
+ */
+function readAccountPoints(admin: AdminClient): Promise<AccountPointsRow[]> {
+  return readAllRows<AccountPointsRow>(
+    ({ from, to }) =>
+      admin
+        .schema("users")
+        .rpc("admin_account_points", undefined, { count: "exact" })
+        .order("user_id")
+        .range(from, to),
+    { label: "users.admin_account_points" },
   );
 }
 
@@ -212,8 +233,14 @@ export async function GET() {
   // the roster still loads and `plans_error` says why the column is empty.
   let plansError: string | null = null;
   const planById = new Map<string, AccountPlanRow>();
+  const pointsById = new Map<string, AccountPointsRow>();
   try {
-    for (const row of await readAccountPlans(admin)) planById.set(row.user_id, row);
+    const [planRows, pointRows] = await Promise.all([
+      readAccountPlans(admin),
+      readAccountPoints(admin),
+    ]);
+    for (const row of planRows) planById.set(row.user_id, row);
+    for (const row of pointRows) pointsById.set(row.user_id, row);
   } catch (error) {
     plansError = extractErrorMessage(error, "Failed to read account plans");
   }
@@ -342,7 +369,7 @@ export async function GET() {
       landing: signal?.landingPath
         ? `${signal.landingHost ?? ""}${signal.landingPath}`
         : null,
-      plan: planRow ? toAdminUserPlan(planRow) : null,
+      plan: planRow ? toAdminUserPlan(planRow, pointsById.get(u.id)) : null,
     };
   });
 

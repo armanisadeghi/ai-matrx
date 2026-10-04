@@ -30,8 +30,14 @@
 //   * A capability with `enforced = false` is TRACKING ONLY and says so in
 //     words wherever its numbers appear.
 //   * Name and price are read-only here — they are `billing.plan` columns.
+//   * THE 0 TRAP: saving 0 asks first and names the consequence ("0 means no AI
+//     points at all for Pro — every account on it is blocked.").
+//   * ENTERPRISE HAS NO CELLS. It is never unlimited and has no plan numbers:
+//     its values are entered per organization (Organizations admin, custom
+//     limits) and inherited by members. Its row says so and links there.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Loader2, Plus, X } from "lucide-react";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +77,7 @@ import {
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
+import { isEnterpriseAudience, zeroConfirmation } from "../enterpriseCustom";
 
 /**
  * The one honest word for `billing.capability.enforced`. "Tracking only" is
@@ -167,6 +174,16 @@ function LimitCell({
     if (stored === undefined) {
       toast.error("Enter a number, or leave it blank for unlimited");
       return;
+    }
+    const zero = zeroConfirmation(plan.name, column.capability, stored, existing?.limit_value);
+    if (zero) {
+      const ok = await confirm({
+        ...zero,
+        confirmLabel: "Save 0",
+        cancelLabel: "Cancel",
+        variant: "destructive",
+      });
+      if (!ok) return;
     }
     setSaving(true);
     try {
@@ -382,7 +399,17 @@ function GroupRows({
           >
             {planPriceLabel(plan)}
           </td>
-          {columns.map((column) => (
+          {isEnterpriseAudience(plan.audience) ? (
+            <td colSpan={columns.length} className="px-3 py-1.5 align-middle text-xs text-muted-foreground">
+              Custom per organization ·{" "}
+              <Link
+                href="/administration/users/organizations?plan=enterprise"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Enterprise organizations
+              </Link>
+            </td>
+          ) : columns.map((column) => (
             <LimitCell
               key={`${column.capability}|${column.period}`}
               plan={plan}

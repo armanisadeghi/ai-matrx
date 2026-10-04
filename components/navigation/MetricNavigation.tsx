@@ -54,6 +54,12 @@ function availabilityBadge(
 /**
  * Compact, touch-safe links for a module's real destinations and optional live
  * metrics. Callers own reads, access filtering, count semantics, and routes.
+ *
+ * Below `sm` the pills sit in a two-row, sideways-scrolling grid. A grid cell
+ * stretches its item by default, which drew every pill as wide as the widest
+ * one in its column with the label pushed left (2026-10-04, /education/overview
+ * at 375px). A pill is never stretched: each one hugs its label
+ * (`justify-self-start`); the design-system pill guard flags a stretched pill.
  */
 export function MetricNavigation({
   label,
@@ -91,7 +97,7 @@ export function MetricNavigation({
             data-surface-value={
               item.value !== undefined ? `${item.key}_count` : undefined
             }
-            className="inline-flex min-h-11 min-w-0 items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 min-w-0 items-center gap-2 justify-self-start rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span
               className={cn(

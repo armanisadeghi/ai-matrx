@@ -44161,6 +44161,16 @@ export type ChatDatabase = {
           user_id: string
         }[]
       }
+      admin_account_points: {
+        Args: never
+        Returns: {
+          last_points_at: string
+          month_points: number
+          plan_org_id: string
+          plan_org_name: string
+          user_id: string
+        }[]
+      }
       credential_item_holdings: {
         Args: { p_item_ids: string[] }
         Returns: {

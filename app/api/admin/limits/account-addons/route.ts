@@ -49,6 +49,9 @@ export async function GET() {
           .schema("billing")
           .from("account_addon")
           .select(COLUMNS, { count: "exact" })
+          // A removed row (soft delete, e.g. billing.org_custom_limit_remove)
+          // is gone; an EXPIRED row still lists and reads as expired.
+          .is("deleted_at", null)
           .order("effective_from", { ascending: false })
           .order("id", { ascending: false })
           .range(from, to)

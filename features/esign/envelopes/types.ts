@@ -62,3 +62,105 @@ export const SIGNER_STATUS_LABEL: Record<string, string> = {
   delivery_failed: "Not delivered",
   expired: "Expired",
 };
+
+// ─── sending: recipients and placed fields ───────────────────────────────────────
+
+/** The four boxes a signer fills at signing, each from what they adopted (the frozen contract). */
+export type FieldKind = "signature" | "initials" | "date_signed" | "full_name";
+
+export interface FieldKindSpec {
+  kind: FieldKind;
+  label: string;
+  /** Default box size as fractions of the page (8.5x11). */
+  w: number;
+  h: number;
+}
+
+export const FIELD_KINDS: readonly FieldKindSpec[] = [
+  { kind: "signature", label: "Signature", w: 0.25, h: 0.06 },
+  { kind: "initials", label: "Initials", w: 0.08, h: 0.05 },
+  { kind: "date_signed", label: "Date signed", w: 0.16, h: 0.035 },
+  { kind: "full_name", label: "Name", w: 0.22, h: 0.035 },
+];
+
+export function fieldKindSpec(kind: FieldKind): FieldKindSpec {
+  return FIELD_KINDS.find((k) => k.kind === kind) ?? FIELD_KINDS[0];
+}
+
+/** One person asked to sign. A picked member carries `userId`; an outsider is a name and an address. */
+export interface Recipient {
+  key: string;
+  fullName: string;
+  email: string;
+  userId: string | null;
+  avatarUrl: string | null;
+}
+
+/**
+ * A box placed on one page of one document for one recipient. Coordinates are fractions of the
+ * page, origin top-left; `page` is 1-based. Held against the document's file id and the
+ * recipient's key so removing or reordering either never points a box at the wrong one.
+ */
+export interface PlacedField {
+  id: string;
+  fileId: string;
+  recipientKey: string;
+  kind: FieldKind;
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** A field as the send request carries it (indexes into `file_ids` and `signers`). */
+export interface EnvelopeFieldInput {
+  document_index: number;
+  signer_index: number;
+  kind: FieldKind;
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** Keep a box on its page: never smaller than a sliver, never past an edge. */
+export function clampBox(box: { x: number; y: number; w: number; h: number }) {
+  const w = Math.min(1, Math.max(0.02, box.w));
+  const h = Math.min(1, Math.max(0.015, box.h));
+  return {
+    w,
+    h,
+    x: Math.min(1 - w, Math.max(0, box.x)),
+    y: Math.min(1 - h, Math.max(0, box.y)),
+  };
+}
+
+/**
+ * The send request's fields, indexed against the documents and signers actually sent. A box whose
+ * document or recipient is gone is dropped, never re-pointed.
+ */
+export function fieldsForSend(
+  fields: readonly PlacedField[],
+  fileIds: readonly string[],
+  recipientKeys: readonly string[],
+): EnvelopeFieldInput[] {
+  const out: EnvelopeFieldInput[] = [];
+  for (const f of fields) {
+    const document_index = fileIds.indexOf(f.fileId);
+    const signer_index = recipientKeys.indexOf(f.recipientKey);
+    if (document_index < 0 || signer_index < 0) continue;
+    const box = clampBox(f);
+    out.push({ document_index, signer_index, kind: f.kind, page: Math.max(1, Math.round(f.page)), ...box });
+  }
+  return out;
+}
+
+/** Each recipient's colour on the page — the chart palette, in order. */
+const RECIPIENT_TOKENS = ["--chart-1", "--chart-2", "--chart-4", "--chart-6", "--chart-3", "--chart-5"];
+
+export function recipientColor(index: number, alpha = 1): string {
+  const token = RECIPIENT_TOKENS[((index % RECIPIENT_TOKENS.length) + RECIPIENT_TOKENS.length) % RECIPIENT_TOKENS.length];
+  return alpha === 1 ? `hsl(var(${token}))` : `hsl(var(${token}) / ${alpha})`;
+}

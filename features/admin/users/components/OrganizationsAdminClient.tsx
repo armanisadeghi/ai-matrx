@@ -67,6 +67,7 @@ import {
 } from "@/features/admin/limits/components/ChangePlanDialog";
 import { fetchOrgPlanAssignments, fetchPlans } from "@/features/admin/limits/service";
 import { audienceLabel, type OrgPlanAssignment, type Plan } from "@/features/admin/limits/types";
+import { EnterpriseCustomLimitsEditor } from "@/features/admin/limits/components/EnterpriseCustomLimitsEditor";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
   email: string | null;
@@ -81,6 +82,9 @@ export function OrganizationsAdminClient() {
   const searchParams = useSearchParams();
   const focusedUserId = searchParams.get("user");
   const requestedOrganizationId = searchParams.get("org");
+  // `?plan=enterprise` lists only organizations on that plan audience (the
+  // Plan allowances matrix links here for Enterprise's custom values).
+  const planAudienceFilter = searchParams.get("plan");
 
   const [showGuestWorkspaces, setShowGuestWorkspaces] = useState(false);
   const [directory, setDirectory] = useState<AdminOrganizationDirectory | null>(
@@ -195,8 +199,13 @@ export function OrganizationsAdminClient() {
   );
   const isGuestWorkspace = (organization: AdminOrganizationRow): boolean =>
     organization.created_by !== null && guestUserIds.has(organization.created_by);
+  const orgPlanAudience = (organizationId: string): string | null => {
+    const planId = orgPlans.get(organizationId)?.plan_id;
+    return planId ? (planByKey.get(planId)?.audience ?? null) : (defaultPlan?.audience ?? null);
+  };
   const visibleOrganizations = (directory?.organizations ?? []).filter(
     (organization) =>
+      (!planAudienceFilter || orgPlanAudience(organization.id) === planAudienceFilter) &&
       (!focusedUserId || membershipOrganizationIds.has(organization.id)) &&
       (showGuestWorkspaces || Boolean(focusedUserId) || !isGuestWorkspace(organization)),
   );
@@ -545,6 +554,24 @@ export function OrganizationsAdminClient() {
         />
       ) : null}
 
+      {planAudienceFilter ? (
+        <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-1.5 text-sm">
+          <span className="truncate">
+            Only organizations on {audienceLabel(planAudienceFilter)} plans
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete("plan");
+              pushAddressWithoutNavigating(`${pathname}${params.size ? `?${params.toString()}` : ""}`);
+            }}
+          >
+            Show all
+          </Button>
+        </div>
+      ) : null}
       {focusedUserId ? (
         <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
           <div className="flex min-w-0 items-center gap-2 text-sm">
@@ -756,6 +783,14 @@ export function OrganizationsAdminClient() {
               <Plus className="mr-1 h-4 w-4" /> Add member
             </Button>
           </div>
+          {selectedOrganization && orgPlanAudience(selectedOrganization.id) === "enterprise" ? (
+            <EnterpriseCustomLimitsEditor
+              key={selectedOrganization.id}
+              organizationId={selectedOrganization.id}
+              organizationName={selectedOrganization.name}
+              className="mx-2 mt-2"
+            />
+          ) : null}
           <div className="min-h-0 flex-1 p-2">
             <NonEditableContextMenu
               sourceFeature="admin"

@@ -64,7 +64,7 @@ export function UpgradeModal({
   const selected = visible.find((p) => p.planKey === selectedKey);
   const confirm = (plan: CatalogPlan) => {
     if (onSelect) onSelect(plan, cycle);
-    else choose(plan);
+    else choose(plan, cycle);
   };
 
   return (

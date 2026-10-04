@@ -9,6 +9,11 @@
 // from `billing.plan`, grouped by audience, with the read-only price beside
 // each name. The database refuses anyone but a super admin; its message is
 // shown verbatim.
+//
+// Enterprise is never one person's plan, so a person is never offered it. When
+// an organization is on (or is being moved to) Enterprise, the dialog shows
+// its custom limits editor: Enterprise has no numbers of its own and is never
+// unlimited — members inherit the values entered there.
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -34,6 +39,8 @@ import { Input } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { assignOrgPlan, fetchPlans, setUserPlan } from "../service";
 import { groupPlansByAudience, planPriceLabel, type Plan } from "../types";
+import { isEnterpriseAudience } from "../enterpriseCustom";
+import { EnterpriseCustomLimitsEditor } from "./EnterpriseCustomLimitsEditor";
 
 const DEFAULT_CHOICE = "__default__";
 
@@ -86,7 +93,13 @@ export function ChangePlanDialog({
   }
 
   const groups = groupPlansByAudience(
-    (plans ?? []).filter((p) => subject?.kind !== "user" || p.audience !== "guest"),
+    (plans ?? []).filter(
+      (p) =>
+        subject?.kind !== "user" || (p.audience !== "guest" && !isEnterpriseAudience(p.audience)),
+    ),
+  );
+  const choiceIsEnterprise = isEnterpriseAudience(
+    (plans ?? []).find((p) => p.plan_key === choice)?.audience,
   );
 
   const save = async () => {
@@ -115,7 +128,7 @@ export function ChangePlanDialog({
 
   return (
     <Dialog open={subject !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={subject?.kind === "organization" && choiceIsEnterprise ? "sm:max-w-2xl" : "sm:max-w-md"}>
         <DialogHeader>
           <DialogTitle>Change plan</DialogTitle>
           <DialogDescription className="truncate">{subject?.name}</DialogDescription>
@@ -150,6 +163,12 @@ export function ChangePlanDialog({
               <span>Expires (optional)</span>
               <Input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
             </label>
+          )}
+          {subject?.kind === "organization" && choiceIsEnterprise && (
+            <EnterpriseCustomLimitsEditor
+              organizationId={subject.id}
+              organizationName={subject.name}
+            />
           )}
           <label className="block space-y-1 text-xs text-muted-foreground">
             <span>Note (optional)</span>

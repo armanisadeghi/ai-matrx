@@ -9,8 +9,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
+import { isStripeConfigured, requiredStripeMode } from "@/lib/stripe/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { openSubscriptionPortal } from "@/features/entitlements/stripe/portal";
 import {
   billingOwnerRef,
   ownerEq,
@@ -39,6 +40,17 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+    const admin = createAdminClient();
+    const livemode = requiredStripeMode() === "live";
+    const { data: personal, error: personalError } = await admin.schema("billing").from("customer")
+      .select("stripe_customer_id").eq("beneficiary_user_id", user.id).eq("livemode", livemode).maybeSingle();
+    if (personalError) throw personalError;
+    const body: unknown = await request.json().catch(() => null);
+    const organizationPortal = body && typeof body === "object" && "scope" in body && body.scope === "organization";
+    if (personal && !organizationPortal) {
+      const session = await openSubscriptionPortal(personal.stripe_customer_id, true, `${request.nextUrl.origin}/pricing`);
+      return NextResponse.json({ url: session.url });
+    }
 
     // REC-62: the Stripe customer belongs to the ORGANIZATION the person is acting
     // in. `billingOwnerRef` names whichever column is live and refuses rather than
@@ -62,11 +74,15 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    const admin = createAdminClient();
-    const { data } = await ownerEq(
+    const { data: membership, error: membershipError } = await supabase.schema("iam").from("organization_member")
+      .select("user_id").eq("organization_id", owner.value).eq("user_id", user.id).maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership) return NextResponse.json({ error: "Choose an organization you belong to." }, { status: 403 });
+    const { data, error } = await ownerEq(
       admin.schema("billing").from("customer").select("*"),
       owner,
-    ).maybeSingle();
+    ).eq("livemode", livemode).is("beneficiary_user_id", null).maybeSingle();
+    if (error) throw error;
     const stripeCustomerId = asRowBag(data)?.["stripe_customer_id"];
     if (typeof stripeCustomerId !== "string" || !stripeCustomerId) {
       return NextResponse.json(
@@ -75,11 +91,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const stripe = getStripe();
-    const session = await stripe.billingPortal.sessions.create({
-      customer: stripeCustomerId,
-      return_url: `${request.nextUrl.origin}/pricing`,
-    });
+    const session = await openSubscriptionPortal(stripeCustomerId, false, `${request.nextUrl.origin}/pricing`);
 
     return NextResponse.json({ url: session.url });
   } catch (err) {

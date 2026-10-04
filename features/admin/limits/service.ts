@@ -361,3 +361,59 @@ export async function assignOrgPlan(
   });
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------------
+// Enterprise custom values — an ENTERPRISE organization's own AI-points numbers
+// per window (`billing.account_addon`, source `enterprise_custom`), inherited by
+// every member through `billing._points_usage_state`. Enterprise is never
+// unlimited: a window either holds a number or is not set. Reads ride the
+// add-on register door (`fetchAccountAddons`); writes are the two super-admin
+// functions below.
+// ---------------------------------------------------------------------------
+
+export async function setOrgCustomLimit(
+  organizationId: string,
+  period: string,
+  limitValue: number,
+  note: string | null,
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.schema("billing").rpc("org_custom_limit_set", {
+    p_org: organizationId,
+    p_period: period as MeterPeriod,
+    p_limit: limitValue,
+    // NULL keeps the row's existing note (generator renders it non-nullable).
+    p_note: note as string,
+  });
+  if (error) throw error;
+}
+
+export async function removeOrgCustomLimit(organizationId: string, period: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.schema("billing").rpc("org_custom_limit_remove", {
+    p_org: organizationId,
+    p_period: period as MeterPeriod,
+  });
+  if (error) throw error;
+}
+
+/**
+ * Clear a person's AI-points usage for the named windows
+ * (`billing.usage_reset_apply`, super-admin). `null` = every window. Returns
+ * the person's fresh `billing.user_usage_state` verbatim.
+ */
+export async function applyUsageReset(
+  userId: string,
+  periods: string[] | null,
+  note: string | null,
+): Promise<Database["billing"]["Functions"]["usage_reset_apply"]["Returns"]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.schema("billing").rpc("usage_reset_apply", {
+    p_user: userId,
+    // NULL = every window (generator renders SQL arguments non-nullable).
+    p_periods: periods as MeterPeriod[],
+    p_note: note as string,
+  });
+  if (error) throw error;
+  return data;
+}

@@ -44,17 +44,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Idempotency — Stripe retries; skip anything already fully processed.
-  if (await hasProcessedStripeEvent(event.id)) {
-    return NextResponse.json({ received: true, deduped: true });
-  }
-
   try {
+    // A failed dedupe read is retryable, never a successful acknowledgement.
+    if (await hasProcessedStripeEvent(event.id)) {
+      return NextResponse.json({ received: true, deduped: true });
+    }
     switch (event.type) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.trial_will_end":
-        await syncSubscription(event.data.object as Stripe.Subscription, event.created);
+        await syncSubscription(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), event.created);
         break;
       case "customer.subscription.deleted":
         await markSubscriptionCanceled(event.data.object as Stripe.Subscription, event.created);

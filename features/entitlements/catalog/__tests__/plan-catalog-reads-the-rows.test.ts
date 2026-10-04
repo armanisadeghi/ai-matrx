@@ -109,9 +109,10 @@ describe("plan catalog", () => {
     expect(upgradePlans(plans, "personal").map((p) => p.planKey)).toEqual(["starter"]);
   });
 
-  it("never pretends a checkout exists", () => {
+  it("routes a paid selection to checkout without treating free or custom plans as purchases", () => {
     const by = (k: string) => plans.find((p) => p.planKey === k)!;
-    expect(planAction(by("starter"), true).kind).toBe("checkout-pending");
+    expect(planAction(by("starter"), true).kind).toBe("checkout");
+    expect(planAction(by("starter"), false).kind).toBe("checkout");
     expect(planAction(by("ent"), false)).toMatchObject({ kind: "contact", href: "/contact" });
     expect(planAction(by("free"), false)).toMatchObject({ kind: "signup" });
     expect(planAction(by("free"), true).kind).toBe("included");

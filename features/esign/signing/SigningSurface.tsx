@@ -10,13 +10,16 @@
 //   1. REVIEW — every document is fetched as its frozen bytes and rendered here; only once it
 //      has rendered is `preview` recorded, and its SHA-256 is computed from the bytes on screen.
 //   2. CONSENT — the frozen disclosure, in full, on its own step. Never a buried checkbox.
-//   3. SIGN — the signer types their name; the Sign press sends the hashes of what they SAW
-//      (`observed`), and the database refuses if those bytes are not the frozen ones.
+//   3. SIGN — the signer types or draws their mark; the Sign press sends the hashes of what they
+//      SAW (`observed`), and the database refuses if those bytes are not the frozen ones.
+// When the sender placed fields (`documents[].field_map`), they are drawn on the pages: the
+// signer's own are highlighted and walked one by one ("Next field"), a Signature field opens the
+// adopt step, and once adopted every one of their fields shows its value before the final Sign.
+// Another signer's fields show muted and inert. A document with no fields walks exactly as before.
 // Every refusal comes back as a reason code and is shown as one short sentence.
 
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Check, Download, FileText, Loader2, PenLine, ShieldCheck, Type as TypeIcon, XCircle } from "lucide-react";
-import { SignaturePad } from "@ai-matrx/records-ui";
+import { ArrowRight, Check, Download, FileText, Loader2, PenLine, ShieldCheck, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,10 +30,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
+
+import { AdoptSignature, type SignatureMark } from "./AdoptSignature";
+import { initialsOf, readFieldMap, signingDate, type PlacedField } from "./fieldMap";
+import { SigningFields, type FieldValues } from "./SigningFields";
 
 import {
   signingAct,
@@ -94,6 +99,14 @@ interface DocView {
   /** The database recorded the preview. */
   previewed: boolean;
   failed: string | null;
+  /** Every field placed on this document, the signer's own and everyone else's. */
+  fields: PlacedField[];
+}
+
+/** One of the signer's own fields, with the document it sits on. */
+interface MyField {
+  docIndex: number;
+  field: PlacedField;
 }
 
 type Step = "review" | "consent" | "sign" | "done";

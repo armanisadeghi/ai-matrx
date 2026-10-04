@@ -295,7 +295,7 @@ export function IndustryUpgradeModal({
                 onClick={() => {
                   if (!selected) return;
                   if (onSelect) onSelect(selected, cycle);
-                  else choose(selected);
+                  else choose(selected, cycle);
                 }}
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background transition-all hover:bg-foreground/90 active:scale-[0.99] disabled:opacity-40"
               >

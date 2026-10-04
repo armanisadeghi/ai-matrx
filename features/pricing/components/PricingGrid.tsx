@@ -8,6 +8,7 @@
 // The guest plan is never listed (listed_on_pricing = false).
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BillingToggle } from "./BillingToggle";
@@ -35,15 +36,16 @@ interface PricingGridProps {
 
 export function PricingGrid({
   initialPlans,
-  initialCycle = "annual",
+  initialCycle = "monthly",
   initialGroup = "personal",
   onSelect,
   showHeader = true,
   className,
 }: PricingGridProps) {
   const catalog = usePlanCatalog(initialPlans);
-  const { signedIn, choose } = useChoosePlan();
-  const [cycle, setCycle] = useState<BillingCycle>(initialCycle);
+  const { signedIn, choose, isPending } = useChoosePlan();
+  const searchParams = useSearchParams();
+  const [cycle, setCycle] = useState<BillingCycle>(searchParams.get("cycle") === "annual" ? "annual" : initialCycle);
   const [groupId, setGroupId] = useState<PricingGroupId>(initialGroup);
 
   if (catalog.status === "error") {
@@ -107,7 +109,7 @@ export function PricingGrid({
         )}
       >
         {visiblePlans.map((plan) => (
-          <PlanCard key={plan.planKey} plan={plan} cycle={cycle} signedIn={signedIn} onSelect={handleSelect} />
+          <PlanCard key={plan.planKey} plan={plan} cycle={cycle} signedIn={signedIn} pending={isPending} onSelect={handleSelect} />
         ))}
       </div>
     </div>
