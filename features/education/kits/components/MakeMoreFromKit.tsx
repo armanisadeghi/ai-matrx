@@ -51,12 +51,17 @@ export function MakeMoreFromKit({
    */
   addTarget,
   onConverted,
+  buttonVariant = "default",
+  buttonClassName = "min-h-11 gap-1.5 sm:min-h-0",
 }: {
   sourceType: string;
   sourceId: string;
   kitTitle: string;
   addTarget?: TargetKind;
   onConverted?: () => void;
+  /** Lets a host row draw this door as its one uniform button (the kit sample). */
+  buttonVariant?: "default" | "outline";
+  buttonClassName?: string;
 }) {
   const pdf = usePdfClient();
   const [recovered, setRecovered] = useState<Recovered | null>(null);
@@ -112,8 +117,9 @@ export function MakeMoreFromKit({
   return (
     <>
       <Button
-        size="sm"
-        className="min-h-11 gap-1.5 sm:min-h-0"
+        size={buttonVariant === "default" ? "sm" : undefined}
+        variant={buttonVariant}
+        className={buttonClassName}
         disabled={busy}
         onClick={() => void openDialog()}
       >

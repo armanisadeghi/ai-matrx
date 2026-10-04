@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { EducationKitSample } from "./_components/EducationKitSample";
 
-/** Sample: /education/kits/[sourceId] rebuilt on the 28px system, real kit data (`?id=`). */
+/** Sample: /education/kits/[sourceId] — the real page (`KitHub`) with the owner's four fixes (`?id=`). */
 export default function EducationKitSamplePage() {
   return (
     <Suspense>

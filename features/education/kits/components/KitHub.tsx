@@ -17,6 +17,7 @@ import {
   Flag,
   NotebookPen,
   Pencil,
+  Plus,
   Route,
   Trash2,
   X,
@@ -193,10 +194,10 @@ function ArtifactCard({
   );
 }
 
-function KitLoading() {
+function KitLoading({ header }: { header: ReactNode }) {
   return (
     <>
-      <EducationToolHeader title="Study kit" />
+      {header}
       <div className="matrx-touch-targets mx-auto w-full max-w-6xl space-y-6 px-4 pb-10">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-48 w-full rounded-2xl" />
@@ -214,11 +215,26 @@ export function KitHub({
   sourceId,
   sourceType = "file",
   addTarget,
+  renderHeader,
+  proposedLayout = false,
 }: {
   sourceId: string;
   sourceType?: string;
   /** `?add=<kind>` — the format the learner came here to add (the home's nudge). */
   addTarget?: TargetKind;
+  /**
+   * Replaces the default `EducationToolHeader`. Used by the ui-unification
+   * sample (/demos/ui-unification/samples/education-kit) to draw the sitewide
+   * crumb header over this exact page.
+   */
+  renderHeader?: (state: { title: string | null; loading: boolean }) => ReactNode;
+  /**
+   * The owner's proposed layout (ui-unification sample only, 2026-10-04): the
+   * kit's actions sit BELOW the hero as one uniform outline button, and the
+   * hero drops its "Your study path" pill and its evidence sentence. Nothing
+   * else changes — this page is the model for inviting pages.
+   */
+  proposedLayout?: boolean;
 }) {
   const router = useRouter();
   const [kit, setKit] = useState<StudyKit | null>(null);
@@ -358,12 +374,19 @@ export function KitHub({
     </SurfaceRuntimeProvider>
   );
 
-  if (loading) return withSurface(<KitLoading />);
+  const header = (title: string | null) =>
+    renderHeader ? (
+      renderHeader({ title, loading })
+    ) : (
+      <EducationToolHeader title={title ?? "Study kit"} />
+    );
+
+  if (loading) return withSurface(<KitLoading header={header(null)} />);
 
   if (loadError) {
     return withSurface(
       <>
-        <EducationToolHeader title="Study kit" />
+        {header(null)}
         <div className="mx-auto w-full max-w-3xl px-4 pb-10">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
             <AGENT_ICON className="h-8 w-8 text-warning" />
@@ -388,7 +411,7 @@ export function KitHub({
   if (!kit) {
     return withSurface(
       <>
-        <EducationToolHeader title="Study kit" />
+        {header(null)}
         <div className="matrx-touch-targets mx-auto w-full max-w-3xl px-4 pb-10">
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
             <AGENT_ICON className="h-8 w-8 text-muted-foreground" />
@@ -493,10 +516,59 @@ export function KitHub({
     }
   };
 
-  return withSurface(
-    <>
-      <EducationToolHeader title={kit.title} />
-      <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">
+  // Proposed layout: one canonical button for all five actions — same
+  // variant, same size, same shape (the real row mixes primary/outline and
+  // default/sm sizes).
+  const proposedButton = "min-h-11 gap-1.5 sm:min-h-10";
+  const actionRow = proposedLayout ? (
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+      {studyNotes && (
+        <Button asChild variant="outline" className={proposedButton}>
+          <Link href={artifactActionHref(studyNotes)}>
+            <NotebookPen className="h-4 w-4" />
+            Study guide
+          </Link>
+        </Button>
+      )}
+      {materialHref && (
+        <Button asChild variant="outline" className={proposedButton}>
+          <Link href={materialHref}>
+            <MaterialIcon className="h-4 w-4" />
+            Material
+          </Link>
+        </Button>
+      )}
+      <MakeMoreFromKit
+        sourceType={kit.sourceType}
+        sourceId={kit.sourceId}
+        kitTitle={kit.title}
+        addTarget={addTarget}
+        onConverted={() => setRefreshKey((key) => key + 1)}
+        buttonVariant="outline"
+        buttonClassName={proposedButton}
+      />
+      <Button asChild variant="outline" className={proposedButton}>
+        <Link
+          href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}
+        >
+          <Plus className="h-4 w-4" />
+          Add saved aid
+        </Link>
+      </Button>
+      <Button
+        variant="outline"
+        className={proposedButton}
+        onClick={() => {
+          setDraftTitle(kit.title);
+          setManaging((open) => !open);
+          setWriteError(null);
+        }}
+      >
+        {managing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+        {managing ? "Close" : "Manage kit"}
+      </Button>
+    </div>
+  ) : (
         <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
           {studyNotes && (
             <Button asChild variant="outline" className="min-h-11 gap-1.5 sm:min-h-10">
@@ -540,8 +612,9 @@ export function KitHub({
             {managing ? "Close" : "Manage kit"}
           </Button>
         </div>
+  );
+  const managePanel = managing ? (
 
-        {managing && (
           <section className="rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Manage study kit">
             <div className="flex flex-wrap items-end gap-2">
               <label className="min-w-56 flex-1 text-sm font-medium text-foreground">
@@ -565,23 +638,34 @@ export function KitHub({
             </div>
             {writeError && <p className="mt-3 text-sm text-destructive">{writeError} <ErrorAlchemyMenu error={writeError} /></p>}
           </section>
-        )}
+  ) : null;
+
+  return withSurface(
+    <>
+      {header(kit.title)}
+      <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">
+        {!proposedLayout && actionRow}
+        {!proposedLayout && managePanel}
+
 
         <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card-textured p-5 sm:p-7">
           <div className="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
           <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)] lg:items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                <Route className="h-3.5 w-3.5" />
-                Your study path
-              </div>
-              <h1 className="mt-4 max-w-2xl text-[clamp(1.75rem,1.4rem+1.5vw,2.75rem)] font-semibold leading-tight text-foreground">
+              {!proposedLayout && (
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <Route className="h-3.5 w-3.5" />
+                  Your study path
+                </div>
+              )}
+              <h1 className="max-w-2xl text-[clamp(1.75rem,1.4rem+1.5vw,2.75rem)] font-semibold leading-tight text-foreground">
                 Pick a way in. Build toward what you can prove.
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Start with the big picture, strengthen recall, then test what
-                sticks. Each progress number below comes from that study
-                aid&apos;s real activity.
+                sticks.
+                {!proposedLayout &&
+                  " Each progress number below comes from that study aid\u2019s real activity."}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 <span className="rounded-full border border-border bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
@@ -641,6 +725,9 @@ export function KitHub({
             )}
           </div>
         </section>
+
+        {proposedLayout && actionRow}
+        {proposedLayout && managePanel}
 
         <section aria-labelledby="study-path-heading">
           <div className="mb-4 flex items-center gap-2">
