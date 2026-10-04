@@ -579,7 +579,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
           <p>Target scope: {activeAttempt.occurrence}</p>
           <p>Reviewed version: {activeAttempt.action.request.expected_etag}</p>
           <p>{resultSummary(activeAttempt)}</p>
-          {activeAttempt.phase === "confirmed" ? <CalendarSavedCopyStatus view={changeResultLocalRefresh(activeAttempt.action.result)} /> : null}
+          {activeAttempt.phase === "succeeded" ? <CalendarSavedCopyStatus view={changeResultLocalRefresh(activeAttempt.action.result)} /> : null}
           <ReviewedChangeFacts attempt={activeAttempt} />
           <ReturnedResultFacts attempt={activeAttempt} />
           <p>{activeAttempt.action.preview.guest_notification_behavior}</p>

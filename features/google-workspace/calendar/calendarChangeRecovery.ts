@@ -115,7 +115,7 @@ function validSource(value: unknown): value is CalendarEventSourceResult {
     eligible(value.move) && eligible(value.cancel) && eligible(value.rsvp);
 }
 
-function validBaseRequest(value: unknown): value is CalendarRescheduleRequest | CalendarCancelRequest | CalendarRsvpRequest {
+function validBaseRequest(value: unknown): value is Record<string, unknown> {
   return record(value) && nonempty(value.connection_id) && nonempty(value.calendar_id) &&
     nonempty(value.event_id) && OCCURRENCES.has(String(value.occurrence)) &&
     nonempty(value.expected_etag) && SEND_UPDATES.has(String(value.send_updates));
@@ -327,6 +327,7 @@ function validAttempt(value: unknown, scope: CalendarChangeScope): value is Cale
     case "source_divergent": return (!hasResult || !calendarChangeResultMatches(action, action.result)) && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "divergent" && nonempty(value.problem);
     case "fresh_review_started": return (!hasResult || !calendarChangeResultMatches(action, action.result)) && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "divergent" && value.problem === null;
   }
+  return false;
 }
 
 export function calendarChangeStorageKey(scope: CalendarChangeScope): string {

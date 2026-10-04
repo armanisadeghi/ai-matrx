@@ -347,4 +347,23 @@ describe("CalendarCreateReview", () => {
     expect(host.textContent).not.toContain("Create another event");
     expect(JSON.parse(raw).phase).toBe("uncertain");
   });
+  it.each([
+    [undefined, null],
+    [null, null],
+    [{ status: "updated", reason: null, cache_refresh_pending: false }, "Saved copy updated"],
+    [{ status: "pending", reason: "refresh_pending", cache_refresh_pending: false }, "Saved copy refresh pending"],
+    [{ status: "invalid" }, "Saved copy refresh pending"],
+  ])("restores confirmed create independently of saved-copy metadata", async (localRefresh, message) => {
+    const confirmed = { ...result, result: { ...result.result, local_refresh: localRefresh } };
+    const storage = memoryStorage(recovery({ phase: "consumed", result: confirmed }));
+    const transport = createTransport();
+    await act(async () => root.render(<CalendarCreateReview actorId="admin-user" organizationId={request.organization_id} connectionId={request.connection_id} accountLabel="admin@admin.com" calendar={writerCalendar} storage={storage} transport={transport} />));
+    expect(host.textContent).toContain("Event created in Google Calendar.");
+    expect(host.querySelector('[data-calendar-saved-copy]')?.textContent ?? null).toBe(message);
+    expect(transport.confirm).not.toHaveBeenCalled();
+    expect(transport.preview).not.toHaveBeenCalled();
+    expect(transport.readSource).not.toHaveBeenCalled();
+    expect(storage.read().phase).toBe("consumed");
+  });
+
 });

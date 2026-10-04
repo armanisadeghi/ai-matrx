@@ -78,7 +78,7 @@ function transport(overrides: Partial<CalendarEventChangeTransport> = {}): Calen
     confirmReschedule: jest.fn(async () => ({ ...movePreview, provider_etag: '"cedar-v2"', reconciliation_pending: false })),
     previewCancel: jest.fn(async ({ request }) => ({
       account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
-      access_role: "owner", event_id: request.event_id, occurrence: request.occurrence,
+      access_role: "owner" as const, event_id: request.event_id, occurrence: request.occurrence,
       event_summary: source.event_summary!, etag: request.expected_etag, starts_at: source.starts_at!, ends_at: source.ends_at!,
       attendees: ["guest@example.com"], send_updates: request.send_updates,
       guest_notification_behavior: "Google will notify guests.", action_notice: "Cancel this organizer event.",
@@ -87,17 +87,17 @@ function transport(overrides: Partial<CalendarEventChangeTransport> = {}): Calen
     confirmCancel: jest.fn(async () => { throw new Error("connection closed after send"); }),
     previewRsvp: jest.fn(async ({ request }) => ({
       account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
-      access_role: "owner", event_id: request.event_id, occurrence: request.occurrence,
+      access_role: "owner" as const, event_id: request.event_id, occurrence: request.occurrence,
       event_summary: source.event_summary!, organizer_email: source.organizer_email!, etag: request.expected_etag,
-      old_response_status: "tentative", new_response_status: request.response_status, send_updates: request.send_updates,
+      old_response_status: "tentative" as const, new_response_status: request.response_status, send_updates: request.send_updates,
       guest_notification_behavior: "Google may notify the organizer.", action_notice: "Only this response changes.",
       recovery_notice: "A later response requires a fresh version.",
     })),
     confirmRsvp: jest.fn(async ({ request }) => ({
       account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
-      access_role: "owner", event_id: request.event_id, occurrence: request.occurrence,
+      access_role: "owner" as const, event_id: request.event_id, occurrence: request.occurrence,
       event_summary: source.event_summary!, organizer_email: source.organizer_email!, etag: request.expected_etag,
-      old_response_status: "tentative", new_response_status: request.response_status, send_updates: request.send_updates,
+      old_response_status: "tentative" as const, new_response_status: request.response_status, send_updates: request.send_updates,
       guest_notification_behavior: "Google may notify the organizer.", action_notice: "Only this response changes.",
       recovery_notice: "A later response requires a fresh version.", provider_etag: '"cedar-v2"', already_applied: false,
     })),
@@ -329,4 +329,33 @@ describe("CalendarEventChangeReview", () => {
     expect(host.textContent).toContain("Check current source");
     expect(confirmReschedule).toHaveBeenCalledTimes(1);
   });
+  it.each([
+    [undefined, null],
+    [{ status: "updated", reason: null, cache_refresh_pending: false }, "Saved copy updated"],
+    [{ status: "pending", reason: "refresh_pending", cache_refresh_pending: false }, "Saved copy refresh pending"],
+    [{ status: "invalid" }, "Saved copy refresh pending"],
+  ])("settles and reloads a Google move without repeating it for saved-copy state", async (localRefresh, message) => {
+    const changeTransport = transport({ confirmReschedule: jest.fn(async () => ({ ...movePreview, provider_etag: '\"cedar-v2\"', reconciliation_pending: false, local_refresh: localRefresh })) });
+    await loadSource(changeTransport);
+    const start = host.querySelector<HTMLInputElement>('input[aria-label="New start"]');
+    const end = host.querySelector<HTMLInputElement>('input[aria-label="New end"]');
+    if (!start || !end) throw new Error('Move fields are missing');
+    act(() => { setInput(start, "2026-10-08T11:00:00-07:00"); setInput(end, "2026-10-08T12:00:00-07:00"); });
+    const notifications = Array.from(host.querySelectorAll("select")).find((item) => item.parentElement?.textContent?.includes("Guest notifications"));
+    if (!notifications) throw new Error("Notification choice is missing");
+    act(() => setSelect(notifications, "all"));
+    await act(async () => button(host, "Review move").click());
+    await act(async () => button(host, "Confirm move").click());
+    expect(host.textContent).toContain("Google returned a matching change result");
+    expect(host.querySelector('[data-calendar-saved-copy]')?.textContent ?? null).toBe(message);
+    expect(changeTransport.confirmReschedule).toHaveBeenCalledTimes(1);
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await act(async () => root.render(<CalendarEventChangeReview {...baseProps(changeTransport)} />));
+    expect(host.textContent).toContain("Google returned a matching change result");
+    expect(host.querySelector('[data-calendar-saved-copy]')?.textContent ?? null).toBe(message);
+    expect(changeTransport.confirmReschedule).toHaveBeenCalledTimes(1);
+    expect(Array.from(host.querySelectorAll("button")).some((item) => item.textContent === "Confirm move")).toBe(false);
+  });
+
 });
