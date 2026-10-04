@@ -108,8 +108,10 @@ export function CapabilityGate({
   }
 
   const capReached = entitlement.reason === "cap_reached";
-  const required = entitlement.requiredTier ?? entitlement.definition.minTier;
-  const requiredLabel = TIER_LABEL[required] ?? "a paid";
+  // The tier that unlocks it is the resolver's answer (billing.capability
+  // min_tier, returned as required_tier) — never a client copy.
+  const required = entitlement.requiredTier ?? null;
+  const requiredLabel = (required && TIER_LABEL[required]) || "a paid";
   const heldLabel = TIER_LABEL[entitlement.tier] ?? "Free";
   const resetsAt = entitlement.windows[0]?.resetsAt ?? null;
   const resetsLabel = resetsAt

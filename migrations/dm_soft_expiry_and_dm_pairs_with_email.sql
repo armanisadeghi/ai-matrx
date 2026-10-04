@@ -2,7 +2,7 @@
 -- based-on: public.get_dm_unread_count(uuid, uuid) d9ce120d569bac59c466e4b7fddc39ff15a315ae9221554c6f7cbef5b12d4ca4
 -- based-on: communication.notification_user_channels(uuid, text, uuid, jsonb, boolean) 35135eeee5d692e87d5aefc9b244e8e3ac709d4b42b7a617fd9c61f780d3b75a
 -- based-on: communication.notify_from_sql(uuid, text, uuid, text, text, jsonb, text, text, uuid, text) 7510107182dc09fb91601ba12bced08b9177ffb4e4033214d326b2c44f0ba25e
--- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) 5eca5c078245c9d1db3034daee305d3dcb8932178493be2aa25d754a585c5fb3
+-- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) 9741207307fce625f9d10a9edb7858ee1f25cc7f9e7583266cc7113abc82b0e7
 -- based-on: iam._notify_door(uuid, text, uuid, jsonb, uuid, text, text) 6727eebbe9779ee0bd45b91c5e676830ced54ed5109c9e73dc911013f5cb90be
 -- based-on: public.org_admin_take_over_account(uuid, uuid, text, text, text) b5d40e915824b176e50393ea1864e8114455f6af2ef4c8bbb82d1f89dc01d92b
 -- based-on: public.org_admin_take_over_member_records(uuid, uuid, text, text, uuid) 3b1bfeae05d3a074440d8ff471c94552d79672d485abf94801e3477ecf55731c
@@ -759,6 +759,17 @@ begin
   v_status := case when p_channel in ('email', 'sms')
                     and nullif(btrim(coalesce(p_body, '')), '') is null
                    then 'render_pending' else 'pending' end;
+  -- THE SENDER'S NOTICE OPENS THE ENVELOPE (2026-10-03). Completed / declined / voided / expired /
+  -- could-not-reach notices go to the envelope's sender with no link of their own; theirs is the
+  -- envelope page (/esign/<id>), where they see who signed and act on it.
+  if p_deep_link is null and p_to_user is not null then
+    if p_event_key in ('esign.signature_requested', 'esign.signature_reminder') then
+      -- An account signer always signs at their own door, even when they also sent it.
+      p_deep_link := '/sign/e/' || p_envelope_id::text;
+    elsif p_to_user = (select e.created_by from esign.envelope e where e.id = p_envelope_id) then
+      p_deep_link := '/esign/' || p_envelope_id::text;
+    end if;
+  end if;
   v_kind := case when p_to_user is not null then 'user'
                  when p_actor_token_id is not null then 'actor_token'
                  else 'address' end;
@@ -858,6 +869,14 @@ begin
     end if;
   else
     v_addr := nullif(btrim(coalesce(p_to_address, '')), '');
+  end if;
+  -- 🚨 A NOTICE TO AN ACCOUNT RESOLVES THE ACCOUNT'S ADDRESS (2026-10-03). The sender's notices
+  -- (completed / declined / voided / expired) name the sender's account and no address, and were
+  -- written with to_address NULL — every one failed at dispatch with missing_recipient_address.
+  if v_addr is null and v_kind = 'user' and p_channel in ('email', 'sms') then
+    select r.address into v_addr
+      from communication.resolve_channel_address(p_channel, v_org, 'user', p_to_user, null, null, null) r
+     limit 1;
   end if;
 
   if v_kind <> 'user' and v_addr is null then

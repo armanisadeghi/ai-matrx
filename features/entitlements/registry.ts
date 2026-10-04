@@ -1,35 +1,23 @@
 // features/entitlements/registry.ts
 //
-// The capability registry — the single source of truth for every metered or
-// gated action in the platform. Consumers reference a capability by its typed
-// id; they never hardcode limits or tier rules. Adding a metered action = add
-// one entry here (and, when enforcement flips, the matching row in
-// `billing.capability_limit`).
+// The capability registry — the WORDS for every metered or gated action: a
+// label, a description, the paywall copy, and whose entitlement decides it.
+// Consumers reference a capability by its typed id.
 //
-// Rules:
-// - Ids are namespaced `<domain>.<action>` (e.g. `education.generate_cards`).
-// - `enforced: false` = the resolver returns the permissive verdict for this
-//   capability regardless of tier/usage. Flip to `true` ONLY once the backend
-//   limit rows + the aidream-side spend re-check both exist. This is the
-//   per-capability rollout switch the brief mandates.
-// - No limit lives here. The SINGLE SOURCE for every limit is the database
-//   (`billing.capability_limit`, `billing.plan_limit`): the `entitlement_snapshot`
-//   / `resolve_capability` RPCs report a capability's live limits + windows (for
-//   EVERY registered capability, enforced or not — F1), and the hook/meter read
-//   those. A number here would be a second source of truth; don't add one.
+// 🚨 NOTHING HERE IS A COPY OF THE DATABASE (USAGE-GATE.md rule 1; Arman
+// 2026-10-03: nothing about tiers, points or limits is hardcoded).
+// `billing.capability` owns `enforced`, `min_tier` and `period`;
+// `billing.capability_limit` / `billing.plan_limit` own every number. The
+// resolver RPCs (`entitlement_check`, `entitlement_snapshot`,
+// `org_capability_status`) report enforced / required tier / period / windows
+// per capability, and every reader takes them from there. Flipping enforcement
+// is one DB row:
+//   update billing.capability set enforced = true where capability = '…';
+// Guard: __tests__/registry-holds-no-database-copies.test.ts.
 //
-// FLIPPED 2026-08-22 (education): all 16 `education.*` capabilities are
-// `enforced: true`, per Arman's Q2 ruling (2026-08-19 — "$5–8/mo billed
-// annually, on the GENEROUS staged variant already in billing.capability_limit,
-// core practice never metered"). Limits exist ONLY for tier `free`
-// (monthly quota + rolling burst per capability); any higher tier has no
-// limit rows and resolves UNLIMITED — so pre-launch complimentary-Pro
-// accounts are untouched, and the caps land after the aha-moment by
-// construction. D-5 stays law: nothing here meters studying — every
-// enforced key is AI generation/grading depth (guarded by
-// __tests__/core-practice-never-metered.test.ts).
-
-import type { EntitlementPeriod, EntitlementTier } from "./types";
+// Ids are namespaced `<domain>.<action>` (e.g. `education.generate_cards`).
+// D-5 stays law: nothing here meters studying — every key is AI
+// generation/grading depth (guarded by __tests__/core-practice-never-metered.test.ts).
 
 // Metering principle (Arman, 2026-07-07): we meter AI GENERATION, never saved
 // content. Storage + studying + keeping decks are free forever (capping what a
@@ -37,9 +25,8 @@ import type { EntitlementPeriod, EntitlementTier } from "./types";
 // to protect is any path with AI involvement — especially multi-call paths
 // (per-card enrichment = one model call per card) and the live grader.
 //
-// Every metered capability declares a PRIMARY display period here; the actual
-// enforcement windows (monthly + burst) live in billing.capability_limit so we
-// can tune burst protection without a deploy.
+// Every metering window (monthly + burst) lives in billing.capability_limit /
+// billing.plan_limit so burst protection is tuned without a deploy.
 
 /** All metered/gated capabilities. Extend this union by adding a registry entry. */
 export type Capability =
@@ -73,10 +60,6 @@ export interface CapabilityDefinition {
   label: string;
   /** One-line description of what consuming this capability means. */
   description: string;
-  /** Metering window. `null` = a pure gate (tier unlocks it; no usage count). */
-  period: EntitlementPeriod;
-  /** Minimum tier for ANY access (a gate). Most capabilities are `free`. */
-  minTier: EntitlementTier;
   /**
    * WHOSE entitlement decides this — the user's, or the organization's?
    *
@@ -88,12 +71,6 @@ export interface CapabilityDefinition {
    * access may not depend on which org happens to be selected (db-rules §6).
    */
   scope?: "user" | "org";
-  /**
-   * Enforcement switch. `false` (default for every capability at launch) =>
-   * resolver returns the permissive verdict. Flip per-capability as the backend
-   * limit + server re-check land. NEVER flip without both in place.
-   */
-  enforced: boolean;
   /** Contextual paywall copy — helpful, never hostage (TRUST mandate). */
   upgradeMessage: string;
 }
@@ -107,20 +84,14 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
   // in the database, not here — this registry supplies only the human words: a
   // label, a description, and what to say when someone runs out.
   //
-  // All four ship `enforced: false`: real users are spending these today, and
-  // the no-regression rule says a live capability is not switched off on an
-  // agent's authority. They are VISIBLE now (users can see exactly where they
-  // stand), and enforcing one later is a single DB row flip:
-  //   update billing.capability set enforced = true where capability = '…';
+  // Whether each one is enforced is billing.capability's answer, never this
+  // file's.
   "platform.points": def({
     id: "platform.points",
     label: "AI points",
     description:
       "The platform's unit of AI cost. Every model has a points price, so one budget covers every model instead of a separate allowance per model.",
-    period: "month",
-    minTier: "free",
     scope: "org",
-    enforced: false,
     upgradeMessage:
       "You've used this month's AI points. They reset at the start of next month — or upgrade for a bigger monthly budget.",
   }),
@@ -128,10 +99,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "platform.messages",
     label: "Messages",
     description: "Messages sent to an agent this month.",
-    period: "month",
-    minTier: "free",
     scope: "org",
-    enforced: false,
     upgradeMessage:
       "You've used this month's messages. They reset next month — or upgrade for more.",
   }),
@@ -140,10 +108,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Active agents",
     description:
       "How many agents can be live at once. A standing quota, not a monthly meter — counted by the agent system itself, not by billing.",
-    period: null,
-    minTier: "free",
     scope: "org",
-    enforced: false,
     upgradeMessage:
       "You've reached the number of active agents your plan includes. Upgrade to run more at once.",
   }),
@@ -152,10 +117,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Storage",
     description:
       "Total file storage. A standing quota, measured by the file system itself — billing reports the limit, not the usage.",
-    period: null,
-    minTier: "free",
     scope: "org",
-    enforced: false,
     upgradeMessage:
       "You've filled the storage your plan includes. Upgrade for more space, or add storage on its own.",
   }),
@@ -164,10 +126,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Outreach emails",
     description:
       "Outreach messages sent this month, across every connected mailbox. Enforced — outreach volume is what gets a sending domain blocklisted, so it is capped by plan on purpose.",
-    period: "month",
-    minTier: "trial",
     scope: "org",
-    enforced: true,
     upgradeMessage:
       "You've sent this month's outreach for your plan. It resets next month — or upgrade to reach more people.",
   }),
@@ -176,25 +135,14 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Marketing automations",
     description:
       "Runs of an automated marketing pipeline (crawls, audits, content generation). These are the expensive multi-step jobs, so they are capped by plan.",
-    period: "month",
-    minTier: "free",
     scope: "org",
-    enforced: true,
     upgradeMessage:
       "You've used this month's marketing automations. They reset next month — or upgrade to run more.",
   }),
 
   // THE FIRST GATED CAPABILITY IN THE PLATFORM (Arman, 2026-08-14 —
-  // docs/handoffs/outreach-system.md §5.6). Everything above ships
-  // `enforced: false`; this one ships `true`, and it is the only one.
-  //
-  // It is safe to enforce on day one precisely because it takes nothing away:
-  // there is no send path in production yet (outreach Phase 4 is unbuilt) and
-  // zero sending identities exist. Gating a capability nobody has is the only
-  // kind of gate the no-regression rule permits.
-  //
-  // `minTier: "trial"` — not premium. The abuse filter this exists for wants an
-  // IDENTIFIED account, and a trial is one. Erring toward permitting.
+  // docs/handoffs/outreach-system.md §5.6). Its gate (billing.capability
+  // min_tier) is the database's; the reasoning lives on that row.
   //
   // What is NOT gated: connecting a mailbox, proving a domain, checking
   // SPF/DKIM/DMARC, warming up. All the setup work stays free — the plan gates
@@ -204,10 +152,7 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Outreach sending",
     description:
       "Send outreach email from a verified, warmed mailbox on the organization's own domain. Gated because free accounts are what get sending infrastructure blocklisted.",
-    period: null,
-    minTier: "trial",
     scope: "org",
-    enforced: true,
     upgradeMessage:
       "Outreach sending isn't part of the free plan — it's how we keep sending reputation clean for everyone. Upgrade to send from the mailboxes you've already connected.",
   }),
@@ -215,9 +160,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.generate_cards",
     label: "Generate flashcards",
     description: "AI-generate a flashcard deck from your material.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your flashcard generations this month. Upgrade for unlimited decks.",
   }),
@@ -226,9 +168,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Find card images",
     description:
       "An agent finds an expert image on the open web for a card face — search plus a vision judgment per card.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your card image searches this month. Upgrade to keep illustrating your decks.",
   }),
@@ -237,9 +176,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate card images",
     description:
       "AI-generate a verified image for a card face — generation plus adversarial accuracy checking, with retries.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your card image generations this month. Upgrade for more verified images.",
   }),
@@ -248,9 +184,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Enrich flashcards",
     description:
       "Per-card AI enrichment (mnemonics, examples, hints) — one model call per card, metered by card count.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your card enrichments this month. Upgrade for unlimited enrichment.",
   }),
@@ -258,9 +191,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.tutor_message",
     label: "AI tutor message",
     description: "Send a message to the grounded AI tutor.",
-    period: "day",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've reached today's tutor messages. Upgrade for unlimited tutoring.",
   }),
@@ -268,9 +198,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.audio_generate",
     label: "Generate study audio",
     description: "Generate an audio study session / podcast from your material.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your audio generations this month. Upgrade for more.",
   }),
@@ -278,9 +205,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.quiz_generate",
     label: "Generate a quiz",
     description: "AI-generate a quiz from your material.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your quiz generations this month. Upgrade for unlimited quizzes.",
   }),
@@ -288,9 +212,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.practice_test_generate",
     label: "Generate a practice test",
     description: "AI-generate a full practice test / mock exam.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your practice tests this month. Upgrade for unlimited exams.",
   }),
@@ -298,9 +219,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.mindmap_generate",
     label: "Generate a mind map",
     description: "AI-generate a mind map from your material.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your mind maps this month. Upgrade for unlimited maps.",
   }),
@@ -309,9 +227,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Generate memory aids",
     description:
       "AI-generate mnemonics, analogies, and a memory-palace scaffold from your material.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your memory-aid generations this month. Upgrade for unlimited aids.",
   }),
@@ -319,9 +234,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     id: "education.notes_generate",
     label: "Generate smart notes",
     description: "AI-generate structured notes from your material.",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your note generations this month. Upgrade for more.",
   }),
@@ -330,9 +242,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Live AI grading",
     description:
       "Real-time AI grading of a free-response / spoken answer. The most compute-heavy AI path — burst-limited.",
-    period: "day",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've reached today's live gradings. Upgrade for unlimited AI grading.",
   }),
@@ -341,9 +250,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Spoken practice session",
     description:
       "A voice-first oral-exam / interview / debate session: AI generates grounded prompts and grades each spoken answer on meaning. Metered as one generation-heavy session.",
-    period: "day",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've reached today's spoken practice sessions. Upgrade for unlimited oral exam, interview, and debate practice.",
   }),
@@ -352,9 +258,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Grade handwritten work",
     description:
       "Vision-AI grading of a PHOTOGRAPHED handwritten/typed worked answer — reads the image, grades on meaning, and returns a per-step breakdown. A compute-heavy vision path (photograph-your-work item answers + the standalone Grade My Work tool).",
-    period: "day",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've reached today's handwritten-work gradings. Upgrade for unlimited photo grading.",
   }),
@@ -363,11 +266,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Multiplayer game room size",
     description:
       "Max players in a live study game room. A gate, not a per-period meter.",
-    period: null,
-    // Generous default so we never recreate the 'Kahoot tax' resentment
-    // (brief Coordinates: P10). Free rooms are large.
-    minTier: "free",
-    enforced: true,
     upgradeMessage: "Upgrade to host larger game rooms.",
   }),
   "education.ingest_document": def({
@@ -375,9 +273,6 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     label: "Ingest a document",
     description:
       "Upload/import a document to turn into a study kit (the AI kit fan-out is the metered cost, not storage).",
-    period: "month",
-    minTier: "free",
-    enforced: true,
     upgradeMessage:
       "You've used your document uploads this month. Upgrade for more.",
   }),

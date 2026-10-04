@@ -5,18 +5,19 @@
 // message) — the DoD forbids a mid-generation ambush, so the cap check happens
 // before the action starts.
 //
-// Rollout contract: while a capability is `enforced: false` in the registry,
-// this returns the permissive verdict WITHOUT a round-trip (the whole point of
-// the per-capability switch). Once flipped, it calls the `entitlement_check`
-// SECURITY DEFINER RPC (the same resolver the aidream-side spend path calls),
-// so client and server agree.
+// The database decides. Whether a capability is enforced, which tier unlocks it
+// and which window meters it are `billing.capability`'s answers, returned on
+// every verdict by the `entitlement_check` SECURITY DEFINER RPC (the same
+// resolver the aidream-side spend path calls) — the client keeps no copy and
+// never short-circuits on one (USAGE-GATE.md rule 1). An un-enforced capability
+// comes back `permissive_stub` from the resolver itself.
 
 import { createClient } from "@/utils/supabase/client";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { getCapability, isCapability, type Capability } from "./registry";
+import { isCapability, type Capability } from "./registry";
 import type {
   EntitlementCheckResult,
   EntitlementConsumeResult,
@@ -40,9 +41,9 @@ function warnPermissiveOnce(capability: Capability): void {
   warnedPermissive.add(capability);
   // eslint-disable-next-line no-console -- intentional loud-recovery dev signal
   console.warn(
-    `[entitlements] "${capability}" resolved permissive_stub (enforced: false) — ` +
-      `unlimited for every user until this capability's backend limit + server ` +
-      `re-check land and it is flipped to enforced: true in the registry.`,
+    `[entitlements] "${capability}" resolved permissive_stub — ` +
+      `billing.capability has it enforced = false, so it is unlimited for every ` +
+      `user until that row is flipped.`,
   );
 }
 
@@ -64,18 +65,20 @@ function warnUnknownCapability(capability: Capability): void {
   );
 }
 
-function permissiveVerdict(capability: Capability): EntitlementCheckResult {
-  warnPermissiveOnce(capability);
-  const dfn = getCapability(capability);
+/** A refusal the client produced itself (no verdict from the resolver). */
+function refusal(
+  capability: Capability,
+  reason: "organization_required" | "resolver_error",
+): EntitlementCheckResult {
   return {
     capability,
-    allowed: true,
+    allowed: false,
     remaining: null,
     limit: null,
     used: 0,
     tier: "free",
-    reason: "permissive_stub",
-    period: dfn.period,
+    reason,
+    period: null,
     windows: [],
     isLoading: false,
     checkId: null,
@@ -85,17 +88,15 @@ function permissiveVerdict(capability: Capability): EntitlementCheckResult {
 /**
  * Imperative pre-action check. Returns the resolver's verdict for `capability`.
  *
- * FAIL policy: on resolver error we FAIL CLOSED here (spend path) only for
- * ENFORCED capabilities — an un-enforced capability is always permissive. The
- * UI read path (the hook/selector) fails open; this spend path does not.
+ * FAIL policy: on resolver error we FAIL CLOSED here (spend path). Whether the
+ * capability is enforced is the resolver's answer, so with no answer there is
+ * nothing to be permissive on. The UI read path (the hook/selector) fails open;
+ * this spend path does not.
  */
 export async function checkEntitlement(
   capability: Capability,
   opts?: { organizationId?: string | null },
 ): Promise<EntitlementCheckResult> {
-  const dfn = getCapability(capability);
-  if (!dfn.enforced) return permissiveVerdict(capability);
-
   // 🚨 A TIER BELONGS TO AN ORGANIZATION (DD-047; billing.user_plan retired
   // 2026-09-29). There is no personal plan to answer from, so a check with no
   // organization is HELD, never answered: `ensureOrgId` uses the organization
@@ -107,17 +108,9 @@ export async function checkEntitlement(
     organizationId = await ensureOrgId(opts?.organizationId ?? null);
   } catch (e) {
     if (isOrganizationSelectionCancelled(e) || isOrganizationRequiredError(e)) {
-      return {
-        ...permissiveVerdict(capability),
-        allowed: false,
-        reason: "organization_required",
-      };
+      return refusal(capability, "organization_required");
     }
-    return {
-      ...permissiveVerdict(capability),
-      allowed: false,
-      reason: "resolver_error",
-    };
+    return refusal(capability, "resolver_error");
   }
 
   try {
@@ -131,24 +124,17 @@ export async function checkEntitlement(
       });
 
     if (error || !data) {
-      return {
-        ...permissiveVerdict(capability),
-        allowed: false,
-        reason: "resolver_error",
-      };
+      return refusal(capability, "resolver_error");
     }
     const row = data as EntitlementCheckRow;
     // Loud recovery (F3): the resolver failed OPEN on an unknown capability id.
     // The DB already RAISEd a WARNING server-side; scream in the client too so a
     // typo'd/unregistered capability can't silently resolve unlimited in dev.
     if (row.unknown) warnUnknownCapability(capability);
+    else if (row.reason === "permissive_stub") warnPermissiveOnce(capability);
     return mapCheckRow(capability, row);
   } catch {
-    return {
-      ...permissiveVerdict(capability),
-      allowed: false,
-      reason: "resolver_error",
-    };
+    return refusal(capability, "resolver_error");
   }
 }
 

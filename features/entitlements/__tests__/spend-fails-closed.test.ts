@@ -8,9 +8,11 @@
 // page (reads), but it must also never hand out unlimited paid AI generation
 // because the meter could not be reached (spend).
 //
-// The un-enforced half is tested too: while `enforced: false` a capability is
-// permissive WITHOUT a round trip, which is what makes the per-capability
-// rollout switch a switch at all.
+// Whether a capability is enforced is the DATABASE's answer
+// (billing.capability.enforced, returned on the verdict). The client keeps no
+// copy, so it always asks: an un-enforced capability comes back
+// `permissive_stub` from the resolver, and a resolver error refuses regardless,
+// because without an answer there is nothing to be permissive on.
 
 import { CAPABILITY_REGISTRY, type Capability } from "../registry";
 import { checkEntitlement } from "../service";
@@ -20,10 +22,8 @@ jest.mock("@/utils/supabase/client", () => ({
   createClient: () => ({ schema: () => ({ rpc: (...a: unknown[]) => rpc(...a) }) }),
 }));
 
-/** An enforced capability — the only kind that can reach the resolver. */
+/** Any capability — enforcement is the resolver's answer, not a fixture. */
 const ENFORCED = "outreach.send_volume" as const;
-/** An un-enforced one (education flipped to enforced 2026-08-22, Q2 ruling —
- *  platform.points is the surviving live un-enforced example). */
 const UNENFORCED = "platform.points" as const;
 
 beforeEach(() => {
@@ -37,11 +37,6 @@ afterEach(() => {
 });
 
 describe("a spend path fails closed when the resolver errors", () => {
-  it("the fixtures still hold the enforcement states this test assumes", () => {
-    expect(CAPABILITY_REGISTRY[ENFORCED].enforced).toBe(true);
-    expect(CAPABILITY_REGISTRY[UNENFORCED].enforced).toBe(false);
-  });
-
   it("refuses when the resolver RPC returns an error", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "connection reset" } });
     const verdict = await checkEntitlement(ENFORCED, { organizationId: "org-1" });
@@ -95,11 +90,34 @@ describe("a spend path fails closed when the resolver errors", () => {
     expect(verdict.requiredTier).toBe("premium");
   });
 
-  it("an un-enforced capability is permissive with NO round trip", async () => {
-    const verdict = await checkEntitlement(UNENFORCED);
-    expect(rpc).not.toHaveBeenCalled();
+  it("asks the resolver even when the database has the capability un-enforced", async () => {
+    rpc.mockResolvedValue({
+      data: {
+        allowed: true,
+        remaining: null,
+        limit: null,
+        used: 0,
+        tier: "free",
+        reason: "permissive_stub",
+        period: "month",
+        windows: [],
+        enforced: false,
+        check_id: "c-1",
+      },
+      error: null,
+    });
+    const verdict = await checkEntitlement(UNENFORCED, { organizationId: "org-1" });
+    expect(rpc).toHaveBeenCalledTimes(1);
     expect(verdict.allowed).toBe(true);
     expect(verdict.reason).toBe("permissive_stub");
+    expect(verdict.period).toBe("month");
+  });
+
+  it("refuses an un-enforced capability too when the resolver cannot answer", async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: "connection reset" } });
+    const verdict = await checkEntitlement(UNENFORCED, { organizationId: "org-1" });
+    expect(verdict.allowed).toBe(false);
+    expect(verdict.reason).toBe("resolver_error");
   });
 
   // Replaced 2026-09-29: this used to assert a dev scream while the verdict
@@ -111,7 +129,7 @@ describe("a spend path fails closed when the resolver errors", () => {
   it("never resolves an org capability without an organization — it refuses instead", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "x" } });
     const orgScoped = (Object.keys(CAPABILITY_REGISTRY) as Capability[]).find(
-      (c) => CAPABILITY_REGISTRY[c].enforced && CAPABILITY_REGISTRY[c].scope === "org",
+      (c) => CAPABILITY_REGISTRY[c].scope === "org",
     );
     expect(orgScoped).toBeDefined();
     const verdict = await checkEntitlement(orgScoped!);

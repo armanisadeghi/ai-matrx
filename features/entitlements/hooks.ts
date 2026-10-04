@@ -51,7 +51,7 @@ export interface UseEntitlementResult extends EntitlementResult {
    * to reference when the consume is metered.
    */
   check: () => Promise<EntitlementCheckResult>;
-  /** The registry definition (label, upgrade copy, period) for paywall UIs. */
+  /** The registry definition (label, description, upgrade copy) for paywall UIs. */
   definition: ReturnType<typeof getCapability>;
   /**
    * Re-read server truth into the snapshot so the meter converges.
@@ -174,10 +174,12 @@ export function useOrgEntitlement(
       used: 0,
       tier: "free" as EntitlementTier,
       reason: "allowed" as const,
-      period: definition.period,
+      // Nothing is known until the resolver answers — no client copy of the
+      // capability's period or tier stands in for it.
+      period: null,
       windows: [],
       isLoading: true,
-      requiredTier: definition.minTier,
+      requiredTier: null,
       organizationId: organizationId ?? null,
       orgTier: "free" as EntitlementTier,
       check,

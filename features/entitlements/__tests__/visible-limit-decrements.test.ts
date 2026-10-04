@@ -16,7 +16,6 @@
 //      `setCapabilityUsage` + the verdict selector must carry the new
 //      `remaining` through to what a surface renders.
 
-import { CAPABILITY_REGISTRY } from "../registry";
 import { consumeEntitlement, usageFromConsume } from "../service";
 import reducer, {
   setCapabilityUsage,
@@ -113,11 +112,6 @@ beforeEach(() => {
 });
 
 describe("a visible limit must decrement", () => {
-  it("the capability under test is genuinely un-enforced", () => {
-    // If someone flips this one on, the test below stops proving what it says.
-    expect(CAPABILITY_REGISTRY[CAP].enforced).toBe(false);
-  });
-
   it("records usage even while the capability is un-enforced", async () => {
     rpc.mockResolvedValue({
       data: {

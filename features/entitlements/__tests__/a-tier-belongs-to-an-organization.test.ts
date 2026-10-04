@@ -31,7 +31,7 @@ jest.mock("@/features/organizations/awaitWorkspace", () => ({
   awaitEffectiveOrganizationId: () => awaitEffectiveOrganizationId(),
 }));
 
-/** An enforced capability — the only kind that reaches the resolver. */
+/** A capability the resolver answers for (every one is asked; enforcement is the DB's). */
 const ENFORCED = "outreach.send_volume" as const;
 const RINCON_PLUMBING = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 

@@ -18,11 +18,7 @@
 // practice: meter the AI GENERATION that produces the material instead
 // (`education.quiz_generate` is legal; `education.quiz_attempt` is not).
 
-import {
-  ALL_CAPABILITIES,
-  CAPABILITY_REGISTRY,
-  type Capability,
-} from "../registry";
+import { ALL_CAPABILITIES } from "../registry";
 import {
   deriveCorePracticeTokens,
   deriveStudyModeVocabulary,
@@ -103,22 +99,8 @@ describe("D-5 — core practice is never metered", () => {
     );
     expect(violations).toEqual([]);
   });
-
-  it("no ENFORCED capability meters core practice", () => {
-    const violations = ALL_CAPABILITIES.filter(
-      (c) => CAPABILITY_REGISTRY[c].enforced && metersCorePractice(c, coreTokens),
-    );
-    expect(violations).toEqual([]);
-  });
-
-  it("no capability GATES core practice behind a tier either", () => {
-    // D-5 says free FOREVER — a `minTier` above free would lock practice just
-    // as effectively as a meter, with no usage count to notice it by.
-    const gated = ALL_CAPABILITIES.filter(
-      (c: Capability) =>
-        CAPABILITY_REGISTRY[c].minTier !== "free" &&
-        metersCorePractice(c, coreTokens),
-    );
-    expect(gated).toEqual([]);
-  });
+  // The ENFORCED and tier-GATED variants that lived here read copies of
+  // billing.capability out of the registry (removed 2026-10-03, USAGE-GATE.md
+  // rule 1). "No REGISTERED capability" above is strictly stronger: a key that
+  // is not registered cannot be enforced or gated from this client at all.
 });
