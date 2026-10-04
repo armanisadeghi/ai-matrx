@@ -6616,6 +6616,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _points_usage_state: {
+        Args: { p_org: string; p_plan: string; p_user: string }
+        Returns: Json
+      }
       _resolve_tier_legacy: {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
@@ -6690,6 +6694,7 @@ export type Database = {
         }
         Returns: Json
       }
+      org_usage_state: { Args: { p_org: string }; Returns: Json }
       period_reset: {
         Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
         Returns: string
@@ -6698,6 +6703,7 @@ export type Database = {
         Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
         Returns: string
       }
+      plan_catalog: { Args: never; Returns: Json }
       plan_limit_set: {
         Args: {
           p_capability: string
@@ -6824,6 +6830,17 @@ export type Database = {
           total_quantity: number
         }[]
       }
+      user_effective_plan: { Args: { p_user: string }; Returns: string }
+      user_plan_set: {
+        Args: {
+          p_expires_at?: string
+          p_note?: string
+          p_plan_key: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      user_usage_state: { Args: { p_user?: string }; Returns: Json }
     }
     Enums: {
       meter_period:
@@ -43971,7 +43988,13 @@ export type Database = {
         Args: { p_file_id: string; p_version: number }
         Returns: Json
       }
+      envelope_document_ids: { Args: { p_envelope_id: string }; Returns: Json }
       generate_certificate: { Args: { p_envelope_id: string }; Returns: Json }
+      may_send_in: { Args: { p_organization_id: string }; Returns: boolean }
+      org_member_by_email: {
+        Args: { p_email: string; p_organization_id: string }
+        Returns: string
+      }
       outsider_token_organization: {
         Args: { p_secret: string }
         Returns: string
@@ -43980,9 +44003,14 @@ export type Database = {
         Args: { p_organization_id: string; p_sensitivity: string }
         Returns: Json
       }
+      sendable_file: { Args: { p_file_id: string }; Returns: Json }
       signature_owner: {
         Args: { p_envelope_id: string; p_session: string }
         Returns: Json
+      }
+      signer_belongs_to: {
+        Args: { p_envelope_id: string; p_signer_id: string }
+        Returns: boolean
       }
       wf_apply_signature_request: {
         Args: { p_instance_id: string }
@@ -98869,6 +98897,15 @@ export type Database = {
           p_signing_order?: string
           p_source?: Json
           p_title: string
+        }
+        Returns: Json
+      }
+      esign_envelope_list: {
+        Args: {
+          p_lane?: string
+          p_limit?: number
+          p_org_id?: string
+          p_search?: string
         }
         Returns: Json
       }
