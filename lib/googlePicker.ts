@@ -356,9 +356,13 @@ export async function pickGoogleForm(
       .addView(view)
       .setCallback((data) => {
         try {
-          if (isRecord(data) && textField(data, "action") === "error") {
+          const action = isRecord(data) ? textField(data, "action") : null;
+          if (action === "error") {
             throw new Error("Google Form selection failed.");
           }
+          // Picker can announce lifecycle events before a choice is made.
+          // Only terminal actions settle the selection promise.
+          if (action && action !== "picked" && action !== "cancel") return;
           const result = parsePickedFiles(data);
           if (result === null) {
             resolve(null);

@@ -279,3 +279,43 @@ it("refuses malformed or multiple Form selections instead of leaving the caller 
     "Google Form selection returned an invalid result.",
   );
 });
+
+it.each(["picked", "cancel"])(
+  "waits for a terminal Form choice after a lifecycle callback (%s)",
+  async (terminal) => {
+    const { pending } = await openFormPicker();
+    let settled = false;
+    void pending.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+    finishPicker({ action: "loaded" });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    if (terminal === "cancel") {
+      finishPicker({ action: "cancel" });
+      await expect(pending).resolves.toBeNull();
+    } else {
+      finishPicker({
+        action: "picked",
+        docs: [
+          {
+            id: "cedar-form",
+            name: "Cedar review",
+            mimeType: GOOGLE_FORM_MIME_TYPE,
+          },
+        ],
+      });
+      await expect(pending).resolves.toEqual({
+        id: "cedar-form",
+        name: "Cedar review",
+        mimeType: GOOGLE_FORM_MIME_TYPE,
+        url: null,
+      });
+    }
+  },
+);
