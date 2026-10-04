@@ -15,6 +15,7 @@
  */
 
 import { callHrTimeRpc, type HrRpcOptions } from "../api/rpc";
+import { toTimePage } from "../api/timePage";
 import { fromLiveExceptionList } from "../punches/fromLivePunches";
 import type {
   AttendanceExceptionKind,
@@ -72,8 +73,7 @@ export function listAttendanceExceptions(
     "hr_attendance_exception_list",
     {
       p_filters: snakeizeExceptionFilters(filters),
-      // The SQL reads `limit`/`offset`, not `page`/`pageSize`.
-      p_page: { limit: page.pageSize, offset: Math.max(0, (page.page - 1) * page.pageSize) },
+      p_page: toTimePage(page),
     },
     opts,
   ).then(fromLiveExceptionList);

@@ -41,6 +41,7 @@
 import { hrApiPost } from "@/lib/api/hr-contract-client";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { callHrTimeRpc, type HrRpcOptions } from "../../api/rpc";
+import { toTimePage } from "../../api/timePage";
 import type {
   CalcBlock,
   OvertimePreapprovalState,
@@ -196,10 +197,6 @@ function mapPaged<T>(raw: unknown, mapRow: (row: unknown) => T): Paged<T> {
   };
 }
 
-function pageArg(page: PageRequest): Record<string, unknown> {
-  return { limit: page.pageSize, offset: Math.max(0, (page.page - 1) * page.pageSize) };
-}
-
 // ---------------------------------------------------------------------------------------------
 // The RPC lane
 // ---------------------------------------------------------------------------------------------
@@ -237,7 +234,7 @@ export async function listOvertimePreapprovals(
 ): Promise<Paged<OvertimeRequestRow>> {
   const raw = await callHrTimeRpc<unknown>(
     "hr_overtime_preapproval_list",
-    { p_filters: filterArg(filters), p_page: pageArg(page) },
+    { p_filters: filterArg(filters), p_page: toTimePage(page) },
     opts,
   );
   return mapPaged(raw, mapOvertimeRequest);

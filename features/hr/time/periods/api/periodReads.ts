@@ -43,6 +43,7 @@
 "use client";
 
 import { callHrTimeRpc, type HrRpcOptions } from "../../api/rpc";
+import { toTimePage } from "../../api/timePage";
 import type { PageRequest, Paged, PayPeriodRow, PayPeriodState } from "../../api/types";
 
 // ---------------------------------------------------------------------------------------------
@@ -162,17 +163,6 @@ function mapPaged<T>(raw: unknown, mapRow: (row: unknown) => T): Paged<T> {
   };
 }
 
-/**
- * The server's page argument is `{limit, offset}`, not `{page, pageSize}` — `hr._time_page` reads
- * those two keys. Translating here rather than at every call site keeps one spelling in the lane.
- */
-function pageArg(page: PageRequest): Record<string, unknown> {
-  return {
-    limit: page.pageSize,
-    offset: Math.max(0, (page.page - 1) * page.pageSize),
-  };
-}
-
 // ---------------------------------------------------------------------------------------------
 // Pay periods
 // ---------------------------------------------------------------------------------------------
@@ -212,7 +202,7 @@ export async function listPayPeriods(
 ): Promise<Paged<PayPeriodRow>> {
   const raw = await callHrTimeRpc<unknown>(
     "hr_pay_period_list",
-    { p_filters: filterArg(filters), p_page: pageArg(page) },
+    { p_filters: filterArg(filters), p_page: toTimePage(page) },
     opts,
   );
   return mapPaged(raw, mapPayPeriodRow);
@@ -504,7 +494,7 @@ export async function listTimeAdjustments(
 ): Promise<Paged<TimeAdjustmentRow>> {
   const raw = await callHrTimeRpc<unknown>(
     "hr_time_adjustment_list",
-    { p_filters: { pay_period_id: payPeriodId }, p_page: pageArg(page) },
+    { p_filters: { pay_period_id: payPeriodId }, p_page: toTimePage(page) },
     opts,
   );
   return mapPaged(raw, mapTimeAdjustmentRow);
