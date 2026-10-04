@@ -141,7 +141,10 @@ export function FieldPlacementCanvas({
                   )}
                   style={on ? { borderColor: recipientColor(i), background: recipientColor(i, 0.14) } : undefined}
                 >
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: recipientColor(i) }} />
+                  {/* An SVG, not a coloured span: the pill guard counts glyphs, and a dot is content. */}
+                  <svg className="h-2.5 w-2.5 shrink-0" viewBox="0 0 10 10" aria-hidden>
+                    <circle cx="5" cy="5" r="5" fill={recipientColor(i)} />
+                  </svg>
                   <span className="truncate">{r.fullName}</span>
                 </button>
               );
