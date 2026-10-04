@@ -449,6 +449,26 @@ describe("a write nothing open can apply (W49)", () => {
     unregister();
   });
 
+  // The Board's agent asked apply_surface_write for a cell on a tile that was
+  // not live and got only "declares no write target" — nothing named the way in.
+  it("names the host's way in when a mounted surface declares one", async () => {
+    mockGetManifest.mockImplementation((name: string) =>
+      name === "matrx-user/test"
+        ? { writeTargets: [target], otherItemsHint: "Other items are reached with board_open_item, then board_item_act." }
+        : {},
+    );
+    const unregister = registerSurfaceRuntime(
+      { surfaceName: "matrx-user/test", getScope: () => ({}), getWriteHandlers: () => ({ review_field: () => undefined }) },
+      1,
+    );
+    const result = await applySurfaceWrite("cell_value", { row_id: "r" });
+    unregister();
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("unreachable");
+    expect(result.error).toContain("declares no write target by that name");
+    expect(result.error).toContain("board_open_item, then board_item_act");
+  });
+
   it("keeps a real page defect a defect — an unwired handler still captures", async () => {
     mockGetManifest.mockReturnValue({
       writeTargets: [{ ...target, name: "rule_draft" }],

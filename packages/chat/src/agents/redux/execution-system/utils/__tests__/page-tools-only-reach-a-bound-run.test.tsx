@@ -355,8 +355,8 @@ describe("apply_surface_write carries the mounted host's otherItemsHint", () => 
     infoSpy.mockRestore();
   });
   function description(result: ToolInjectionResult): string {
-    const spec = (result.tools ?? []).find((t) => t.kind !== "agent" && t.name === "apply_surface_write");
-    return spec && spec.kind !== "agent" ? String(spec.description) : "";
+    const spec = (result.tools ?? []).find((t) => t.kind === "inline" && t.name === "apply_surface_write");
+    return spec && spec.kind === "inline" ? String(spec.description) : "";
   }
 
   it("states the hint when the surface that declares it is mounted", async () => {

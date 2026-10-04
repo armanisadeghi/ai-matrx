@@ -230,6 +230,8 @@ export const refreshSurfaceScope = createAsyncThunk<
       }
     }
 
+    if (!runtime) return { refreshed: false, surfaceName, reason: "no_provider" };
+
     let preparation;
     try {
       preparation = await runtime.beforeExecute?.({
