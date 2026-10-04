@@ -17,11 +17,12 @@
  * is a link into the one schedule form, not a second automation builder.
  */
 
-import { useEffect, useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 
 import { recordChangeActions } from "@/features/data-tables/data-source/record-store-grid";
+import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 import { toRecordSourceKey } from "@/features/scheduling/utils/recordSourceKey";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -30,6 +31,9 @@ type Answer =
   | { state: "absent" }
   | { state: "refused"; why: string }
   | { state: "offered"; entityType: string };
+
+/** Kept per table, organization and person — a waking board tile or a remount asks nothing. */
+const rowChangeOffers = createKeptAnswers<Answer>({ keep: (a) => a.state !== "refused" });
 
 /**
  * WHETHER THIS TABLE OFFERS "WHEN A ROW CHANGES, RUN AN AGENT", AND WHERE IT GOES — the one
@@ -54,21 +58,14 @@ export function useRowChangeAgentOffer({
   organizationId: string | null;
   userId: string | null;
 }): RowChangeAgentOffer {
-  const [answer, setAnswer] = useState<Answer>({ state: "asking" });
-
-  useEffect(() => {
-    if (!organizationId) return;
-    let live = true;
-    void recordChangeActions({ store: "record", organizationId, userId }, tableId).then((door) => {
-      if (!live) return;
-      if (door.ok) setAnswer({ state: "offered", entityType: toRecordSourceKey(door.data.entity_type) });
-      else if (door.absent) setAnswer({ state: "absent" });
-      else setAnswer({ state: "refused", why: door.error.message });
-    });
-    return () => {
-      live = false;
-    };
-  }, [tableId, organizationId, userId]);
+  const key = organizationId ? `${tableId}:${organizationId}:${userId ?? ""}` : null;
+  const kept = rowChangeOffers.useAnswer(key, async (): Promise<Answer> => {
+    const door = await recordChangeActions({ store: "record", organizationId: organizationId as string, userId }, tableId);
+    if (door.ok) return { state: "offered", entityType: toRecordSourceKey(door.data.entity_type) };
+    if (door.absent) return { state: "absent" };
+    return { state: "refused", why: door.error.message };
+  });
+  const answer: Answer = kept.answer ?? { state: "asking" };
 
   if (answer.state !== "offered") return answer;
   const prompt = `${tableName ? `A row in the table "${tableName}"` : "A row in this table"} changed. The event variable names the row and the columns that changed. `;

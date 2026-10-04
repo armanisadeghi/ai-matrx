@@ -8,9 +8,9 @@
 // switch, every test edit is replaced by the older table's rows first (rows people added are
 // archived, never deleted, and counted in a log). The table's ⋯ menu says so in one line — no banner.
 
-import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import { createKeptAnswers } from "@/lib/kept-answer/keptAnswer";
 
 export type TableCopyEvaluation =
   | { state: "asking" }
@@ -51,21 +51,15 @@ export async function tableCopyEvaluation(client: SupabaseClient, tableId: strin
   };
 }
 
+/** Kept per table and version, so a sleeping board tile that wakes (or a remount) asks nothing. */
+const copyEvaluations = createKeptAnswers<TableCopyEvaluation>({
+  keep: (a) => a.state !== "unavailable",
+});
+
 /** The table page's hook: re-asks when the table changes or `version` moves (after an edit). */
 export function useTableCopyEvaluation(tableId: string | null, version = 0): TableCopyEvaluation {
-  const [answer, setAnswer] = useState<TableCopyEvaluation>({ state: "asking" });
-  useEffect(() => {
-    if (!tableId) {
-      setAnswer({ state: "not-a-test-copy" });
-      return;
-    }
-    let live = true;
-    void tableCopyEvaluation(createClient(), tableId).then((a) => {
-      if (live) setAnswer(a);
-    });
-    return () => {
-      live = false;
-    };
-  }, [tableId, version]);
-  return answer;
+  const key = tableId ? `${tableId}:${version}` : null;
+  const { answer } = copyEvaluations.useAnswer(key, () => tableCopyEvaluation(createClient(), tableId as string));
+  if (!tableId) return { state: "not-a-test-copy" };
+  return answer ?? { state: "asking" };
 }
