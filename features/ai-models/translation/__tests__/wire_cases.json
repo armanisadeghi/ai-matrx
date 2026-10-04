@@ -1,0 +1,8013 @@
+{
+ "cases": [
+  {
+   "cell_id": "038c4755-6328-45bf-9c14-92cd39f168e1",
+   "engine": {
+    "off": {
+     "max_tokens": 64000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 64000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-4-7",
+   "rule": {
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 64000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "0a0f5bda-750d-467f-b7b2-a7c9928890f0",
+   "engine": {
+    "unset": {
+     "threshold": 0.3
+    },
+    "values": {}
+   },
+   "offering": "fastino/gliner2-large-v1",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    },
+    "default": 0.3,
+    "why": "Provider requirement: our GLiNER extraction service takes a threshold on every call; 0.3 is its calibrated default."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "threshold",
+    "value_type": "number"
+   },
+   "setting_key": "threshold"
+  },
+  {
+   "cell_id": "0e7cd7d1-3641-4b21-8a13-279619c68602",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {
+      "reasoning.summary": "detailed"
+     },
+     "\"concise\"": {
+      "reasoning.summary": "concise"
+     },
+     "\"detailed\"": {
+      "reasoning.summary": "detailed"
+     }
+    }
+   },
+   "offering": "gpt-5.3-codex",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "OpenAI has no summary-off value (auto, concise, detailed only; none is rejected) and an omitted summary returns none, so off is exactly not asking"
+    },
+    "provider_key": "reasoning.summary",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never"
+    ],
+    "value_map": {
+     "always": "detailed",
+     "auto": "auto",
+     "concise": "concise",
+     "detailed": "detailed",
+     "never": null
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "0ea88215-e1c5-4ef7-b2a5-66cb5b1ba21e",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-6-luna",
+   "rule": {
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "max",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "1186c955-3adf-477c-bcdd-31377da64e2b",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.3-codex",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "xhigh",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "12504b78-aa7b-4ed2-9833-479b1c512074",
+   "engine": {
+    "off": {
+     "max_tokens": 64000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 64000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 64000,
+      "thinking.budget_tokens": 8192,
+      "thinking.type": "enabled"
+     },
+     "\"low\"": {
+      "max_tokens": 64000,
+      "thinking.budget_tokens": 1024,
+      "thinking.type": "enabled"
+     },
+     "\"medium\"": {
+      "max_tokens": 64000,
+      "thinking.budget_tokens": 4096,
+      "thinking.type": "enabled"
+     },
+     "\"minimal\"": {
+      "max_tokens": 64000,
+      "thinking.budget_tokens": 1024,
+      "thinking.type": "enabled"
+     }
+    }
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 32768,
+     "mode": "budget",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "12dd05ba-faec-4354-a2ca-76e9f3260400",
+   "engine": {
+    "off": {
+     "reasoning_effort": "low"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "low"
+     }
+    }
+   },
+   "offering": "grok-4.7",
+   "rule": {
+    "off": {
+     "send": "low"
+    },
+    "provider_key": "reasoning_effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "xhigh",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "low",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "13e186c3-50d2-411f-af26-6ff47b436595",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "deep-research-preview-04-2026",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "this Google research agent has no thinking setting, so off cannot be sent"
+    },
+    "why": "this model take no thinking_budget, and no setting carried here can express it"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "15cb2aca-41ec-4394-a0f1-fdbaf3a8cea4",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.4-mini",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "16fa3070-d9a2-4b6e-86e1-4342a4b15740",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 128000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-5",
+   "rule": {
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100,
+     "thinks_by_default": true
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "18a54f7b-793e-4cbc-a1bf-615e28c6d2b1",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "grok-4.20-multi-agent-0309",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "18dda281-95c1-4f8a-9893-26275ae461fa",
+   "engine": {
+    "off": {
+     "reasoning_effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "minimal"
+     }
+    }
+   },
+   "offering": "kimi-k3",
+   "rule": {
+    "accepts": [
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "off": {
+     "send": "none"
+    },
+    "ui_values": [
+     "none",
+     "low",
+     "medium",
+     "high",
+     "max"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "1a169483-f18c-4081-8aad-daa65b4fc6e9",
+   "engine": {
+    "unset": {
+     "response_modalities": [
+      "AUDIO"
+     ]
+    },
+    "values": {
+     "\"AUDIO\"": {
+      "response_modalities": "AUDIO"
+     },
+     "\"TEXT\"": {
+      "response_modalities": "TEXT"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-live-preview",
+   "rule": {
+    "default": [
+     "AUDIO"
+    ],
+    "why": "Provider requirement: native-audio Live models answer only in AUDIO; the session must request it."
+   },
+   "setting": {
+    "canonical_values": [
+     "TEXT",
+     "AUDIO"
+    ],
+    "family": "format",
+    "key": "response_modalities",
+    "value_type": "string_array"
+   },
+   "setting_key": "response_modalities"
+  },
+  {
+   "cell_id": "1ab15d32-4645-46a5-b30a-e13aa842ff6c",
+   "engine": {
+    "unset": {
+     "threshold": 0.3
+    },
+    "values": {}
+   },
+   "offering": "fastino/gliner2-multi-large-v1",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    },
+    "default": 0.3,
+    "why": "Provider requirement: our GLiNER extraction service takes a threshold on every call; 0.3 is its calibrated default."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "threshold",
+    "value_type": "number"
+   },
+   "setting_key": "threshold"
+  },
+  {
+   "cell_id": "1ad27231-96dc-4e0c-abef-34587231b0e7",
+   "engine": {
+    "off": {},
+    "unset": {
+     "thinking_config.thinking_level": "medium"
+    },
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "low"
+     }
+    }
+   },
+   "offering": "gemini-3.7-flash",
+   "rule": {
+    "default": "medium",
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Product choice: Gemini flash listings run at a fixed default thinking level when nothing is set (predictable latency and cost)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "1c5ad50e-81e7-4f06-af46-14ef3b7f0602",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_level": "minimal"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "minimal"
+     }
+    }
+   },
+   "offering": "gemini-3-flash-preview",
+   "rule": {
+    "off": {
+     "send": "minimal"
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_level",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "1c912d7a-b7b2-46ec-a667-562bf4c244f8",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-haiku-4-5-20251001",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-haiku-4-5-20251001 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "1d524738-fbac-4406-abdb-af03ade237ac",
+   "engine": {
+    "unset": {},
+    "values": {
+     "\"1024p\"": {
+      "image_size": "2K"
+     },
+     "\"1080p\"": {
+      "image_size": "2K"
+     },
+     "\"480p\"": {
+      "image_size": "512px"
+     },
+     "\"720p\"": {
+      "image_size": "1K"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-image-preview",
+   "rule": {
+    "provider_key": "image_size",
+    "supported": true,
+    "value_map": {
+     "0.5k": "512px",
+     "1080p": "2K",
+     "1k": "1K",
+     "2k": "2K",
+     "4k": "4K",
+     "720p": "1K"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "480p",
+     "720p",
+     "1080p",
+     "1024p",
+     "4k",
+     "0.5k",
+     "1k",
+     "2k"
+    ],
+    "family": "intensity",
+    "key": "resolution",
+    "value_type": "enum"
+   },
+   "setting_key": "resolution"
+  },
+  {
+   "cell_id": "1d599891-8132-4fe8-81a3-c4770e1716fd",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.6-terra",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "max",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "1e7b3d18-1e53-4f32-a861-4f5aaa03ddab",
+   "engine": {
+    "unset": {
+     "size": "1024x1024"
+    },
+    "values": {
+     "\"1:1\"": {
+      "size": "1024x1024"
+     },
+     "\"3:4\"": {
+      "size": "1024x1408"
+     },
+     "\"4:3\"": {
+      "size": "1408x1024"
+     },
+     "\"9:16\"": {
+      "size": "1024x1536"
+     }
+    }
+   },
+   "offering": "gpt-image-2",
+   "rule": {
+    "processor": "media_dims",
+    "processor_config": {
+     "consumes": [
+      "width",
+      "height"
+     ],
+     "default": "1024x1024",
+     "default_operations": [
+      "generate"
+     ],
+     "mode": "size",
+     "order": 100,
+     "target": "size"
+    },
+    "why": "Product choice: images render in a known shape when none is asked for."
+   },
+   "setting": {
+    "canonical_values": [
+     "1:1",
+     "3:4",
+     "4:3",
+     "9:16",
+     "16:9",
+     "16:10",
+     "10:16",
+     "21:9",
+     "9:21",
+     "2:3",
+     "3:2",
+     "9:19.5",
+     "19.5:9",
+     "9:20",
+     "20:9",
+     "1:2",
+     "2:1",
+     "4:5",
+     "5:4",
+     "1:4",
+     "1:8",
+     "4:1",
+     "8:1"
+    ],
+    "family": "shape",
+    "key": "aspect_ratio",
+    "value_type": "enum"
+   },
+   "setting_key": "aspect_ratio"
+  },
+  {
+   "cell_id": "1fa51f76-76d8-4b8f-b79f-2b71190293b6",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen-3.8-27b",
+   "rule": {
+    "max_items": 4,
+    "provider_key": "stop"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "20877dcb-d70b-480a-85bc-df46e0ab6972",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "deepseek-ai/DeepSeek-V4-Flash-0731",
+   "rule": {
+    "clamp": {
+     "max": 2,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "23998386-199f-4c3e-90cb-aa4e632f680c",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 128000,
+     "output_config.effort": "xhigh",
+     "thinking.display": "summarized",
+     "thinking.type": "adaptive"
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-sonnet-5",
+   "rule": {
+    "default": "xhigh",
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "xhigh",
+     "max"
+    ],
+    "why": "Product choice: a \"-max\" listing is defined as maximum thinking, so NOT SET runs at xhigh effort."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "23bf8b2e-7ec1-4b77-8e1e-974070a405f2",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "kimi-k2.7-code",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "25003125-e3af-4edb-b029-901d667187c9",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gemini-3.6-flash",
+   "rule": {
+    "clamp": {
+     "max": 2,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "25766639-83cd-4ec7-90da-434c47ae46a8",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.2",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "264dbe9f-1009-4884-ad0d-337cc2c2bf20",
+   "engine": {
+    "unset": {
+     "reasoning_format": "parsed"
+    },
+    "values": {
+     "\"hidden\"": {
+      "reasoning_format": "parsed"
+     },
+     "\"parsed\"": {
+      "reasoning_format": "parsed"
+     },
+     "\"raw\"": {
+      "reasoning_format": "parsed"
+     }
+    }
+   },
+   "offering": "qwen/qwen3.6-27b",
+   "rule": {
+    "const": "parsed",
+    "supported": true,
+    "why": "Integration requirement: reasoning arrives parsed (separate from the answer) so the stream can show it apart."
+   },
+   "setting": {
+    "canonical_values": [
+     "hidden",
+     "raw",
+     "parsed"
+    ],
+    "family": "visibility",
+    "key": "reasoning_format",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_format"
+  },
+  {
+   "cell_id": "267e348c-0018-4311-9ffb-c1a135b403b3",
+   "engine": {
+    "off": {
+     "safety_tolerance": 5
+    },
+    "unset": {
+     "safety_tolerance": 5
+    },
+    "values": {
+     "true": {
+      "safety_tolerance": 5
+     }
+    }
+   },
+   "offering": "black-forest-labs/flux-2-flex",
+   "rule": {
+    "processor": "flux_safety_tolerance",
+    "processor_config": {
+     "default": 5,
+     "order": 110
+    },
+    "supported": true,
+    "why": "The platform asks FLUX for its most permissive safety level unless the person turns the checker on; Replicate does not require the field."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "disable_safety_checker",
+    "value_type": "boolean"
+   },
+   "setting_key": "disable_safety_checker"
+  },
+  {
+   "cell_id": "2746398f-3449-4b48-b997-d2f91535b25f",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.6-sol",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "max",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "2a689049-9fcf-466b-80a7-45ff976fc3c6",
+   "engine": {
+    "off": {
+     "safety_tolerance": 5
+    },
+    "unset": {
+     "safety_tolerance": 5
+    },
+    "values": {
+     "true": {
+      "safety_tolerance": 5
+     }
+    }
+   },
+   "offering": "black-forest-labs/flux-2-max",
+   "rule": {
+    "processor": "flux_safety_tolerance",
+    "processor_config": {
+     "default": 5,
+     "order": 110
+    },
+    "supported": true,
+    "why": "The platform asks FLUX for its most permissive safety level unless the person turns the checker on; Replicate does not require the field."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "disable_safety_checker",
+    "value_type": "boolean"
+   },
+   "setting_key": "disable_safety_checker"
+  },
+  {
+   "cell_id": "2ad38570-7b56-466b-8c96-c51594b74313",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.5",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "2ada8cae-6a00-4344-81d1-79ce0554d3cc",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "lyria-3-pro-preview",
+   "rule": {
+    "clamp": {
+     "max": 65536
+    },
+    "provider_key": "max_output_tokens"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "length",
+    "key": "max_output_tokens",
+    "value_type": "integer"
+   },
+   "setting_key": "max_output_tokens"
+  },
+  {
+   "cell_id": "2b274808-5ca0-49df-9201-fbd69843e694",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "moonshotai/Kimi-K3",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "2bd804cf-3689-4e6d-b317-ba39bdefd1ab",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "gemini-2.5-pro",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "Gemini returns no thoughts unless include_thoughts is asked for (probed: 0 thought parts unset), so never is exactly not asking"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "2ed1c2cf-b266-4942-aa5c-d7280c6c46f1",
+   "engine": {
+    "off": {
+     "reasoning_effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "default"
+     },
+     "\"low\"": {
+      "reasoning_effort": "default"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "default"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "default"
+     }
+    }
+   },
+   "offering": "qwen/qwen3.6-27b",
+   "rule": {
+    "provider_key": "reasoning_effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "default",
+     "low": "default",
+     "medium": "default",
+     "minimal": "default",
+     "none": "none",
+     "xhigh": "default"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "2ed88d57-45e9-42fb-ad73-da336e86dad0",
+   "engine": {
+    "unset": {
+     "size": "1024x1024"
+    },
+    "values": {
+     "\"1:1\"": {
+      "size": "1024x1024"
+     },
+     "\"3:4\"": {
+      "size": "1024x1408"
+     },
+     "\"4:3\"": {
+      "size": "1408x1024"
+     },
+     "\"9:16\"": {
+      "size": "1024x1536"
+     }
+    }
+   },
+   "offering": "recraft-ai/recraft-v4",
+   "rule": {
+    "processor": "media_dims",
+    "processor_config": {
+     "consumes": [
+      "width",
+      "height"
+     ],
+     "default": "1024x1024",
+     "mode": "size",
+     "order": 100,
+     "target": "size"
+    },
+    "supported": true,
+    "why": "Product choice: images render in a known shape when none is asked for."
+   },
+   "setting": {
+    "canonical_values": [
+     "1:1",
+     "3:4",
+     "4:3",
+     "9:16",
+     "16:9",
+     "16:10",
+     "10:16",
+     "21:9",
+     "9:21",
+     "2:3",
+     "3:2",
+     "9:19.5",
+     "19.5:9",
+     "9:20",
+     "20:9",
+     "1:2",
+     "2:1",
+     "4:5",
+     "5:4",
+     "1:4",
+     "1:8",
+     "4:1",
+     "8:1"
+    ],
+    "family": "shape",
+    "key": "aspect_ratio",
+    "value_type": "enum"
+   },
+   "setting_key": "aspect_ratio"
+  },
+  {
+   "cell_id": "32681d84-16a9-4e41-a8fb-5f73db1ba3bd",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-4.20-multi-agent-0309",
+   "rule": {
+    "drop": true,
+    "provider_key": "stop",
+    "why": "xAI refuses stop sequences on its reasoning models; the one model that takes them says so on its own rule."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "34fcc52d-9216-49cc-854d-0ace7e2876c9",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "auto"
+     }
+    }
+   },
+   "offering": "claude-fable-5-1",
+   "rule": {
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none"
+    ],
+    "value_map": {
+     "auto": "auto",
+     "none": "none",
+     "required": "auto"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "353e261d-be5c-4be4-920b-3700e1c8ded0",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-sonnet-4-5-20250929 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "36d0ec16-3a2f-4aa8-b748-9dda5d887bf1",
+   "engine": {
+    "off": {
+     "reasoning_effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "low"
+     }
+    }
+   },
+   "offering": "grok-4.3",
+   "rule": {
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning_effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "36fb2dbf-6a55-41bd-b881-f71d8a16f06b",
+   "engine": {
+    "off": {
+     "apply_text_normalization": "off"
+    },
+    "unset": {},
+    "values": {
+     "\"on\"": {
+      "apply_text_normalization": "on"
+     }
+    }
+   },
+   "offering": "eleven_v3",
+   "rule": {
+    "supported": true,
+    "value_map": {
+     "auto": "auto",
+     "off": "off",
+     "on": "on"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "on",
+     "off"
+    ],
+    "family": "none",
+    "key": "apply_text_normalization",
+    "value_type": "enum"
+   },
+   "setting_key": "apply_text_normalization"
+  },
+  {
+   "cell_id": "37459283-4466-4061-b774-1d370d68fc16",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gpt-realtime-2.1-mini",
+   "rule": {
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "37abdbe9-aa60-4098-b91d-0bbb3ad17411",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "grok-4.20-multi-agent-0309",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "xAI refuses any reasoning setting on this model and it always reasons, so off cannot be sent"
+    },
+    "why": "grok-4.20 multi-agent always reasons and xAI rejects the reasoning_effort parameter on it"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "37c7aa49-05e0-45e8-aab4-85a765295520",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "moonshotai/Kimi-K3",
+   "rule": {
+    "max_items": 4,
+    "provider_key": "stop"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "37cd164d-b677-43a7-98bd-cd739731e766",
+   "engine": {
+    "unset": {
+     "threshold": 0.3
+    },
+    "values": {}
+   },
+   "offering": "fastino/gliner2-base-v1",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    },
+    "default": 0.3,
+    "why": "Provider requirement: our GLiNER extraction service takes a threshold on every call; 0.3 is its calibrated default."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "threshold",
+    "value_type": "number"
+   },
+   "setting_key": "threshold"
+  },
+  {
+   "cell_id": "3a2b222f-0d9b-4070-8a6b-099ab630ecf4",
+   "engine": {
+    "unset": {
+     "turn_coverage": "TURN_INCLUDES_ONLY_ACTIVITY"
+    },
+    "values": {
+     "\"TURN_INCLUDES_ALL_INPUT\"": {
+      "turn_coverage": "TURN_INCLUDES_ALL_INPUT"
+     },
+     "\"TURN_INCLUDES_ONLY_ACTIVITY\"": {
+      "turn_coverage": "TURN_INCLUDES_ONLY_ACTIVITY"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-live-preview",
+   "rule": {
+    "default": "TURN_INCLUDES_ONLY_ACTIVITY",
+    "why": "Product choice (live-voice tuning): a turn covers only the active speech, so silence is not sent as input."
+   },
+   "setting": {
+    "canonical_values": [
+     "TURN_INCLUDES_ONLY_ACTIVITY",
+     "TURN_INCLUDES_ALL_INPUT"
+    ],
+    "family": "none",
+    "key": "turn_coverage",
+    "value_type": "enum"
+   },
+   "setting_key": "turn_coverage"
+  },
+  {
+   "cell_id": "3a615fce-e77b-4c92-85bd-f24f98858be7",
+   "engine": {
+    "off": {
+     "chat_template_kwargs.thinking": false
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "high"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "high"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "high"
+     }
+    }
+   },
+   "offering": "deepseek-ai/DeepSeek-V4-Pro-0813",
+   "rule": {
+    "off": {
+     "send": false
+    },
+    "on_unmapped": "nearest",
+    "processor": "together_reasoning",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "order": 100
+    },
+    "provider_key": "chat_template_kwargs.thinking",
+    "ui_values": [
+     "auto",
+     "none",
+     "high",
+     "max"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "4109894e-5b55-48f5-b1d4-47406a1bba13",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_budget": 0
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "low"
+     }
+    }
+   },
+   "offering": "gemini-flash-latest",
+   "rule": {
+    "accepts": [
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "off": {
+     "send": 0
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_budget",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "42f0fcdc-473b-4190-bd8c-6b38297c4afc",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-haiku-4-5-20251001",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-haiku-4-5-20251001 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "43fae869-d4be-444a-a51c-95ba5644000d",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_budget": 0
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_budget": 8192
+     },
+     "\"low\"": {
+      "thinking_config.thinking_budget": 1024
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_budget": 4096
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_budget": 512
+     }
+    }
+   },
+   "offering": "gemini-2.5-flash",
+   "rule": {
+    "off": {
+     "send": 0
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "max_thinking_budget": 24576,
+     "mode": "legacy",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_budget",
+    "supported": true
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "455e013f-ffe2-4e04-a122-c7e125b05708",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "moonshotai/Kimi-K3",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "Together takes no request switch that hides reasoning (probed gpt-oss-120b: thoughts still returned with include_thoughts=false); hiding is never depth, so the reasoning stays at our default and the wire equals not set"
+    },
+    "why": "a Together model takes no include_thoughts switch; reasoning models read it through the together_reasoning processor (which consumes it), every other model drops it"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "46312176-ff4c-4871-af02-0ecde70d886d",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "grok-build-0.1",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "xAI refuses any reasoning setting on this model and it always reasons, so off cannot be sent"
+    },
+    "why": "grok-build always reasons and xAI rejects the reasoning_effort parameter on it"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "47cd8f34-64d6-411a-bf4a-38c140ec5763",
+   "engine": {
+    "off": {
+     "max_tokens": 64000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 64000,
+     "output_config.effort": "xhigh",
+     "thinking.display": "summarized",
+     "thinking.type": "adaptive"
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-4-8",
+   "rule": {
+    "default": "xhigh",
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 64000,
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "xhigh",
+     "max"
+    ],
+    "why": "Product choice: a \"-max\" listing is defined as maximum thinking, so NOT SET runs at xhigh effort."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "4b6cc6a0-cbff-4e5e-89ef-aef47ff2412a",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "image_size": "1K"
+     },
+     "\"low\"": {
+      "image_size": "1K"
+     },
+     "\"medium\"": {
+      "image_size": "1K"
+     },
+     "\"minimal\"": {
+      "image_size": "1K"
+     }
+    }
+   },
+   "offering": "gemini-2.5-flash-image",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "on image models thinking depth becomes picture size, so off leaves the size at the model default"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "4c2d86d6-9b1c-4652-acb7-fb41579fc8ec",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gemini-3.1-flash-tts-preview",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "this model does not think, so off and not set are the same"
+    },
+    "why": "this model take no thinking_budget, and no setting carried here can express it"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "4c34709f-8839-43e0-a252-2ffc039855bb",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "deep-research-preview-04-2026",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "this Google research agent has no thinking setting, so off cannot be sent"
+    },
+    "why": "this model take no reasoning_effort, and no setting carried here can express it"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "4c7de503-9540-491d-b346-be15ffb20045",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "moonshotai/Kimi-K3",
+   "rule": {
+    "clamp": {
+     "max": 1
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_p",
+    "value_type": "number"
+   },
+   "setting_key": "top_p"
+  },
+  {
+   "cell_id": "4cf94538-a686-4fbf-a4ea-846449b605b6",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "gemini-flash-lite-latest",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "Gemini returns no thoughts unless include_thoughts is asked for (probed), and this model does not think by default, so never is exactly not asking"
+    },
+    "supported": true,
+    "value_map": {
+     "always": "always",
+     "never": "never"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "4e7dc615-4432-4f89-bfec-ee66c49d1db9",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "kimi-k2.7-code",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "Moonshot accepts only thinking enabled on this model, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "4eab2c20-7c8d-442d-bea0-16181c36c09d",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-opus-4-6",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-opus-4-6 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "4f89af90-cf6f-4f00-8852-1d8ac072a9f2",
+   "engine": {
+    "off": {},
+    "unset": {
+     "thinking_config.thinking_level": "medium"
+    },
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "minimal"
+     }
+    }
+   },
+   "offering": "gemini-3.6-flash",
+   "rule": {
+    "default": "medium",
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Product choice: Gemini flash listings run at a fixed default thinking level when nothing is set (predictable latency and cost)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "521d9da7-103c-4d54-a7db-cf10a5248143",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "minimal"
+     }
+    }
+   },
+   "offering": "gpt-realtime-2.1-mini",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "minimal",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "52d1f8be-ff7c-4312-9927-b7a13816b97f",
+   "engine": {
+    "off": {
+     "background": false
+    },
+    "unset": {
+     "background": true
+    },
+    "values": {
+     "true": {
+      "background": true
+     }
+    }
+   },
+   "offering": "gemini-omni-flash-preview",
+   "rule": {
+    "default": true,
+    "provider_key": "background",
+    "supported": true,
+    "why": "Integration requirement: the interactions seam polls the job, so the request runs in background."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "run_in_background",
+    "value_type": "boolean"
+   },
+   "setting_key": "run_in_background"
+  },
+  {
+   "cell_id": "5334dea0-4932-437a-9915-fc60eb16c293",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 128000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-sonnet-5",
+   "rule": {
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100,
+     "thinks_by_default": true
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "562f6269-54be-48f8-aa8d-d501655dc9ad",
+   "engine": {
+    "unset": {},
+    "values": {
+     "\"1024p\"": {
+      "resolution": "1080p"
+     },
+     "\"1080p\"": {
+      "resolution": "1080p"
+     },
+     "\"480p\"": {
+      "resolution": "720p"
+     },
+     "\"720p\"": {
+      "resolution": "720p"
+     }
+    }
+   },
+   "offering": "veo-3.1-lite-generate-preview",
+   "rule": {
+    "ui_values": [
+     "720p",
+     "1080p"
+    ],
+    "value_map": {
+     "1080p": "1080p",
+     "4k": "4k",
+     "720p": "720p"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "480p",
+     "720p",
+     "1080p",
+     "1024p",
+     "4k",
+     "0.5k",
+     "1k",
+     "2k"
+    ],
+    "family": "intensity",
+    "key": "resolution",
+    "value_type": "enum"
+   },
+   "setting_key": "resolution"
+  },
+  {
+   "cell_id": "57623af9-37eb-446a-833c-ce5ceb365aaf",
+   "engine": {
+    "unset": {},
+    "values": {
+     "\"1024p\"": {
+      "image_size": "2K"
+     },
+     "\"1080p\"": {
+      "image_size": "2K"
+     },
+     "\"480p\"": {
+      "image_size": "512px"
+     },
+     "\"720p\"": {
+      "image_size": "1K"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-image",
+   "rule": {
+    "provider_key": "image_size",
+    "supported": true,
+    "ui_values": [
+     "0.5k",
+     "1k",
+     "2k",
+     "4k"
+    ],
+    "value_map": {
+     "0.5k": "512px",
+     "1080p": "2K",
+     "1k": "1K",
+     "2k": "2K",
+     "4k": "4K",
+     "720p": "1K"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "480p",
+     "720p",
+     "1080p",
+     "1024p",
+     "4k",
+     "0.5k",
+     "1k",
+     "2k"
+    ],
+    "family": "intensity",
+    "key": "resolution",
+    "value_type": "enum"
+   },
+   "setting_key": "resolution"
+  },
+  {
+   "cell_id": "57eb9a28-b817-4c64-aa4b-be480da57ec7",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-opus-4-7",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-opus-4-7 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "586fe654-836d-4d1c-8ec1-f5588a8c13f6",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-4.20-multi-agent-0309",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "xAI refuses any reasoning setting on this model and it always reasons, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "58c8c108-b27c-4155-b6a9-3b890c0a6757",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "lyria-3-clip-preview",
+   "rule": {
+    "clamp": {
+     "max": 65536
+    },
+    "provider_key": "max_output_tokens"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "length",
+    "key": "max_output_tokens",
+    "value_type": "integer"
+   },
+   "setting_key": "max_output_tokens"
+  },
+  {
+   "cell_id": "59a975fc-d8f2-48f7-ae2c-f0e4b3fdc748",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "output_config.effort": "low",
+     "thinking.display": "omitted",
+     "thinking.type": "adaptive"
+    },
+    "unset": {
+     "max_tokens": 128000,
+     "output_config.effort": "medium",
+     "thinking.display": "summarized",
+     "thinking.type": "adaptive"
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-5-5",
+   "rule": {
+    "default": "medium",
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100,
+     "thinking_always_on": true
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Product choice carried from the pre-cells catalog: the Opus 5.5 listing runs at medium effort when nothing is set (the -max listing is the deep one)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "59ad0615-63da-4b2f-ac91-2ef5a941f084",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_budget": 0
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_budget": 8192
+     },
+     "\"low\"": {
+      "thinking_config.thinking_budget": 1024
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_budget": 4096
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_budget": 512
+     }
+    }
+   },
+   "offering": "gemini-robotics-er-2-preview",
+   "rule": {
+    "default": "auto",
+    "off": {
+     "send": 0
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts"
+     ],
+     "family": "robotics_er",
+     "mode": "legacy",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_budget",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "5a1ba666-cc10-4afe-a66a-929e56a6fba4",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-build-0.1",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "xAI refuses any reasoning setting on this model and it always reasons, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "5df0abbc-1087-42ea-a659-8e4b3e88e15a",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-imagine-image-2.0",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "the xAI image API has no thinking setting, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "60655096-fbbd-4166-992d-9c940a1fb518",
+   "engine": {
+    "off": {
+     "apply_text_normalization": "off"
+    },
+    "unset": {},
+    "values": {
+     "\"on\"": {
+      "apply_text_normalization": "on"
+     }
+    }
+   },
+   "offering": "eleven_flash_v2_5",
+   "rule": {
+    "supported": true,
+    "value_map": {
+     "auto": "auto",
+     "off": "off",
+     "on": "on"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "on",
+     "off"
+    ],
+    "family": "none",
+    "key": "apply_text_normalization",
+    "value_type": "enum"
+   },
+   "setting_key": "apply_text_normalization"
+  },
+  {
+   "cell_id": "619e71c4-0e17-4b01-9c03-03c29e0be6cc",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "gpt-6-astra",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "65542d13-4f30-46f8-88fb-7fa59328f349",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen-3.8-27b",
+   "rule": {
+    "clamp": {
+     "max": 2,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "67d6b279-1970-495b-b158-f9e27dff90a4",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-opus-4-8",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-opus-4-8 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "691c506d-276b-44b2-bf4f-5b648e8aafbb",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "qwen-3.8-27b",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "6c691669-042d-4a46-baf4-26e88b1b079b",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gemini-2.5-flash-image",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "on image models thinking depth becomes picture size, so off leaves the size at the model default"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "6de4ad64-7bec-4dfb-80f3-6a9c9c0db57d",
+   "engine": {
+    "off": {
+     "max_tokens": 64000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 64000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-4-8",
+   "rule": {
+    "default": "auto",
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 64000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "6f01c75b-f301-4f72-b5dd-f64b7b2fc68e",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {
+      "reasoning.summary": "detailed"
+     },
+     "\"concise\"": {
+      "reasoning.summary": "concise"
+     },
+     "\"detailed\"": {
+      "reasoning.summary": "detailed"
+     }
+    }
+   },
+   "offering": "gpt-6-astra",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "OpenAI has no summary-off value (auto, concise, detailed only; none is rejected) and an omitted summary returns none, so off is exactly not asking"
+    },
+    "provider_key": "reasoning.summary",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never"
+    ],
+    "value_map": {
+     "always": "detailed",
+     "auto": "auto",
+     "concise": "concise",
+     "detailed": "detailed",
+     "never": null
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "721928e7-d311-4fd9-93e3-0a64707c8b9c",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "auto"
+     }
+    }
+   },
+   "offering": "claude-opus-5-5",
+   "rule": {
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none"
+    ],
+    "value_map": {
+     "auto": "auto",
+     "none": "none",
+     "required": "auto"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "72ad3927-43e9-4af5-9e83-da63d6feceae",
+   "engine": {
+    "off": {
+     "reasoning.effort": "low"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-6-astra",
+   "rule": {
+    "off": {
+     "send": "low"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "max",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "low",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "76321fc0-3c94-46e0-8704-258568f01021",
+   "engine": {
+    "unset": {
+     "threshold": 0.3
+    },
+    "values": {}
+   },
+   "offering": "fastino/gliner2-multi-v1",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    },
+    "default": 0.3,
+    "why": "Provider requirement: our GLiNER extraction service takes a threshold on every call; 0.3 is its calibrated default."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "threshold",
+    "value_type": "number"
+   },
+   "setting_key": "threshold"
+  },
+  {
+   "cell_id": "79d236d1-cc2f-4fb3-81d3-ddbeababac26",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_budget": 8192
+     },
+     "\"low\"": {
+      "thinking_config.thinking_budget": 1024
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_budget": 4096
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_budget": 512
+     }
+    }
+   },
+   "offering": "gemini-flash-lite-latest",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "this model does not think unless asked (probed: no thought tokens unset) and Google rejects a thinking budget of 0 on it, so off is exactly not asking"
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "mode": "legacy",
+     "order": 100
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "79dc8ef9-34b6-44b1-a0da-358f7f4aa5a6",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "gemini-omni-flash-preview",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "this Google interactions model has no thinking setting, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "7b03a6e2-2aa7-47d6-a7f4-145130eaf64a",
+   "engine": {
+    "off": {
+     "reasoning_summary": "never"
+    },
+    "unset": {
+     "reasoning_summary": "auto"
+    },
+    "values": {
+     "\"always\"": {
+      "reasoning_summary": "always"
+     },
+     "\"concise\"": {
+      "reasoning_summary": "concise"
+     },
+     "\"detailed\"": {
+      "reasoning_summary": "detailed"
+     }
+    }
+   },
+   "offering": "deep-research-preview-04-2026",
+   "rule": {
+    "default": "auto",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "never"
+    ],
+    "why": "Product choice: Deep Research returns its reasoning summary by default."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "7b1a4d24-cc4e-44e2-98c1-029eef674a91",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-sonnet-4-5 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "7c17e3dd-764d-403e-a84a-0382bcab720e",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_level": "minimal"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "minimal"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "minimal"
+     }
+    }
+   },
+   "offering": "gemma-4-26b-a4b-it",
+   "rule": {
+    "off": {
+     "send": "minimal"
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "level_map": {
+      "high": "high",
+      "low": "minimal",
+      "max": "high",
+      "medium": "high",
+      "minimal": "minimal",
+      "xhigh": "high"
+     },
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_level"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "7db249c9-c9d4-42e4-a15b-b8008596bf31",
+   "engine": {
+    "unset": {
+     "threshold": 0.3
+    },
+    "values": {}
+   },
+   "offering": "fastino/gliner2-privacy-filter-PII-multi",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    },
+    "default": 0.3,
+    "why": "Provider requirement: our GLiNER extraction service takes a threshold on every call; 0.3 is its calibrated default."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "threshold",
+    "value_type": "number"
+   },
+   "setting_key": "threshold"
+  },
+  {
+   "cell_id": "7de106de-6621-439b-9971-f78f506c2c19",
+   "engine": {
+    "off": {
+     "safety_tolerance": 5
+    },
+    "unset": {
+     "safety_tolerance": 5
+    },
+    "values": {
+     "true": {
+      "safety_tolerance": 5
+     }
+    }
+   },
+   "offering": "black-forest-labs/flux-2-pro",
+   "rule": {
+    "processor": "flux_safety_tolerance",
+    "processor_config": {
+     "default": 5,
+     "order": 110
+    },
+    "supported": true,
+    "why": "The platform asks FLUX for its most permissive safety level unless the person turns the checker on; Replicate does not require the field."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "disable_safety_checker",
+    "value_type": "boolean"
+   },
+   "setting_key": "disable_safety_checker"
+  },
+  {
+   "cell_id": "7e5f4c1a-1c88-40ef-8c85-391569ba9ef0",
+   "engine": {
+    "unset": {
+     "thinking_level": "MINIMAL"
+    },
+    "values": {
+     "\"high\"": {
+      "thinking_level": "HIGH"
+     },
+     "\"low\"": {
+      "thinking_level": "LOW"
+     },
+     "\"medium\"": {
+      "thinking_level": "MEDIUM"
+     },
+     "\"minimal\"": {
+      "thinking_level": "MINIMAL"
+     }
+    }
+   },
+   "offering": "gemini-robotics-er-2-streaming-preview",
+   "rule": {
+    "default": "MINIMAL",
+    "value_map": {
+     "high": "HIGH",
+     "low": "LOW",
+     "medium": "MEDIUM",
+     "minimal": "MINIMAL"
+    },
+    "why": "Product choice (live-voice tuning): minimal thinking keeps spoken replies fast."
+   },
+   "setting": {
+    "canonical_values": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "family": "intensity",
+    "key": "thinking_level",
+    "value_type": "enum"
+   },
+   "setting_key": "thinking_level"
+  },
+  {
+   "cell_id": "7e954324-ec98-4fb0-9b99-e998340e4921",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "moonshotai/Kimi-K3",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "7f99f569-f7e2-4523-bad9-fa3a524d1fd2",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "kimi-k2.7-code-highspeed",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "Moonshot accepts only thinking enabled on this model, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "81bf6334-5ca0-473f-b83f-0d908b499dd5",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-opus-4-7",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-opus-4-7 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "837efbc0-8876-45c6-a350-80165a64fcde",
+   "engine": {
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {}
+    }
+   },
+   "offering": "gpt-image-1.5",
+   "rule": {
+    "context": {
+     "operation": "edit"
+    },
+    "why": "OpenAI images.generate rejects input_fidelity (\"Unknown parameter\"); only images.edit takes it"
+   },
+   "setting": {
+    "canonical_values": [
+     "high",
+     "low"
+    ],
+    "family": "none",
+    "key": "input_fidelity",
+    "value_type": "enum"
+   },
+   "setting_key": "input_fidelity"
+  },
+  {
+   "cell_id": "839574c9-86ae-490e-9f67-ddbbea78a086",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-4.20-multi-agent-0309",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_p",
+    "value_type": "number"
+   },
+   "setting_key": "top_p"
+  },
+  {
+   "cell_id": "844ccd88-9177-47ba-af9b-950f12bd1624",
+   "engine": {
+    "unset": {
+     "size": "1024x1024"
+    },
+    "values": {
+     "\"1:1\"": {
+      "size": "1024x1024"
+     },
+     "\"3:4\"": {
+      "size": "1024x1408"
+     },
+     "\"4:3\"": {
+      "size": "1408x1024"
+     },
+     "\"9:16\"": {
+      "size": "1024x1536"
+     }
+    }
+   },
+   "offering": "recraft-ai/recraft-v4-svg",
+   "rule": {
+    "processor": "media_dims",
+    "processor_config": {
+     "consumes": [
+      "width",
+      "height"
+     ],
+     "default": "1024x1024",
+     "mode": "size",
+     "order": 100,
+     "target": "size"
+    },
+    "supported": true,
+    "why": "Product choice: images render in a known shape when none is asked for."
+   },
+   "setting": {
+    "canonical_values": [
+     "1:1",
+     "3:4",
+     "4:3",
+     "9:16",
+     "16:9",
+     "16:10",
+     "10:16",
+     "21:9",
+     "9:21",
+     "2:3",
+     "3:2",
+     "9:19.5",
+     "19.5:9",
+     "9:20",
+     "20:9",
+     "1:2",
+     "2:1",
+     "4:5",
+     "5:4",
+     "1:4",
+     "1:8",
+     "4:1",
+     "8:1"
+    ],
+    "family": "shape",
+    "key": "aspect_ratio",
+    "value_type": "enum"
+   },
+   "setting_key": "aspect_ratio"
+  },
+  {
+   "cell_id": "84cb06cf-1dfb-42da-a107-338df1993f93",
+   "engine": {
+    "off": {
+     "reasoning.effort": "minimal"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "minimal"
+     }
+    }
+   },
+   "offering": "gpt-5-nano",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "minimal"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "minimal",
+     "none": "minimal",
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "86daec1d-ef45-4f73-a711-637b8239c706",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_p",
+    "value_type": "number"
+   },
+   "setting_key": "top_p"
+  },
+  {
+   "cell_id": "886f093c-3a5a-45d0-8175-ea3e7f533621",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "output_config.effort": "low",
+     "thinking.display": "omitted",
+     "thinking.type": "adaptive"
+    },
+    "unset": {
+     "max_tokens": 128000,
+     "output_config.effort": "xhigh",
+     "thinking.display": "summarized",
+     "thinking.type": "adaptive"
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-5-5",
+   "rule": {
+    "default": "xhigh",
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "max",
+     "mode": "adaptive",
+     "order": 100,
+     "thinking_always_on": true
+    },
+    "supported": true,
+    "ui_values": [
+     "xhigh",
+     "max"
+    ],
+    "why": "Product choice: a \"-max\" listing is defined as maximum thinking, so NOT SET runs at xhigh effort."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "89956bbb-ba52-4814-b8a7-1da48938fc71",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.4-nano",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "89da2a62-e2a1-436f-85ae-8c6d50059b8c",
+   "engine": {
+    "unset": {
+     "output_dimensionality": 3072
+    },
+    "values": {}
+   },
+   "offering": "gemini-embedding-2",
+   "rule": {
+    "clamp": {
+     "max": 3072,
+     "min": 128
+    },
+    "default": 3072,
+    "provider_key": "output_dimensionality",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     128,
+     256,
+     512,
+     768,
+     1536,
+     3072
+    ],
+    "why": "Product choice: stored Gemini embeddings are 3072 wide; every call pins the width so vectors stay comparable."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "dimensions",
+    "value_type": "integer"
+   },
+   "setting_key": "dimensions"
+  },
+  {
+   "cell_id": "8a0b841d-f8ca-46ad-a9c1-5aeeeb93b61d",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_level": "low"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "low"
+     }
+    }
+   },
+   "offering": "gemini-pro-latest",
+   "rule": {
+    "off": {
+     "send": "low"
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "pro",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_level",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "8af0902f-177d-4630-b001-20b97601fbf6",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-sonnet-4-5-20250929 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "8b5721a4-2fcf-4590-8f84-96015ce6027f",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "gemini-3.1-flash-tts-preview",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "the models this rule covers do not think, so off and not set are the same"
+    },
+    "why": "this api's models take no reasoning_effort, and no setting carried here can express it"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "8c5a3b7a-ea9f-47f7-bde7-579d46cbe72d",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-opus-4-8",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-opus-4-8 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "8d9750cc-bbbc-482f-82cf-ee9eaa8b41c8",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "minimal"
+     }
+    }
+   },
+   "offering": "gpt-realtime-2.1",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "minimal",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "8e3cac80-4ceb-4267-817b-fe9a252b32bb",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-tts-preview",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "928ce458-9991-498f-8750-ca2ac5d52e1a",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gpt-4.1-nano-2025-04-14",
+   "rule": {
+    "clamp": {
+     "max": 2,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "9295ff77-6f15-4c1b-9e15-cb089b982a57",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-4.20-0309-reasoning",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "xAI refuses any reasoning setting on this model and it always reasons, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "93a6ac78-3e2f-49c0-a255-96419b4a837b",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.4",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "9498fb14-b85e-4d62-8f42-a591734408dc",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 128000,
+     "output_config.effort": "xhigh",
+     "thinking.display": "summarized",
+     "thinking.type": "adaptive"
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-5",
+   "rule": {
+    "default": "xhigh",
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "xhigh",
+     "max"
+    ],
+    "why": "Product choice: a \"-max\" listing is defined as maximum thinking, so NOT SET runs at xhigh effort."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "964e97d8-6f18-4da9-9966-add33b2a7b66",
+   "engine": {
+    "off": {
+     "max_tokens": 64000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 64000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-opus-4-6",
+   "rule": {
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 64000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "966c4642-65f2-40cb-8a15-26f04e1d7bf9",
+   "engine": {
+    "off": {},
+    "unset": {
+     "thinking_config.thinking_level": "medium"
+    },
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "minimal"
+     }
+    }
+   },
+   "offering": "gemini-3.5-flash",
+   "rule": {
+    "default": "medium",
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Product choice: Gemini flash listings run at a fixed default thinking level when nothing is set (predictable latency and cost)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "97203387-1f2f-4bff-be73-f4911f30d050",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "qwen/qwen3.8-27b",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "99380665-6e65-49ab-8cf6-65b793468ac2",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-4.20-0309-non-reasoning",
+   "rule": {
+    "max_items": 8,
+    "provider_key": "stop"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "9c2c1add-83b0-4e62-b9d7-7d73e2e681f4",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_level": "low"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "low"
+     }
+    }
+   },
+   "offering": "gemini-3.1-pro-preview",
+   "rule": {
+    "off": {
+     "send": "low"
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "pro",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_level",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "9dfd6285-0226-47ff-873e-dde15c08c524",
+   "engine": {
+    "unset": {
+     "image_format": "base64"
+    },
+    "values": {
+     "\"base64\"": {
+      "image_format": "base64"
+     },
+     "\"url\"": {
+      "image_format": "base64"
+     }
+    }
+   },
+   "offering": "grok-imagine-image-2.0",
+   "rule": {
+    "const": "base64",
+    "why": "Integration requirement: the media pipeline stores the image bytes; a returned URL expires."
+   },
+   "setting": {
+    "canonical_values": [
+     "base64",
+     "url"
+    ],
+    "family": "format",
+    "key": "image_format",
+    "value_type": "enum"
+   },
+   "setting_key": "image_format"
+  },
+  {
+   "cell_id": "9fc0f5f4-4db8-4828-98f7-fd2e6cccf451",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen/qwen3.8-27b",
+   "rule": {
+    "clamp": {
+     "max": 2,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "a104b037-c421-4024-bce9-07c34bedc6fe",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-sonnet-4-6",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-sonnet-4-6 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "a238a818-a327-4789-9fb9-ee820f8db05b",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-6-sol",
+   "rule": {
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "max",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "a3395059-13c7-4045-93ca-e9c58de94587",
+   "engine": {
+    "unset": {
+     "moderation": "low"
+    },
+    "values": {
+     "\"low\"": {
+      "moderation": "low"
+     }
+    }
+   },
+   "offering": "gpt-image-2",
+   "rule": {
+    "processor": "openai_image_gen_only",
+    "processor_config": {
+     "background_transparent_drop": true,
+     "consumes": [
+      "background"
+     ],
+     "default": "low",
+     "order": 120
+    },
+    "supported": true,
+    "why": "The platform asks OpenAI for its least restrictive image moderation unless the person picks a level; OpenAI does not require the field."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "low"
+    ],
+    "family": "none",
+    "key": "moderation",
+    "value_type": "enum"
+   },
+   "setting_key": "moderation"
+  },
+  {
+   "cell_id": "a3772274-5f74-47df-9561-14710be55610",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "output_config.effort": "low",
+     "thinking.display": "omitted",
+     "thinking.type": "adaptive"
+    },
+    "unset": {
+     "max_tokens": 128000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-fable-5-1",
+   "rule": {
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "max",
+     "mode": "adaptive",
+     "order": 100,
+     "thinking_always_on": true
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "a7697a11-2c91-40d0-b632-42addd97a7c2",
+   "engine": {
+    "off": {
+     "reasoning.effort": "minimal"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "minimal"
+     }
+    }
+   },
+   "offering": "gpt-5",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "minimal"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "minimal",
+     "none": "minimal",
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "a7f75c9f-0830-423d-848d-b0533e6de250",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gpt-4.1-nano-2025-04-14",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_p",
+    "value_type": "number"
+   },
+   "setting_key": "top_p"
+  },
+  {
+   "cell_id": "a88ca618-a3f5-44f7-a55a-90521f78c19b",
+   "engine": {
+    "off": {
+     "visualization": "off"
+    },
+    "unset": {
+     "visualization": "auto"
+    },
+    "values": {}
+   },
+   "offering": "deep-research-preview-04-2026",
+   "rule": {
+    "default": "auto",
+    "supported": true,
+    "why": "Product choice: Deep Research may add visualizations by default."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "off"
+    ],
+    "family": "none",
+    "key": "visualization",
+    "value_type": "enum"
+   },
+   "setting_key": "visualization"
+  },
+  {
+   "cell_id": "a9070989-0b4a-48eb-a49d-47bcd39bc5a8",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "veo-3.1-generate-preview",
+   "rule": {
+    "accepts": [
+     4,
+     6,
+     8
+    ]
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "length",
+    "key": "duration_seconds",
+    "value_type": "integer"
+   },
+   "setting_key": "duration_seconds"
+  },
+  {
+   "cell_id": "a9418f5a-3b43-432b-a5ec-0a223c39b01d",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.1",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "aa30068f-347a-468e-8b65-74a1c82fea0c",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "output_config.effort": "low",
+     "thinking.display": "omitted",
+     "thinking.type": "adaptive"
+    },
+    "unset": {
+     "max_tokens": 128000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-fable-5",
+   "rule": {
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100,
+     "thinking_always_on": true
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "b04dbd10-9281-4f8b-b19f-be640114c309",
+   "engine": {
+    "unset": {
+     "aspect_ratio": "1:1"
+    },
+    "values": {
+     "\"1:1\"": {
+      "aspect_ratio": "1:1"
+     },
+     "\"3:4\"": {},
+     "\"4:3\"": {},
+     "\"9:16\"": {}
+    }
+   },
+   "offering": "openai/gpt-image-2",
+   "rule": {
+    "processor": "media_dims",
+    "processor_config": {
+     "allowed": [
+      "1:1",
+      "3:2",
+      "2:3"
+     ],
+     "consumes": [
+      "width",
+      "height"
+     ],
+     "default": "1:1",
+     "mode": "aspect_ratio",
+     "order": 100
+    },
+    "supported": true,
+    "why": "Product choice: images render in a known shape when none is asked for."
+   },
+   "setting": {
+    "canonical_values": [
+     "1:1",
+     "3:4",
+     "4:3",
+     "9:16",
+     "16:9",
+     "16:10",
+     "10:16",
+     "21:9",
+     "9:21",
+     "2:3",
+     "3:2",
+     "9:19.5",
+     "19.5:9",
+     "9:20",
+     "20:9",
+     "1:2",
+     "2:1",
+     "4:5",
+     "5:4",
+     "1:4",
+     "1:8",
+     "4:1",
+     "8:1"
+    ],
+    "family": "shape",
+    "key": "aspect_ratio",
+    "value_type": "enum"
+   },
+   "setting_key": "aspect_ratio"
+  },
+  {
+   "cell_id": "b12614b1-f910-4ec8-bc02-702df3e31132",
+   "engine": {
+    "off": {
+     "reasoning_effort": "low"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-oss-120b",
+   "rule": {
+    "off": {
+     "floor": true
+    },
+    "provider_key": "reasoning_effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "low",
+     "none": null,
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "b2c8362c-9172-4e1f-9724-265b59401f39",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gpt-6-astra",
+   "rule": {
+    "clamp": {
+     "min": 16
+    },
+    "provider_key": "max_output_tokens"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "length",
+    "key": "max_output_tokens",
+    "value_type": "integer"
+   },
+   "setting_key": "max_output_tokens"
+  },
+  {
+   "cell_id": "b6805dfc-a033-427b-8e15-f6f9ee5c19cf",
+   "engine": {
+    "off": {
+     "reasoning_effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "low"
+     }
+    }
+   },
+   "offering": "qwen-3.8-27b",
+   "rule": {
+    "accepts": [
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning_effort"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "b6b311f0-a32e-4590-b4c6-e0eb9d9e88cd",
+   "engine": {
+    "off": {
+     "reasoning.effort": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "low"
+     }
+    }
+   },
+   "offering": "gpt-5.6-luna",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "none"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "max",
+     "medium": "medium",
+     "minimal": "low",
+     "none": "none",
+     "xhigh": "xhigh"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "b9a24b6b-229e-4f43-aa17-74e75f6d8ba9",
+   "engine": {
+    "off": {},
+    "unset": {
+     "thinking_config.thinking_level": "minimal"
+    },
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "minimal"
+     }
+    }
+   },
+   "offering": "gemini-3.5-flash-lite",
+   "rule": {
+    "default": "minimal",
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Product choice: Gemini flash listings run at a fixed default thinking level when nothing is set (predictable latency and cost)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "bbe9eb45-c876-441e-8882-3bf4d735f9d5",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-sonnet-4-6",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-sonnet-4-6 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "bcc8f92f-54b5-4ac9-8d33-37a031c5f473",
+   "engine": {
+    "off": {
+     "max_tokens": 128000,
+     "output_config.effort": "low",
+     "thinking.display": "omitted",
+     "thinking.type": "adaptive"
+    },
+    "unset": {
+     "max_tokens": 128000,
+     "output_config.effort": "xhigh",
+     "thinking.display": "summarized",
+     "thinking.type": "adaptive"
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 128000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-fable-5",
+   "rule": {
+    "default": "xhigh",
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 128000,
+     "effort_ceiling": "max",
+     "mode": "adaptive",
+     "order": 100,
+     "thinking_always_on": true
+    },
+    "supported": true,
+    "ui_values": [
+     "xhigh",
+     "max"
+    ],
+    "why": "Product choice: a \"-max\" listing is defined as maximum thinking, so NOT SET runs at xhigh effort."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "bd60431d-ec41-41ac-9391-a38dd4160a9e",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_budget": 128
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_budget": 8192
+     },
+     "\"low\"": {
+      "thinking_config.thinking_budget": 1024
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_budget": 4096
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_budget": 512
+     }
+    }
+   },
+   "offering": "gemini-2.5-pro",
+   "rule": {
+    "off": {
+     "send": 128
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "max_thinking_budget": 32768,
+     "min_thinking_budget": 128,
+     "mode": "legacy",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_budget",
+    "supported": true
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "be1fc72b-4c83-4ba4-8dd8-f68c5d860bda",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen-3.8-27b",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_p",
+    "value_type": "number"
+   },
+   "setting_key": "top_p"
+  },
+  {
+   "cell_id": "bf496668-ef54-41a0-a9bd-85f26058ea01",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "claude-opus-4-6",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-opus-4-6 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "c27a35dc-ea19-42ce-9a2b-6ebf246e43f0",
+   "engine": {
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "quality": "medium"
+     },
+     "\"low\"": {
+      "quality": "low"
+     },
+     "\"medium\"": {
+      "quality": "medium"
+     },
+     "\"xhigh\"": {
+      "quality": "medium"
+     }
+    }
+   },
+   "offering": "grok-imagine-image-2.0",
+   "rule": {
+    "provider_key": "quality",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "low",
+     "medium"
+    ],
+    "value_map": {
+     "auto": "auto",
+     "high": "medium",
+     "low": "low",
+     "max": "medium",
+     "medium": "medium",
+     "xhigh": "medium"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max",
+     "auto"
+    ],
+    "family": "intensity",
+    "key": "quality",
+    "value_type": "enum"
+   },
+   "setting_key": "quality"
+  },
+  {
+   "cell_id": "c3b3d0da-d566-426a-bba6-64c816d05fef",
+   "engine": {
+    "off": {
+     "disable_safety_checker": false
+    },
+    "unset": {
+     "disable_safety_checker": true
+    },
+    "values": {
+     "true": {
+      "disable_safety_checker": true
+     }
+    }
+   },
+   "offering": "bytedance/seedream-4.5",
+   "rule": {
+    "default": true,
+    "supported": true,
+    "why": "Product choice: the provider safety checker is off by default (false positives blocked ordinary images)."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "disable_safety_checker",
+    "value_type": "boolean"
+   },
+   "setting_key": "disable_safety_checker"
+  },
+  {
+   "cell_id": "c41e1f47-f7ef-4d46-893c-83653b7c5cea",
+   "engine": {
+    "off": {
+     "chat_template_kwargs.thinking": false
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "high"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "high"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "high"
+     }
+    }
+   },
+   "offering": "zai-org/GLM-5.2",
+   "rule": {
+    "off": {
+     "send": false
+    },
+    "processor": "together_reasoning",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "order": 100
+    },
+    "provider_key": "chat_template_kwargs.thinking",
+    "ui_values": [
+     "auto",
+     "none",
+     "high",
+     "xhigh"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "c722a4d4-74f9-4df8-bf8c-943a4d94dccf",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "grok-4.20-0309-reasoning",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "xAI refuses any reasoning setting on this model and it always reasons, so off cannot be sent"
+    },
+    "why": "grok-4.20 reasoning always reasons and xAI rejects the reasoning_effort parameter on it"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "cad36043-2808-47c5-b053-3a12df623673",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "clamp": {
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_k",
+    "value_type": "integer"
+   },
+   "setting_key": "top_k"
+  },
+  {
+   "cell_id": "cad82216-5ade-4e0e-96f3-9629428f9722",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "grok-4.20-multi-agent-0309",
+   "rule": {
+    "clamp": {
+     "max": 2,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "temperature",
+    "value_type": "number"
+   },
+   "setting_key": "temperature"
+  },
+  {
+   "cell_id": "cc4d2fd9-6207-49eb-8ab1-56bddcee7e3d",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen-3.8-27b",
+   "rule": {
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "ce3e8341-1b33-40db-8188-b528abc0cf90",
+   "engine": {
+    "unset": {
+     "reasoning.effort": "minimal"
+    },
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "HIGH"
+     },
+     "\"low\"": {
+      "reasoning.effort": "LOW"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "MEDIUM"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "MINIMAL"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-live-preview",
+   "rule": {
+    "default": "minimal",
+    "provider_key": "reasoning.effort",
+    "send_when_unset": true,
+    "supported": true,
+    "ui_values": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "high": "HIGH",
+     "low": "LOW",
+     "medium": "MEDIUM",
+     "minimal": "MINIMAL"
+    },
+    "why": "Product choice (live-voice tuning): minimal thinking keeps spoken replies fast."
+   },
+   "setting": {
+    "canonical_values": [
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "family": "intensity",
+    "key": "thinking_level",
+    "value_type": "enum"
+   },
+   "setting_key": "thinking_level"
+  },
+  {
+   "cell_id": "cee8856f-f5aa-4a2a-ba2c-26cbdfe625c6",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "kimi-k2.7-code",
+   "rule": {
+    "max_items": 5,
+    "provider_key": "stop"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "cef653f6-d6bc-449c-85d9-0e03d4d76a99",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "quality": "medium"
+     },
+     "\"low\"": {
+      "quality": "low"
+     },
+     "\"medium\"": {
+      "quality": "medium"
+     },
+     "\"minimal\"": {
+      "quality": "low"
+     }
+    }
+   },
+   "offering": "grok-imagine-image-2.0",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "the xAI image API has no thinking setting, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "d19e9dfd-b9d7-4163-bc8e-a18ff7eba4aa",
+   "engine": {
+    "off": {},
+    "unset": {
+     "thinking_config.thinking_level": "medium"
+    },
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "low"
+     }
+    }
+   },
+   "offering": "gemini-3.8-flash",
+   "rule": {
+    "default": "medium",
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Product choice: Gemini flash listings run at a fixed default thinking level when nothing is set (predictable latency and cost)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "d4a7316c-fd8d-4d60-b1ba-ccd0fba00924",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gemini-omni-flash-preview",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "this Google interactions model has no thinking setting, so off cannot be sent"
+    },
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "d67770b5-1780-421c-b7b0-f35ea4080034",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen/qwen3.8-27b",
+   "rule": {
+    "clamp": {
+     "max": 1,
+     "min": 0
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "randomness",
+    "key": "top_p",
+    "value_type": "number"
+   },
+   "setting_key": "top_p"
+  },
+  {
+   "cell_id": "dac97395-3d8f-4cc2-a2eb-1d4cc38349eb",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gpt-realtime-2.1",
+   "rule": {
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "e02176cd-7ec9-4feb-9c8a-57f19e6b51e1",
+   "engine": {
+    "off": {
+     "parallel_tool_calls": false
+    },
+    "unset": {
+     "parallel_tool_calls": false
+    },
+    "values": {
+     "true": {
+      "parallel_tool_calls": false
+     }
+    }
+   },
+   "offering": "gpt-oss-120b",
+   "rule": {
+    "const": false,
+    "why": "Provider requirement: gpt-oss-120b on Cerebras runs tool calls one at a time; parallel_tool_calls is always false."
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "parallel_tool_calls",
+    "value_type": "boolean"
+   },
+   "setting_key": "parallel_tool_calls"
+  },
+  {
+   "cell_id": "e1263c44-0638-41ff-babe-66ca7b8aadc6",
+   "engine": {
+    "unset": {
+     "resolution": "720p"
+    },
+    "values": {
+     "\"1024p\"": {
+      "resolution": "720p"
+     },
+     "\"1080p\"": {
+      "resolution": "720p"
+     },
+     "\"480p\"": {
+      "resolution": "720p"
+     },
+     "\"720p\"": {
+      "resolution": "720p"
+     }
+    }
+   },
+   "offering": "gemini-omni-flash-preview",
+   "rule": {
+    "const": "720p",
+    "ui_values": [
+     "720p"
+    ],
+    "why": "Provider requirement: this listing accepts only 720p; the fixed value is the one it takes."
+   },
+   "setting": {
+    "canonical_values": [
+     "480p",
+     "720p",
+     "1080p",
+     "1024p",
+     "4k",
+     "0.5k",
+     "1k",
+     "2k"
+    ],
+    "family": "intensity",
+    "key": "resolution",
+    "value_type": "enum"
+   },
+   "setting_key": "resolution"
+  },
+  {
+   "cell_id": "e2b8e5bb-d281-4358-98ab-97d8f5e5c09f",
+   "engine": {
+    "unset": {
+     "moderation": "low"
+    },
+    "values": {
+     "\"low\"": {
+      "moderation": "low"
+     }
+    }
+   },
+   "offering": "openai/gpt-image-2",
+   "rule": {
+    "default": "low",
+    "send_when_unset": true,
+    "supported": true,
+    "why": "Product choice: image moderation runs at low by default (defaults lean open)."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "low"
+    ],
+    "family": "none",
+    "key": "moderation",
+    "value_type": "enum"
+   },
+   "setting_key": "moderation"
+  },
+  {
+   "cell_id": "e4e3bcf7-d8fe-4c9d-b11b-0f1c714e93e2",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "required"
+     }
+    }
+   },
+   "offering": "claude-opus-5",
+   "rule": {
+    "ui_values": [
+     "auto",
+     "none",
+     "required"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "e749609e-3a98-46ec-b8e4-51e80f29b2b4",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"high\"": {},
+     "\"low\"": {},
+     "\"medium\"": {},
+     "\"minimal\"": {}
+    }
+   },
+   "offering": "kimi-k2.7-code",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "Moonshot accepts only thinking enabled on this model, so off cannot be sent"
+    },
+    "why": "Kimi K2.7 Code always reasons and has no effort control: Moonshot rejects off and every degree reasons the same, so no value is sent"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "e8e550d2-6b39-4708-9a3e-1204c9e8bd22",
+   "engine": {
+    "unset": {},
+    "values": {
+     "\"1024p\"": {
+      "resolution": "1080p"
+     },
+     "\"1080p\"": {
+      "resolution": "1080p"
+     },
+     "\"480p\"": {
+      "resolution": "720p"
+     },
+     "\"720p\"": {
+      "resolution": "720p"
+     }
+    }
+   },
+   "offering": "veo-3.1-generate-preview",
+   "rule": {
+    "value_map": {
+     "1080p": "1080p",
+     "4k": "4k",
+     "720p": "720p"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "480p",
+     "720p",
+     "1080p",
+     "1024p",
+     "4k",
+     "0.5k",
+     "1k",
+     "2k"
+    ],
+    "family": "intensity",
+    "key": "resolution",
+    "value_type": "enum"
+   },
+   "setting_key": "resolution"
+  },
+  {
+   "cell_id": "ec99615c-6ce3-4d7f-a0de-14be2ecfcc55",
+   "engine": {
+    "off": {
+     "max_tokens": 64000,
+     "thinking.type": "disabled"
+    },
+    "unset": {
+     "max_tokens": 64000
+    },
+    "values": {
+     "\"high\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "high",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"low\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"medium\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "medium",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     },
+     "\"minimal\"": {
+      "max_tokens": 64000,
+      "output_config.effort": "low",
+      "thinking.display": "summarized",
+      "thinking.type": "adaptive"
+     }
+    }
+   },
+   "offering": "claude-sonnet-4-6",
+   "rule": {
+    "off": {
+     "send": {
+      "type": "disabled"
+     }
+    },
+    "processor": "anthropic_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "default_max_tokens": 64000,
+     "effort_ceiling": "high",
+     "mode": "adaptive",
+     "order": 100
+    },
+    "provider_key": "thinking",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "why": "Anthropic refuses any request without max_tokens, so the model's own maximum output is sent when the person sets no length."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "efc0ea39-755d-48d3-8826-e543ff66876e",
+   "engine": {
+    "off": {
+     "reasoning.effort": "minimal"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning.effort": "high"
+     },
+     "\"low\"": {
+      "reasoning.effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning.effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning.effort": "minimal"
+     }
+    }
+   },
+   "offering": "gpt-5-mini",
+   "rule": {
+    "from_number": [
+     {
+      "lte": 0,
+      "to": "none"
+     },
+     {
+      "lte": 1999,
+      "to": "low"
+     },
+     {
+      "lte": 11000,
+      "to": "medium"
+     },
+     {
+      "lte": 19999,
+      "to": "high"
+     },
+     {
+      "lte": null,
+      "to": "xhigh"
+     }
+    ],
+    "off": {
+     "send": "minimal"
+    },
+    "provider_key": "reasoning.effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "medium": "medium",
+     "minimal": "minimal",
+     "none": "minimal",
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "f16a2e39-f4ac-4fec-ae26-eb75501dcf54",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "qwen/qwen3.8-27b",
+   "rule": {
+    "max_items": 4,
+    "provider_key": "stop"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "f3d4d8e7-7d3a-411d-b5dc-7c00a14af60d",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "true": {}
+    }
+   },
+   "offering": "claude-sonnet-4-5-20250929",
+   "rule": {
+    "off": {
+     "omit": true,
+     "why": "claude-sonnet-4-5 does not think unless asked (probed: thinking omitted -> text only), so hiding the thoughts with no depth asked is exactly not asking; with a depth asked the thoughts are hidden (display omitted) and the depth is kept"
+    }
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "visibility",
+    "key": "include_thoughts",
+    "value_type": "boolean"
+   },
+   "setting_key": "include_thoughts"
+  },
+  {
+   "cell_id": "f4cb2efb-c7f4-4e21-853b-e101d9c4df29",
+   "engine": {
+    "off": {
+     "thinking_config.thinking_level": "minimal"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "thinking_config.thinking_level": "high"
+     },
+     "\"low\"": {
+      "thinking_config.thinking_level": "low"
+     },
+     "\"medium\"": {
+      "thinking_config.thinking_level": "medium"
+     },
+     "\"minimal\"": {
+      "thinking_config.thinking_level": "minimal"
+     }
+    }
+   },
+   "offering": "gemini-3.1-flash-lite",
+   "rule": {
+    "off": {
+     "send": "minimal"
+    },
+    "processor": "google_thinking",
+    "processor_config": {
+     "consumes": [
+      "thinking_budget",
+      "thinking_level",
+      "include_thoughts",
+      "reasoning_summary",
+      "clear_thinking"
+     ],
+     "family": "flash",
+     "mode": "gemini_3",
+     "order": 100
+    },
+    "provider_key": "thinking_config.thinking_level",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high"
+    ]
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  },
+  {
+   "cell_id": "f6069dcf-a806-4c9c-b142-ef645a27158c",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "gemini-3.6-flash",
+   "rule": {
+    "supported": false
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "intensity",
+    "key": "thinking_budget",
+    "value_type": "integer"
+   },
+   "setting_key": "thinking_budget"
+  },
+  {
+   "cell_id": "f7349f0e-ab44-455a-85cd-3a06adbcde55",
+   "engine": {
+    "off": {},
+    "unset": {},
+    "values": {
+     "\"always\"": {},
+     "\"concise\"": {},
+     "\"detailed\"": {}
+    }
+   },
+   "offering": "moonshotai/Kimi-K3",
+   "rule": {
+    "drop": true,
+    "off": {
+     "omit": true,
+     "why": "Together takes no request switch that hides reasoning (probed gpt-oss-120b: thoughts still returned with include_thoughts=false); hiding is never depth, so the reasoning stays at our default and the wire equals not set"
+    },
+    "why": "a Together model takes no reasoning_summary; reasoning models read it through the together_reasoning processor (which consumes it), every other model drops it"
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "concise",
+     "detailed",
+     "never",
+     "always"
+    ],
+    "family": "visibility",
+    "key": "reasoning_summary",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_summary"
+  },
+  {
+   "cell_id": "f8297653-2169-44f9-bbf9-221f90728596",
+   "engine": {
+    "unset": {
+     "aspect_ratio": "16:9"
+    },
+    "values": {
+     "\"1:1\"": {
+      "aspect_ratio": "16:9"
+     },
+     "\"3:4\"": {
+      "aspect_ratio": "16:9"
+     },
+     "\"4:3\"": {
+      "aspect_ratio": "16:9"
+     },
+     "\"9:16\"": {
+      "aspect_ratio": "9:16"
+     }
+    }
+   },
+   "offering": "veo-3.1-generate-preview",
+   "rule": {
+    "processor": "media_dims",
+    "processor_config": {
+     "allowed": [
+      "16:9",
+      "9:16"
+     ],
+     "consumes": [
+      "width",
+      "height"
+     ],
+     "default": "16:9",
+     "fallback": "16:9",
+     "mode": "aspect_ratio",
+     "order": 100
+    },
+    "ui_values": [
+     "16:9",
+     "9:16"
+    ],
+    "why": "Product choice: video renders in a known shape (16:9) when none is asked for."
+   },
+   "setting": {
+    "canonical_values": [
+     "1:1",
+     "3:4",
+     "4:3",
+     "9:16",
+     "16:9",
+     "16:10",
+     "10:16",
+     "21:9",
+     "9:21",
+     "2:3",
+     "3:2",
+     "9:19.5",
+     "19.5:9",
+     "9:20",
+     "20:9",
+     "1:2",
+     "2:1",
+     "4:5",
+     "5:4",
+     "1:4",
+     "1:8",
+     "4:1",
+     "8:1"
+    ],
+    "family": "shape",
+    "key": "aspect_ratio",
+    "value_type": "enum"
+   },
+   "setting_key": "aspect_ratio"
+  },
+  {
+   "cell_id": "f9756290-632f-4b97-8309-62451ed6a752",
+   "engine": {
+    "off": {
+     "tool_choice": "none"
+    },
+    "unset": {},
+    "values": {
+     "\"required\"": {
+      "tool_choice": "auto"
+     }
+    }
+   },
+   "offering": "claude-opus-5-5",
+   "rule": {
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none"
+    ],
+    "value_map": {
+     "auto": "auto",
+     "none": "none",
+     "required": "auto"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "required",
+     "none"
+    ],
+    "family": "none",
+    "key": "tool_choice",
+    "value_type": "enum"
+   },
+   "setting_key": "tool_choice"
+  },
+  {
+   "cell_id": "fb409b04-6b43-4f58-802a-5c19c05650ba",
+   "engine": {
+    "unset": {
+     "reasoning_format": "parsed"
+    },
+    "values": {
+     "\"hidden\"": {
+      "reasoning_format": "parsed"
+     },
+     "\"parsed\"": {
+      "reasoning_format": "parsed"
+     },
+     "\"raw\"": {
+      "reasoning_format": "parsed"
+     }
+    }
+   },
+   "offering": "qwen/qwen3.8-27b",
+   "rule": {
+    "const": "parsed",
+    "supported": true,
+    "why": "Integration requirement: reasoning arrives parsed (separate from the answer) so the stream can show it apart."
+   },
+   "setting": {
+    "canonical_values": [
+     "hidden",
+     "raw",
+     "parsed"
+    ],
+    "family": "visibility",
+    "key": "reasoning_format",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_format"
+  },
+  {
+   "cell_id": "fd630435-5b99-4cb8-8cdf-9108e0f289bd",
+   "engine": {
+    "unset": {
+     "moderation": "low"
+    },
+    "values": {
+     "\"low\"": {
+      "moderation": "low"
+     }
+    }
+   },
+   "offering": "gpt-image-1.5",
+   "rule": {
+    "processor": "openai_image_gen_only",
+    "processor_config": {
+     "consumes": [
+      "background"
+     ],
+     "default": "low",
+     "order": 120
+    },
+    "why": "The platform asks OpenAI for its least restrictive image moderation unless the person picks a level; OpenAI does not require the field."
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "low"
+    ],
+    "family": "none",
+    "key": "moderation",
+    "value_type": "enum"
+   },
+   "setting_key": "moderation"
+  },
+  {
+   "cell_id": "fece8c4f-a8ac-4a39-8aad-9c1182480436",
+   "engine": {
+    "unset": {},
+    "values": {}
+   },
+   "offering": "claude-opus-5",
+   "rule": {
+    "drop_items_matching": "\\s*",
+    "provider_key": "stop_sequences"
+   },
+   "setting": {
+    "canonical_values": null,
+    "family": "none",
+    "key": "stop_sequences",
+    "value_type": "string_array"
+   },
+   "setting_key": "stop_sequences"
+  },
+  {
+   "cell_id": "ff710442-164f-4e12-853b-dc663604f32f",
+   "engine": {
+    "off": {
+     "reasoning_effort": "low"
+    },
+    "unset": {},
+    "values": {
+     "\"high\"": {
+      "reasoning_effort": "high"
+     },
+     "\"low\"": {
+      "reasoning_effort": "low"
+     },
+     "\"medium\"": {
+      "reasoning_effort": "medium"
+     },
+     "\"minimal\"": {
+      "reasoning_effort": "low"
+     }
+    }
+   },
+   "offering": "openai/gpt-oss-120b",
+   "rule": {
+    "off": {
+     "floor": true
+    },
+    "provider_key": "reasoning_effort",
+    "supported": true,
+    "ui_values": [
+     "auto",
+     "none",
+     "low",
+     "medium",
+     "high"
+    ],
+    "value_map": {
+     "auto": null,
+     "high": "high",
+     "low": "low",
+     "max": "high",
+     "medium": "medium",
+     "minimal": "low",
+     "none": null,
+     "xhigh": "high"
+    }
+   },
+   "setting": {
+    "canonical_values": [
+     "auto",
+     "none",
+     "minimal",
+     "low",
+     "medium",
+     "high",
+     "xhigh",
+     "max"
+    ],
+    "family": "intensity",
+    "key": "reasoning_effort",
+    "value_type": "enum"
+   },
+   "setting_key": "reasoning_effort"
+  }
+ ]
+}
