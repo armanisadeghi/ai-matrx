@@ -44,7 +44,10 @@ function takeSecret(): string | null {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
   const fromHash = params.get("t");
   if (fromHash) {
-    window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    // `null`, never `window.history.state`: Next's patched replaceState skips its router when the
+    // state carries its own marker (`__NA`), so the router kept the URL WITH the secret and wrote
+    // it back on its next update (seen 2026-10-04 after a field press). `null` syncs the router.
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }
   let t = fromHash;
   try {
