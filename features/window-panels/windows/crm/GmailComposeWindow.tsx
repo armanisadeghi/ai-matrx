@@ -71,6 +71,7 @@ export default function GmailComposeWindow({
       position="center"
       onClose={onClose}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      retainBodyOnMinimize
     >
       {/* A window answers for itself; without this a right-click here is
           answered by whatever page is open behind it. The entity is the

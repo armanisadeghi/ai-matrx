@@ -9,8 +9,8 @@ assertLazyLoaded("features/window-panels/WindowPanel.tsx");
  * A floating, draggable, resizable, maximizable, minimizable OS-style window.
  *
  * Changes from v1:
- *  - Minimized and maximized states rendered via createPortal(document.body)
- *    so they always escape any parent stacking context / overflow:hidden.
+ *  - Desktop states share one portal and shell so maximize/restore preserves
+ *    the mounted body while escaping parent stacking contexts.
  *  - Green traffic-light is single-click maximize (not double-click).
  *  - Green traffic-light shows an Apple-style dropdown on hover with
  *    "Move & Resize" options (snap left/right/top/bottom, centre) and
@@ -53,7 +53,7 @@ import {
   type UseWindowPanelOptions,
   type ResizeEdge,
 } from "./hooks/useWindowPanel";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   updateWindowRect,
   updateWindowPersistence,
@@ -167,7 +167,7 @@ const HANDLES: HandleDef[] = [
 ];
 
 /**
- * Desktop windowed body shell — consumers style the inner slot via `bodyClassName`
+ * Desktop body shell — consumers style the inner slot via `bodyClassName`
  * only. The outer guard ring is structural: it keeps full-bleed children off the
  * resize-handle hit zones and uses pointer-events-none so bare edge clicks reach
  * the handle layer (z-50) even when inner content is `absolute inset-0`.
@@ -175,12 +175,14 @@ const HANDLES: HandleDef[] = [
 function WindowPanelBodyShell({
   bodyRef,
   fitContent,
+  isMaximized,
   bodyClassName,
   captureDimensions,
   children,
 }: {
   bodyRef: React.RefObject<HTMLDivElement | null>;
   fitContent?: boolean;
+  isMaximized?: boolean;
   bodyClassName?: string;
   captureDimensions?: { width: number; height: number } | null;
   children: React.ReactNode;
@@ -193,7 +195,8 @@ function WindowPanelBodyShell({
         // chrome. Painting it with the canonical page background keeps the
         // 2px resize-handle gutter visually continuous with full-bleed bodies
         // such as Chat instead of exposing the card-coloured window shell.
-        "relative z-0 min-h-0 flex-1 overflow-hidden bg-background p-0.5 pointer-events-none",
+        "relative z-0 min-h-0 flex-1 overflow-hidden bg-background pointer-events-none",
+        !isMaximized && "p-0.5",
         fitContent && "overflow-visible",
         captureDimensions && "fixed -left-[100000px] top-0 z-[-1] flex",
       )}
@@ -202,7 +205,8 @@ function WindowPanelBodyShell({
     >
       <div
         className={cn(
-          "h-full min-h-0 overflow-auto pointer-events-auto rounded-[10px]",
+          "h-full min-h-0 overflow-auto pointer-events-auto",
+          !isMaximized && "rounded-[10px]",
           bodyClassName,
         )}
       >
@@ -841,6 +845,7 @@ export function WindowPanel({
   // measured size (or its preset position). The effect re-runs when the
   // element actually appears.
   const [fitContentEl, fitContentRef] = useState<HTMLDivElement | null>(null);
+  const fitContentStore = useAppStore();
   // A preset position ("center", a corner) was resolved from the DEFAULT size
   // before anything was measured, so a window that fits its content grew away
   // from where it was placed — a centered 694px picker opened with its left
@@ -861,10 +866,15 @@ export function WindowPanel({
     hookOpts.initialRect?.y === undefined;
 
   useEffect(() => {
-    if (!fitContent || isMobile) return undefined;
+    if (!fitContent || isMobile || windowState !== "windowed") return undefined;
     const el = fitContentEl;
     if (!el) return undefined;
+    let active = true;
     const ro = new ResizeObserver((entries) => {
+      // Disconnect does not cancel a callback already queued by the browser.
+      // Read the current store state as well as the effect lifetime so a
+      // maximize dispatched before React cleans up cannot save fullscreen size.
+      if (!active || fitContentStore.getState().windowManager.windows[id]?.state !== "windowed") return;
       const entry = entries[0];
       if (!entry) return;
       const { width, height } = entry.contentRect;
@@ -891,8 +901,11 @@ export function WindowPanel({
       );
     });
     ro.observe(el);
-    return () => ro.disconnect();
-  }, [fitContent, fitContentEl, isMobile, id, dispatch, fitPresetPosition, fitMayReplace]);
+    return () => {
+      active = false;
+      ro.disconnect();
+    };
+  }, [fitContent, fitContentEl, isMobile, windowState, id, dispatch, fitContentStore, fitPresetPosition, fitMayReplace]);
 
   const toggleSidebar = useCallback(() => {
     const panel = sidebarPanelRef.current;
@@ -1297,7 +1310,7 @@ export function WindowPanel({
   );
 
   // ────────────────────────────────────────────────────────────────────────
-  // MAXIMIZED — portalled to body so it covers the full viewport
+  // Desktop body shared by windowed, maximized, and minimized states.
   // ────────────────────────────────────────────────────────────────────────
   // A secondary (right) panel is shown when content is provided and it's open.
   // Stable `id` props (sidebar/body/secondary) keep panel identity so toggling
@@ -1578,41 +1591,9 @@ export function WindowPanel({
     );
   }
 
-  if (isMaximized) {
-    const el = (
-      <div
-        data-window-panel=""
-        data-window-id={id}
-        {...surfaceLayerAttrs}
-        className={cn(
-          "fixed inset-0 flex flex-col",
-          "bg-card/98 backdrop-blur-md border border-border shadow-2xl",
-          "overflow-hidden",
-          motionStyles.enter,
-          deprecatedRingClass,
-          className,
-        )}
-        style={{ zIndex, visibility: windowsHidden ? "hidden" : undefined }}
-        onPointerDown={onFocus}
-        onPointerDownCapture={claimFront}
-        onFocusCapture={claimFront}
-      >
-        {header}
-        <div className={cn("flex-1 overflow-auto", bodyClassName)}>
-          {bodyContent}
-        </div>
-        {footerBar}
-      </div>
-    );
-    return portalTarget
-      ? createPortal(<FloatingLayer>{el}</FloatingLayer>, portalTarget)
-      : null;
-  }
-
   // ────────────────────────────────────────────────────────────────────────
-  // WINDOWED + MINIMIZED — same shell, with the minimized rect supplied by
-  // Redux. The full body unmounts after the one-shot offscreen capture; the
-  // lightweight semantic/snapshot preview occupies the remaining card body.
+  // DESKTOP — one shell and body tree across windowed/maximized/restore.
+  // Minimized keeps its existing capture/retention and tray-preview semantics.
   // ────────────────────────────────────────────────────────────────────────
   const el = (
     <div
@@ -1621,7 +1602,8 @@ export function WindowPanel({
         data-window-id={id}
       {...surfaceLayerAttrs}
       className={cn(
-        "fixed overflow-visible",
+        "fixed",
+        isMaximized ? "overflow-hidden" : "overflow-visible",
         motionStyles.enter,
         // Programmatic rect changes glide; pointer drag/resize stays 1:1.
         !isInteracting && motionStyles.glide,
@@ -1632,21 +1614,25 @@ export function WindowPanel({
         className,
       )}
       style={{
-        left: rect.x,
-        top: rect.y,
-        ...(fitContent && !isMinimized
-          ? { width: "max-content", height: "auto" }
-          : { width: rect.width, height: rect.height }),
+        ...(isMaximized
+          ? { inset: 0, width: "100vw", height: "100dvh" }
+          : {
+              left: rect.x,
+              top: rect.y,
+              ...(fitContent && !isMinimized
+                ? { width: "max-content", height: "auto" }
+                : { width: rect.width, height: rect.height }),
+            }),
         zIndex,
         // Cap CSS mins to the current rect so arrange/snap geometry wins.
         // Uncapped minWidth (e.g. 640) was overriding tile widths and stacking
         // every left-edge window on top of each other.
-        minWidth: isMinimized
+        minWidth: isMaximized || isMinimized
           ? 0
           : fitContent
             ? (minWidth ?? 180)
             : Math.min(minWidth ?? 180, rect.width),
-        minHeight: isMinimized
+        minHeight: isMaximized || isMinimized
           ? 0
           : fitContent
             ? (minHeight ?? 80)
@@ -1660,7 +1646,7 @@ export function WindowPanel({
       // restores it, matching the single-click-to-restore body affordance.
       onDoubleClick={isMinimized ? handleRestoreClearingSnapshot : undefined}
     >
-      {!isMinimized &&
+      {!isMinimized && !isMaximized &&
         HANDLES.map((h) => (
           <div
             key={h.edge}
@@ -1675,7 +1661,9 @@ export function WindowPanel({
       <div
         className={cn(
           "flex h-full w-full min-h-0 flex-col",
-          "rounded-xl bg-card/95 backdrop-blur-md border border-border shadow-xl",
+          isMaximized
+            ? "bg-card/98 backdrop-blur-md border border-border shadow-2xl"
+            : "rounded-xl bg-card/95 backdrop-blur-md border border-border shadow-xl",
           "overflow-hidden",
         )}
       >
@@ -1688,6 +1676,7 @@ export function WindowPanel({
           <WindowPanelBodyShell
             bodyRef={bodyRef}
             fitContent={fitContent}
+            isMaximized={isMaximized}
             bodyClassName={bodyClassName}
             captureDimensions={
               isMinimized

@@ -53,6 +53,7 @@ import {
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { isJsonObject } from "@/types/json";
 
 interface GmailReviewCardProps {
   ask: PendingAsk;
@@ -161,7 +162,7 @@ export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailR
   ) {
     const receipt = reply.receipt;
     const output = receipt.output;
-    if (receipt.state === "applied" && typeof output === "object" && output !== null && !Array.isArray(output) && output.__kind === "gmail_draft_saved" && typeof output.draft_id === "string" && typeof output.message_id === "string" && typeof output.account_email === "string") {
+    if (receipt.state === "applied" && isJsonObject(output) && output.__kind === "gmail_draft_saved" && typeof output.draft_id === "string" && typeof output.message_id === "string" && typeof output.account_email === "string") {
       publishAttempt({ ...attempt, approvalId, state: "saved" });
     } else if (receipt.state === "applied_unconfirmed") {
       publishAttempt({ ...attempt, approvalId, state: "uncertain" });

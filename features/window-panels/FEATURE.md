@@ -364,6 +364,13 @@ Adding an overlay requires **explicit registration at every boundary**: typed ov
 
 ## Architecture
 
+Desktop windowed and maximized states render through the same `FloatingLayer`,
+outer frame, inner chrome, and `WindowPanelBodyShell`. Maximize changes the
+frame to viewport geometry, removes its rounded corners and resize handles,
+and leaves the child mounted with its local state; Restore returns to the saved
+window rect. Minimize still uses its existing body capture or opt-in retention
+and tray preview. Mobile and pop-out use their separate presentations.
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Shell (server component)                                           │
