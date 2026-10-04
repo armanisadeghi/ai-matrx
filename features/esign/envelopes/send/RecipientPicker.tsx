@@ -135,12 +135,12 @@ export function RecipientPicker({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate text-sm font-medium">{r.fullName}</span>
+              <div className="truncate text-sm font-medium">{r.fullName}</div>
+              <div className="flex min-w-0 items-center gap-1.5">
                 {r.userId ? <Badge tone="info">Member</Badge> : <Badge>Guest</Badge>}
-              </div>
-              <div className="truncate text-xs text-muted-foreground">
-                {missingSignature.has(r.key) ? "No signature box yet" : r.email}
+                <span className="truncate text-xs text-muted-foreground">
+                  {missingSignature.has(r.key) ? "No signature box yet" : r.email}
+                </span>
               </div>
             </div>
             <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
@@ -190,7 +190,6 @@ export function RecipientPicker({
             }))}
           title="Choose a signer"
           placeholder="Add a member by name or email"
-          inputClassName="text-base sm:text-sm"
           ariaLabel="Browse members"
           onEnter={() => {
             if (matches[0]) addMember(matches[0]);
@@ -245,7 +244,6 @@ export function RecipientPicker({
             value={outsider.fullName}
             autoFocus
             autoComplete="off"
-            className="text-base sm:text-sm"
             onChange={(e) => setOutsider({ ...outsider, fullName: e.target.value })}
           />
           <Field
@@ -254,7 +252,6 @@ export function RecipientPicker({
             type="email"
             value={outsider.email}
             autoComplete="off"
-            className="text-base sm:text-sm"
             onChange={(e) => setOutsider({ ...outsider, email: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && addOutsider()}
           />

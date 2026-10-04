@@ -7,11 +7,14 @@
 // address); and, once complete, whether the stored documents and signatures still verify.
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   BellRing,
   CheckCircle2,
   Circle,
+  Download,
+  Eye,
   FileText,
   Loader2,
   PenLine,
@@ -34,6 +37,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@ai-matrx/design-system";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -51,6 +55,12 @@ import {
   type EnvelopeState,
 } from "./service";
 import { SIGNER_STATUS_LABEL, signHref, statusLabel } from "./types";
+
+// react-pdf needs the browser, and only a sender who opens a document pays for the viewer.
+const PdfPreview = dynamic(() => import("@/features/pdf/components/viewer/PdfPreview"), {
+  ssr: false,
+  loading: () => <Loader2 className="m-auto h-5 w-5 animate-spin text-muted-foreground" />,
+});
 
 const EVENT_LABEL: Record<string, string> = {
   created: "Created",
@@ -82,6 +92,10 @@ const REFUSAL_TEXT: Record<string, string> = {
   waiting_on_earlier_position: "That signer's turn has not come yet.",
 };
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
+
 function text(record: Record<string, unknown> | undefined, key: string): string | null {
   const value = record?.[key];
   return typeof value === "string" && value !== "" ? value : null;
@@ -110,6 +124,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
   const [voidReason, setVoidReason] = useState("");
   const [resendFor, setResendFor] = useState<{ id: string; email: string; outsider: boolean } | null>(null);
   const [reload, setReload] = useState(0);
+  const [viewing, setViewing] = useState<{ fileId: string; name: string } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -187,8 +202,11 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
           </Badge>
         </div>
       </PageHeader>
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 pb-safe print:max-w-none">
+      {/* The shell header is a solid band over the page: the scroll body starts BELOW it, or the
+       * top of the envelope (actions, dates) sits under the band and reads as cut off. */}
+      <div className="h-full overflow-hidden" style={{ paddingTop: "var(--shell-header-h)" }}>
+        <div data-matrx-page-scroll className="h-full overflow-y-auto">
+        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 print:max-w-none">
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             {mySigner && (
               <Button size="sm" asChild>
@@ -270,22 +288,41 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
           </Section>
 
           <Section title="Documents">
-            {state.documents.map((d) => (
-              <div key={String(d.id)} className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2">
-                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-sm">{text(d, "name")}</span>
-                {typeof d.page_count === "number" && (
-                  <span className="text-xs text-muted-foreground">
-                    {d.page_count} {d.page_count === 1 ? "page" : "pages"}
-                  </span>
-                )}
-                {text(d, "content_file_id") && (
-                  <Button variant="ghost" size="sm" asChild className="print:hidden">
-                    <Link href={`/files/f/${text(d, "content_file_id")}`}>Open</Link>
-                  </Button>
-                )}
-              </div>
-            ))}
+            {state.documents.map((d) => {
+              const fileId = text(d, "content_file_id");
+              const signedCopy = text(asRecord(d.metadata), "signed_copy_file_id");
+              return (
+                <div key={String(d.id)} className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm">{text(d, "name")}</div>
+                    {typeof d.page_count === "number" && (
+                      <div className="text-xs text-muted-foreground">
+                        {d.page_count} {d.page_count === 1 ? "page" : "pages"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5 print:hidden">
+                    {fileId && (
+                      <ControlButton icon={<Eye />} onClick={() => setViewing({ fileId, name: text(d, "name") ?? "Document" })}>
+                        View
+                      </ControlButton>
+                    )}
+                    {status === "completed" &&
+                      (signedCopy ? (
+                        <ControlButton variant="primary" icon={<Download />} asChild>
+                          <Link href={`/files/f/${signedCopy}`}>Download signed copy</Link>
+                        </ControlButton>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Preparing signed copy
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              );
+            })}
           </Section>
 
           {status === "completed" && (
@@ -327,7 +364,10 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
             </ol>
           </Section>
         </div>
+        </div>
       </div>
+
+      <DocumentViewer doc={viewing} onClose={() => setViewing(null)} />
 
       <Dialog open={voidOpen} onOpenChange={(open) => busy !== "void" && setVoidOpen(open)}>
         <DialogContent>
@@ -428,5 +468,28 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="truncate">{value}</dd>
     </div>
+  );
+}
+
+function DocumentViewer({ doc, onClose }: { doc: { fileId: string; name: string } | null; onClose: () => void }) {
+  return (
+    <Dialog open={doc !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex h-[85dvh] max-w-4xl flex-col gap-3">
+        <DialogHeader>
+          <DialogTitle className="truncate pr-8">{doc?.name}</DialogTitle>
+          <DialogDescription className="sr-only">The document as it was sent for signature.</DialogDescription>
+        </DialogHeader>
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border border-border">
+          {doc && <PdfPreview fileId={doc.fileId} />}
+        </div>
+        {doc && (
+          <div className="flex justify-end">
+            <ControlButton asChild>
+              <Link href={`/files/f/${doc.fileId}`}>Open in Files</Link>
+            </ControlButton>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

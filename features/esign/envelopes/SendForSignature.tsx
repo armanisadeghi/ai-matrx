@@ -2,28 +2,36 @@
 
 // features/esign/envelopes/SendForSignature.tsx — /esign/new: send PDFs for signature.
 //
-// DocuSign's "send an envelope" is the bar: documents, who signs (in order or all at once), a
-// message, an expiry — then Send. The server freezes the exact bytes and emails the first
-// signer(s); a signer who belongs to the sending organization signs as themself, anyone else gets
-// a link and a one-time code.
+// DocuSign / Dropbox Sign's send flow on one screen: the documents are ON SCREEN from the moment
+// they are attached; recipients are picked from the sending organization's members or added as
+// guests by name and email; each recipient's Signature / Initials / Date / Name boxes are placed
+// on the pages in that recipient's colour; then Send. The server freezes the exact bytes and
+// emails the first signer(s). A signer with no signature box is warned about, never blocked
+// (their signature then lives on the certificate).
+//
+// Layout: desktop is a left rail (documents, recipients, message, Send) beside the document; a
+// phone stacks the same parts and the document keeps a tall, scrollable frame.
 
 import { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, FileText, FolderOpen, Loader2, Plus, Send, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, FileText, FolderOpen, Loader2, Send, Trash2, Upload } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@ai-matrx/design-system";
+import { Button, EmptyState, Field, SegmentedControl, Select, Textarea } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
+import {
+  selectActiveOrganizationId,
+  selectActiveOrganizationName,
+} from "@/features/scopes/redux/selectors/active-context";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { cn } from "@/lib/utils";
 
 import { EnvelopeRefusal, sendEnvelope } from "./service";
+import type { PlacedField, Recipient } from "./types";
+import { RecipientPicker } from "./send/RecipientPicker";
+import { FieldPlacementCanvas } from "./send/FieldPlacementCanvas";
 
 // The picker window is heavy and opened on demand — kept out of this route's first bundle.
 const FilePickerWindow = dynamic(
@@ -37,14 +45,11 @@ interface DocumentChoice {
   size: number | null;
 }
 
-interface SignerRow {
-  key: number;
-  fullName: string;
-  email: string;
-}
-
-const EXPIRY_CHOICES = [7, 14, 30, 60, 90];
-let nextKey = 1;
+const EXPIRY_CHOICES = [7, 14, 30, 60, 90].map((d) => ({ value: String(d), label: `${d} days` }));
+const ORDER_CHOICES = [
+  { value: "sequential", label: "In order" },
+  { value: "parallel", label: "All at once" },
+] as const;
 
 export function SendForSignature() {
   const dispatch = useAppDispatch();
@@ -53,23 +58,39 @@ export function SendForSignature() {
   const { upload, uploading } = useFileUpload();
   const [documents, setDocuments] = useState<DocumentChoice[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [signers, setSigners] = useState<SignerRow[]>([{ key: nextKey++, fullName: "", email: "" }]);
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [activeRecipient, setActiveRecipient] = useState<string | null>(null);
+  const [fields, setFields] = useState<PlacedField[]>([]);
   const [order, setOrder] = useState<"sequential" | "parallel">("sequential");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [expiry, setExpiry] = useState(14);
+  const [expiry, setExpiry] = useState("14");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [dropping, setDropping] = useState(false);
   // An envelope is filed in the active organization (every write carries it), and that decides
-  // which signers are colleagues (they sign with their account) — so the page names it.
+  // whose members are colleagues (they sign with their account) — so the page names it.
   const organizationName = useAppSelector(selectActiveOrganizationName);
+  const organizationId = useAppSelector(selectActiveOrganizationId);
 
   function addDocument(choice: DocumentChoice) {
     setDocuments((current) => (current.some((d) => d.fileId === choice.fileId) ? current : [...current, choice]));
     setTitle((current) => current || choice.name.replace(/\.pdf$/i, ""));
   }
 
-  async function uploadFiles(list: FileList | null) {
+  function removeDocument(fileId: string) {
+    setDocuments((all) => all.filter((d) => d.fileId !== fileId));
+    setFields((all) => all.filter((f) => f.fileId !== fileId));
+  }
+
+  function changeRecipients(next: Recipient[]) {
+    setRecipients(next);
+    const keys = new Set(next.map((r) => r.key));
+    setFields((all) => all.filter((f) => keys.has(f.recipientKey)));
+    if (!activeRecipient || !keys.has(activeRecipient)) setActiveRecipient(next[0]?.key ?? null);
+  }
+
+  async function uploadFiles(list: FileList | File[] | null) {
     setNotice(null);
     for (const file of Array.from(list ?? [])) {
       if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
@@ -85,25 +106,10 @@ export function SendForSignature() {
     }
   }
 
-  function patchSigner(key: number, patch: Partial<SignerRow>) {
-    setSigners((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
-  }
-
-  function moveSigner(index: number, by: -1 | 1) {
-    setSigners((rows) => {
-      const next = [...rows];
-      const [row] = next.splice(index, 1);
-      next.splice(index + by, 0, row);
-      return next;
-    });
-  }
-
-  const filledSigners = signers.filter((s) => s.fullName.trim() || s.email.trim());
-  const ready =
-    documents.length > 0 &&
-    title.trim() !== "" &&
-    filledSigners.length > 0 &&
-    filledSigners.every((s) => s.fullName.trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.email.trim()));
+  const withSignature = new Set(fields.filter((f) => f.kind === "signature").map((f) => f.recipientKey));
+  const missingSignature = new Set(recipients.filter((r) => !withSignature.has(r.key)).map((r) => r.key));
+  const missingNames = recipients.filter((r) => missingSignature.has(r.key)).map((r) => r.fullName);
+  const ready = documents.length > 0 && title.trim() !== "" && recipients.length > 0;
 
   async function send() {
     setSending(true);
@@ -113,9 +119,9 @@ export function SendForSignature() {
         title: title.trim(),
         message: message.trim() || null,
         file_ids: documents.map((d) => d.fileId),
-        signers: filledSigners.map((s) => ({ full_name: s.fullName.trim(), email: s.email.trim() })),
+        signers: recipients.map((r) => ({ full_name: r.fullName.trim(), email: r.email.trim() })),
         signing_order: order,
-        expires_in_days: expiry,
+        expires_in_days: Number(expiry),
       });
       startNavigation(() => router.push(`/esign/${answer.envelope_id}`));
     } catch (err) {
@@ -124,172 +130,161 @@ export function SendForSignature() {
     }
   }
 
+  const busy = sending || navigating;
+
   return (
     <>
       <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <h1 className="truncate text-sm font-semibold text-foreground">Send for signature</h1>
           {organizationName && (
             <span className="hidden truncate text-xs text-muted-foreground sm:inline">From {organizationName}</span>
           )}
+          <Button
+            variant="primary"
+            className="ml-auto shrink-0"
+            disabled={!ready || busy}
+            icon={busy ? <Loader2 className="animate-spin" /> : <Send />}
+            onClick={() => void send()}
+          >
+            Send
+          </Button>
         </div>
       </PageHeader>
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-6 pb-safe">
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold text-foreground">Documents</h2>
-            {documents.map((d) => (
-              <div key={d.fileId} className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2">
-                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-sm">{d.name}</span>
-                {d.size !== null && <span className="text-xs text-muted-foreground">{formatFileSize(d.size)}</span>}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove ${d.name}`}
-                  onClick={() => setDocuments((all) => all.filter((x) => x.fileId !== d.fileId))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" asChild disabled={uploading}>
-                <label className="cursor-pointer">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  Upload PDF
-                  <input
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    multiple
-                    className="sr-only"
-                    onChange={(e) => {
-                      void uploadFiles(e.target.files);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
-                <FolderOpen className="h-4 w-4" />
-                Choose from files
-              </Button>
-            </div>
-          </section>
 
-          <section className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold text-foreground">Signers</h2>
-              <div className="flex gap-1">
-                <Button size="sm" variant={order === "sequential" ? "secondary" : "ghost"} onClick={() => setOrder("sequential")}>
-                  In order
-                </Button>
-                <Button size="sm" variant={order === "parallel" ? "secondary" : "ghost"} onClick={() => setOrder("parallel")}>
-                  All at once
-                </Button>
-              </div>
-            </div>
-            {signers.map((s, i) => (
-              <div key={s.key} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3 sm:flex-row sm:items-center">
-                {order === "sequential" && (
-                  <span className="w-6 shrink-0 text-center text-sm tabular-nums text-muted-foreground">{i + 1}</span>
-                )}
-                <Input
-                  aria-label="Signer name"
-                  placeholder="Full name"
-                  value={s.fullName}
-                  autoComplete="off"
-                  className="text-base sm:text-sm"
-                  onChange={(e) => patchSigner(s.key, { fullName: e.target.value })}
-                />
-                <Input
-                  aria-label="Signer email"
-                  placeholder="name@company.com"
-                  type="email"
-                  value={s.email}
-                  autoComplete="off"
-                  className="text-base sm:text-sm"
-                  onChange={(e) => patchSigner(s.key, { email: e.target.value })}
-                />
-                <div className="flex shrink-0 gap-1">
-                  {order === "sequential" && (
-                    <>
-                      <Button variant="ghost" size="icon" aria-label="Move up" disabled={i === 0} onClick={() => moveSigner(i, -1)}>
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Move down"
-                        disabled={i === signers.length - 1}
-                        onClick={() => moveSigner(i, 1)}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Remove signer"
-                    disabled={signers.length === 1}
-                    onClick={() => setSigners((rows) => rows.filter((r) => r.key !== s.key))}
-                  >
-                    <Trash2 className="h-4 w-4" />
+      <div className="h-full overflow-hidden" style={{ paddingTop: "var(--shell-header-h)" }}>
+        <div data-matrx-page-scroll className="h-full overflow-y-auto lg:overflow-clip">
+          <div className="flex flex-col lg:h-full lg:flex-row">
+            <aside className="flex shrink-0 flex-col gap-5 border-border p-4 lg:w-[22rem] lg:overflow-y-auto lg:border-r">
+              <section className="flex flex-col gap-2">
+                <h2 className="text-sm font-semibold text-foreground">Documents</h2>
+                {documents.map((d) => (
+                  <div key={d.fileId} className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5">
+                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 truncate text-sm">{d.name}</span>
+                    {d.size !== null && <span className="text-xs text-muted-foreground">{formatFileSize(d.size)}</span>}
+                    <Button variant="quiet" aria-label={`Remove ${d.name}`} icon={<Trash2 />} onClick={() => removeDocument(d.fileId)} />
+                  </div>
+                ))}
+                <div className="flex flex-wrap gap-2">
+                  <UploadButton uploading={uploading} onFiles={(files) => void uploadFiles(files)} />
+                  <Button icon={<FolderOpen />} onClick={() => setPickerOpen(true)}>
+                    From files
                   </Button>
                 </div>
+              </section>
+
+              <section className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-semibold text-foreground">Signers</h2>
+                  {recipients.length > 1 && (
+                    <SegmentedControl
+                      aria-label="Signing order"
+                      value={order}
+                      onValueChange={(v) => setOrder(v)}
+                      data={ORDER_CHOICES}
+                    />
+                  )}
+                </div>
+                <RecipientPicker
+                  organizationId={organizationId}
+                  recipients={recipients}
+                  onChange={changeRecipients}
+                  sequential={order === "sequential"}
+                  missingSignature={documents.length > 0 ? missingSignature : new Set()}
+                  activeKey={activeRecipient}
+                  onActivate={setActiveRecipient}
+                />
+              </section>
+
+              <section className="flex flex-col gap-2">
+                <h2 className="text-sm font-semibold text-foreground">Message</h2>
+                <Field
+                  aria-label="Subject"
+                  placeholder="Subject"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <Textarea
+                  aria-label="Note to signers"
+                  value={message}
+                  placeholder="Note to signers (optional)"
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs text-muted-foreground">Expires after</span>
+                  <Select aria-label="Expires after" value={expiry} options={EXPIRY_CHOICES} onValueChange={setExpiry} />
+                </div>
+              </section>
+
+              <div className="flex flex-col gap-2">
+                {documents.length > 0 && missingNames.length > 0 && (
+                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
+                    <span>
+                      No signature box: {missingNames.join(", ")}
+                    </span>
+                  </p>
+                )}
+                <Button
+                  variant="primary"
+                  disabled={!ready || busy}
+                  icon={busy ? <Loader2 className="animate-spin" /> : <Send />}
+                  onClick={() => void send()}
+                >
+                  Send
+                </Button>
+                {notice && <p className="text-sm text-destructive">{notice}</p>}
               </div>
-            ))}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="self-start"
-              onClick={() => setSigners((rows) => [...rows, { key: nextKey++, fullName: "", email: "" }])}
+            </aside>
+
+            <section
+              aria-label="Document"
+              className={cn(
+                "relative h-[85dvh] min-h-0 overflow-hidden border-t border-border lg:h-auto lg:flex-1 lg:border-t-0",
+                dropping && "ring-2 ring-inset ring-primary",
+              )}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes("Files")) {
+                  e.preventDefault();
+                  setDropping(true);
+                }
+              }}
+              onDragLeave={() => setDropping(false)}
+              onDrop={(e) => {
+                if (!e.dataTransfer.files.length) return;
+                e.preventDefault();
+                setDropping(false);
+                void uploadFiles(e.dataTransfer.files);
+              }}
             >
-              <Plus className="h-4 w-4" />
-              Add signer
-            </Button>
-          </section>
-
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold text-foreground">Message</h2>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="esign-title">Subject</Label>
-              <Input id="esign-title" value={title} className="text-base sm:text-sm" onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="esign-message">Note to signers</Label>
-              <Textarea
-                id="esign-message"
-                value={message}
-                placeholder="Please review and sign by Friday."
-                className="text-base sm:text-sm"
-                onChange={(e) => setMessage(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="esign-expiry">Expires after</Label>
-              <Select value={String(expiry)} onValueChange={(v) => setExpiry(Number(v))}>
-                <SelectTrigger id="esign-expiry" className="w-40 text-base sm:text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPIRY_CHOICES.map((d) => (
-                    <SelectItem key={d} value={String(d)}>
-                      {d} days
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </section>
-
-          <div className="flex items-center gap-3">
-            <Button disabled={!ready || sending || navigating} onClick={() => void send()}>
-              {sending || navigating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send
-            </Button>
-            {notice && <p className="text-sm text-destructive">{notice}</p>}
+              {documents.length === 0 ? (
+                <div className="flex h-full items-center justify-center p-6">
+                  <EmptyState
+                    icon={uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+                    title="Add a PDF to sign"
+                    line="Drop it here, upload, or choose from your files"
+                    action={
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <UploadButton uploading={uploading} onFiles={(files) => void uploadFiles(files)} primary />
+                        <Button icon={<FolderOpen />} onClick={() => setPickerOpen(true)}>
+                          From files
+                        </Button>
+                      </div>
+                    }
+                  />
+                </div>
+              ) : (
+                <FieldPlacementCanvas
+                  documents={documents}
+                  recipients={recipients}
+                  fields={fields}
+                  onFieldsChange={setFields}
+                  activeRecipientKey={activeRecipient}
+                  onActiveRecipient={setActiveRecipient}
+                />
+              )}
+            </section>
           </div>
         </div>
       </div>
@@ -306,5 +301,26 @@ export function SendForSignature() {
         }}
       />
     </>
+  );
+}
+
+function UploadButton({ uploading, onFiles, primary }: { uploading: boolean; onFiles: (files: FileList | null) => void; primary?: boolean }) {
+  return (
+    <Button variant={primary ? "primary" : "outline"} asChild disabled={uploading}>
+      <label>
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        Upload PDF
+        <input
+          type="file"
+          accept="application/pdf,.pdf"
+          multiple
+          className="sr-only"
+          onChange={(e) => {
+            onFiles(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </label>
+    </Button>
   );
 }
