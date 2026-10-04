@@ -18,6 +18,7 @@ import {
   setTapTargetLinkComponent,
   type TapTargetLinkComponent,
 } from "@ai-matrx/tap-target";
+import { enablePillGuard } from "@ai-matrx/design-system";
 
 setTapTargetLinkComponent(Link as unknown as TapTargetLinkComponent);
 
@@ -26,4 +27,9 @@ setTapTargetLinkComponent(Link as unknown as TapTargetLinkComponent);
 // no tooltip text) renders as a giant red box naming the fault. Gated HERE,
 // in host code Next compiles, never inside the package (whose build inlines
 // NODE_ENV).
-if (process.env.NODE_ENV !== "production") enableTapTargetGuard();
+if (process.env.NODE_ENV !== "production") {
+  enableTapTargetGuard();
+  // A capsule wider than 320px or wrapping to two lines gets a dashed red
+  // outline + one [pill-guard] console error (owner, 2026-10-04).
+  if (typeof window !== "undefined") enablePillGuard();
+}

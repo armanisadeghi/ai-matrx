@@ -1262,7 +1262,7 @@ export function EntityListPage<TRow>({
           // this row and the toolbar stays 28px and gets an invisible 44px hit
           // area on a touch screen, instead of the list's touch floor growing
           // each one to 44px (owner, /board/all on an iPad, 2026-10-02).
-          className="matrx-tap-ring flex min-w-0 items-center justify-between gap-1.5 sm:gap-2"
+          className="matrx-tap-ring flex min-w-0 items-center justify-between gap-1.5 sm:flex-wrap sm:gap-2"
         >
           {/* On a phone the organization filter is an icon until it narrows and
               the lane select gives way first (it truncates); wider, the tabs take
@@ -1270,7 +1270,9 @@ export function EntityListPage<TRow>({
           <div
             data-entity-list-lanes=""
             className={cn(
-              "min-w-0 max-sm:flex-initial sm:flex-1",
+              // A floor before the filters and actions wrap below (a list beside the chat panel is
+              // narrower than its viewport): the lanes never squeeze to nothing.
+              "min-w-0 max-sm:flex-initial sm:min-w-40 sm:flex-1",
               phoneSearching && "hidden",
             )}
           >

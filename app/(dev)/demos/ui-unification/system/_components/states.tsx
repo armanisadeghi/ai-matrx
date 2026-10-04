@@ -12,7 +12,8 @@ import { CircleAlert, Loader2, Plus, RotateCw } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 import { EmptyCombined } from "../../_components/round2";
-import { Group, ROWS, STATUS, Section, Segmented, StatusBadge } from "./kit";
+import { Group, ROWS, STATUS, Section } from "./kit";
+import { Badge, Button, ControlRow, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type RegionState = "loaded" | "loading" | "empty" | "error";
 
@@ -35,9 +36,9 @@ function ErrorState({ size }: { size: "inline" | "block" }) {
         </div>
         <div className="text-xs text-muted-foreground">The server didn&apos;t answer in time.</div>
       </div>
-      <button type="button" className="uc-btn uc-btn-outline mt-1">
+      <Button variant="outline" className="mt-1">
         <RotateCw aria-hidden /> Try again
-      </button>
+      </Button>
     </div>
   );
 }
@@ -68,9 +69,9 @@ function Region({ state }: { state: RegionState }) {
           <span className="text-[0.8125rem] font-semibold">Projects</span>
         )}
         <span className="flex-1" />
-        <button type="button" className="uc-btn uc-btn-outline">
+        <Button variant="outline">
           <Plus aria-hidden /> New
-        </button>
+        </Button>
       </div>
       {state === "loading" && <RowsSkeleton />}
       {state === "empty" && <EmptyCombined size="inline" />}
@@ -83,7 +84,7 @@ function Region({ state }: { state: RegionState }) {
                 <div className="truncate text-[0.8125rem] font-medium leading-4">{r.name}</div>
                 <div className="truncate text-[0.6875rem] leading-4 text-muted-foreground">{r.owner}</div>
               </div>
-              <StatusBadge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</StatusBadge>
+              <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>
             </li>
           ))}
         </ul>
@@ -102,19 +103,19 @@ export function States() {
   return (
     <Section id="states" title="States">
       <Group label="One region, four states">
-        <div className="uc-row">
-          <Segmented
-            label="Region state"
+        <ControlRow>
+          <SegmentedControl
+            aria-label="Region state"
             value={state}
-            onChange={setState}
-            options={[
+            onValueChange={setState}
+            data={[
               { value: "loaded", label: "Loaded" },
               { value: "loading", label: "Loading" },
               { value: "empty", label: "Empty" },
               { value: "error", label: "Error" },
             ]}
           />
-        </div>
+        </ControlRow>
         <div className="max-w-xl">
           <Region state={state} />
         </div>
@@ -132,15 +133,15 @@ export function States() {
         </Group>
       </div>
       <Group label="Busy control · the only place a spinner goes">
-        <div className="uc-row">
-          <button type="button" className="uc-btn uc-btn-primary" onClick={save} disabled={saving} aria-busy={saving}>
+        <ControlRow>
+          <Button variant="primary" onClick={save} disabled={saving} aria-busy={saving}>
             {saving ? <Loader2 className="animate-spin" aria-hidden /> : null}
             {saving ? "Saving" : "Save"}
-          </button>
-          <button type="button" className="uc-btn uc-btn-outline" disabled>
+          </Button>
+          <Button variant="outline" disabled>
             <Loader2 className="animate-spin" aria-hidden /> Exporting
-          </button>
-        </div>
+          </Button>
+        </ControlRow>
       </Group>
     </Section>
   );

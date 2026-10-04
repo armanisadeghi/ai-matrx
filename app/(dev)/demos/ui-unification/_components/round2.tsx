@@ -25,7 +25,8 @@ import {
 } from "@ai-matrx/tap-target/buttons";
 import { FolderOpen, Loader2, Plus, Search, Trash2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MeasuredBare, Scale } from "./one-control";
+import { Alt, MeasuredBare } from "./one-control";
+import { Badge, Button, ControlRow, ControlScope, DangerZone, DeleteButton, EmptyState, Field, SearchField, SegmentedControl, Select, SettingRow, Tabs } from "@ai-matrx/design-system/controls";
 
 /* ------------------------------------------------------------------ */
 /* Shared bits                                                          */
@@ -51,14 +52,6 @@ const ROWS = [
 
 export type Tone = "neutral" | "success" | "warning" | "destructive" | "info";
 
-/** The settled badge tints: token roles only, correct in dark mode. */
-export const TONE_CLASS: Record<Tone, string> = {
-  neutral: "border-border bg-muted text-muted-foreground",
-  success: "border-success/40 bg-success/10 text-success",
-  warning: "border-warning/60 bg-warning/15 text-foreground",
-  destructive: "border-destructive/40 bg-destructive/10 text-destructive",
-  info: "border-info/40 bg-info/10 text-info",
-};
 const STATUS_TONE: Record<string, Tone> = { draft: "neutral", live: "success", review: "warning", failed: "destructive" };
 const STATUS_LABEL: Record<string, string> = { draft: "Draft", live: "Live", review: "In review", failed: "Failed" };
 
@@ -69,34 +62,30 @@ function DenseForm() {
     <div className="flex w-[340px] max-w-full flex-col gap-2.5 py-1">
       <div className="flex flex-col gap-1">
         <span className="px-[3px] text-xs font-medium text-muted-foreground">Project name</span>
-        <label className="uc-field" style={{ width: "calc(100% - var(--matrx-tap-gap))" }}>
-          <input defaultValue="Launch plan" aria-label="Project name" />
-        </label>
+        <Field style={{ width: "calc(100% - var(--matrx-control-gap))" }} defaultValue="Launch plan" aria-label="Project name" />
       </div>
       <div className="flex flex-col gap-1">
         <span className="px-[3px] text-xs font-medium text-muted-foreground">Owner</span>
-        <button type="button" className="uc-select" style={{ width: "calc(100% - var(--matrx-tap-gap))" }}>
-          Ana Ruiz <span aria-hidden>⌄</span>
-        </button>
+        <Select aria-label="Owner" style={{ width: "calc(100% - var(--matrx-control-gap))" }} value="ana" onValueChange={() => {}} options={[{ value: "ana", label: "Ana Ruiz" }]} />
       </div>
       <MeasuredBare>
         <span className="flex-1" />
-        <button type="button" className="uc-btn uc-btn-quiet">Cancel</button>
-        <button type="button" className="uc-btn uc-btn-primary">Save</button>
+        <Button variant="quiet">Cancel</Button>
+        <Button variant="primary">Save</Button>
       </MeasuredBare>
     </div>
   );
 }
 
 export const FormAt28 = () => (
-  <Scale scale={28}>
+  <Alt size={28}>
     <DenseForm />
-  </Scale>
+  </Alt>
 );
 export const FormAt32 = () => (
-  <Scale scale={32}>
+  <Alt size={32}>
     <DenseForm />
-  </Scale>
+  </Alt>
 );
 
 /* ------------------------------ Icon size --------------------------- */
@@ -104,13 +93,10 @@ export const FormAt32 = () => (
 function IconRow() {
   return (
     <MeasuredBare>
-      <button type="button" className="uc-btn uc-btn-primary">
+      <Button variant="primary">
         <Plus aria-hidden /> New
-      </button>
-      <label className="uc-field" style={{ width: "10rem" }}>
-        <Search aria-hidden />
-        <input placeholder="Search" aria-label="Search" />
-      </label>
+      </Button>
+      <SearchField style={{ width: "10rem" }} placeholder="Search" aria-label="Search" />
       <PencilTapButton variant="transparent" ariaLabel="Rename" />
       <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
     </MeasuredBare>
@@ -118,19 +104,19 @@ function IconRow() {
 }
 
 export const Glyph12 = () => (
-  <Scale scale={28} icon={12}>
+  <Alt size={28} icon={12}>
     <IconRow />
-  </Scale>
+  </Alt>
 );
 export const Glyph14 = () => (
-  <Scale scale={28} icon={14}>
+  <Alt size={28} icon={14}>
     <IconRow />
-  </Scale>
+  </Alt>
 );
 export const Glyph16 = () => (
-  <Scale scale={28} icon={16}>
+  <Alt size={28} icon={16}>
     <IconRow />
-  </Scale>
+  </Alt>
 );
 
 /* ------------------------------ Micro text -------------------------- */
@@ -173,16 +159,9 @@ function StatusPill({ status, mode }: { status: string; mode: "raw" | "token" })
     destructive: "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300",
     info: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
   };
-  // The SAME tinted look, expressed as token roles: one place to change,
-  // correct in dark mode, and no agent ever types a palette class.
-  const token = TONE_CLASS;
+  if (mode === "token") return <Badge tone={tone}>{STATUS_LABEL[status]}</Badge>;
   return (
-    <span
-      className={cn(
-        "inline-flex h-[1.125rem] items-center rounded-md border px-1.5 text-[0.6875rem] font-medium",
-        mode === "raw" ? raw[tone] : token[tone],
-      )}
-    >
+    <span className={cn("inline-flex h-[1.125rem] items-center rounded-md border px-1.5 text-[0.6875rem] font-medium", raw[tone])}>
       {STATUS_LABEL[status]}
     </span>
   );
@@ -210,7 +189,7 @@ export const StatusTinted = () => <StatusList mode="token" />;
 
 function DeleteRows({ solid }: { solid: boolean }) {
   return (
-    <Scale scale={28}>
+    <Alt size={28}>
       <Frame width={420}>
         <div className="divide-y divide-border">
           {ROWS.slice(0, 2).map((r) => (
@@ -225,7 +204,7 @@ function DeleteRows({ solid }: { solid: boolean }) {
           ))}
         </div>
       </Frame>
-    </Scale>
+    </Alt>
   );
 }
 
@@ -235,82 +214,53 @@ export const DestructiveQuietRow = () => <DeleteRows solid={false} />;
 /* ------------------------------ Tabs ------------------------------- */
 
 function UnderlineTabs({ items }: { items: string[] }) {
-  const [on, setOn] = useState(items[0]);
-  return (
-    <div role="tablist" className="flex items-end gap-4 border-b border-border px-3">
-      {items.map((i) => (
-        <button
-          key={i}
-          type="button"
-          role="tab"
-          aria-selected={on === i}
-          onClick={() => setOn(i)}
-          className={cn(
-            "-mb-px h-8 border-b-2 text-[0.8125rem] font-medium",
-            on === i ? "border-primary text-foreground" : "border-transparent text-muted-foreground",
-          )}
-        >
-          {i}
-        </button>
-      ))}
-    </div>
-  );
+  const [on, setOn] = useState(items[0]!);
+  return <Tabs aria-label="Sections" value={on} onValueChange={setOn} data={items.map((i) => ({ value: i, label: i }))} />;
 }
 
 function CapsuleTabs({ items }: { items: string[] }) {
-  const [on, setOn] = useState(items[0]);
-  return (
-    <div className="uc-seg" role="group">
-      {items.map((i) => (
-        <button key={i} type="button" className="uc-seg-item" data-on={on === i ? "" : undefined} onClick={() => setOn(i)}>
-          {i}
-        </button>
-      ))}
-    </div>
-  );
+  const [on, setOn] = useState(items[0]!);
+  return <Tabs variant="capsule" aria-label="Filter" value={on} onValueChange={setOn} data={items.map((i) => ({ value: i, label: i }))} />;
 }
 
 const SECTIONS = ["Overview", "Runs", "Settings"];
 const FILTERS = ["All", "Mine", "Shared"];
 
 export const TabsAllUnderline = () => (
-  <Scale scale={28}>
+  <Alt size={28}>
     <Frame>
       <UnderlineTabs items={SECTIONS} />
-      <div className="uc-row px-1.5 py-1.5">
+      <ControlRow className="px-1.5 py-1.5">
         <UnderlineTabs items={FILTERS} />
-      </div>
+      </ControlRow>
     </Frame>
-  </Scale>
+  </Alt>
 );
 
 export const TabsAllCapsule = () => (
-  <Scale scale={28}>
+  <Alt size={28}>
     <Frame>
-      <div className="uc-row px-1.5 py-1.5">
+      <ControlRow className="px-1.5 py-1.5">
         <CapsuleTabs items={SECTIONS} />
-      </div>
-      <div className="uc-row border-t border-border px-1.5 py-1.5">
+      </ControlRow>
+      <ControlRow className="border-t border-border px-1.5 py-1.5">
         <CapsuleTabs items={FILTERS} />
-      </div>
+      </ControlRow>
     </Frame>
-  </Scale>
+  </Alt>
 );
 
 export const TabsByPurpose = () => (
-  <Scale scale={28}>
+  <Alt size={28}>
     <Frame>
       <UnderlineTabs items={SECTIONS} />
-      <div className="uc-row px-1.5 py-1.5">
+      <ControlRow className="px-1.5 py-1.5">
         <CapsuleTabs items={FILTERS} />
         <span className="flex-1" />
-        <label className="uc-field" style={{ width: "9rem" }}>
-          <Search aria-hidden />
-          <input placeholder="Search" aria-label="Search" />
-        </label>
-      </div>
+        <SearchField style={{ width: "9rem" }} placeholder="Search" aria-label="Search" />
+      </ControlRow>
     </Frame>
-  </Scale>
+  </Alt>
 );
 
 /* ------------------------------ Cards ------------------------------ */
@@ -347,7 +297,7 @@ function CardBody() {
 
 function CardGrid({ surface }: { surface: string }) {
   return (
-    <Scale scale={28}>
+    <Alt size={28}>
       <div className="w-[560px] max-w-full rounded-lg bg-muted/40 p-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className={cn("overflow-hidden rounded-lg bg-card", surface)}>
@@ -358,7 +308,7 @@ function CardGrid({ surface }: { surface: string }) {
           </div>
         </div>
       </div>
-    </Scale>
+    </Alt>
   );
 }
 
@@ -372,7 +322,7 @@ export const CardElevated = () => <CardGrid surface="shadow-sm ring-1 ring-borde
  *  exactly like what will render there. */
 export function LoadingMatched() {
   return (
-    <Scale scale={28}>
+    <Alt size={28}>
       <Frame>
         <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
           <Skeleton className="h-4 w-24" />
@@ -394,12 +344,12 @@ export function LoadingMatched() {
         </div>
         <div className="flex items-center gap-2 border-t border-border px-3 py-2 text-[0.8125rem]">
           <span className="text-muted-foreground">An action in progress:</span>
-          <button type="button" className="uc-btn uc-btn-primary" disabled>
+          <Button variant="primary" disabled>
             <Loader2 className="animate-spin" aria-hidden /> Saving
-          </button>
+          </Button>
         </div>
       </Frame>
-    </Scale>
+    </Alt>
   );
 }
 
@@ -427,31 +377,23 @@ export function LoadingCenterSpinner() {
 /* The structure of "icon + title + action" with the colour of           */
 /* EmptyStateCard (a tinted icon disc), at dense sizes, token colours.   */
 
-export function EmptyCombined({ size }: { size: "inline" | "block" }) {
-  const block = size === "block";
+export function EmptyCombined(_props: { size: "inline" | "block" }) {
   return (
-    <div className={cn("flex flex-col items-center text-center", block ? "gap-2 py-8" : "gap-1.5 py-4")}>
-      <div
-        className={cn(
-          "flex items-center justify-center rounded-full bg-primary/10 text-primary",
-          block ? "size-10" : "size-8",
-        )}
-      >
-        <FolderOpen className={block ? "size-5" : "size-4"} aria-hidden />
-      </div>
-      <div className="flex flex-col gap-0.5">
-        <div className="text-[0.8125rem] font-semibold">No projects yet</div>
-        <div className="text-xs text-muted-foreground">Projects group your agents and files.</div>
-      </div>
-      <button type="button" className="uc-btn uc-btn-primary mt-1">
-        <Plus aria-hidden /> New project
-      </button>
-    </div>
+    <EmptyState
+      icon={<FolderOpen aria-hidden />}
+      title="No projects yet"
+      line="Projects group your agents and files."
+      action={
+        <Button variant="primary" icon={<Plus aria-hidden />}>
+          New project
+        </Button>
+      }
+    />
   );
 }
 
 export const EmptyCombinedSpecimen = () => (
-  <Scale scale={28}>
+  <Alt size={28}>
     <div className="grid w-[560px] max-w-full items-start gap-3 sm:grid-cols-2">
       <Frame width={272}>
         <div className="border-b border-border px-3 py-1.5 text-xs font-medium text-muted-foreground">
@@ -466,7 +408,7 @@ export const EmptyCombinedSpecimen = () => (
         <EmptyCombined size="block" />
       </Frame>
     </div>
-  </Scale>
+  </Alt>
 );
 
 
@@ -485,38 +427,36 @@ function TierLabel({ n, title, rule }: { n: number; title: string; rule: string 
 
 export function DeleteTiers() {
   return (
-    <Scale scale={28}>
+    <ControlScope>
       <Frame width={560}>
         <TierLabel n={1} title="Quiet" rule="Default. Archived, undo in the toast" />
         <div className="flex min-h-9 items-center gap-1 pl-3 pr-1">
           <div className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium">Quarterly client report</div>
-          <TrashTapButton variant="transparent" ariaLabel="Delete" iconColor="text-destructive" />
+          <DeleteButton aria-label="Delete Quarterly client report" />
         </div>
         <div className="border-t border-border" />
         <TierLabel n={2} title="Confirm" rule="Permanent or affects others. Names the cost" />
         <div className="mx-3 mb-2 mt-1 flex flex-col gap-2 rounded-lg border border-border bg-card p-3">
           <div className="text-[0.8125rem] font-semibold">Delete “Intake form — dental”?</div>
           <div className="text-xs text-muted-foreground">Removes 214 responses for 3 people. This can't be undone.</div>
-          <div className="uc-row justify-end">
-            <button type="button" className="uc-btn uc-btn-quiet">Cancel</button>
-            <button type="button" className="uc-btn uc-btn-danger">
-              Delete form
-            </button>
-          </div>
+          <ControlRow className="justify-end">
+            <Button variant="quiet">Cancel</Button>
+            <Button variant="danger">Delete form</Button>
+          </ControlRow>
         </div>
         <div className="border-t border-border" />
         <TierLabel n={3} title="Danger zone" rule="Irreversible, account-level. Settings only" />
-        <div className="mx-3 mb-3 mt-1 flex items-center gap-3 rounded-lg border border-destructive/40 p-3">
-          <div className="min-w-0 flex-1">
-            <div className="text-[0.8125rem] font-semibold">Delete this organization</div>
-            <div className="text-xs text-muted-foreground">Every project, agent and file, for everyone.</div>
-          </div>
-          <button type="button" className="uc-btn uc-btn-danger">
-            <Trash2 aria-hidden /> Delete
-          </button>
+        <div className="px-3 pb-3 pt-1">
+          <DangerZone>
+            <SettingRow label="Delete this organization" line="Every project, agent and file, for everyone.">
+              <Button variant="danger" icon={<Trash2 aria-hidden />}>
+                Delete
+              </Button>
+            </SettingRow>
+          </DangerZone>
         </div>
       </Frame>
-    </Scale>
+    </ControlScope>
   );
 }
 
@@ -529,20 +469,23 @@ export function SelectedInGroup() {
   const [view, setView] = useState<"list" | "grid">("list");
   const [scope, setScope] = useState("all");
   return (
-    <Scale scale={28}>
+    <Alt size={28}>
       <MeasuredBare>
         <TapTargetButtonGroup surface="solid">
           <ListTapButton variant="group" ariaLabel="List view" pressed={view === "list"} onClick={() => setView("list")} />
           <LayoutGridTapButton variant="group" ariaLabel="Grid view" pressed={view === "grid"} onClick={() => setView("grid")} />
         </TapTargetButtonGroup>
-        <div className="uc-seg" role="group" aria-label="Scope">
-          {["all", "mine", "shared"].map((v) => (
-            <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
-              {v === "all" ? "All" : v === "mine" ? "Mine" : "Shared"}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+        aria-label="Scope"
+        value={scope}
+        onValueChange={setScope}
+        data={[
+          { value: "all", label: "All" },
+          { value: "mine", label: "Mine" },
+          { value: "shared", label: "Shared" },
+        ]}
+      />
       </MeasuredBare>
-    </Scale>
+    </Alt>
   );
 }

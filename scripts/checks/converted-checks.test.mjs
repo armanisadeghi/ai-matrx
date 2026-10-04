@@ -249,6 +249,13 @@ export const CONVERTED = [
     reasonedKeys: () => Object.entries(json("scripts/ui-drift/baseline.json").reasons ?? {}).filter(([, v]) => withReason(v)).map(([k]) => k),
   },
   {
+    // No baseline: every item is new (the controls shipped with zero sites).
+    id: "one-control",
+    cmd: "pnpm check:one-control:strict",
+    allowKeys: () => [],
+    keyShape: /^(prototype-control-class|control-visual-override)\|[^|]+\.tsx$/,
+  },
+  {
     id: "route-metadata-and-favicons",
     cmd: "pnpm check:route-metadata",
     allowKeys: () => [],

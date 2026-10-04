@@ -18,6 +18,7 @@ import tseslint from "typescript-eslint";
 import { noNavigationForQueryState } from "./scripts/lint-rules/no-navigation-for-query-state.mjs";
 import { emptyStateNeedsReadGate, errorRenderCarriesAlchemy } from "./scripts/lint-rules/error-render-carries-alchemy.mjs";
 import { noCanonicalComponentOverride } from "./scripts/lint-rules/no-canonical-component-override.mjs";
+import { noStyledRawButton, oneControl } from "./scripts/lint-rules/one-control-rule.mjs";
 
 // eslint-plugin-react's `version: "detect"` (what eslint-config-next sets) calls
 // the `context.getFilename()` method that ESLint 10 removed, which made EVERY
@@ -201,6 +202,11 @@ const matrxLintPlugin = {
     // THE CANONICAL-OVERRIDE LAW (owner, /agents/all 2026-10-04): a page never re-styles the
     // package's table/toolbar — no class prop on it, no [&_…] reach into its internals.
     "no-canonical-component-override": noCanonicalComponentOverride,
+    // THE ONE CONTROL (owner, 2026-10-04: "core primitives … built, then used and enforced
+    // everywhere"): no retired uc-* prototype class, no visual class/style on a package control,
+    // and a styled raw <button> is flagged as the hand-rolled control it is.
+    "one-control": oneControl,
+    "no-styled-raw-button": noStyledRawButton,
     "no-raw-storage-media": {
       meta: {
         type: "problem",
@@ -1690,6 +1696,9 @@ export default [
       // run linter checks"). Error in the editor; the census of what is left is `pnpm findings`
       // (check:ui-drift rule canonical-override, shrink-only). Never an eslint-disable.
       "matrx/no-canonical-component-override": "error",
+      "matrx/one-control": "error",
+      // warn: ~5,600 raw buttons predate the controls; the census is `pnpm findings` (ui-drift).
+      "matrx/no-styled-raw-button": "warn",
       // Single-path JSON extraction — no parallel raw-stream scanners.
       // Loud but non-blocking, matching the other doctrine bans here.
       "matrx/no-parallel-stream-json-scan": "warn",

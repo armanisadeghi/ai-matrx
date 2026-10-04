@@ -86,6 +86,9 @@
     },
     "route-metadata-and-favicons": {
       "no_accept": "scripts/check-route-metadata.ts has no allowlist or baseline: every item is new."
+    },
+    "one-control": {
+      "no_accept": "scripts/one-control/check-one-control.mjs has no baseline: the controls shipped with zero sites, so every item is new — render the package control."
     }
   }
 }

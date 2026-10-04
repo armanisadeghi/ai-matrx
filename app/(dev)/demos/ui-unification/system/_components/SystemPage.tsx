@@ -2,9 +2,8 @@
 
 /**
  * THE SETTLED UI SYSTEM, all at once (owner-accepted decisions, 2026-10-02/03)
- * composed as one product page so it can be judged as a whole. Built from the
- * prototype pieces (`../../_components/one-control.tsx`, `round2.tsx`,
- * `toast-system.tsx`) — never forked.
+ * composed as one product page so it can be judged as a whole. Built from THE
+ * controls (`@ai-matrx/design-system/controls`) and `toast-system.tsx`.
  *
  * The page obeys what it shows: one surface level, sections split by
  * hairlines, 12px phone gutters (24px from sm), space between groups and
@@ -13,14 +12,14 @@
  */
 
 import { useState } from "react";
-import { Scale } from "../../_components/one-control";
 import { Controls } from "./controls";
 import { Data } from "./data";
 import { Feedback } from "./feedback";
 import { Foundations } from "./foundations";
-import { SectionTabs } from "./kit";
+
 import { Navigation } from "./navigation";
 import { States } from "./states";
+import { ControlScope, Tabs } from "@ai-matrx/design-system/controls";
 
 const SECTIONS = [
   { value: "foundations", label: "Foundations" },
@@ -41,19 +40,15 @@ export function SystemPage() {
   };
   return (
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-background">
-      <Scale scale={28} pad="matched">
-        <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
+      <ControlScope>
+        <header className="sticky top-0 z-10 bg-background/95 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-baseline gap-2 px-3 pt-2 sm:px-6">
             <h1 className="text-[0.8125rem] font-semibold text-foreground">UI system</h1>
             <span className="text-[0.6875rem] text-muted-foreground">Settled decisions, one page</span>
           </div>
-          <SectionTabs
-            label="Sections"
-            value={active}
-            onChange={jump}
-            options={SECTIONS}
-            className="mx-auto max-w-6xl border-b-0 px-3 sm:px-6"
-          />
+          <div className="mx-auto max-w-6xl px-3 sm:px-6">
+            <Tabs aria-label="Sections" value={active} onValueChange={jump} data={SECTIONS} />
+          </div>
         </header>
         <main className="mx-auto max-w-6xl px-3 pb-16 sm:px-6">
           <Foundations />
@@ -63,7 +58,7 @@ export function SystemPage() {
           <Feedback />
           <Navigation />
         </main>
-      </Scale>
+      </ControlScope>
     </div>
   );
 }

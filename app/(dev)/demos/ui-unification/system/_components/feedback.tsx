@@ -29,6 +29,7 @@ import {
   smartToast,
 } from "../../_components/toast-system";
 import { Group, Section } from "./kit";
+import { Button, ControlRow, Field } from "@ai-matrx/design-system/controls";
 
 const FIRE: ReadonlyArray<{ label: string; run: () => void }> = [
   { label: "Success", run: () => smartToast.success("Note saved") },
@@ -47,19 +48,17 @@ function RenameDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
             <DialogDescription className="text-xs">Everyone with access sees the new name.</DialogDescription>
           </DialogHeader>
           <div className="py-3">
-            <label className="uc-field" style={{ width: "calc(100% - var(--matrx-tap-gap))" }}>
-              <input defaultValue="Intake form — dental" aria-label="Form name" />
-            </label>
+            <Field style={{ width: "calc(100% - var(--matrx-control-gap))" }} defaultValue="Intake form — dental" aria-label="Form name" />
           </div>
           <DialogFooter>
-            <div className="uc-row justify-end">
-              <button type="button" className="uc-btn uc-btn-quiet" onClick={() => onOpenChange(false)}>
+            <ControlRow className="justify-end">
+              <Button variant="quiet" onClick={() => onOpenChange(false)}>
                 Cancel
-              </button>
-              <button type="button" className="uc-btn uc-btn-primary" onClick={() => onOpenChange(false)}>
+              </Button>
+              <Button variant="primary" onClick={() => onOpenChange(false)}>
                 Rename
-              </button>
-            </div>
+              </Button>
+            </ControlRow>
           </DialogFooter>
         </Scale>
       </DialogContent>
@@ -76,9 +75,9 @@ export function Feedback() {
       <Group label="Toast · fire one">
         <MeasuredBare>
           {FIRE.map((f) => (
-            <button key={f.label} type="button" className="uc-btn uc-btn-outline" onClick={f.run}>
+            <Button variant="outline" key={f.label} onClick={f.run}>
               {f.label}
-            </button>
+            </Button>
           ))}
         </MeasuredBare>
       </Group>
@@ -107,12 +106,12 @@ export function Feedback() {
         </Group>
         <Group label="Dialogs · md width">
           <MeasuredBare>
-            <button type="button" className="uc-btn uc-btn-outline" onClick={() => setRenameOpen(true)}>
+            <Button variant="outline" onClick={() => setRenameOpen(true)}>
               Rename
-            </button>
-            <button type="button" className="uc-btn uc-btn-danger" onClick={() => setConfirmOpen(true)}>
+            </Button>
+            <Button variant="danger" onClick={() => setConfirmOpen(true)}>
               Delete form
-            </button>
+            </Button>
           </MeasuredBare>
         </Group>
       </div>

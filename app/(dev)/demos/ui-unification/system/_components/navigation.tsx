@@ -16,9 +16,10 @@ import {
   UndoTapButton,
   RedoTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { ChevronDown, Plus, Search, Shapes } from "lucide-react";
+import { Plus, Search, Shapes } from "lucide-react";
 import { TabsByPurpose } from "../../_components/round2";
-import { Group, ROWS, STATUS, Section, Segmented, StatusBadge } from "./kit";
+import { Group, ROWS, STATUS, Section } from "./kit";
+import { Badge, Button, ControlRow, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
 
 function Mock({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -35,16 +36,16 @@ function MarketingTop() {
         <span className="text-[0.8125rem] font-semibold">AI Matrx</span>
         <span className="flex-1" />
         <span className="hidden px-[3px] text-xs text-muted-foreground sm:inline">Pricing</span>
-        <button type="button" className="uc-btn uc-btn-quiet">Sign in</button>
-        <button type="button" className="uc-btn uc-btn-primary">Start free</button>
+        <Button variant="quiet">Sign in</Button>
+        <Button variant="primary">Start free</Button>
       </div>
       <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
         <div className="text-xl font-semibold tracking-tight">Your expertise, made reliable</div>
         <div className="text-xs text-muted-foreground">Build AI that works the way you do</div>
-        <div className="uc-row mt-1 justify-center">
-          <button type="button" className="uc-btn uc-btn-primary">Start free</button>
-          <button type="button" className="uc-btn uc-btn-outline">See how it works</button>
-        </div>
+        <ControlRow className="mt-1 justify-center">
+          <Button variant="primary">Start free</Button>
+          <Button variant="outline">See how it works</Button>
+        </ControlRow>
       </div>
     </div>
   );
@@ -58,35 +59,36 @@ function ModuleHomeTop() {
         <span className="text-[0.8125rem] font-semibold">Forms</span>
         <span className="text-[0.6875rem] text-muted-foreground">{ROWS.length}</span>
         <span className="flex-1" />
-        <button type="button" className="uc-btn uc-btn-primary">
+        <Button variant="primary">
           <Plus aria-hidden /> New
-        </button>
+        </Button>
       </div>
-      <div className="uc-row border-b border-border px-[3px] py-[3px]">
-        <Segmented
-          label="Access"
+      <ControlRow className="border-b border-border px-[3px] py-[3px]">
+        <SegmentedControl
+          aria-label="Access"
           value={lane}
-          onChange={setLane}
-          options={[
+          onValueChange={setLane}
+          data={[
             { value: "all", label: "All" },
             { value: "mine", label: "Mine" },
             { value: "shared", label: "Shared" },
           ]}
         />
         <span className="flex-1" />
-        <label className="uc-field" style={{ width: "8rem" }}>
-          <Search aria-hidden />
-          <input placeholder="Search" aria-label="Search forms" />
-        </label>
-        <button type="button" className="uc-select" style={{ width: "9.75rem" }} aria-label="Organization">
-          <span className="truncate">All organizations</span> <ChevronDown aria-hidden />
-        </button>
-      </div>
+        <SearchField style={{ width: "8rem" }} placeholder="Search" aria-label="Search forms" />
+        <Select
+          aria-label="Organization"
+          style={{ width: "9.75rem" }}
+          value="all"
+          onValueChange={() => {}}
+          options={[{ value: "all", label: "All organizations" }]}
+        />
+      </ControlRow>
       <ul className="divide-y divide-border">
         {ROWS.slice(0, 3).map((r) => (
           <li key={r.id} className="flex min-h-9 items-center gap-2 px-3">
             <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium">{r.name}</span>
-            <StatusBadge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</StatusBadge>
+            <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>
           </li>
         ))}
       </ul>

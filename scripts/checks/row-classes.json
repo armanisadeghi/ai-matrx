@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 130,
+    "repo-only": 134,
     "live-db": 62
   },
   "rows": {
@@ -638,18 +638,46 @@
       "reason": "no database access in 4 file(s) reached",
       "evidence": []
     },
+    "floating-clearance": {
+      "label": "Floating clearance",
+      "class": "repo-only",
+      "cmd": "pnpm check:floating-clearance:strict",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "floating-clearance-self-test": {
+      "label": "Floating clearance — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:floating-clearance:self-test",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
     "ui-drift": {
       "label": "UI drift",
       "class": "repo-only",
       "cmd": "pnpm check:ui-drift:strict",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 6 file(s) reached",
+      "evidence": []
+    },
+    "one-control": {
+      "label": "One control",
+      "class": "repo-only",
+      "cmd": "pnpm check:one-control:strict",
+      "reason": "no database access in 9 file(s) reached",
+      "evidence": []
+    },
+    "one-control-self-test": {
+      "label": "One control — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:one-control:self-test",
+      "reason": "no database access in 10 file(s) reached",
       "evidence": []
     },
     "ui-drift-self-test": {
       "label": "UI drift — self-test",
       "class": "repo-only",
       "cmd": "pnpm check:ui-drift:self-test",
-      "reason": "no database access in 4 file(s) reached",
+      "reason": "no database access in 6 file(s) reached",
       "evidence": []
     },
     "no-blocking-dialogs-ai-stays-reachable": {

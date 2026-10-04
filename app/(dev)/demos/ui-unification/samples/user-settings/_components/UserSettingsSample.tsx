@@ -28,7 +28,8 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/organizatio
 import { toast } from "@/lib/toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { cn } from "@/lib/utils";
-import { RowGroup, RowSkeletons, SampleScale, SampleTitle, SettingRow, UcSelect, UcSwitch } from "../../_components/kit";
+import { SampleTitle } from "../../_components/kit";
+import { Button, ControlRow, ControlScope, RegionSkeleton, RowGroup, Select, SettingRow, Switch } from "@ai-matrx/design-system/controls";
 
 type SampleTab = "communication.email" | "ai.textGeneration";
 const SAMPLE_TABS: { value: SampleTab; label: string }[] = [
@@ -48,8 +49,8 @@ export function UserSettingsSample() {
       <PageHeader>
         <SampleTitle icon={Settings} title="Settings" meta="Sample" />
       </PageHeader>
-      <SampleScale>
-        <div className="uk-page flex h-full overflow-hidden bg-textured">
+      <ControlScope className="h-full">
+        <div className="flex h-full overflow-hidden bg-textured">
           {/* Settings tree — 28px rows, 13px labels, 16px glyphs. */}
           <nav aria-label="Settings" className="hidden w-56 shrink-0 overflow-y-auto border-r border-border py-2 lg:block">
             {tree.map((group) => (
@@ -89,16 +90,16 @@ export function UserSettingsSample() {
                   <h1 className="truncate text-[0.8125rem] font-semibold">{SAMPLE_TABS.find((s) => s.value === tab)?.label}</h1>
                 </div>
                 <div className="lg:hidden">
-                  <div className="uc-row -mr-[3px]">
-                    <UcSelect value={tab} options={SAMPLE_TABS} onChange={setTab} ariaLabel="Settings page" width="9.5rem" align="end" />
-                  </div>
+                  <ControlRow className="-mr-[3px]">
+                    <Select value={tab} options={SAMPLE_TABS} onValueChange={setTab} aria-label="Settings page" style={{ width: "9.5rem" }} align="end" />
+                  </ControlRow>
                 </div>
               </div>
               {tab === "communication.email" ? <EmailSample /> : <TextGenerationSample />}
             </div>
           </div>
         </div>
-      </SampleScale>
+      </ControlScope>
     </>
   );
 }
@@ -180,7 +181,7 @@ function EmailSample() {
       <>
         {EMAIL_GROUPS.map((g) => (
           <RowGroup key={g.title} title={g.title}>
-            <RowSkeletons count={g.rows.length} twoLine />
+            <RegionSkeleton count={g.rows.length} twoLine />
           </RowGroup>
         ))}
       </>
@@ -201,7 +202,7 @@ function EmailSample() {
         <RowGroup key={g.title} title={g.title}>
           {g.rows.map((r) => (
             <SettingRow key={r.key} label={r.label} line={r.line}>
-              <UcSwitch checked={prefs[r.key]} ariaLabel={r.label} onChange={(v) => setDraft({ ...prefs, [r.key]: v })} />
+              <Switch checked={prefs[r.key]} aria-label={r.label} onCheckedChange={(v) => setDraft({ ...prefs, [r.key]: v })} />
             </SettingRow>
           ))}
         </RowGroup>
@@ -210,14 +211,14 @@ function EmailSample() {
       {dirty ? (
         <div className="sticky bottom-3 flex items-center gap-2 rounded-lg border border-border bg-card py-1 pl-3 pr-[9px] shadow-sm">
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">Unsaved changes</span>
-          <div className="uc-row" style={{ flexWrap: "nowrap" }}>
-            <button type="button" className="uc-btn uc-btn-quiet" onClick={() => setDraft(null)}>
+          <ControlRow nowrap>
+            <Button variant="quiet" onClick={() => setDraft(null)}>
               Discard
-            </button>
-            <button type="button" className="uc-btn uc-btn-primary" onClick={() => toast.success("Email preferences saved", { description: NOT_SAVED })}>
+            </Button>
+            <Button variant="primary" onClick={() => toast.success("Email preferences saved", { description: NOT_SAVED })}>
               Save
-            </button>
-          </div>
+            </Button>
+          </ControlRow>
         </div>
       ) : null}
     </>
@@ -238,21 +239,20 @@ function TextGenerationSample() {
   return (
     <RowGroup title="Model & style">
       <SettingRow label="Default AI model" line="Answers chat and drafting unless you pick another">
-        <Link
+        <Button asChild variant="outline"><Link
           href={settingDoorHref({ scope: "user", tabId: "firstScreen", controlId: CHAT_DEFAULT_MODEL_KNOB })}
-          className="uc-btn uc-btn-outline"
         >
           Change
-        </Link>
+        </Link></Button>
       </SettingRow>
       <SettingRow label="Tone">
-        <UcSelect value={tone ?? savedTone} options={TEXT_TONE_OPTIONS} onChange={setTone} ariaLabel="Tone" width="9.5rem" align="end" />
+        <Select value={tone ?? savedTone} options={TEXT_TONE_OPTIONS} onValueChange={setTone} aria-label="Tone" style={{ width: "9.5rem" }} align="end" />
       </SettingRow>
       <SettingRow label="Creativity">
-        <UcSelect value={creativity ?? savedCreativity} options={CREATIVITY_LEVEL_OPTIONS} onChange={setCreativity} ariaLabel="Creativity" width="9.5rem" align="end" />
+        <Select value={creativity ?? savedCreativity} options={CREATIVITY_LEVEL_OPTIONS} onValueChange={setCreativity} aria-label="Creativity" style={{ width: "9.5rem" }} align="end" />
       </SettingRow>
       <SettingRow label="Language">
-        <UcSelect value={language ?? savedLanguage} options={LANGUAGE_OPTIONS} onChange={setLanguage} ariaLabel="Language" width="9.5rem" align="end" />
+        <Select value={language ?? savedLanguage} options={LANGUAGE_OPTIONS} onValueChange={setLanguage} aria-label="Language" style={{ width: "9.5rem" }} align="end" />
       </SettingRow>
     </RowGroup>
   );

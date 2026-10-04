@@ -37,7 +37,6 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import { useDriftAlerts } from "@ai-matrx/chat/agents/hooks/useDriftAlerts";
 import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
 import {
@@ -55,8 +54,9 @@ import { AGENT_BROWSE_SURFACE } from "@/features/agents/browse/surface";
 import { AGENT_LIST_SCOPES, type AgentBrowseRow } from "@/features/agents/browse/types";
 import { cn } from "@/lib/utils";
 import { PlusGlyph } from "../../../_components/one-control";
-import { SampleScale } from "../../_components/kit";
+
 import { FeatureCards, type FeatureCardItem } from "../../_components/page-top/feature-cards";
+import { Button, ControlScope } from "@ai-matrx/design-system/controls";
 
 /** The Agents area's own pages — the crumb's sibling menu (nav-data's Agents children). */
 const AGENT_PAGES: CrumbOption[] = [
@@ -115,13 +115,8 @@ function DriftDoor() {
   return (
     <Button
       asChild
-      variant="ghost"
-      size="sm"
+      variant="quiet"
       aria-label={worstSev ? `Agent drift report — ${totals[worstSev]} ${worstSev.replace("_", " ")}` : "Agent drift report"}
-      className={cn(
-        "mx-[3px] h-7 cursor-pointer gap-1.5 rounded-full px-2.5 text-xs",
-        meta ? cn(meta.textClass, meta.bgClass, "border hover:opacity-90", meta.borderClass) : "text-muted-foreground",
-      )}
     >
       <Link href="/reports/agent-drift" title={meta?.description ?? "Open agent drift report"}>
         {worstSev ? (
@@ -155,20 +150,20 @@ function AgentsPageTop() {
 /** New agent — on /agents/all always the viewer's OWN agent (the admin seat never acts as itself here). */
 function NewAgentButton() {
   return (
-    <Link href={newAgentHref(false)} aria-label="New agent" className="uc-btn uc-btn-primary">
+    <Button asChild variant="primary"><Link href={newAgentHref(false)} aria-label="New agent">
       <PlusGlyph />
       <span className="max-sm:sr-only">New agent</span>
-    </Link>
+    </Link></Button>
   );
 }
 
 function HeaderActions(_list: EntityListController<AgentBrowseRow>) {
   return (
     <>
-      <Link href="/agents/orchestras" aria-label="Orchestras" className="uc-btn uc-btn-outline">
+      <Button asChild variant="outline"><Link href="/agents/orchestras" aria-label="Orchestras">
         <Users aria-hidden />
         <span className="max-sm:sr-only">Orchestras</span>
-      </Link>
+      </Link></Button>
       <NewAgentButton />
     </>
   );
@@ -185,8 +180,8 @@ export function AgentsAllSample() {
         ]}
         right={<DriftDoor />}
       />
-      <SampleScale>
-        <div className="uk-page flex h-full min-h-0 flex-col overflow-hidden bg-textured">
+      <ControlScope className="h-full">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden bg-textured">
           {/* THE REAL LIST — identical props to AgentBrowsePage variant "user". */}
           <EntityListPage
             config={agentListConfig}
@@ -200,7 +195,7 @@ export function AgentsAllSample() {
             emptyAction={() => <NewAgentButton />}
           />
         </div>
-      </SampleScale>
+      </ControlScope>
     </>
   );
 }

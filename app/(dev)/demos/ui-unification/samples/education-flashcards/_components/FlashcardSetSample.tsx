@@ -204,34 +204,28 @@ import {
 import { Search, X } from "lucide-react";
 import { CrumbTrailHeader, type CrumbOption } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { EDUCATION_NAV_ITEMS } from "@/features/education/components/EducationHeader";
-import { SampleScale } from "../../_components/kit";
+import { ControlScope, SearchField } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, ControlRow, SearchField, SegmentedControl, SplitButton } from "@ai-matrx/design-system/controls";
+
 
 const SAMPLE_PATH = "/demos/ui-unification/samples/education-flashcards";
 
-/* Sample-only CSS on top of the 28px system.
-   - `.uc-icon`: an icon-only control is a 28px circle (glyph inset 6px).
-   - `.uk-split-*`: a split button is two controls with no gap between them.
+/* Sample-only CSS on top of the package controls (@ai-matrx/design-system/controls).
    - `.uk-adopt`: a REAL component that draws its own Button (Add, Share,
      Make a copy, the study-window trigger, the phone "Add") paints as the one
      control without editing it. Unlayered CSS beats its Tailwind utilities;
      the rollout does this in the package Button instead. */
 const FC_SAMPLE_CSS = `
-/* Disabled: the cursor law (not-allowed) and a dimmed control. */
-.uc-btn:disabled, .uc-btn[aria-disabled=true] { opacity: 0.5; cursor: not-allowed; }
-.uc-icon.uc-btn { width: var(--matrx-tap-wide-size); padding: 0; color: hsl(var(--muted-foreground)); }
-.uc-icon.uc-btn:hover { color: hsl(var(--foreground)); }
-.uk-split-l.uc-btn { margin-inline-end: 0; border-start-end-radius: 0; border-end-end-radius: 0; padding-inline-end: 0.75rem; }
-.uk-split-r.uc-btn { margin-inline-start: 0; border-start-start-radius: 0; border-end-start-radius: 0; width: 1.75rem; padding: 0; border-inline-start: 1px solid hsl(var(--primary-foreground) / 0.25); }
-.uk-adopt > button, .uk-adopt > a { box-sizing: border-box; height: var(--matrx-tap-wide-size) !important; min-height: 0 !important; margin-inline: calc(var(--matrx-tap-gap) / 2);
-  padding-inline: var(--uc-pad-icon) var(--uc-pad-text); border-radius: 9999px; font-size: var(--uc-label); font-weight: 500; gap: 0.375rem; line-height: 1; cursor: pointer; }
+.uk-adopt > button, .uk-adopt > a { box-sizing: border-box; height: var(--matrx-tap-wide-size) !important; min-height: 0 !important; margin-inline: calc(var(--matrx-control-gap) / 2);
+  padding-inline: var(--matrx-control-inset-text); border-radius: 9999px; font-size: var(--matrx-control-label); font-weight: 500; gap: 0.375rem; line-height: 1; cursor: pointer; }
 .uk-adopt > button *, .uk-adopt > a * { font-size: inherit; }
 .uk-adopt > button svg, .uk-adopt > a svg { width: var(--matrx-tap-icon-size) !important; height: var(--matrx-tap-icon-size) !important; margin: 0 !important; }
 .uk-adopt-icon > button { box-sizing: border-box; width: var(--matrx-tap-wide-size) !important; height: var(--matrx-tap-wide-size) !important; min-height: 0 !important;
-  margin-inline: calc(var(--matrx-tap-gap) / 2); padding: 0 !important; border-radius: 9999px; cursor: pointer; }
+  margin-inline: calc(var(--matrx-control-gap) / 2); padding: 0 !important; border-radius: 9999px; cursor: pointer; }
 .uk-adopt-icon > button svg { width: var(--matrx-tap-icon-size) !important; height: var(--matrx-tap-icon-size) !important; }
-.uk-full > button, .uk-full > a { width: calc(100% - var(--matrx-tap-gap)); }
-.uc-btn.uk-start, .uk-adopt.uk-grow > button { justify-content: flex-start; }
-.uk-grow > button { flex: 1 1 calc(50% - var(--matrx-tap-gap)); }
+.uk-full > button, .uk-full > a { width: calc(100% - var(--matrx-control-gap)); }
+.uk-adopt.uk-grow > button { justify-content: flex-start; }
+.uk-grow > button { flex: 1 1 calc(50% - var(--matrx-control-gap)); }
 `;
 
 const EDU_BASE = "/education/flashcards";
@@ -306,15 +300,7 @@ function IconAction({
   asTrigger?: boolean;
 }) {
   const button = (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="uc-btn uc-btn-quiet uc-icon"
-    >
-      {children}
-    </button>
+    <ControlButton variant="quiet" icon={children} aria-label={label} onClick={onClick} disabled={disabled} />
   );
   return (
     <TooltipProvider>
@@ -1152,9 +1138,9 @@ export function FlashcardSetSample({
         },
       ]}
     />
-    <SampleScale>
+    <ControlScope className="h-full">
     <style dangerouslySetInnerHTML={{ __html: FC_SAMPLE_CSS }} />
-    <div className="uk-page h-full w-full overflow-y-auto bg-textured">
+    <div className="h-full w-full overflow-y-auto bg-textured">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-3 pb-safe pt-2 sm:px-4 sm:pb-8">
         {loading ? (
           <>
@@ -1201,35 +1187,27 @@ export function FlashcardSetSample({
               {/* Desktop action bar: how to study (left), deck tools as quiet
                   icons, then Add — the one primary write (right). */}
               <div className="-mx-[3px] hidden items-center justify-between gap-2 md:flex">
-                <div className="uc-row" style={{ flexWrap: "nowrap" }}>
+                <ControlRow nowrap>
                   {deckEmpty ? (
                     canEdit && (
-                      <button type="button" className="uc-btn uc-btn-primary" onClick={() => setGenerateOpen(true)}>
+                      <ControlButton variant="primary" onClick={() => setGenerateOpen(true)}>
                         <AGENT_ICON aria-hidden />
                         Generate cards
-                      </button>
+                      </ControlButton>
                     )
                   ) : (
                     <>
-                      <button
-                        type="button"
-                        className="uc-btn uc-btn-primary uk-split-l"
+                      <SplitButton>
+                      <ControlButton variant="primary"
                         onClick={() => navigate("study", `${EDU_BASE}/${setId}/study`)}
                         disabled={isPending}
                       >
                         {studyBusy ? <Loader2 className="animate-spin" aria-hidden /> : <Play className="fill-current" aria-hidden />}
                         Study
-                      </button>
+                      </ControlButton>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            className="uc-btn uc-btn-primary uk-split-r"
-                            disabled={isPending}
-                            aria-label="More ways to study"
-                          >
-                            <ChevronDown aria-hidden />
-                          </button>
+                          <ControlButton variant="primary" disabled={isPending} aria-label="More ways to study" icon={<ChevronDown aria-hidden />} />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-64 p-1">
                           <DropdownMenuLabel className="text-[0.6875rem] font-medium text-muted-foreground">
@@ -1252,30 +1230,29 @@ export function FlashcardSetSample({
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </SplitButton>
                       <span className="uk-adopt contents">
                         <FlashcardStudyWindowDevTrigger setId={setId} title={data.set.name} />
                       </span>
-                      <button
-                        type="button"
-                        className="uc-btn uc-btn-quiet"
+                      <ControlButton variant="quiet"
                         data-deck-action="progress"
                         onClick={() => navigate("sessions", `${EDU_BASE}/${setId}/sessions`)}
                         disabled={isPending}
                       >
                         {pendingAction === "sessions" ? <Loader2 className="animate-spin" aria-hidden /> : <TrendingUp aria-hidden />}
                         Progress
-                      </button>
+                      </ControlButton>
                       {chatHref && (
-                        <Link href={chatHref} className="uc-btn uc-btn-quiet">
+                        <ControlButton asChild variant="quiet"><Link href={chatHref}>
                           <MessagesSquare aria-hidden />
                           See chat
-                        </Link>
+                        </Link></ControlButton>
                       )}
                     </>
                   )}
-                </div>
+                </ControlRow>
 
-                <div className="uc-row" style={{ flexWrap: "nowrap" }}>
+                <ControlRow nowrap>
                   {canEdit && (
                     <IconAction
                       label="Edit deck"
@@ -1415,43 +1392,41 @@ export function FlashcardSetSample({
                       />
                     </span>
                   )}
-                </div>
+                </ControlRow>
               </div>
 
               {/* Phone: one row of three — Study, More ways, Deck tools —
                   then the deck's one write. Same 28px control; the hit area
                   grows to 44px invisibly. */}
               <div className="flex flex-col gap-1 md:hidden">
-                <div className="uc-row -mx-[3px] [&>*]:flex-1" style={{ flexWrap: "nowrap" }}>
+                <ControlRow nowrap className="-mx-[3px] [&>*]:flex-1">
                   {deckEmpty
                     ? canEdit && (
-                        <button type="button" className="uc-btn uc-btn-primary" onClick={() => setGenerateOpen(true)}>
+                        <ControlButton variant="primary" onClick={() => setGenerateOpen(true)}>
                           <AGENT_ICON aria-hidden />
                           Generate cards
-                        </button>
+                        </ControlButton>
                       )
                     : (
                         <>
-                          <button
-                            type="button"
-                            className="uc-btn uc-btn-primary"
+                          <ControlButton variant="primary"
                             onClick={() => navigate("study", `${EDU_BASE}/${setId}/study`)}
                             disabled={isPending}
                           >
                             {studyBusy ? <Loader2 className="animate-spin" aria-hidden /> : <Play className="fill-current" aria-hidden />}
                             Study
-                          </button>
-                          <button type="button" className="uc-btn uc-btn-outline" onClick={() => setStudyModesOpen(true)}>
+                          </ControlButton>
+                          <ControlButton variant="outline" onClick={() => setStudyModesOpen(true)}>
                             <GraduationCap aria-hidden />
                             More ways
-                          </button>
+                          </ControlButton>
                         </>
                       )}
-                  <button type="button" className="uc-btn uc-btn-outline" onClick={() => setDeckToolsOpen(true)}>
+                  <ControlButton variant="outline" onClick={() => setDeckToolsOpen(true)}>
                     <Ellipsis aria-hidden />
                     Deck tools
-                  </button>
-                </div>
+                  </ControlButton>
+                </ControlRow>
                 {canEdit && (
                   <div className="uk-adopt uk-full -mx-[3px] flex">
                     <AddMoreCardsButton
@@ -1587,20 +1562,18 @@ export function FlashcardSetSample({
                   </div>
                   <div className="text-[0.8125rem] font-semibold">This deck has no cards yet</div>
                   {canEdit && (
-                    <div className="uc-row mt-1 justify-center">
-                      <button type="button" className="uc-btn uc-btn-primary" onClick={() => setGenerateOpen(true)}>
+                    <ControlRow className="mt-1 justify-center">
+                      <ControlButton variant="primary" onClick={() => setGenerateOpen(true)}>
                         <AGENT_ICON aria-hidden />
                         Generate cards
-                      </button>
-                      <button
-                        type="button"
-                        className="uc-btn uc-btn-outline"
+                      </ControlButton>
+                      <ControlButton variant="outline"
                         onClick={() => navigate("edit", `${EDU_BASE}/${setId}/edit`)}
                       >
                         <Pencil aria-hidden />
                         Write cards
-                      </button>
-                    </div>
+                      </ControlButton>
+                    </ControlRow>
                   )}
                 </div>
               ) : (
@@ -1616,11 +1589,9 @@ export function FlashcardSetSample({
                         {cardSearch.trim() ? `${filteredCards.length} of ${data.cards.length}` : data.cards.length}
                       </span>
                     </h2>
-                    <div className="uc-row flex-1" style={{ flexWrap: "nowrap" }}>
+                    <ControlRow nowrap className="flex-1">
                       {canEdit && !selecting && (
-                        <button
-                          type="button"
-                          className="uc-btn uc-btn-quiet"
+                        <ControlButton variant="quiet"
                           onClick={() => {
                             changeView("overview");
                             setSelecting(true);
@@ -1628,61 +1599,39 @@ export function FlashcardSetSample({
                         >
                           <MousePointerClick aria-hidden />
                           Select
-                        </button>
+                        </ControlButton>
                       )}
                       <span className="flex-1" />
                       <div className="contents max-sm:hidden">
-                      <label className="uc-field" style={{ width: "14rem" }}>
-                        <Search aria-hidden />
-                        <input
-                          type="search"
-                          value={cardSearch}
-                          onChange={(e) => setCardSearch(e.target.value)}
-                          placeholder="Search cards"
-                          aria-label="Search cards in this deck"
-                        />
-                        {cardSearch && (
-                          <button type="button" aria-label="Clear search" className="cursor-pointer" onClick={() => setCardSearch("")}>
-                            <X aria-hidden />
-                          </button>
-                        )}
-                      </label>
-                      </div>
-                      <div className="uc-seg" role="radiogroup" aria-label="Card view">
-                        {DECK_VIEWS.map((v) => (
-                          <TooltipProvider key={v.id}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  role="radio"
-                                  aria-checked={v.id === view}
-                                  aria-label={v.label}
-                                  className="uc-seg-item px-1.5"
-                                  data-on={v.id === view ? "" : undefined}
-                                  onClick={() => changeView(v.id)}
-                                >
-                                  <v.icon className="size-4" aria-hidden />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom">{v.label}</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Phone: search gets its own full row. */}
-                    <div className="hidden max-sm:contents">
-                    <label className="uc-field" style={{ flexBasis: "calc(100% - var(--matrx-tap-gap))" }}>
-                      <Search aria-hidden />
-                      <input
-                        type="search"
+                      <SearchField
+                        style={{ width: "14rem" }}
                         value={cardSearch}
                         onChange={(e) => setCardSearch(e.target.value)}
                         placeholder="Search cards"
                         aria-label="Search cards in this deck"
+                        end={
+                          cardSearch ? (
+                            <button type="button" aria-label="Clear search" onClick={() => setCardSearch("")}>
+                              <X aria-hidden />
+                            </button>
+                          ) : null
+                        }
                       />
-                    </label>
+                      </div>
+                      <SegmentedControl
+                        aria-label="Card view"
+                        value={view}
+                        onValueChange={changeView}
+                        data={DECK_VIEWS.map((v) => ({ value: v.id, ariaLabel: v.label, title: v.label, label: <v.icon className="size-4" aria-hidden /> }))}
+                      />
+                    </ControlRow>
+                    {/* Phone: search gets its own full row. */}
+                    <div className="hidden max-sm:contents">
+                    <SearchField style={{ flexBasis: "calc(100% - var(--matrx-control-gap))" }} type="search"
+                        value={cardSearch}
+                        onChange={(e) => setCardSearch(e.target.value)}
+                        placeholder="Search cards"
+                        aria-label="Search cards in this deck" />
                     </div>
                   </div>
                   {canEdit && selecting && (
@@ -1690,38 +1639,32 @@ export function FlashcardSetSample({
                       <span className="text-xs text-muted-foreground">
                         {selectedIds.size === 0 ? "Pick cards to enrich or merge" : `${selectedIds.size} selected`}
                       </span>
-                      <div className="uc-row ml-auto">
-                        <button
-                          type="button"
-                          className="uc-btn uc-btn-primary"
+                      <ControlRow className="ml-auto">
+                        <ControlButton variant="primary"
                           onClick={() => void runBulkEnrich()}
                           disabled={selectedIds.size === 0 || enrichGuard.isChecking || bulkRun.phase === "running"}
                           title="Enrich just these cards — even ones that already have layers"
                         >
                           <Lightbulb aria-hidden />
                           Enrich selected ({selectedIds.size})
-                        </button>
-                        <button
-                          type="button"
-                          className="uc-btn uc-btn-outline"
+                        </ControlButton>
+                        <ControlButton variant="outline"
                           onClick={() => setMergeOpen(true)}
                           disabled={!canMergeSelection}
                           title={canMergeSelection ? undefined : "Pick two or more basic or cloze cards"}
                         >
                           <Merge aria-hidden />
                           Merge {selectedIds.size >= 2 ? selectedIds.size : ""}
-                        </button>
-                        <button
-                          type="button"
-                          className="uc-btn uc-btn-quiet"
+                        </ControlButton>
+                        <ControlButton variant="quiet"
                           onClick={() => {
                             setSelecting(false);
                             setSelectedIds(new Set());
                           }}
                         >
                           Cancel
-                        </button>
-                      </div>
+                        </ControlButton>
+                      </ControlRow>
                     </div>
                   )}
                   {filteredCards.length === 0 ? (
@@ -1870,39 +1813,39 @@ export function FlashcardSetSample({
                   <DialogTitle>Deck tools</DialogTitle>
                 </DialogHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-safe">
-                <SampleScale>
+                <ControlScope className="h-full">
                 <style dangerouslySetInnerHTML={{ __html: FC_SAMPLE_CSS }} />
                 <div className="space-y-4">
                   <section className="space-y-2">
                     <h2 className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
                       Manage
                     </h2>
-                    <div className="uc-row -mx-[3px] [&>*]:basis-[calc(50%-var(--matrx-tap-gap))] [&>*]:grow">
+                    <ControlRow className="-mx-[3px] [&>*]:basis-[calc(50%-var(--matrx-control-gap))] [&>*]:grow">
                       {canEdit && (
-                        <button type="button" className="uc-btn uc-btn-outline uk-start md:hidden"
+                        <ControlButton variant="outline" className="justify-start md:hidden"
                           onClick={() =>
                             navigate("edit", `${EDU_BASE}/${setId}/edit`)
                           }
                         >
                           <Pencil aria-hidden /> Edit
-                        </button>
+                        </ControlButton>
                       )}
-                      <button type="button" className="uc-btn uc-btn-outline uk-start"
+                      <ControlButton variant="outline" className="justify-start"
                         onClick={() =>
                           navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
                         }
                       >
                         <TrendingUp aria-hidden /> Progress
-                      </button>
+                      </ControlButton>
                       {canEdit && (
-                        <button type="button" className="uc-btn uc-btn-outline uk-start"
+                        <ControlButton variant="outline" className="justify-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
                             setSettingsOpen(true);
                           }}
                         >
                           <Settings2 aria-hidden /> Deck settings
-                        </button>
+                        </ControlButton>
                       )}
                       {(access.isOwner || access.level === "admin") && (
                         <span className="uk-adopt uk-grow contents"><ShareButton
@@ -1915,9 +1858,9 @@ export function FlashcardSetSample({
                         /></span>
                       )}
                       {chatHref && (
-                        <Link href={chatHref} className="uc-btn uc-btn-outline uk-start">
+                        <ControlButton asChild variant="outline"><Link href={chatHref} className="justify-start">
                             <MessagesSquare aria-hidden /> See chat
-                          </Link>
+                          </Link></ControlButton>
                       )}
                       {/* An empty deck has nothing to keep offline or
                           print: those appear with its first card. */}
@@ -1928,22 +1871,22 @@ export function FlashcardSetSample({
                         /></span>
                       )}
                       {!deckEmpty && (
-                        <button type="button" className="uc-btn uc-btn-outline uk-start"
+                        <ControlButton variant="outline" className="justify-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
                             handlePrint();
                           }}
                         >
                           <Printer aria-hidden /> Print
-                        </button>
+                        </ControlButton>
                       )}
                       {/* This deck is one printable; the hub is the index of
                           the rest (cheat sheets, practice tests, certificates,
                           labels, codes, booklets, printed copies). */}
-                      <Link href="/print" className="uc-btn uc-btn-quiet uk-start" onClick={() => setDeckToolsOpen(false)}>
+                      <ControlButton asChild variant="quiet"><Link href="/print" onClick={() => setDeckToolsOpen(false)} className="justify-start">
                           <Printer aria-hidden /> More printing
-                        </Link>
-                    </div>
+                        </Link></ControlButton>
+                    </ControlRow>
                   </section>
 
                   {!deckEmpty && (
@@ -1951,18 +1894,18 @@ export function FlashcardSetSample({
                     <h2 className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
                       Export
                     </h2>
-                    <div className="uc-row -mx-[3px] [&>*]:basis-[calc(50%-var(--matrx-tap-gap))] [&>*]:grow">
+                    <ControlRow className="-mx-[3px] [&>*]:basis-[calc(50%-var(--matrx-control-gap))] [&>*]:grow">
                       {(["csv", "anki", "md", "json"] as const).map(
                         (format) => (
-                          <button type="button" key={format} className="uc-btn uc-btn-outline uk-start"
+                          <ControlButton variant="outline" className="justify-start" key={format}
                             onClick={() => exportDeck(format)}
                           >
                             <Download aria-hidden />
                             {DECK_EXPORT_FILE[format].label}
-                          </button>
+                          </ControlButton>
                         ),
                       )}
-                    </div>
+                    </ControlRow>
                   </section>
                   )}
 
@@ -1971,15 +1914,15 @@ export function FlashcardSetSample({
                       <h2 className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
                         Audio
                       </h2>
-                      <div className="uc-row -mx-[3px] [&>*]:basis-full">
-                        <button type="button" className="uc-btn uc-btn-outline uk-start"
+                      <ControlRow className="-mx-[3px] [&>*]:basis-full">
+                        <ControlButton variant="outline" className="justify-start"
                           onClick={() => startAudioJob("generate")}
                         >
                           <Volume2 aria-hidden />
                           {data.set.audio_overview_file_id
                             ? "Regenerate audio overview"
                             : "Generate audio overview"}
-                        </button>
+                        </ControlButton>
                         {(
                           [
                             ["spoken_front", "card audio", Mic],
@@ -1989,7 +1932,7 @@ export function FlashcardSetSample({
                           const { ready, total } = deckAudioCoverage(data.cards, lane);
                           const done = ready >= total;
                           return (
-                            <button type="button" key={lane} className="uc-btn uc-btn-outline uk-start"
+                            <ControlButton variant="outline" className="justify-start" key={lane}
                               disabled={done}
                               onClick={() => startAudioJob(lane)}
                             >
@@ -1999,10 +1942,10 @@ export function FlashcardSetSample({
                                 : ready > 0
                                   ? `Prepare ${noun} (${ready}/${total} done)`
                                   : `Prepare ${noun}`}
-                            </button>
+                            </ControlButton>
                           );
                         })}
-                      </div>
+                      </ControlRow>
                     </section>
                   )}
                   {canEdit && data.cards.length > 0 && (
@@ -2010,8 +1953,8 @@ export function FlashcardSetSample({
                       <h2 className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
                         Cards
                       </h2>
-                      <div className="uc-row -mx-[3px] [&>*]:basis-full">
-                      <button type="button" className="uc-btn uc-btn-outline uk-start"
+                      <ControlRow className="-mx-[3px] [&>*]:basis-full">
+                      <ControlButton variant="outline" className="justify-start"
                         onClick={() => {
                           setDeckToolsOpen(false);
                           setSelecting(true);
@@ -2019,13 +1962,13 @@ export function FlashcardSetSample({
                       >
                         <MousePointerClick aria-hidden />
                         Select cards to enrich or merge
-                      </button>
-                      </div>
+                      </ControlButton>
+                      </ControlRow>
                     </section>
                   )}
 
                 </div>
-                </SampleScale>
+                </ControlScope>
                 </div>
               </DialogContent>
             </Dialog>
@@ -2138,7 +2081,7 @@ export function FlashcardSetSample({
         )}
       </div>
     </div>
-    </SampleScale>
+    </ControlScope>
     </>
   );
 }

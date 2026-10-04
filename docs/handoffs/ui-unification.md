@@ -1,6 +1,6 @@
 # Handoff — UI unification (owner: the 2026-10-01 → 10-03 UI-unification session)
 
-**Read this first if you are continuing this work.** Evidence: `docs/ui-drift-audit.md`. Plan and rules: `docs/ui-unification-plan.md` (§1b one control, §1c round-2 rules, §1d sets). Decision board: `/demos/ui-unification` (demos.aimatrx.com). Settled-system page: `/demos/ui-unification/system`. Sample pages: `/demos/ui-unification/samples/{agents-all,project-settings,user-settings}`. Prototype code: `app/(dev)/demos/ui-unification/_components/{one-control,round2,toast-system}.tsx`, `system/_components/*`, `samples/_components/kit.tsx`.
+**Read this first if you are continuing this work.** Evidence: `docs/ui-drift-audit.md`. Plan and rules: `docs/ui-unification-plan.md` (§1b one control, §1c round-2 rules, §1d sets). Decision board: `/demos/ui-unification` (demos.aimatrx.com). Settled-system page: `/demos/ui-unification/system`. Sample pages: `/demos/ui-unification/samples/{agents-all,project-settings,user-settings}`. THE controls now live in `@ai-matrx/design-system/controls` (≥0.61.3; package FEATURE.md § THE ONE CONTROL) and every demo page renders them; the board's rejected options are the same components with one token moved (`Alt` in `_components/one-control.tsx`). Guards: ESLint `matrx/one-control`, `pnpm check:one-control`, the package's `controls-geometry.test.tsx`.
 
 ## SETTLED (owner accepted)
 - **One control at 28px visible height:** buttons, fields, selects, segmented controls, tabs and tap buttons, all with the capsule shape. Labels 13px/500, glyphs 16px. Inner padding is matched: a glyph sits 6px from the edge, text about 10px. Every control carries a 3px half-gap of its own, and containers add no gap.
@@ -69,7 +69,7 @@
 
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
-  - the system moves into `@ai-matrx/design-system` at the proper CSS layer (the prototype's unlayered `uc-*` beats Tailwind utilities, and the density scope's `!important` padding fights pages);
+  - DONE 2026-10-04: the system is in `@ai-matrx/design-system/controls`, locked in `matrx-tap-lock`; `ControlScope` stands in for the tap tokens' 28/34 flip until it lands app-wide;
   - remove size props; a codemod across the app; the geometry lock;
   - tap buttons get a SURFACE-CONTEXT default (plain on solid, glass only inside a declared floating bar), which fixes ~370 page-injected glass header buttons.
 - **Page-top templates** — inventory in this session's scratch:
@@ -78,5 +78,4 @@
   - internal: `RouteHeader` (118), `EntityModeHeader` (25), `CrumbTrailHeader` (18), and 233 raw `PageHeader`s with no template;
   - full-bleed: six groups, each opting out differently.
 - **Custom data:** brief in `common-docs/operations/for-arman/2026-10-02/custom-data-requirements.md` and a task chip. The board keeps localStorage until `useAppTable` exists.
-- **Duplicates:** the tabs, badge, empty state and skeleton pieces exist twice (`round2.tsx` vs `samples/_components/kit.tsx`). Collapse them when the system moves into the package.
 - **Census leftovers:** glass on table pagination ("Page 1"), the chat history sidebar refresh, and the tasks quick-add neighbour within 3px. Fix them in the rollout.

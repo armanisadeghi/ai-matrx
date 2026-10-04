@@ -280,6 +280,10 @@ if $STRICT; then
         # schedule ("UI drift check — daily", .github/workflows/ui-drift-daily.yml), never the hourly
         # repo-only leg (run.mjs OWN_SCHEDULE). Offline, ~15 s.
         "UI drift|pnpm check:ui-drift:strict"
+        # THE ONE CONTROL (owner, 2026-10-04): retired uc-* prototype classes and visual overrides
+        # on @ai-matrx/design-system/controls. Loud via findings; never blocks a release.
+        "One control|pnpm check:one-control:strict"
+        "One control — self-test|pnpm check:one-control:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         # No blocking layers (register ARE-008): a desktop dialog forced to
         # block, or built straight on Radix, hides every AI door on the page.
@@ -1069,6 +1073,7 @@ else
         "Floating clearance|pnpm check:floating-clearance"
         "Floating clearance — self-test|pnpm check:floating-clearance:self-test"
         "UI drift|pnpm check:ui-drift"
+        "One control|pnpm check:one-control"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"
         "No blocking dialogs — self-test|pnpm check:blocking-dialogs:self-test"

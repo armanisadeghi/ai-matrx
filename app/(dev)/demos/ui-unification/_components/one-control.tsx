@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * THE ONE CONTROL — prototype of a single control system built FROM the
- * tap-target geometry, so a text button, a field, a select and a segmented
- * control are the same object as a tap button, not a lookalike.
+ * THE ONE CONTROL on the decision board. The settled answer is the package's
+ * `@ai-matrx/design-system/controls`, rendered as is; each alternative option
+ * is the SAME component with one token moved (`Alt`). The "today" specimens
+ * deliberately render the legacy primitives they replace.
  *
  * The rules the prototype encodes (owner, 2026-10-02):
  * - Every control's VISIBLE height is the tap pill (`--matrx-tap-wide-size`).
@@ -28,8 +29,8 @@ import {
   SettingsTapButton,
 } from "@ai-matrx/tap-target/buttons";
 import { ChevronDown, Download, Plus, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button as LegacyButton } from "@/components/ui/button";
+import { Badge as LegacyBadge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -41,79 +42,20 @@ import { Input } from "@ai-matrx/design-system";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Badge, Button, ControlRow, ControlScope, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
 
 /* ------------------------------------------------------------------ */
-/* Prototype CSS. Plain CSS on purpose: this is the shape the package   */
-/* stylesheet will take, every number read from a tap token.            */
-/* ------------------------------------------------------------------ */
-
-const ONE_CONTROL_CSS = `
-.uc { --uc-label: 0.8125rem; --uc-field-radius: 9999px; --uc-pad-text: 0.875rem; --uc-pad-icon: 0.75rem; --uc-pad-field: 0.75rem; }
-.uc-row { display: flex; flex-wrap: wrap; align-items: center; row-gap: var(--matrx-tap-gap); }
-.uc-btn, .uc-field, .uc-select, .uc-seg {
-  box-sizing: border-box; height: var(--matrx-tap-wide-size);
-  margin-inline: calc(var(--matrx-tap-gap) / 2); flex-shrink: 0;
-  font-size: var(--uc-label); line-height: 1; font-weight: 500;
-}
-.uc-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
-  padding-inline: var(--uc-pad-text); border-radius: 9999px; white-space: nowrap; cursor: pointer;
-  color: hsl(var(--foreground));
-  transition: background-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.uc-btn:has(svg) { padding-inline: var(--uc-pad-icon) var(--uc-pad-text); }
-.uc-btn svg { width: var(--matrx-tap-icon-size); height: var(--matrx-tap-icon-size); flex-shrink: 0; }
-.uc-btn:active { transform: scale(0.97); }
-.uc-btn-primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
-.uc-btn-primary:hover { background: hsl(var(--primary) / 0.9); }
-.uc-btn-quiet { background: transparent; }
-.uc-btn-outline { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
-.uc-btn-outline:hover { background: hsl(var(--accent)); }
-.uc-btn-danger { background: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
-.uc-btn-danger:hover { background: hsl(var(--destructive) / 0.9); }
-.uc-btn-quiet:hover { background: hsl(var(--accent)); }
-.uc-field, .uc-select {
-  display: inline-flex; align-items: center; gap: 0.375rem; padding-inline: var(--uc-pad-field);
-  border: 1px solid hsl(var(--border)); background: hsl(var(--card)); color: hsl(var(--foreground));
-  border-radius: var(--uc-field-radius); font-weight: 400; min-width: 0;
-}
-.uc-field input { all: unset; flex: 1 1 auto; min-width: 0; font-size: inherit; }
-.uc-field input::placeholder { color: hsl(var(--muted-foreground)); }
-.uc-field:has(svg) { padding-inline-start: var(--uc-pad-icon); }
-.uc-field:focus-within, .uc-select:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 1px; }
-.uc-field svg, .uc-select svg { width: var(--matrx-tap-icon-size); height: var(--matrx-tap-icon-size); color: hsl(var(--muted-foreground)); flex-shrink: 0; }
-.uc-select { justify-content: space-between; cursor: pointer; }
-/* The track's thin glass border (1.5px) sits INSIDE its height, so the thumb is
-   inset from the OUTER edge equally on both axes (2px): pad = 2px - border. A
-   thumb with its own ring inside a bordered track reads as two outlines at the
-   rounded ends — the selected state is a fill and a hairline shadow, no ring. */
-/* On a solid surface (glass only floats): a muted track, no stroke, so the
-   thumb is inset 2px from the edge on both axes. */
-.uc-seg { display: inline-flex; align-items: center; gap: 2px; padding-inline: 2px; border-radius: 9999px; background: hsl(var(--muted)); }
-.uc-seg-item {
-  box-sizing: border-box; height: calc(var(--matrx-tap-wide-size) - 4px); padding-inline: 0.625rem;
-  border-radius: 9999px; display: inline-flex; align-items: center; cursor: pointer;
-  color: hsl(var(--muted-foreground)); font-size: var(--uc-label); font-weight: 500;
-}
-.uc-seg-item[data-on] { background: hsl(var(--background)); box-shadow: 0 1px 2px hsl(var(--foreground) / 0.12); color: hsl(var(--foreground)); }
-.uc-meta { font-size: 0.6875rem; color: hsl(var(--muted-foreground)); }
-.uc-badge { display: inline-flex; align-items: center; height: 1.125rem; padding-inline: 0.375rem; border-radius: 9999px; font-size: 0.6875rem; font-weight: 500; border: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground)); }
-@media (pointer: coarse) { .uc-field input { font-size: 16px; } }
-`;
-
-function OneControlStyles() {
-  return <style dangerouslySetInnerHTML={{ __html: ONE_CONTROL_CSS }} />;
-}
-
-/* ------------------------------------------------------------------ */
-/* Scale scope: 32 = today's tap canon (no scope); 28 = the package's   */
-/* sanctioned density scope at a 34px control size.                     */
+/* Alt: the REAL package controls at an alternative token value. The    */
+/* settled answer is the package default (28px, 13px label, 16px glyph, */
+/* capsule fields, 10px text inset); every other option on the board is */
+/* the same component with one token moved, so a rejected option is     */
+/* still an honest render of the system.                                 */
 /* ------------------------------------------------------------------ */
 
 export type PadMode = "today" | "matched" | "tight";
 
-export interface ScaleProps {
-  scale: 28 | 30 | 32;
+export interface AltProps {
+  size?: 28 | 30 | 32;
   pad?: PadMode;
   icon?: 12 | 14 | 16;
   label?: 12 | 13;
@@ -121,42 +63,23 @@ export interface ScaleProps {
   children: ReactNode;
 }
 
-/** Inner padding. "matched": the space from the edge to the first glyph equals
- *  the space above and below it — a 16px icon in a 28px control sits 6px in on
- *  every side, the same as a round tap pill; text gets the same optical inset
- *  measured to its cap height (≈10px). */
-const PAD: Record<PadMode, { text: string; icon: string; field: string }> = {
-  today: { text: "0.875rem", icon: "0.75rem", field: "0.75rem" },
-  matched: { text: "0.625rem", icon: "calc((var(--matrx-tap-wide-size) - var(--matrx-tap-icon-size)) / 2)", field: "0.625rem" },
-  tight: { text: "0.5rem", icon: "0.375rem", field: "0.5rem" },
-};
+const TEXT_INSET: Record<PadMode, string> = { today: "0.875rem", matched: "0.625rem", tight: "0.5rem" };
 
-export function Scale({ scale, icon = 16, label = 13, fieldRadius = "capsule", pad = "today", children }: ScaleProps) {
+export function Alt({ size = 28, icon = 16, label = 13, fieldRadius = "capsule", pad = "matched", children }: AltProps) {
   const vars = {
-    "--uc-label": label === 13 ? "0.8125rem" : "0.75rem",
-    "--uc-field-radius": fieldRadius === "capsule" ? "9999px" : "0.5rem",
-    "--uc-pad-text": PAD[pad].text,
-    "--uc-pad-icon": PAD[pad].icon,
-    "--uc-pad-field": PAD[pad].field,
-    ...(scale === 30
-      ? { "--matrx-table-control-size": "2.25rem", "--matrx-table-action-icon-size": icon === 12 ? "0.75rem" : icon === 14 ? "0.875rem" : "1rem" }
-      : {}),
-    ...(scale === 28
-      ? { "--matrx-table-control-size": "2.125rem", "--matrx-table-action-icon-size": icon === 12 ? "0.75rem" : icon === 14 ? "0.875rem" : "1rem" }
-      : {}),
+    "--matrx-control-size": `${size / 16}rem`,
+    "--matrx-control-glyph": `${icon / 16}rem`,
+    "--matrx-control-inset-glyph": `${(size - icon) / 2 / 16}rem`,
+    "--matrx-control-label": label === 13 ? "0.8125rem" : "0.75rem",
+    "--matrx-control-field-radius": fieldRadius === "capsule" ? "9999px" : "0.5rem",
+    "--matrx-control-inset-text": TEXT_INSET[pad],
   } as CSSProperties;
-  const scoped = scale !== 32 ? { "data-matrx-table": "", "data-matrx-table-density": "" } : {};
-  return (
-    <div className="uc" style={vars} {...scoped}>
-      <OneControlStyles />
-      {children}
-    </div>
-  );
+  return <ControlScope style={vars}>{children}</ControlScope>;
 }
 
 /* Measures each direct child's VISIBLE height (a tap button's pill or a  */
 /* group's capsule, never its invisible box) and the gaps between them.  */
-export function MeasuredBare({ children, className = "uc-row" }: { children: ReactNode; className?: string }) {
+export function MeasuredBare({ children, className }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [read, setRead] = useState("");
   useEffect(() => {
@@ -165,7 +88,7 @@ export function MeasuredBare({ children, className = "uc-row" }: { children: Rea
     const measure = () => {
       const all = Array.from(row.children);
       const kids = all.filter(
-        (c) => c.tagName !== "STYLE" && c.getAttribute("aria-hidden") !== "true" && c.getBoundingClientRect().width > 2 && c.getBoundingClientRect().height > 2,
+        (c) => c.getAttribute("aria-hidden") !== "true" && c.getBoundingClientRect().width > 2 && c.getBoundingClientRect().height > 2,
       );
       // A flex spacer between two controls is deliberate distance, not spacing.
       const adjacent = (a: Element, b: Element) => all.indexOf(b) - all.indexOf(a) === 1;
@@ -193,9 +116,9 @@ export function MeasuredBare({ children, className = "uc-row" }: { children: Rea
   }, []);
   return (
     <div className="flex flex-col gap-1.5">
-      <div ref={ref} className={className}>
+      <ControlRow ref={ref} className={className}>
         {children}
-      </div>
+      </ControlRow>
       <div className={cn("font-mono text-xs", read.includes("✗") ? "text-destructive" : "text-muted-foreground")}>
         {read || "—"}
       </div>
@@ -212,23 +135,21 @@ export function UnifiedToolbar() {
   const [scope, setScope] = useState("all");
   return (
     <MeasuredBare>
-      <button type="button" className="uc-btn uc-btn-primary">
+      <Button variant="primary">
         <PlusGlyph /> New
-      </button>
-      <label className="uc-field" style={{ width: "11rem" }}>
-        <Search aria-hidden />
-        <input placeholder="Search" aria-label="Search" />
-      </label>
-      <button type="button" className="uc-select" style={{ width: "7rem" }} aria-label="Status">
-        Open <ChevronDown aria-hidden />
-      </button>
-      <div className="uc-seg" role="group" aria-label="Scope">
-        {["all", "mine", "shared"].map((v) => (
-          <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
-            {v === "all" ? "All" : v === "mine" ? "Mine" : "Shared"}
-          </button>
-        ))}
-      </div>
+      </Button>
+      <SearchField style={{ width: "11rem" }} placeholder="Search" aria-label="Search" />
+      <Select aria-label="Status" style={{ width: "7rem" }} value="open" onValueChange={() => {}} options={STATUS_OPTIONS} />
+      <SegmentedControl
+        aria-label="Scope"
+        value={scope}
+        onValueChange={setScope}
+        data={[
+          { value: "all", label: "All" },
+          { value: "mine", label: "Mine" },
+          { value: "shared", label: "Shared" },
+        ]}
+      />
       <TapTargetButtonGroup surface="solid">
         <FilterTapButton variant="group" ariaLabel="Filter" />
         <ArrowDownUpTapButton variant="group" ariaLabel="Sort" />
@@ -238,6 +159,11 @@ export function UnifiedToolbar() {
     </MeasuredBare>
   );
 }
+
+const STATUS_OPTIONS = [
+  { value: "open", label: "Open" },
+  { value: "closed", label: "Closed" },
+];
 
 export function PlusGlyph() {
   return (
@@ -251,9 +177,9 @@ export function PlusGlyph() {
 export function OneToday() {
   return (
     <MeasuredBare className="flex flex-wrap items-center gap-2">
-        <Button size="sm">
+        <LegacyButton size="sm">
           <PlusGlyph /> New
-        </Button>
+        </LegacyButton>
         <Input placeholder="Search" className="w-44" />
         <Select defaultValue="open">
           <SelectTrigger className="w-28">
@@ -283,51 +209,51 @@ export function OneToday() {
 }
 
 export const OneAt32 = () => (
-  <Scale scale={32}>
+  <Alt size={32}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const OneAt30 = () => (
-  <Scale scale={30}>
+  <Alt size={30}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const OneAt28 = () => (
-  <Scale scale={28}>
+  <Alt size={28}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 
 /* Sub-choices, all at the 28 system. */
 export const FieldCapsule = () => (
-  <Scale scale={28} fieldRadius="capsule">
+  <Alt size={28} fieldRadius="capsule">
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const FieldRounded = () => (
-  <Scale scale={28} fieldRadius="rounded">
+  <Alt size={28} fieldRadius="rounded">
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const Label13 = () => (
-  <Scale scale={28} label={13}>
+  <Alt size={28} label={13}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const Label12 = () => (
-  <Scale scale={28} label={12}>
+  <Alt size={28} label={12}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const Icon16At28 = () => (
-  <Scale scale={28} icon={16}>
+  <Alt size={28} icon={16}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 export const Icon14At28 = () => (
-  <Scale scale={28} icon={14}>
+  <Alt size={28} icon={14}>
     <UnifiedToolbar />
-  </Scale>
+  </Alt>
 );
 
 /* ------------------------------------------------------------------ */
@@ -356,9 +282,9 @@ export function DensityToday() {
           <h3 className="text-2xl font-bold">Documents</h3>
           <div className="ml-auto flex items-center gap-2">
             <Input placeholder="Search" className="w-48" />
-            <Button>
+            <LegacyButton>
               <PlusGlyph /> New document
-            </Button>
+            </LegacyButton>
           </div>
         </div>
         <Card>
@@ -372,10 +298,10 @@ export function DensityToday() {
                   <div className="truncate text-base font-medium">{r.name}</div>
                   <div className="text-sm text-muted-foreground">{r.meta}</div>
                 </div>
-                <Badge variant="outline">{r.status}</Badge>
-                <Button variant="ghost" size="icon" aria-label="More">
+                <LegacyBadge variant="outline">{r.status}</LegacyBadge>
+                <LegacyButton variant="ghost" size="icon" aria-label="More">
                   <MoreGlyph />
-                </Button>
+                </LegacyButton>
               </div>
             ))}
           </CardContent>
@@ -388,33 +314,30 @@ export function DensityToday() {
 export function DensityDense() {
   return (
     <Frame>
-      <Scale scale={28}>
+      <Alt size={28}>
         <div className="flex flex-col">
-          <div className="uc-row border-b border-border px-1.5 py-1.5">
+          <ControlRow className="border-b border-border px-1.5 py-1.5">
             <h3 className="mx-1.5 text-sm font-semibold">Documents</h3>
-            <span className="uc-meta">4</span>
+            <span className="text-[0.6875rem] text-muted-foreground">4</span>
             <span className="flex-1" />
-            <label className="uc-field" style={{ width: "10rem" }}>
-              <Search aria-hidden />
-              <input placeholder="Search" aria-label="Search" />
-            </label>
+            <SearchField style={{ width: "10rem" }} placeholder="Search" aria-label="Search" />
             <TapTargetButtonOutline icon={<Plus />} label="New" ariaLabel="New document" />
-          </div>
+          </ControlRow>
           <div className="px-3 pb-1 pt-2.5 text-[0.6875rem] font-medium text-muted-foreground">Recent</div>
           <div className="divide-y divide-border">
             {ROWS.map((r) => (
               <div key={r.name} className="flex min-h-9 items-center gap-2 pl-3 pr-1">
                 <div className="min-w-0 flex-1 py-1.5">
                   <div className="truncate text-[0.8125rem] font-medium leading-4">{r.name}</div>
-                  <div className="uc-meta truncate leading-4">{r.meta}</div>
+                  <div className="truncate text-[0.6875rem] leading-4 text-muted-foreground">{r.meta}</div>
                 </div>
-                <span className="uc-badge">{r.status}</span>
+                <Badge tone="neutral">{r.status}</Badge>
                 <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
               </div>
             ))}
           </div>
         </div>
-      </Scale>
+      </Alt>
     </Frame>
   );
 }
@@ -435,24 +358,21 @@ function PadToolbar() {
   const [scope, setScope] = useState("all");
   return (
     <MeasuredBare>
-      <button type="button" className="uc-btn uc-btn-primary">
+      <Button variant="primary">
         <PlusGlyph /> New
-      </button>
-      <button type="button" className="uc-btn uc-btn-outline">Export</button>
-      <label className="uc-field" style={{ width: "11rem" }}>
-        <Search aria-hidden />
-        <input placeholder="Search" aria-label="Search" />
-      </label>
-      <button type="button" className="uc-select" style={{ width: "7rem" }} aria-label="Status">
-        Open <ChevronDown aria-hidden />
-      </button>
-      <div className="uc-seg" role="group" aria-label="Scope">
-        {["all", "mine"].map((v) => (
-          <button key={v} type="button" className="uc-seg-item" data-on={scope === v ? "" : undefined} onClick={() => setScope(v)}>
-            {v === "all" ? "All" : "Mine"}
-          </button>
-        ))}
-      </div>
+      </Button>
+      <Button variant="outline">Export</Button>
+      <SearchField style={{ width: "11rem" }} placeholder="Search" aria-label="Search" />
+      <Select aria-label="Status" style={{ width: "7rem" }} value="open" onValueChange={() => {}} options={STATUS_OPTIONS} />
+      <SegmentedControl
+        aria-label="Scope"
+        value={scope}
+        onValueChange={setScope}
+        data={[
+          { value: "all", label: "All" },
+          { value: "mine", label: "Mine" },
+        ]}
+      />
       <SettingsTapButton variant="transparent" ariaLabel="Settings" />
       <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
     </MeasuredBare>
@@ -460,17 +380,17 @@ function PadToolbar() {
 }
 
 export const PadToday = () => (
-  <Scale scale={28} pad="today">
+  <Alt size={28} pad="today">
     <PadToolbar />
-  </Scale>
+  </Alt>
 );
 export const PadMatched = () => (
-  <Scale scale={28} pad="matched">
+  <Alt size={28} pad="matched">
     <PadToolbar />
-  </Scale>
+  </Alt>
 );
 export const PadTight = () => (
-  <Scale scale={28} pad="tight">
+  <Alt size={28} pad="tight">
     <PadToolbar />
-  </Scale>
+  </Alt>
 );

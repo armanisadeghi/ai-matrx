@@ -6,7 +6,8 @@ import { FilterTapButton, ArrowDownUpTapButton, MoreHorizontalTapButton } from "
 import { Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MeasuredBare } from "../../_components/one-control";
-import { Group, Section, Segmented, StatusBadge, UcSelect } from "./kit";
+import { Group, Section } from "./kit";
+import { Badge, Button, SearchField, SegmentedControl, Select } from "@ai-matrx/design-system/controls";
 
 const TYPE = [
   { px: 16, cls: "text-base font-semibold", use: "Marketing and dialog titles", sample: "Client onboarding" },
@@ -74,7 +75,7 @@ export function Foundations() {
               <div key={s.tone} className="flex items-center gap-2">
                 <span className={cn("size-5 shrink-0 rounded-md", s.swatch)} aria-hidden />
                 <span className="w-20 shrink-0 font-mono text-[0.6875rem] text-muted-foreground">{s.tone}</span>
-                <StatusBadge tone={s.tone}>{s.label}</StatusBadge>
+                <Badge tone={s.tone}>{s.label}</Badge>
               </div>
             ))}
           </div>
@@ -100,30 +101,27 @@ export function Foundations() {
 
       <Group label="The one control · 28px, 3px half-gap each">
         <MeasuredBare>
-          <button type="button" className="uc-btn uc-btn-primary">
+          <Button variant="primary">
             <Plus aria-hidden /> New
-          </button>
-          <button type="button" className="uc-btn uc-btn-outline">Export</button>
-          <button type="button" className="uc-btn uc-btn-quiet">Cancel</button>
-          <label className="uc-field" style={{ width: "9rem" }}>
-            <Search aria-hidden />
-            <input placeholder="Search" aria-label="Search" />
-          </label>
-          <UcSelect
-            label="Status"
+          </Button>
+          <Button variant="outline">Export</Button>
+          <Button variant="quiet">Cancel</Button>
+          <SearchField style={{ width: "9rem" }} placeholder="Search" aria-label="Search" />
+          <Select
+            aria-label="Status"
             value={status}
-            onChange={setStatus}
+            onValueChange={setStatus}
             options={[
               { value: "open", label: "Open" },
               { value: "closed", label: "Closed" },
             ]}
-            width="6.5rem"
+            style={{ width: "6.5rem" }}
           />
-          <Segmented
-            label="Scope"
+          <SegmentedControl
+            aria-label="Scope"
             value={scope}
-            onChange={setScope}
-            options={[
+            onValueChange={setScope}
+            data={[
               { value: "all", label: "All" },
               { value: "mine", label: "Mine" },
             ]}

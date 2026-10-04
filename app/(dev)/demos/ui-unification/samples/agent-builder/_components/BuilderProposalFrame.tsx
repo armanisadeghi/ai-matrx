@@ -17,7 +17,8 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SampleScale } from "../../_components/kit";
+
+import { Button, ControlRow, ControlScope, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface Proposal {
   text: string;
@@ -62,12 +63,10 @@ export function BuilderProposalFrame({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <SampleScale>
+      <ControlScope className="h-full">
         <div className="shrink-0 border-b border-border">
-          <div className="uc-row py-0.5 pl-3 pr-[9px]" style={{ flexWrap: "nowrap" }}>
-            <button
-              type="button"
-              className="uc-btn uc-btn-quiet"
+          <ControlRow nowrap className="py-0.5 pl-3 pr-[9px]">
+            <Button variant="quiet"
               aria-expanded={open}
               aria-controls="builder-proposals"
               onClick={() => setOpen((v) => !v)}
@@ -76,31 +75,17 @@ export function BuilderProposalFrame({ children }: { children: ReactNode }) {
               <span className="max-sm:sr-only">Proposals</span>
               <span className="text-[0.6875rem] text-muted-foreground">{PROPOSALS.length}</span>
               <ChevronDown aria-hidden className={cn("transition-transform", open && "rotate-180")} />
-            </button>
-            <div className="uc-seg" role="radiogroup" aria-label="Builder view">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!preview}
-                className="uc-seg-item"
-                data-on={!preview ? "" : undefined}
-                onClick={() => setPreview(false)}
-              >
-                Original
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={preview}
-                className="uc-seg-item"
-                data-on={preview ? "" : undefined}
-                onClick={() => setPreview(true)}
-                title={`Applies the ${shown} previewed proposals as scoped CSS`}
-              >
-                Preview
-              </button>
-            </div>
-          </div>
+            </Button>
+            <SegmentedControl
+              aria-label="Builder view"
+              value={preview ? "preview" : "original"}
+              onValueChange={(v) => setPreview(v === "preview")}
+              data={[
+                { value: "original", label: "Original" },
+                { value: "preview", label: <span title={`Applies the ${shown} previewed proposals as scoped CSS`}>Preview</span> },
+              ]}
+            />
+          </ControlRow>
           {open ? (
             <ol
               id="builder-proposals"
@@ -123,7 +108,7 @@ export function BuilderProposalFrame({ children }: { children: ReactNode }) {
             </ol>
           ) : null}
         </div>
-      </SampleScale>
+      </ControlScope>
       {preview ? <style dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }} /> : null}
       {/* The real route lets the builder run UNDER the shell header and clear
           it with "padding-top: var(--shell-header-h)"; the demos layout has

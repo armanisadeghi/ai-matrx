@@ -15,8 +15,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Archive, Database, ExternalLink, FolderKanban, Mail, Trash2, UserPlus, Users } from "lucide-react";
-import { CopyTapButton, TrashTapButton } from "@ai-matrx/tap-target/buttons";
+import { Archive, Copy, Database, ExternalLink, FolderKanban, Mail, Trash2, UserPlus, Users } from "lucide-react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { Skeleton } from "@ai-matrx/design-system";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -31,18 +30,8 @@ import {
 import type { Project, ProjectMemberWithUser, ProjectPriority, ProjectRole, ProjectStatus } from "@/features/projects/types";
 import { toast } from "@/lib/toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import {
-  EmptyState,
-  RowGroup,
-  RowSkeletons,
-  SampleScale,
-  SampleTitle,
-  SettingRow,
-  ToneBadge,
-  UcSelect,
-  UnderlineTabs,
-  type Tone,
-} from "../../_components/kit";
+import { SampleTitle } from "../../_components/kit";
+import { Badge, Button, ControlRow, ControlScope, DeleteButton, EmptyState, Field, RegionSkeleton, RowGroup, Select, SettingRow, Tabs, Textarea, type BadgeTone } from "@ai-matrx/design-system/controls";
 
 type Section = "general" | "members" | "invitations" | "references";
 
@@ -59,7 +48,7 @@ const PRIORITY_OPTIONS: { value: ProjectPriority | "none"; label: string }[] = [
   { value: "medium", label: "Medium" },
   { value: "high", label: "High" },
 ];
-const ROLE_TONE: Record<ProjectRole, Tone> = { owner: "primary", admin: "info", member: "neutral" };
+const ROLE_TONE: Record<ProjectRole, BadgeTone> = { owner: "primary", admin: "info", member: "neutral" };
 
 const NOT_SAVED = "Sample page — nothing was changed.";
 
@@ -87,34 +76,36 @@ export function ProjectSettingsSample() {
       <PageHeader>
         <SampleTitle icon={FolderKanban} title={project?.name ?? "Project"} meta="Sample" />
       </PageHeader>
-      <SampleScale>
-        <div className="uk-page flex h-full flex-col overflow-hidden bg-textured">
+      <ControlScope className="h-full">
+        <div className="flex h-full flex-col overflow-hidden bg-textured">
           {/* Section tabs (underline) + the page's two controls, one row. */}
           <div className="flex shrink-0 items-end gap-x-1 border-b border-border pl-3 pr-[9px] sm:gap-x-3">
-            <UnderlineTabs<Section>
-              className="min-w-0 flex-1 border-b-0"
+            <Tabs<Section>
+              className="min-w-0 flex-1"
+              rule={false}
+              aria-label="Project sections"
               value={section}
-              onChange={setSection}
-              items={[
-                { id: "general", label: "General" },
-                { id: "members", label: "Members", count: members.length || null },
-                { id: "invitations", label: "Invitations", count: invitations.length || null },
-                { id: "references", label: "References", count: references.length || null },
+              onValueChange={setSection}
+              data={[
+                { value: "general", label: "General" },
+                { value: "members", label: "Members", count: members.length || null },
+                { value: "invitations", label: "Invitations", count: invitations.length || null },
+                { value: "references", label: "References", count: references.length || null },
               ]}
             />
-            <div className="uc-row ml-auto py-0.5">
+            <ControlRow className="ml-auto py-0.5">
               {projectOptions.length > 1 && id ? (
                 <div className="hidden sm:contents">
-                  <UcSelect value={id} options={projectOptions} onChange={setChosen} ariaLabel="Project" icon={FolderKanban} width="12rem" align="end" />
+                  <Select value={id} options={projectOptions} onValueChange={setChosen} aria-label="Project" icon={FolderKanban} style={{ width: "12rem" }} align="end" />
                 </div>
               ) : null}
               {project ? (
-                <Link href={`/projects/${project.id}`} className="uc-btn uc-btn-outline" aria-label="Open workspace">
+                <Button asChild variant="outline"><Link href={`/projects/${project.id}`} aria-label="Open workspace">
                   <ExternalLink aria-hidden />
                   <span className="max-sm:sr-only">Open workspace</span>
-                </Link>
+                </Link></Button>
               ) : null}
-            </div>
+            </ControlRow>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -123,13 +114,13 @@ export function ProjectSettingsSample() {
                 <FormSkeleton />
               ) : !project ? (
                 <EmptyState
-                  icon={FolderKanban}
+                  icon={<FolderKanban />}
                   title="No project to show"
                   line={error ? "The project could not be read." : "You aren't on any project yet."}
                   action={
-                    <Link href="/projects" className="uc-btn uc-btn-outline">
+                    <Button asChild variant="outline"><Link href="/projects">
                       All projects
-                    </Link>
+                    </Link></Button>
                   }
                 />
               ) : section === "general" ? (
@@ -146,22 +137,20 @@ export function ProjectSettingsSample() {
                 <RowGroup title="Pending invitations">
                   {invitations.length === 0 ? (
                     <EmptyState
-                      icon={Mail}
+                      icon={<Mail />}
                       title="No pending invitations"
                       line="People you invite by email wait here."
                       action={
-                        <button type="button" className="uc-btn uc-btn-outline" onClick={() => toast.info("Invite", { description: NOT_SAVED })}>
+                        <Button variant="outline" onClick={() => toast.info("Invite", { description: NOT_SAVED })}>
                           <UserPlus aria-hidden /> Invite
-                        </button>
+                        </Button>
                       }
                     />
                   ) : (
                     invitations.map((inv) => (
                       <SettingRow key={inv.id} label={inv.email} line={`Expires ${formatRelativeTime(inv.expiresAt)}`}>
-                        <ToneBadge tone={ROLE_TONE[inv.role]}>{inv.role}</ToneBadge>
-                        <span className="uk-quiet">
-                          <TrashTapButton variant="transparent" ariaLabel={`Revoke ${inv.email}`} onClick={() => toast.success(`Invitation to ${inv.email} revoked`, { description: NOT_SAVED })} />
-                        </span>
+                        <Badge tone={ROLE_TONE[inv.role]}>{inv.role}</Badge>
+                        <DeleteButton aria-label={`Revoke ${inv.email}`} onClick={() => toast.success(`Invitation to ${inv.email} revoked`, { description: NOT_SAVED })} />
                       </SettingRow>
                     ))
                   )}
@@ -169,7 +158,7 @@ export function ProjectSettingsSample() {
               ) : (
                 <RowGroup title={`Linked records · ${linked}`}>
                   {references.length === 0 ? (
-                    <EmptyState icon={Database} title="Nothing links here" line="Tasks, notes and files tagged with this project show here." />
+                    <EmptyState icon={<Database />} title="Nothing links here" line="Tasks, notes and files tagged with this project show here." />
                   ) : (
                     references.map((r) => (
                       <SettingRow key={`${r.schemaName}.${r.tableName}.${r.columnName}`} label={`${r.schemaName}.${r.tableName}`} line={r.columnName}>
@@ -182,20 +171,20 @@ export function ProjectSettingsSample() {
             </div>
           </div>
         </div>
-      </SampleScale>
+      </ControlScope>
     </>
   );
 }
 
 /* ------------------------------ General ---------------------------- */
 
-function Field({ label, htmlFor, children, className }: { label: string; htmlFor?: string; children: React.ReactNode; className?: string }) {
+function FormField({ label, htmlFor, children, className }: { label: string; htmlFor?: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
       <label htmlFor={htmlFor} className="mb-1 block px-[3px] text-xs font-medium text-muted-foreground">
         {label}
       </label>
-      <div className="uc-row -mx-[3px]" style={{ flexWrap: "nowrap" }}>{children}</div>
+      <ControlRow nowrap className="-mx-[3px]">{children}</ControlRow>
     </div>
   );
 }
@@ -229,18 +218,16 @@ function General({
     <>
       {/* The form: no card — fields sit on the page, 28px, labels above. */}
       <section className="flex flex-col gap-3">
-        <Field label="Name" htmlFor="ps-name">
-          <label className="uc-field flex-1">
-            <input id="ps-name" value={form.name} disabled={!canEdit} onChange={(e) => set("name", e.target.value)} />
-          </label>
-        </Field>
+        <FormField label="Name" htmlFor="ps-name">
+          <Field className="flex-1" id="ps-name" value={form.name} disabled={!canEdit} onChange={(e) => set("name", e.target.value)} />
+        </FormField>
         <div>
           <label htmlFor="ps-desc" className="mb-1 block px-[3px] text-xs font-medium text-muted-foreground">
             Description
           </label>
-          <textarea
+          <Textarea
             id="ps-desc"
-            className="uk-textarea -mx-[3px] block !w-full"
+            className="-mx-[3px] !w-full"
             rows={4}
             value={form.description}
             disabled={!canEdit}
@@ -248,49 +235,44 @@ function General({
           />
         </div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-3 sm:grid-cols-4">
-          <Field label="Status">
-            <UcSelect value={form.status} options={STATUS_OPTIONS} onChange={(v) => set("status", v)} ariaLabel="Status" width="calc(100% - var(--matrx-tap-gap))" />
-          </Field>
-          <Field label="Priority">
-            <UcSelect value={form.priority} options={PRIORITY_OPTIONS} onChange={(v) => set("priority", v)} ariaLabel="Priority" width="calc(100% - var(--matrx-tap-gap))" />
-          </Field>
-          <Field label="Start date" htmlFor="ps-start">
-            <label className="uc-field flex-1">
-              <input id="ps-start" type="date" value={form.startDate} disabled={!canEdit} onChange={(e) => set("startDate", e.target.value)} />
-            </label>
-          </Field>
-          <Field label="Target date" htmlFor="ps-target">
-            <label className="uc-field flex-1">
-              <input id="ps-target" type="date" value={form.targetDate} disabled={!canEdit} onChange={(e) => set("targetDate", e.target.value)} />
-            </label>
-          </Field>
+          <FormField label="Status">
+            <Select value={form.status} options={STATUS_OPTIONS} onValueChange={(v) => set("status", v)} aria-label="Status" style={{ width: "calc(100% - var(--matrx-control-gap))" }} />
+          </FormField>
+          <FormField label="Priority">
+            <Select value={form.priority} options={PRIORITY_OPTIONS} onValueChange={(v) => set("priority", v)} aria-label="Priority" style={{ width: "calc(100% - var(--matrx-control-gap))" }} />
+          </FormField>
+          <FormField label="Start date" htmlFor="ps-start">
+            <Field className="flex-1" id="ps-start" type="date" value={form.startDate} disabled={!canEdit} onChange={(e) => set("startDate", e.target.value)} />
+          </FormField>
+          <FormField label="Target date" htmlFor="ps-target">
+            <Field className="flex-1" id="ps-target" type="date" value={form.targetDate} disabled={!canEdit} onChange={(e) => set("targetDate", e.target.value)} />
+          </FormField>
         </div>
         {dirty ? (
-          <div className="uc-row -mx-[3px] justify-end">
-            <button type="button" className="uc-btn uc-btn-quiet" onClick={() => setForm(initial)}>
+          <ControlRow className="-mx-[3px] justify-end">
+            <Button variant="quiet" onClick={() => setForm(initial)}>
               Cancel
-            </button>
-            <button type="button" className="uc-btn uc-btn-primary" onClick={() => toast.success("Project saved", { description: NOT_SAVED })}>
+            </Button>
+            <Button variant="primary" onClick={() => toast.success("Project saved", { description: NOT_SAVED })}>
               Save
-            </button>
-          </div>
+            </Button>
+          </ControlRow>
         ) : null}
       </section>
 
       {/* Details — a bordered group of hairline rows. */}
       <RowGroup title="Details">
         <SettingRow label="Project ID" line={project.id}>
-          <span className="uk-quiet">
-            <CopyTapButton
-              variant="transparent"
-              ariaLabel="Copy project ID"
-              onClick={() => void navigator.clipboard.writeText(project.id).then(() => toast.success("Project ID copied"))}
-            />
-          </span>
+          <Button
+            variant="quiet"
+            aria-label="Copy project ID"
+            icon={<Copy aria-hidden />}
+            onClick={() => void navigator.clipboard.writeText(project.id).then(() => toast.success("Project ID copied"))}
+          />
         </SettingRow>
         <SettingRow label="Slug" line={project.slug ?? "None"} />
         <SettingRow label="Your role">
-          {role ? <ToneBadge tone={ROLE_TONE[role]}>{role}</ToneBadge> : <span className="mx-[3px] text-xs text-muted-foreground">Not a member</span>}
+          {role ? <Badge tone={ROLE_TONE[role]}>{role}</Badge> : <span className="mx-[3px] text-xs text-muted-foreground">Not a member</span>}
         </SettingRow>
         <SettingRow label="Created" line={new Date(project.createdAt).toLocaleString()} />
         <SettingRow label="Last updated" line={formatRelativeTime(project.updatedAt)} />
@@ -299,14 +281,12 @@ function General({
       {/* Danger zone — tier 3. Delete opens the tier-2 confirm that names the cost. */}
       <RowGroup title="Danger zone" danger>
         <SettingRow label="Archive this project" line="Hides it from lists. Restore any time.">
-          <button
-            type="button"
-            className="uc-btn uc-btn-outline"
+          <Button variant="outline"
             disabled={!canEdit}
             onClick={() => toast.success(`“${project.name}” archived`, { description: NOT_SAVED })}
           >
             <Archive aria-hidden /> Archive
-          </button>
+          </Button>
         </SettingRow>
         {confirming ? (
           <div className="flex flex-col gap-1.5 py-2.5 pl-3 pr-[9px]">
@@ -314,27 +294,25 @@ function General({
             <div className="text-xs text-muted-foreground">
               {memberCount} {memberCount === 1 ? "member loses" : "members lose"} access; {linked} linked {linked === 1 ? "record points" : "records point"} to it.
             </div>
-            <div className="uc-row justify-end">
-              <button type="button" className="uc-btn uc-btn-quiet" onClick={() => setConfirming(false)}>
+            <ControlRow className="justify-end">
+              <Button variant="quiet" onClick={() => setConfirming(false)}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                className="uc-btn uc-btn-danger"
+              </Button>
+              <Button variant="danger"
                 onClick={() => {
                   setConfirming(false);
                   toast.success(`“${project.name}” deleted`, { description: NOT_SAVED });
                 }}
               >
                 Delete project
-              </button>
-            </div>
+              </Button>
+            </ControlRow>
           </div>
         ) : (
           <SettingRow label="Delete this project" line="Removes it for everyone on it.">
-            <button type="button" className="uc-btn uc-btn-danger" disabled={role !== "owner"} onClick={() => setConfirming(true)}>
+            <Button variant="danger" disabled={role !== "owner"} onClick={() => setConfirming(true)}>
               <Trash2 aria-hidden /> Delete
-            </button>
+            </Button>
           </SettingRow>
         )}
       </RowGroup>
@@ -351,25 +329,25 @@ function Members({ members, loading, error }: { members: ProjectMemberWithUser[]
         <h2 className="px-3 text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
           Members · {members.length}
         </h2>
-        <div className="uc-row -mr-[3px]">
-          <button type="button" className="uc-btn uc-btn-outline" onClick={() => toast.info("Invite", { description: NOT_SAVED })}>
+        <ControlRow className="-mr-[3px]">
+          <Button variant="outline" onClick={() => toast.info("Invite", { description: NOT_SAVED })}>
             <UserPlus aria-hidden /> Invite
-          </button>
-        </div>
+          </Button>
+        </ControlRow>
       </div>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         {loading ? (
-          <RowSkeletons count={4} twoLine />
+          <RegionSkeleton count={4} twoLine />
         ) : error != null ? (
           <ReadFailure error={error} what="the members" />
         ) : members.length === 0 ? (
-          <EmptyState icon={Users} title="No members yet" line="Invite people to work on this project." />
+          <EmptyState icon={<Users />} title="No members yet" line="Invite people to work on this project." />
         ) : (
           <div className="divide-y divide-border">
             {members.map((m) => {
               const name = m.user?.displayName || m.user?.email || m.userId;
               return (
-                <div key={m.id} className="uk-row flex min-h-9 items-center gap-2 pl-3 pr-[9px]">
+                <div key={m.id} className="hover:bg-accent/50 flex min-h-9 items-center gap-2 pl-3 pr-[9px]">
                   <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.6875rem] font-semibold uppercase text-primary">
                     {name.slice(0, 1)}
                   </div>
@@ -379,16 +357,13 @@ function Members({ members, loading, error }: { members: ProjectMemberWithUser[]
                       {[m.user?.email && m.user.email !== name ? m.user.email : null, `Joined ${formatRelativeTime(m.joinedAt)}`].filter(Boolean).join(" · ")}
                     </div>
                   </div>
-                  <ToneBadge tone={ROLE_TONE[m.role]}>{m.role}</ToneBadge>
+                  <Badge tone={ROLE_TONE[m.role]}>{m.role}</Badge>
                   {/* Delete tier 1 (quiet): remove, undo in the toast. */}
-                  <span className="uk-quiet">
-                    <TrashTapButton
-                      variant="transparent"
-                      ariaLabel={`Remove ${name}`}
-                      disabled={m.role === "owner"}
-                      onClick={() => toast.success(`${name} removed`, { description: NOT_SAVED })}
-                    />
-                  </span>
+                  <DeleteButton
+                    aria-label={`Remove ${name}`}
+                    disabled={m.role === "owner"}
+                    onClick={() => toast.success(`${name} removed`, { description: NOT_SAVED })}
+                  />
                 </div>
               );
             })}
@@ -421,7 +396,7 @@ function FormSkeleton() {
         </div>
       </div>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
-        <RowSkeletons count={5} twoLine />
+        <RegionSkeleton count={5} twoLine />
       </div>
     </div>
   );

@@ -426,14 +426,14 @@ export function EntityListToolbar<TRow>({
     // crushed the search to an empty 22px pill). On a phone the search owns
     // its line and the controls take the next; from `sm:` up everything sits
     // on the search row and the view-tab strip scrolls inside its own box.
-    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
+    <div data-entity-list-toolbar="" className="matrx-tap-ring flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
       {/* The table's saved-view tabs open the row, far left (`toolbar.tabsPortalInto`); the
           package draws them and bounds their strip — this slot only places it. */}
       {tableTabsRef && (
         <div
           ref={tableTabsRef}
           data-entity-list-table-tabs=""
-          className="flex min-w-0 max-w-[16rem] shrink items-center empty:hidden"
+          className="flex min-w-0 max-w-[16rem] shrink-0 items-center empty:hidden"
         />
       )}
 

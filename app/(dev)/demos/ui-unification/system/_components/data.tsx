@@ -18,7 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
-import { Group, ROWS, STATUS, Section, StatusBadge, type Row } from "./kit";
+import { Group, ROWS, STATUS, Section, type Row } from "./kit";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 
 /* Quiet row actions: muted until the row is hovered or focused; always
    visible where there is no hover (touch). They go LEFT of the status chips,
@@ -54,9 +55,9 @@ function DenseList() {
         <span className="text-[0.8125rem] font-semibold">Forms</span>
         <span className="text-[0.6875rem] text-muted-foreground">{rows.length}</span>
         <span className="flex-1" />
-        <button type="button" className="uc-btn uc-btn-quiet" onClick={() => setRows(ROWS.slice(0, 4))}>
+        <Button variant="quiet" onClick={() => setRows(ROWS.slice(0, 4))}>
           Reset
-        </button>
+        </Button>
       </div>
       {rows.length === 0 ? (
         <div className="px-3 py-4 text-center text-xs text-muted-foreground">All rows deleted</div>
@@ -81,7 +82,7 @@ function DenseList() {
                   onClick={() => trash(r)}
                 />
               </div>
-              <StatusBadge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</StatusBadge>
+              <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <MoreHorizontalTapButton variant="transparent" ariaLabel="More" />
@@ -125,9 +126,9 @@ function DangerZone() {
         <div className="text-[0.8125rem] font-semibold">Delete this organization</div>
         <div className="text-xs text-muted-foreground">Every project, agent and file, for everyone</div>
       </div>
-      <button type="button" className="uc-btn uc-btn-danger" onClick={() => setOpen(true)}>
+      <Button variant="danger" onClick={() => setOpen(true)}>
         <Trash2 aria-hidden /> Delete
-      </button>
+      </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
@@ -162,7 +163,7 @@ function SmallTable() {
               <td className="hidden h-9 truncate px-3 text-muted-foreground sm:table-cell">{r.owner}</td>
               <td className="h-9 px-3 text-right tabular-nums">{r.runs.toLocaleString()}</td>
               <td className="h-9 px-3">
-                <StatusBadge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</StatusBadge>
+                <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>
               </td>
               <td className="hidden h-9 px-3 text-xs text-muted-foreground md:table-cell">{r.updated}</td>
             </tr>

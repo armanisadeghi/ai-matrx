@@ -23,6 +23,7 @@ import ACCEPT_RULES from "./accept-rules.json" with { type: "json" };
 import { SUMMARY as VISIBILITY_SUMMARY, remedyForKey as visibilityRemedyForKey } from "../visibility-vocab/remedies.mjs";
 import { featureRegExp } from "../lib/source-roots.cjs";
 import { remedyForKey as uiDriftRemedyForKey } from "../ui-drift/check-ui-drift.mjs";
+import { remedyForKey as oneControlRemedyForKey } from "../one-control/check-one-control.mjs";
 
 /**
  * accept / noAccept come from accept-rules.json — the ONE declaration the server's Mark OK button
@@ -169,6 +170,15 @@ export const FINDINGS_CHECKS = [
     fix: "Use the design system instead of re-styling it: placement-only classes on primitives, semantic colour tokens, the type scale, the shared spinner, overlays and tabs — the item's own fix line names the rule.",
     fixFor: uiDriftRemedyForKey,
     ...fromRules("ui-drift"),
+  },
+  {
+    // THE ONE CONTROL (package FEATURE.md § THE ONE CONTROL): retired uc-* prototype classes and
+    // visual className/style on @ai-matrx/design-system/controls. Same rule as ESLint matrx/one-control.
+    id: "one-control",
+    watch: /\.tsx$/,
+    fix: "Render the package control (@ai-matrx/design-system/controls) as it is; className is placement only.",
+    fixFor: oneControlRemedyForKey,
+    ...fromRules("one-control"),
   },
   {
     id: "route-metadata-and-favicons",

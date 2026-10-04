@@ -52,7 +52,6 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
-import { Button } from "@/components/ui/button";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -84,10 +83,11 @@ import { EducationLibraryRows } from "@/features/education/library/components/Ed
 import { educationLibraryHref } from "@/features/education/library/types";
 import { educationLibraryMenuFor } from "@/features/education/library/useEducationLibraryRowActions";
 import { EDU_START_HREF } from "@/features/education/onboard/startRoutes";
-import { CapsuleSeg, SampleScale, ToneBadge, type TabItem } from "../../_components/kit";
+
 import { KpiRow, type KpiRowItem } from "../../_components/page-top/kpi-row";
 import { FeatureCards } from "../../_components/page-top/feature-cards";
 import { PlusGlyph } from "../../../_components/one-control";
+import { Badge, Button, ControlRow, ControlScope, type SegmentOption, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 /* ------------------------------------------------------------------ */
 /* Header — the sitewide crumb trail                                    */
@@ -126,7 +126,7 @@ function Section({
         </h2>
         {meta ? <div className="flex items-center gap-1.5 text-[0.6875rem] text-muted-foreground">{meta}</div> : null}
         <span className="flex-1" />
-        {actions ? <div className="uc-row">{actions}</div> : null}
+        {actions ? <ControlRow>{actions}</ControlRow> : null}
         {seeAll ? (
           <Link
             href={seeAll.href}
@@ -210,9 +210,9 @@ function AvailabilityNotice({ snapshot, onRetry }: { snapshot: EducationSnapshot
         {unavailable.join(", ")} didn&apos;t load — those counts show “—”.
       </span>
       <ErrorAlchemyMenu />
-      <button type="button" className="uc-btn uc-btn-outline" onClick={onRetry}>
+      <Button variant="outline" onClick={onRetry}>
         <RefreshCw aria-hidden /> Retry
-      </button>
+      </Button>
     </div>
   );
 }
@@ -232,9 +232,9 @@ function StartHereSection() {
           <span className="block truncate text-[0.8125rem] font-semibold">Create a study kit</span>
           <span className="block truncate text-xs text-muted-foreground">Bring in material — get cards, quizzes and more</span>
         </span>
-        <span className="uc-btn uc-btn-primary">
+        <Button asChild variant="primary"><span>
           Start <ArrowRight aria-hidden />
-        </span>
+        </span></Button>
       </Link>
       <FeatureCards
         ariaLabel="Other ways to start"
@@ -257,14 +257,14 @@ function StudyTodaySection({ snapshot }: { snapshot: EducationSnapshot }) {
       title="Study today"
       meta={
         <>
-          {totalMinutes > 0 ? <ToneBadge tone="primary">~{totalMinutes} min</ToneBadge> : null}
+          {totalMinutes > 0 ? <Badge tone="primary">~{totalMinutes} min</Badge> : null}
           {study.streakDays > 0 ? (
-            <ToneBadge tone="warning">
+            <Badge tone="warning">
               <span className="inline-flex items-center gap-0.5">
                 <Flame className="size-3" aria-hidden />
                 {study.streakDays}-day streak
               </span>
-            </ToneBadge>
+            </Badge>
           ) : null}
         </>
       }
@@ -298,15 +298,15 @@ function StudyTodaySection({ snapshot }: { snapshot: EducationSnapshot }) {
               <div className="truncate text-[0.8125rem] font-medium">You&apos;re all caught up</div>
               <div className="truncate text-xs text-muted-foreground">Nothing due — get ahead with a new set.</div>
             </div>
-            <Link href="/education/library" className="uc-btn uc-btn-outline">
+            <Button asChild variant="outline"><Link href="/education/library">
               Study something
-            </Link>
+            </Link></Button>
           </div>
         ) : (
           nextActions.map((action) => {
             const Icon = action.icon;
             return (
-              <div key={action.key} className="uk-row flex min-h-11 items-center gap-3 py-1 pl-3 pr-[9px]">
+              <div key={action.key} className="hover:bg-accent/50 flex min-h-11 items-center gap-3 py-1 pl-3 pr-[9px]">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Icon className="size-4" aria-hidden />
                 </span>
@@ -320,9 +320,9 @@ function StudyTodaySection({ snapshot }: { snapshot: EducationSnapshot }) {
                   <div className="truncate text-xs text-muted-foreground">{action.why}</div>
                 </div>
                 {action.href ? (
-                  <Link href={action.href} className="uc-btn uc-btn-outline">
+                  <Button asChild variant="outline"><Link href={action.href}>
                     Start
-                  </Link>
+                  </Link></Button>
                 ) : null}
               </div>
             );
@@ -404,9 +404,9 @@ function KitsSection({ snapshot }: { snapshot: EducationSnapshot }) {
       title="Your study kits"
       meta={<span>{snapshot.kits.total}</span>}
       actions={
-        <Link href="/education/start" className="uc-btn uc-btn-quiet">
+        <Button asChild variant="quiet"><Link href="/education/start">
           <PlusGlyph /> New kit
-        </Link>
+        </Link></Button>
       }
       seeAll={{ href: "/education/kits", label: `All ${snapshot.kits.total} kits` }}
     >
@@ -463,10 +463,10 @@ function RecentSection({ snapshot }: { snapshot: EducationSnapshot }) {
   const tableColumns = EDUCATION_LIBRARY_COLUMNS.filter((column) =>
     ["title", "kind", "size", "progress", "due", "updated"].includes(column.id),
   ).map((column) => column.column);
-  const views: TabItem<RecentView>[] = [
-    { id: "table", label: "Table" },
-    { id: "cards", label: "Cards" },
-    { id: "rows", label: "Rows" },
+  const views: SegmentOption<RecentView>[] = [
+    { value: "table", label: "Table" },
+    { value: "cards", label: "Cards" },
+    { value: "rows", label: "Rows" },
   ];
   return (
     <Section
@@ -475,36 +475,27 @@ function RecentSection({ snapshot }: { snapshot: EducationSnapshot }) {
       actions={
         <>
           <span className="hidden sm:contents">
-            <CapsuleSeg items={views} value={view} onChange={setView} ariaLabel="Show recent study items as" />
+            <SegmentedControl data={views} value={view} onValueChange={setView} aria-label="Show recent study items as" />
           </span>
-          <Link href={EDU_START_HREF} className="uc-btn uc-btn-quiet">
+          <Button asChild variant="quiet"><Link href={EDU_START_HREF}>
             <FolderOpen aria-hidden /> Study a file you have
-          </Link>
+          </Link></Button>
         </>
       }
       seeAll={{ href: "/education/library", label: `Library (${snapshot.library.total})` }}
     >
       {/* Icons-only switch on a phone, where the labels would not fit. */}
       <div className="flex sm:hidden">
-        <div className="uc-seg" role="group" aria-label="Show recent study items as">
-          {([
+        <SegmentedControl
+          aria-label="Show recent study items as"
+          value={view}
+          onValueChange={setView}
+          data={([
             ["table", TableProperties],
             ["cards", LayoutGrid],
             ["rows", Rows3],
-          ] as const).map(([id, Icon]) => (
-            <button
-              key={id}
-              type="button"
-              aria-label={id}
-              aria-pressed={view === id}
-              data-on={view === id ? "" : undefined}
-              className="uc-seg-item"
-              onClick={() => setView(id)}
-            >
-              <Icon className="size-4" aria-hidden />
-            </button>
-          ))}
-        </div>
+          ] as const).map(([id, Icon]) => ({ value: id, ariaLabel: id, label: <Icon className="size-4" aria-hidden /> }))}
+        />
       </div>
       {view === "table" ? (
         <MatrxDataTable
@@ -518,9 +509,7 @@ function RecentSection({ snapshot }: { snapshot: EducationSnapshot }) {
               filter: false,
               customActions: (row) => (
                 <ItemMenu config={educationLibraryMenuFor(row)} align="end">
-                  <Button type="button" size="icon" variant="ghost" className="size-7" aria-label={`Actions for ${row.title}`}>
-                    <MoreHorizontal className="size-4" />
-                  </Button>
+                  <Button variant="quiet" aria-label={`Actions for ${row.title}`} icon={<MoreHorizontal aria-hidden />} />
                 </ItemMenu>
               ),
             },
@@ -563,7 +552,7 @@ function ToolsSection({ snapshot }: { snapshot: EducationSnapshot }) {
                     href={t.href}
                     title={t.description}
                     data-surface-value={t.value !== undefined ? `${t.key}_count` : undefined}
-                    className="uk-row flex min-h-9 cursor-pointer items-center gap-2 pl-3 pr-[9px]"
+                    className="hover:bg-accent/50 flex min-h-9 cursor-pointer items-center gap-2 pl-3 pr-[9px]"
                   >
                     <span className="flex shrink-0 text-muted-foreground">
                       <ShellIcon name={t.iconName} size={16} strokeWidth={1.75} />
@@ -692,20 +681,20 @@ export function EducationOverviewSample() {
           getApplicationScope={getScope}
           contentSource={{ type: "raw" }}
         >
-          <SampleScale>
-            <main className="uk-page h-full overflow-y-auto bg-textured">
+          <ControlScope className="h-full">
+            <main className="h-full overflow-y-auto bg-textured">
               <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-3 py-3 sm:px-6 sm:py-4">
                 {/* PAGE TOP — provenance + the page's two actions, then the KPI row. */}
                 <div className="flex flex-col gap-3">
                   <div className="flex min-h-7 flex-wrap items-center gap-y-1">
-                    <div className="uc-row" style={{ flexWrap: "nowrap" }}>
-                      <Link href="/education/library" className="uc-btn uc-btn-outline">
+                    <ControlRow nowrap>
+                      <Button asChild variant="outline"><Link href="/education/library">
                         <Library aria-hidden /> Library
-                      </Link>
-                      <Link href="/education/start" className="uc-btn uc-btn-primary">
+                      </Link></Button>
+                      <Button asChild variant="primary"><Link href="/education/start">
                         <PlusGlyph /> Create kit
-                      </Link>
-                    </div>
+                      </Link></Button>
+                    </ControlRow>
                   </div>
                   <KpiRow items={kpis(snapshot)} ariaLabel="Your study at a glance" />
                 </div>
@@ -725,7 +714,7 @@ export function EducationOverviewSample() {
                 )}
               </div>
             </main>
-          </SampleScale>
+          </ControlScope>
         </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
       <ScrollAssistantLauncher inputVariant="text-voice" />
