@@ -296,6 +296,7 @@ const MODE_BADGE_STYLES: Record<string, string> = {
   tuning: "bg-orange-500/15 text-orange-500 border-orange-500/30",
   variations: "bg-teal-500/15 text-teal-500 border-teal-500/30",
   conversation: "bg-indigo-500/15 text-indigo-500 border-indigo-500/30",
+  matrix: "bg-fuchsia-500/15 text-fuchsia-500 border-fuchsia-500/30",
 };
 
 function ModeBadge({ mode }: { mode: string }) {

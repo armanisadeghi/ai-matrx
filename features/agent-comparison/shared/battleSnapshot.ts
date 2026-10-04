@@ -54,6 +54,7 @@ export const MODE_LABELS: Record<BattleModeId, string> = {
   "system-prompt": "System prompt battle",
   "request-mod": "Request mod battle",
   conversation: "Conversation battle",
+  matrix: "Matrix battle",
 };
 
 /** What each mode varies per column, in words. */
@@ -68,6 +69,7 @@ const VARIED_AXIS: Record<BattleModeId, string> = {
   "request-mod": "the request (message and variables) sent to the same agent",
   conversation:
     "only what happens after the fork: each column continues its own copy of one conversation",
+  matrix: "a patch per row and per column over one base; every cell is its own server run",
 };
 
 export interface BattleColumnSnapshot {
@@ -264,6 +266,7 @@ function describeVariant(
       };
     case "request-mod":
     case "conversation":
+    case "matrix":
       return undefined;
   }
 }

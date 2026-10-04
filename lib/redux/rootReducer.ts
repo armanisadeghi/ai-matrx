@@ -88,6 +88,7 @@ import agentComparisonSettingsReducer from "@/features/agent-comparison/modes/se
 import agentComparisonSystemPromptReducer from "@/features/agent-comparison/modes/system-prompt/redux/slice";
 import agentComparisonToolsReducer from "@/features/agent-comparison/modes/tools/redux/slice";
 import agentComparisonRequestModReducer from "@/features/agent-comparison/modes/request-mod/redux/slice";
+import agentComparisonMatrixReducer from "@/features/agent-comparison/modes/matrix/redux/slice";
 import agentComparisonModelReducer from "@/features/agent-comparison/modes/model/redux/slice";
 import agentComparisonTuningReducer from "@/features/agent-comparison/modes/tuning/redux/slice";
 import agentComparisonVariationsReducer from "@/features/agent-comparison/modes/variations/redux/slice";
@@ -318,6 +319,7 @@ export const slimReducerMap = {
   agentComparisonSystemPrompt: agentComparisonSystemPromptReducer,
   agentComparisonTools: agentComparisonToolsReducer,
   agentComparisonRequestMod: agentComparisonRequestModReducer,
+  agentComparisonMatrix: agentComparisonMatrixReducer,
   agentComparisonModel: agentComparisonModelReducer,
   agentComparisonTuning: agentComparisonTuningReducer,
   agentComparisonVariations: agentComparisonVariationsReducer,

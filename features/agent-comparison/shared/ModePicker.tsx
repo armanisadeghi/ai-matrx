@@ -25,6 +25,7 @@ import {
   Gauge,
   Boxes,
   GitFork,
+  Grid3x3,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -103,6 +104,13 @@ const MODES: ModeEntry[] = [
     href: "/agents/battle/conversation",
     icon: GitFork,
     hint: "Fork one conversation into side-by-side continuations",
+  },
+  {
+    id: "matrix",
+    label: "Matrix",
+    href: "/agents/battle/matrix",
+    icon: Grid3x3,
+    hint: "Prompts × arms; every cell a real server run",
   },
 ];
 

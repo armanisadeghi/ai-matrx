@@ -59,6 +59,7 @@ const selectTools = (s: RootState) => s.agentComparisonTools;
 const selectRequestMod = (s: RootState) => s.agentComparisonRequestMod;
 const selectVariations = (s: RootState) => s.agentComparisonVariations;
 const selectConversation = (s: RootState) => s.agentComparisonConversation;
+const selectMatrix = (s: RootState) => s.agentComparisonMatrix;
 // A Model column is named after its model, read live (modes/model/columnTitle).
 const selectModelRegistry = (s: RootState) => s.modelRegistry;
 const selectModelOverrides = (s: RootState) => s.instanceModelOverrides;
@@ -192,6 +193,7 @@ export const selectMountedBattleSetId = createSelector(
     selectRequestMod,
     selectVariations,
     selectConversation,
+    selectMatrix,
   ],
   (
     mounted,
@@ -204,6 +206,7 @@ export const selectMountedBattleSetId = createSelector(
     rm,
     variations,
     conversation,
+    matrix,
   ) => {
     switch (mounted) {
       case "open":
@@ -224,6 +227,8 @@ export const selectMountedBattleSetId = createSelector(
         return variations.activeSetId;
       case "conversation":
         return conversation.activeSetId;
+      case "matrix":
+        return matrix.activeSetId;
       default:
         return null;
     }
@@ -243,8 +248,9 @@ export const selectMountedBattleName = createSelector(
     selectRequestMod,
     selectVariations,
     selectConversation,
+    selectMatrix,
   ],
-  (mounted, open, settings, model, tuning, sp, tools, rm, variations, conversation) => {
+  (mounted, open, settings, model, tuning, sp, tools, rm, variations, conversation, matrix) => {
     switch (mounted) {
       case "open":
         return open.activeSetName;
@@ -264,6 +270,8 @@ export const selectMountedBattleName = createSelector(
         return variations.activeSetName;
       case "conversation":
         return conversation.activeSetName;
+      case "matrix":
+        return matrix.activeSetName;
       default:
         return null;
     }

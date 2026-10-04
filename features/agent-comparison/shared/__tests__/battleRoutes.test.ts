@@ -15,6 +15,8 @@ describe("isBattleModeId", () => {
       "tools",
       "system-prompt",
       "request-mod",
+      "conversation",
+      "matrix",
     ];
     for (const m of modes) {
       expect(isBattleModeId(m)).toBe(true);
