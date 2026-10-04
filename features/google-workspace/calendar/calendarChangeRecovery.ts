@@ -121,20 +121,30 @@ function validBaseRequest(value: unknown): value is CalendarRescheduleRequest | 
     nonempty(value.expected_etag) && SEND_UPDATES.has(String(value.send_updates));
 }
 
+function exactKeys(value: Record<string, unknown>, allowed: readonly string[]): boolean {
+  const allowedKeys = new Set(allowed);
+  return Object.keys(value).every((key) => allowedKeys.has(key)) && allowed.every((key) => key in value);
+}
+
 function validRescheduleRequest(value: unknown): value is CalendarRescheduleRequest {
   return validBaseRequest(value) && nonempty(value.starts_at) && nonempty(value.ends_at) &&
     AWARE_DATE_TIME.test(value.starts_at) && AWARE_DATE_TIME.test(value.ends_at) &&
     Number.isFinite(Date.parse(value.starts_at)) && Number.isFinite(Date.parse(value.ends_at)) &&
-    Date.parse(value.ends_at) > Date.parse(value.starts_at);
+    Date.parse(value.ends_at) > Date.parse(value.starts_at) && exactKeys(value, [
+      "connection_id", "calendar_id", "event_id", "occurrence", "expected_etag", "starts_at", "ends_at", "send_updates",
+    ]);
 }
 
 function validCancelRequest(value: unknown): value is CalendarCancelRequest {
-  if (!validBaseRequest(value)) return false;
-  return !("starts_at" in value) && !("response_status" in value);
+  return validBaseRequest(value) && exactKeys(value, [
+    "connection_id", "calendar_id", "event_id", "occurrence", "expected_etag", "send_updates",
+  ]);
 }
 
 function validRsvpRequest(value: unknown): value is CalendarRsvpRequest {
-  return validBaseRequest(value) && RSVP.has(String(value.response_status));
+  return validBaseRequest(value) && RSVP.has(String(value.response_status)) && exactKeys(value, [
+    "connection_id", "calendar_id", "event_id", "occurrence", "expected_etag", "response_status", "send_updates",
+  ]);
 }
 
 function sameInstant(left: unknown, right: unknown): boolean {
@@ -203,11 +213,32 @@ export function calendarChangeActionMatchesSource(value: unknown, source: Calend
       preview.new_response_status !== request.response_status || preview.organizer_email !== source.organizer_email ||
       !nonempty(preview.guest_notification_behavior) || !nonempty(preview.action_notice) || !nonempty(preview.recovery_notice)) return false;
   } else return false;
-  return result === null || calendarChangeResultMatches({ kind: value.kind, request, preview, result: null } as CalendarChangeAction, result);
+  return result === null || calendarChangeResultShape(value.kind, result);
+}
+
+export function calendarChangeResultShape(kind: CalendarChangeAction["kind"], value: unknown): boolean {
+  if (!record(value) || !nonempty(value.account_email) || !nonempty(value.calendar_id) ||
+    !nonempty(value.calendar_summary) || !["owner", "writer", "writerWithoutPrivateAccess"].includes(String(value.access_role)) ||
+    !nonempty(value.event_id) || !OCCURRENCES.has(String(value.occurrence)) || !nonempty(value.event_summary) ||
+    !nonempty(value.etag) || !SEND_UPDATES.has(String(value.send_updates)) || !nonempty(value.guest_notification_behavior) ||
+    !nonempty(value.recovery_notice)) return false;
+  if (kind === "reschedule") {
+    return jsonMap(value.old_start) && jsonMap(value.old_end) && jsonMap(value.new_start) && jsonMap(value.new_end) &&
+      Array.isArray(value.attendees) && value.attendees.every((item) => typeof item === "string") &&
+      nonempty(value.provider_etag) && (value.reconciliation_pending === undefined || typeof value.reconciliation_pending === "boolean");
+  }
+  if (kind === "cancel") {
+    return jsonMap(value.starts_at) && jsonMap(value.ends_at) &&
+      Array.isArray(value.attendees) && value.attendees.every((item) => typeof item === "string") &&
+      nonempty(value.action_notice) && ["absent", "cancelled"].includes(String(value.source_state));
+  }
+  return nonempty(value.organizer_email) && RSVP.has(String(value.old_response_status)) && RSVP.has(String(value.new_response_status)) &&
+    nonempty(value.action_notice) && nonempty(value.provider_etag) &&
+    (value.already_applied === undefined || typeof value.already_applied === "boolean");
 }
 
 export function calendarChangeResultMatches(action: CalendarChangeAction, value: unknown): boolean {
-  if (!record(value) || !record(action.preview)) return false;
+  if (!calendarChangeResultShape(action.kind, value) || !record(value) || !record(action.preview)) return false;
   const preview = action.preview as unknown as Record<string, unknown>;
   const shared = value.account_email === preview.account_email && value.calendar_id === preview.calendar_id &&
     value.calendar_summary === preview.calendar_summary && value.access_role === preview.access_role &&
@@ -271,6 +302,7 @@ function validAttempt(value: unknown, scope: CalendarChangeScope): value is Cale
     !(value.source_proof === null || validSource(value.source_proof))) return false;
   if (value.actor_id !== scope.actorId || value.organization_id !== scope.organizationId ||
     value.connection_id !== scope.connectionId || value.calendar_id !== scope.calendarId ||
+    value.account_label !== value.original_source.account_email || value.calendar_summary !== value.original_source.calendar_summary ||
     value.selected_event_id !== value.original_source.selected_event_id || value.target_event_id !== value.original_source.target_event_id ||
     value.occurrence !== value.original_source.occurrence) return false;
   const action = value.action as CalendarChangeAction;
@@ -286,10 +318,10 @@ function validAttempt(value: unknown, scope: CalendarChangeScope): value is Cale
     case "uncertain": return !hasResult && !hasProof && nonempty(value.problem);
     case "reconciliation_required": return hasResult && !calendarChangeResultMatches(action, action.result) && !hasProof && nonempty(value.problem);
     case "succeeded": return hasResult && calendarChangeResultMatches(action, action.result) && !hasProof && value.problem === null;
-    case "source_requested": return !hasResult && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "requested" && value.problem === null;
-    case "source_unchanged": return !hasResult && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "unchanged" && value.problem === null;
-    case "source_divergent": return !hasResult && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "divergent" && nonempty(value.problem);
-    case "fresh_review_started": return !hasResult && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "divergent" && value.problem === null;
+    case "source_requested": return (!hasResult || !calendarChangeResultMatches(action, action.result)) && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "requested" && value.problem === null;
+    case "source_unchanged": return (!hasResult || !calendarChangeResultMatches(action, action.result)) && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "unchanged" && value.problem === null;
+    case "source_divergent": return (!hasResult || !calendarChangeResultMatches(action, action.result)) && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "divergent" && nonempty(value.problem);
+    case "fresh_review_started": return (!hasResult || !calendarChangeResultMatches(action, action.result)) && hasProof && reconcileCalendarChangeSource(value as unknown as CalendarChangeAttempt, value.source_proof) === "divergent" && value.problem === null;
   }
 }
 

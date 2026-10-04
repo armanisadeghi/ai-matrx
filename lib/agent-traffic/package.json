@@ -1,0 +1,4 @@
+{
+  "//": "Node scripts import marker.ts directly (types stripped); this says it is ESM. See marker.ts.",
+  "type": "module"
+}
