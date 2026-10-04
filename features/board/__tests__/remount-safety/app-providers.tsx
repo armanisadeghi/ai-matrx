@@ -6,6 +6,11 @@
  * ledger shows only what the tile did.
  */
 
+// The provider stack reaches a server-only module through the chat host's feedback action
+// (`ChatHostAdapter` → `actions/feedback.actions` → the notification spine). The browser build
+// never loads it; the suite has no server, so the marker module is replaced by an empty one.
+jest.mock("server-only", () => ({}));
+
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
 import "@/providers/chat-surface-manifests";

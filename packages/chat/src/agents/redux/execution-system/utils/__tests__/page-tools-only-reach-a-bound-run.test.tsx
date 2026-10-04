@@ -257,6 +257,83 @@ describe("page tools reach only a run bound to that page", () => {
   });
 });
 
+/**
+ * A RUN ON AN ITEM KEEPS THE SURFACE THAT HOLDS THE ITEM (Board, 2026-10-04).
+ * Real turn (conversation 051d7738, test@test.com): the Board's side chat had
+ * board_read / board_open_item / board_item_act while no tile was live, and
+ * lost ALL of them the moment a tile became live (the conversation follows the
+ * active surface, so its stamp became the tile's surface, and the binding only
+ * accepted the stamp and its inheritance ancestors). The agent then called
+ * board_item_act and the server refused it ("not available here").
+ */
+describe("a run stamped with a surface nested in a host keeps the host's tools", () => {
+  const TILE = "matrx-user/tile-b";
+  const OTHER = "matrx-user/unrelated";
+  const TILE_TOOL = { ...CLIENT_TOOL, name: "tile_b_do" };
+  const OTHER_TOOL = { ...CLIENT_TOOL, name: "unrelated_do" };
+  let unmount: () => void;
+  let infoSpy: jest.SpyInstance;
+
+  function mountNested(): () => void {
+    const cleanups = [mountPage()];
+    cleanups.push(
+      registerSurfaceRuntime({ surfaceName: TILE, getScope: () => ({}), getWriteHandlers: () => ({}) }, 2),
+    );
+    cleanups.push(
+      registerSurfaceRuntime({ surfaceName: OTHER, getScope: () => ({}), getWriteHandlers: () => ({}) }, 2),
+    );
+    function Host() {
+      useSurfaceClientTools(TILE, { [TILE_TOOL.name]: () => ({ ok: true }) });
+      useSurfaceClientTools(OTHER, { [OTHER_TOOL.name]: () => ({ ok: true }) });
+      return null;
+    }
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => root.render(<Host />));
+    return () => {
+      act(() => root.unmount());
+      container.remove();
+      cleanups.forEach((c) => c());
+    };
+  }
+
+  beforeEach(() => {
+    invalidateOutputSchemaCache();
+    resetMandateCatalogueCache();
+    mockGetManifest.mockImplementation((name: string) =>
+      name === PAGE
+        ? { writeTargets: [WRITE_TARGET], clientTools: [CLIENT_TOOL] }
+        : name === TILE
+          ? { clientTools: [TILE_TOOL] }
+          : name === OTHER
+            ? { clientTools: [OTHER_TOOL] }
+            : {},
+    );
+    infoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    unmount = mountNested();
+  });
+  afterEach(() => {
+    unmount();
+    infoSpy.mockRestore();
+  });
+
+  it("a run stamped with the nested surface still receives the host page's tools", async () => {
+    const result = await buildToolInjection(makeState({ surfaceName: TILE }), "conv");
+    expect(toolNames(result)).toEqual(expect.arrayContaining([CLIENT_TOOL.name, TILE_TOOL.name]));
+  });
+
+  it("a sibling mounted beside the stamp (not around it) is still withheld", async () => {
+    const result = await buildToolInjection(makeState({ surfaceName: TILE }), "conv");
+    expect(toolNames(result)).not.toContain(OTHER_TOOL.name);
+  });
+
+  it("the host's tools do not leak DOWN: a run stamped with the host gets no tile tools", async () => {
+    const result = await buildToolInjection(makeState({ surfaceName: PAGE }), "conv");
+    expect(toolNames(result)).not.toContain(TILE_TOOL.name);
+  });
+});
+
 describe("the person's tool decisions travel as the USER layer", () => {
   it("picks → user.add, removals → user.remove, the switch → user.auto_tools; never tools[]", async () => {
     const state = makeState({

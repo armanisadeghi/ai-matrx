@@ -23,6 +23,14 @@
  *   - Any other run gets the tools of the surface it was LAUNCHED on (the
  *     conversation's `surfaceName` stamp) and that surface's ancestors —
  *     nothing from any other screen that happens to be mounted.
+ *   - A run stamped with a surface that is MOUNTED INSIDE another (a Board
+ *     tile's surface inside the Board) also keeps the surfaces around it: the
+ *     conversation follows the active surface, so selecting a tile re-stamps
+ *     the Board's side chat with the tile's surface, and without this the
+ *     Board's own tools (board_open_item, board_item_act…) vanished mid-turn
+ *     and the server refused the call (2026-10-04, conversation 051d7738).
+ *     Only surfaces outside the stamp in the live stack — never siblings,
+ *     never tools flowing down to a surface the run is not on.
  *   - No stamp ⇒ no page tools.
  *
  * Guard: `__tests__/page-tools-only-reach-a-bound-run.test.tsx`.
@@ -30,7 +38,10 @@
 
 import type { ChatRootState } from "../../../../store/root-state";
 import { isHeadlessDisplayMode } from "../../../utils/run-ui-utils";
-import { isPageOwnConversation } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
+import {
+  getSurfaceRuntimeDepths,
+  isPageOwnConversation,
+} from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import { isCompanionSurface } from "../../../../surfaces/runtime/surface-chain";
 import { getSurfaceAncestry } from "../../../../surfaces/runtime/registry";
 
@@ -86,8 +97,22 @@ export function resolvePageToolBinding(
   return {
     bound: true,
     via: "launch-surface",
-    accepts: (surfaceName) => allowed.has(surfaceName),
+    accepts: (surfaceName) =>
+      allowed.has(surfaceName) || isMountedAround(stamp, surfaceName),
   };
+}
+
+/**
+ * True when `surfaceName` is mounted at a SHALLOWER provider depth than
+ * `stamp` right now, i.e. the stamped surface sits inside it. A surface at the
+ * same or deeper depth (a sibling window, another page) is never "around".
+ * False when the stamp itself is not mounted.
+ */
+function isMountedAround(stamp: string, surfaceName: string): boolean {
+  const mounted = getSurfaceRuntimeDepths();
+  const own = mounted.find((entry) => entry.surfaceName === stamp);
+  if (!own) return false;
+  return mounted.some((entry) => entry.surfaceName === surfaceName && entry.depth < own.depth);
 }
 
 const announced = new Set<string>();

@@ -32,6 +32,7 @@ const skeleton = (tile: TileHandle) => tile.container.querySelector('[aria-busy=
 
 const DECK_ID = "6c1e8d3a-52b4-4f97-8a0e-3d7b9f2c4e18";
 const DECK_NAME = "Spanish for property managers: lease vocabulary";
+const DECK_DESCRIPTION = "Words a landlord needs at a walk-through.";
 const deckRow = {
   id: DECK_ID,
   organization_id: ORGANIZATION.id,
@@ -41,7 +42,7 @@ const deckRow = {
   deleted_at: null,
   visibility: "personal",
   name: DECK_NAME,
-  description: "Words a landlord needs at a walk-through.",
+  description: DECK_DESCRIPTION,
   topic: "Spanish",
   lesson: null,
   difficulty: "easy",
@@ -60,10 +61,22 @@ remountType(
         seed("education.fc_set", [deckRow]);
         seed("education.fc_card", []);
         seed("education.fc_detail", []);
-        seedRpc("assoc_for_targets_visible", []);
+        seedRpc("assoc_members_visible", []);
+        // The person owns the deck: the page offers the full authoring surface, not "make a copy".
+        seedRpc("get_resource_access", { level: "admin", is_owner: true, exists: true });
+        // An adult account: the age and consent check allows AI.
+        seedRpc("edu_coppa_gate", {
+          age_band: "adult",
+          requires_consent: false,
+          has_active_guardian: false,
+          has_verified_guardian: false,
+          is_anonymous: false,
+          ai_allowed: true,
+          reason: "allowed",
+        });
       },
       loadMs: 1500,
-      kept: (tile) => ({ deck: shows(tile, DECK_NAME), loading: skeleton(tile) }),
+      kept: (tile) => ({ deck: shows(tile, DECK_DESCRIPTION), loading: skeleton(tile) }),
     }),
   (r) => expectRemountSafe(r, { deck: true, loading: false }, [/^education\.fc_set$/, /^education\.fc_card$/, /^education\.fc_detail$/]),
 );

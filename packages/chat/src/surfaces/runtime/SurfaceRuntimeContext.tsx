@@ -251,6 +251,8 @@ export interface SurfaceRegistry {
   register: (value: SurfaceRuntimeValue, depth?: number) => () => void;
   /** All registered runtimes, DEEPEST first (ties broken by registration recency). */
   stack: () => readonly SurfaceRuntimeValue[];
+  /** The same runtimes, deepest first, with the provider nesting depth each registered at. */
+  depths: () => ReadonlyArray<{ surfaceName: string; depth: number }>;
   /** The deepest registered runtime, or null. */
   primary: () => SurfaceRuntimeValue | null;
   /** Handlers registered by descendants for `surfaceName` (later wins per name). */
@@ -387,6 +389,10 @@ function createRegistry(
       };
     },
     stack: sortedStack,
+    depths: () =>
+      [...stack]
+        .sort((a, b) => b.depth - a.depth || b.id - a.id)
+        .map((entry) => ({ surfaceName: entry.value.surfaceName, depth: entry.depth })),
     primary() {
       let winner: RegistryEntry | null = null;
       for (const entry of stack) {
@@ -778,6 +784,11 @@ function getServerSnapshot(): SurfaceRuntimeValue | null {
  */
 export function getSurfaceRuntimeStack(): readonly SurfaceRuntimeValue[] {
   return globalRegistry.stack();
+}
+
+/** Mounted surfaces with their nesting depth, deepest first (read-only). */
+export function getSurfaceRuntimeDepths(): ReadonlyArray<{ surfaceName: string; depth: number }> {
+  return globalRegistry.depths();
 }
 
 /**
