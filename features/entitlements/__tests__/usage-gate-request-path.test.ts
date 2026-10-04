@@ -26,6 +26,7 @@ import {
   applyServerUsageState,
   cancelPendingUsageRefreshForTests,
   noteAiCallEnded,
+  REFRESH_AFTER_CALL_MS,
 } from "../usage-gate/usageGate";
 import type { UsageSnapshot } from "../usage-gate/usageState";
 import { runAiStream } from "@/packages/chat/src/agents/redux/execution-system/thunks/run-ai-stream";
@@ -180,7 +181,7 @@ test("call end: marked stale at once, refreshed later in the background, never a
   expect(readMock).not.toHaveBeenCalled();
   expect(store.getState().entitlements.usageGate.stale).toBe(true);
 
-  await jest.advanceTimersByTimeAsync(2_000);
+  await jest.advanceTimersByTimeAsync(REFRESH_AFTER_CALL_MS + 100);
   expect(readMock).toHaveBeenCalledTimes(1);
   const gate = store.getState().entitlements.usageGate;
   expect(gate.state).toBe("near");
@@ -193,7 +194,7 @@ test("calls ending together share one background refresh", async () => {
   noteAiCallEnded(store.dispatch as never, store.getState);
   noteAiCallEnded(store.dispatch as never, store.getState);
   noteAiCallEnded(store.dispatch as never, store.getState);
-  await jest.advanceTimersByTimeAsync(2_000);
+  await jest.advanceTimersByTimeAsync(REFRESH_AFTER_CALL_MS + 100);
   expect(readMock).toHaveBeenCalledTimes(1);
 });
 

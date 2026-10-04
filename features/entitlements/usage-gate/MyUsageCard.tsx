@@ -8,7 +8,7 @@
 // never an organization's numbers. Opening the tab refreshes it once in the
 // background (a page read, never on an AI request's path).
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Infinity as InfinityIcon, RotateCw } from "lucide-react";
 import { formatCost, pointsToUsd } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
@@ -130,13 +130,21 @@ export function MyUsageCard({ className }: { className?: string }) {
   const windows = useAppSelector(selectUsageGateWindows);
   const fetchedAt = useAppSelector(selectUsageGateFetchedAt);
   const readFor = useRef<string | null>(null);
+  const [reading, setReading] = useState(true);
+
+  const read = () => {
+    setReading(true);
+    void refreshUsageInBackground(dispatch, store.getState).finally(() =>
+      setReading(false),
+    );
+  };
 
   // One background refresh per visit, so the numbers here are current.
   useEffect(() => {
     if (!userId || readFor.current === userId) return;
     readFor.current = userId;
-    void refreshUsageInBackground(dispatch, store.getState);
-  }, [userId, dispatch, store]);
+    read();
+  });
 
   const frame = cn("rounded-md border border-border bg-card", className);
 
@@ -144,7 +152,7 @@ export function MyUsageCard({ className }: { className?: string }) {
     return (
       <div className={cn(frame, "p-3 sm:p-4")}>
         <h3 className="text-sm font-semibold text-foreground">Your AI usage</h3>
-        {fetchedAt === null ? (
+        {fetchedAt === null && reading ? (
           <div className="mt-3 space-y-2" aria-busy="true" aria-label="Reading your usage">
             <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
             <div className="h-1 w-full animate-pulse rounded-full bg-muted" />
@@ -158,7 +166,7 @@ export function MyUsageCard({ className }: { className?: string }) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => void refreshUsageInBackground(dispatch, store.getState)}
+              onClick={read}
             >
               <RotateCw className="h-3.5 w-3.5" aria-hidden />
               Try again
