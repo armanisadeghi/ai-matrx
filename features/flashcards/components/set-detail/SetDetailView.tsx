@@ -146,7 +146,9 @@ import {
   selectCardDetailLayers,
 } from "../../data/cardDetailLayers";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore, useDispatchThunk } from "@/lib/redux/hooks";
+import { refreshStoreRead } from "@/lib/redux/slices/storeReadsSlice";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import {
   useIllustrateSetRun,
   type IllustrateCardState,
@@ -640,9 +642,6 @@ export function SetDetailView({
 }) {
   useFlashcardMandates(["enrichCard"]);
   const router = useRouter();
-  const [data, setData] = useState<SetWithCards | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [convertOpen, setConvertOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -684,62 +683,55 @@ export function SetDetailView({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeOpen, setMergeOpen] = useState(false);
   const [lineageKey, setLineageKey] = useState(0);
-  const [masteryByCard, setMasteryByCard] = useState<
-    Record<string, ItemMasteryRow | undefined>
-  >({});
-  const [masteryStatus, setMasteryStatus] = useState<
-    "pending" | "available" | "unavailable"
-  >("pending");
-  // Bump to refetch (after enrich/deepen adds details/sub-cards). The fetch
-  // lives in the effect so no setState fires synchronously in the effect body.
-  const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
+  // THE DECK AND ITS MASTERY ARE READ ONCE PER TAB (`useStoreRead`, Redux `storeReads`, keyed by
+  // deck): a remount, a wake from sleep (a Board tile) or a second view of the deck renders the
+  // kept copy and reads nothing, and never drops to the skeleton. `reload` is the deliberate
+  // re-read after something changed the cards (enrich, deepen, illustrate, merge, import).
+  const dispatchRead = useDispatchThunk();
+  const deckKey = `education.fc_set:${setId}`;
+  const masteryKey = `education.fc_set_mastery:${setId}`;
+  const readDeck = async (): Promise<SetWithCards> => {
+    const res = await fcService.getSetWithCards(setId);
+    if (!res.data) throw new Error(res.error ?? recordUnavailableMessage("deck", "unknown"));
+    return res.data;
+  };
+  const readMastery = async (cards: readonly { id: string }[]): Promise<Record<string, ItemMasteryRow>> => {
+    if (cards.length === 0) return {};
+    // Per-card mastery for the retention viz (read-only; RLS-scoped).
+    const mRes = await studyService.getMasteryBulk(cards.map((c) => ({ itemType: "fc_card", itemId: c.id })));
+    if (mRes.error) throw new Error("The mastery read failed");
+    const seed: Record<string, ItemMasteryRow> = {};
+    for (const m of mRes.data ?? []) seed[m.item_id] = m;
+    return seed;
+  };
+  const deckRead = useStoreRead<SetWithCards>(deckKey, readDeck);
+  // The deck is the primary payload; never hold the entire page behind the secondary mastery
+  // enrichment (a slow mastery read once left mobile learners on skeletons).
+  const masteryRead = useStoreRead<Record<string, ItemMasteryRow>>(
+    masteryKey,
+    () => readMastery(deckRead.data?.cards ?? []),
+    { enabled: Boolean(deckRead.data), staleAfterMs: 60_000 },
+  );
+  // A failed re-read of a deck that was already shown is the failure the page reports, as before.
+  const error = deckRead.isError ? (deckRead.error ?? recordUnavailableMessage("deck", "unknown")) : null;
+  const data: SetWithCards | null = deckRead.isError ? null : (deckRead.data ?? null);
+  const loading = !deckRead.hasData && !deckRead.isError;
+  const masteryByCard: Record<string, ItemMasteryRow | undefined> = masteryRead.data ?? {};
+  // A missing mastery read is not the same as a learner with no history: the surface value stays
+  // absent rather than handing an agent fabricated "new" evidence.
+  const masteryStatus: "pending" | "available" | "unavailable" = masteryRead.hasData
+    ? "available"
+    : masteryRead.isError
+      ? "unavailable"
+      : "pending";
+  const setData = (update: (prev: SetWithCards | null) => SetWithCards | null) =>
+    deckRead.setData((prev) => update(prev ?? null) ?? (prev as SetWithCards));
+  const reload = () => {
     void (async () => {
-      setLoading(true);
-      setMasteryStatus("pending");
-      const res = await fcService.getSetWithCards(setId);
-      if (cancelled) return;
-      if (!res.data) {
-        setError(res.error ?? recordUnavailableMessage("deck", "unknown"));
-        setData(null);
-        setLoading(false);
-      } else {
-        setData(res.data);
-        setError(null);
-        // The deck is the primary payload; never hold the entire page behind
-        // the secondary mastery enrichment. A slow mastery read previously
-        // left mobile learners staring at skeletons indefinitely even though
-        // every card was already available.
-        setLoading(false);
-        // Per-card mastery for the retention viz (read-only; RLS-scoped).
-        if (res.data.cards.length > 0) {
-          const mRes = await studyService.getMasteryBulk(
-            res.data.cards.map((c) => ({ itemType: "fc_card", itemId: c.id })),
-          );
-          if (!cancelled && !mRes.error) {
-            const seed: Record<string, ItemMasteryRow | undefined> = {};
-            for (const m of mRes.data ?? []) seed[m.item_id] = m;
-            setMasteryByCard(seed);
-            setMasteryStatus("available");
-          } else if (!cancelled) {
-            // A missing mastery read is not the same as a learner with no
-            // history. Keep the optional surface value absent rather than
-            // handing an agent fabricated "new" evidence.
-            setMasteryByCard({});
-            setMasteryStatus("unavailable");
-          }
-        } else {
-          setMasteryByCard({});
-          setMasteryStatus("available");
-        }
-      }
+      const fresh = await dispatchRead(refreshStoreRead(deckKey, readDeck));
+      if (fresh) await dispatchRead(refreshStoreRead(masteryKey, () => readMastery(fresh.cards)));
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [setId, reloadKey]);
+  };
 
   const [pendingAction, setPendingAction] = useState<
     | "study"
@@ -832,7 +824,7 @@ export function SetDetailView({
     );
     // Whatever landed is already in the DB — refetch so badges and thumbnails
     // on the deck below match what the review pass is showing.
-    setReloadKey((k) => k + 1);
+    reload();
     void illustrate.refresh();
     if (outcome.failed) return;
     if (outcome.refused) {
@@ -911,7 +903,7 @@ export function SetDetailView({
       });
       // Whatever landed is already in the DB — refetch so the deck's badges
       // match what the run is reporting.
-      setReloadKey((k) => k + 1);
+      reload();
       if (outcome.counts.enriched > 0 || outcome.counts.failed > 0) {
         toast.success(summarizeBulkEnrichCounts(outcome.counts));
       }
@@ -932,7 +924,7 @@ export function SetDetailView({
       return;
     }
     setReview(card.cardId, verdict);
-    if (verdict === "rejected") setReloadKey((k) => k + 1);
+    if (verdict === "rejected") reload();
   };
 
   // Print — the SAME canonical printer (10 variants, same settings UX) the
@@ -1370,7 +1362,7 @@ export function SetDetailView({
                       deckName={data.set.name}
                       deckOrganizationId={data.set.organization_id}
                       onAdded={() => {
-                        setReloadKey((k) => k + 1);
+                        reload();
                         setLineageKey((k) => k + 1);
                       }}
                     />
@@ -1445,7 +1437,7 @@ export function SetDetailView({
                   deckName={data.set.name}
                   deckOrganizationId={data.set.organization_id}
                   onAdded={() => {
-                    setReloadKey((k) => k + 1);
+                    reload();
                     setLineageKey((k) => k + 1);
                   }}
                 />
@@ -1554,7 +1546,7 @@ export function SetDetailView({
                 setId={setId}
                 set={data.set}
                 cards={data.cards}
-                onCardsChanged={() => setReloadKey((k) => k + 1)}
+                onCardsChanged={() => reload()}
                 onFileIdChange={(fileId) =>
                   setData((prev) =>
                     prev
@@ -2080,7 +2072,7 @@ export function SetDetailView({
                 }}
                 setId={setId}
                 cards={[enhanceCard]}
-                onChanged={() => setReloadKey((k) => k + 1)}
+                onChanged={() => reload()}
               />
             )}
 
@@ -2102,7 +2094,7 @@ export function SetDetailView({
               onMerged={() => {
                 setSelecting(false);
                 setSelectedIds(new Set());
-                setReloadKey((k) => k + 1);
+                reload();
               }}
             />
 
@@ -2114,7 +2106,7 @@ export function SetDetailView({
                 defaultTopic={data.set.topic?.trim() || data.set.name}
                 difficulty={data.set.difficulty}
                 onAdded={() => {
-                  setReloadKey((k) => k + 1);
+                  reload();
                   setLineageKey((k) => k + 1);
                 }}
               />

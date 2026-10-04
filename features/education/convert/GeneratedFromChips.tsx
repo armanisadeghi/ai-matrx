@@ -13,7 +13,7 @@
 // title, which every artifact of one Source shares, so the strip read as a row
 // of identical capsules (owner, 2026-10-04). The export name stays for callers.
 
-import { useEffect, useState } from "react";
+import { useRefreshWhenChanged, useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { listGeneratedFrom, type GeneratedArtifact } from "./lineage";
 import { LineageArtifactList } from "./LineageArtifactList";
 
@@ -29,17 +29,13 @@ export function GeneratedFromChips({
   refreshKey?: number;
   className?: string;
 }) {
-  const [items, setItems] = useState<GeneratedArtifact[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    void listGeneratedFrom(entityType, entityId).then((rows) => {
-      if (active) setItems(rows);
-    });
-    return () => {
-      active = false;
-    };
-  }, [entityType, entityId, refreshKey]);
+  // Read once per record (`useStoreRead`): a remount or a wake renders the kept list and reads
+  // nothing; a bumped `refreshKey` (a new conversion) is the deliberate re-read.
+  const read = useStoreRead<GeneratedArtifact[]>(`education.generated_from:${entityType}:${entityId}`, () =>
+    listGeneratedFrom(entityType, entityId),
+  );
+  useRefreshWhenChanged(refreshKey, read.refresh);
+  const items = read.data ?? [];
 
   return (
     <LineageArtifactList

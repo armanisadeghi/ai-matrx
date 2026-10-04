@@ -34,6 +34,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // who forces gate errors in devtools, would otherwise keep the stale allow
 // forever. Matches aidream's own 60s status cache.
 const ALLOWED_VERDICT_TTL_MS = 60_000;
+/** The person's verdict, kept in `storeReads` (identity reset clears it on sign-out). */
+const COPPA_GATE_READ_KEY = "education.coppa_gate";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setStoreReadData } from "@/lib/redux/slices/storeReadsSlice";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { coppaService } from "./coppaService";
 import type { AgeBand, CoppaGate } from "./types";
 import { AiConsentRequiredDialog } from "./components/AiConsentRequiredDialog";
@@ -88,40 +93,42 @@ export function useAiComplianceGate(
   options: UseAiComplianceGateOptions = {},
 ): UseAiComplianceGateResult {
   const declarationVariant = options.declarationVariant ?? "gate";
-  const [gate, setGate] = useState<CoppaGate | null>(null);
-  const [loading, setLoading] = useState(true);
+  // The verdict is kept in Redux for the person (`useStoreRead`): a remount, a wake from sleep
+  // (a Board tile) or another gate mounted beside this one reads nothing. `ensureAllowed` is the
+  // deliberate server-truth check before an AI action; it and the age prompt write the fresh
+  // verdict back with `setData`.
+  const dispatch = useAppDispatch();
+  const gateRead = useStoreRead<CoppaGate>(COPPA_GATE_READ_KEY, async () => {
+    const res = await coppaService.getGate();
+    if (!res.data) throw new Error(res.error ?? "The age and consent check could not be read");
+    return res.data;
+  });
+  const gate = gateRead.data ?? null;
+  const loading = !gateRead.hasData && !gateRead.isError;
+  const setGate = useCallback(
+    (next: CoppaGate) => void dispatch(setStoreReadData({ key: COPPA_GATE_READ_KEY, data: next })),
+    [dispatch],
+  );
   const [open, setOpen] = useState(false);
   const [askAge, setAskAge] = useState(false);
   const [savingBand, setSavingBand] = useState<AgeBand | null>(null);
-  const [nonce, setNonce] = useState(0);
   // Latest successfully-loaded verdict, read inside ensureAllowed without making
   // the callback depend on (and churn with) `gate`.
   const gateRef = useRef<CoppaGate | null>(null);
   const gateAtRef = useRef<number>(0);
+  // The kept verdict (first read, or one a sibling gate wrote) is what `promptDeclarationIfNeeded`
+  // and the fail-soft path below look at.
+  useEffect(() => {
+    if (!gateRead.data) return;
+    gateRef.current = gateRead.data;
+    if (!gateAtRef.current) gateAtRef.current = Date.now();
+  }, [gateRead.data]);
   // Resolves every in-flight ensureAllowed() once the age prompt is answered or
   // dismissed, so each caller's original action can resume on its own. A LIST,
   // not a single slot: two actions can race the same prompt, and overwriting
   // one resolver left the first caller's promise pending for the life of the
   // page — a permanent hang, not a refusal.
   const agePromptWaitersRef = useRef<((allowed: boolean) => void)[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      setLoading(true);
-      const res = await coppaService.getGate();
-      if (cancelled) return;
-      if (res.data) {
-        gateRef.current = res.data;
-        gateAtRef.current = Date.now();
-      }
-      setGate(res.data);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [nonce]);
 
   const settleAgePrompt = useCallback((allowed: boolean) => {
     const waiters = agePromptWaitersRef.current;
@@ -175,7 +182,7 @@ export function useAiComplianceGate(
       settleAgePrompt(allowed);
       if (!allowed) setOpen(true);
     },
-    [settleAgePrompt],
+    [settleAgePrompt, setGate],
   );
 
   const ensureAllowed = useCallback(async () => {
@@ -237,7 +244,7 @@ export function useAiComplianceGate(
 
     setOpen(true);
     return false;
-  }, []);
+  }, [setGate]);
 
   /**
    * PROACTIVE prompt — identify before submit, not after. Opens the age dialog
@@ -299,6 +306,6 @@ export function useAiComplianceGate(
     ensureAllowed,
     promptDeclarationIfNeeded,
     Gate,
-    reload: () => setNonce((n) => n + 1),
+    reload: () => void gateRead.refresh(),
   };
 }

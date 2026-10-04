@@ -15,10 +15,10 @@
  * React) so the server guard can share them without a client boundary. Import
  * helpers from `./access-core` when you need them outside this hook.
  */
-import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import {
   selectAccessToken,
   selectAuthReady,
@@ -59,12 +59,6 @@ export function useAccess(
   resourceType: string | undefined,
   resourceId: string | undefined,
 ): ResourceAccess & { loading: boolean; refresh: () => Promise<void> } {
-  const [access, setAccess] = useState<ResourceAccess>(NO_ACCESS);
-  // Loading only while there's something to resolve; lazy init avoids a
-  // synchronous setState in the effect (react-hooks/set-state-in-effect).
-  const [loading, setLoading] = useState<boolean>(() =>
-    Boolean(resourceType && resourceId),
-  );
   // A persisted Redux identity can briefly precede the browser Supabase
   // client's own restored session: firing get_resource_access before it
   // settles sends the request as `anon`, and the non-strict resolver above
@@ -83,23 +77,22 @@ export function useAccess(
   const accessToken = useAppSelector(selectAccessToken);
   const sessionSettled = authReady && (!userId || Boolean(accessToken));
 
-  useEffect(() => {
-    if (!resourceType || !resourceId || !sessionSettled) return;
-    let active = true;
-    getResourceAccess(resourceType, resourceId).then((result) => {
-      if (!active) return;
-      setAccess(result);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [resourceType, resourceId, sessionSettled]);
+  // The answer is kept in Redux by resource (`useStoreRead`): a remount, a wake from
+  // sleep (a Board tile) or a second view of the same record asks nothing, and
+  // `refresh()` is the deliberate re-read. The key carries the person, so a different
+  // account never sees the last one's answer.
+  const read = useStoreRead<ResourceAccess>(
+    resourceType && resourceId ? `access.resource:${userId ?? "anon"}:${resourceType}:${resourceId}` : null,
+    // Strict: a failed read is an error entry (the next view asks again), never a kept "no access".
+    () =>
+      resolveResourceAccess(supabase as unknown as SupabaseClient, resourceType as string, resourceId as string, {
+        strict: true,
+      }),
+    { enabled: sessionSettled },
+  );
+  const access = read.data ?? NO_ACCESS;
+  // Loading only while there's something to resolve and nothing has answered or failed yet.
+  const loading = Boolean(resourceType && resourceId) && !read.hasData && !read.isError;
 
-  const refresh = async () => {
-    if (!resourceType || !resourceId) return;
-    setAccess(await getResourceAccess(resourceType, resourceId));
-  };
-
-  return { ...access, loading, refresh };
+  return { ...access, loading, refresh: read.refresh };
 }

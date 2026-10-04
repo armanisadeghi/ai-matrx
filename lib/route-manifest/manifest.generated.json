@@ -494,6 +494,11 @@
       "source": "app/(admin)/administration/billing/page.tsx"
     },
     {
+      "pattern": "/administration/billing/plans",
+      "status": "live",
+      "source": "app/(admin)/administration/billing/plans/page.tsx"
+    },
+    {
       "pattern": "/administration/billing/spend",
       "status": "live",
       "source": "app/(admin)/administration/billing/spend/page.tsx"
@@ -6680,11 +6685,6 @@
       "pattern": "/x/sign",
       "status": "live",
       "source": "app/(link)/x/sign/page.tsx"
-    },
-    {
-      "pattern": "/x/sign/dev-fields",
-      "status": "live",
-      "source": "app/(link)/x/sign/dev-fields/page.tsx"
     }
   ]
 }

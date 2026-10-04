@@ -21,7 +21,7 @@
 // ONE component, used by every artifact surface. Its forward-direction twin is
 // `GeneratedFromChips`; do not grow a third lineage renderer.
 
-import { useEffect, useState } from "react";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import Link from "next/link";
 import { FileText, CornerUpLeft, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,34 +45,29 @@ export function MadeFromSource({
   entityId: string;
   className?: string;
 }) {
-  const [origins, setOrigins] = useState<ArtifactOrigin[]>([]);
-  const [siblings, setSiblings] = useState<GeneratedArtifact[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
+  // Read once per artifact (`useStoreRead`): a remount or a wake renders the kept answer.
+  const read = useStoreRead<{ origins: ArtifactOrigin[]; siblings: GeneratedArtifact[] }>(
+    `education.made_from:${entityType}:${entityId}`,
+    async () => {
       // Every Source it was made from (a deck from a PDF and a note has two).
       const allOrigins = await readArtifactOrigins(entityType, entityId);
-      if (!active) return;
-      setOrigins(allOrigins);
       const found = allOrigins[0];
-      if (!found) return;
+      if (!found) return { origins: allOrigins, siblings: [] };
       const all = await listGeneratedFrom(found.entityType, found.entityId);
-      if (!active) return;
       // The rest of the KIT — the artifacts, not their parts. Every generated
       // flashcard also writes its own card-level lineage edge to the anchor
       // file, so an unfiltered read of a source's incoming edges returns the
       // whole deck one card at a time. A converter artifact is exactly the edge
       // `recordSourceLineage` stamped with a `targetKind`; a card-level edge has
       // none, which is the honest discriminator rather than a type blocklist.
-      setSiblings(
-        all.filter((a) => a.targetKind !== null && a.artifactId !== entityId),
-      );
-    })();
-    return () => {
-      active = false;
-    };
-  }, [entityType, entityId]);
+      return {
+        origins: allOrigins,
+        siblings: all.filter((a) => a.targetKind !== null && a.artifactId !== entityId),
+      };
+    },
+  );
+  const origins = read.data?.origins ?? [];
+  const siblings = read.data?.siblings ?? [];
 
   // No lineage edge means this artifact genuinely has no recorded origin
   // (hand-made, or made before lineage was recorded). Say nothing rather than

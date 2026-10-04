@@ -43,7 +43,12 @@ export function PayPeriodsPage() {
   const hr = useHrContext();
   const mockCase = useMockCase();
   const [query, setQuery] = useState<MatrxDataTableQueryState>({ page: 1, pageSize: 50, search: "", anyOf: "", columnFilters: {}, sort: null });
-  const { page, isLoading, failure, reload } = usePayPeriods({}, { page: query.page, pageSize: query.pageSize }, mockCase, hr.orgRef);
+  const [queryScope, setQueryScope] = useState(hr.orgRef);
+  if (queryScope !== hr.orgRef) {
+    setQueryScope(hr.orgRef);
+    setQuery((current) => ({ ...current, page: 1, search: "", anyOf: "", columnFilters: {}, sort: null }));
+  }
+  const { page, isLoading, failure, reload } = usePayPeriods({ organizationId: hr.orgRef ? hr.active?.organization_id : undefined }, { page: query.page, pageSize: query.pageSize }, mockCase, hr.orgRef);
 
   return (
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">

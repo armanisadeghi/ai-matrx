@@ -7,7 +7,10 @@
 // every claim tied to that mode's real library/study-spine evidence, and gives
 // the learner one inviting next move.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useDispatchThunk } from "@/lib/redux/hooks";
+import { refreshStoreRead } from "@/lib/redux/slices/storeReadsSlice";
+import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -268,60 +271,38 @@ export function KitHub({
   proposedLayout?: boolean;
 }) {
   const router = useRouter();
-  const [kit, setKit] = useState<StudyKit | null>(null);
-  const [stats, setStats] = useState<KitArtifactStats>({});
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [statsFailed, setStatsFailed] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [managing, setManaging] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [writeError, setWriteError] = useState<string | null>(null);
   const [writing, setWriting] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-
+  // THE KIT AND ITS PROGRESS ARE READ ONCE PER TAB (`useStoreRead`, Redux `storeReads`, keyed by
+  // the source): a remount, a wake from sleep (a Board tile) or a second view renders the kept
+  // copy and reads nothing, and never drops to the skeleton. `reload` is the deliberate re-read
+  // after a write or a conversion. Progress also re-reads in the background when the kept copy
+  // is over a minute old (the person studied somewhere else and came back).
+  const dispatchRead = useDispatchThunk();
+  const kitKey = `education.kit:${sourceType}:${sourceId}`;
+  const statsKey = `education.kit_stats:${sourceType}:${sourceId}`;
+  const kitRead = useStoreRead<StudyKit | null>(kitKey, () => readKit(sourceType, sourceId));
+  const kit = kitRead.data ?? null;
+  const statsRead = useStoreRead<KitArtifactStats>(statsKey, () => readKitArtifactStats(kit?.artifacts ?? []), {
+    enabled: kit !== null,
+    staleAfterMs: 60_000,
+  });
+  const loading = !kitRead.hasData && !kitRead.isError;
+  const loadError = kitRead.isError;
+  const stats: KitArtifactStats = statsRead.data ?? {};
+  const statsLoading = kit !== null && !statsRead.hasData && !statsRead.isError;
+  const statsFailed = statsRead.isError;
+  const reload = () => {
     void (async () => {
-      try {
-        const result = await readKit(sourceType, sourceId);
-        if (!active) return;
-        setKit(result);
-        setLoading(false);
-        setLoadError(false);
-        if (!result) {
-          setStats({});
-          setStatsLoading(false);
-          return;
-        }
-
-        try {
-          const nextStats = await readKitArtifactStats(result.artifacts);
-          if (!active) return;
-          setStats(nextStats);
-          setStatsFailed(false);
-        } catch (error) {
-          console.error("[kits] artifact progress read failed:", error);
-          if (!active) return;
-          setStats({});
-          setStatsFailed(true);
-        } finally {
-          if (active) setStatsLoading(false);
-        }
-      } catch (error) {
-        console.error("[kits] kit read failed:", error);
-        if (!active) return;
-        setLoading(false);
-        setStatsLoading(false);
-        setLoadError(true);
-      }
+      const fresh = await dispatchRead(
+        refreshStoreRead(kitKey, () => readKit(sourceType, sourceId)),
+      );
+      if (fresh) await dispatchRead(refreshStoreRead(statsKey, () => readKitArtifactStats(fresh.artifacts)));
     })();
-
-    return () => {
-      active = false;
-    };
-  }, [sourceId, sourceType, refreshKey]);
+  };
 
   const getScope = () =>
     buildKitDetailScope({
@@ -342,7 +323,7 @@ export function KitHub({
         parse: (value) => { if (writing || (managing && draftTitle !== kit.title)) throw new Error("Save or cancel your kit title edits before applying agent changes."); return parseKitUpdates(value, [kit]); },
         run: async (plan) => {
           await renameKit(plan.kit, plan.title, plan.fingerprint);
-          setRefreshKey((key) => key + 1);
+          reload();
           return { id: plan.kit.sourceId, name: plan.title };
         },
         nameOf: (plan) => plan.title,
@@ -390,7 +371,7 @@ export function KitHub({
       apply: async (value: unknown) => {
         const { refs, fingerprint } = parseMemberRemoval(value);
         await removeKitMembersVersioned(kit, refs, fingerprint);
-        setRefreshKey((key) => key + 1);
+        reload();
         return { summary: `Removed ${refs.length} study aid${refs.length === 1 ? "" : "s"} from the kit.` };
       },
     } };
@@ -430,7 +411,7 @@ export function KitHub({
                 Your material is still safe. Try the read again.
               </p>
             </div>
-            <Button onClick={() => setRefreshKey((key) => key + 1)}>
+            <Button onClick={() => reload()}>
               Try again
             </Button>
           </div>
@@ -462,7 +443,7 @@ export function KitHub({
                 sourceId={sourceId}
                 kitTitle=""
                 addTarget={addTarget}
-                onConverted={() => setRefreshKey((key) => key + 1)}
+                onConverted={() => reload()}
               />
             )}
           </div>
@@ -509,7 +490,7 @@ export function KitHub({
     try {
       await renameKit(kit, draftTitle);
       setManaging(false);
-      setRefreshKey((key) => key + 1);
+      reload();
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : "Could not rename this study kit.");
     } finally {
@@ -521,7 +502,7 @@ export function KitHub({
     setWriteError(null);
     try {
       await removeKitMember(kit, artifact);
-      setRefreshKey((key) => key + 1);
+      reload();
     } catch (error) {
       setWriteError(error instanceof Error ? error.message : "Could not remove this study aid.");
     } finally {
@@ -574,7 +555,7 @@ export function KitHub({
         sourceId={kit.sourceId}
         kitTitle={kit.title}
         addTarget={addTarget}
-        onConverted={() => setRefreshKey((key) => key + 1)}
+        onConverted={() => reload()}
         buttonVariant="outline"
         buttonClassName={proposedButton}
       />
@@ -626,7 +607,7 @@ export function KitHub({
             sourceId={kit.sourceId}
             kitTitle={kit.title}
             addTarget={addTarget}
-            onConverted={() => setRefreshKey((key) => key + 1)}
+            onConverted={() => reload()}
           />
           <Button asChild variant="outline" size="sm"><Link href={`/education/kits/new?source=${encodeURIComponent(kit.sourceId)}&from=${encodeURIComponent(kit.sourceType)}`}>Add saved aid</Link></Button>
           <Button

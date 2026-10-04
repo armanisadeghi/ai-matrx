@@ -15,7 +15,7 @@
  * Slice + rules: `lib/redux/slices/storeReadsSlice.ts`.
  */
 
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useEffectEvent, useRef } from "react";
 import { dispatchThunk, useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   ensureStoreRead,
@@ -41,17 +41,31 @@ export interface StoreRead<T> {
 export function useStoreRead<T>(
   key: string | null,
   read: () => Promise<T>,
-  options: { enabled?: boolean } = {},
+  options: {
+    enabled?: boolean;
+    /**
+     * For an answer that goes stale while the person works elsewhere (study progress): a mount or
+     * wake finding the kept answer older than this reads again in the background, keeping the old
+     * answer on screen. Inside the window (a Board tile waking, a quick remount) nothing is read.
+     */
+    staleAfterMs?: number;
+  } = {},
 ): StoreRead<T> {
   const dispatch = useAppDispatch();
   const activeKey = options.enabled === false ? null : key;
   const entry = useAppSelector((state) => selectStoreRead(state, activeKey));
   const runRead = useEffectEvent(() => read());
 
+  const staleAfterMs = options.staleAfterMs;
   useEffect(() => {
     if (!activeKey) return;
-    void dispatch(ensureStoreRead(activeKey, () => runRead()));
-  }, [activeKey, dispatch]);
+    dispatchThunk(dispatch, (d, getState) => {
+      const kept = selectStoreRead(getState(), activeKey);
+      const stale =
+        staleAfterMs !== undefined && kept?.status === "ready" && Date.now() - kept.at > staleAfterMs;
+      return d(ensureStoreRead(activeKey, () => runRead(), stale ? { force: true, joinRunning: true } : {}));
+    });
+  }, [activeKey, dispatch, staleAfterMs]);
 
   const data = (entry?.hasData ? entry.data : undefined) as T | undefined;
   // Asked but not yet in the store (the first render before the effect): loading.
@@ -83,4 +97,19 @@ export function useStoreRead<T>(
     refresh,
     setData,
   };
+}
+
+/**
+ * Read again when `token` changes — a host's "bump to refresh" counter (`refreshKey`).
+ * The token at mount is the baseline, so a remount or a wake from sleep (state kept, token
+ * unchanged) reads nothing; only a real change after mount does.
+ */
+export function useRefreshWhenChanged(token: unknown, refresh: () => Promise<void>): void {
+  const seen = useRef(token);
+  const run = useEffectEvent(() => refresh());
+  useEffect(() => {
+    if (Object.is(seen.current, token)) return;
+    seen.current = token;
+    void run();
+  }, [token]);
 }
