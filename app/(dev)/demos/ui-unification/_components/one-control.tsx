@@ -136,7 +136,7 @@ export function UnifiedToolbar() {
   return (
     <MeasuredBare>
       <Button variant="primary">
-        <PlusGlyph /> New
+        <Plus aria-hidden /> New
       </Button>
       <SearchField style={{ width: "11rem" }} placeholder="Search" aria-label="Search" />
       <Select aria-label="Status" style={{ width: "7rem" }} value="open" onValueChange={() => {}} options={STATUS_OPTIONS} />
@@ -165,20 +165,12 @@ const STATUS_OPTIONS = [
   { value: "closed", label: "Closed" },
 ];
 
-export function PlusGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
-      <path d="M12 5v14M5 12h14" />
-    </svg>
-  );
-}
-
 /* Today: the same toolbar from the shipped primitives at their defaults. */
 export function OneToday() {
   return (
     <MeasuredBare className="flex flex-wrap items-center gap-2">
         <LegacyButton size="sm">
-          <PlusGlyph /> New
+          <Plus aria-hidden /> New
         </LegacyButton>
         <Input placeholder="Search" className="w-44" />
         <LegacySelect defaultValue="open">
@@ -283,7 +275,7 @@ export function DensityToday() {
           <div className="ml-auto flex items-center gap-2">
             <Input placeholder="Search" className="w-48" />
             <LegacyButton>
-              <PlusGlyph /> New document
+              <Plus aria-hidden /> New document
             </LegacyButton>
           </div>
         </div>
@@ -359,7 +351,7 @@ function PadToolbar() {
   return (
     <MeasuredBare>
       <Button variant="primary">
-        <PlusGlyph /> New
+        <Plus aria-hidden /> New
       </Button>
       <Button variant="outline">Export</Button>
       <SearchField style={{ width: "11rem" }} placeholder="Search" aria-label="Search" />

@@ -36,7 +36,8 @@ import type { SmartAgentInputSurfaceValueAnchors } from "./SmartAgentInput";
 import type { ComposerPresentation } from "./composer/composer-types";
 import { composerShows } from "./composer/composer-mode-visibility";
 import { ComposerChipsRow } from "./composer/ComposerChipsRow";
-import { ComposerMetaRow, ComposerPills, ComposerScopeCluster } from "./composer/ComposerMetaRow";
+import { ComposerMetaRow } from "./composer/ComposerMetaRow";
+import { useComposerFold } from "./composer/useComposerFold";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   presentation?: "default" | "ambient";
@@ -95,6 +96,8 @@ export function SmartAgentInputStacked({
   // recorder running.
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [expandRequestKey, setExpandRequestKey] = useState(0);
+  // Scope and Output fold into + when the composer itself is narrow.
+  const { ref: composerRootRef, folded } = useComposerFold();
   // Hooks must run unconditionally — `conversationId` may be null on
   // first render, but the selectors short-circuit when it is and the
   // early-return below renders the uninitialized shell instead.
@@ -254,24 +257,23 @@ export function SmartAgentInputStacked({
   // and the toolbar whose + trigger owns the documents bridge — arranged as the
   // design draws them.
   if (composer) {
-    const line = composer.size === "line";
-    // `line` is compact density too (6px inset, 14px corners).
-    const compact = composer.size === "compact" || line;
+    // TWO styles (Arman, 2026-10-04). Full (splash · page): two text rows and
+    // a button row in the card. Compact: ONE row in the card — + · text ·
+    // voice · send. Both keep every part: chips above (Work+), attachments,
+    // variables, and the meta row below (scope · values | agent · output · effort).
+    const compact = composer.size === "compact";
     const menuSide = composer.size === "splash" ? "bottom" : "top";
     const cardClassName = cn(
       "relative flex w-full min-h-0 flex-col border border-border bg-card transition-colors focus-within:border-foreground/25",
       // ONE inset (Arman, 2026-10-03): the send button's distance from the
-      // card edge is every edge's distance — variables, attachments, text and
-      // toolbar carry no side padding of their own inside the card.
-      // Splash · page: variable labels and text start where the + glyph does (6px in).
-      compact
-        ? "[&_[data-variable-row]]:px-0 [&_[data-variable-heading]]:px-0"
-        : "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5",
+      // card edge is every edge's distance. Variable labels and text start
+      // where the + glyph does (6px in).
+      "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5",
       // The drop target's hidden file input is not a row (it took a gap), and
       // an inline-block textarea leaves a 7px baseline strip under itself.
       "[&>input[type=file]]:!hidden [&_textarea]:block",
       compact
-        ? "rounded-[14px] p-1.5 gap-1.5"
+        ? "rounded-[18px] p-1.5 gap-0"
         : "rounded-[22px] p-2 gap-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     );
     const textarea = (
@@ -290,101 +292,37 @@ export function SmartAgentInputStacked({
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
         textMenu={composer.textMenu}
-        // Two lines of text sit in the box without moving it; it grows from
-        // the third (Arman, 2026-10-03 — Claude and ChatGPT do the same).
-        // splash · page: THREE IDENTICAL 32px ROWS — two text lines + the
-        // toolbar (Arman, 2026-10-03). Compact keeps 24px lines.
-        // Line: ONE 32px row, the text centred against the buttons.
-        minHeightPx={line ? 32 : compact ? 48 : 64}
+        // Every text line is one 32px composer row. Full: two rows sit still
+        // and the third grows it (Arman, 2026-10-03). Compact: one row, the
+        // text centred against the buttons, growing from the second.
+        minHeightPx={compact ? 32 : 64}
         composerType
-        composerRows={!compact || line}
+        composerRows
         flush
       />
     );
-    const toolbar = (
-      <InputActionButtons
-        conversationId={conversationId}
-        uploadRoot={uploadRoot}
-        uploadPath={uploadPath}
-        showSendButton={showSendButton}
-        showSubmitOnEnterToggle={false}
-        showVariableIcon={showVariableIcon}
-        sendButtonVariant="blue"
-        surfaceKey={surfaceKey}
-        disableSend={sendBlocked}
-        onVoiceBusyChange={setVoiceBusy}
-        extraRightControls={extraRightControls}
-        onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
-        composer={{
-          size: composer.size,
-          mode: composer.mode,
-          // Compact (Arman, 2026-10-03): send sits in the card; + · voice ·
-          // Scope · surface values | Agent · Effort ride the row under it.
-          leading: compact ? (
-            <ComposerScopeCluster conversationId={conversationId} composer={composer} />
-          ) : undefined,
-          trailing: compact ? (
-            <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} />
-          ) : undefined,
-          part: compact ? "controls" : undefined,
-        }}
-      />
-    );
-    // Compact: the send control alone, inside the card beside the text.
-    const sendInCard = (
-      <InputActionButtons
-        conversationId={conversationId}
-        uploadRoot={uploadRoot}
-        uploadPath={uploadPath}
-        showSendButton={showSendButton}
-        showSubmitOnEnterToggle={false}
-        showVariableIcon={showVariableIcon}
-        sendButtonVariant="blue"
-        surfaceKey={surfaceKey}
-        disableSend={sendBlocked}
-        composer={{ size: composer.size, mode: composer.mode, part: "send" }}
-      />
-    );
-    // Line: the + leads the one row; voice · send close it.
-    const linePlus = (
-      <InputActionButtons
-        conversationId={conversationId}
-        uploadRoot={uploadRoot}
-        uploadPath={uploadPath}
-        showSendButton={showSendButton}
-        showSubmitOnEnterToggle={false}
-        showVariableIcon={showVariableIcon}
-        sendButtonVariant="blue"
-        surfaceKey={surfaceKey}
-        disableSend={sendBlocked}
-        composer={{ size: composer.size, mode: composer.mode, part: "plus" }}
-      />
-    );
-    const lineTrail = (
-      <InputActionButtons
-        conversationId={conversationId}
-        uploadRoot={uploadRoot}
-        uploadPath={uploadPath}
-        showSendButton={showSendButton}
-        showSubmitOnEnterToggle={false}
-        showVariableIcon={showVariableIcon}
-        sendButtonVariant="blue"
-        surfaceKey={surfaceKey}
-        disableSend={sendBlocked}
-        onVoiceBusyChange={setVoiceBusy}
-        extraRightControls={extraRightControls}
-        composer={{ size: composer.size, mode: composer.mode, part: "trail" }}
-      />
-    );
+    const buttonsProps = {
+      conversationId,
+      uploadRoot,
+      uploadPath,
+      showSendButton,
+      showSubmitOnEnterToggle: false,
+      showVariableIcon,
+      sendButtonVariant: "blue" as const,
+      surfaceKey,
+      disableSend: sendBlocked,
+    };
+    const composerParts = { size: composer.size, mode: composer.mode, foldScopeAndOutput: folded };
     return (
       <div
+        ref={composerRootRef}
         className={cn(
-          "mx-auto flex w-full min-w-0 shrink-0 flex-col",
-          // Tight to the card: the rows above and below belong to it (Arman, 2026-09-28).
-          compact ? "gap-1" : "max-w-[768px] gap-1",
+          "mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1",
+          compact ? undefined : "max-w-[768px]",
         )}
         data-composer-size={composer.size}
         data-composer-mode={composer.mode}
+        data-composer-folded={folded ? "" : undefined}
         // The floating assists control never rests on any of the composer's controls.
         data-assist-dock-avoid=""
       >
@@ -397,7 +335,7 @@ export function SmartAgentInputStacked({
           uploadPath={uploadPath}
           className={cardClassName}
         >
-          {/* ONE row: attachments left, the value-group chip right. */}
+          {/* Attachments; the value-group chip rides the meta row. */}
           <ConversationContextRail
             conversationId={conversationId}
             presentation={contextRailPresentation}
@@ -405,9 +343,8 @@ export function SmartAgentInputStacked({
             surfaceValueName={surfaceValueAnchors?.context}
             withAttachments
             attachmentsSurfaceValueName={surfaceValueAnchors?.resources}
-            // The value-group chip rides the meta row beside Output (compact: the toolbar).
             withValueGroupChip={false}
-            className="px-0 pb-0"
+            className="px-0 pb-1"
           />
           <SmartAgentVariables
             conversationId={conversationId}
@@ -416,29 +353,35 @@ export function SmartAgentInputStacked({
             styleOverride={variablesPanelStyle}
             surfaceValueName={surfaceValueAnchors?.variables}
           />
-          {line ? (
+          {compact ? (
             <div className="flex min-w-0 items-end gap-1.5">
-              {linePlus}
+              <InputActionButtons
+                {...buttonsProps}
+                onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
+                composer={{ ...composerParts, part: "plus" }}
+              />
               <div className="min-w-0 flex-1">{textarea}</div>
-              {lineTrail}
-            </div>
-          ) : compact ? (
-            <div className="flex min-w-0 items-end gap-1.5">
-              <div className="min-w-0 flex-1">{textarea}</div>
-              {sendInCard}
+              <InputActionButtons
+                {...buttonsProps}
+                onVoiceBusyChange={setVoiceBusy}
+                extraRightControls={extraRightControls}
+                composer={{ ...composerParts, part: "trail" }}
+              />
             </div>
           ) : (
             <>
               {textarea}
-              {toolbar}
+              <InputActionButtons
+                {...buttonsProps}
+                onVoiceBusyChange={setVoiceBusy}
+                extraRightControls={extraRightControls}
+                onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
+                composer={composerParts}
+              />
             </>
           )}
         </SmartInputFileDropTarget>
-        {line ? null : compact ? (
-          toolbar
-        ) : (
-          <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} />
-        )}
+        <ComposerMetaRow conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
       </div>
     );
   }

@@ -1,19 +1,19 @@
 "use client";
 
 /**
- * /demos/composer/all — the FINAL composer styles only, each on its own REAL
- * conversation (surface-owned, default chat job), so each one sends, switches
- * agents and streams exactly as it does where it lives. The mode switch at the
- * top drives every composer on the page.
+ * /demos/composer/all — the final composer styles, each ONE real composer on
+ * its own real conversation (surface-owned, default chat job): variables,
+ * agent switching, Work/Advanced, outputs and streaming all behave exactly as
+ * where it lives. Nothing here is a stand-in.
  *
- * One component (SmartAgentInput's `composer` prop), three styles:
- *   Full (placed top on a new chat, bottom in a conversation) · Compact · Single-line.
- * Each style shows a frame you can drag from 340 to 768 — chat beside the
- * canvas and most windows resize live — then the six fixed widths.
- * Every composer of one style shares its conversation: type in one, all follow.
+ * One component (SmartAgentInput's `composer` prop), two styles:
+ *   Full — top on a new chat, bottom in a conversation · Compact — one row.
+ * Each sits in a frame you drag from 340 to 768, or snap to a fixed width.
+ * The drag writes the frame's width straight to the DOM (no React state per
+ * pixel), so resizing never re-renders the composer.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Building2, GripVertical, RotateCcw } from "lucide-react";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
 import { useCanvasWorkspaceConversation } from "@ai-matrx/chat/canvas/workspace/useCanvasWorkspaceConversation";
@@ -27,24 +27,22 @@ import type {
   ComposerSize,
 } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { cn } from "@/lib/utils";
 
 const MIN_W = 340;
 const MAX_W = 768;
-const WIDTHS = [768, 640, 560, 480, 400, 340] as const;
+const PRESETS = [768, 640, 560, 480, 400, 340] as const;
 
 interface StyleSpec {
   key: string;
   title: string;
   size: ComposerSize;
-  /** Show the transcript above the composer in the resizable frame. */
-  transcript: boolean;
 }
 
 const STYLES: StyleSpec[] = [
-  { key: "full-top", title: "Full · top (new chat)", size: "splash", transcript: false },
-  { key: "full-bottom", title: "Full · bottom (conversation)", size: "page", transcript: true },
-  { key: "compact", title: "Compact", size: "compact", transcript: true },
-  { key: "line", title: "Single-line", size: "line", transcript: false },
+  { key: "full-top", title: "Full · top (new chat)", size: "splash" },
+  { key: "full-bottom", title: "Full · bottom (conversation)", size: "page" },
+  { key: "compact", title: "Compact", size: "compact" },
 ];
 
 export function ComposerGallery({ initialMode }: { initialMode: ComposerMode | null }) {
@@ -55,7 +53,7 @@ export function ComposerGallery({ initialMode }: { initialMode: ComposerMode | n
         <ComposerModeSwitch initialMode={initialMode} />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-12 px-4 pb-16">
+        <div className="mx-auto flex max-w-[900px] flex-col gap-12 px-4 pb-16">
           {STYLES.map((style) => (
             <StyleSection key={style.key} spec={style} mode={mode} />
           ))}
@@ -69,19 +67,18 @@ function StyleSection({ spec, mode }: { spec: StyleSpec; mode: ComposerMode }) {
   const surfaceKey = `demo:composer-all:${spec.key}`;
   const chat = useCanvasWorkspaceConversation(surfaceKey);
   const conversationId = chat.conversationId;
-  const composer = (width: number): ComposerPresentation => ({
+  const composer: ComposerPresentation = {
     size: spec.size,
     mode,
     agent: { onSelectAgent: chat.startWith },
-    placeholder: spec.size === "compact" || spec.size === "line" ? "Reply" : "How can I help you today?",
-    maxInputHeightPx: spec.size === "compact" ? Math.round(width * 0.6) : undefined,
-  });
+    placeholder: spec.size === "compact" ? "Reply" : "How can I help you today?",
+  };
 
-  let gate: ReactNode = null;
+  let body: ReactNode;
   if (chat.conversation.state === "failed") {
-    gate = (
+    body = (
       <ErrorNotice
-        className="max-w-md"
+        className="m-auto max-w-xs"
         title="This conversation could not be opened"
         message={chat.conversation.reason}
         operation="Open the demo conversation"
@@ -93,93 +90,113 @@ function StyleSection({ spec, mode }: { spec: StyleSpec; mode: ComposerMode }) {
       />
     );
   } else if (chat.conversation.state === "needs-organization") {
-    gate = (
-      <button type="button" onClick={chat.conversation.choose} className="inline-flex w-fit items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm hover:bg-accent">
+    body = (
+      <button type="button" onClick={chat.conversation.choose} className="m-auto inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-sm hover:bg-accent">
         <Building2 className="h-3.5 w-3.5" /> Choose organization
       </button>
     );
   } else if (!conversationId) {
-    gate = <div className="h-24 w-full max-w-[768px] animate-pulse rounded-[22px] bg-muted" aria-busy="true" />;
+    body = <div className="m-auto h-24 w-4/5 animate-pulse rounded-[22px] bg-muted" aria-busy="true" />;
+  } else if (spec.size === "splash") {
+    body = (
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-3">
+        <ComposerGreeting className="mb-2" />
+        <SmartAgentInput conversationId={conversationId} surfaceKey={surfaceKey} composer={composer} />
+      </div>
+    );
+  } else {
+    body = (
+      <AgentConversationColumn
+        conversationId={conversationId}
+        surfaceKey={surfaceKey}
+        smartInputProps={{ composer }}
+      />
+    );
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-3">
       <h2 className="text-base font-semibold text-foreground">{spec.title}</h2>
-      {gate ?? (
-        <>
-          <ResizableFrame tall={spec.transcript || spec.size === "splash"}>
-            {(width) =>
-              spec.transcript ? (
-                <AgentConversationColumn
-                  conversationId={conversationId!}
-                  surfaceKey={surfaceKey}
-                  smartInputProps={{ composer: composer(width) }}
-                />
-              ) : (
-                <div className={spec.size === "splash" ? "flex h-full flex-col items-center justify-center gap-4 px-3" : "mt-auto p-3"}>
-                  {spec.size === "splash" ? <ComposerGreeting className="mb-2" /> : null}
-                  <SmartAgentInput conversationId={conversationId!} surfaceKey={surfaceKey} composer={composer(width)} />
-                </div>
-              )
-            }
-          </ResizableFrame>
-          <div className="flex flex-col gap-5">
-            {WIDTHS.map((w) => (
-              <div key={w} className="flex flex-col gap-1">
-                <span className="text-xs tabular-nums text-muted-foreground">{w}px</span>
-                <div style={{ width: w }} className="max-w-full">
-                  <SmartAgentInput conversationId={conversationId!} surfaceKey={surfaceKey} composer={composer(w)} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      <ResizableFrame>{body}</ResizableFrame>
     </section>
   );
 }
 
-/** A frame the viewer drags between 340 and 768 px, its live width shown above it. */
-function ResizableFrame({ tall, children }: { tall: boolean; children: (width: number) => ReactNode }) {
-  const [width, setWidth] = useState(560);
-  const drag = useRef<{ x: number; w: number } | null>(null);
-  useEffect(() => {
-    const move = (e: PointerEvent) => {
-      if (!drag.current) return;
-      const next = drag.current.w + (e.clientX - drag.current.x);
-      setWidth(Math.max(MIN_W, Math.min(MAX_W, Math.round(next))));
+/** A frame dragged between 340 and 768 px, or snapped to a preset. */
+function ResizableFrame({ children }: { children: ReactNode }) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [preset, setPreset] = useState<number | null>(560);
+
+  const apply = (width: number) => {
+    const w = Math.max(MIN_W, Math.min(MAX_W, Math.round(width)));
+    if (frameRef.current) frameRef.current.style.width = `${w}px`;
+    if (labelRef.current) labelRef.current.textContent = `${w}px`;
+    return w;
+  };
+
+  const startDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const startX = e.clientX;
+    const startW = frameRef.current?.offsetWidth ?? 560;
+    let frame = 0;
+    let lastX = startX;
+    setPreset(null);
+    const move = (ev: PointerEvent) => {
+      lastX = ev.clientX;
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        apply(startW + (lastX - startX));
+      });
     };
     const up = () => {
-      drag.current = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      if (frame) cancelAnimationFrame(frame);
+      const w = apply(startW + (lastX - startX));
+      if ((PRESETS as readonly number[]).includes(w)) setPreset(w);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-    return () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-  }, []);
+  };
+
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs tabular-nums text-muted-foreground">Drag the edge · {width}px</span>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {PRESETS.map((w) => (
+          <button
+            key={w}
+            type="button"
+            onClick={() => {
+              apply(w);
+              setPreset(w);
+            }}
+            className={cn(
+              "h-6 rounded-md px-2 text-xs tabular-nums transition-colors",
+              preset === w ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            {w}
+          </button>
+        ))}
+        <span ref={labelRef} className="ml-2 text-xs tabular-nums text-muted-foreground">
+          560px
+        </span>
+      </div>
       <div className="flex items-stretch">
         <div
-          style={{ width }}
-          className={`flex min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card/40 ${tall ? "h-[460px]" : "h-[200px]"}`}
+          ref={frameRef}
+          style={{ width: 560 }}
+          className="flex h-[520px] min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card/40"
         >
-          {children(width)}
+          {children}
         </div>
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize"
-          aria-valuemin={MIN_W}
-          aria-valuemax={MAX_W}
-          aria-valuenow={width}
-          onPointerDown={(e) => {
-            drag.current = { x: e.clientX, w: width };
-          }}
-          className="flex w-4 cursor-col-resize touch-none items-center justify-center text-muted-foreground hover:text-foreground"
+          aria-label="Drag to resize"
+          onPointerDown={startDrag}
+          className="flex w-4 touch-none select-none items-center justify-center text-muted-foreground hover:text-foreground"
         >
           <GripVertical className="h-4 w-4" />
         </div>

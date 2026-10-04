@@ -69,14 +69,6 @@ export function composerShows(mode: ComposerMode, control: ComposerControl): boo
 }
 
 /**
- * At compact width the meta row holds the agent pill only; Scope and
- * Output move into the + menu (A5 compact-composer ruling).
- */
-export function metaRowHoldsScopeAndOutput(size: ComposerSize): boolean {
-  return size !== "compact" && size !== "line";
-}
-
-/**
  * Phones: the `+` opens the run-controls bottom sheet (tabs), not the cascade —
  * with EVERY tab in every mode (no mode has less capability).
  */

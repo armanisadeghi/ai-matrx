@@ -86,7 +86,13 @@ export interface RunControlsMenuProps {
    * desktop `+` opens the mode-aware cascading ComposerPlusMenu; absent =
    * PlusAttachMenu exactly as before. Mobile keeps the bottom sheet either way.
    */
-  composer?: { mode: ComposerMode; size: ComposerSize; surfaceKey?: string };
+  composer?: {
+    mode: ComposerMode;
+    size: ComposerSize;
+    surfaceKey?: string;
+    /** The composer is narrow: Scope and Output live in the + menu. */
+    foldScopeAndOutput?: boolean;
+  };
 }
 
 export function RunControlsMenu({
@@ -176,10 +182,10 @@ export function RunControlsMenu({
         "relative flex items-center justify-center rounded-full transition-colors",
         variant !== "plus"
           ? "h-8 w-8"
-          : composer && composer.size !== "compact"
+          : composer
             ? // THE COMPOSER ROW (Arman, 2026-10-03): one 32px row height for
-              // every text line and for the toolbar.
-              "h-11 w-11 lg:h-8 lg:w-8"
+              // every text line and for the buttons.
+              "h-11 w-11 shrink-0 lg:h-8 lg:w-8"
             : "h-11 w-11 lg:h-9 lg:w-9",
         "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
       )}
@@ -203,6 +209,7 @@ export function RunControlsMenu({
           trigger={triggerButton}
           mode={composer.mode}
           size={composer.size}
+          foldScopeAndOutput={composer.foldScopeAndOutput}
           side={side}
           surfaceKey={composer.surfaceKey}
           onRequestInputExpand={onRequestInputExpand}
@@ -232,6 +239,7 @@ export function RunControlsMenu({
         trigger={triggerButton}
         mode={composer.mode}
         size={composer.size}
+        foldScopeAndOutput={composer.foldScopeAndOutput}
         side={side}
         surfaceKey={composer.surfaceKey}
         onRequestInputExpand={onRequestInputExpand}

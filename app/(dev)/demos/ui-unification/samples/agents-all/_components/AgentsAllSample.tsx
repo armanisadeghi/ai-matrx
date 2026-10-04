@@ -36,6 +36,7 @@ import {
   Swords,
   Users,
   Zap,
+  Plus,
 } from "lucide-react";
 import { useDriftAlerts } from "@ai-matrx/chat/agents/hooks/useDriftAlerts";
 import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
@@ -53,7 +54,6 @@ import { newAgentHref } from "@/features/agents/browse/agentPaths";
 import { AGENT_BROWSE_SURFACE } from "@/features/agents/browse/surface";
 import { AGENT_LIST_SCOPES, type AgentBrowseRow } from "@/features/agents/browse/types";
 import { cn } from "@/lib/utils";
-import { PlusGlyph } from "../../../_components/one-control";
 
 import { FeatureCards, type FeatureCardItem } from "../../_components/page-top/feature-cards";
 import { Button, ControlScope } from "@ai-matrx/design-system/controls";
@@ -151,7 +151,7 @@ function AgentsPageTop() {
 function NewAgentButton() {
   return (
     <Button asChild variant="primary"><Link href={newAgentHref(false)} aria-label="New agent">
-      <PlusGlyph />
+      <Plus aria-hidden />
       <span className="max-sm:sr-only">New agent</span>
     </Link></Button>
   );

@@ -82,7 +82,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
           aria-label={`Dimension filter: ${label}`}
           title="Show only items linked to one value"
           className={cn(
-            "inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors sm:max-w-[13rem] lg:max-w-[18rem]",
+            "matrx-glyph-trim inline-flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors sm:max-w-[13rem] lg:max-w-[18rem]",
             valueId
               ? "border-primary/40 bg-primary/10 text-foreground"
               : "border-border text-muted-foreground hover:bg-muted hover:text-foreground max-sm:shrink-0",

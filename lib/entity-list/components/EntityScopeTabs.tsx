@@ -102,7 +102,7 @@ const LANE_NARROWS: ReadonlySet<ListScopeKind> = new Set([
 ]);
 
 const TAB_BASE =
-  "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap";
+  "matrx-glyph-trim inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors whitespace-nowrap";
 const TAB_ACTIVE = "bg-primary text-primary-foreground";
 const TAB_IDLE = "text-muted-foreground hover:bg-muted hover:text-foreground";
 

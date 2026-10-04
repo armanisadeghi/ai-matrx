@@ -140,7 +140,7 @@ const PILL =
 // hit target without changing the compact desktop pill geometry. Its sheet
 // owns the large route rows after activation.
 const ITEM =
-  "flex items-center justify-center gap-1 py-0.5 px-2.5 text-xs font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
+  "matrx-glyph-trim [--matrx-glyph-size:0.875rem] flex items-center justify-center gap-1 py-0.5 px-2.5 text-xs font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
 
 // Breathing room the nav must keep between itself and the header's left/right
 // flanks. Without it the measurement picks "full" whenever the content fits by

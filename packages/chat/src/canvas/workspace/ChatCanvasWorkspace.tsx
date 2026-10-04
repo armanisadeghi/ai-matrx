@@ -379,7 +379,7 @@ export function ChatCanvasWorkspace({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
+          className="matrx-glyph-trim flex h-7 min-w-0 items-center gap-1 rounded-md px-1.5 text-sm font-medium text-foreground hover:bg-accent"
         >
           <span className="min-w-0 truncate">{title}</span>
           <ChevronDown

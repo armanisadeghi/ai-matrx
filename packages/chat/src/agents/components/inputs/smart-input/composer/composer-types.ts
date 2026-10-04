@@ -33,12 +33,10 @@ export function isComposerMode(value: unknown): value is ComposerMode {
  * Where the composer sits (brief §1 + A5).
  *  - `splash`  — centered hero on an empty conversation; menus open downward.
  *  - `page`    — docked at the bottom of a conversation; menus open upward.
- *  - `line`    — ONE row: + · text · voice · send, nothing under it; launchers
- *                and inline prompts with a fixed agent (agent apps, approvals).
  *  - `compact` — a 440px chat panel footer or a 340px floating panel; the meta
  *                row keeps agent · effort beside send, and Scope / Output move into +.
  */
-export type ComposerSize = "splash" | "page" | "compact" | "line";
+export type ComposerSize = "splash" | "page" | "compact";
 
 /**
  * The host's say over the agent. The composer never navigates on its own: a

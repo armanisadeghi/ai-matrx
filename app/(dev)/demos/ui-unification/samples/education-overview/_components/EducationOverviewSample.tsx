@@ -86,7 +86,6 @@ import { EDU_START_HREF } from "@/features/education/onboard/startRoutes";
 
 import { KpiRow, type KpiRowItem } from "../../_components/page-top/kpi-row";
 import { FeatureCards } from "../../_components/page-top/feature-cards";
-import { PlusGlyph } from "../../../_components/one-control";
 import { Badge, Button, ControlRow, ControlScope, type SegmentOption, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 /* ------------------------------------------------------------------ */
@@ -405,7 +404,7 @@ function KitsSection({ snapshot }: { snapshot: EducationSnapshot }) {
       meta={<span>{snapshot.kits.total}</span>}
       actions={
         <Button asChild variant="quiet"><Link href="/education/start">
-          <PlusGlyph /> New kit
+          <Plus aria-hidden /> New kit
         </Link></Button>
       }
       seeAll={{ href: "/education/kits", label: `All ${snapshot.kits.total} kits` }}
@@ -692,7 +691,7 @@ export function EducationOverviewSample() {
                         <Library aria-hidden /> Library
                       </Link></Button>
                       <Button asChild variant="primary"><Link href="/education/start">
-                        <PlusGlyph /> Create kit
+                        <Plus aria-hidden /> Create kit
                       </Link></Button>
                     </ControlRow>
                   </div>

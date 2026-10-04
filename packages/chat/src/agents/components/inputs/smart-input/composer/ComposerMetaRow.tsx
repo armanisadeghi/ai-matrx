@@ -42,25 +42,6 @@ export function ComposerValueGroupChip({ conversationId }: { conversationId: str
   );
 }
 
-/** Scope · surface values — the left cluster (meta row; compact: after + and the voice controls). */
-export function ComposerScopeCluster({
-  conversationId,
-  composer,
-}: {
-  conversationId: string;
-  composer: ComposerPresentation;
-}) {
-  return (
-    <div className="flex shrink-0 items-center gap-1.5">
-      <ActiveContextLensChip
-        conversationId={conversationId}
-        className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
-      />
-      <ComposerValueGroupChip conversationId={conversationId} />
-    </div>
-  );
-}
-
 /**
  * The Scope chip's two faces under comparison (Arman, 2026-10-03):
  * `plain` = the Output pill's own face; `pill` = bordered, round like the card.
@@ -121,18 +102,28 @@ export function ComposerMetaRow({
   conversationId,
   composer,
   menuSide,
+  folded = false,
 }: {
   conversationId: string;
   composer: ComposerPresentation;
   menuSide: "top" | "bottom";
+  /** Under 480px of composer width Scope and Output live in + (useComposerFold). */
+  folded?: boolean;
 }) {
   return (
-    // One line, always: a phone scrolls the row sideways, never wraps it.
-    // `@container/composer-meta`: a narrow column (a chat beside a wide
-    // canvas) folds the Scope chip to its icon, as a phone does.
-    <div className={cn(COMPOSER_ROW_CLASS, "@container/composer-meta justify-between gap-2 px-1")}>
-      <ComposerScopeCluster conversationId={conversationId} composer={composer} />
-      <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} withOutput />
+    // One line, always: a narrow column scrolls the row sideways, never wraps it.
+    // Every gap is the tap-target 6px; the clusters sit at the two ends.
+    <div className={cn(COMPOSER_ROW_CLASS, "justify-between gap-1.5 px-1")}>
+      <div className="flex shrink-0 items-center gap-1.5">
+        {folded ? null : (
+          <ActiveContextLensChip
+            conversationId={conversationId}
+            className={SCOPE_CHIP_CLASS[composer.scopeChipStyle ?? "plain"]}
+          />
+        )}
+        <ComposerValueGroupChip conversationId={conversationId} />
+      </div>
+      <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} withOutput={!folded} />
     </div>
   );
 }

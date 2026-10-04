@@ -112,7 +112,7 @@ import {
 } from "./ComposerMenu";
 import { ComposerOutputPanel } from "./ComposerOutput";
 import { ComposerMenuSheet } from "./ComposerMenuSheet";
-import { composerShows, metaRowHoldsScopeAndOutput } from "./composer-mode-visibility";
+import { composerShows } from "./composer-mode-visibility";
 import type { ComposerMode, ComposerSize } from "./composer-types";
 import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import { QuickRunModelSelect } from "../../../run-controls/RunModelPicker";
@@ -136,7 +136,10 @@ interface ComposerPlusMenuProps {
   conversationId: string;
   trigger: ReactNode;
   mode: ComposerMode;
-  size: ComposerSize;
+  /** Which style hosts the menu (rows do not vary by it; width folds via the next prop). */
+  size?: ComposerSize;
+  /** The composer is narrow: Scope and Output live here, not in the meta row. */
+  foldScopeAndOutput?: boolean;
   side: "top" | "bottom";
   /** The host's surface key — auto-clear keeps its display slot in step. */
   surfaceKey?: string;
@@ -153,7 +156,7 @@ export function ComposerPlusMenu({
   surfaceKey,
   trigger,
   mode,
-  size,
+  foldScopeAndOutput = false,
   side,
   onRequestInputExpand,
   presentation = "popover",
@@ -270,8 +273,8 @@ export function ComposerPlusMenu({
           }}
         />
 
-        {/* At compact width Scope and Output live here (A5). */}
-        {!metaRowHoldsScopeAndOutput(size) ? (
+        {/* A narrow composer folds Scope and Output in here (under 480px). */}
+        {foldScopeAndOutput ? (
           <>
             <ComposerMenuDivider />
             <ComposerSubmenu row={{ icon: Target, label: "Scope" }} panelClassName="w-[340px] p-0">

@@ -93,7 +93,7 @@ export function InputButton({
       // The tooltip is the control's whole identity — an icon-only button with
       // no aria-label reads as "button" and nothing else.
       aria-label={tooltip}
-      className={`h-8 w-8 flex items-center justify-center rounded-full transition-colors
+      className={`h-8 w-8 shrink-0 flex items-center justify-center rounded-full transition-colors
         ${active ? "text-primary ring-1 ring-inset ring-primary/50 hover:bg-muted/40" : INPUT_BUTTON_IDLE_TINT}
         ${className}`}
     >
@@ -131,16 +131,13 @@ interface InputActionButtonsProps {
   composer?: {
     size: ComposerSize;
     mode: ComposerMode;
-    /** Compact only: after + and the voice controls (Scope · surface values). */
-    leading?: React.ReactNode;
-    trailing?: React.ReactNode;
+    /** The composer is narrow: Scope and Output live in the + menu. */
+    foldScopeAndOutput?: boolean;
     /**
-     * Which part of the arrangement this instance draws. Compact puts send
-     * INSIDE the card and everything else in the row under it, so it mounts
-     * two instances: `"send"` (stop/send only) and `"controls"` (the rest).
-     * Absent = everything (splash · page).
+     * Which part this instance draws. Compact's one row mounts two: `"plus"`
+     * leads it, `"trail"` (voice · send) closes it. Absent = Full's button row.
      */
-    part?: "send" | "controls" | "plus" | "trail";
+    part?: "plus" | "trail";
   };
 }
 
@@ -291,7 +288,6 @@ export function InputActionButtons({
     ) : null;
 
   if (composer) {
-    const compact = composer.size === "compact";
     const plusMenu = (
       <RunControlsMenu
         conversationId={conversationId}
@@ -299,7 +295,12 @@ export function InputActionButtons({
         includeAttach={showAttachments}
         side={composer.size === "splash" ? "bottom" : "top"}
         onRequestInputExpand={onRequestInputExpand}
-        composer={{ mode: composer.mode, size: composer.size, surfaceKey }}
+        composer={{
+          mode: composer.mode,
+          size: composer.size,
+          surfaceKey,
+          foldScopeAndOutput: composer.foldScopeAndOutput,
+        }}
       />
     );
     // The mic and its device chevron are ONE control group (Arman, 2026-10-03):
@@ -353,7 +354,6 @@ export function InputActionButtons({
       </ComposerSendSlot>
     ) : null;
 
-    if (composer.part === "send") return sendControls;
     // `line`: the + leads the row, voice and send close it, the text between.
     if (composer.part === "plus") {
       return (
@@ -376,28 +376,18 @@ export function InputActionButtons({
     }
 
     return (
-      <div
-        className={
-          compact
-            ? "flex min-w-0 items-center justify-between gap-1.5 shrink-0"
-            : // One 32px composer row, the same height as each text line.
-              "flex min-w-0 items-center justify-between gap-1.5 shrink-0 lg:h-8"
-        }
-      >
+      // Full's button row: one 32px composer row, the same height as each text line.
+      <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0 lg:h-8">
         <div className="flex min-w-0 items-center gap-1.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
           {variablesToggle}
-          {compact ? micGroup : null}
-          {compact ? liveAudioButton : null}
-          {compact ? composer.leading : null}
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
           {extraRightControls}
-          {composer.trailing}
-          {compact ? null : micGroup}
-          {compact ? null : liveAudioButton}
-          {composer.part === "controls" ? null : sendControls}
+          {micGroup}
+          {liveAudioButton}
+          {sendControls}
         </div>
       </div>
     );

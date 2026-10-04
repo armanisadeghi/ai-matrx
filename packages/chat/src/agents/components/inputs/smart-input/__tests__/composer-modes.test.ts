@@ -7,7 +7,6 @@
 
 import {
   composerShows,
-  metaRowHoldsScopeAndOutput,
   mobileSheetShowsTab,
 } from "../composer/composer-mode-visibility";
 import { modeAfterKnobs, parseComposerModeCookie } from "../composer/composer-mode-cookie";
@@ -49,12 +48,6 @@ describe("THE ONE TABLE — what each mode shows (A1, amended 2026-09-27)", () =
     expect(composerShows("work", "agent.presets")).toBe(false);
     expect(composerShows("advanced", "agent.presets")).toBe(false);
     expect(composerShows("advanced", "agent.panel")).toBe(true);
-  });
-
-  it("at compact width Scope and Output leave the meta row for the + menu (A5)", () => {
-    expect(metaRowHoldsScopeAndOutput("compact")).toBe(false);
-    expect(metaRowHoldsScopeAndOutput("page")).toBe(true);
-    expect(metaRowHoldsScopeAndOutput("splash")).toBe(true);
   });
 
   it("phones get every sheet tab in every mode", () => {
