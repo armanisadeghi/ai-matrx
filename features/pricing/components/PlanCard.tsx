@@ -63,22 +63,19 @@ export function PlanCard({
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/40 to-transparent" />
       )}
 
-      {plan.badge && (
-        <div className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
-          <Crown className="h-3 w-3" strokeWidth={2.5} />
-          {plan.badge}
-        </div>
-      )}
-
       <div className={cn("flex flex-col gap-1 px-6 pt-6", variant === "compact" && "px-5 pt-5")}>
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-lg font-semibold tracking-tight">{plan.name}</h3>
-          {seats && (
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
-              {seats}
+          {plan.badge && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background">
+              <Crown className="h-3 w-3" strokeWidth={2.5} />
+              {plan.badge}
             </span>
           )}
         </div>
+        {seats && (
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground/70">{seats}</span>
+        )}
         {plan.tagline && <p className="text-sm text-muted-foreground">{plan.tagline}</p>}
       </div>
 
@@ -116,10 +113,10 @@ export function PlanCard({
           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             AI points{plan.perSeat ? " per seat" : ""}
           </div>
-          <dl className="mt-1 grid grid-cols-3 gap-2">
+          <dl className="mt-1 flex flex-col gap-0.5">
             {points.map((w) => (
-              <div key={w.period} className="flex flex-col">
-                <dt className="text-[10px] text-muted-foreground">{w.label}</dt>
+              <div key={w.period} className="flex items-baseline justify-between gap-2">
+                <dt className="text-xs text-muted-foreground">{w.label}</dt>
                 <dd className="text-sm font-semibold tabular-nums">
                   {w.limit == null ? "Custom" : formatPoints(w.limit)}
                 </dd>

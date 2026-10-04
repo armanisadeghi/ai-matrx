@@ -10,6 +10,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { announcePlanCheckout, planAction } from "@/features/entitlements/catalog/planAction";
 import type { CatalogPlan } from "@/features/entitlements/catalog/types";
 
@@ -21,6 +22,8 @@ export function useChoosePlan(): {
   const router = useRouter();
   const signedIn = useAppSelector(selectIsAuthenticated);
   const [isPending, startTransition] = useTransition();
+  // Sign-up keeps the visitor's place (they come back to the plan they chose).
+  const signUpHref = useLoginHref("/sign-up");
 
   const choose = (plan: CatalogPlan) => {
     if (isPending) return;
@@ -30,7 +33,8 @@ export function useChoosePlan(): {
       return;
     }
     if (action.kind === "signup" || action.kind === "contact") {
-      startTransition(() => router.push(action.href));
+      const href = action.kind === "signup" ? signUpHref : action.href;
+      startTransition(() => router.push(href));
     }
   };
 

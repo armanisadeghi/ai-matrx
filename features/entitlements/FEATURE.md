@@ -115,13 +115,29 @@ full snapshot refresh.
 
 🚨 **No plan name, price, or limit may be hardcoded.** They live in
 `billing.plan` / `billing.plan_limit`; changing a plan is one row, never a
-deploy. `features/pricing/data.ts` was the old hardcoded ladder and is
-superseded — a constant describing a plan is a bug. Full model + the change
+deploy — a constant describing a plan is a bug. Full model + the change
 table: `common-docs/systems/platform/entitlements-knobs/PLAN_MODEL.md`.
+
+**Every surface that names a plan reads `billing.plan_catalog()`** (public RPC,
+anon + authenticated) through [`catalog/`](./catalog/) — never a second reader,
+never a copy of a number:
+
+- `usePlanCatalog(initialPlans?)` in the browser (one read per session, shared);
+  `readPlanCatalogServer()` for server pages, whose result seeds the hook.
+- `catalog/format.ts` derives every figure: price from exact cents (`$15.20`,
+  never rounded), the annual saving from the two prices, AI points per window
+  (`platform.points` month / week / 5-hour), limit rows labelled by `registry.ts`
+  (a capability with no registry label is not shown). A null price is "Custom".
+  `listed_on_pricing = false` (guest) is never listed.
+- `catalog/planAction.ts` decides what choosing a plan does: free → sign-up
+  (keeps the destination), custom price → `/contact`, paid → the tracked
+  Coming Soon `billing.plan-checkout` (no plan has a Stripe price yet). A plan
+  button never closes silently or claims a trial.
 
 | Piece | Role |
 |---|---|
-| [`plan-service.ts`](./plan-service.ts) | `fetchPlanStatus(org)` — "where am I at": plan + every dimension + what the next plan gives. `fetchPublicPlans()` — the pricing page, from the DB. |
+| [`plan-service.ts`](./plan-service.ts) | `fetchPlanStatus(org)` — "where am I at": plan + every dimension + what the next plan gives. |
+| [`catalog/`](./catalog/) | The plan catalog reader + formatters + plan action (above). Consumers: `/pricing`, `PricingGrid`/`PlanCard`, `UsageLimitDialog` (via `CapabilityPaywallDialog`), `UpgradeModal` (via `CapabilityGate`), industry upgrade surfaces. |
 | [`components/PlanUsagePanel.tsx`](./components/PlanUsagePanel.tsx) | The usage screen. Mounted at Settings → **Plan & usage** (`/user-settings/plan`). |
 | `registry.ts` | The human WORDS for each dimension (label, description, run-out copy). The NUMBERS are never here. |
 
@@ -387,8 +403,8 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
   action starts — mid-generation ambush is a defect (README §6). The mechanism: the snapshot /
   `resolve_capability` RPCs report limits + windows for EVERY registered capability, enforced or
   not, each with an `enforced` flag; un-enforced caps stay `allowed` but the meter still renders.
-- **`billing.capability_limit` is the SINGLE SOURCE for every number.** The registry
-  `defaultFreeLimit` is descriptive-only, read by nobody — never a second source of truth.
+- **The database is the SINGLE SOURCE for every number** (`billing.capability_limit`,
+  `billing.plan_limit`, the `billing/points_per_usd` knob). The registry holds words only.
 - **Consume the primitives, never hand-roll.** `EntitlementMeter` for the meter,
   `useEntitlementGuard` for the pre-spend check + paywall + `commit()`. A hand-rolled
   `remaining` line, a `toast.error` on a cap-hit, or a direct `billing.entitlement_consume`
@@ -438,11 +454,9 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
       their `commit()` — the primitive is ready.
 - [x] `/pricing/pledge` + `/pricing/compare` (education-specific, verified rendering).
 - [x] `/pricing` education-first + DB-backed (F5) — Free caps from `billing.capability_limit`,
-      Premium from `billing.product`/`price` (TEST row today). Generic harness `PLANS[]` +
-      `PricingGrid`/`PricingLanding` retained ONLY for `(dev)/demos/upgrade`. Premium CTA starts
-      real Stripe checkout. **Structure decision:** education plans are primary on `/pricing`
-      because every inbound link is an education paywall; the generic SaaS grid lives on in the
-      demos, not deleted.
+      Premium from `billing.product`/`price` (TEST row today). Since 2026-10-03 `/pricing`
+      leads with the plan ladder from `billing.plan_catalog()`; the education plans are their own
+      section below it.
 - [x] Admin usage read surface (`/administration/entitlements`, super-admin) + `usage_admin_summary` / `usage_my_summary` (P5).
 - [x] Stripe machinery: SDK, checkout, customer portal (one-click cancel), webhooks, lifecycle sync, idempotency + ordering guard.
 - [x] Stripe TEST secret/publishable keys are in `.env.local` (`STRIPE_TEST_MODE_SECRET_KEY` /
@@ -497,6 +511,8 @@ real (F6, 2026-07-13).
 | `education.game_room_size` | `HostSetupImpl` (engage lobby) — `useEntitlement` gate, max room size shown before hosting (no meter/consume — a gate) | engage/game agent |
 
 ## Change Log
+
+- **2026-10-03** — Plan catalog: every plan surface reads `billing.plan_catalog()` via `catalog/`. `/pricing` shows the ladder (Personal / Business, exact cents, AI points per window) above the education section; paywall/upgrade/industry dialogs read the same rows; paid plans announce `billing.plan-checkout` (Coming Soon). Deleted `features/pricing/data.ts`, `PricingLandingRoute`, dead `fetchPublicPlans`; dropped registry `defaultFreeLimit` and the hardcoded points-rate sentence. Registry `minTier`/`enforced` still duplicate `billing.capability` (the resolver gate reads them) — open.
 
 - **2026-09-27** — page-pass 2026-09-27: `/pricing`, type promotional, posture after Linear's pricing page (CTA directly under each price), fixed: Premium card no longer shows the internal test product name/description ("AI Matrx Premium (TEST)", "Test-mode … P8 checkout verification"); removed the false "Priority generation on capacity" line (no tier-aware priority exists) and the "We email before every renewal" line (the pledge marks renewal reminders Before paid launch); Free limits phrased as units ("30 flashcard decks / month") and now include the daily AI tutor and live-grading caps; a refused `capability_limit` read throws instead of rendering a limitless Free card; signed-out visitors are told every new account gets Premium free before launch and are sent to sign-up instead of a $10 checkout (`PRELAUNCH_COMPLIMENTARY_PREMIUM` in `features/pricing/education/loadEducationPricing.ts` — un-flip with the signup trigger); complimentary Premium says so; hand-styled buttons → design-system `Button`; plan CTAs above the fold. Phase B (live proof): "complimentary" now reads the person's own `billing.user_plan.source` via `readMyPlanSource()` (`plan-service.ts`) — `entitlement_snapshot().is_subscribed` is only `tier in (premium, trial)` and cannot tell a grant from a subscription; header links carry `data-tap-target` for the 44px phone floor. Iteration (blind judge "mediocre"): headline now states the offer, pledge moved below the plans as one section with one link each; Premium leads with "Everything in Free, plus" (7 true lines, no premium limit rows exist); current plan is a "Your plan" badge, never a button; signed-out Free and Premium both go to sign-up returning to /pricing; "Start free"/"Open study tools" are real links; "test pricing" caveat removed (internal wording; `isTest` dropped); shared `PublicHeader` Download is a 44px touch link (Button asChild, no <a><button>), `PublicFooter` is one row at xl and a grid below. Excellence pass: cards share a subgrid (header · action · features · footer aligned); Premium is the emphasized card via primary border/ring on `bg-card` (no inverted slab — it glared in dark); "Every plan includes" strip holds the shared lines once; 5-hour pacing is a real limit line from the `rolling_5h` row (`freePacing`); a Premium member's plan is first on phone; pledge links one style, pledge icons 20px in primary tiles. No surface: the public shell mounts no Agents menu or agent right-click runtime, so a manifest here could never be reached.
 
