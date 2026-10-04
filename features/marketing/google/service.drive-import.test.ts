@@ -14,7 +14,7 @@ jest.mock("@/features/files/api/files", () => ({
 }));
 
 import { CHOSEN_ORG, mockFetchJson, resetGate, selectOrganization } from "@/lib/organization/__tests__/gate-harness";
-import { importSelectedGoogleDriveFile } from "./service";
+import { browseGoogleDrive, checkGoogleDriveFileAccess, importSelectedGoogleDriveFile } from "./service";
 
 const chosen = {
   organizationId: CHOSEN_ORG,
@@ -59,6 +59,7 @@ it("sends the chosen file, source connection and destination organization to the
     connection_id: chosen.connectionId,
     file_id: chosen.fileId,
     file_path: chosen.filePath,
+    resource_key: null,
   });
   expect(mockGetFile).toHaveBeenCalledWith("saved-intake-guide");
 });
@@ -77,4 +78,28 @@ it("refuses a response that cannot be confirmed as the saved Matrx file", async 
   await expect(importSelectedGoogleDriveFile(chosen)).rejects.toThrow(
     "returned a different file",
   );
+});
+
+// Exercise the real transport, not the component's mocked service functions.
+it.each(["review-key", "different-review-key"])("preserves resource key %s through all Drive wire requests", async (resourceKey) => {
+  const fetchMock = mockFetchJson({ files: [], next_page_token: null });
+  await browseGoogleDrive({ ...chosen, folderId: "shared-folder", pageToken: "second-page", resourceKey });
+  expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+    organization_id: chosen.organizationId, connection_id: chosen.connectionId,
+    search: null, folder_id: "shared-folder", page_token: "second-page", resource_key: resourceKey,
+  });
+
+  fetchMock.mockClear();
+  await checkGoogleDriveFileAccess({ ...chosen, resourceKey });
+  expect(JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+    organization_id: chosen.organizationId, connection_id: chosen.connectionId,
+    file_id: chosen.fileId, resource_key: resourceKey,
+  });
+
+  const importFetch = mockFetchJson(result(chosen.fileId));
+  await importSelectedGoogleDriveFile({ ...chosen, resourceKey });
+  expect(JSON.parse((importFetch.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+    organization_id: chosen.organizationId, connection_id: chosen.connectionId,
+    file_id: chosen.fileId, file_path: chosen.filePath, resource_key: resourceKey,
+  });
 });
