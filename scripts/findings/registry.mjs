@@ -144,6 +144,12 @@ export const FINDINGS_CHECKS = [
     ...fromRules("scroll-chain-clipped-tables-lists"),
   },
   {
+    id: "floating-clearance",
+    watch: featureRegExp(/^(app|features|components|lib)\/.*\.tsx$/),
+    fix: "Delete the page scroller's hand-written bottom clearance (pb-safe / pb-[…safe-area…] / pb-16+) — the shell's floating-clearance runway owns it (lib/layout/floating-chrome.ts) — or give a data-floating-clearance=\"off\" opt-out its `// ui-exception:` reason.",
+    ...fromRules("floating-clearance"),
+  },
+  {
     id: "canonical-agent-model-pickers",
     watch: /\.tsx?$/,
     fix: "Use the ONE agent picker (@ai-matrx/agents/catalog/react) or the canonical model picker instead of a local one.",

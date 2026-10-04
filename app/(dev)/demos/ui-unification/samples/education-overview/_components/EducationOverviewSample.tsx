@@ -693,8 +693,8 @@ export function EducationOverviewSample() {
           contentSource={{ type: "raw" }}
         >
           <SampleScale>
-            <main className="uk-page h-full overflow-y-auto bg-textured pb-safe">
-              <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-3 pb-12 pt-3 sm:px-6 sm:pt-4">
+            <main className="uk-page h-full overflow-y-auto bg-textured">
+              <div className="mx-auto flex w-full max-w-6xl flex-col gap-7 px-3 py-3 sm:px-6 sm:py-4">
                 {/* PAGE TOP — provenance + the page's two actions, then the KPI row. */}
                 <div className="flex flex-col gap-3">
                   <div className="flex min-h-7 flex-wrap items-center gap-y-1">

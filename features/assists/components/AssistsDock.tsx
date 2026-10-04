@@ -205,6 +205,7 @@ export default function AssistsDock() {
           onClick={() => setOpen(true)}
           aria-label={`Open ${visible.length} assist${visible.length === 1 ? "" : "s"}`}
           data-assists-dock=""
+          data-matrx-floating-bottom=""
           className="fixed right-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-glass text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[background-color,transform] hover:bg-glass-hover md:hidden data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30"
           style={mobileLauncherStyle}
         >
@@ -297,6 +298,8 @@ export default function AssistsDock() {
         dragging && "select-none",
       )}
       style={style}
+      // Floating chrome: page scroll owners reserve its height (lib/layout/floating-chrome.ts).
+      data-matrx-floating-bottom=""
     >
       {open && (
         <div className="pointer-events-auto flex max-h-[50dvh] w-72 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-background/95 p-2 shadow-lg backdrop-blur">

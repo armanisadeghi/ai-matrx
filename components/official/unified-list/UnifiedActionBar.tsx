@@ -161,7 +161,7 @@ export function UnifiedActionBar<T extends BaseListItem>({
                     />
 
                     {/* Active Search Bar */}
-                    <div className="fixed bottom-0 left-0 right-0 pb-safe z-40">
+                    <div className="fixed bottom-0 left-0 right-0 pb-safe z-40" data-matrx-floating-bottom="">
                         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] pb-4">
                             <div className="flex items-center gap-2 p-2 rounded-full bg-background/95 backdrop-blur-xl border border-border shadow-2xl">
                                 {/* Search Input Container */}
@@ -210,7 +210,7 @@ export function UnifiedActionBar<T extends BaseListItem>({
 
         // Compact Mode - Default floating bar
         return (
-            <div className="fixed bottom-0 left-0 right-0 pb-safe z-40">
+            <div className="fixed bottom-0 left-0 right-0 pb-safe z-40" data-matrx-floating-bottom="">
                 <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] pb-4">
                     <div className="flex items-center gap-2 p-2 rounded-full bg-background/80 backdrop-blur-xl border border-border/50 shadow-lg">
                         {/* Filter Button */}

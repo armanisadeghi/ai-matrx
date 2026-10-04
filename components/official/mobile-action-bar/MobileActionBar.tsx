@@ -152,7 +152,7 @@ export function MobileActionBar({
   // Default state - compact bar
   if (!isSearchActive) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 pb-safe z-40">
+      <div className="fixed bottom-0 left-0 right-0 pb-safe z-40" data-matrx-floating-bottom="">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px]">
           <div className="flex items-center gap-2 p-2 rounded-full matrx-glass-core">
             {/* Filter Button */}

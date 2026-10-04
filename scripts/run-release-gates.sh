@@ -271,6 +271,10 @@ if $STRICT; then
         "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
+        # THE FLOATING CLEARANCE (lib/layout/floating-chrome.ts): page scrollers take the shell's
+        # runway under floating chrome; no hand pb-safe, no unreasoned opt-out. Offline, ~2 s.
+        "Floating clearance|pnpm check:floating-clearance:strict"
+        "Floating clearance — self-test|pnpm check:floating-clearance:self-test"
         # UI DRIFT (docs/ui-unification-plan.md §2.12): one item per drifting site, ratcheted against
         # scripts/ui-drift/baseline.json, which only shrinks. Measured centrally by its OWN daily
         # schedule ("UI drift check — daily", .github/workflows/ui-drift-daily.yml), never the hourly
@@ -1062,6 +1066,8 @@ else
         "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
+        "Floating clearance|pnpm check:floating-clearance"
+        "Floating clearance — self-test|pnpm check:floating-clearance:self-test"
         "UI drift|pnpm check:ui-drift"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         "No blocking dialogs (AI stays reachable)|pnpm check:blocking-dialogs"
