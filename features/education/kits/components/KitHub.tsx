@@ -643,7 +643,14 @@ export function KitHub({
   return withSurface(
     <>
       {header(kit.title)}
-      <main className="mx-auto w-full max-w-6xl space-y-7 px-4 pb-10">
+      {/* With the hero leading (proposed layout) it gets the breathing room the
+          action row used to give it; otherwise it sits flush under the header. */}
+      <main
+        className={cn(
+          "mx-auto w-full max-w-6xl space-y-7 px-4 pb-10",
+          proposedLayout && "pt-4",
+        )}
+      >
         {!proposedLayout && actionRow}
         {!proposedLayout && managePanel}
 
