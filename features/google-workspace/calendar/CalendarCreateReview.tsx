@@ -33,6 +33,8 @@ import {
 } from "./calendarCreateRecovery";
 import type { SelectedCalendar } from "./selectedCalendarService";
 import { googleCalendarHref } from "./record";
+import { createResultLocalRefresh } from "./calendarLocalRefresh";
+import { CalendarSavedCopyStatus } from "./CalendarSavedCopyStatus";
 
 export interface CalendarCreateTransport {
   preview(request: CalendarCreateRequest): Promise<CalendarCreateIntent>;
@@ -554,6 +556,7 @@ export function CalendarCreateReview({
           {saved.phase === "consumed" ? (
             <div className="space-y-2">
               <p className="font-medium text-foreground">Event created in Google Calendar.</p>
+              <CalendarSavedCopyStatus view={createResultLocalRefresh(saved.result)} />
               <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                 Google event ID
                 <Input readOnly value={saved.result?.result.provider_event_id ?? ""} className="font-mono" />
