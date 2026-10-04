@@ -39,11 +39,12 @@ export function NoteModeSwitch({
   const setMode = (mode: NoteViewMode) => selectNoteMode(noteId, mode);
 
   return (
-    // Equal columns: the control's width never depends on which view is
-    // selected (a bolder selected label used to nudge it sideways).
+    // Content-sized buttons whose labels reserve their SEMIBOLD width, so the
+    // control's width never depends on which view is selected and every
+    // button pads both sides alike (the tap-target ink guard measures that).
     <div
       className={cn(
-        "matrx-glass-thin-border grid grid-cols-4 items-center gap-0.5 rounded-full p-0.5",
+        "matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5",
         className,
       )}
     >
@@ -62,8 +63,16 @@ export function NoteModeSwitch({
           onClick={() => setMode(mode)}
         >
           <Icon />
-          <span className={labels === "container" ? "hidden @[26rem]:inline" : undefined}>
-            {label}
+          <span
+            className={cn(
+              "inline-grid text-center",
+              labels === "container" && "hidden @[26rem]:inline-grid",
+            )}
+          >
+            <span aria-hidden className="invisible col-start-1 row-start-1 font-semibold">
+              {label}
+            </span>
+            <span className="col-start-1 row-start-1">{label}</span>
           </span>
         </button>
       ))}

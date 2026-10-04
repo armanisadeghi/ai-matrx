@@ -190,36 +190,29 @@ export function EntityScopeTabs({
   compact = false,
   onChange,
 }: EntityScopeTabsProps) {
-  // A row wider than the screen fades at the edge that has more tabs past it
-  // (page-pass 2026-09-27, /education/quizzes: "Public" was cut off beside
-  // the "+" with no cue that the row scrolls).
+  // A LANE IS NEVER CLIPPED (coordinator, /agents/all beside the chat panel 2026-10-04: "My Orgs"
+  // cut mid-word under "Any dimension", Shared / Public / System gone). The tab row is measured at
+  // its natural width against the slot it sits in; when it does not fit, the SAME slot holds the
+  // capsule select ("All 236 ▾") and the row stays mounted, invisible and inert, only to be measured
+  // (so the answer cannot oscillate as the layout flips). Never a row that scrolls or fades its tabs.
+  const boxRef = useRef<HTMLDivElement | null>(null);
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const [more, setMore] = useState<{ start: boolean; end: boolean }>({ start: false, end: false });
+  const [fits, setFits] = useState(true);
   useEffect(() => {
-    const el = rowRef.current;
-    if (!el) return;
+    const box = boxRef.current;
+    const row = rowRef.current;
+    if (!box || !row || typeof ResizeObserver === "undefined") return;
     const measure = () => {
-      const start = el.scrollLeft > 1;
-      const end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
-      setMore((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+      if (row.offsetParent === null && getComputedStyle(row).display === "none") return;
+      const next = row.scrollWidth <= box.clientWidth + 1;
+      setFits((prev) => (prev === next ? prev : next));
     };
     measure();
-    el.addEventListener("scroll", measure, { passive: true });
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(el);
-    return () => {
-      el.removeEventListener("scroll", measure);
-      observer?.disconnect();
-    };
-  }, [scopes.length]);
-  const fade =
-    more.start && more.end
-      ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]"
-      : more.end
-        ? "[mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]"
-        : more.start
-          ? "[mask-image:linear-gradient(to_right,transparent,black_1.5rem)]"
-          : "";
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [scopes.length, compact]);
   const kinds = exact ? [...scopes] : withStandardLanes(scopes, { lanes });
   // Only a lane's OWN axis narrows inside its tab; organizations are the org filter's.
   const narrowOptions = (kind: ListScopeKind) =>
@@ -228,7 +221,9 @@ export function EntityScopeTabs({
   // phone five or more scope tabs never fit (at 375 /transcripts showed two of
   // five, "Shared" and "Public" past the edge), so the SAME slot holds a
   // select there; wider screens keep the tabs.
-  const phoneSelect = compact || kinds.length >= 5;
+  const phoneSelect = kinds.length >= 5;
+  // The select stands in whenever the row does not fit, at any width.
+  const selectEverywhere = compact || !fits;
   const activeNarrowId =
     scope.kind === "industry" ? scopeIndustryId(scope) : scopeNarrowId(scope);
   const countOf = (kind: ListScopeKind): number | null => {
@@ -239,8 +234,8 @@ export function EntityScopeTabs({
   };
   const withCount = (label: string, n: number | null) => (n === null ? label : `${label} (${n})`);
   return (
-    <>
-    {phoneSelect && (
+    <div ref={boxRef} data-entity-scope-lanes={selectEverywhere ? "select" : "tabs"} className="relative w-full min-w-0">
+    {(phoneSelect || selectEverywhere) && (
       <Select
         value={activeNarrowId ? `${scope.kind}:${activeNarrowId}` : scope.kind}
         onValueChange={(v) => {
@@ -248,7 +243,7 @@ export function EntityScopeTabs({
           onChange(at === -1 ? makeScope(v as ListScopeKind) : makeScope(v.slice(0, at) as ListScopeKind, v.slice(at + 1)));
         }}
       >
-        <SelectTrigger aria-label="List scope" className={cn("h-7 w-auto min-w-0 max-w-full gap-1.5 text-xs", !compact && "sm:hidden")}>
+        <SelectTrigger aria-label="List scope" className={cn("h-7 w-auto min-w-0 max-w-full gap-1.5 text-xs", !selectEverywhere && "sm:hidden")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -282,7 +277,8 @@ export function EntityScopeTabs({
     )}
     <div
       ref={rowRef}
-      data-scope-tabs-more={more.end ? "end" : more.start ? "start" : undefined}
+      aria-hidden={selectEverywhere && !compact ? true : undefined}
+      inert={selectEverywhere && !compact ? true : undefined}
       // No box around the tabs: the active tab's fill is the whole signal
       // (a bordered box around them read as box-in-box, 2026-09-27).
       // Labels stay on a phone (page-pass 2026-09-27: icon + count alone left
@@ -293,10 +289,11 @@ export function EntityScopeTabs({
         // touch ring INSIDE this scroll box (.matrx-tap-ring, app/globals.css,
         // which keeps a tablist's rings to the tab's own width): without it the
         // ring overflowed, the strip scrolled and faded its only tab on a phone.
-        "pointer-coarse:-my-2 pointer-coarse:py-2 inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] sm:gap-1 [&::-webkit-scrollbar]:hidden [&>*]:shrink-0",
-        phoneSelect && "max-sm:hidden",
+        "pointer-coarse:-my-2 pointer-coarse:py-2 inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-hidden sm:gap-1 [&>*]:shrink-0",
+        phoneSelect && !selectEverywhere && "max-sm:hidden",
         compact && "hidden",
-        fade,
+        // Measured, never shown: out of flow, invisible, inert.
+        selectEverywhere && !compact && "pointer-events-none invisible absolute left-0 top-0 max-w-none",
       )}
       role="tablist"
       aria-label="List scope"
@@ -416,6 +413,6 @@ export function EntityScopeTabs({
         );
       })}
     </div>
-    </>
+    </div>
   );
 }
