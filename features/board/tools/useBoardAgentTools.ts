@@ -43,7 +43,7 @@ import type {
 } from "../board/useBoard";
 import { screenToWorld, visibleWorldRect, rectsIntersect, type Rect } from "../engine/camera";
 import { align, arrange, distribute, enclosingFrame, type AlignEdge, type ArrangeLayout, type DistributeAxis } from "../engine/arrange";
-import type { SpatialStore } from "../engine/spatial-store";
+import type { BoardCameraStore } from "../engine/camera-store";
 import { boundBoardContext, type RawBoardTile } from "./board-snapshot";
 import type { BoardTileKindInput } from "./board-tools";
 import {
@@ -121,7 +121,7 @@ export interface BoardToolTarget<T extends BoardTileBase> {
 
 export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
   board: BoardToolTarget<T>;
-  store: SpatialStore | null;
+  store: BoardCameraStore | null;
   boardTitle: string;
   /** Build a tile of `input.kind` with this id and size (position is decided here). */
   createTile: (id: string, input: AddTileInput, size: { w: number; h: number }) => T | Failure;
@@ -168,8 +168,8 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : u
 
 /** The rendered text of a tile, from its body in the DOM (what the person sees). */
 function tileText(id: string): string {
-  const card = document.querySelector<HTMLElement>(`[data-spatial-card="${CSS.escape(id)}"]`);
-  return card?.querySelector<HTMLElement>("[data-spatial-body]")?.innerText ?? "";
+  const card = document.querySelector<HTMLElement>(`[data-board-card="${CSS.escape(id)}"]`);
+  return card?.querySelector<HTMLElement>("[data-board-body]")?.innerText ?? "";
 }
 
 export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(

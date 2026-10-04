@@ -1,9 +1,9 @@
 /**
- * Spatial view — the tool bar's tools and their keys (Figma / FigJam / Claude
+ * Board — the tool bar's tools and their keys (Figma / FigJam / Claude
  * Design conventions, so hands already know them).
  */
 
-export type SpatialTool =
+export type BoardTool =
   | "select"
   | "hand"
   | "text"
@@ -15,11 +15,11 @@ export type SpatialTool =
   | "arrow"
   | "line";
 
-export type ShapeTool = Extract<SpatialTool, "rect" | "oval" | "arrow" | "line">;
+export type ShapeTool = Extract<BoardTool, "rect" | "oval" | "arrow" | "line">;
 
 export const SHAPE_TOOLS: readonly ShapeTool[] = ["rect", "oval", "arrow", "line"];
 
-export const TOOL_LABEL: Record<SpatialTool, string> = {
+export const TOOL_LABEL: Record<BoardTool, string> = {
   select: "Select",
   hand: "Hand",
   text: "Text",
@@ -33,7 +33,7 @@ export const TOOL_LABEL: Record<SpatialTool, string> = {
 };
 
 /** Key shown in tooltips and menus. */
-export const TOOL_KEY: Record<SpatialTool, string> = {
+export const TOOL_KEY: Record<BoardTool, string> = {
   select: "V",
   hand: "H",
   text: "T",
@@ -47,7 +47,7 @@ export const TOOL_KEY: Record<SpatialTool, string> = {
 };
 
 /** Map a keydown to a tool, or null. */
-export function toolForKey(e: { key: string; shiftKey: boolean }): SpatialTool | null {
+export function toolForKey(e: { key: string; shiftKey: boolean }): BoardTool | null {
   const k = e.key.toLowerCase();
   if (e.shiftKey) return k === "l" ? "arrow" : null;
   switch (k) {
@@ -75,6 +75,6 @@ export function toolForKey(e: { key: string; shiftKey: boolean }): SpatialTool |
 }
 
 /** Tools that create something where you click or drag. */
-export function isCreationTool(t: SpatialTool): boolean {
+export function isCreationTool(t: BoardTool): boolean {
   return t !== "select" && t !== "hand";
 }

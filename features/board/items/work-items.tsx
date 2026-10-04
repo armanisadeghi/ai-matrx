@@ -44,7 +44,7 @@ import { FilesResourcePicker } from "@/features/resource-manager/resource-picker
 import { InlineUploadArea } from "@/features/resource-manager/resource-picker/InlineUploadArea";
 import { NoteItemBody } from "./NoteItemBody";
 import type { NodeSource } from "../board/document";
-import { useSpatialStore } from "../engine/react";
+import { useBoardCameraStore } from "../engine/react";
 import { entityComments, type BoardItemType, type ItemBodyProps, type PickerProps, type PlacedItem } from "./types";
 import {
   chatAgentId,
@@ -95,7 +95,7 @@ function ChatBody({ tileId, source, title, onSource }: ItemBodyProps) {
 
   // A viewer of the conversation's run holds it (LIVE-RUN-RETENTION.md), so a
   // launcher reap never blanks the tile mid-stream.
-  useRetainLatestRequestForViewer(conversationId, "spatial-board-chat-tile");
+  useRetainLatestRequestForViewer(conversationId, "board-chat-tile");
 
   // A new conversation (or the composer's agent switch) → save its id, and
   // its agent, so a reload reopens THAT conversation.
@@ -149,7 +149,7 @@ function ChatPicker({ onPick, onCancel }: PickerProps) {
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
         <ConversationHistorySidebar
           variant="dense"
-          scopeId="spatial-board-chat-picker"
+          scopeId="board-chat-picker"
           agentIds={ALL_AGENTS}
           surfaceId="conversation-picker"
           onOpenConversation={(conv) =>
@@ -181,7 +181,7 @@ function AgentChatPicker({ onPick, onCancel }: PickerProps) {
     <div className="flex h-[520px] min-h-0 flex-col gap-2">
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
         <AgentListInlinePicker
-          consumerId="spatial-board-chat-agent"
+          consumerId="board-chat-agent"
           defaultMandateKey={DEFAULT_NEW_CHAT_MANDATE_KEY}
           className="h-full"
           onSelect={(agentId) => onPick([{ title: "Chat", source: chatSource(null, agentId) }])}
@@ -328,13 +328,13 @@ function FilePicker({ onPick, onCancel }: PickerProps) {
  */
 function ChatKeep({ tileId, source }: { tileId: string; source: NodeSource }) {
   const conversationId = entityId(source);
-  useRetainLatestRequestForViewer(conversationId, "spatial-board-chat-keep");
+  useRetainLatestRequestForViewer(conversationId, "board-chat-keep");
   const working = useAppSelector((s) => {
     if (!conversationId) return false;
     const status = s.conversations?.byConversationId[conversationId]?.status;
     return status === "running" || status === "streaming" || status === "paused";
   });
-  const board = useSpatialStore();
+  const board = useBoardCameraStore();
   useEffect(() => (working ? board.holdAwake(tileId) : undefined), [working, board, tileId]);
   return null;
 }

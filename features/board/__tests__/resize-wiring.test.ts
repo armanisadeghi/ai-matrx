@@ -1,5 +1,5 @@
 /**
- * Every board resizes its tiles. A `<SpatialTile>` that can be MOVED must say
+ * Every board resizes its tiles. A `<BoardTile>` that can be MOVED must say
  * how it is RESIZED: `onResize={handler}`, or `onResize={null}` for a board
  * whose own layout model cannot take a size (it then says why in a comment).
  * A board that forgets resize fails here, by file and line.
@@ -27,16 +27,16 @@ interface Use {
   resize: "handler" | "null" | "missing";
 }
 
-function spatialTileUses(): Use[] {
+function boardTileUses(): Use[] {
   const uses: Use[] = [];
   for (const file of featureRoots(REPO).flatMap((root) => tsxFiles(join(REPO, root)))) {
     const text = readFileSync(file, "utf8");
-    if (!text.includes("<SpatialTile")) continue;
+    if (!text.includes("<BoardTile")) continue;
     const src = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const visit = (node: ts.Node) => {
       if (
         (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
-        node.tagName.getText(src) === "SpatialTile"
+        node.tagName.getText(src) === "BoardTile"
       ) {
         const attrs = node.attributes.properties.filter(ts.isJsxAttribute);
         const named = (n: string) => attrs.find((a) => a.name.getText(src) === n);
@@ -57,7 +57,7 @@ function spatialTileUses(): Use[] {
 }
 
 describe("every board wires tile resize", () => {
-  const uses = spatialTileUses();
+  const uses = boardTileUses();
 
   it("finds the boards", () => {
     // /board, the demo, the workflow run board, War Room. (The meeting board

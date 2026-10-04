@@ -1,5 +1,5 @@
 /**
- * Spatial view — keep what has focus on screen (pure).
+ * Board — keep what has focus on screen (pure).
  *
  * When focus moves to an element inside a tile that is outside the visible
  * board area (tabbing through grid cells, find-next, an editor caret), the

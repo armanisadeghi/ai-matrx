@@ -11,7 +11,7 @@
 import { useState } from "react";
 import type { WheelMode } from "../engine/wheel-input";
 
-const WHEEL_MODE_KEY = "matrx.spatial.wheelMode";
+const WHEEL_MODE_KEY = "matrx.board.wheelMode";
 
 export function useWheelModePreference(): [WheelMode, (m: WheelMode) => void] {
   const [mode, setMode] = useState<WheelMode>(() => {

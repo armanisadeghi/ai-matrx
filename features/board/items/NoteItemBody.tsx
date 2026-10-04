@@ -64,7 +64,7 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
       setFailure({ reason: "Choose the workspace this note belongs to, then try again.", cancelled: true });
       return;
     }
-    console.error("[spatial/note] could not prepare the note", { tileId, err });
+    console.error("[board/note] could not prepare the note", { tileId, err });
     setFailure({ reason: err instanceof Error ? err.message : String(err), cancelled: false });
   };
 

@@ -2,7 +2,7 @@
 
 // features/war-room/components/board/RoomBoardView.tsx
 //
-// Board mode: every visible THREAD is a frame on the spatial board, and every
+// Board mode: every visible THREAD is a frame on the Board, and every
 // PART of that thread — task, notes, audio, chat, resources, one per attached
 // entity type (the tabs `useThreadTabs` derives, minus the stacked "All") — is
 // its own tile inside the frame. Notes, files, audio and chat can all be out
@@ -23,7 +23,7 @@
 // The arrangement (part rects, parked/removed parts) and the camera live on
 // the room row (`metadata.spatial_layout`, debounced) — see `boardLayout.ts`.
 //
-// The board is an agent SURFACE (`SpatialBoardSurface`, stacked inside the War
+// The board is an agent SURFACE (`BoardSurface`, stacked inside the War
 // Room's own surface, which stays mounted in `WarRoomShell`): the board tools
 // act on the parts through `roomBoardAgent.ts`, over this same layout path.
 
@@ -57,18 +57,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { screenToWorld, type Rect } from "@/features/board/engine/camera";
-import type { SpatialStore } from "@/features/board/engine/spatial-store";
-import { useSpatialStore } from "@/features/board/engine/react";
+import type { BoardCameraStore } from "@/features/board/engine/camera-store";
+import { useBoardCameraStore } from "@/features/board/engine/react";
 import type { ThrowAction, ThrowDirection } from "@/features/board/engine/throw";
 import type { TileStatusValue } from "@/features/board/streams/useSourceStatus";
 import { useWheelModePreference } from "@/features/board/board/useWheelModePreference";
-import { SpatialViewport } from "@/features/board/components/SpatialViewport";
-import { SpatialTile } from "@/features/board/components/SpatialTile";
-import { SpatialFrame } from "@/features/board/components/SpatialFrame";
-import { SpatialBoardMenu } from "@/features/board/components/SpatialBoardMenu";
+import { BoardViewport } from "@/features/board/components/BoardViewport";
+import { BoardTile } from "@/features/board/components/BoardTile";
+import { BoardFrameView } from "@/features/board/components/BoardFrameView";
+import { BoardMenu } from "@/features/board/components/BoardMenu";
 import { ParkedShelf, type ParkedChip } from "@/features/board/components/ParkedShelf";
-import { Minimap, ZoomHud } from "@/features/board/components/SpatialChrome";
-import { SpatialBoardSurface } from "@/features/board/components/SpatialBoardSurface";
+import { Minimap, ZoomHud } from "@/features/board/components/BoardChrome";
+import { BoardSurface } from "@/features/board/components/BoardSurface";
 import type { BoardToolHost, Failure } from "@/features/board/tools/useBoardAgentTools";
 import {
   selectActiveNoteId,
@@ -169,7 +169,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
   const tabsKey = useAppSelector((s) => boardTabsKey(s, visibleIds));
   const threads = parseTabsKey(tabsKey);
 
-  const [store, setStore] = useState<SpatialStore | null>(null);
+  const [store, setStore] = useState<BoardCameraStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
 
   // ── the remembered arrangement ─────────────────────────────────────────
@@ -459,8 +459,8 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
   };
 
   return (
-    <SpatialBoardSurface host={agentHost}>
-      <SpatialBoardMenu
+    <BoardSurface host={agentHost}>
+      <BoardMenu
         store={store}
         actions={{ park: parkPart, remove: removePart, removeLabel: "Remove from board…" }}
         parked={parkedChips}
@@ -468,7 +468,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
         wheelMode={wheelMode}
         onWheelMode={setWheelMode}
       >
-        <SpatialViewport
+        <BoardViewport
           insets={{ top: 16, bottom: 64 }}
           wheelMode={wheelMode}
           onStore={setStore}
@@ -481,7 +481,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
               <Minimap />
               {threads.length === 0 && (
                 <div
-                  data-spatial-chrome
+                  data-board-chrome
                   className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card/95 px-4 py-3 text-sm text-muted-foreground shadow-md"
                 >
                   {/* read-gate-exempt: WarRoomShell renders this board only when the room's thread read is "ready"; a failed read shows ReadFailure there instead */}
@@ -514,9 +514,9 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
               onStage={stageThread}
             />
           ))}
-        </SpatialViewport>
-      </SpatialBoardMenu>
-    </SpatialBoardSurface>
+        </BoardViewport>
+      </BoardMenu>
+    </BoardSurface>
   );
 }
 
@@ -540,7 +540,7 @@ function partStatus(state: RootState, threadId: string, tab: ThreadTab): string 
 }
 
 /** World point at the centre of what you are looking at. */
-function viewCentre(store: SpatialStore | null): { x: number; y: number } | undefined {
+function viewCentre(store: BoardCameraStore | null): { x: number; y: number } | undefined {
   if (!store) return undefined;
   const { w, h } = store.getSize();
   if (w <= 0 || h <= 0) return undefined;
@@ -586,7 +586,7 @@ function BoardThreadFrame({
 
   return (
     <>
-      <SpatialFrame id={threadId} rect={frame} title={title} />
+      <BoardFrameView id={threadId} rect={frame} title={title} />
       <BoardFrameHeader
         threadId={threadId}
         sessionId={sessionId}
@@ -662,7 +662,7 @@ function BoardPartTile({
           : IDLE;
 
   return (
-    <SpatialTile
+    <BoardTile
       id={partId}
       rect={rect}
       title={kind.label}
@@ -681,7 +681,7 @@ function BoardPartTile({
           <ThreadTabContent tab={tab} threadId={threadId} sessionId={sessionId} threadLayout="stage" />
         </div>
       )}
-    </SpatialTile>
+    </BoardTile>
   );
 }
 
@@ -722,7 +722,7 @@ function BoardFrameHeader({
   onDelete: (threadId: string) => void;
   onStage: (threadId: string) => void;
 }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const actions = useThreadActions(threadId, sessionId);
   const drag = useRef<{ px: number; py: number; start: Record<string, Rect> } | null>(null);
   if (!actions) return null;
@@ -755,7 +755,7 @@ function BoardFrameHeader({
 
   return (
     <div
-      data-spatial-chrome
+      data-board-chrome
       data-board-frame-header={threadId}
       onPointerDown={down}
       onPointerMove={move}
@@ -769,7 +769,7 @@ function BoardFrameHeader({
         height: FRAME_HEADER_H - 8,
         // Readable when zoomed out: grows as the board shrinks, capped so it
         // never reaches the parts below the header band.
-        transform: `scale(clamp(1, calc(${HEADER_READ_Z} / var(--spatial-z, 1)), ${HEADER_MAX_SCALE}))`,
+        transform: `scale(clamp(1, calc(${HEADER_READ_Z} / var(--board-z, 1)), ${HEADER_MAX_SCALE}))`,
         transformOrigin: "top left",
       }}
     >

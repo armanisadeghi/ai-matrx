@@ -35,7 +35,7 @@ export async function filesToBoardItems(files: File[]): Promise<PlacedItem[]> {
       items.push(fileItem(result.value.fileId, name));
     } else if (!isUploadCancelledError(result.reason)) {
       const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
-      console.error("[spatial/file-drop] upload failed", { name, reason: result.reason });
+      console.error("[board/file-drop] upload failed", { name, reason: result.reason });
       failed.push({ name, reason });
     }
   });

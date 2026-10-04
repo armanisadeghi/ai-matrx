@@ -12,7 +12,7 @@
  *   the Note / Text tools             → a note or a label where you click;
  *   drop                              → files upload; links and text land;
  *   paste                             → links become pages, text a Note;
- *   agents                            → the board_* tools (SpatialBoardSurface).
+ *   agents                            → the board_* tools (BoardSurface).
  *
  * The host owns nothing but placement and the document: every change is
  * reported through `onChange` as a `BoardDocument` (the saved form).
@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import { type Camera, type Rect, screenToWorld } from "../engine/camera";
 import { useIsEditing, useIsLiveTile } from "../engine/react";
 import { SurfaceActivity, createSurfaceCapture } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import type { SpatialStore } from "../engine/spatial-store";
+import type { BoardCameraStore } from "../engine/camera-store";
 import type { ThrowAction, ThrowDirection } from "../engine/throw";
 import { DEFAULT_THROW_ACTIONS } from "../engine/throw";
 import { type BoardStore, useBoardLayout, useBoardStore, useBoardTile, useBoardView } from "../board/useBoard";
@@ -40,19 +40,19 @@ import { BoardNavigationContext } from "../engine/tile-navigation";
 import { appPagePath, pageSource, pageTitleFor } from "../items/page-items";
 import { useWheelModePreference } from "../board/useWheelModePreference";
 import { type BoardDocument, type NodeSource, recordKeyOf } from "../board/document";
-import { SpatialBoardMenu } from "../components/SpatialBoardMenu";
-import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
-import { SpatialViewport } from "../components/SpatialViewport";
-import { SpatialTile } from "../components/SpatialTile";
-import { SpatialFrame } from "../components/SpatialFrame";
-import { SpatialEdge } from "../components/SpatialEdge";
+import { BoardMenu } from "../components/BoardMenu";
+import { BoardSurface } from "../components/BoardSurface";
+import { BoardViewport } from "../components/BoardViewport";
+import { BoardTile } from "../components/BoardTile";
+import { BoardFrameView } from "../components/BoardFrameView";
+import { BoardEdgeLine } from "../components/BoardEdgeLine";
 import { ShapesLayer } from "../components/ShapesLayer";
 import { CreationLayer, type Creation } from "../components/CreationLayer";
 import { ToolBar } from "../components/ToolBar";
 import { ZoomMenu } from "../components/ZoomMenu";
 import { LayersPanel } from "../components/LayersPanel";
 import { ParkedShelf } from "../components/ParkedShelf";
-import { Minimap, ZoomHud } from "../components/SpatialChrome";
+import { Minimap, ZoomHud } from "../components/BoardChrome";
 import type { AddTileInput, BoardToolHost, EditTileInput } from "../tools/useBoardAgentTools";
 import { createItemSurfaceIndex, type ItemSurfaceIndex } from "../tools/item-surfaces";
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
@@ -114,7 +114,7 @@ export function UserBoard({
     connections: doc.edges,
   }));
   const layout = useBoardLayout(board);
-  const [store, setStore] = useState<SpatialStore | null>(null);
+  const [store, setStore] = useState<BoardCameraStore | null>(null);
   const [wheelMode, setWheelMode] = useWheelModePreference();
   const [layersOpen, setLayersOpen] = useState(false);
   // Every tile's own surface capture, live or dormant: how an agent reaches
@@ -478,8 +478,8 @@ export function UserBoard({
   const parkedTiles = layout.parked;
 
   return (
-    <SpatialBoardSurface host={agentHost}>
-      <SpatialBoardMenu
+    <BoardSurface host={agentHost}>
+      <BoardMenu
         store={store}
         actions={{ park, remove: takeOff, removeLabel: "Take off this board" }}
         parked={parkedTiles.map((t) => ({ id: t.id, title: t.title }))}
@@ -497,7 +497,7 @@ export function UserBoard({
           onDrop={onDrop}
         >
           <BoardNavigationContext.Provider value={boardNavigation}>
-          <SpatialViewport
+          <BoardViewport
             initialCamera={viewerCamera ?? doc.camera}
             fitOnMount={viewerCamera === null && doc.nodes.length > 0}
             insets={{ top: 72, bottom: 56 }}
@@ -508,7 +508,7 @@ export function UserBoard({
                 <CreationLayer onCreate={onCreate} />
                 <ToolBar leading={<AddMenu types={addableTypes} onStartNew={startNew} onBringIn={bringIn} />} />
                 <div
-                  data-spatial-chrome
+                  data-board-chrome
                   className="absolute right-4 top-4 z-30 flex items-center gap-0.5 rounded-lg border border-border bg-card/95 p-1 shadow-md backdrop-blur"
                 >
                   <button
@@ -553,7 +553,7 @@ export function UserBoard({
             }
           >
             {layout.frames.map((f) => (
-              <SpatialFrame key={f.id} {...f} />
+              <BoardFrameView key={f.id} {...f} />
             ))}
             <ShapesLayer shapes={layout.shapes} />
             {layout.connections.map((c) =>
@@ -571,10 +571,10 @@ export function UserBoard({
                 onThrow={onThrow}
               />
             ))}
-          </SpatialViewport>
+          </BoardViewport>
           </BoardNavigationContext.Provider>
         </div>
-      </SpatialBoardMenu>
+      </BoardMenu>
       <Dialog open={picking !== null} onOpenChange={(open) => !open && setPicking(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader className="flex-row items-center justify-between gap-3 space-y-0 pr-8">
@@ -621,7 +621,7 @@ export function UserBoard({
           onCancel={() => setStarting(null)}
         />
       )}
-    </SpatialBoardSurface>
+    </BoardSurface>
   );
 }
 
@@ -636,7 +636,7 @@ function BoardEdge({ board, from, to }: { board: BoardStore<UserBoardTile>; from
   const a = useBoardTile(board, from);
   const b = useBoardTile(board, to);
   if (!a || !b) return null;
-  return <SpatialEdge from={a.rect} to={b.rect} />;
+  return <BoardEdgeLine from={a.rect} to={b.rect} />;
 }
 
 /** The layers list reads every tile, so it alone re-renders on every change — only while open. */
@@ -700,7 +700,7 @@ function BoardItemTile({
   return (
     <>
       {Keep && <Keep tileId={id} source={source} />}
-      <SpatialTile
+      <BoardTile
         id={id}
         rect={tile.rect}
         title={title}
@@ -741,7 +741,7 @@ function BoardItemTile({
             onSource={onSource}
           />
         )}
-      </SpatialTile>
+      </BoardTile>
     </>
   );
 }

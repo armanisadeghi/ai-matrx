@@ -1,5 +1,5 @@
 /**
- * Spatial view — arranging tiles (pure). What the "Arrange" commands and the
+ * Board — arranging tiles (pure). What the "Arrange" commands and the
  * board's agent tools use: every function takes rects and returns new
  * positions; nothing here touches the board. Sizes never change — arranging
  * moves things, it does not resize them.

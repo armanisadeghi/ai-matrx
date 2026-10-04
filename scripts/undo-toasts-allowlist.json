@@ -22,12 +22,12 @@
     "features/rich-document/actions/handlers/answer-tools.ts": 1,
     "features/rich-document/annotations/AnnotationPanel.tsx": 1,
     "features/source-studio/components/SourceStudio.tsx": 1,
-    "features/board/demo/SpatialDemoBoard.tsx": 3,
+    "features/board/demo/BoardDemo.tsx": 3,
     "features/board/home/UserBoard.tsx": 2,
     "features/board/tools/useBoardAgentTools.ts": 1,
     "features/transcripts/browse/useTranscriptRowActions.tsx": 1,
     "features/war-room/components/board/RoomBoardView.tsx": 4,
-    "features/workflow-runtime/components/board/WorkflowRunSpatialView.tsx": 2,
+    "features/workflow-runtime/components/board/WorkflowRunBoardView.tsx": 2,
     "packages/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx": 1
   }
 }

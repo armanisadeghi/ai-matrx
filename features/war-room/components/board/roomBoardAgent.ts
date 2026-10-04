@@ -1,6 +1,6 @@
 // features/war-room/components/board/roomBoardAgent.ts
 //
-// The War Room board as a `BoardToolTarget` — how the spatial board's agent
+// The War Room board as a `BoardToolTarget` — how the Board's agent
 // tools (`features/board/tools/useBoardAgentTools.ts`) act on a board that
 // keeps its OWN layout model (`boardLayout.ts`) instead of `useBoard`.
 //

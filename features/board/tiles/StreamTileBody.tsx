@@ -21,7 +21,7 @@ import type { PaceTier } from "../engine/lod";
 import type { PacedSource } from "../streams/stream-source";
 import { usePacedSnapshot } from "../streams/usePacedSnapshot";
 import { followToBottom } from "./follow-scroll";
-import { useSpatialStore } from "../engine/react";
+import { useBoardCameraStore } from "../engine/react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const BlockRenderer = dynamic(
@@ -43,7 +43,7 @@ export function StreamTileBody({
   tier: PaceTier;
   emptyLabel?: string;
 }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const { snapshot, seq, revealMs } = usePacedSnapshot(source, tier, store.isInteracting);
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -70,7 +70,7 @@ export function StreamTileBody({
   return (
     <div
       ref={scrollRef}
-      data-spatial-scroll
+      data-board-scroll
       onScroll={(e) => {
         const el = e.currentTarget;
         following.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;

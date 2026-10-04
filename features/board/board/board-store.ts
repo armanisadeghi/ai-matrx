@@ -1,6 +1,6 @@
 /**
  * BoardStore — the board MODEL, outside React (the camera's twin:
- * `engine/spatial-store.ts`).
+ * `engine/camera-store.ts`).
  *
  * Tiles, frames, shapes, connections, the shelf and one undo stack. Every way
  * a board changes — a gesture, the tool bar, the menu, an agent — goes through

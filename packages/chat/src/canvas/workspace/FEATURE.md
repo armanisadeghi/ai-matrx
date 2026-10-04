@@ -105,7 +105,7 @@ relaunches through `chat.default_new_chat` (the person's own default model appli
 - **Below 1024px it is one pane** — the canvas; chat, nav and properties are sheets.
 - **A canvas that publishes its OWN surface passes no `getCanvasContext`.** The Board is the
   `matrx-user/board` surface (values `board_title` / `board_tiles` / `selected_tile` + the `board_*`
-  agent tools, `features/board/components/SpatialBoardSurface.tsx`); a page-level snapshot of it would send
+  agent tools, `features/board/components/BoardSurface.tsx`); a page-level snapshot of it would send
   the board twice. `getCanvasContext` is for canvases with no surface of their own.
 - **Board contract** (`features/board` is owned by another session): the board draws its own
   ToolBar + ZoomMenu inside its canvas and its own surface; it still owes — once it exposes its store outside

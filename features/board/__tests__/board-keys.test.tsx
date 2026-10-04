@@ -35,7 +35,7 @@ describe("useBoardKeys — Delete belongs to the board, never to tile content", 
     const del = jest.fn();
     const root = mount(del);
     const body = document.createElement("div");
-    body.setAttribute("data-spatial-body", "");
+    body.setAttribute("data-board-body", "");
     const cell = document.createElement("div");
     cell.setAttribute("role", "gridcell");
     body.appendChild(cell);

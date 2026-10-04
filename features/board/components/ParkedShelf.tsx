@@ -28,7 +28,7 @@ export function ParkedShelf({
   if (parked.length === 0) return null;
   return (
     <div
-      data-spatial-chrome
+      data-board-chrome
       className={cn(
         "absolute right-4 top-4 flex max-h-[calc(100%-12rem)] w-56 flex-col overflow-hidden rounded-lg border border-border bg-card/95 shadow-md backdrop-blur",
         className,

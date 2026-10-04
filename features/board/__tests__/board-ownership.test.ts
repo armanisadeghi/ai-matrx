@@ -3,9 +3,9 @@ import { isAccidentalScroll } from "../engine/native-scroll";
 
 function tileWithBody(): { tile: HTMLElement; body: HTMLElement } {
   const tile = document.createElement("div");
-  tile.setAttribute("data-spatial-tile", "file:1");
+  tile.setAttribute("data-board-tile", "file:1");
   const body = document.createElement("div");
-  body.setAttribute("data-spatial-body", "");
+  body.setAttribute("data-board-body", "");
   tile.appendChild(body);
   document.body.appendChild(tile);
   return { tile, body };
@@ -46,9 +46,9 @@ describe("which keys are the board's", () => {
 
   it("does not own a key inside a focused (full-screen) card either", () => {
     const card = document.createElement("div");
-    card.setAttribute("data-spatial-card", "file:1");
+    card.setAttribute("data-board-card", "file:1");
     const body = document.createElement("div");
-    body.setAttribute("data-spatial-body", "");
+    body.setAttribute("data-board-body", "");
     const cell = document.createElement("button");
     body.appendChild(cell);
     card.appendChild(body);
@@ -68,7 +68,7 @@ describe("the board never scrolls natively", () => {
     const root = document.createElement("div");
     root.style.overflow = "hidden";
     const card = document.createElement("div");
-    card.setAttribute("data-spatial-card", "t");
+    card.setAttribute("data-board-card", "t");
     card.style.overflow = "hidden";
     const grid = document.createElement("div");
     grid.style.overflow = "auto";

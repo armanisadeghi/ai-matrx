@@ -183,7 +183,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       (error: unknown) => {
         if (!alive) return;
         if (!isOrganizationSelectionCancelled(error)) {
-          console.error("[spatial] opening a saved board failed:", error);
+          console.error("[board] opening a saved board failed:", error);
         }
         setPhase({ key, status: "failed", reason: describeLoadFailure(error, loadTargetValue) });
       },
@@ -207,7 +207,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       },
       // Not worth a toast — the board is open and saving; only its "last
       // opened" order is stale. Still never silent.
-      (error: unknown) => console.warn("[spatial] could not record that the board was opened:", error),
+      (error: unknown) => console.warn("[board] could not record that the board was opened:", error),
     );
   }, [readyBoardId, key]);
 

@@ -9,7 +9,7 @@
 //
 //   1. mode — "stage" (thread list → one full-surface thread), "grid" (the
 //      bento gallery of every thread, all at once) or "board" (every thread a
-//      tile on the spatial board; the board's ARRANGEMENT is remembered on the
+//      tile on the Board; the board's ARRANGEMENT is remembered on the
 //      room row — the mode itself stays ephemeral like the rest).
 //   2. projectedTab — the Bloomberg "set the whole wall to one instrument"
 //      move (dense): force every tile to the same tab (all-Tasks, all-Notes,

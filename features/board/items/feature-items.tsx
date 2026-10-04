@@ -56,7 +56,7 @@ import { useWarRoomView } from "@/features/war-room/hooks/useWarRoomView";
 import { useMeetingsDirectory } from "@/features/meet/hooks/useMeetingsDirectory";
 import { MeetingHomeAndRoom } from "@/features/meet/components/MeetingHomeAndRoom";
 import { useMeetingLive } from "@/features/meet/hooks/useMeetingLive";
-import { useSpatialStore } from "../engine/react";
+import { useBoardCameraStore } from "../engine/react";
 import { MeetingFormDialog } from "@/features/meet/components/manage/MeetingFormDialog";
 import { useMeetingActions } from "@/features/meet/hooks/useMeetingActions";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
@@ -599,7 +599,7 @@ function MeetingBody({ tileId, source, title, onSource }: ItemBodyProps) {
   const id = entityIdOf(source);
   const [recordTitle, setRecordTitle] = useState<string | null>(null);
   const [inRoom, setInRoom] = useState(false);
-  const board = useSpatialStore();
+  const board = useBoardCameraStore();
   useAdoptTitle(source, title, recordTitle, onSource);
   useEffect(() => (inRoom ? board.holdAwake(tileId) : undefined), [inRoom, board, tileId]);
   if (!id) return <NoRecordBody what="meeting" href="/meetings" label="Your meetings" />;

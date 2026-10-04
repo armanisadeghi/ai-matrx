@@ -1,5 +1,5 @@
 /**
- * Spatial view — what a wheel event MEANS (pure).
+ * Board — what a wheel event MEANS (pure).
  *
  * Browsers report a mouse wheel, a trackpad swipe and a trackpad pinch all as
  * `wheel` events. The board answers each the way that input's owners expect:

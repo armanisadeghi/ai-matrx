@@ -1,4 +1,4 @@
-// /demos/board — the spatial view proof: many live AI results on one
+// /demos/board — the Board proof: many live AI results on one
 // pannable, zoomable plane, with streaming paced by zoom level — hosted in the
 // ONE chat-beside-a-canvas layout (features/canvas/workspace/FEATURE.md): the
 // platform chat docks beside it (or floats over it) and receives the board as
@@ -6,16 +6,16 @@
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
-import type { DemoKindExample } from "@/features/board/demo/SpatialDemoBoard";
+import type { DemoKindExample } from "@/features/board/demo/BoardDemo";
 import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
-import { SpatialCanvasWorkspaceDemo } from "../canvas-workspace/SpatialCanvasWorkspaceDemo";
+import { BoardCanvasWorkspaceDemo } from "../canvas-workspace/BoardCanvasWorkspaceDemo";
 
 /** The workspace id (its chat surface key and cookies). */
-const WORKSPACE_ID = "demo-spatial-board";
+const WORKSPACE_ID = "demo-board";
 
 export const metadata: Metadata = {
-  title: "Spatial View",
+  title: "Board",
   description: "Many live AI results on one pannable, zoomable plane — streaming paced by zoom.",
 };
 
@@ -70,7 +70,7 @@ async function loadCanonicalExamples(): Promise<{
   }
 }
 
-export default async function SpatialDemoPage() {
+export default async function BoardDemoPage() {
   const [{ kinds, note }, initialLayout, initialMode] = await Promise.all([
     loadCanonicalExamples(),
     readCanvasWorkspaceLayout(WORKSPACE_ID),
@@ -78,7 +78,7 @@ export default async function SpatialDemoPage() {
   ]);
   return (
     <div className="h-full min-h-0">
-      <SpatialCanvasWorkspaceDemo
+      <BoardCanvasWorkspaceDemo
         workspaceId={WORKSPACE_ID}
         kinds={kinds}
         examplesNote={note}

@@ -1272,7 +1272,7 @@
   "features/source-studio/components/OriginalPane.tsx": 1,
   "features/source-studio/components/SourceStudio.tsx": 1,
   "features/sources/SaveSourcePanel.tsx": 1,
-  "features/board/demo/SpatialDemoBoard.tsx": 1,
+  "features/board/demo/BoardDemo.tsx": 1,
   "features/storage-connections/StorageConnectionsPanel.tsx": 1,
   "features/structured-lists/structured-list-manager-v3.tsx": 2,
   "features/structured-lists/StructuredListManagerV1.tsx": 2,

@@ -1,5 +1,5 @@
 /**
- * Spatial view — level of detail and ZOOM-PACED STREAMING (pure).
+ * Board — level of detail and ZOOM-PACED STREAMING (pure).
  *
  * Semantic zoom (Pad++, 1994): at far zoom an item shows a different, more
  * abstract representation, not a shrunken copy. We add the twist nobody ships:

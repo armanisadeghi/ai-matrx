@@ -1,8 +1,8 @@
 import { act, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { SpatialTile } from "../components/SpatialTile";
-import { FocusHostContext, SpatialStoreContext } from "../engine/react";
-import { FREEZE_AFTER_MS, SpatialStore, WARM_TILE_BUDGET } from "../engine/spatial-store";
+import { BoardTile } from "../components/BoardTile";
+import { FocusHostContext, BoardCameraStoreContext } from "../engine/react";
+import { FREEZE_AFTER_MS, BoardCameraStore, WARM_TILE_BUDGET } from "../engine/camera-store";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -14,8 +14,8 @@ import { FREEZE_AFTER_MS, SpatialStore, WARM_TILE_BUDGET } from "../engine/spati
  */
 const rect = (i: number) => ({ x: i * 1000, y: 0, w: 400, h: 300 });
 
-function viewStore(): SpatialStore {
-  const s = new SpatialStore({ x: 0, y: 0, z: 1 });
+function viewStore(): BoardCameraStore {
+  const s = new BoardCameraStore({ x: 0, y: 0, z: 1 });
   s.setSize({ w: 800, h: 600 }); // shows the first tile only
   return s;
 }
@@ -88,13 +88,13 @@ describe("tile lifecycle — a frozen tile keeps its state and stops its effects
     const root = createRoot(el);
     act(() =>
       root.render(
-        <SpatialStoreContext.Provider value={s}>
+        <BoardCameraStoreContext.Provider value={s}>
           <FocusHostContext.Provider value={null}>
-            <SpatialTile id="far" rect={rect(10)} title="Vendor contract review" onResize={null} sleeps>
+            <BoardTile id="far" rect={rect(10)} title="Vendor contract review" onResize={null} sleeps>
               {() => <Body />}
-            </SpatialTile>
+            </BoardTile>
           </FocusHostContext.Provider>
-        </SpatialStoreContext.Provider>,
+        </BoardCameraStoreContext.Provider>,
       ),
     );
     act(() => el.querySelector("button[data-count]")!.dispatchEvent(new MouseEvent("click", { bubbles: true })));
@@ -131,13 +131,13 @@ describe("tile lifecycle — only content proven to wake correctly sleeps", () =
     const root = createRoot(el);
     act(() =>
       root.render(
-        <SpatialStoreContext.Provider value={s}>
+        <BoardCameraStoreContext.Provider value={s}>
           <FocusHostContext.Provider value={null}>
-            <SpatialTile id="far" rect={rect(10)} title="Q4 pricing notes" onResize={null}>
+            <BoardTile id="far" rect={rect(10)} title="Q4 pricing notes" onResize={null}>
               {() => <Body />}
-            </SpatialTile>
+            </BoardTile>
           </FocusHostContext.Provider>
-        </SpatialStoreContext.Provider>,
+        </BoardCameraStoreContext.Provider>,
       ),
     );
     act(() => {

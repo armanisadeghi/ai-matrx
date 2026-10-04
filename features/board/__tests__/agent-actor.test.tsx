@@ -1,7 +1,7 @@
 // The assistant's changes are its own: `board_undo` takes back only what the
 // agent did, never the person's move, and an agent's add never takes the
 // selection from a tile the person is typing in. Real BoardStore, real
-// SpatialStore, real tool handlers through the board surface.
+// BoardCameraStore, real tool handlers through the board surface.
 
 jest.mock("@/lib/toast", () => ({ toast: Object.assign(jest.fn(), { error: jest.fn(), success: jest.fn() }) }));
 
@@ -9,8 +9,8 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
 import { BoardStore } from "../board/board-store";
-import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
-import { SpatialStore } from "../engine/spatial-store";
+import { BoardSurface } from "../components/BoardSurface";
+import { BoardCameraStore } from "../engine/camera-store";
 import type { BoardToolHost } from "../tools/useBoardAgentTools";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -74,7 +74,7 @@ describe("board store — actors", () => {
 describe("board tools — the person's work is theirs", () => {
   function mount() {
     const board = new BoardStore<Tile>([tile("a", 0), tile("b", 200)]);
-    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
     const host: BoardToolHost<Tile> = {
       board,
       store,
@@ -83,7 +83,7 @@ describe("board tools — the person's work is theirs", () => {
       describe: () => ({ kind: "note" }),
     };
     const root = createRoot(document.createElement("div"));
-    act(() => root.render(<SpatialBoardSurface host={host}>{null}</SpatialBoardSurface>));
+    act(() => root.render(<BoardSurface host={host}>{null}</BoardSurface>));
     return { board, store, unmount: () => act(() => root.unmount()) };
   }
 

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { zoomAt } from "../engine/camera";
-import { useLayoutGuides, useSpatialStore } from "../engine/react";
+import { useLayoutGuides, useBoardCameraStore } from "../engine/react";
 
 const PRESETS = [0.25, 0.5, 0.75, 1, 1.5, 2];
 
@@ -33,7 +33,7 @@ export interface HistoryControls {
 }
 
 export function ZoomMenu({ history, className }: { history?: HistoryControls; className?: string }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const guides = useLayoutGuides();
   const pctRef = useRef<HTMLSpanElement>(null);
 
@@ -61,7 +61,7 @@ export function ZoomMenu({ history, className }: { history?: HistoryControls; cl
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          data-spatial-chrome
+          data-board-chrome
           aria-label="Zoom and view"
           className={cn(
             "flex h-8 items-center gap-1 rounded-md px-2 font-mono text-xs tabular-nums text-foreground hover:bg-accent",
@@ -72,7 +72,7 @@ export function ZoomMenu({ history, className }: { history?: HistoryControls; cl
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52" data-spatial-chrome>
+      <DropdownMenuContent align="end" className="w-52" data-board-chrome>
         <DropdownMenuItem onSelect={() => zoomTo(store.getCamera().z * 1.25)}>
           Zoom in
           <DropdownMenuShortcut>⌘+</DropdownMenuShortcut>

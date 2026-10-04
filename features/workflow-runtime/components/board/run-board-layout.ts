@@ -1,5 +1,5 @@
 /**
- * run-board-layout — a workflow DEFINITION laid out as a spatial board.
+ * run-board-layout — a workflow DEFINITION laid out as a Board.
  *
  * Pure and deterministic: the same definition always yields the same board, so
  * a run reopened tomorrow lands every stage where it was today, and every
@@ -16,7 +16,7 @@
  *   sizes    — a step is 560×440; a deliverable (what the reader keeps) is
  *              720×560, because kinds are tuned for the 720px chat column.
  *
- * Nothing here knows about React, Redux or the spatial engine.
+ * Nothing here knows about React, Redux or the Board engine.
  */
 
 export interface RunBoardRect {

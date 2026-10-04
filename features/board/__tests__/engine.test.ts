@@ -19,7 +19,7 @@ import {
   shouldCommit,
 } from "../engine/lod";
 
-describe("spatial camera", () => {
+describe("Board camera", () => {
   const cam = { x: 120, y: -40, z: 0.5 };
 
   it("round-trips world ↔ screen", () => {
@@ -136,7 +136,7 @@ describe("zoom-paced streaming", () => {
   });
 });
 
-describe("spatial store culling", () => {
+describe("Board camera store culling", () => {
   // The store schedules coarse work on rAF; drive it by hand instead.
   const raf = globalThis.requestAnimationFrame;
   beforeAll(() => {
@@ -147,8 +147,8 @@ describe("spatial store culling", () => {
   });
 
   it("marks only tiles near the viewport visible and tracks the tier", async () => {
-    const { SpatialStore } = await import("../engine/spatial-store");
-    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    const { BoardCameraStore } = await import("../engine/camera-store");
+    const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
     store.setSize({ w: 1000, h: 800 });
     store.registerItem("near", { x: 100, y: 100, w: 300, h: 300 });
     store.registerItem("far", { x: 20_000, y: 0, w: 300, h: 300 });
@@ -311,8 +311,8 @@ describe("tile interaction states", () => {
   });
 
   it("interacting implies selected; selecting elsewhere or nothing ends it", async () => {
-    const { SpatialStore } = await import("../engine/spatial-store");
-    const store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    const { BoardCameraStore } = await import("../engine/camera-store");
+    const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
     store.registerItem("a", { x: 0, y: 0, w: 10, h: 10 });
     store.registerItem("b", { x: 20, y: 0, w: 10, h: 10 });
     store.setEditing("a");

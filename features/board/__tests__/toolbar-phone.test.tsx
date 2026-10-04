@@ -12,7 +12,7 @@ import path from "path";
 
 jest.mock("../engine/react", () => ({
   useActiveTool: () => "select",
-  useSpatialStore: () => ({ setTool: jest.fn() }),
+  useBoardCameraStore: () => ({ setTool: jest.fn() }),
 }));
 
 import { ToolBar, PHONE_TOOLS } from "../components/ToolBar";

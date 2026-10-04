@@ -65,7 +65,7 @@ export function MeetingPartBody({ meetingId, part }: { meetingId: string; part: 
 export function MeetingSectionBody({ section }: { section: MeetingPart }) {
   const ai = useMeetAi();
   return (
-    <div data-spatial-scroll className="h-full overflow-y-auto p-4 text-sm leading-relaxed text-foreground">
+    <div data-board-scroll className="h-full overflow-y-auto p-4 text-sm leading-relaxed text-foreground">
       <p className="mb-3 text-xs text-muted-foreground">{ai.noteTakerLabel}</p>
       {section === "transcript" && <LiveTranscript />}
       {section === "notes" && <NoteList notes={ai.notes} empty={EMPTY.notes} />}
@@ -110,7 +110,7 @@ function useFollowNewest(lastLine: string | null) {
   const endRef = useRef<HTMLLIElement>(null);
   useEffect(() => {
     const end = endRef.current;
-    const scroller = end?.closest<HTMLElement>("[data-spatial-scroll]");
+    const scroller = end?.closest<HTMLElement>("[data-board-scroll]");
     if (!end || !scroller) return;
     const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 120;
     if (nearBottom) scroller.scrollTop = scroller.scrollHeight;
@@ -195,7 +195,7 @@ function RecordPart({ loaded, part }: { loaded: LoadedMeeting; part: MeetingPart
     const mine = loaded.invitees.find((i) => i.userId === userId) ?? null;
     const canManage = meeting.hostUserId === userId || mine?.role === "cohost";
     return (
-      <div data-spatial-scroll className="h-full overflow-y-auto p-4 text-sm">
+      <div data-board-scroll className="h-full overflow-y-auto p-4 text-sm">
         <ActionItemsSection
           meeting={meeting}
           bundle={bundle}
@@ -209,7 +209,7 @@ function RecordPart({ loaded, part }: { loaded: LoadedMeeting; part: MeetingPart
   }
 
   return (
-    <div data-spatial-scroll className="h-full overflow-y-auto p-4 text-sm leading-relaxed text-foreground">
+    <div data-board-scroll className="h-full overflow-y-auto p-4 text-sm leading-relaxed text-foreground">
       {part === "transcript" && <RecordTranscript bundle={bundle} notHeld={notHeld} />}
       {part === "notes" && <NoteList notes={bundle.liveNotes} empty={notHeld ? EMPTY.notes : "No notes were taken."} />}
       {part === "decisions" && (

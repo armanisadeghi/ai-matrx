@@ -1,36 +1,36 @@
 "use client";
 
 /**
- * React bindings for the spatial store — every hook reads a COARSE channel,
+ * React bindings for the Board camera store — every hook reads a COARSE channel,
  * never the per-frame camera.
  */
 
 import { createContext, useContext, useSyncExternalStore } from "react";
-import type { SpatialStore, TileLife } from "./spatial-store";
+import type { BoardCameraStore, TileLife } from "./camera-store";
 import type { DetailTier, PaceTier } from "./lod";
 
-export const SpatialStoreContext = createContext<SpatialStore | null>(null);
+export const BoardCameraStoreContext = createContext<BoardCameraStore | null>(null);
 
 /** The element a focused tile portals into (screen space, over the plane). */
 export const FocusHostContext = createContext<HTMLElement | null>(null);
 
-export function useSpatialStore(): SpatialStore {
-  const store = useContext(SpatialStoreContext);
+export function useBoardCameraStore(): BoardCameraStore {
+  const store = useContext(BoardCameraStoreContext);
   if (!store) {
     throw new Error(
-      "useSpatialStore: no <SpatialViewport> above this component — spatial tiles only render inside a viewport.",
+      "useBoardCameraStore: no <BoardViewport> above this component — Board tiles only render inside a viewport.",
     );
   }
   return store;
 }
 
 export function useDetailTier(): DetailTier {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(store.subscribeTier, store.getTier, store.getTier);
 }
 
 export function useTileVisible(id: string): boolean {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(
     (l) => store.subscribeVisible(id, l),
     () => store.isVisible(id),
@@ -46,7 +46,7 @@ export function usePaceTier(id: string): PaceTier {
 }
 
 export function useSelectedTile(): string | null {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(
     store.subscribeSelection,
     store.getSelected,
@@ -55,23 +55,23 @@ export function useSelectedTile(): string | null {
 }
 
 export function useFocusedTile(): string | null {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(store.subscribeFocus, store.getFocused, store.getFocused);
 }
 
 export function useActiveTool() {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(store.subscribeUi, store.getTool, store.getTool);
 }
 
 export function useLayoutGuides(): boolean {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(store.subscribeUi, store.getGuides, store.getGuides);
 }
 
 /** The tile whose content currently receives input natively, if any. */
 export function useEditingTile(): string | null {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(store.subscribeEditing, store.getEditing, store.getEditing);
 }
 
@@ -79,19 +79,19 @@ export function useEditingTile(): string | null {
 // never every tile on the board (an id-returning hook wakes them all). ──────
 
 export function useIsSelected(id: string): boolean {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const get = () => store.getSelected() === id;
   return useSyncExternalStore(store.subscribeSelection, get, get);
 }
 
 export function useIsFocused(id: string): boolean {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const get = () => store.getFocused() === id;
   return useSyncExternalStore(store.subscribeFocus, get, get);
 }
 
 export function useIsEditing(id: string): boolean {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const get = () => store.getEditing() === id;
   return useSyncExternalStore(store.subscribeEditing, get, get);
 }
@@ -102,7 +102,7 @@ export function useIsEditing(id: string): boolean {
  * one (selecting another tile while one is full screen never makes two live).
  */
 export function useIsLiveTile(id: string): boolean {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const get = () => (store.getFocused() ?? store.getEditing() ?? store.getSelected()) === id;
   const subscribe = (l: () => void) => {
     const a = store.subscribeSelection(l);
@@ -119,7 +119,7 @@ export function useIsLiveTile(id: string): boolean {
 
 /** The tile's content lifecycle (`TileLife`). */
 export function useTileLife(id: string): TileLife {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   return useSyncExternalStore(
     (l) => store.subscribeLife(id, l),
     () => store.getLife(id),

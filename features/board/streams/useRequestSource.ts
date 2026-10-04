@@ -11,7 +11,7 @@
  * reader is a viewer (LIVE-RUN-RETENTION.md) — holds a viewer retention for as
  * long as the tile is mounted, so the run is never reaped under an open tile.
  *
- *   const source = useRequestSource(requestId, "spatial-tile");
+ *   const source = useRequestSource(requestId, "board-tile");
  *   board.addTile({ id, title, rect, content: { type: "stream", stream: source } }, viewportCentre);
  */
 
@@ -25,7 +25,7 @@ import {
 import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { RequestStream } from "./stream-source";
 
-export function useRequestSource(requestId: string, viewerLabel = "spatial-tile"): RequestStream<RootState> {
+export function useRequestSource(requestId: string, viewerLabel = "board-tile"): RequestStream<RootState> {
   const store = useAppStore();
   useRetainRequestForViewer(requestId, viewerLabel);
   // One source per request for the life of the tile (the selector factory is

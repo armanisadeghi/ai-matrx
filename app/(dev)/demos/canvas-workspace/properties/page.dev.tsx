@@ -1,6 +1,6 @@
 // /demos/canvas-workspace/properties — ChatCanvasWorkspace with a properties
 // panel over real rows (content_ir.kind_definition), so the panel's tabs,
-// fade and hover scrollbar are provable. The spatial host is one level up.
+// fade and hover scrollbar are provable. The Board host is one level up.
 
 import type { Metadata } from "next";
 import { readAllRows } from "@ai-matrx/data/db";

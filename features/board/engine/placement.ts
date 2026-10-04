@@ -1,5 +1,5 @@
 /**
- * Spatial view — where a NEW tile goes (pure).
+ * Board — where a NEW tile goes (pure).
  *
  * A result that arrives while you watch must land where you are looking,
  * never on top of something else (Miro, FigJam and Heptabase all place new

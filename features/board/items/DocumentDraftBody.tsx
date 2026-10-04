@@ -40,7 +40,7 @@ async function createDraftDocument(
     if (isOrganizationSelectionCancelled(err)) {
       return { failure: { reason: "Choose the workspace this document belongs to, then try again.", cancelled: true } };
     }
-    console.error("[spatial/document] could not create the document", err);
+    console.error("[board/document] could not create the document", err);
     return { failure: { reason: err instanceof Error ? err.message : String(err), cancelled: false } };
   }
 }

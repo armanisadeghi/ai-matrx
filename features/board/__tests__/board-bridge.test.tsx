@@ -17,8 +17,8 @@
 const TEST_NOTE = "matrx-user/test-board-note";
 
 jest.mock("@/features/surfaces/manifests/registry", () => {
-  const { spatialBoardManifest } = jest.requireActual(
-    "@/features/surfaces/manifests/spatial-board.manifest",
+  const { boardManifest } = jest.requireActual(
+    "@/features/surfaces/manifests/board.manifest",
   );
   const note = {
     surfaceName: "matrx-user/test-board-note",
@@ -49,7 +49,7 @@ jest.mock("@/features/surfaces/manifests/registry", () => {
       },
     ],
   };
-  const all = [spatialBoardManifest, note];
+  const all = [boardManifest, note];
   return {
     getManifest: (name: string) => all.find((m) => m.surfaceName === name),
     getAllManifests: () => all,
@@ -72,9 +72,9 @@ import {
 import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
 import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host";
-import { SPATIAL_BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/spatial-board.manifest";
-import { SpatialBoardSurface } from "../components/SpatialBoardSurface";
-import { SpatialStore } from "../engine/spatial-store";
+import { BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/board.manifest";
+import { BoardSurface } from "../components/BoardSurface";
+import { BoardCameraStore } from "../engine/camera-store";
 import { createItemSurfaceIndex, type ItemSurfaceIndex } from "../tools/item-surfaces";
 import type { BoardToolHost } from "../tools/useBoardAgentTools";
 
@@ -109,7 +109,7 @@ function NoteSurface({ id }: { id: string }) {
   );
 }
 
-function BoardTile({ tile, store, index }: { tile: Tile; store: SpatialStore; index: ItemSurfaceIndex }) {
+function BoardTile({ tile, store, index }: { tile: Tile; store: BoardCameraStore; index: ItemSurfaceIndex }) {
   const live = useSyncExternalStore(store.subscribeSelection, store.getSelected, store.getSelected) === tile.id;
   const [capture] = useState(createSurfaceCapture);
   useEffect(() => index.set(tile.id, capture), [index, tile.id, capture]);
@@ -120,7 +120,7 @@ function BoardTile({ tile, store, index }: { tile: Tile; store: SpatialStore; in
   );
 }
 
-function TestBoard({ tiles, store, index }: { tiles: Tile[]; store: SpatialStore; index: ItemSurfaceIndex }) {
+function TestBoard({ tiles, store, index }: { tiles: Tile[]; store: BoardCameraStore; index: ItemSurfaceIndex }) {
   const host: BoardToolHost<Tile> = {
     board: {
       read: () => ({ tiles, parked: [], frames: [], connections: [] }),
@@ -136,11 +136,11 @@ function TestBoard({ tiles, store, index }: { tiles: Tile[]; store: SpatialStore
     itemSurfaces: index,
   };
   return (
-    <SpatialBoardSurface host={host}>
+    <BoardSurface host={host}>
       {tiles.map((tile) => (
         <BoardTile key={tile.id} tile={tile} store={store} index={index} />
       ))}
-    </SpatialBoardSurface>
+    </BoardSurface>
   );
 }
 
@@ -181,12 +181,12 @@ afterAll(() => _resetChatHostForTests());
 
 describe("the bridge — every board item in two requests", () => {
   let root: ReturnType<typeof createRoot>;
-  let store: SpatialStore;
+  let store: BoardCameraStore;
 
   beforeEach(async () => {
     notes.colors = { title: "Colors", body: "Primary is teal.\nAccent is coral for buttons." };
     notes.site = { title: "Website", body: "Hero, pricing, footer." };
-    store = new SpatialStore({ x: 0, y: 0, z: 1 });
+    store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
     store.select("site");
     const tiles: Tile[] = [
       { id: "site", title: "Website", rect: { x: 0, y: 0, w: 300, h: 200 } },
@@ -207,7 +207,7 @@ describe("the bridge — every board item in two requests", () => {
   });
 
   it("request one: board_items names every item, with the dormant one's basics and none for the live one", async () => {
-    const scope = await getSurfaceRuntimeForName(SPATIAL_BOARD_SURFACE_NAME)?.getScope();
+    const scope = await getSurfaceRuntimeForName(BOARD_SURFACE_NAME)?.getScope();
     const overview = scope?.board_items as {
       live_item_ids: string[];
       items: Array<{ id: string; live: boolean; surface: string; basics?: Record<string, unknown>; basics_note?: string }>;

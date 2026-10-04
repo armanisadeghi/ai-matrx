@@ -1,5 +1,5 @@
 /**
- * Spatial view — stream sources a tile can be paced against.
+ * Board — stream sources a tile can be paced against.
  *
  * A source is anything that holds the CURRENT render blocks of one stream and
  * notifies when they change. Two exist:
@@ -97,7 +97,7 @@ export class ReplayStream implements PacedSource {
     const order: string[] = [];
     let received = 0;
     const expected = this.wire.length;
-    const accumulator = new StreamBlockAccumulator(`spatial-${this.id}`, (payload) => {
+    const accumulator = new StreamBlockAccumulator(`board-${this.id}`, (payload) => {
       const b = payload.block as RenderBlockPayload;
       if (!blocks.has(b.blockId)) order.push(b.blockId);
       blocks.set(b.blockId, b);

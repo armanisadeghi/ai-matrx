@@ -71,7 +71,7 @@ export function PeopleStrip() {
   return (
     <div
       ref={boxRef}
-      data-spatial-chrome
+      data-board-chrome
       data-meet-people-strip
       className={cn(
         "pointer-events-auto absolute z-20 flex max-w-[calc(100%-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur",

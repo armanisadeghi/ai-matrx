@@ -1,8 +1,8 @@
 /**
  * The board, as an agent reads it (`board_read`).
  *
- * A `BoardContext` is a compact, BOUNDED structured snapshot of a spatial
- * board, returned by the board's agent tools — never sent as user text.
+ * A `BoardContext` is a compact, BOUNDED structured snapshot of a
+ * Board, returned by the board's agent tools — never sent as user text.
  *
  * Size bounds (so a 300-tile board can never blow the context window):
  *   - at most `BOARD_CONTEXT_MAX_TILES` tiles, in-view and selected tiles first;

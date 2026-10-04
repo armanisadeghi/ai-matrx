@@ -1,5 +1,5 @@
 /**
- * Spatial view demo — replay scripts.
+ * Board demo — replay scripts.
  *
  * Every tile on the demo board streams one of these through the REAL
  * accumulator. They are replays, and the board says so on every tile — no

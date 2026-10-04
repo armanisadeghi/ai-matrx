@@ -1,7 +1,7 @@
 /**
- * Spatial view — what a gesture on a TILE means (pure).
+ * Board — what a gesture on a TILE means (pure).
  *
- * Every tile on every board gets these from the tile frame (`SpatialTile`),
+ * Every tile on every board gets these from the tile frame (`BoardTile`),
  * so no item type writes its own resize or double-click code.
  *
  *   resize        — eight handles (four edges, four corners), a constant

@@ -1,9 +1,62 @@
-# FEATURE.md — `spatial` (working name: Spatial view)
+# FEATURE.md — Board (`features/board`)
 
-> **Status:** proof of concept, live at `/demos/board` (demos build). Working name only — "desk" is
-> retired vocabulary and "Canvas" is the side-sheet artifact host (`features/canvas`); the product
-> name goes to Arman before this leaves demos. Project plan and research:
-> `../common-docs/systems/workspace/boards/projects/spatial-view/PLAN.md`.
+## Status — what is live at /board (2026-10-04)
+
+- Routes: `/board` (the person's own board in the active organization), `/board/<id>` (any of their boards), `/board/all` (the list: open, rename, duplicate, delete; deleted boards restorable, Archived filter). Saved boards live in `projects.spatial_boards` (table rename pending, see Names still spelled "spatial").
+- Board is its own Workspace menu item: My board, All boards, and one "Add to your board" row per item type (`/board?add=<item key>` starts that type on the person's board). `__tests__/board-menu-items.test.ts` fails when a type has no row or a row names a missing type. The nav has no feature-board sub-entries yet (Open item 1).
+- Item types: note, file, chat, table, record, document, task, war room, meeting, workflow run, research, project, web page, image, write-up, label, meeting_part, Page (any app page as a tile).
+- Every item type passes the remount quiet law (record, table, task, project, meeting, chat fixed 2026-10-04). The one source of which types sleep and which laws each passes is the ledger `__tests__/remount-safety/cases.ts` (enforced by `remount-ledger.test.ts`); never list sleepers in prose here.
+- Agent bridge in two requests (`board_items` value, then `board_open_item` / `board_item_act`), 13 `board_*` tools, surface `matrx-user/spatial-board` (values `board_title`, `board_items`, `selected_tile`; the key keeps its old spelling, see Names still spelled "spatial"). Board comments: the Board's own thread plus one comment door per tile. Tile errors are isolated by an error boundary per tile.
+- Fixed 2026-10-04 (remount ledger all green, two-tab per-tile merge, placement in rows, phone toolbar, tap-target fixes): unsent chat tile no longer lost on reload; "New board" in the title menu opens the board; two-tab per-tile merge; tile placement in rows; phone toolbar "More tools"; documents no longer render black; file Versions loads in about 2.5 s.
+- Feature boards mount the same engine: War Room (Board mode), meetings (`UserBoard` over a saved board linked by `settings.meeting_id`), workflow runs (run board).
+
+## Vision — Arman's words
+
+(Verbatim from the retired `docs/handoffs/master-board.md`, written 2026-09-30. Per the docs skill, §5 these also belong in a node `VISION.md`; the owner's instruction put them in this file.)
+
+- "the user's master one and it's got it's own menu item... show all of the supported features as suboptions... drop in anything... If we do it properly, it will eventually be the only ui we ever need... The big key is that you can choose form supported options to drop things into the ui and just get started on them immediately."
+- "each item that is added properly declares it's FULL surface values and actions because if the agent can't do the exact same things as on the normal screen, it doen't work well"
+- "The 'notes' you added are fake. it's not our real notes ui... Ideally, we give them literally the same ui but if not the same ui, then at least the same core part"
+- "it still needs to offer all of the items that are open and the agent should be able to reach them with two requests. The first carries the active surface and a list of all other open items... give the agent enough info to know what that item is, including the name and some basics. If the agent wants to do something with the non-open items, it fiirst requests that item and it gets the state and controls for it."
+- On a multi-item ask: "We're working on redoing the website and I have some images here and I have the notes with the color options. Look at what this other agent said and then see if you think for our website the colors I have set in the table make sense and update them for what you think is best."
+- "the things on the canvas don't have proper controls for resizing... You have to easily and freely resize"; "scrolling the page DOES NOT WORK if you are hovering over one of these items. We cannot ever have the scroll move the canvas when you're over one of these"; full screen on a chat tile "changed sizes" and he "couldn't get out... you cannot allow that to happen"; "a double click on any node needs to move to it, zoom it in and bring it into focus." "There are a lot more things like that."
+- Naming, 2026-10-04: "Let's go with "Board" everywhere and ensure that Sonnet agents go through and completely and 100% replace everything in all docs and the code comments, componens, etc. so there is no confusion."
+
+## Open — the one list
+
+1. **Feature boards as Board menu sub-options.** Vision: the Board has its own menu item with each feature's board (War Room, Meetings, Workflow runs) as sub-options. Today the nav has only "My board" and "All boards"; the feature boards are views inside their features. Build gap, not a doc fix.
+2. **Feature boards publish `board_items` basics.** War Room and workflow-run boards pass no `itemSurfaces` (only `home/UserBoard.tsx` does), so an agent beside them cannot reach their items the two-request way.
+3. **Dormant table says "not loaded yet".** Before its grid loads a dormant table reports `row_count` 0 and `is_read_only` true.
+4. **Same-tab document sync.** Two views of one document in one tab (a Board tile plus a `/documents` page or canvas tab) do not Yjs-sync: `@ai-matrx/realtime` gives every holder in a tab the same client id and suppresses echoes (`SupabaseYjsProvider`). Fix in the package (`aidream/apps/shared/realtime`, local fan-out between holders of one topic), never on the Board. UNVERIFIABLE from code whether it is still open after the one-working-copy-per-tab change; one two-view check proves it.
+5. **Saving a file another person owns and shared with edit rights is refused** (the files service resolves the upload path under the uploader). Real fix: a replace-by-id endpoint in aidream. `change_summary` sent with a file save is stored as null.
+6. **Camera overshoot on table checkboxes.** On the "Grid Parity Fixture" table, Tab onto a row checkbox past the grid's own scroll edge panned 411 px where the rule predicts about 53 px (suspected: the settle-window re-check measuring mid-way through the grid's scroll).
+7. **Caret following** is not built for plain `<textarea>`/`<input>` or Monaco.
+8. **More item types:** lists, scopes, education (study sets, flashcards) — follow the `board-items` skill.
+9. **Agent multi-item run and the approval-card tool trace — untested, blocked.** Includes the open question: an agent once wrote a table row through a server-side records write tool with no approval card, then raised the Board's card for the same write. Trace which tool it was and raise it with the agent-tools owners (`common-docs/systems/agents/agent-tools/STATE.md`); agents never edit agent definitions themselves. UNVERIFIABLE without one live reproduction.
+10. **A full `pnpm type-check` has never run** on this work (a cloud container lacks the memory); a scoped check over every file touched was clean.
+11. **Next batch of interactions.** Arman: "There are a lot more things like that" — ask him; nothing else is known. A phone swipe from the left edge (x about 30) does not pan the Board (probably the workspace's edge-swipe claiming it; decide which wins). Resize on the demo and workflow-run boards is proven by the required prop and parse test, not in a browser.
+12. **Record tile:** `RecordsProvider` memoizes its client on its config; `config.realtime` comes from `createRecordsRealtimePort(org)` in `useUnifiedTable` and relies on the React Compiler memoizing it, otherwise the record surface re-reads row actions every render.
+13. **Small:** Notes tile has no comments of its own beyond the Board door (matches `/notes`) and mode labels collapse to icons below a 26rem tile; Files has no mobile host for `/files/f`; only the data-tables, notes-editor and documents briefs were chosen with their features in mind, review the other seven when touching those surfaces; Page tiles show an embedded page's surface to agents by title only; `check:reserved-icons` was failing on `WorkflowRunBoardView.tsx` (`docs/ui-drift-audit.md`).
+14. **Composer-chrome leftovers** (from the ai-matrx-composer MAP, UNVERIFIED whether still true): the store reachable outside the viewport (Layers as a Properties tab), an insets callback for fit-to-view, ToolBar/ZoomMenu overlap at 390 px.
+15. **A tile size contract for kinds.** Kinds are tuned to the 720 px chat column; add an optional compact/tile variant to the kind component contract (content-ir) with a scaled fallback.
+16. **Annotations on any tile.** Generalise the PDF annotation layer and the image annotation window into one overlay; text anchors keep the rich-document sidecar.
+17. **Multiplayer.** Supabase Realtime Broadcast for cursors, camera follow (opt-in, FigJam Spotlight style, never a yanked viewport) and presence; Postgres Changes only for persisted board edits.
+18. **Conflicting statement to settle:** the retired handoff said the custom-data merged grid is "on platform-wide"; the old change log said `data_tables.merged_grid` defaults off until merge step 8. UNVERIFIABLE here: read the knob's live default (`platform.feature_knob`) and write one line.
+19. **Testing on the nightly database copy** is impossible in a Claude cloud container (needs `../aidream`, a clone-wired server on :8200 and a password on Arman's Mac); walks there use ordinary UI records on live, all deleted or archived after.
+
+### Names still spelled "spatial" (database-facing, a later lane renames the table)
+
+- `projects.spatial_boards` (table, generated types, `.from("spatial_boards")` in `persistence/boardsService.ts`), entity token `spatial_board` (`BOARD_TOKEN`, `features/scopes/registry/entityRegistry.ts`, the knobs `access.shown_to_default.spatial_board` and `lists.landing_tab.spatial_board`).
+- `war_rooms.metadata.spatial_layout` (`BOARD_LAYOUT_KEY` in `features/war-room/components/board/boardLayout.ts`), stored in room rows.
+- Surface key `matrx-user/spatial-board` (`BOARD_SURFACE_NAME`): a row in `ui.ui_surface` and named by aidream tests and `wire.test.ts`; renaming it is a data change plus both repos.
+- List surface key `spatial-boards-browse` (`boards/listConfig.tsx`).
+- Never reintroduce the retired names in code, docs or UI: Spatial view, Spatial Board, spatial board, master Board, Spatial, spatial canvas.
+
+### Rules for the open work (from the retired plan, never lose)
+
+- Never adopt tldraw: production use needs a paid quote-only licence or an undismissable watermark; canvas/WebGL engines rasterise live DOM and are wrong for our tiles.
+- Tiles render through the one pipeline (`BlockRenderer` / `LiveRunDisplay` / existing media components); no bespoke stream renderer.
+- Persistence stays JSON-Canvas-compatible (nodes with world rects, edges) plus our own fields.
 
 **What it is:** an infinite, pannable, zoomable plane where many live AI results (streaming
 prose, structured kinds, images, generated HTML, pipelines) sit as tiles at their natural size.
@@ -31,16 +84,18 @@ stale text. By construction a batched tile renders once per interval instead of 
 |---|---|
 | Camera math (pure): zoom-at-cursor, fit, log-space fly-to, hash deep links | `engine/camera.ts` |
 | Tiers + pacing rule (pure) | `engine/lod.ts` |
-| Camera/item store OUTSIDE React: frame listeners write the DOM; coarse channels (tier, per-tile visibility, selection) via `useSyncExternalStore` | `engine/spatial-store.ts`, `engine/react.tsx` |
-| The plane: input (wheel/pinch/drag/space/keys), ONE world transform, dot grid, `#cam=` sync | `components/SpatialViewport.tsx` |
-| Tile (world rect, culling via `content-visibility`, overview card, header drag) | `components/SpatialTile.tsx` |
-| Frames (named regions, counter-scaled labels, click to fly), edges, HUD, minimap | `components/SpatialFrame.tsx`, `SpatialEdge.tsx`, `SpatialChrome.tsx` |
+| Camera/item store OUTSIDE React: frame listeners write the DOM; coarse channels (tier, per-tile visibility, selection) via `useSyncExternalStore` | `engine/camera-store.ts`, `engine/react.tsx` |
+| The plane: input (wheel/pinch/drag/space/keys), ONE world transform, dot grid, `#cam=` sync | `components/BoardViewport.tsx` |
+| Tile (world rect, culling via `content-visibility`, overview card, header drag) | `components/BoardTile.tsx` |
+| Frames (named regions, counter-scaled labels, click to fly), edges, HUD, minimap | `components/BoardFrameView.tsx`, `BoardEdgeLine.tsx`, `BoardChrome.tsx` |
 | Stream sources: `ReplayStream` (real `StreamBlockAccumulator`), `RequestStream` (live `activeRequests` row) | `streams/stream-source.ts` |
 | The read-side throttle | `streams/usePacedSnapshot.ts` |
 | Tile bodies: stream → `BlockRenderer`; sandboxed HTML; image; video | `tiles/` |
 | Demo board | `demo/`, route `app/(dev)/demos/board/page.dev.tsx` |
 
 ## Rules for this directory
+
+- **Tile errors are isolated.** Every tile body sits in its own error boundary (`boundary="BoardTile"`); one tile throwing shows a stand-in on that tile and never takes the board down.
 
 - **Never hand-render a stream.** Stream tiles render blocks through `BlockRenderer`, the one
   pipeline. Pacing sits between a source and that render — never upstream of the accumulator.
@@ -53,17 +108,16 @@ stale text. By construction a batched tile renders once per interval instead of 
   page hidden, Escape (puts it back), or the first move that reports the button up. A gesture that
   ended only on one `pointerup` reaching one element stayed open when that release was missed: the
   resize shield stayed over the page with a resize cursor and the board took no clicks (Arman,
-  2026-10-01). The board pan heals the same way. `__tests__/SpatialTile.test.tsx` holds it.
-- **Tiles sleep only when proven to wake correctly (`TileLife` in `engine/spatial-store.ts`).** The store
+  2026-10-01). The board pan heals the same way. `__tests__/BoardTile.test.tsx` holds it.
+- **Tiles sleep only when proven to wake correctly (`TileLife` in `engine/camera-store.ts`).** The store
   says live / frozen / discarded (needed = in view at a readable zoom, selected, worked in, full screen,
   keyboard focus inside, or `holdAwake`; frozen 8 s after it stops being needed; discarded beyond 12
   warm). A tile acts on it only with `sleeps` (React `<Activity mode="hidden">`) / `discardable`, set per
   item type (`BoardItemType.sleeps`) after a browser check — waking re-runs every effect, and content
-  whose mount effect resets itself loses work. Sleeping (browser-checked 2026-10-02): label, image,
-  chat, note, task, research, project, war room, workflow run, table, record, document (the tile does not rebuild Univer: the
-  last view parks its Univer instance on the document's model and the next view re-parents that same instance into its
-  container, so the text and undo history survive — 08a47eaf1d). Awake, with the reason: file (`@monaco-editor/react` never re-creates its editor; previews re-download). What must outlive a sleeping body (a chat's live run, holding the
-  tile awake while the agent works) is the type's `Keep`, mounted outside the boundary.
+  whose mount effect resets itself loses work. Which types sleep is the ledger
+  `__tests__/remount-safety/cases.ts`, never a list here: a type sleeps only when its remount-safety case passes. What must outlive a sleeping body (a chat's live run, holding the
+  tile awake while the agent works) is the type's `Keep`, mounted outside the boundary. A document tile does not rebuild Univer: the
+  last view parks its Univer instance on the document's model and the next view re-parents that same instance, so text and undo history survive.
 - **A type sleeps when its remount-safety case passes** (`__tests__/remount-safety.*.test.tsx`, owner's
   law 2026-10-02: hidden, shown and remounted with no lost work and no repeated side effects). Each
   type's `Body` (+ `Host`) is mounted as the board mounts it over the real store and a recording
@@ -118,7 +172,7 @@ The board takes a real run the same way it takes a replay. Nothing else is neede
    (`board/useBoard.ts`) — `near` is usually the viewport centre in world px
    (`screenToWorld(store.getCamera(), w/2, h/2)`); the tile lands in the nearest free space.
 4. For a saved board, the node is `{ source: { kind: "stream", requestId } }` (`board/document.ts`).
-A pipeline (notes → script → media) is several tiles plus `SpatialEdge`s inside a `SpatialFrame`;
+A pipeline (notes → script → media) is several tiles plus `BoardEdgeLine`s inside a `BoardFrameView`;
 each stage's tile is added when that stage's request starts.
 
 ## Saved boards
@@ -170,7 +224,7 @@ the link (`settingsForCopy`). It is outside the
   ~120 ms after motion stops, then catch up in one step.
 - **One text node per changing label**, updated by `nodeValue` — node insertions trigger the shell's
   global `:has()` restyles (D349).
-- `--spatial-z` lives on an inner element and is written only on a ≥1.5% zoom change.
+- `--board-z` lives on an inner element and is written only on a ≥1.5% zoom change.
 
 Measured in this container (headless Chromium, software raster, dev build, 4 vCPU), 112 tiles:
 standing still with 100 live streams 58 fps (was 21); panning with 100 live streams 21–24 fps (was
@@ -179,15 +233,15 @@ hardware with a production build before tuning further.
 
 ## Input, focus, gestures
 
-- **A tile has three states (`SpatialTile`, store `editing`):** *idle* → click = *selected* (drag
+- **A tile has three states (`BoardTile`, store `editing`):** *idle* → click = *selected* (drag
   from anywhere on it moves it) → double-click, or a press on a control (input, button, link,
   editor) = *interacting* (native input: typing, text selection, "Interacting · Esc" pill). Esc
   steps back one state; the header always drags. While a tile is interacting only Esc reaches the
   board's keys.
-- **Frame gestures every item type inherits (`engine/tile-gestures.ts`, drawn by `SpatialTile`; a host
+- **Frame gestures every item type inherits (`engine/tile-gestures.ts`, drawn by `BoardTile`; a host
   must pass `onResize`):**
   - *Resize:* four edge + four corner handles, a 12px SCREEN hit area at any zoom (world size
-    `px / --spatial-z`), mostly outside the edge so it never covers a scrollbar; min 160×96; Shift keeps
+    `px / --board-z`), mostly outside the edge so it never covers a scrollbar; min 160×96; Shift keeps
     the aspect ratio (corner: the axis that moved most leads; edge: the other axis scales about its
     centre); left/top handles move the origin. Pointer capture + a page-wide shield portalled to
     `body`, so an iframe or editor in the tile can never steal the drag, even while interacting.
@@ -197,7 +251,7 @@ hardware with a production build before tuning further.
     forget it: every `useBoard` host passes `board.resizeTile` (/board — which the meeting board now is —, the demo,
     the workflow run board); War Room passes `null` with its reason (its parts are sized by the
     thread layout, which stores positions only). `__tests__/resize-wiring.test.ts` walks every
-    `<SpatialTile>` in `features/` and fails on a movable tile with no resize decision.
+    `<BoardTile>` in `features/` and fails on a movable tile with no resize decision.
   - *Press (`pressAction`), the pointer twin of `routeWheel`:* a control gets its own press; the
     header always drags; a mouse/pen press on the body of a tile you are not working in selects and
     drags it; a FINGER on a tile's body only selects it and stays native, so the content scrolls
@@ -232,7 +286,7 @@ hardware with a production build before tuning further.
   dominant axis. Defaults (`DEFAULT_THROW_ACTIONS`, a knob): → park on the shelf · ↑ save to Notes
   and close · ↓ delete from the board after a consequence-naming confirm · ← unassigned. The action
   is named on the tile BEFORE release; every result toasts an Undo.
-- **Right-click (`SpatialBoardMenu`):** the ONE v3 menu, one per board; the clicked tile's actions
+- **Right-click (`BoardMenu`):** the ONE v3 menu, one per board; the clicked tile's actions
   come first (`primary`), then Board (fit, 100%, Scrolling, Parked).
 - **Keys:** shift+1 fit all · shift+2 fit selection · shift+0 100% · +/- zoom · arrows nudge · esc
   leaves focus, then deselects.
@@ -253,8 +307,8 @@ hardware with a production build before tuning further.
 
 ## Agent tools — the board is a surface
 
-Every host wraps its board in **`components/SpatialBoardSurface.tsx`**: it mounts the
-`matrx-user/spatial-board` surface runtime (values `board_title`, `board_items`, `selected_tile`)
+Every host wraps its board in **`components/BoardSurface.tsx`**: it mounts the
+`matrx-user/spatial-board` surface runtime (legacy key, see Names still spelled "spatial") (values `board_title`, `board_items`, `selected_tile`)
 and registers the board's client tools, so ANY agent running while a board is on screen (the chat
 beside it, a shortcut, a mandate) receives them automatically (`listLiveSurfaceClientTools` →
 tool injection; no per-agent arming, no aidream change).
@@ -284,7 +338,7 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
 
 | Piece | File |
 |---|---|
-| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/spatial-board.manifest.ts`) |
+| Tool declarations: `board_read`, `board_add_tile` (note / markdown / text / html / image), `board_update_tile`, `board_remove_tile`, `board_move_tiles`, `board_arrange` (grid / tidy / row / column / align / distribute), `board_group` (named frame), `board_connect`, `board_focus`, `board_open_item`, `board_item_act`, `board_park`, `board_undo` | `tools/board-tools.ts` (carried by `features/surfaces/manifests/board.manifest.ts`) |
 | Handlers — host-agnostic, drive `useBoard` + the store; errors come back as `{ok:false, error}` with a remedy; remove toasts an Undo; adding never moves the camera | `tools/useBoardAgentTools.ts` |
 | The bridge: per-tile capture index, `board_items` overview, open / act on any item | `tools/item-surfaces.ts` |
 | Pure layout math | `engine/arrange.ts` |
@@ -301,7 +355,7 @@ and `read().removed` lists tiles off the board that `board_park parked:false` re
 Markdown written by an agent renders through the stream pipeline (`tiles/MarkdownTileBody.tsx`,
 an instant `ReplayStream` → `StreamTileBody`), never a second renderer; an agent's note is a real
 Note in the notes core (`items/NoteItemBody.tsx`; its `text` is the note's seed while no note exists
-yet, and a real note's text changes through `note_content`). Wired: the demo; `/board` and the meeting board (which renders `UserBoard` itself); the workflow run board (`features/workflow-runtime/components/board/WorkflowRunSpatialView.tsx`
+yet, and a real note's text changes through `note_content`). Wired: the demo; `/board` and the meeting board (which renders `UserBoard` itself); the workflow run board (`features/workflow-runtime/components/board/WorkflowRunBoardView.tsx`
 — real Note / markdown / text / html / image beside the steps; a step refuses content edits, and
 `describe` gives its family + declared kind and live status). Both render `board.frames` and
 `board.connections`; the War Room board (`features/war-room/components/board/roomBoardAgent.ts`, an
@@ -313,8 +367,9 @@ Room FEATURE.md Board section).
 ## The Board (`/board`) — a person's own canvas, the main way in
 
 `/board` is the person's home board in the active organization; `/board/<id>` any of their boards;
-`/board/all` manages them (open, rename, duplicate, delete). The nav item "Board" lists My board,
-All boards and each feature's board view (War Room, Meetings, Workflow runs).
+`/board/all` manages them (open, rename, duplicate, delete). The nav item "Board" lists My board, All boards and one "Add to your board" row per item type
+(`/board?add=<key>`, guard `__tests__/board-menu-items.test.ts`). The feature boards (War Room, Meetings,
+Workflow runs) are views inside their features, not nav entries yet (Open item 1).
 
 | Piece | File |
 |---|---|
@@ -336,7 +391,7 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
 `UserBoard`) — never `dynamic()` a body (code-splitting FRAGMENTATION LAW).
 
 - **The chat beside the board** is `ChatCanvasWorkspace`'s; the board publishes its own surface
-  (`matrx-user/spatial-board`: values + `board_*` tools), so no page-level snapshot is passed.
+  (the Board surface: values + `board_*` tools), so no page-level snapshot is passed.
 - **A chat tile is /chat's conversation**: `CanvasChatColumn` (the one chat column, compact composer, agent
   switch) under `ChatConversationSurface` — the `matrx-user/chat` surface `/chat` mounts, scoped to the
   tile's conversation, so the chat beside the board reads what the tile's agent said (through the surface
@@ -373,14 +428,6 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   document" places a draft tile that creates the document only on its Create click (org gate +
   `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
   `{ kind: "document" }` source renders through the same item and is saved in the entity form.
-- **A document tile is `/documents/[id]`'s own component** (`items/document-items.tsx`, key `udt_document`):
-  `DocumentRecord` (features/data-tables) — rename, Copy reference, Share, the Rulebook notice, the Univer
-  editor with its save status, snapshot and History — which mounts `matrx-user/documents` itself, so the
-  item declares `surface: { name }` with no `Host`. An agent reads and writes the name, the description AND
-  the body text (`document_body_text` / `document_body`, applied through Univer's command service). "New
-  document" places a draft tile that creates the document only on its Create click (org gate +
-  `createDocument`, `items/DocumentDraftBody.tsx`); bring in is `DocumentsResourcePicker`; the older
-  `{ kind: "document" }` source renders through the same item and is saved in the entity form.
 - **Meeting notes are one part of one meeting** (`items/meeting-items.tsx`, key `meeting_part`,
   `meta.part` = transcript / notes / decisions / actions / summary; `recordKeyOf` keys a part as
   `meeting_part:<meeting>#<part>`, so all five sit on a board once each): the room's live AI seam
@@ -390,195 +437,6 @@ and is kept. Tile bodies are STATIC imports inside the page's one `ssr:false` ed
   over a saved board linked to the meeting and opens on these five in a "Meeting notes" frame.
 - **Down-throw and Delete take a tile off the board** ("remove"): the record lives on where it lives.
 
-## Change Log
+## Neighbours that own their tile behaviour
 
-- 2026-10-03 — Board comments (THREADS F4). The board header has the board's own thread (`spatial_board`); every tile has ONE comment door in its header — a record tile opens its record's own thread (`BoardItemType.comments`, platform token, never the item key); board-only tiles (write-up, label, web page, image, app page) and the data table (no entity token) post on the board's thread, say "Posted on the board", and name the tile in the remark; a draft has no door. Every comment made on the board (header, tile door, a task tile's own thread, a passage in a note/document tile, a record thread in the canvas) rides the board chat's next message as a remark naming its record when "With next message" is on (the ChatCanvasWorkspace registers the remark sink; `features/rich-document/annotations/comment-remarks.tsx`). Guards: `__tests__/every-tile-has-one-comment-door.test.ts`, chat `board-comments-ride-to-the-page-chat.test.ts`. Comments on one PART of a board (`part_anchor`) are built and proven on the clone only — the live apply is pending, so board-only tiles use the board thread until then.
-- 2026-10-03 — Document tiles were drawn solid black (pixel 0,0,0,255) from first boot, every browser and theme. Cause: Univer 1.0 paints its own fills as theme tokens ("gray.0") and the editor's pass-through colour service handed them to the canvas unresolved (an unparseable fillStyle leaves the canvas default black); the theme hook also called the 0.x `getRenderById`. Not the kept-instance re-parenting. Fix and guard: features/data-tables/FEATURE.md.
-- 2026-10-03 — Chat, task, research and project pass the core remount law with no waiver: what each tile shows is a store read kept in Redux by record and read once (`lib/redux/store-reads/useStoreRead.ts`), and the project's half-typed quick-add task is a draft in the store by project. research:quiet is green; chat:quiet (the @ai-matrx/associations conversation-files hook), task:quiet and project:quiet (EntityCustomFields) stay red with their owners named in the ledger. Browser (clone, admin's Workspace): sleep→wake and remove+Undo on all four read none of their records; the quick-add draft survives both.
-- 2026-10-03 — The board's document item sleeps. A document is one working copy per tab (lib/working-copy, kind udt_document), kept warm after its last view; a wake or a removed-and-undone tile reads and writes nothing (remount harness udt_document + :quiet green; browser: slept, woke with its text, zero requests).
-- 2026-10-03 — Table and record tiles read nothing on wake or Undo. The record store's data layer
-  (`@ai-matrx/records` 0.65.0) owns every answer and the realtime subscription; the tiles' `Keep`
-  (`RecordsTileKeep`, `useRecordsHold(tileId)`) holds them open while the body sleeps, and the body
-  sits under `<RecordsHoldScope>`. A change made while asleep is on screen at wake.
-
-- 2026-10-03 — Remount-safety guard over every board item type (`__tests__/remount-safety.*`,
-  ledger `remount-safety/cases.ts`, cross-check `remount-ledger.test.ts`). Univer and the records
-  grid stand in at their engine boundary; everything above runs for real.
-- 2026-10-02 — Table and record sleep. Their three gates (where the table lives, the store switch, the
-  share check) keep their answers per record for the session (`lib/kept-answer`), so a wake or an
-  Undo-remount draws the content on its first frame, asks none of those doors again, and never
-  unmounts the grid ("Opening the table…" is gone from wake). Browser-checked on a Record tile:
-  draft kept across sleep, 0 gate calls on wake and on remove+Undo. Still re-read on wake/remount:
-  the records package's own hooks (`@ai-matrx/records` `useAsync`, realtime resubscribe).
-
-- 2026-10-02 — War room and workflow run sleep. War room: the tile (body + a `Keep`) holds a
-  ref-counted room view (`features/war-room/redux/roomViewSession.ts`) — one read and one "opened"
-  per session, no skeleton on wake, remount or a second tile of the room. Workflow run: the run's
-  workflow + surface are read once into Redux (`loadRunSurface`), its `Keep` holds the one stream
-  adoption, and the tile's stage passes `floatOnLeave={false}` — waking, hiding or removing it never
-  opens the floating run window. Guard: `__tests__/feature-items-remount.test.tsx`.
-- 2026-10-02 — The file tile sleeps: its editor text, dirty state and undo come back after a sleep and a
-  remount (one working copy per file in the store, features/files FEATURE.md 7b), Monaco re-creates on wake
-  (never blank), one save, no repeated download — checked in the browser on a board with the file also open
-  in a canvas tab.
-- 2026-10-02 — Sleep census: chat, note, task, research and project now sleep, each checked in the
-  browser (sleep → wake → text/scroll/draft kept, nothing relaunched or re-created, edits still save).
-  Effects that threw work away on a re-run were made idempotent at their source: the Visual rich
-  editor (Tiptap rebuilt from mount text), the inline file editor (reset + re-read), the composer
-  autofocus (stole the caret), project name/description drafts and the project task list.
-- 2026-10-02 — The meeting board is the canonical Board: `MeetingBoard` renders `UserBoard` over a
-  saved board linked by `settings.meeting_id` (`getMeetingBoard`; a guest keeps the same document in
-  the browser). Its five live sections became the registered item type `meeting_part`
-  (`items/meeting-items.tsx`), placeable on any board; `recordKeyOf` keys a `meta.part` separately.
-  The bespoke board (all-in-one `useBoard` host, own toolbar, scratchpad, localStorage tiles) is gone.
-
-- 2026-10-02 — A tile never navigates the board away: pages it opens land on the board as Page
-  tiles (or a new tab); Page tiles put any app page on the board with the shell chrome dropped.
-
-- 2026-10-02 — Meeting tile: Join/Rejoin runs the live room inside the tile (the board stays); Leave
-  returns to the meeting's home; the tile is held awake while the room is up (`MeetingBody`).
-- 2026-10-02 — Stability round: tile lifecycle (opt-in sleep), full screen moves the card, per-tile
-  hooks, one tile per record, agent undo never re-parks, close-safe saves, the camera follows only
-  keyboard focus, a press on empty board blurs the tile's field. Root causes of the pan freeze and the
-  menu freeze/crash were CSS (see "Two CSS traps"); measured on five long chats: pan/drag/resize 17 ms
-  frames with no long tasks, a menu opens in ~0.2 s (was a hang and a crash), pan while two chats
-  stream p95 17 ms (was 1,267 ms).
-
-- 2026-10-02 — Every "Bring in" picker offers its type's "Start new" entries in its header, so no
-  picker is a dead end. New starts: Meeting (`StartNewEntry.Dialog` — THE ONE MEETING FORM mounted bare,
-  held behind the organization gate like `/meetings`), Workflow run (pick a workflow → its served
-  `RunStartForm`), Research (the start wizard embedded via `ResearchInitForm onCreated`, steps in local
-  state, never the address bar), Project (`ProjectCreatePanel`). Record stays bring-in only (a record
-  is made inside its table tile).
-- 2026-10-01 — Saved boards and agents stop fighting the person: the camera left the saved board
-  (per-viewer, never in the version guard — two tabs no longer lock each other out); the document is
-  built only when a save goes out and a save reads back only `version`; hide/close flushes as a
-  keepalive PATCH; "Reload board" after a conflict dismisses the toast and resumes saving. Agents never
-  move the camera, select or end typing while the person works in a tile, and `board_undo` undoes only
-  the agent's changes (`BoardStore.runAs` / `undoActor`). Sequential adds fill the view in reading
-  order instead of a diagonal staircase. Tests: `board-save`, `useSavedBoard`, `agent-actor`,
-  `board-bridge`, `placement-run` — each failing on the old files.
-
-- 2026-10-01 — No gesture can get stuck: `startPointerGesture` ends a resize, tile drag or drawing
-  on every way a press can end (a missed release heals on the next move); Escape puts a resize or
-  drag back. The board pan ends on a missed release or window blur too.
-
-- 2026-09-30 — The board model moved out of React into `BoardStore` with per-tile, layout and
-  whole-board subscriptions; `/board` renders tiles by id (`useBoardTile`), the body sits behind a
-  rect-free `TileContent`, edges follow their two tiles, the layers list reads the whole board only
-  while open, and autosave subscribes to the store. `useBoard` keeps its API with stable operations
-  (the old per-render closures defeated the React Compiler, so every tile re-rendered on every
-  frame) — the demo, meeting and workflow boards inherit that. `DocumentDraftBody`'s create moved
-  out of the component so the compiler compiles it.
-
-- 2026-09-30 — What has focus stays on screen (`engine/reveal.ts`): keyboard focus moving to an element
-  inside a tile that is off the visible board (tabbing grid cells, find-next) or a contenteditable
-  caret leaving it pans the CAMERA by the smallest amount, 24px margin, never a zoom (Figma, Excel) —
-  what a native scroll would have done now that the board never scrolls natively. Not for a click's
-  focus (within 400ms of a press) and never while a pointer is down. It reveals only what the content
-  itself shows (`clipToVisible`: a cell hidden past a grid's own scroll edge brings at most that edge on
-  screen — the grid scrolls its content), and re-checks for 700ms while the content settles (a grid
-  scrolling its own cell into view a frame later).
-
-- 2026-09-30 — Keys and scroll belong to their owner: `engine/key-target.ts` (`isTyping`, `boardOwnsKey`)
-  is the one guard for every board key — a key inside a tile's content (grid cell, editor, Monaco
-  EditContext, textbox) is the content's, so Enter there never opens full screen and Backspace never
-  takes the tile off (`useBoardKeys` shares it). `engine/native-scroll.ts`: the board never scrolls
-  natively — the root is `overflow: clip`, and a `focus()`/`scrollIntoView()` scroll of the root, a
-  clipped ancestor pane or a tile card is reset at once; only the camera moves the board.
-
-- 2026-09-30 — Browser verification of every item type (note, file, chat, table, record, task, project) and
-  the bridge. Two fixes: the board's key guard (`isTyping`, `components/SpatialViewport.tsx`) now treats
-  an EditContext host (Monaco, the file tile's editor) and `role="textbox"` as typing — Space-to-pan was
-  eating every space typed into a file (`__tests__/typing-target.test.ts`); the File tile adopts the file's
-  current name as its title, so a rename no longer leaves the board and `board_items` on the old name.
-
-- 2026-09-30 — The gaps, closed as one class: `onResize` is required on `SpatialTile` and wired on
-  every `useBoard` host (War Room opts out explicitly), guarded by `resize-wiring.test.ts`; a finger
-  on a tile body scrolls its content instead of dragging the tile or panning the board
-  (`pressAction`); full screen joined a shared layer stack so one Escape closes only the top layer,
-  and top toasts drop below the exit bar.
-
-- 2026-09-30 — Documents on the Board (`udt_document`): the tile renders `DocumentRecord`, the one
-  component `/documents/[id]` now renders too, with the `matrx-user/documents` surface — which gained the
-  body text (read + ask-first write through Univer's command service). Create happens on the tile's
-  Create click; bring in via `DocumentsResourcePicker`; legacy `{kind:"document"}` tiles render.
-  Tests: `items/__tests__/document-items.test.tsx`.
-- 2026-09-30 — Board interaction musts (Arman, from real use): every `/board` tile resizes from
-  eight handles (constant screen hit area, min size, Shift aspect, drag shield, one undo step,
-  persisted); a wheel over any tile never pans or zooms the board (pinch / ctrl-wheel still zoom);
-  double-click the header flies to a tile and makes it live (the header fly had never fired —
-  pointer capture retargeted the dblclick); full screen is viewport-fixed with an always-visible
-  Close and an Escape that works from inside a chat composer. The full-screen trap, reproduced on
-  a chat tile: the board read Escape inside any field of a tile as "leave the field" (blur and
-  stop) BEFORE "leave full screen", and the chat composer keeps its focus, so every Escape was
-  eaten (two presses, still full screen, focus still in the composer); and the layer was sized
-  from the board pane, so it moved and resized with the workspace around it. Pure rules + tests:
-  `engine/tile-gestures.ts`, `routeWheel`, `__tests__/tile-gestures.test.ts`.
-
-- 2026-09-28 — Custom data: Table tile (`data-table`) renders `/data-v2`'s own table (`UnifiedTable`, shared
-  with the route) and carries `matrx-user/data-tables` via `RecordStoreTableSurface`; Record tile renders
-  `Peek` and carries `matrx-user/data-tables` scoped to that one row (`RecordStoreRecordSurface`). The table
-  surface mounts only under the merged grid (`data_tables.merged_grid` knob, default off until merge step 8).
-  Board-item surfaces declare `briefValues` for `board_items` basics.
-
-- 2026-09-28 — The bridge: every tile registers its surface into a per-tile capture (live or dormant);
-  `board_items` replaces `board_tiles` (every item + a dormant item's basics); `board_open_item` /
-  `board_item_act` read and act on ANY item in the same turn through the canonical writeback and
-  client-tool runtimes (approval flow included). `board_focus` no longer says "act next turn".
-
-- 2026-09-28 — Feature tiles carry their feature's full surface: Task (`matrx-user/tasks`, already in
-  `TaskEditorBody`), War Room (`WarRoomSurfaceHost`, body now the room's `StageView`; the tile hydrates
-  without taking the active room), Research (`ResearchTopicSurfaceHost`), Project
-  (`ProjectRecordWorkspace` — the whole workspace, not just its task list), Meeting (NEW
-  `matrx-user/meeting`, body now `MeetingDetail` embedded) and Workflow run (NEW
-  `matrx-user/workflow-run`). Each host is shared with the feature's own page.
-
-- 2026-09-28 — Note tile is the real notes core (`NoteWorkspace`) instead of a plain-text `NoteEditorCore`;
-  `tiles/NoteTileBody.tsx` deleted (label body moved to `tiles/TextTileBody.tsx`); "Note" starts a note
-  the /notes way; agent and pasted text become real notes; agent `text` on a real note refuses with the
-  `note_content` remedy. Note tiles default to 560×620.
-
-- 2026-09-28 — File tile: the body is the single-file page's own working area (`SingleFileWorkspace`: name menu,
-  Copy link / Download / More, per-tab rail, all seven tabs) and its surface is `matrx-user/file` through the
-  page's own host (`SingleFileSurfaceHost` as `surface.Host`). Default size 800×600.
-
-- 2026-09-28 — Chat tile: mounts `matrx-user/chat` for its conversation (`ChatConversationSurface`, shared
-  with `/chat`); reopening resumes through `resumeConversation` (reattaches a mid-run turn); its launch opts
-  out of surface adoption like /chat's own. `startNew` may list several entries; chat adds "Chat with an
-  agent". Bring-in is "Conversation".
-
-- 2026-09-27 — Frame fly-to includes its title band in the fit target; War Room’s board-only down throw uses the reversible 'remove' action, distinct from destructive 'delete'.
-
-- 2026-09-25 — Created: engine, zoom-paced streaming, demo board (research/study kinds, podcast
-  pipeline, generated HTML, 100-stream stress test). Unit tests in `__tests__/engine.test.ts`.
-  Same day: browser pass fixed controls swallowed by the pan handler, fit under the toolbar
-  (`insets`), and the performance rules above; far-zoom tiles no longer commit at all.
-  Independent verification (Sonnet) then found and this session fixed: header drag dropped after
-  the first move (listeners re-bound mid-gesture — now ref-based), tiles collapsed to 2px under
-  768px (global `* { max-width: 100% }` in globals.css — every spatial element is `max-w-none`),
-  a reload right after a move lost it (hash now throttled, not debounced), and a 1.8× zoom per
-  mouse notch (now ~1.22×). Zoom-at-cursor measured exact to 0.1 world px over 23%→400%.
-- 2026-09-27 — Owner round 2: wheel-zooms input model with the auto/zoom/pan knob, focus mode, throw
-  gestures with pre-release hints and undo, the parked shelf, the v3 right-click menu, save-to-Notes,
-  `useBoard` + auto-placement. Browser-verified (wheel vs trackpad, focus + arrows + Esc, throw
-  right/down, shelf restore, delete confirm, menu), 0 console errors.
-- 2026-09-27 — Tile interaction model (idle / selected / interacting). Board agent tools + the
-  `matrx-user/spatial-board` surface; `useBoard` gains connections, `moveMany`, a live `read()`
-  (fixes back-to-back commands reading stale state — test fails before, passes after) and
-  frame-aware placement. All 11 tools driven in the browser on the demo, 0 page errors.
-- 2026-09-27 — Board agent tools wired into the meeting board and the workflow run board
-  (`SpatialBoardSurface` host each). The meeting board now saves `{tiles, frames}` (older bare-array
-  boards still load) and keeps a scratchpad's text on the tile so an agent can write it.
-- 2026-09-27 — The tools depend on `BoardToolTarget` (a narrow interface `Board<T>` satisfies)
-  instead of the whole `useBoard` model, so a board with its own layout model can take them: the
-  War Room board is wired through an adapter. Absent operations refuse with the host's remedy;
-  `board_read` lists `removed` tiles; focusing a parked tile now waits for it to render before
-  moving the camera (it used to fly nowhere). Tests: `features/war-room/components/board/__tests__/roomBoardAgent.test.tsx`
-  drive the real handlers.
-- 2026-09-27 — The Board: `/board`, `/board/<id>`, `/board/all`; the nav item with its feature
-  boards; the item-type contract and catalog; Add menu, Start panel, drop and paste; saved boards
-  (`useBoard` seeds parked tiles, shapes and connections; the document saves shapes, labels and
-  entity sources). The interim `chat/` (BoardWithChat, BoardChatPanel, the DOM snapshot reader) is
-  deleted — `ChatCanvasWorkspace` replaced it; the bounded snapshot `board_read` returns lives in
-  `tools/board-snapshot.ts`. `useBoardKeys` is shared (`board/useBoardKeys.ts`).
+`features/surfaces/FEATURE.md` (`SurfaceActivity`, captures) · `packages/chat/src/canvas/workspace/FEATURE.md` (the chat-beside-a-canvas layout) · `features/shell/FEATURE.md` (nav, chrome, floating clearance) · `features/war-room/FEATURE.md` · `features/meet/FEATURE.md` · `features/workflow-runtime/FEATURE.md` · `features/notes/FEATURE.md` · `features/data-tables/FEATURE.md`. Cross-repo node (pointer only): `common-docs/systems/workspace/boards/FEATURE.md`; vocabulary row: `common-docs/systems/platform/vocabulary/FEATURE.md`. Status handoff: `docs/handoffs/board.md`. Adding an item type: `.claude/skills/board-items/SKILL.md`. History: `CHANGELOG.md`.

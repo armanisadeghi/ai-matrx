@@ -45,10 +45,10 @@ import { useRunViewPreference } from "../board/useRunViewPreference";
 
 /**
  * The Board view — one `ssr:false` edge, fetched only when a viewer picks it
- * (the spatial engine is browser-only and most viewers never open it).
+ * (the Board engine is browser-only and most viewers never open it).
  */
-const WorkflowRunSpatialView = dynamic(
-  () => import("../board/WorkflowRunSpatialView"),
+const WorkflowRunBoardView = dynamic(
+  () => import("../board/WorkflowRunBoardView"),
   {
     ssr: false,
     loading: () => <div className="h-full animate-pulse bg-muted/30" />,
@@ -272,7 +272,7 @@ export function WorkflowRunPage({
     body = <LoadingBody />;
   } else if (runId && !showForm && boardMode) {
     body = (
-      <WorkflowRunSpatialView
+      <WorkflowRunBoardView
         runId={runId}
         definitionId={workflow.id}
         definition={workflow.definition}

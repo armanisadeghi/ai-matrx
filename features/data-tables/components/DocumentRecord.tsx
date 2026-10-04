@@ -411,9 +411,9 @@ export function DocumentRecord({
         />
         {/* The editor is one control: Univer draws on a canvas, so a board
             tile (features/board) cannot tell a press in it from a press on
-            empty body. `data-spatial-interactive` says so — a click places the
+            empty body. `data-board-interactive` says so — a click places the
             caret instead of selecting the tile. No effect off the board. */}
-        <div className="min-h-0 flex-1" data-spatial-interactive="">
+        <div className="min-h-0 flex-1" data-board-interactive="">
           {permsResolved && doc ? (
             <DocumentEditor
               documentId={id}

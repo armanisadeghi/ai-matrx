@@ -11,8 +11,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { screenToWorld } from "../engine/camera";
-import { useActiveTool, useSpatialStore } from "../engine/react";
-import { isCreationTool, type SpatialTool } from "../engine/tools";
+import { useActiveTool, useBoardCameraStore } from "../engine/react";
+import { isCreationTool, type BoardTool } from "../engine/tools";
 import { startPointerGesture } from "../engine/pointer-gesture";
 
 export type Creation =
@@ -23,14 +23,14 @@ export type Creation =
 
 /** Below this many screen px a drag is a click: the item gets its default size. */
 const CLICK_SLOP = 6;
-const DEFAULT_SIZE: Partial<Record<SpatialTool, { w: number; h: number }>> = {
+const DEFAULT_SIZE: Partial<Record<BoardTool, { w: number; h: number }>> = {
   frame: { w: 960, h: 640 },
   rect: { w: 240, h: 160 },
   oval: { w: 200, h: 200 },
 };
 
 export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const tool = useActiveTool();
   const [drag, setDrag] = useState<{ points: { x: number; y: number }[] } | null>(null);
   // The drawing in flight; it ends on every way a press can end
@@ -80,7 +80,7 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
 
   return (
     <div
-      data-spatial-creation
+      data-board-creation
       className="absolute inset-0 z-20"
       style={{ cursor: tool === "text" ? "text" : "crosshair" }}
       onPointerDown={(e) => {
@@ -112,7 +112,7 @@ export function CreationLayer({ onCreate }: { onCreate: (c: Creation) => void })
   );
 }
 
-function Preview({ tool, points }: { tool: SpatialTool; points: { x: number; y: number }[] }) {
+function Preview({ tool, points }: { tool: BoardTool; points: { x: number; y: number }[] }) {
   const a = points[0];
   const b = points[points.length - 1];
   const box = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };

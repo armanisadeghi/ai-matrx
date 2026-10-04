@@ -1,5 +1,5 @@
 /**
- * Spatial view — the board never scrolls natively.
+ * Board — the board never scrolls natively.
  *
  * The camera is the ONLY thing that moves the board. But a clipped
  * (`overflow: hidden`) box is still a scroll container that `focus()` and
@@ -13,7 +13,7 @@
  */
 export function isAccidentalScroll(el: Element, root: Element): boolean {
   if (el === root) return true;
-  if (el.matches("[data-spatial-card]")) return true;
+  if (el.matches("[data-board-card]")) return true;
   if (!el.contains(root)) return false;
   const style = getComputedStyle(el);
   return /^(hidden|clip)$/.test(style.overflowX) || /^(hidden|clip)$/.test(style.overflowY) || style.overflow === "hidden" || style.overflow === "clip";

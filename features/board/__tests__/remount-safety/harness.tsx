@@ -5,9 +5,9 @@
  * open/close messages are idempotent; editors are views of the store.
  *
  * One cycle per board item type, mounted exactly as the board mounts a tile
- * (`home/UserBoard.tsx` `TileContent` inside `SpatialTile`'s `<Activity>`): the
+ * (`home/UserBoard.tsx` `TileContent` inside `BoardTile`'s `<Activity>`): the
  * type's `Body` inside its surface `Host` (when it has one), under the real
- * Redux store (`makeStore`), the real chat host and a real spatial store.
+ * Redux store (`makeStore`), the real chat host and a real Board camera store.
  *
  *   1. mount and let it load            → the baseline ledger
  *   2. the person's action (type, change) and let it settle
@@ -33,8 +33,8 @@ import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { closeAllOverlays } from "@/lib/redux/slices/overlaySlice";
 import { AppProviders } from "./app-providers";
 import { SurfaceActivity, createSurfaceCapture } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { FocusHostContext, SpatialStoreContext } from "../../engine/react";
-import { SpatialStore } from "../../engine/spatial-store";
+import { FocusHostContext, BoardCameraStoreContext } from "../../engine/react";
+import { BoardCameraStore } from "../../engine/camera-store";
 import type { NodeSource } from "../../board/document";
 import type { BoardItemType } from "../../items/types";
 import { ORGANIZATION, PERSON } from "./people";
@@ -161,8 +161,8 @@ export async function mountTile(
     open = next;
   });
 
-  const spatial = new SpatialStore({ x: 0, y: 0, z: 1 });
-  spatial.setSize({ w: 1600, h: 1000 });
+  const cameraStore = new BoardCameraStore({ x: 0, y: 0, z: 1 });
+  cameraStore.setSize({ w: 1600, h: 1000 });
   const capture = createSurfaceCapture();
   const tile = tileRecord(source, options.title ?? type.label);
   const tileId = `tile-${type.key}`;
@@ -176,7 +176,7 @@ export async function mountTile(
   let present = true;
   const tree = (): ReactNode => (
     <AppProviders store={store}>
-      <SpatialStoreContext.Provider value={spatial}>
+      <BoardCameraStoreContext.Provider value={cameraStore}>
         <FocusHostContext.Provider value={null}>
           {present ? (
             <Activity mode={mode}>
@@ -186,7 +186,7 @@ export async function mountTile(
             </Activity>
           ) : null}
         </FocusHostContext.Provider>
-      </SpatialStoreContext.Provider>
+      </BoardCameraStoreContext.Provider>
     </AppProviders>
   );
 

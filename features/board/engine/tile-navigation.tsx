@@ -117,7 +117,7 @@ export function useTileNavigationGuard(): void {
     const onPress = (e: Event) => {
       // Every press counts: one outside a tile (the board's own chrome) clears it.
       const t = e.target;
-      lastTilePress = t instanceof Element && t.closest("[data-spatial-card]") ? performance.now() : -Infinity;
+      lastTilePress = t instanceof Element && t.closest("[data-board-card]") ? performance.now() : -Infinity;
     };
     const onNavigate = (event: Event) => {
       const e = event as NavigateEventLike;

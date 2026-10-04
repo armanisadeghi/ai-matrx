@@ -1,5 +1,5 @@
 /**
- * Spatial view — THROW gestures (pure).
+ * Board — THROW gestures (pure).
  *
  * Drag a tile by its header and let go with speed: the flick's direction is a
  * command. What each direction does is the host's choice (a knob, not

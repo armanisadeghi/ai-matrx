@@ -1,5 +1,5 @@
 /**
- * The board's AGENT TOOLS — what any agent working beside a spatial board can
+ * The board's AGENT TOOLS — what any agent working beside a Board can
  * do to it. Declared once here and carried by the `matrx-user/spatial-board`
  * surface manifest, so every board host (the demo, War Room, meetings,
  * workflow runs) offers the same vocabulary. Executed in the browser by
@@ -29,7 +29,7 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
     name: "board_read",
     label: "Read board",
     description:
-      "Returns what is on the spatial board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
+      "Returns what is on the Board right now: every tile (id, title, kind, status, rect {x,y,w,h} in board pixels, parked or not, and a text excerpt of its content), every frame (named region: id, title, rect), connections between tiles, the selected and focused tile, which tiles are in the person's view, and `live_tile_id` — the tile whose feature is live for you. A tile with a `surface` is a real feature record: read and change it with board_open_item and board_item_act. Call this before arranging so you act on real ids and positions. Excerpts are capped; the result says how many tiles were left out.",
     inputSchema: {
       type: "object",
       properties: {

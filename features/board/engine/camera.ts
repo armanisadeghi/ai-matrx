@@ -1,5 +1,5 @@
 /**
- * Spatial view — camera math (pure; no React, no DOM).
+ * Board — camera math (pure; no React, no DOM).
  *
  * One world plane, one camera. The world is drawn by applying ONE transform
  * to ONE container: `translate(x, y) scale(z)`. A world point `w` lands on

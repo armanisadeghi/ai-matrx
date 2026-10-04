@@ -11,11 +11,11 @@ import { BOARD_LIST_SCOPES, createBoardListService } from "./listService";
 import { useBoardRowActions } from "./useBoardRowActions";
 
 export const boardListConfig: EntityListConfig<BoardListRow> = {
-  surfaceKey: "spatial-boards-browse",
+  surfaceKey: "spatial-boards-browse", // legacy key; renames with the table
   registryToken: "spatial_board",
   entityLabel: { singular: "board", plural: "boards" },
   // SourceFeature is a closed registry with no board member yet; the board is
-  // the spatial canvas, so it attributes to "canvas".
+  // the Board, so it attributes to "canvas".
   sourceFeature: "canvas",
   scopes: [...BOARD_LIST_SCOPES],
   service: createBoardListService(),

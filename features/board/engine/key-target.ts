@@ -1,5 +1,5 @@
 /**
- * Spatial view — who a key belongs to (pure, DOM-reading).
+ * Board — who a key belongs to (pure, DOM-reading).
  *
  * The board answers single keys (Enter = full screen, Space = pan, letters =
  * tools, Delete = take off, arrows, +/-) ONLY when the key is addressed to the
@@ -25,5 +25,5 @@ export function boardOwnsKey(target: EventTarget | null): boolean {
   if (isTyping(target)) return false;
   const el = target as HTMLElement | null;
   if (!el || typeof el.closest !== "function") return true;
-  return !el.closest("[data-spatial-body]");
+  return !el.closest("[data-board-body]");
 }

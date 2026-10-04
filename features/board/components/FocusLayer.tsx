@@ -23,12 +23,12 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
-import { useFocusedTile, useSpatialStore } from "../engine/react";
+import { useFocusedTile, useBoardCameraStore } from "../engine/react";
 
 const noSubscribe = () => () => {};
 
 export function FocusLayer({ onHost }: { onHost: (el: HTMLElement | null) => void }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const focused = useFocusedTile();
   // Portal only on the client (the server has no body to portal into).
   const onClient = useSyncExternalStore(noSubscribe, () => true, () => false);
@@ -44,8 +44,8 @@ export function FocusLayer({ onHost }: { onHost: (el: HTMLElement | null) => voi
 
   const layer = (
     <div
-      data-spatial-focus
-      data-spatial-chrome
+      data-board-focus
+      data-board-chrome
       aria-hidden={!focused}
       role={focused ? "dialog" : undefined}
       aria-modal={focused ? true : undefined}
@@ -76,7 +76,7 @@ export function FocusLayer({ onHost }: { onHost: (el: HTMLElement | null) => voi
           <span className="flex-1" />
           <button
             type="button"
-            data-spatial-focus-exit
+            data-board-focus-exit
             onClick={() => store.unfocus()}
             className="inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent sm:h-9"
           >

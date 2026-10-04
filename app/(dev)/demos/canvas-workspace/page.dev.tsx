@@ -1,19 +1,19 @@
 // /demos/canvas-workspace — "chat beside a canvas" (Amendment 1, A5), hosting
-// the spatial demo board. The chrome: features/canvas/workspace/ChatCanvasWorkspace.
+// the Board demo. The chrome: features/canvas/workspace/ChatCanvasWorkspace.
 // The properties panel is proven on ./properties.
 
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
-import type { DemoKindExample } from "@/features/board/demo/SpatialDemoBoard";
+import type { DemoKindExample } from "@/features/board/demo/BoardDemo";
 import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
 import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
-import { SpatialCanvasWorkspaceDemo } from "./SpatialCanvasWorkspaceDemo";
+import { BoardCanvasWorkspaceDemo } from "./BoardCanvasWorkspaceDemo";
 
-const WORKSPACE_ID = "demo-spatial-board";
+const WORKSPACE_ID = "demo-board";
 
 export const metadata: Metadata = {
   title: "Canvas Workspace",
-  description: "Chat beside a canvas — the spatial demo board with the platform chat, nav and floating chat.",
+  description: "Chat beside a canvas — the Board demo with the platform chat, nav and floating chat.",
 };
 
 /** Kinds shown in the study pack, in board order (missing ones are skipped). */
@@ -76,7 +76,7 @@ export default async function CanvasWorkspaceDemoPage() {
   ]);
   return (
     <div className="h-full min-h-0">
-      <SpatialCanvasWorkspaceDemo
+      <BoardCanvasWorkspaceDemo
         workspaceId={WORKSPACE_ID}
         kinds={kinds}
         examplesNote={note}

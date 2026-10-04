@@ -12,7 +12,7 @@ import { useState } from "react";
 import { Frame, PenLine, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { rectsIntersect, type Rect } from "../engine/camera";
-import { useIsSelected, useSpatialStore } from "../engine/react";
+import { useIsSelected, useBoardCameraStore } from "../engine/react";
 
 export interface LayerItem {
   id: string;
@@ -39,8 +39,8 @@ export function LayersPanel({
 
   return (
     <aside
-      data-spatial-chrome
-      data-spatial-focus
+      data-board-chrome
+      data-board-focus
       aria-label="Layers"
       className="absolute bottom-4 right-4 top-16 z-30 flex w-64 flex-col overflow-hidden rounded-lg border border-border bg-card/95 shadow-lg backdrop-blur"
     >
@@ -96,7 +96,7 @@ function LayerRow({
   indent?: boolean;
   onRename?: (id: string, title: string) => void;
 }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const selected = useIsSelected(item.id);
   const [editing, setEditing] = useState(false);
   const Icon = item.icon;

@@ -32,10 +32,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useActiveTool, useSpatialStore } from "../engine/react";
-import { SHAPE_TOOLS, type ShapeTool, type SpatialTool, TOOL_KEY, TOOL_LABEL } from "../engine/tools";
+import { useActiveTool, useBoardCameraStore } from "../engine/react";
+import { SHAPE_TOOLS, type ShapeTool, type BoardTool, TOOL_KEY, TOOL_LABEL } from "../engine/tools";
 
-const ICON: Record<SpatialTool, LucideIcon> = {
+const ICON: Record<BoardTool, LucideIcon> = {
   select: MousePointer2,
   hand: Hand,
   text: Type,
@@ -48,19 +48,19 @@ const ICON: Record<SpatialTool, LucideIcon> = {
   line: Minus,
 };
 
-const MAIN_TOOLS: SpatialTool[] = ["select", "hand", "text", "frame", "note", "pen"];
+const MAIN_TOOLS: BoardTool[] = ["select", "hand", "text", "frame", "note", "pen"];
 /** Tools that stay on the strip at phone width; the rest fold into one "More tools" menu. */
-export const PHONE_TOOLS: readonly SpatialTool[] = ["select", "hand"];
+export const PHONE_TOOLS: readonly BoardTool[] = ["select", "hand"];
 
 export function ToolBar({ leading, className }: { leading?: ReactNode; className?: string }) {
-  const store = useSpatialStore();
+  const store = useBoardCameraStore();
   const active = useActiveTool();
-  const shapeActive = (SHAPE_TOOLS as readonly SpatialTool[]).includes(active);
+  const shapeActive = (SHAPE_TOOLS as readonly BoardTool[]).includes(active);
   const ShapeIcon = shapeActive ? ICON[active] : Shapes;
 
   return (
     <div
-      data-spatial-chrome
+      data-board-chrome
       role="toolbar"
       aria-label="Board tools"
       className={cn(
@@ -97,7 +97,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
             <Ellipsis className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-44" data-spatial-chrome>
+        <DropdownMenuContent align="start" className="w-44" data-board-chrome>
           {[...MAIN_TOOLS.filter((t) => !PHONE_TOOLS.includes(t)), ...SHAPE_TOOLS].map((tool) => {
             const Icon = ICON[tool];
             return (
@@ -125,7 +125,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
             <ChevronDown className="h-3 w-3" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-44" data-spatial-chrome>
+        <DropdownMenuContent align="start" className="w-44" data-board-chrome>
           {SHAPE_TOOLS.map((tool: ShapeTool, i) => {
             const Icon = ICON[tool];
             return (
@@ -153,7 +153,7 @@ function ToolButton({
   className,
 }: {
   className?: string;
-  tool: SpatialTool;
+  tool: BoardTool;
   icon: LucideIcon;
   active: boolean;
   onPick: () => void;

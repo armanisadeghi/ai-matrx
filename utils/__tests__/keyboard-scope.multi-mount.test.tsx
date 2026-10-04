@@ -126,7 +126,7 @@ describe("surfaceOwnsKey — page-level surfaces", () => {
     const { surfaceOwnsKey } = await import("@ai-matrx/kit/keyboard-scope");
     const page = document.createElement("div");
     const tile = document.createElement("div");
-    tile.setAttribute("data-spatial-body", "");
+    tile.setAttribute("data-board-body", "");
     const tilePage = document.createElement("div");
     tile.appendChild(tilePage);
     document.body.append(page, tile);

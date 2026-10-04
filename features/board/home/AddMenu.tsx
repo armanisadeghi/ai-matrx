@@ -40,7 +40,7 @@ export function AddMenu({ types, onStartNew, onBringIn }: AddProps) {
           <ChevronDown className="h-3 w-3 opacity-80" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64" data-spatial-chrome>
+      <DropdownMenuContent align="start" className="w-64" data-board-chrome>
         {news.length > 0 && <DropdownMenuLabel className="text-xs text-muted-foreground">Start new</DropdownMenuLabel>}
         {news.map(({ t, entry, key }) => {
           const Icon = entry.icon ?? t.icon;
@@ -72,7 +72,7 @@ export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
       <section
-        data-spatial-chrome
+        data-board-chrome
         aria-label="Start working on your board"
         className="pointer-events-auto w-full max-w-2xl rounded-2xl border border-border bg-card/95 p-6 shadow-xl backdrop-blur"
       >

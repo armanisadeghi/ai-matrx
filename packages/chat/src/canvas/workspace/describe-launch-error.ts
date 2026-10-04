@@ -3,8 +3,8 @@
  * with a SerializedError or a `rejectWithValue` payload — plain objects, not
  * Errors — so `String(error)` would print "[object Object]".
  *
- * (Same reading as the interim spatial chat's helper, which is slated for
- * deletion once the spatial board moves onto ChatCanvasWorkspace.)
+ * (Same reading as the interim Board chat's helper, which is slated for
+ * deletion once the Board moves onto ChatCanvasWorkspace.)
  */
 export function describeLaunchError(error: unknown): string {
   if (typeof error === "string" && error.trim()) return error;
