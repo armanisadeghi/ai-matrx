@@ -27,7 +27,7 @@ describe("Entity List responsive contract", () => {
       '"relative inline-flex h-7 items-center',
     );
     // The control row and the toolbar opt into the ring and out of the growth floor.
-    expect(componentSource("EntityListPage.tsx")).toContain('"matrx-tap-ring flex min-w-0 items-center');
+    expect(componentSource("EntityListPage.tsx")).toContain('"matrx-tap-ring flex min-w-0 flex-wrap items-center');
     expect(componentSource("EntityListToolbar.tsx")).toContain('className="matrx-tap-ring flex min-w-0 flex-wrap');
     const css = readFileSync(join(__dirname, "..", "..", "app", "globals.css"), "utf8");
     expect(css).toContain(":not(.matrx-tap-ring *):not(thead *) {\n      min-height: 2.75rem;");
