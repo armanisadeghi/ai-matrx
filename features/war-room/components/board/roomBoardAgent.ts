@@ -59,6 +59,9 @@ export interface RoomBoardAgentDeps {
 
 const fail = (error: string): Failure => ({ ok: false, error });
 
+/** The surface every War Room part tile carries: its thread's (`matrx-user/war-room-thread`). */
+export const ROOM_PART_SURFACE = "matrx-user/war-room-thread";
+
 /** The part's kind, named by its tab — what `board_read` reports. */
 export function partKind(tab: ThreadTab): string {
   if (tab.startsWith("entity:")) return "attachments";
@@ -176,7 +179,12 @@ export function roomBoardToolHost(
       // Written into the note itself (autosaved); nothing on the board changes.
       return {};
     },
-    describe: (tile) => ({ kind: partKind(tile.tab), status: deps.statusOf(tile.threadId, tile.tab) }),
+    describe: (tile) => ({
+      kind: partKind(tile.tab),
+      status: deps.statusOf(tile.threadId, tile.tab),
+      // Every part publishes its thread's surface (BoardPartTile), so an agent reaches it the two-request way.
+      surface: ROOM_PART_SURFACE,
+    }),
   };
 }
 

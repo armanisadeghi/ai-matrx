@@ -27,7 +27,7 @@
 // Room's own surface, which stays mounted in `WarRoomShell`): the board tools
 // act on the parts through `roomBoardAgent.ts`, over this same layout path.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
   EyeOff,
@@ -70,6 +70,12 @@ import { ParkedShelf, type ParkedChip } from "@/features/board/components/Parked
 import { Minimap, ZoomHud } from "@/features/board/components/BoardChrome";
 import { BoardSurface } from "@/features/board/components/BoardSurface";
 import type { BoardToolHost, Failure } from "@/features/board/tools/useBoardAgentTools";
+import { createItemSurfaceIndex } from "@/features/board/tools/item-surfaces";
+import { TileSurfaceCapture } from "@/features/board/tools/TileSurfaceCapture";
+import { useIsLiveTile } from "@/features/board/engine/react";
+import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { buildWarRoomThreadScope } from "@/features/war-room/lib/war-room-scope";
+import { useWarRoomThreadWriteHandlers } from "../thread/useWarRoomThreadWriteHandlers";
 import {
   selectActiveNoteId,
   selectAssignmentTokenSummary,
@@ -111,7 +117,7 @@ import {
   threadFrame,
   withPartState,
 } from "./boardLayout";
-import { type RoomPartTile, useRoomBoardToolHost } from "./roomBoardAgent";
+import { ROOM_PART_SURFACE, type RoomPartTile, useRoomBoardToolHost } from "./roomBoardAgent";
 
 const SAVE_DEBOUNCE_MS = 800;
 /** Flying to a frame leaves room for its title, which sits above it. */
@@ -170,6 +176,9 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
   const threads = parseTabsKey(tabsKey);
 
   const [store, setStore] = useState<BoardCameraStore | null>(null);
+  // Every part's own surface capture (live or dormant): the Board bridge's `board_items` basics,
+  // `board_open_item` and `board_item_act` read it (features/board/tools/item-surfaces.ts).
+  const [itemSurfaces] = useState(createItemSurfaceIndex);
   const [wheelMode, setWheelMode] = useWheelModePreference();
 
   // ── the remembered arrangement ─────────────────────────────────────────
@@ -456,6 +465,7 @@ export function RoomBoardView({ sessionId }: { sessionId: string }) {
     ...roomTools,
     store,
     boardTitle: session?.title?.trim() || "War Room",
+    itemSurfaces,
   };
 
   return (
@@ -625,6 +635,28 @@ function BoardThreadFrame({
   );
 }
 
+/**
+ * What a part tile publishes: its thread's own surface (`matrx-user/war-room-thread`, the one the
+ * thread's agent panel emits — same scope, same write handlers), so the part has basics in
+ * `board_items` and opens with `board_open_item` exactly like an item on /board. Only the live part
+ * registers globally (TileSurfaceCapture); the rest are captured dormant.
+ */
+function PartThreadSurface({ threadId, children }: { threadId: string; children: React.ReactNode }) {
+  const store = useAppStore();
+  const getScope = useCallback(() => buildWarRoomThreadScope(store.getState(), threadId), [store, threadId]);
+  const getWriteHandlers = useWarRoomThreadWriteHandlers(threadId);
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={ROOM_PART_SURFACE}
+      getScope={getScope}
+      isEditable
+      getWriteHandlers={getWriteHandlers}
+    >
+      {children}
+    </SurfaceRuntimeProvider>
+  );
+}
+
 const IDLE: TileStatusValue = { status: "idle", progress: null };
 
 function BoardPartTile({
@@ -649,6 +681,7 @@ function BoardPartTile({
   onThrow: (id: string, direction: ThrowDirection) => void;
 }) {
   const pulse = useThreadPulse(threadId);
+  const live = useIsLiveTile(partId);
   const kind = dynamicTabKind(tab, anchorType);
   // Each part carries the reading that belongs to it: the recorder is live on
   // Audio, the task's progress on Task; everything else is idle.
@@ -677,9 +710,13 @@ function BoardPartTile({
       throwActions={PART_THROWS}
     >
       {() => (
-        <div className={cn("h-full min-h-0 overflow-hidden border-l-[3px]", kind.sectionBorder)}>
-          <ThreadTabContent tab={tab} threadId={threadId} sessionId={sessionId} threadLayout="stage" />
-        </div>
+        <TileSurfaceCapture id={partId} active={live}>
+          <PartThreadSurface threadId={threadId}>
+            <div className={cn("h-full min-h-0 overflow-hidden border-l-[3px]", kind.sectionBorder)}>
+              <ThreadTabContent tab={tab} threadId={threadId} sessionId={sessionId} threadLayout="stage" />
+            </div>
+          </PartThreadSurface>
+        </TileSurfaceCapture>
       )}
     </BoardTile>
   );

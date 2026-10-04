@@ -81,7 +81,8 @@ import { TextTileBody } from "@/features/board/tiles/TextTileBody";
 import { NoteItemBody } from "@/features/board/items/NoteItemBody";
 import { entityId, noteSeedEdit } from "@/features/board/items/work-sources";
 import type { NodeSource } from "@/features/board/board/document";
-import { SurfaceActivity } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { createItemSurfaceIndex } from "@/features/board/tools/item-surfaces";
+import { TileSurfaceCapture } from "@/features/board/tools/TileSurfaceCapture";
 import { useIsEditing } from "@/features/board/engine/react";
 import { BoardSurface } from "@/features/board/components/BoardSurface";
 import type {
@@ -282,6 +283,8 @@ function RunBoard({
   const [built] = useState(() => buildBoard(definition, steps, deliverableIds, primaryIds));
   const board = useBoard<RunTileSpec>(() => ({ tiles: built.tiles, frames: built.frames }));
   const [store, setStore] = useState<BoardCameraStore | null>(null);
+  // Each Notes tile's own surface capture: the Board bridge (`board_items` basics, `board_open_item`).
+  const [itemSurfaces] = useState(createItemSurfaceIndex);
   const [wheelMode, setWheelMode] = useWheelModePreference();
   const activeOrgId = useAppSelector(selectOrganizationId);
   const reduxStore = useAppStore();
@@ -357,11 +360,16 @@ function RunBoard({
     board,
     store,
     boardTitle: workflowName,
+    itemSurfaces,
     createTile: createAgentTile,
     editTile: editAgentTile,
     describe: (tile) => {
       const c = tile.content;
-      if (c.type !== "step") return { kind: c.type === "html" && c.srcDoc === undefined ? "web page" : c.type };
+      // A Notes tile carries the notes surface (AddedTile). A step's data lives on the run's own surface
+      // (`matrx-user/workflow-run`, stacked above this board), so a step has no item surface of its own.
+      if (c.type !== "step") {
+        return { kind: c.type === "html" && c.srcDoc === undefined ? "web page" : c.type, surface: c.type === "note" ? "matrx-user/notes" : null };
+      }
       const status = selectStatusKey(runId, tile.id)(reduxStore.getState()).split(":")[0];
       return { kind: `${familyNoun(c.family)}${c.declaredKind ? ` · ${humanizeKind(c.declaredKind)}` : ""}`, status };
     },
@@ -591,7 +599,7 @@ function AddedTile({
           case "note":
             return (
               // Only the tile being worked in registers the notes surface.
-              <SurfaceActivity active={interacting}>
+              <TileSurfaceCapture id={spec.id} active={interacting}>
                 <NoteItemBody
                   tileId={spec.id}
                   source={c.source}
@@ -600,7 +608,7 @@ function AddedTile({
                   interacting={interacting}
                   onSource={(source, label) => onContent(spec.id, { type: "note", source }, label)}
                 />
-              </SurfaceActivity>
+              </TileSurfaceCapture>
             );
           case "text":
             return <TextTileBody text={c.text} onChange={(text) => onContent(spec.id, { type: "text", text })} />;

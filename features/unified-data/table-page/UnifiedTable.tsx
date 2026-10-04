@@ -363,7 +363,7 @@ export function UnifiedTableBody({
   ) : (
     <>
       {before}
-      <RecordStoreTableSurface channel={mount.gridContext} enabled={mount.mergedGrid}>
+      <RecordStoreTableSurface channel={mount.gridContext} enabled={mount.mergedGrid} tableId={tableId}>
         <TablePage
           tableId={tableId}
           onLeave={onLeave}

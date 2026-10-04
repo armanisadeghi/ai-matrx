@@ -48,6 +48,12 @@ import {
 } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
+/**
+ * A surface whose content has not loaded sets this to `true` in its scope instead of publishing zeros
+ * and defaults (0 rows, read-only): the bridge then says "not loaded yet" in plain words.
+ */
+export const SURFACE_NOT_LOADED_KEY = "not_loaded_yet";
+
 /** Items listed in `board_items`; the rest are counted in `omitted_count`. */
 export const BOARD_ITEMS_MAX = 60;
 /** All item briefs together stay under this many characters (JSON). */
@@ -259,6 +265,8 @@ export async function openItemSurface(capture: SurfaceRegistry): Promise<
       about: string;
       values: Record<string, { value: unknown; description: string; truncated?: true }>;
       on_demand_values?: string[];
+      /** Present when the item has not loaded: its counts and permissions are unknown, never zero or false. */
+      not_loaded_yet?: string;
       write_targets: string[];
       patch_contract?: string;
       client_tools: Array<{
@@ -311,6 +319,12 @@ export async function openItemSurface(capture: SurfaceRegistry): Promise<
     about: manifest.description,
     values,
     ...(onDemand.length > 0 ? { on_demand_values: onDemand } : {}),
+    ...(scope[SURFACE_NOT_LOADED_KEY] === true
+      ? {
+          not_loaded_yet:
+            "This item has not loaded its content yet, so what it holds (counts, columns, permissions) is UNKNOWN, not zero or read-only. Bring it into view or open it, then read it again.",
+        }
+      : {}),
     write_targets: await describeAgentWritableTargets(writable),
     ...(writable.some(({ target }) => target.patchable)
       ? { patch_contract: surfacePatchContractLine() }

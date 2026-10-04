@@ -13,7 +13,7 @@ import {
   serializeBoardLayout,
   threadFrame,
 } from "../boardLayout";
-import { ROOM_BOARD_REFUSALS, type RoomPartTile, partKind, roomBoardToolHost } from "../roomBoardAgent";
+import { ROOM_BOARD_REFUSALS, ROOM_PART_SURFACE, type RoomPartTile, partKind, roomBoardToolHost } from "../roomBoardAgent";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -70,7 +70,7 @@ describe("War Room board agent tools", () => {
     const b = mount();
     const read = b.call("board_read", { include_text: false }) as {
       ok: boolean;
-      board: { tiles: { id: string; kind: string; status: string | null; title: string }[]; frames: { id: string; title: string }[] };
+      board: { tiles: { id: string; kind: string; status: string | null; title: string; surface?: string | null }[]; frames: { id: string; title: string }[] };
     };
     expect(read.ok).toBe(true);
     expect(read.board.frames.map((f) => [f.id, f.title])).toEqual([
@@ -80,6 +80,8 @@ describe("War Room board agent tools", () => {
     const kinds = read.board.tiles.filter((t) => t.id.startsWith(A)).map((t) => t.kind);
     expect(kinds).toEqual(["task", "notes", "audio", "chat", "resources", "attachments"]);
     expect(read.board.tiles.find((t) => t.id === partKey(A, "task"))?.status).toBe("2/5 done");
+    // Every part names the surface it publishes, so the bridge (board_items basics, board_open_item) reaches it.
+    expect(read.board.tiles.every((t) => t.surface === ROOM_PART_SURFACE)).toBe(true);
   });
 
   it("board_move_tiles persists through the layout path, and a thread id moves the whole frame", () => {

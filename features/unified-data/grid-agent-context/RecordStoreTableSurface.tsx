@@ -17,6 +17,7 @@ import type { GridContextSnapshot } from "./recordStoreTableScope";
 import { useRecordsClient } from "@ai-matrx/records/react";
 
 import { SurfaceRuntimeProvider, type SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { createDataTablesScope } from "@/features/surfaces/manifests/data-tables.manifest";
 import { buildDataTablesScope } from "@/features/data-tables/agent-context/buildDataTablesScope";
 
 import { isWorkedOut, scopeInputFromGrid } from "./recordStoreTableScope";
@@ -103,12 +104,24 @@ export function recordStoreWriteHandlers(
   };
 }
 
+/**
+ * Has the grid told the host a real table yet? Before it has (a tile that has not drawn, or a table
+ * still opening) the snapshot carries no columns, no rows and no total — and `canWrite` is false only
+ * because nothing is known. Such a snapshot must never be read as "0 rows, read-only".
+ */
+export function gridHasLoaded(snapshot: GridContextSnapshot | null): snapshot is GridContextSnapshot {
+  return snapshot !== null && (snapshot.total !== null || snapshot.fields.length > 0 || snapshot.visibleRows.length > 0);
+}
+
 export function RecordStoreTableSurface({
   channel,
   enabled = true,
+  tableId,
   children,
 }: {
   channel: GridContextChannel;
+  /** The table this surface is over; the only value known before the grid has drawn. */
+  tableId?: string;
   /** Off: the children draw bare (the classic grid tells nothing, so there is no scope to offer). */
   enabled?: boolean;
   children: ReactNode;
@@ -122,11 +135,9 @@ export function RecordStoreTableSurface({
   const getScope = () => {
     const snapshot = latest.current;
     if (snapshot) void ledger.current!.drew(client, snapshot.visibleRows.map((r) => r.id));
-    return buildDataTablesScope(
-      snapshot
-        ? scopeInputFromGrid(snapshot)
-        : { tableId: "", isReadOnly: null, fields: [], visibleRows: [], totalCount: 0, searchTerm: "", fullDataset: null, openCell: null, openRow: null },
-    );
+    // Not loaded yet: say only what is known. row_count / is_read_only are left OUT (unknown is not 0 / true).
+    if (!gridHasLoaded(snapshot)) return { ...createDataTablesScope(tableId ? { table_id: tableId } : {}), not_loaded_yet: true };
+    return buildDataTablesScope(scopeInputFromGrid(snapshot));
   };
   const handlers = recordStoreWriteHandlers(latest, async (recordId, key, value) => {
     const answer = await updateRecordAt(client, {
@@ -147,7 +158,7 @@ export function RecordStoreTableSurface({
     <SurfaceRuntimeProvider
       surfaceName={DATA_TABLES_SURFACE}
       getScope={getScope}
-      isEditable={snapshot ? snapshot.canWrite : false}
+      isEditable={gridHasLoaded(snapshot) ? snapshot.canWrite : false}
       getWriteHandlers={() => handlers}
     >
       {children}

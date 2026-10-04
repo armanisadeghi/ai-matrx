@@ -20,6 +20,7 @@ import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceR
 import { BOARD_SURFACE_NAME } from "@/features/surfaces/manifests/board.manifest";
 import type { BoardTileBase } from "../board/useBoard";
 import { boardItemsOverview } from "../tools/item-surfaces";
+import { ItemSurfaceIndexContext } from "../tools/TileSurfaceCapture";
 import { type BoardToolHost, useBoardAgentTools } from "../tools/useBoardAgentTools";
 
 export function BoardSurface<T extends BoardTileBase & { title: string }>({
@@ -69,7 +70,7 @@ export function BoardSurface<T extends BoardTileBase & { title: string }>({
         };
       }}
     >
-      {children}
+      <ItemSurfaceIndexContext.Provider value={host.itemSurfaces ?? null}>{children}</ItemSurfaceIndexContext.Provider>
     </SurfaceRuntimeProvider>
   );
 }
