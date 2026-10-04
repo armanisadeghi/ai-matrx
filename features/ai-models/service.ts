@@ -483,6 +483,9 @@ function parseProviderModelsCache(
 ): ProviderModelsCache | null {
   if (value === null) return null;
   const record = requireJsonObject(value, path);
+  // A provider the daily refresh only stores facts/docs for (no model listing — e.g.
+  // ElevenLabs, Fastino) has no `models` key: that is "no listing", not a broken row.
+  if (record.models === undefined) return null;
   if (!isJsonArray(record.models)) {
     throw boundaryError(`${path}.models`, "a JSON array");
   }
