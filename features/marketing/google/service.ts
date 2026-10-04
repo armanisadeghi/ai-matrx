@@ -35,6 +35,7 @@ import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
 import { operationFailed } from "@/utils/errors";
+import { getFile } from "@/features/files/api/files";
 // Keep this small exchange control local rather than deriving it from the
 // deployed OpenAPI snapshot: the frontend and backend deploy independently,
 // and a newly added fail-closed purpose must be usable as soon as both source
@@ -446,6 +447,7 @@ const READ_SHAPED_GOOGLE_POSTS: readonly string[] = [
 
 export type DriveBrowsePage = components["schemas"]["DriveBrowsePage"];
 export type DriveFileMetadata = components["schemas"]["DriveFileMetadata"];
+export type DriveImportResult = components["schemas"]["StorageImportResult"];
 
 /**
  * One bounded metadata page from the explicitly selected Drive connection.
@@ -491,6 +493,40 @@ export async function checkGoogleDriveFileAccess(input: {
     input.organizationId,
   );
   return (await response.json()) as DriveFileMetadata;
+}
+
+/** Save one explicitly chosen Drive file into the selected Matrx Files organization. */
+export async function importSelectedGoogleDriveFile(input: {
+  organizationId: string;
+  connectionId: string;
+  fileId: string;
+  filePath: string;
+}): Promise<DriveImportResult> {
+  const response = await postGoogleBackend(
+    "/api/google-sync/drive/import",
+    {
+      organization_id: input.organizationId,
+      connection_id: input.connectionId,
+      file_id: input.fileId,
+      file_path: input.filePath,
+    },
+    "Google Drive import could not be confirmed. Check Matrx Files before trying again.",
+    input.organizationId,
+  );
+  const result = (await response.json()) as DriveImportResult;
+  if (
+    result.source.provider !== "google_drive" ||
+    result.source.connection_id !== input.connectionId ||
+    result.source.source_ref !== input.fileId ||
+    result.file_path !== input.filePath
+  ) {
+    throw new Error("The saved file did not match the selected Google file and destination. Check Matrx Files before trying again.");
+  }
+  const { data: savedFile } = await getFile(result.file_id);
+  if (savedFile.id !== result.file_id) {
+    throw new Error("Matrx Files returned a different file after the import. Check Matrx Files before trying again.");
+  }
+  return result;
 }
 
 function googlePostAsks(path: string): boolean {

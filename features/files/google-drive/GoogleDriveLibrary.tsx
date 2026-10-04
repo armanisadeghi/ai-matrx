@@ -1,14 +1,11 @@
 "use client";
 
 /**
- * Internal-review browser for the restricted whole-Drive capability.
- *
- * This is intentionally a metadata-only surface. It cannot preview, export,
- * download, sync, or connect an account. The server remains the authority for
- * the exact connection, organization, and internal-review admission.
+ * Internal-review browser and explicit selected-file import for the
+ * restricted whole-Drive capability.
  */
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import {
   ChevronLeft,
   ExternalLink,
@@ -23,6 +20,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { Input } from "@ai-matrx/design-system";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { eligibleGoogleConnections } from "@/features/google-workspace/connection";
+import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import {
   useGoogleCapabilities,
   useGoogleConnectionInventory,
@@ -30,15 +28,22 @@ import {
 import {
   browseGoogleDrive,
   checkGoogleDriveFileAccess,
+  importSelectedGoogleDriveFile,
   type DriveBrowsePage,
   type DriveFileMetadata,
+  type DriveImportResult,
 } from "@/features/marketing/google/service";
+import { openFilePreview } from "@/features/files/components/preview/openFilePreview";
+import { storageDestinationPath, validateStorageDestinationFolderPath } from "@/features/files/storage-sources/service";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationName } from "@/lib/redux/slices/appContextSlice";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   allAccessibleDriveBrowseState,
   folderDriveBrowseCriteria,
   type DriveBrowseCriteria,
+  type DriveBrowseCapability,
   driveBrowseIsAvailable,
   driveFileTypeLabel,
   incompleteSearchNotice,
@@ -51,6 +56,39 @@ const NO_ORGANIZATION_FOR_CONNECTION =
   "This Google account is your own (not filed under an organization) and the Drive service still needs an organization for the request. Choose one from the organization picker in the header and try again.";
 
 const FOLDER_MIME_TYPE = "application/vnd.google-apps.folder";
+const GOOGLE_NATIVE_EXTENSIONS: Record<string, string> = {
+  "application/vnd.google-apps.document": ".docx",
+  "application/vnd.google-apps.spreadsheet": ".xlsx",
+  "application/vnd.google-apps.presentation": ".pptx",
+  "application/vnd.google-apps.drawing": ".pdf",
+  "application/vnd.google-apps.script": ".json",
+};
+
+function importableFile(file: DriveBrowsePage["files"][number]): boolean {
+  return !file.mime_type.startsWith("application/vnd.google-apps.") ||
+    file.mime_type in GOOGLE_NATIVE_EXTENSIONS;
+}
+
+function suggestedImportPath(file: DriveBrowsePage["files"][number]): string {
+  const extension = GOOGLE_NATIVE_EXTENSIONS[file.mime_type];
+  const name = extension && !file.name.toLowerCase().endsWith(extension)
+    ? `${file.name}${extension}`
+    : file.name;
+  return storageDestinationPath("My Files/Imports", name);
+}
+
+type ImportSelection = {
+  file: DriveBrowsePage["files"][number];
+  connectionId: string;
+  sourceAccount: string;
+};
+
+type ImportReceipt = {
+  result: DriveImportResult;
+  sourceAccount: string;
+  fileName: string;
+  organizationId: string;
+};
 
 function dateLabel(value: string | null): string {
   if (!value) return "Date not provided";
@@ -69,13 +107,39 @@ function ownerLabel(
   return labels.length ? labels.join(", ") : "Owner not provided";
 }
 
+export type GoogleDriveLibraryEnvironment = {
+  selectedOrganizationId: string | null;
+  selectedOrganizationName: string | null;
+  connections: GoogleConnectionSummary[];
+  driveBrowse: DriveBrowseCapability | undefined;
+  loadingConnections: boolean;
+  connectionsError: boolean;
+  browse: typeof browseGoogleDrive;
+  checkAccess: typeof checkGoogleDriveFileAccess;
+  importFile: typeof importSelectedGoogleDriveFile;
+};
+
+/** Live container; a separate injected seat permits localhost interaction without provider calls. */
 export function GoogleDriveLibrary() {
-  // The header's selected organization is only a FALLBACK for a personal (org-less)
-  // connection — the server route still names an organization. A connection filed
-  // under an organization always uses its OWN. Nothing gates the list on a selection.
   const { organizationId: selectedOrganizationId } = useOrganizationRequired();
+  const selectedOrganizationName = useAppSelector(selectOrganizationName);
   const inventory = useGoogleConnectionInventory();
   const capabilities = useGoogleCapabilities();
+  return <GoogleDriveLibraryContent environment={{
+    selectedOrganizationId,
+    selectedOrganizationName,
+    connections: inventory.data?.connections ?? [],
+    driveBrowse: capabilities.data?.find((capability) => capability.key === "drive_browse"),
+    loadingConnections: Boolean(inventory.isLoading || capabilities.isLoading),
+    connectionsError: Boolean(inventory.isError || capabilities.isError),
+    browse: browseGoogleDrive,
+    checkAccess: checkGoogleDriveFileAccess,
+    importFile: importSelectedGoogleDriveFile,
+  }} />;
+}
+
+export function GoogleDriveLibraryContent({ environment }: { environment: GoogleDriveLibraryEnvironment }) {
+  const { selectedOrganizationId, selectedOrganizationName } = environment;
   const [connectionId, setConnectionId] = useState("");
   const [search, setSearch] = useState("");
   const [criteria, setCriteria] = useState<DriveBrowseCriteria>(
@@ -86,9 +150,17 @@ export function GoogleDriveLibrary() {
   const [error, setError] = useState<string | null>(null);
   const [access, setAccess] = useState<DriveFileMetadata | null>(null);
   const [checkingFileId, setCheckingFileId] = useState<string | null>(null);
+  const [importSelection, setImportSelection] = useState<ImportSelection | null>(null);
+  const [destinationPath, setDestinationPath] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<ImportReceipt | null>(null);
+  const attemptedImports = useRef(new Set<string>());
+  const inFlightImport = useRef(false);
+  const browseGeneration = useRef(0);
 
   const connections = eligibleGoogleConnections(
-    inventory.data?.connections ?? [],
+    environment.connections,
     "drive-browse",
     connectionId,
   );
@@ -97,9 +169,7 @@ export function GoogleDriveLibrary() {
   );
   const organizationId =
     selectedConnection?.organization_id ?? selectedOrganizationId ?? null;
-  const driveBrowse = capabilities.data?.find(
-    (capability) => capability.key === "drive_browse",
-  );
+  const driveBrowse = environment.driveBrowse;
   const capabilityAvailable = driveBrowseIsAvailable(driveBrowse);
 
   async function load(
@@ -108,32 +178,41 @@ export function GoogleDriveLibrary() {
       criteria?: DriveBrowseCriteria;
     } = {},
   ) {
-    if (!connectionId) return;
+    if (!connectionId || inFlightImport.current) return;
     if (!organizationId) {
       setError(NO_ORGANIZATION_FOR_CONNECTION);
       return;
     }
     const nextCriteria = next.criteria ?? criteria;
+    const generation = ++browseGeneration.current;
     setLoading(true);
     setError(null);
     setAccess(null);
     try {
-      const result = await browseGoogleDrive({
+      const result = await environment.browse({
         organizationId,
         connectionId,
         ...nextDriveBrowseInput(nextCriteria, next.pageToken),
       });
+      if (result.connection_id !== connectionId) {
+        throw new Error("Google Drive returned files from a different account.");
+      }
+      if (generation !== browseGeneration.current) return;
       setCriteria(nextCriteria);
       setPage(result);
     } catch (caught) {
+      if (generation !== browseGeneration.current) return;
       setPage(null);
       setError(extractErrorMessage(caught));
     } finally {
-      setLoading(false);
+      if (generation === browseGeneration.current) setLoading(false);
     }
   }
 
   function chooseConnection(id: string) {
+    if (inFlightImport.current) return;
+    browseGeneration.current += 1;
+    setLoading(false);
     setConnectionId(id);
     const reset = allAccessibleDriveBrowseState();
     setSearch(reset.search);
@@ -141,6 +220,79 @@ export function GoogleDriveLibrary() {
     setPage(null);
     setAccess(null);
     setError(null);
+    setImportSelection(null);
+    setDestinationPath("");
+    setImportError(null);
+  }
+
+  function selectForImport(file: DriveBrowsePage["files"][number]) {
+    if (!page || page.connection_id !== connectionId || !importableFile(file) || inFlightImport.current) return;
+    try {
+      setDestinationPath(suggestedImportPath(file));
+      setImportSelection({ file, connectionId, sourceAccount: page.source_account });
+      setImportError(null);
+    } catch (caught) {
+      setImportError(extractErrorMessage(caught));
+    }
+  }
+
+  async function importSelected() {
+    const selected = importSelection;
+    const destinationOrganizationId = selectedOrganizationId;
+    if (!selected || inFlightImport.current) return;
+    if (!destinationOrganizationId) {
+      setImportError("Choose the Matrx Files organization in the header before importing.");
+      return;
+    }
+    if (selected.connectionId !== connectionId || page?.connection_id !== connectionId ||
+        page.source_account !== selected.sourceAccount ||
+        !page.files.some((file) => file.id === selected.file.id)) {
+      setImportError("The Google account or file selection changed. Select the file again.");
+      return;
+    }
+    const slash = destinationPath.lastIndexOf("/");
+    const folder = slash < 0 ? "" : destinationPath.slice(0, slash);
+    const name = destinationPath.slice(slash + 1);
+    try {
+      if (!folder || validateStorageDestinationFolderPath(folder) ||
+          storageDestinationPath(folder, name) !== destinationPath) {
+        throw new Error("Choose a valid Matrx Files destination path.");
+      }
+    } catch (caught) {
+      setImportError(extractErrorMessage(caught));
+      return;
+    }
+    const attemptKey = JSON.stringify([
+      destinationOrganizationId, selected.connectionId, selected.file.id, destinationPath,
+    ]);
+    if (attemptedImports.current.has(attemptKey)) {
+      setImportError("This import was already requested. Check Matrx Files before choosing another destination.");
+      return;
+    }
+    attemptedImports.current.add(attemptKey);
+    inFlightImport.current = true;
+    setImporting(true);
+    setImportError(null);
+    try {
+      const result = await environment.importFile({
+        organizationId: destinationOrganizationId,
+        connectionId: selected.connectionId,
+        fileId: selected.file.id,
+        filePath: destinationPath,
+      });
+      setReceipt({
+        result,
+        sourceAccount: selected.sourceAccount,
+        fileName: selected.file.name,
+        organizationId: destinationOrganizationId,
+      });
+      setImportSelection(null);
+    } catch (caught) {
+      setImportError(`${extractErrorMessage(caught)} Check Matrx Files before another import.`);
+    } finally {
+      inFlightImport.current = false;
+      setImporting(false);
+    }
   }
 
   async function checkAccess(fileId: string) {
@@ -154,7 +306,7 @@ export function GoogleDriveLibrary() {
     setAccess(null);
     try {
       setAccess(
-        await checkGoogleDriveFileAccess({
+        await environment.checkAccess({
           organizationId,
           connectionId,
           fileId,
@@ -189,7 +341,7 @@ export function GoogleDriveLibrary() {
       await openFreshGoogleDriveFile({
         selectedConnectionId: connectionId,
         check: () =>
-          checkGoogleDriveFileAccess({ organizationId, connectionId, fileId }),
+          environment.checkAccess({ organizationId, connectionId, fileId }),
         tab,
       });
     } catch (caught) {
@@ -227,8 +379,8 @@ export function GoogleDriveLibrary() {
               Google Drive
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Search or browse one connected account’s accessible Drive file
-              metadata. This does not open, download, export, or save any file.
+              Browse a connected account, then choose one file to save a copy
+              in Matrx Files. Browsing alone does not save file content.
             </p>
           </div>
           {page ? (
@@ -244,11 +396,11 @@ export function GoogleDriveLibrary() {
         </div>
       </header>
 
-      {capabilities.isLoading || inventory.isLoading ? (
+      {environment.loadingConnections ? (
         <p className="rounded-xl border border-border p-5 text-sm text-muted-foreground">
           Loading connected Google accounts…
         </p>
-      ) : capabilities.isError || inventory.isError ? (
+      ) : environment.connectionsError ? (
         <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 text-sm text-foreground">
           Google Drive access could not be checked. Try again from the Google
           connection screen.
@@ -275,7 +427,7 @@ export function GoogleDriveLibrary() {
             connectionId={connectionId}
             onConnectionChange={chooseConnection}
             label="Google account to review"
-            disabled={loading || checkingFileId !== null}
+            disabled={loading || checkingFileId !== null || importing}
             requireExplicitSelection
           />
           <form
@@ -357,6 +509,38 @@ export function GoogleDriveLibrary() {
           </p>
         </div>
       ) : null}
+      {importSelection ? (
+        <section className="space-y-3 rounded-xl border border-primary/30 bg-card p-5 shadow-sm" aria-label="Import selected Google Drive file">
+          <h2 className="font-semibold">Save a copy to Matrx Files</h2>
+          <p className="text-sm text-muted-foreground">
+            {importSelection.file.name} · {importSelection.sourceAccount}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Destination organization: {selectedOrganizationId ? selectedOrganizationName ?? "Selected in header" : "Choose one in the header"}
+          </p>
+          <label className="block space-y-1 text-sm font-medium">
+            <span>Matrx Files path</span>
+            <Input value={destinationPath} onChange={(event) => setDestinationPath(event.target.value)} disabled={importing} aria-label="Matrx Files destination path" />
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Import downloads or exports this one Google file and saves a Matrx Files copy until you delete it.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => void importSelected()} disabled={importing || !selectedOrganizationId}>
+              {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Import selected file
+            </Button>
+            <Button type="button" variant="outline" disabled={importing} onClick={() => setImportSelection(null)}>Cancel</Button>
+          </div>
+          {importError ? <div role="alert" className="text-sm text-destructive">{importError}<ErrorAlchemyMenu error={importError} /></div> : null}
+        </section>
+      ) : null}
+      {receipt ? (
+        <section className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm" aria-label="Saved Matrx Files copy">
+          <p className="font-medium">Saved to Matrx Files</p>
+          <p className="mt-1 text-muted-foreground">{receipt.fileName} from {receipt.sourceAccount} · {receipt.result.file_path}</p>
+          <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => openFilePreview(receipt.result.file_id)}>Open saved file</Button>
+        </section>
+      ) : null}
       {page ? (
         <section
           className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
@@ -424,6 +608,13 @@ export function GoogleDriveLibrary() {
                           Check access
                         </Button>
                       )}
+                      {!isFolder && importableFile(file) ? (
+                        <Button type="button" size="sm" disabled={importing} onClick={() => selectForImport(file)}>
+                          Save to Matrx Files
+                        </Button>
+                      ) : !isFolder ? (
+                        <span className="self-center text-xs text-muted-foreground">Import unavailable for this file type</span>
+                      ) : null}
                       <Button
                         type="button"
                         size="sm"

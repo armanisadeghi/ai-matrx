@@ -105,7 +105,7 @@ export type ConnectorFirstAction =
    * agenda, whose subject is the signed-in person, not anything the caller
    * supplies.
    */
-  | {
+  | ({
       kind: "overlay";
       label: string;
       needs?: readonly ConnectorFirstActionContextKey[];
@@ -122,7 +122,7 @@ export type ConnectorFirstAction =
           >;
           data?: never;
         }
-    )
+    ))
   /** Nothing to offer YET, and the row says why in writing. Never a bare null. */
   | { kind: "none"; because: string };
 
@@ -216,6 +216,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
   [GOOGLE_SCOPE.userinfoProfile]: "Your name and profile picture",
   [GOOGLE_SCOPE.driveFile]:
     "Open, create and edit the Google files you pick — nothing else in your Drive",
+  [GOOGLE_SCOPE.driveReadonly]:
+    "Google permits viewing and downloading all files this account can access. AI Matrx browses file details and copies only a file you choose into Matrx Files; the copy stays until deleted and is not sent to an AI model automatically",
   [GOOGLE_SCOPE.gmailSend]:
     "Send an email as you, after you have reviewed it. No inbox access",
   [GOOGLE_SCOPE.gmailReadonly]:
@@ -333,6 +335,24 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "route",
         label: "Pick your first file",
         href: "/user-settings/integrations",
+      },
+    },
+    {
+      key: "drive_browse",
+      name: "Google Drive browse",
+      promise:
+        "Browse your Drive, then choose a file to copy into Matrx Files. Google permits access to all files; we copy only what you choose.",
+      group: WORKSPACE_GROUP,
+      icon: FileSpreadsheet,
+      mark: GoogleDriveMark,
+      capabilityKeys: ["drive_browse"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.driveReadonly],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "browsing your Drive and copying a chosen file here",
+      firstAction: {
+        kind: "route",
+        label: "Browse Google Drive",
+        href: "/files/google-drive",
       },
     },
     {
@@ -489,8 +509,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
     {
       key: "contacts",
       name: "Contacts",
-      promise:
-        "Bring a contact you choose into your People.",
+      promise: "Bring a contact you choose into your People.",
       group: WORKSPACE_GROUP,
       icon: Contact,
       mark: GoogleContactsMark,

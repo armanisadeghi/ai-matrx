@@ -31,7 +31,12 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
+import {
+  GOOGLE_CONNECTOR_PROVIDER,
+  scopeLanguage,
+  userOwnedGoogleProductNames,
+} from "../provider-config";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import {
   googleActivityByProduct,
   parseGoogleCapabilityHealth,
@@ -102,16 +107,7 @@ const clientResourceTypes = new Set(
  * else may. Pending capabilities stay here until their consent and account UI
  * are ready; every other catalog key needs a product row.
  */
-const NOT_SURFACED: Record<
-  string,
-  { reason: string; internalFilesRoute?: boolean }
-> = {
-  drive_browse: {
-    reason:
-      "Whole-Drive browsing has an internal Files route, not a public consent row.",
-    internalFilesRoute: true,
-  },
-};
+const NOT_SURFACED: Record<string, { reason: string }> = {};
 
 function serverDescriptor(key: string): string {
   const source = readFileSync(CAPABILITIES, "utf8");
@@ -172,7 +168,29 @@ const hasServer = existsSync(CAPABILITIES);
     });
 
     it("keeps the internal Drive reviewer route behind its catalog gate", () => {
-      expect(NOT_SURFACED.drive_browse?.internalFilesRoute).toBe(true);
+      const product = GOOGLE_CONNECTOR_PROVIDER.products.find(
+        (item) => item.key === "drive_browse",
+      );
+      expect(product?.capabilityKeys).toEqual(["drive_browse"]);
+      expect(product?.firstAction).toEqual({
+        kind: "route",
+        label: "Browse Google Drive",
+        href: "/files/google-drive",
+      });
+      expect(product?.scopes).toEqual([
+        ...GOOGLE_CONNECTOR_PROVIDER.identityScopes,
+        GOOGLE_SCOPE.driveReadonly,
+      ]);
+      expect(product?.scopes).not.toContain(GOOGLE_SCOPE.driveFile);
+      expect(userOwnedGoogleProductNames(["drive_browse"])).toEqual([]);
+      const disclosure = scopeLanguage(
+        GOOGLE_CONNECTOR_PROVIDER,
+        GOOGLE_SCOPE.driveReadonly,
+      );
+      expect(disclosure).toContain("all files");
+      expect(disclosure).toContain("only a file you choose");
+      expect(disclosure).toContain("until deleted");
+      expect(disclosure).toContain("not sent to an AI model automatically");
       const root = process.cwd();
       const page = readFileSync(
         join(root, "app/(core)/files/google-drive/page.tsx"),

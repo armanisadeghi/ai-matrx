@@ -23,6 +23,7 @@ import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
 import type { ConnectorAccount } from "../health";
 
 const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
+const DRIVE_READONLY = "https://www.googleapis.com/auth/drive.readonly";
 const GMAIL_SEND = "https://www.googleapis.com/auth/gmail.send";
 const GMAIL_READONLY = "https://www.googleapis.com/auth/gmail.readonly";
 const GMAIL_MODIFY = "https://www.googleapis.com/auth/gmail.modify";
@@ -75,6 +76,45 @@ function account(scopes: string[]): ConnectorAccount {
 }
 
 describe("buildConsentPlan", () => {
+  it("requests Drive browsing only for the chosen internal product", () => {
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["drive_browse"],
+      account: null,
+      rollout: rollout({
+        drive_browse: { phase: "internal_test", eligible: true },
+      }),
+    });
+    expect(plan.request?.capabilityKeys).toEqual(["drive_browse"]);
+    expect(new Set(plan.request?.scopes)).toEqual(
+      new Set(["openid", "email", "profile", DRIVE_READONLY]),
+    );
+    expect(plan.request?.scopes).not.toContain(DRIVE_FILE);
+  });
+
+  it("keeps held grants when adding Drive browsing and excludes it from unrelated consent", () => {
+    const internalReview = rollout({
+      drive_browse: { phase: "internal_test", eligible: true },
+    });
+    const selected = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["drive_browse"],
+      account: account([OPENID, DRIVE_FILE, GMAIL_SEND]),
+      rollout: internalReview,
+    });
+    expect(selected.request?.addedScopes).toEqual([DRIVE_READONLY]);
+    expect(selected.request?.scopes).toEqual(
+      expect.arrayContaining([OPENID, DRIVE_FILE, GMAIL_SEND, DRIVE_READONLY]),
+    );
+    const other = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["workspace_files"],
+      account: null,
+      rollout: internalReview,
+    });
+    expect(other.request?.scopes).not.toContain(DRIVE_READONLY);
+  });
+
   it("asks for only Gmail reading and identity on a fresh reviewer account", () => {
     const plan = buildConsentPlan({
       provider,

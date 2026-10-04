@@ -8,7 +8,7 @@ const PrivacyPolicyPage = () => {
       <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-8 dark:prose-invert sm:px-6 sm:py-12">
         <h1>Privacy Policy</h1>
         <p>
-          <strong>Last updated:</strong> September 27, 2026
+          <strong>Last updated:</strong> October 4, 2026
         </p>
         <p>
           AI Matrx is a technology product owned and operated by{" "}
@@ -282,13 +282,25 @@ const PrivacyPolicyPage = () => {
 
         <h3>2.9 Google Workspace data (optional)</h3>
         <p>
-          If you choose to connect Google Workspace, AI Matrx requests access at the
-          point of use for the feature you are using. Connecting Docs and Sheets uses
-          Google&rsquo;s <code>drive.file</code> permission. This lets you
-          select individual Google Docs or Sheets through Google Picker; it does
-          not let AI Matrx browse your entire Google Drive. For a selected file,
-          we may process its file id, name, type, link, and the content needed
-          to perform the read or update action you request.
+          If you choose to connect Google Workspace, AI Matrx requests access at
+          the point of use for the feature you are using. Connecting Docs and
+          Sheets uses Google&rsquo;s <code>drive.file</code> permission. This
+          lets you select individual Google Docs or Sheets through Google
+          Picker; it does not let AI Matrx browse your entire Google Drive. For
+          a selected file, we may process its file id, name, type, link, and the
+          content needed to perform the read or update action you request.
+        </p>
+        <p>
+          Google Drive browsing is a separate, optional feature in internal
+          testing. If you grant <code>drive.readonly</code>, Google technically
+          permits AI Matrx to view and download all files that account can
+          access, including shared files. The Files browser lists file details
+          and searches that account; it downloads an ordinary file or exports a
+          supported Google file only when you explicitly choose to copy it into
+          Matrx Files. That copy remains in Matrx Files until you delete it.
+          Browsing or copying a file does not automatically send its contents to
+          an AI model. If you later attach the saved copy to a chat or make
+          another explicit agent request, Section 3.1 applies.
         </p>
         <p>
           Gmail sending uses <code>gmail.send</code> to send the recipients,
@@ -302,14 +314,13 @@ const PrivacyPolicyPage = () => {
           controls for retained Rulebook material. If it becomes available and
           you separately start it, AI Matrx reads up to 50 recent threads you
           replied to in your chosen lookback period. It retains qualifying
-          thread content as Rulebook raw material to derive draft rules, and
-          the configured AI model provider may process that content for that
-          request. Connecting Gmail alone does not start Connected Shadow
-          Inbox.
+          thread content as Rulebook raw material to derive draft rules, and the
+          configured AI model provider may process that content for that
+          request. Connecting Gmail alone does not start Connected Shadow Inbox.
         </p>
         <p>
-          Gmail changes are a separate, optional feature in internal testing.
-          If you grant <code>gmail.modify</code>, AI Matrx can change an opened
+          Gmail changes are a separate, optional feature in internal testing. If
+          you grant <code>gmail.modify</code>, AI Matrx can change an opened
           message in the Google account you chose when you explicitly select
           Archive or Restore to inbox, Mark read or unread, Star or unstar, or
           Add or remove one of your named labels. The screen retrieves your
@@ -336,14 +347,13 @@ const PrivacyPolicyPage = () => {
           creditworthiness. Gmail search results and opened messages are not
           automatically sent to an AI agent. Saved CRM interaction subjects and
           bodies, including matched outreach replies, are also excluded from
-          automatic agent context. Once available, separately starting
-          Connected Shadow Inbox is an explicit request to process its
-          qualifying Gmail thread content to derive Rulebook draft rules. If
-          you choose to provide other Google content to an agent in a chat or
-          another explicit request, the configured model provider may process
-          that content to answer your request, as described in Section 3.1. We
-          do not use Gmail content to
-          train our own generalized AI models.
+          automatic agent context. Once available, separately starting Connected
+          Shadow Inbox is an explicit request to process its qualifying Gmail
+          thread content to derive Rulebook draft rules. If you choose to
+          provide other Google content to an agent in a chat or another explicit
+          request, the configured model provider may process that content to
+          answer your request, as described in Section 3.1. We do not use Gmail
+          content to train our own generalized AI models.
         </p>
         <p>
           The use of information received from Google Workspace APIs will adhere
@@ -526,16 +536,18 @@ const PrivacyPolicyPage = () => {
           storage. We store safe connection metadata and references for the
           individual files you selected. On-demand document and spreadsheet
           operations do not save document contents or spreadsheet cell values as
-          records. The on-demand Gmail search/open reader does not save search
-          queries or opened message bodies as records. Qualifying Gmail thread
-          content from past Connected Shadow Inbox use remains retained as
-          Rulebook raw material; once the feature is available again, new
-          qualifying content may be retained after you separately start it;
-          disconnecting Google stops future reading but does not erase that
-          retained Rulebook content. The separately configured outreach-reply
-          feature saves matched replies as described in Section 2.9; that CRM
-          copy remains after you disconnect Google until you request its
-          deletion or delete your account.
+          records. A file you explicitly import from Drive is a separate saved
+          copy in Matrx Files; disconnecting Google does not delete that copy.
+          The on-demand Gmail search/open reader does not save search queries or
+          opened message bodies as records. Qualifying Gmail thread content from
+          past Connected Shadow Inbox use remains retained as Rulebook raw
+          material; once the feature is available again, new qualifying content
+          may be retained after you separately start it; disconnecting Google
+          stops future reading but does not erase that retained Rulebook
+          content. The separately configured outreach-reply feature saves
+          matched replies as described in Section 2.9; that CRM copy remains
+          after you disconnect Google until you request its deletion or delete
+          your account.
         </p>
 
         <h3>3.6 Amazon credentials and information</h3>
@@ -605,21 +617,23 @@ const PrivacyPolicyPage = () => {
           <li>
             <strong>Google Workspace connection:</strong> encrypted credentials
             and selected-file references are kept until you disconnect Google or
-            delete your account. On-demand document and spreadsheet operations
-            process content without storing those values as records. The Gmail
-            search/open reader processes selected message bodies without saving
-            them as records. Qualifying Connected Shadow Inbox threads from past
-            use remain retained as Rulebook raw material; disconnecting Google
-            stops future access but does not itself delete that retained content.
+            delete your account. A Drive file you explicitly copy into Matrx
+            Files remains there until you delete the copy or your account.
+            On-demand document and spreadsheet operations process content
+            without storing those values as records. The Gmail search/open
+            reader processes selected message bodies without saving them as
+            records. Qualifying Connected Shadow Inbox threads from past use
+            remain retained as Rulebook raw material; disconnecting Google stops
+            future access but does not itself delete that retained content.
             Matched outreach replies saved as CRM interactions are retained
             until you request their deletion or delete your account;
-            disconnecting Google stops
-            future access but does not itself delete those existing CRM
-            interactions. Deleting a CRM copy from the active database does not
-            immediately remove earlier backup copies. Our daily S3 database
-            backups have a 365-day expiration rule. The separate point-in-time
-            recovery window was about seven days when last checked in September
-            2026; other copies may have different retention.
+            disconnecting Google stops future access but does not itself delete
+            those existing CRM interactions. Deleting a CRM copy from the active
+            database does not immediately remove earlier backup copies. Our
+            daily S3 database backups have a 365-day expiration rule. The
+            separate point-in-time recovery window was about seven days when
+            last checked in September 2026; other copies may have different
+            retention.
           </li>
           <li>
             <strong>Amazon Selling Partner connection:</strong> encrypted
