@@ -220,6 +220,7 @@ import { podcastManifest } from "./podcast.manifest";
 import { podcastStudioManifest } from "./podcast-studio.manifest";
 import { podcastRunManifest } from "./podcast-run.manifest";
 import { scopesManifest } from "./scopes.manifest";
+import { scopeDetailManifest } from "./scope-detail.manifest";
 import { contextItemsManifest } from "./context-items.manifest";
 import { chatVoiceManifest } from "@ai-matrx/chat/surfaces/manifests/chat-voice.manifest";
 import { staffManifest } from "./staff.manifest";
@@ -490,6 +491,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   podcastStudioManifest,
   podcastRunManifest,
   scopesManifest,
+  scopeDetailManifest,
   contextItemsManifest,
   chatVoiceManifest,
   staffManifest,

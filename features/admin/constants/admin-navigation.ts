@@ -603,6 +603,11 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         iconName: "DollarSign",
         destinations: [destination("/administration/billing/spend")],
       },
+      {
+        name: "Plans",
+        iconName: "Tags",
+        destinations: [destination("/administration/billing/plans")],
+      },
     ],
   },
   {

@@ -55,13 +55,14 @@ function availabilityBadge(
  * Compact, touch-safe links for a module's real destinations and optional live
  * metrics. Callers own reads, access filtering, count semantics, and routes.
  *
- * The pills FLOW and wrap at every width, 6px apart (each pill's 3px
- * half-gap). Each hugs its label and never grows past its row: a label wider
- * than the space truncates inside the pill, never past the page gutter.
- * History (2026-10-04, /education/overview at 375px): the phone layout was a
- * two-row grid — first every pill stretched to its column (label pushed left),
- * then, hugging, a long pill ran off the right edge. The design-system pill
- * guard flags a stretched pill and a pill that overflows its container.
+ * Pills hug their labels, 6px apart (each pill's 3px half-gap). Below `sm`
+ * they sit in ONE sideways-scrolling strip (the iOS pattern: snap, a fade at
+ * the trailing edge so it reads as scrollable); from `sm` up they wrap. A
+ * label wider than the space truncates inside its pill, never past the gutter.
+ * History (2026-10-04, /education/overview at 375px): a two-row grid stretched
+ * every pill to its column; wrapping instead filled the first phone screen
+ * with 21 pills. The design-system pill guard flags a stretched pill and a pill
+ * past its row or the screen — a sideways strip like this one is exempt.
  */
 export function MetricNavigation({
   label,
@@ -72,7 +73,11 @@ export function MetricNavigation({
     <section
       aria-label={label}
       className={cn(
-        "flex max-w-full flex-wrap gap-1.5",
+        // Phone: ONE sideways strip (snap, trailing fade, room to scroll the
+        // last pill clear of the fade). sm and up: the pills wrap.
+        "flex max-w-full gap-1.5",
+        "scrollbar-none snap-x snap-proximity flex-nowrap overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]",
+        "sm:snap-none sm:flex-wrap sm:overflow-visible sm:pr-0 sm:[mask-image:none]",
         className,
       )}
     >
@@ -99,7 +104,7 @@ export function MetricNavigation({
             data-surface-value={
               item.value !== undefined ? `${item.key}_count` : undefined
             }
-            className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 min-w-0 max-w-full shrink-0 snap-start items-center gap-2 rounded-full sm:shrink border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span
               className={cn(

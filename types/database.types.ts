@@ -6846,6 +6846,7 @@ export type Database = {
         }
         Returns: Json
       }
+      plan_set: { Args: { p_fields: Json; p_plan_key: string }; Returns: Json }
       plan_status: { Args: { p_org: string }; Returns: Json }
       public_plans: { Args: never; Returns: Json }
       release_checkout: {
@@ -44169,6 +44170,7 @@ export type Database = {
         Returns: Json
       }
       envelope_document_ids: { Args: { p_envelope_id: string }; Returns: Json }
+      envelope_sender: { Args: { p_envelope_id: string }; Returns: Json }
       generate_certificate: { Args: { p_envelope_id: string }; Returns: Json }
       may_send_in: { Args: { p_organization_id: string }; Returns: boolean }
       org_member_by_email: {
@@ -44179,6 +44181,7 @@ export type Database = {
         Args: { p_secret: string }
         Returns: string
       }
+      outsider_token_sender: { Args: { p_secret: string }; Returns: Json }
       record_signed_copy: {
         Args: { p_document_id: string; p_file_id: string }
         Returns: boolean

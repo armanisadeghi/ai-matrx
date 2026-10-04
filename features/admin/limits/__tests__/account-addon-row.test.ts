@@ -17,6 +17,9 @@ const plan: Plan = {
   per_seat: false,
   is_default: false,
   listed_on_pricing: true,
+  tagline: null,
+  badge: null,
+  min_seats: null,
 };
 const addon: AccountAddon = {
   id: "addon-1",

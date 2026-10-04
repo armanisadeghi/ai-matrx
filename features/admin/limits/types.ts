@@ -67,7 +67,27 @@ export interface Plan {
   per_seat: boolean;
   is_default: boolean;
   listed_on_pricing: boolean;
+  tagline: string | null;
+  badge: string | null;
+  min_seats: number | null;
 }
+
+/** The `billing.plan` columns `billing.plan_set` writes — the plan editor's fields. */
+export type PlanFields = Partial<
+  Pick<
+    Plan,
+    | "name"
+    | "tagline"
+    | "badge"
+    | "monthly_cents"
+    | "annual_cents"
+    | "per_seat"
+    | "min_seats"
+    | "listed_on_pricing"
+    | "rank"
+    | "active"
+  >
+>;
 
 /**
  * The audience groups the plan matrix and the plan pickers render, in order.
@@ -179,8 +199,10 @@ export function limitToStored(
   raw: string,
 ): number | null | undefined {
   const trimmed = raw.trim();
-  if (trimmed === "") return null;
-  const parsed = Number(trimmed);
+  // Blank or the word "unlimited" both store NULL; the word is how a window
+  // with no row yet is created unlimited (blank over no row writes nothing).
+  if (trimmed === "" || /^unlimited$/i.test(trimmed)) return null;
+  const parsed = Number(trimmed.replace(/,/g, ""));
   if (!Number.isFinite(parsed) || parsed < 0) return undefined;
   return isMicroUsd(capability)
     ? Math.round(parsed * MICRO_USD_PER_USD)

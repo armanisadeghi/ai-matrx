@@ -86,3 +86,80 @@ remountType(
     expectRemountSafe({ ...r, keptAfterRemount: r.keptAfterWake }, r.keptAfterWake, [/^assoc_for_entity$/, /^assoc_for_sources$/]);
   },
 );
+
+// ─── Scope ──────────────────────────────────────────────────────────────────
+import { scopesActions } from "@/features/scopes/redux/scopesSlice";
+import type { ScopeTreeResponse } from "@/features/scopes/types";
+
+const SCOPE_ID = "e8b3a6d1-47c2-4f09-9a15-2c6d8e0b7f43";
+const SCOPE_TYPE_ID = "a1d9c4b7-3e58-4b62-8f10-6c2e9d7a5b84";
+const SCOPE_NAME = "Rivera Painting";
+const STAMP = "2026-09-27T15:30:00.000Z";
+const scopeTree: ScopeTreeResponse = {
+  fetched_at: STAMP,
+  organizations: [
+    {
+      id: ORGANIZATION.id,
+      name: ORGANIZATION.name,
+      abbreviation: "HP",
+      slug: "harborview-properties",
+      role: "owner",
+      projects: [],
+      tasks: [],
+      scope_types: [
+        {
+          id: SCOPE_TYPE_ID,
+          organization_id: ORGANIZATION.id,
+          label_singular: "Vendor",
+          label_plural: "Vendors",
+          icon: "Tag",
+          color: "blue",
+          max_assignments_per_entity: null,
+          sort_order: 0,
+          parent_type_id: null,
+          default_variable_keys: [],
+          slug: "vendor",
+          description: "",
+          created_at: STAMP,
+          updated_at: STAMP,
+          scopes: [
+            {
+              id: SCOPE_ID,
+              scope_type_id: SCOPE_TYPE_ID,
+              organization_id: ORGANIZATION.id,
+              name: SCOPE_NAME,
+              description: "Interior painting for unit turnovers.",
+              parent_scope_id: null,
+              settings: {},
+              slug: "rivera-painting",
+              sort_order: 0,
+              created_by: PERSON.id,
+              created_at: STAMP,
+              updated_at: STAMP,
+            },
+          ],
+        },
+      ],
+    },
+  ] as unknown as ScopeTreeResponse["organizations"],
+};
+
+// Break: the scope tile re-reads the scope tree (or its values, or its organization) on wake /
+// remount instead of keeping them by scope id, or drops to its spinner while it does.
+remountType(
+  "scope",
+  () =>
+    runCycle(type("scope"), { kind: "entity", entity: "scope", id: SCOPE_ID }, {
+      title: SCOPE_NAME,
+      prepare: () => {
+        seedRpc("context_values", []);
+        seedRpc("context_items", []);
+      },
+      prepareStore: (store) => {
+        store.dispatch(scopesActions.treeFetchFulfilled(scopeTree));
+      },
+      loadMs: 1500,
+      kept: (tile) => ({ scope: shows(tile, SCOPE_NAME), loading: skeleton(tile) }),
+    }),
+  (r) => expectRemountSafe(r, { scope: true, loading: false }, [/^context_/, /^custom\.context_/]),
+);

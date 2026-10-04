@@ -24,6 +24,7 @@ import type {
   OrganizationOption,
   OrgPlanAssignment,
   Plan,
+  PlanFields,
   PlanLimit,
 } from "./types";
 
@@ -125,12 +126,26 @@ export async function fetchPlans(): Promise<Plan[]> {
     // SLUG, and `plan_limit_set(p_plan_id)` still takes it, so this panel keys on
     // `plan_key` — never the uuid.
     .select(
-      "plan_key, name, audience, rank, tier, active, monthly_cents, annual_cents, per_seat, is_default, listed_on_pricing",
+      "plan_key, name, audience, rank, tier, active, monthly_cents, annual_cents, per_seat, is_default, listed_on_pricing, tagline, badge, min_seats",
     )
     .is("deleted_at", null)
     .order("rank");
   if (error) throw error;
   return (data ?? []) as Plan[];
+}
+
+/**
+ * Write a plan's own columns through `billing.plan_set` (super-admin) — the one
+ * write path for name, prices, tagline, badge, seats, order and listing. Only
+ * the keys passed change; `null` prices together mean custom pricing.
+ */
+export async function setPlanFields(planKey: string, fields: PlanFields): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.schema("billing").rpc("plan_set", {
+    p_plan_key: planKey,
+    p_fields: fields,
+  });
+  if (error) throw error;
 }
 
 export async function fetchCapabilities(): Promise<Capability[]> {

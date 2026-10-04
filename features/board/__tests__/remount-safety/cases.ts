@@ -61,6 +61,8 @@ export const REMOUNT_LEDGER: Record<string, RemountStatus> = {
   "fc_set:quiet": { status: "failing", owner: "board-items lane (education)", why: "the deck page keeps its deck and cards in component state, so a wake re-reads the deck, its access and its members (education.fc_set, get_resource_access, assoc_members_visible); fix = a keyed store like the task and project tiles. The type does not sleep." },
   "study-kit": { status: "failing", owner: "board-items lane (education)", why: "KitHub loads its kit in component state, so a wake re-reads the kit and its aids (assoc_for_entity twice); fix = a keyed store like the task and project tiles. The type does not sleep." },
   "study-kit:quiet": { status: "failing", owner: "board-items lane (education)", why: "KitHub loads its kit in component state, so a wake re-reads the kit and its aids (assoc_for_entity twice); fix = a keyed store like the task and project tiles. The type does not sleep." },
+  "scope": { status: "passing" },
+  "scope:quiet": { status: "passing" },
   "meeting_part": { status: "passing" },
   "meeting_part:quiet": { status: "passing" },
   "web-page": { status: "passing" },

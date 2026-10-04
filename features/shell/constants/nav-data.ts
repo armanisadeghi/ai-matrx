@@ -1367,6 +1367,7 @@ export const primaryNavItems: ShellNavItem[] = [
           { label: "Project", href: "/board?add=project", iconName: "FolderKanban", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Flashcard deck", href: "/board?add=fc_set", iconName: "Layers", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Study kit", href: "/board?add=study-kit", iconName: "NotebookTabs", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Scope", href: "/board?add=scope", iconName: "Tag", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Web page", href: "/board?add=web-page", iconName: "Globe", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Image", href: "/board?add=image", iconName: "Image", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Label", href: "/board?add=label", iconName: "Type", group: "Add to your board", actionItem: true, guestHidden: true },

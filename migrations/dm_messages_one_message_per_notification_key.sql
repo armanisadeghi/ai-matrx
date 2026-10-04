@@ -1,4 +1,4 @@
--- draft: owner-session(board+notify) — applied to the clone; production apply awaits Arman together with dm_soft_expiry_and_dm_pairs_with_email.sql (an index on communication.dm_messages)
+-- chair-step: Arman approved this production apply in chat on 2026-10-04 (an index on communication.dm_messages). Its one DROP removes only a cancelled, INVALID build of this same index so the CONCURRENTLY build can be re-run.
 --
 -- ONE NOTICE, ONE MESSAGE — ENFORCED BY THE DATABASE, NOT BY A LOOKUP.
 --

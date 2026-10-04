@@ -29,7 +29,8 @@
 //     knob via `pointsToUsdLabel`). Conversions live in `types.ts`, once.
 //   * A capability with `enforced = false` is TRACKING ONLY and says so in
 //     words wherever its numbers appear.
-//   * Name and price are read-only here — they are `billing.plan` columns.
+//   * Name and price are read-only here — they are `billing.plan` columns,
+//     edited on Billing › Plans & pricing (the price links there).
 //   * THE 0 TRAP: saving 0 asks first and names the consequence ("0 means no AI
 //     points at all for Pro — every account on it is blocked.").
 //   * ENTERPRISE HAS NO CELLS. It is never unlimited and has no plan numbers:
@@ -130,7 +131,9 @@ function valueHint(
 ): string | null {
   const trimmed = raw.trim();
   if (trimmed === "") return null;
-  if (limitToStored(capability, trimmed) === undefined) return "not a number";
+  const stored = limitToStored(capability, trimmed);
+  if (stored === undefined) return "not a number";
+  if (stored === null) return "unlimited";
   if (Number(trimmed) === 0) return "not included";
   if (isPoints(capability)) return pointsToUsdLabel(trimmed, period, rate);
   if (BYTES_CAPABILITIES.has(capability)) return formatFileSize(Number(trimmed));
@@ -172,7 +175,7 @@ function LimitCell({
     }
     const stored = limitToStored(column.capability, draft);
     if (stored === undefined) {
-      toast.error("Enter a number, or leave it blank for unlimited");
+      toast.error("Enter a number, or \"unlimited\"");
       return;
     }
     const zero = zeroConfirmation(plan.name, column.capability, stored, existing?.limit_value);
@@ -397,7 +400,12 @@ function GroupRows({
                 : undefined
             }
           >
-            {planPriceLabel(plan)}
+            <Link
+              href="/administration/billing/plans"
+              className="underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {planPriceLabel(plan)}
+            </Link>
           </td>
           {isEnterpriseAudience(plan.audience) ? (
             <td colSpan={columns.length} className="px-3 py-1.5 align-middle text-xs text-muted-foreground">

@@ -22,6 +22,7 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
+import { ScopeDetailSurface } from "./ScopeDetailSurface";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -231,6 +232,13 @@ export function ScopeDetailEditor({
 
   return (
     <div className="space-y-6">
+      <ScopeDetailSurface
+        scope={scope}
+        scopeType={scopeType}
+        orgId={orgId}
+        rows={rows}
+        readError={readError ? String(readError) : null}
+      />
       <Card className="p-6">
         <div className="flex items-start gap-4">
           <div

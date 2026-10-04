@@ -11,6 +11,9 @@ function plan(partial: Partial<Plan> & Pick<Plan, "plan_key" | "audience" | "ran
     per_seat: false,
     is_default: false,
     listed_on_pricing: true,
+    tagline: null,
+    badge: null,
+    min_seats: null,
     ...partial,
   };
 }

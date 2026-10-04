@@ -296,6 +296,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/billing/spend",
         isNew: true,
       },
+      {
+        title: "Plans & Pricing",
+        description:
+          "Every plan's name, prices, tagline, badge and listing, plus its allowances — what the pricing page and upgrade dialogs show.",
+        iconName: "Tags",
+        link: "/administration/billing/plans",
+        isNew: true,
+      },
     ],
   },
   {

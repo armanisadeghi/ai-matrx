@@ -55,6 +55,8 @@ export function parseCustomLimit(raw: string): number | null | undefined {
  * Saving 0 on a plan cell names its consequence first (THE 0 TRAP). Returns
  * null when the value is not a fresh 0.
  */
+const ZERO_IS_A_VALUE = new Set(["print.markup_percent"]);
+
 export function zeroConfirmation(
   planName: string,
   capability: string,
@@ -62,6 +64,8 @@ export function zeroConfirmation(
   savedStored: number | null | undefined,
 ): { title: string; description: string } | null {
   if (stored !== 0 || savedStored === 0) return null;
+  // A rate where 0 is a value, not an exclusion (0% markup is a discount).
+  if (ZERO_IS_A_VALUE.has(capability)) return null;
   if (capability === POINTS_CAPABILITY) {
     return {
       title: `Set ${planName} to 0 AI points?`,
