@@ -67,6 +67,14 @@
 - No "Replaces…" line on samples (done); classic-view notice hidden on the agents sample (done).
 - Stay in lane: never raise other lanes' problems (security etc.) to him until this UI is perfect.
 
+## DONE 2026-10-04
+- Shared controls live: `@ai-matrx/design-system/controls` (≥0.61.14) — Button (no size, `collapse="container"`, `tone`), Field/SearchField, Select, SegmentedControl, Tabs, Badge, Switch, RowGroup/SettingRow, EmptyState, RegionSkeleton, delete tiers. uc-* deleted; `pnpm check:one-control` + ESLint enforce.
+- Glyph trim (all lucide icons measured) fixes off-centre pills; pill guard flags stretched/overflowing/long pills; Badge clamps.
+- Floating clearance is a shell primitive (`--matrx-floating-clearance`), guard + `pnpm check:floating-clearance`.
+- List shell: no overrides of the canonical table (ESLint `matrx/no-canonical-component-override` + findings); always two header rows, sized by its pane (`@container/list`); lanes fold to a select, never clip; one Actions column.
+- Kit sample = real KitHub + 4 listed changes. Flashcards "Also made from" = LineageArtifactList on ItemRow. MetricNavigation: one sideways row on phones.
+- OPEN: owner decision on rebuilding the table playground (design-system dev app, port 3026) controls onto the shared controls + the 12 flaws reported in chat 2026-10-04 (grouping per-page only, total misaligned, etc.). Hand-built lane tabs/filters/Education pill still carry `matrx-glyph-trim` by hand until rebuilt on controls. Research topics: saved-view "+" scrolls out of the strip at narrow panes. Education header route-mode nav off-centre at 768.
+
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
   - DONE 2026-10-04: the system is in `@ai-matrx/design-system/controls`, locked in `matrx-tap-lock`; `ControlScope` stands in for the tap tokens' 28/34 flip until it lands app-wide;
