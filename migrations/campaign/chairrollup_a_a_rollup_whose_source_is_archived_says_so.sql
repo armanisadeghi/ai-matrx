@@ -2,7 +2,7 @@
 --   It ADDS two functions — custom._derived_source_archived(uuid, uuid, jsonb) (a STABLE helper,
 --   EXECUTE revoked from public/anon/authenticated, called only from the store's own bodies) and
 --   the read door custom.field_source_archived(uuid, uuid) (SECURITY DEFINER, EXECUTE to
---   authenticated) — and REPLACES two bodies, custom.rollup_value and custom.lookup_value. No table,
+--   authenticated, one platform.client_callable_door row) — and REPLACES two bodies, custom.rollup_value and custom.lookup_value. No table,
 --   column, trigger, policy or stored row is touched. Locks: pg_proc row locks only.
 --   Inverse: migrations/inverse/chairrollup_a_a_rollup_whose_source_is_archived_says_so_down.sql
 --
@@ -181,18 +181,43 @@ begin
     return null;
   end if;
   v_out := custom._derived_source_archived(p_organization_id, v_table, v_field);
-  if v_out is not null and (v_out ->> 'table_id') is distinct from v_table::text then
-    begin
-      perform custom.assert_may_know_table(p_organization_id, (v_out ->> 'table_id')::uuid, 'custom.field_source_archived');
-    exception when insufficient_privilege then
-      v_out := v_out - 'label' - 'table' - 'field_id';
-    end;
+  -- A column on a Table this reader may not know is never named (custom._may_know_table, as
+  -- custom.reverse_columns asks it): the state stays, its names go.
+  if v_out is not null and (v_out ->> 'table_id') is distinct from v_table::text
+     and not coalesce(custom._may_know_table(p_organization_id, (v_out ->> 'table_id')::uuid), false) then
+    v_out := v_out - 'label' - 'table' - 'field_id';
   end if;
   return v_out;
 end;
 $function$;
 
 revoke all on function custom.field_source_archived(uuid, uuid) from public, anon;
+
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason,
+   signed_in_callers, anonymous_callers, non_client_lane, identity_argtypes, argument_rules)
+values
+  ('custom', 'field_source_archived', 'p_organization_id uuid, p_field_id uuid',
+   'migrations/campaign/chairrollup_a_a_rollup_whose_source_is_archived_says_so.sql (lane CHAIR-ROLLUP-HONEST)',
+   'custom.assert_client_may_reach decides the organization wall and custom.assert_may_know_table decides the caller may know the Field''s Table before anything else is read. An archived column on another Table is named only when custom._may_know_table says the caller may know that Table. It reads Field and Table definitions only — no record — and writes nothing.',
+   true, false, null, '{2950,2950}',
+   jsonb_build_object(
+     'version', 1,
+     'declared_by', 'chairrollup_a_a_rollup_whose_source_is_archived_says_so.sql',
+     'declared_at', '2026-10-03 lane CHAIR-ROLLUP-HONEST, read from this body',
+     'arguments', jsonb_build_object(
+       'p_organization_id', jsonb_build_object('type', 'uuid', 'position', 1, 'entity', 'organization',
+         'check', 'this body decides it with custom.assert_client_may_reach(arg1) — the organization wall — a non-member is refused before anything is read, and that call stands before every other use of this argument in the body.',
+         'foreign', jsonb_build_object('bounded', true, 'sqlstate', '42501', 'same_as_invented', true,
+           'note', 'custom.assert_client_may_reach decides it first; every Field and Table is read in this organization only.'),
+         'verified', '2026-10-03 lane CHAIR-ROLLUP-HONEST — read from this body'),
+       'p_field_id', jsonb_build_object('type', 'uuid', 'position', 2, 'entity', 'custom_record',
+         'check', 'read only as a live Field of p_organization_id; custom.assert_may_know_table decides the caller may know its Table before its sources are read.',
+         'foreign', jsonb_build_object('bounded', true, 'sqlstate', '42501', 'same_as_invented', true,
+           'note', 'A Field of another organization, or none, answers null without reading anything else.'),
+         'verified', '2026-10-03 lane CHAIR-ROLLUP-HONEST — read from this body'))))
+on conflict do nothing;
+
 grant execute on function custom.field_source_archived(uuid, uuid) to authenticated;
 
 CREATE OR REPLACE FUNCTION custom.rollup_value(p_organization_id uuid, p_record_id uuid, p_field_data jsonb)
