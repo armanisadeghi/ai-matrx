@@ -554,7 +554,6 @@ function CheckBoard({
         stickyHeader
         density="condensed"
         pageSize={100}
-        localPagination={{ mode: "progressive" }}
         defaultSort={{ id: "open", direction: "desc" }}
         onRowOpen={onOpen}
         mobileCards={(r, _index, controls) => (
@@ -934,7 +933,6 @@ function CheckDetail({
             stickyHeader
             density="condensed"
             pageSize={100}
-            localPagination={{ mode: "progressive" }}
             defaultSort={{ id: "first-seen", direction: "asc" }}
             coverage={{ noun: "finding", answeredBy: "client", total: items.status === "ready" ? data.length : undefined }}
             mobileCards={(item, _index, controls) => (
