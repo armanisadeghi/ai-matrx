@@ -147,9 +147,6 @@ export default function RuleFields({
             { value: "drop", label: "Dropped" },
           ]}
         />
-        {rule.processor ? (
-          <p className="text-xs text-muted-foreground">Processor: {rule.processor}</p>
-        ) : null}
       </Section>
 
       {mode === "drop" ? (
@@ -464,7 +461,9 @@ export default function RuleFields({
         </Section>
       ) : null}
 
-      <Section title="Rule">
+      <details className="group text-xs">
+        <summary className="cursor-pointer select-none text-muted-foreground">Advanced</summary>
+        <div className="mt-1.5">
         <Textarea
           value={rawDraft ?? JSON.stringify(rule, null, 2)}
           rows={6}
@@ -487,7 +486,8 @@ export default function RuleFields({
             if (!rawError) setRawDraft(null);
           }}
         />
-      </Section>
+        </div>
+      </details>
     </div>
   );
 }

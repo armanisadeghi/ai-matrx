@@ -34,6 +34,9 @@ import {
   describeOff,
   describeUnset,
   describeValue,
+  plainRule,
+  plainSetting,
+  plainWhy,
   previewValues,
   type WireOutcome,
 } from "../model";
@@ -55,6 +58,8 @@ export type EditorTarget = {
   initialRule?: ControlRule;
   /** Member models with their own cell (shown, each openable). */
   overrides: { offering: TranslationOffering; cell: TranslationCellRow }[];
+  /** No rule at any layer: the editor opens empty and says the engine is guessing. */
+  missing?: boolean;
 };
 
 const TONE_CLASS: Record<WireOutcome["tone"], string> = {
@@ -127,12 +132,13 @@ export default function TranslationCellEditor({
   onOpenOverride: (o: { offering: TranslationOffering; cell: TranslationCellRow }) => void;
 }) {
   const dispatch = useAppDispatch();
-  const original: ControlRule = target.cell?.rule ?? target.initialRule ?? {};
+  const original: ControlRule = target.cell?.rule ?? (target.missing ? {} : (target.initialRule ?? {}));
   const [draft, setDraft] = useState<ControlRule>(original);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [confirmNoReach, setConfirmNoReach] = useState(false);
 
   const edited = stable(draft) !== stable(original);
   // Shape problems quarantine the rule server-side, so they hold the save;
@@ -162,6 +168,7 @@ export default function TranslationCellEditor({
     } finally {
       setBusy(false);
       setConfirmApprove(false);
+      setConfirmNoReach(false);
     }
   };
 
@@ -183,7 +190,8 @@ export default function TranslationCellEditor({
   };
 
   const requestApprove = () => {
-    if (reach > 1) setConfirmApprove(true);
+    if (reach === 0) setConfirmNoReach(true);
+    else if (reach > 1) setConfirmApprove(true);
     else void save();
   };
 
@@ -195,7 +203,7 @@ export default function TranslationCellEditor({
       <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
         <SheetHeader className="border-b border-border px-4 py-3">
           <SheetTitle className="flex min-w-0 items-center gap-2 text-base">
-            <span className="truncate font-mono">{target.settingKey}</span>
+            <span className="truncate">{plainSetting(target.settingKey)}</span>
             <span className="truncate text-sm font-normal text-muted-foreground">{target.ownerLabel}</span>
           </SheetTitle>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -214,6 +222,18 @@ export default function TranslationCellEditor({
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-3">
+          {!cell && target.missing && !edited ? (
+            <p className="rounded-md border border-dashed border-amber-500/50 bg-amber-500/[0.06] px-2.5 py-2 text-sm">
+              No rule yet — the engine is guessing
+            </p>
+          ) : (
+            <p className="text-sm font-medium">{plainRule(draft, target.settingKey, setting)}</p>
+          )}
+          {cell?.rationale ? (
+            <p className="line-clamp-3 text-xs text-muted-foreground" title={plainWhy(cell.rationale)}>
+              {plainWhy(cell.rationale)}
+            </p>
+          ) : null}
           <WirePreview rule={draft} setting={setting} settingKey={target.settingKey} />
 
           {cell?.conflict?.sources?.length ? (
@@ -225,12 +245,6 @@ export default function TranslationCellEditor({
                 </div>
               ))}
             </div>
-          ) : null}
-
-          {cell?.rationale ? (
-            <p className="line-clamp-3 text-xs text-muted-foreground" title={cell.rationale}>
-              {cell.rationale}
-            </p>
           ) : null}
 
           <RuleFields rule={draft} setting={setting} onChange={setDraft} />
@@ -330,6 +344,19 @@ export default function TranslationCellEditor({
             </ul>
           }
           confirmLabel={`Approve ${reach} models`}
+          busy={busy}
+          onConfirm={save}
+        />
+        <ConfirmDialog
+          open={confirmNoReach}
+          onOpenChange={setConfirmNoReach}
+          title="Reaches no models"
+          description={
+            target.overrides.length > 0
+              ? `Every model here has its own rule, so this changes nothing today. Save it as the fallback?`
+              : "No model uses this rule today. Save it anyway?"
+          }
+          confirmLabel="Save anyway"
           busy={busy}
           onConfirm={save}
         />

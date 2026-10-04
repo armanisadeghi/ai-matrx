@@ -134,7 +134,7 @@ const OFF_WORDS = new Set(["none", "off", "never"]);
 
 function show(v: unknown): string {
   if (typeof v === "string") return v;
-  return JSON.stringify(v);
+  return plainValue(v);
 }
 
 function sentKey(rule: ControlRule, key: string): string {
@@ -145,7 +145,7 @@ function sentKey(rule: ControlRule, key: string): string {
 function ruleWide(rule: ControlRule, key: string): WireOutcome | null {
   if (rule.drop === true) return { text: "Dropped", tone: "drop" };
   if (rule.supported === false) return { text: "Converts via family", tone: "computed" };
-  if (rule.processor) return { text: `Processor: ${rule.processor}`, tone: "server" };
+  if (rule.processor) return { text: "Shaped by the server", tone: "server" };
   if (rule.const !== undefined)
     return { text: `${sentKey(rule, key)}${show(rule.const)} (fixed)`, tone: "send" };
   return null;
@@ -541,4 +541,203 @@ export function previewValues(setting: TranslationSetting | undefined, rule: Con
   const out: unknown[] = [...base];
   for (const k of extra) if (!out.map(String).includes(k)) out.push(k);
   return out.filter((v) => v !== "auto");
+}
+
+// ── Plain words (the owner reads these; the raw rule stays behind "Advanced") ──
+
+/** "reasoning_effort" → "Reasoning effort". */
+export function plainSetting(key: string): string {
+  const words = key.replace(/[._]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** A value as words: numbers grouped, booleans on/off, `{type: "disabled"}` → "disabled". */
+export function plainValue(v: unknown): string {
+  if (v === null || v === undefined) return "nothing";
+  if (typeof v === "number") return v.toLocaleString("en-US");
+  if (typeof v === "boolean") return v ? "on" : "off";
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return v.map(plainValue).join(", ");
+  if (typeof v === "object") {
+    const entries = Object.entries(v as Record<string, unknown>);
+    if (entries.length === 1) {
+      const [k, inner] = entries[0];
+      return k === "type" || k === "mode" ? plainValue(inner) : `${plainSetting(k).toLowerCase()} ${plainValue(inner)}`;
+    }
+    return entries.map(([k, inner]) => `${plainSetting(k).toLowerCase()} ${plainValue(inner)}`).join(", ");
+  }
+  return String(v);
+}
+
+function sentAs(rule: ControlRule, key: string): string {
+  const target = rule.provider_key && rule.provider_key !== key ? rule.provider_key : key;
+  const last = target.split(".").pop() ?? target;
+  return plainSetting(last).toLowerCase();
+}
+
+/**
+ * One short line saying what a rule does, in words:
+ * "Off → sends thinking disabled · 5,000–11,000 → medium".
+ */
+export function plainRule(rule: ControlRule | null | undefined, key: string, setting?: TranslationSetting): string {
+  if (!rule || Object.keys(rule).length === 0) return "No rule — the engine guesses";
+  if (rule.drop === true) return "Not sent";
+  if (rule.supported === false) return "Not sent — a related setting carries it";
+  if (rule.const !== undefined) return `Always sends ${sentAs(rule, key)} ${plainValue(rule.const)}`;
+  const parts: string[] = [];
+  const off = rule.off;
+  if (off && typeof off === "object") {
+    if ("send" in off) parts.push(`Off → sends ${sentAs(rule, key)} ${plainValue(off.send)}`);
+    else if ("floor" in off && off.floor) parts.push("Off → its lowest level");
+    else if ("omit" in off && off.omit) parts.push("Off → nothing sent");
+  } else {
+    const offValue = offValueOf(setting);
+    if (offValue !== undefined) {
+      const o = describeValue(rule, key, offValue);
+      if (o.tone === "nothing") parts.push("Off → nothing sent");
+    }
+  }
+  if (rule.send_when_unset && rule.default !== undefined) parts.push(`Not set → ${plainValue(rule.default)}`);
+  const ladder = Array.isArray(rule.from_number) ? rule.from_number : [];
+  let lower: number | null = null;
+  for (const step of ladder) {
+    const to = step.to === null ? "not sent" : plainValue(step.to);
+    const range =
+      step.lte === null
+        ? `over ${plainValue(lower ?? 0)}`
+        : lower === null
+          ? `up to ${plainValue(step.lte)}`
+          : `${plainValue(lower + 1)}–${plainValue(step.lte)}`;
+    if (step.lte !== null) lower = step.lte;
+    parts.push(`${range} → ${to}`);
+  }
+  const map = rule.value_map && typeof rule.value_map === "object" ? rule.value_map : null;
+  if (map) {
+    const changed = Object.entries(map).filter(([k, v]) => k !== "auto" && v !== null && String(v) !== k);
+    for (const [k, v] of changed.slice(0, 3)) parts.push(`${k} → ${plainValue(v)}`);
+    if (changed.length > 3) parts.push(`${changed.length - 3} more`);
+  }
+  if (rule.clamp && (rule.clamp.min != null || rule.clamp.max != null)) {
+    if (rule.clamp.max != null) parts.push(`capped at ${plainValue(rule.clamp.max)}`);
+    else parts.push(`at least ${plainValue(rule.clamp.min)}`);
+  }
+  if (parts.length === 0) {
+    return rule.provider_key && rule.provider_key !== key
+      ? `Sent as ${sentAs(rule, key)}, unchanged`
+      : "Sent unchanged";
+  }
+  return parts.join(" · ");
+}
+
+/** A rationale without build codes ("C7: …", "(K6)") — the owner never sees those. */
+export function plainWhy(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/^\s*[A-Z]{1,2}\d+[a-z]?\s*:\s*/, "")
+    .replace(/\s*\((?:[A-Z]{1,2}\d+[a-z]?[,\s]*)+\)/g, "")
+    .replace(/\b[A-Z]{1,2}\d+[a-z]?\s*:\s*/g, "")
+    .trim();
+}
+
+// ── The "Needs you" queue: one decision per row ────────────────────────────
+
+export type QueueKind = "proposed" | "conflict" | "rejected" | "missing";
+
+export type QueueItem = {
+  id: string;
+  kind: QueueKind;
+  key: string;
+  family: string;
+  setting: TranslationSetting | undefined;
+  /** Who it applies to: a settings profile, an API, or one model. */
+  groupLabel: string;
+  groupKind: CellLayer;
+  /** The cell to decide (null for a missing rule). */
+  cell: TranslationCellRow | null;
+  /** The rule the next layer down would use instead (null = the engine computes). */
+  without: TranslationCellRow | null;
+  /** Models an approval reaches (for a missing rule: the models with no rule). */
+  reach: TranslationOffering[];
+  /** The grid cell it came from, for opening the editor. */
+  gridCell: GridCell | null;
+};
+
+type CellLayer = TranslationCellRow["layer"];
+
+const KIND_ORDER: Record<QueueKind, number> = { rejected: 0, conflict: 1, proposed: 2, missing: 3 };
+
+export function buildQueue(bundle: TranslationBundle, model: GridModel): QueueItem[] {
+  const profileName = new Map(bundle.profiles.map((p) => [p.id, p.name]));
+  const apiName = new Map(bundle.apis.map((a) => [a.id, apiLabel(a)]));
+  const offeringById = new Map(bundle.offerings.map((o) => [o.id, o]));
+  const cellAt = new Map<string, TranslationCellRow>();
+  for (const c of bundle.cells) cellAt.set(`${c.layer}:${c.layer_owner_id}:${c.setting_key}`, c);
+  const reachOf = new Map<string, TranslationOffering[]>();
+  for (const r of bundle.compiled) {
+    const o = offeringById.get(r.offering_id);
+    if (!o) continue;
+    const list = reachOf.get(r.cell_id) ?? [];
+    list.push(o);
+    reachOf.set(r.cell_id, list);
+  }
+  const profileApi = new Map(bundle.profiles.map((p) => [p.id, p.api_id]));
+  const items: QueueItem[] = [];
+
+  for (const c of bundle.cells) {
+    if (!cellNeedsYou(c)) continue;
+    let groupLabel = c.layer_owner_id;
+    let without: TranslationCellRow | null = null;
+    if (c.layer === "profile") {
+      groupLabel = profileName.get(c.layer_owner_id) ?? groupLabel;
+      const api = profileApi.get(c.layer_owner_id);
+      without = api ? (cellAt.get(`api:${api}:${c.setting_key}`) ?? null) : null;
+    } else if (c.layer === "api") {
+      groupLabel = apiName.get(c.layer_owner_id) ?? groupLabel;
+    } else {
+      const o = offeringById.get(c.layer_owner_id);
+      groupLabel = o?.model_name ?? groupLabel;
+      if (o?.setting_profile_id) without = cellAt.get(`profile:${o.setting_profile_id}:${c.setting_key}`) ?? null;
+      if (!without && o) without = cellAt.get(`api:${o.api_id}:${c.setting_key}`) ?? null;
+    }
+    const setting = model.settingByKey.get(c.setting_key);
+    items.push({
+      id: c.id,
+      kind: c.rejection_fingerprint ? "rejected" : c.conflict ? "conflict" : "proposed",
+      key: c.setting_key,
+      family: setting?.family ?? "No family",
+      setting,
+      groupLabel,
+      groupKind: c.layer,
+      cell: c,
+      without,
+      reach: reachOf.get(c.id) ?? [],
+      gridCell: null,
+    });
+  }
+
+  for (const row of model.rows) {
+    for (const gc of row.cells.values()) {
+      if (gc.cell || gc.missing.length === 0) continue;
+      items.push({
+        id: `missing:${gc.column.id}:${gc.key}`,
+        kind: "missing",
+        key: gc.key,
+        family: row.family,
+        setting: row.setting,
+        groupLabel: gc.column.label,
+        groupKind: gc.column.kind,
+        cell: null,
+        without: gc.fallback,
+        reach: gc.missing,
+        gridCell: gc,
+      });
+    }
+  }
+
+  return items.sort(
+    (a, b) =>
+      KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
+      a.groupLabel.localeCompare(b.groupLabel) ||
+      a.key.localeCompare(b.key),
+  );
 }

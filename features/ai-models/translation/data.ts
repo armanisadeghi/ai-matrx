@@ -12,7 +12,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { readAllRows } from "@ai-matrx/data/db";
+import { IncompleteReadError, readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import type { ControlRule } from "../types";
 import type { OfferingCellRow } from "../controls/resolveControls";
@@ -42,8 +42,45 @@ export function isAbsentRelationError(error: unknown): boolean {
   return typeof code === "string" && ABSENT_CODES.has(code);
 }
 
+// `evidence` is left out of the list read: it is the heaviest column and the
+// screen never draws it.
 const CELL_COLUMNS =
-  "id, layer, layer_owner_id, setting_key, rule, state, confidence, rationale, evidence, source, conflict, rejection_fingerprint, approved_by, approved_at, version, updated_at";
+  "id, layer, layer_owner_id, setting_key, rule, state, confidence, rationale, source, conflict, rejection_fingerprint, approved_by, approved_at, version, updated_at";
+
+const PAGE = 1000;
+
+type PageResult<T> = { data: T[] | null; error: { message: string } | null; count?: number | null };
+
+/**
+ * Every row, pages fetched in parallel. The first page carries the exact count;
+ * the rest are fetched at once and the total is checked, so a short read throws
+ * instead of returning a partial list (same contract as `readAllRows`).
+ */
+async function readAllRowsParallel<T>(
+  page: (range: { from: number; to: number }, withCount: boolean) => PromiseLike<PageResult<T>>,
+  label: string,
+): Promise<T[]> {
+  const first = await page({ from: 0, to: PAGE - 1 }, true);
+  if (first.error) throw new Error(`${label}: ${first.error.message}`);
+  const rows = [...(first.data ?? [])];
+  const total = typeof first.count === "number" ? first.count : null;
+  if (total === null) {
+    if (rows.length < PAGE) return rows;
+    throw new IncompleteReadError(label, rows.length, null, "the query returned no count");
+  }
+  const rest: Promise<PageResult<T>>[] = [];
+  for (let from = PAGE; from < total; from += PAGE) {
+    rest.push(Promise.resolve(page({ from, to: from + PAGE - 1 }, false)));
+  }
+  for (const res of await Promise.all(rest)) {
+    if (res.error) throw new Error(`${label}: ${res.error.message}`);
+    rows.push(...(res.data ?? []));
+  }
+  if (rows.length < total) {
+    throw new IncompleteReadError(label, rows.length, total, "a page came back short");
+  }
+  return rows;
+}
 
 function toNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -52,34 +89,34 @@ function toNumberOrNull(v: unknown): number | null {
 }
 
 async function readCells(): Promise<TranslationCellRow[]> {
-  const rows = await readAllRows<TranslationCellRow>(
-    ({ from, to }) =>
+  const rows = await readAllRowsParallel<TranslationCellRow>(
+    ({ from, to }, withCount) =>
       ai()
         .from("translation_cell")
-        .select(CELL_COLUMNS, { count: "exact" })
+        .select(CELL_COLUMNS, withCount ? { count: "exact" } : undefined)
         .is("deleted_at", null)
         .order("id", { ascending: true })
-        .range(from, to),
-    { label: "ai.translation_cell" },
+        .range(from, to) as unknown as PromiseLike<PageResult<TranslationCellRow>>,
+    "ai.translation_cell",
   );
   return rows.map((r) => ({
     ...r,
     rule: (r.rule ?? {}) as ControlRule,
     confidence: toNumberOrNull(r.confidence),
-    evidence: Array.isArray(r.evidence) ? r.evidence : [],
+    evidence: [],
   }));
 }
 
 async function readCompiled(): Promise<CompiledRow[]> {
-  return readAllRows<CompiledRow>(
-    ({ from, to }) =>
+  return readAllRowsParallel<CompiledRow>(
+    ({ from, to }, withCount) =>
       ai()
         .from("offering_rules_compiled")
-        .select("offering_id, setting_key, cell_id, layer, state", { count: "exact" })
+        .select("offering_id, setting_key, cell_id, layer, state", withCount ? { count: "exact" } : undefined)
         .order("offering_id", { ascending: true })
         .order("setting_key", { ascending: true })
-        .range(from, to),
-    { label: "ai.offering_rules_compiled" },
+        .range(from, to) as unknown as PromiseLike<PageResult<CompiledRow>>,
+    "ai.offering_rules_compiled",
   );
 }
 
