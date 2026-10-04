@@ -80,6 +80,8 @@ export interface ComposerPresentation {
   mode: ComposerMode;
   /** The Scope chip's face (meta row). Absent = `plain`, the Output pill's face. */
   scopeChipStyle?: "plain" | "pill";
+  /** The chips row's corners (Cloud, connections). Absent = `md` (6px); `soft` = 8px. */
+  chipShape?: "md" | "soft";
   agent?: ComposerAgentControl;
   /** Literal placeholder; absent = the conversation's configured placeholder. */
   placeholder?: string;

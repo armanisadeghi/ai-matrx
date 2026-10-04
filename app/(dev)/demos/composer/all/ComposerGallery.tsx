@@ -37,14 +37,15 @@ interface TileSpec {
   height: string;
   size?: ComposerSize;
   scopeChipStyle?: ComposerPresentation["scopeChipStyle"];
+  chipShape?: ComposerPresentation["chipShape"];
   classic?: Classic;
 }
 
 const TILES: TileSpec[] = [
   { key: "splash-a", title: "Splash", note: "New chat · Scope chip A (plain)", width: "w-[760px]", height: "h-[420px]", size: "splash", scopeChipStyle: "plain" },
-  { key: "splash-b", title: "Splash", note: "New chat · Scope chip B (round)", width: "w-[760px]", height: "h-[420px]", size: "splash", scopeChipStyle: "pill" },
+  { key: "splash-b", title: "Splash", note: "New chat · chip B · soft chips (Work)", width: "w-[760px]", height: "h-[420px]", size: "splash", scopeChipStyle: "pill", chipShape: "soft" },
   { key: "page-a", title: "Page", note: "Open conversation · chip A", width: "w-[760px]", height: "h-[520px]", size: "page", scopeChipStyle: "plain" },
-  { key: "page-b", title: "Page", note: "Open conversation · chip B", width: "w-[760px]", height: "h-[520px]", size: "page", scopeChipStyle: "pill" },
+  { key: "page-b", title: "Page", note: "Open conversation · chip B · soft chips (Work)", width: "w-[760px]", height: "h-[520px]", size: "page", scopeChipStyle: "pill", chipShape: "soft" },
   { key: "compact-440", title: "Compact 440", note: "Chat panel, Quick Chat, windows", width: "w-[440px]", height: "h-[520px]", size: "compact" },
   { key: "compact-340", title: "Compact 340", note: "Floating panel, widgets", width: "w-[340px]", height: "h-[520px]", size: "compact" },
   { key: "classic-stacked", title: "Classic stacked", note: "No composer prop · runner, battle, code", width: "w-[560px]", height: "h-[520px]", classic: "stacked" },
@@ -90,6 +91,7 @@ function Tile({ spec, mode }: { spec: TileSpec; mode: ComposerMode }) {
         agent: { onSelectAgent: chat.startWith },
         placeholder: spec.size === "compact" ? "Reply" : "How can I help you today?",
         scopeChipStyle: spec.scopeChipStyle,
+        chipShape: spec.chipShape,
         maxInputHeightPx: spec.size === "compact" && panelHeight > 0 ? Math.round(panelHeight / 2) : undefined,
       }
     : undefined;

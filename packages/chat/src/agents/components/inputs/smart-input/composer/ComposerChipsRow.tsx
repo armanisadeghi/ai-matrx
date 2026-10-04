@@ -22,6 +22,7 @@ import { cn } from "@ai-matrx/design-system";
 import { useOpenRunControlsWindow } from "../../../../../host/window-openers";
 import { useOpenCloudBrowserCanvas } from "@host/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
+import { ComposerConnectPromo } from "./ComposerConnectPromo";
 import { useComputeTargetActions } from "../use-compute-target-actions";
 import { ComposerEnvironmentPanel } from "./ComposerPlusMenu";
 import { COMPOSER_CHIP_CLASS, COMPOSER_ROW_CLASS } from "./composer-chip";
@@ -33,11 +34,14 @@ export function ComposerChipsRow({
   mode,
   menuSide,
   className,
+  chipShape = "md",
 }: {
   conversationId: string;
   mode: ComposerMode;
   menuSide: "top" | "bottom";
   className?: string;
+  /** Corner option under comparison (Arman, 2026-10-03): `soft` = 8px corners. */
+  chipShape?: "md" | "soft";
 }) {
   const [envOpen, setEnvOpen] = useState(false);
   const compute = useComputeTargetActions(conversationId);
@@ -47,7 +51,14 @@ export function ComposerChipsRow({
   const EnvIcon = boundName ? Server : Cloud;
 
   return (
-    <div className={cn(COMPOSER_ROW_CLASS, "gap-1 px-1", className)}>
+    <div
+      className={cn(
+        COMPOSER_ROW_CLASS,
+        "gap-1 px-1",
+        chipShape === "soft" && "[&>*]:!rounded-lg",
+        className,
+      )}
+    >
       <Popover open={envOpen} onOpenChange={setEnvOpen} modal={false}>
         <PopoverTrigger asChild>
           <button
@@ -86,6 +97,7 @@ export function ComposerChipsRow({
         conversationId={conversationId}
         variant="chips"
         showResources={composerShows(mode, "chips.repos")}
+        emptyChips={<ComposerConnectPromo />}
       />
     </div>
   );
