@@ -14,13 +14,17 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
-jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@ai-matrx/chat/store/hooks", () =>
+  jest.requireMock("@/lib/redux/hooks"),
+);
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectIsSuperAdmin: () => mockAdmission.isSuperAdmin,
   selectUserEmail: () => mockAdmission.email,
 }));
 jest.mock("@/features/window-panels/WindowPanel", () => ({
-  WindowPanel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  WindowPanel: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 jest.mock("@/features/google-workspace/calendar/AgendaPanel", () => ({
   AgendaPanel: () => <div>Agenda body</div>,
@@ -28,17 +32,44 @@ jest.mock("@/features/google-workspace/calendar/AgendaPanel", () => ({
 jest.mock("@/features/google-workspace/calendar/CalendarView", () => ({
   CalendarView: () => <div>Calendar body</div>,
 }));
-jest.mock("@/features/google-workspace/calendar/SelectedCalendarReview", () => ({
-  SelectedCalendarReview: () => <div>Selected review body</div>,
-}));
+jest.mock(
+  "@/features/google-workspace/calendar/SelectedCalendarReview",
+  () => ({
+    SelectedCalendarReview: () => <div>Selected review body</div>,
+  }),
+);
 jest.mock("@/features/google-workspace/meet/MeetReview", () => ({
   MeetReview: () => <div>Meet review body</div>,
 }));
 jest.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  TabsList: ({ children, className }: { children: React.ReactNode; className?: string }) => <div data-tabs-list className={className}>{children}</div>,
-  TabsTrigger: ({ children, className, value }: { children: React.ReactNode; className?: string; value: string }) => <button data-tab={value} className={className}>{children}</button>,
-  TabsContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <div data-tabs-list className={className}>
+      {children}
+    </div>
+  ),
+  TabsTrigger: ({
+    children,
+    className,
+    value,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+    value: string;
+  }) => (
+    <button data-tab={value} className={className}>
+      {children}
+    </button>
+  ),
+  TabsContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 describe("GoogleAgendaWindow selected-calendar admission", () => {
@@ -74,8 +105,11 @@ describe("GoogleAgendaWindow selected-calendar admission", () => {
     expect(host.textContent).toContain("Meet review");
     expect(host.textContent).toContain("Meet review body");
     expect(host.querySelectorAll("[data-tab]")).toHaveLength(4);
-    expect(host.querySelector("[data-tabs-list]")?.className).toContain("sm:grid-cols-4");
-    for (const tab of host.querySelectorAll("[data-tab]")) expect(tab.className).toContain("min-h-11");
+    expect(host.querySelector("[data-tabs-list]")?.className).toContain(
+      "sm:grid-cols-4",
+    );
+    for (const tab of host.querySelectorAll("[data-tab]"))
+      expect(tab.className).toContain("min-h-11");
   });
 
   it("shows the reviewer for a super admin in the admin lane", () => {

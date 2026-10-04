@@ -64,7 +64,9 @@ export function GoogleAgendaWindow({
         <TabsList
           className={`mx-2 mt-2 grid h-auto ${canReviewSelectedCalendar ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}
         >
-          <TabsTrigger value="calendar" className="min-h-11 text-xs">Calendar</TabsTrigger>
+          <TabsTrigger value="calendar" className="min-h-11 text-xs">
+            Calendar
+          </TabsTrigger>
           <TabsTrigger value="agenda" className="min-h-11 text-xs">
             Agenda
           </TabsTrigger>
@@ -79,7 +81,10 @@ export function GoogleAgendaWindow({
             </TabsTrigger>
           ) : null}
         </TabsList>
-        <TabsContent value="calendar" className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+        <TabsContent
+          value="calendar"
+          className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+        >
           <CalendarView />
         </TabsContent>
         <TabsContent
@@ -101,7 +106,10 @@ export function GoogleAgendaWindow({
           </TabsContent>
         ) : null}
         {canReviewSelectedCalendar ? (
-          <TabsContent value="meet" className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden">
+          <TabsContent
+            value="meet"
+            className="min-h-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+          >
             <MeetReview />
           </TabsContent>
         ) : null}
