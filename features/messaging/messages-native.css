@@ -547,6 +547,14 @@
 .messages-native .mx-msg__bubble--mine.mx-msg__bubble--tail::after {
   background: var(--mx-msg-bubble-mine-bg);
 }
+/* A lapsed message (soft expiry) keeps the package's outlined, muted bubble: the gradient
+   above would leave its muted text unreadable on blue, and its tail would float beside nothing. */
+.messages-native .mx-msg__bubble--mine.mx-msg__bubble--lapsed {
+  background: none;
+}
+.messages-native .mx-msg__bubble--lapsed.mx-msg__bubble--tail::after {
+  display: none;
+}
 
 .messages-header-person [data-slot="avatar-image"] {
   object-fit: cover;
