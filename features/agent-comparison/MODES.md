@@ -335,5 +335,11 @@ reads results from the database.
   real tool call — `bundle:list_*` lister calls never count (`isBundleLister`). Per-column averages
   per group, and for every column pair the break-even share of tool rows (`breakEven`, by cost and
   by tokens).
-- **Archive** archives every cell conversation (`softDeleteConversation`), every cell row, then the
+- **Spend and tokens.** Totals are real spend: every current attempt whatever its status (a failed
+  or cancelled run that cost money counts) and name what is unfinished ("1 failed · 2 cancelled");
+  the "Earlier attempts" toggle adds each cell's `metadata.history` spend. Averages and the analysis
+  use completed runs. Input is always shown as total = uncached (`input_tokens`) + cached
+  (`cached_tokens`) with both parts, so cache warmth (run order) cannot distort a comparison; the
+  token break-even uses all tokens. Grid labels say Queued, never Running, for a queued cell.
+- **Archive** archives every cell conversation, earlier attempts in `history` included (`softDeleteConversation`), every cell row, then the
   set (soft delete), and says how many conversations could not be archived.
