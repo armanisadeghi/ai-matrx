@@ -6,7 +6,7 @@ import { sendDm } from "@/lib/services/system-dm";
 
 /**
  * GET /api/cron/due-date-reminders
- * Process and send due date reminders
+ * Queue due-date email intents and send the in-app reminder DM.
  * 
  * This endpoint should be called by a cron job (e.g., Vercel Cron)
  * Recommended schedule: Daily at 8:00 AM
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     // without the lower bound, ancient overdue rows would permanently occupy
     // PostgREST's row cap and starve tasks that are actually due now.
     const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
     const { data: tasks, error } = await projectsDb(supabase)
       .from('tasks')
       .select('id, title, created_by, due_date, assignee_id, organization_id')
@@ -82,6 +82,7 @@ export async function GET(request: Request) {
       .gte('due_date', thirtyDaysAgo.toISOString())
       .lte('due_date', dayAfterTomorrow.toISOString())
       .order('due_date', { ascending: true })
+      .order('id', { ascending: true })
       .limit(2000);
 
     if (error) {
@@ -124,8 +125,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Volume-aware: at most 3 reminder emails per user per run — a flooded
-    // inbox trains users to ignore every reminder.
+    // Avoid unnecessary work after three intents in this run. The outbox's
+    // unique daily slots enforce the cap across overlapping cron requests.
     const PER_USER_CAP = 3;
     const perUserQueued = new Map<string, number>();
     const reminderDay = today.toISOString().slice(0, 10);

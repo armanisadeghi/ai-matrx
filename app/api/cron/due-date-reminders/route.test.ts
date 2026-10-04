@@ -70,6 +70,7 @@ describe("due-date reminders organization boundary", () => {
     } as Request);
 
     expect(response.status).toBe(200);
+    expect(taskQuery.order).toHaveBeenNthCalledWith(2, "id", { ascending: true });
     expect(mockedEnqueueEmail).toHaveBeenCalledTimes(3);
     expect(mockedEnqueueEmail).toHaveBeenCalledWith(expect.anything(), "task-b1", expect.any(String));
     expect(mockedSendDm).toHaveBeenCalledTimes(2);

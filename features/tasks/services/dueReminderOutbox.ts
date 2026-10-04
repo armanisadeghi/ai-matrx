@@ -98,40 +98,79 @@ export async function enqueueDueReminderEmail(
   const urgency = daysFromDue < 0 ? "overdue" : daysFromDue === 0 ? "due_today" : "upcoming";
   const urgencyLabel = urgency === "overdue" ? "Overdue" : urgency === "due_today" ? "Due today" : "Due soon";
   const urgencyWords = urgency === "overdue" ? "overdue" : urgency === "due_today" ? "due today" : "due tomorrow";
-  const dedupeKey = `task.due_reminder:${task.id}:${recipientId}:${reminderDay}:email`;
-  const { error: insertError } = await admin.schema("communication").from("notification").insert({
-    organization_id: task.organization_id,
-    event_key: "task.due_reminder",
-    channel: "email",
-    recipient_user_id: recipientId,
-    recipient_kind: "user",
-    created_by: recipientId,
-    to_address: address?.address ?? null,
-    status: address?.address ? "render_pending" : "skipped",
-    error_code: address?.address ? null : (address?.refusal ?? "no_contact_point"),
-    error_message: address?.address ? null : "No verified email address for this reminder recipient.",
-    dedupe_key: dedupeKey,
-    payload: { task: {
-      title: task.title,
-      due: dueDay,
-      urgency_label: urgencyLabel,
-      urgency_words: urgencyWords,
-    } },
-    target_kind: "task",
-    target_id: task.id,
-    deep_link: `/tasks?task=${task.id}`,
-    visibility: "personal",
-  });
-  if (insertError?.code === "23505") {
+  if (!address?.address) return "skipped";
+
+  // Recognize rows written by the earlier per-task key before the three-slot
+  // admission scheme. There can be no new legacy writer after this code lands.
+  const legacyKey = `task.due_reminder:${task.id}:${recipientId}:${reminderDay}:email`;
+  const { data: prior, error: priorError } = await admin.schema("communication")
+    .from("notification")
+    .select("id, organization_id, recipient_user_id, target_id, channel, status")
+    .eq("dedupe_key", legacyKey).maybeSingle();
+  if (priorError) throw priorError;
+  if (prior) {
+    if (prior.organization_id !== task.organization_id || prior.recipient_user_id !== recipientId ||
+        prior.target_id !== task.id || prior.channel !== "email") {
+      throw new Error("Reminder dedupe key belongs to a different notification");
+    }
+    return prior.status === "skipped" ? "skipped" : "duplicate";
+  }
+
+  const { data: legacyDaily, error: dailyError } = await admin.schema("communication")
+    .from("notification")
+    .select("id")
+    .eq("recipient_user_id", recipientId)
+    .eq("event_key", "task.due_reminder")
+    .eq("channel", "email")
+    .neq("status", "skipped")
+    .like("dedupe_key", `task.due_reminder:%:${recipientId}:${reminderDay}:email`)
+    .limit(3);
+  if (dailyError) throw dailyError;
+  const availableSlots = Math.max(0, 3 - (legacyDaily?.length ?? 0));
+
+  // The notification table's unique dedupe index is the atomic claim. Two
+  // overlapping cron requests can never both occupy the same recipient/day
+  // slot, even when their task lists differ.
+  for (let slot = 1; slot <= availableSlots; slot++) {
+    const dedupeKey = `task.due_reminder:${recipientId}:${reminderDay}:email:${slot}`;
+    const { error: insertError } = await admin.schema("communication").from("notification").insert({
+      organization_id: task.organization_id,
+      event_key: "task.due_reminder",
+      channel: "email",
+      recipient_user_id: recipientId,
+      recipient_kind: "user",
+      created_by: recipientId,
+      to_address: address.address,
+      status: "render_pending",
+      dedupe_key: dedupeKey,
+      payload: { task: {
+        title: task.title,
+        due: dueDay,
+        urgency_label: urgencyLabel,
+        urgency_words: urgencyWords,
+      } },
+      target_kind: "task",
+      target_id: task.id,
+      deep_link: `/tasks?task=${task.id}`,
+      visibility: "personal",
+    });
+    if (!insertError) return "queued";
+    if (insertError.code !== "23505") throw insertError;
     const { data: existing, error: readError } = await admin.schema("communication")
       .from("notification")
-      .select("id, organization_id, recipient_user_id, target_id, channel")
+      .select("id, organization_id, recipient_user_id, target_id, channel, event_key")
       .eq("dedupe_key", dedupeKey).maybeSingle();
     if (readError) throw readError;
-    if (existing?.organization_id === task.organization_id &&
-        existing.recipient_user_id === recipientId && existing.target_id === task.id &&
-        existing.channel === "email") return "duplicate";
+    if (!existing || existing.recipient_user_id !== recipientId ||
+        existing.channel !== "email" || existing.event_key !== "task.due_reminder") {
+      throw new Error("Reminder slot was occupied by a different notification");
+    }
+    if (existing.target_id === task.id) {
+      if (existing.organization_id !== task.organization_id) {
+        throw new Error("Reminder slot replay belongs to another organization");
+      }
+      return "duplicate";
+    }
   }
-  if (insertError) throw insertError;
-  return address?.address ? "queued" : "skipped";
+  return "skipped";
 }
