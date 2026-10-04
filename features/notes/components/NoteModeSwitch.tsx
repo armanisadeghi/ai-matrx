@@ -6,11 +6,7 @@
 // note tile, `NoteWorkspace`) render THIS component, so the control is the
 // same everywhere.
 
-import { cn } from "@/lib/utils";
-import {
-  NAV_ITEM_SELECTED,
-  NAV_ITEM_UNSELECTED,
-} from "@/features/shell/components/header/navItemClasses";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import {
   useNoteEditorMode,
   useSelectNoteMode,
@@ -36,46 +32,29 @@ export function NoteModeSwitch({
   const editorMode = useNoteEditorMode(noteId);
   const selectNoteMode = useSelectNoteMode();
 
-  const setMode = (mode: NoteViewMode) => selectNoteMode(noteId, mode);
+  // THE canonical capsule toggle (one geometry everywhere), so the control is
+  // the same height and padding as every other segmented control.
+  const data = NOTE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => ({
+    value: mode,
+    title: hint,
+    ariaLabel: label,
+    label: (
+      <>
+        <Icon className="h-3.5 w-3.5" />
+        <span className={labels === "container" ? "hidden @[26rem]:inline" : undefined}>
+          {label}
+        </span>
+      </>
+    ),
+  }));
 
   return (
-    // Content-sized buttons whose labels reserve their SEMIBOLD width, so the
-    // control's width never depends on which view is selected and every
-    // button pads both sides alike (the tap-target ink guard measures that).
-    <div
-      className={cn(
-        "matrx-glass-thin-border flex items-center gap-0.5 rounded-full p-0.5",
-        className,
-      )}
-    >
-      {NOTE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => (
-        <button
-          key={mode}
-          type="button"
-          title={hint}
-          aria-label={label}
-          aria-pressed={editorMode === mode}
-          className={cn(
-            "flex cursor-pointer items-center justify-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-            "[&_svg]:h-3.5 [&_svg]:w-3.5",
-            editorMode === mode ? NAV_ITEM_SELECTED : NAV_ITEM_UNSELECTED,
-          )}
-          onClick={() => setMode(mode)}
-        >
-          <Icon />
-          <span
-            className={cn(
-              "inline-grid text-center",
-              labels === "container" && "hidden @[26rem]:inline-grid",
-            )}
-          >
-            <span aria-hidden className="invisible col-start-1 row-start-1 font-semibold">
-              {label}
-            </span>
-            <span className="col-start-1 row-start-1">{label}</span>
-          </span>
-        </button>
-      ))}
-    </div>
+    <SegmentedControl<NoteViewMode>
+      aria-label="Note view"
+      value={editorMode}
+      onValueChange={(mode) => selectNoteMode(noteId, mode)}
+      data={data}
+      className={className}
+    />
   );
 }
