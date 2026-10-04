@@ -23,7 +23,7 @@ agent -> Needs Arman) with ` — <question> — <what was checked> — <who>` ad
 Its files stay as they are.
 
 ## Held files
-- _conflicts/2026-10-04-102442/app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx.held — LOCAL latest 2026-10-04 10:24; GITHUB latest 2026-10-04 10:23; LOCAL lacks 1 of GITHUB's 2 new lines; GITHUB lacks 37 of LOCAL's 38 new lines; recover: git show 61e5575171:'app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx' / 3e8d7bb6fd:'app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx'
+- _conflicts/2026-10-04-102442/app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx.held — LOCAL latest 2026-10-04 10:24; GITHUB latest 2026-10-04 10:23; LOCAL lacks 1 of GITHUB's 2 new lines; GITHUB lacks 37 of LOCAL's 38 new lines; recover: git show 61e5575171:'app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx' / 3e8d7bb6fd:'app/(dev)/demos/ui-unification/samples/education-overview/_components/EducationOverviewSample.tsx' — owner: 24e6bf36-0725-4380-acd5-200f0c268950, notified 2026-10-04 10:27
 
 ## Needs a manager
 
