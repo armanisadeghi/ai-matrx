@@ -285,7 +285,10 @@ export function SmartAgentInputStacked({
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
         textMenu={composer.textMenu}
-        minHeightPx={28}
+        // Two lines of text sit in the box without moving it; it grows from
+        // the third (Arman, 2026-10-03 — Claude and ChatGPT do the same).
+        minHeightPx={48}
+        composerType
         flush
       />
     );
