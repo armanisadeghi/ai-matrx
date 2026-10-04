@@ -469,6 +469,8 @@ export async function getMeetingBoard(input: {
 // ── Writes ───────────────────────────────────────────────────────────────────
 
 async function insertBoard(input: {
+  /** Mint the id here (the optimistic open): the page already knows it. */
+  id?: string;
   organizationId: string;
   userId: string;
   title: string;
@@ -479,6 +481,7 @@ async function insertBoard(input: {
   const { data, error } = await db
     .from(TABLE)
     .insert({
+      ...(input.id ? { id: input.id } : {}),
       organization_id: input.organizationId,
       created_by: input.userId,
       title: input.title,
@@ -501,6 +504,77 @@ export async function createBoard(input: {
   const orgId = await resolveOrganization(input.organizationId);
   const title = input.title === undefined ? DEFAULT_BOARD_TITLE : normalizeTitle(input.title);
   return insertBoard({ organizationId: orgId, userId: requireUserId(), title });
+}
+
+// ── Optimistic create ────────────────────────────────────────────────────────
+
+/** A board whose id is minted in the browser and whose insert may still be in flight. */
+export interface PendingCreate {
+  /** The empty board the page shows at once (version 1, the id and organization the insert carries). */
+  board: LoadedBoard;
+  /** Settles when the row exists (resolves the stored row) or the insert failed (rejects). */
+  promise: Promise<LoadedBoard>;
+  /** Run the insert again (a prior attempt may have landed; that row is returned). */
+  retry: () => Promise<LoadedBoard>;
+}
+
+const pendingCreates = new Map<string, PendingCreate>();
+
+/** The in-flight (or failed, awaiting Retry) create for a board id, if this tab minted it. */
+export function getPendingCreate(id: string): PendingCreate | undefined {
+  return pendingCreates.get(id);
+}
+
+/** The create is done (the row landed and the page took it): forget it. */
+export function settlePendingCreate(id: string): void {
+  pendingCreates.delete(id);
+}
+
+/**
+ * Start a new empty board and return its id AT ONCE: the id is minted here, the organization is
+ * resolved through the gate (instant when one is selected; the gate asks otherwise), and the
+ * insert goes out in the background carrying that organization explicitly. The page for
+ * `/board/<id>` finds the entry with `getPendingCreate` and renders the empty board without
+ * waiting; a failed insert is reported by the page with Retry, never a silent empty board.
+ */
+export async function beginBoardCreate(input: {
+  organizationId: string | null;
+  title?: string;
+}): Promise<{ id: string }> {
+  const orgId = await resolveOrganization(input.organizationId);
+  const userId = requireUserId();
+  const title = input.title === undefined ? DEFAULT_BOARD_TITLE : normalizeTitle(input.title);
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const empty = documentColumns(parseBoardDocument({ camera: { x: 0, y: 0, z: 1 }, nodes: [], edges: [] }).doc);
+  const board = toLoadedBoard({
+    id,
+    organization_id: orgId,
+    title,
+    description: null,
+    camera: empty.camera,
+    nodes: empty.nodes,
+    edges: empty.edges,
+    settings: {},
+    version: 1,
+    created_by: userId,
+    created_at: now,
+    updated_at: now,
+    last_opened_at: now,
+  });
+  const insert = () => insertBoard({ id, organizationId: orgId, userId, title });
+  const entry: PendingCreate = {
+    board,
+    promise: insert(),
+    retry: async () => {
+      const existing = await getBoard(id).catch(() => null);
+      return existing ?? (await insert());
+    },
+  };
+  // A failure is reported by whoever awaits `promise`; this only keeps it from being "unhandled".
+  entry.promise.catch(() => undefined);
+  pendingCreates.set(id, entry);
+  return { id };
 }
 
 /** Rename. Returns the row's new `version` (the rename bumps it). */

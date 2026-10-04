@@ -37,6 +37,8 @@ import {
   getBoard,
   getHomeBoard,
   getMeetingBoard,
+  getPendingCreate,
+  settlePendingCreate,
   isBoardError,
   renameBoard,
   saveBoardDocument,
@@ -159,6 +161,10 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   const saver = useRef<Autosaver<() => BoardDocument> | null>(null);
   const conflictToast = useRef<string | number | null>(null);
   const touched = useRef<string | null>(null);
+  // A board this tab just minted (optimistic "New board"): the page shows it at once while the
+  // insert lands. Saves wait for the landing; a failed landing is the page's `failed` state with Retry.
+  const landing = useRef<Promise<unknown> | null>(null);
+  const landingFailed = useRef(false);
 
   const retry = () => {
     if (conflictToast.current != null) toast.dismiss(conflictToast.current);
@@ -171,6 +177,42 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     if (!userId) return; // auth not hydrated yet: stay "loading"
     let alive = true;
     const loadTargetValue = targetRef.current;
+    const pending = "boardId" in loadTargetValue ? getPendingCreate(loadTargetValue.boardId) : undefined;
+    if (pending) {
+      // Optimistic open: the empty board renders now; the insert lands in the background.
+      const first = pending.board;
+      guard.current = { id: first.id, version: first.version, fingerprint: first.fingerprint, base: first.doc };
+      blocked.current = false;
+      setSaveError(null);
+      setLastSavedAt(null);
+      setPhase({ key, status: "ready", board: first, title: first.title, viewerCamera: readViewerCamera(userId, first.id) });
+      const run = landingFailed.current ? pending.retry() : pending.promise;
+      landingFailed.current = false;
+      const done = run.then(
+        (row) => {
+          settlePendingCreate(first.id);
+          if (alive && guard.current?.id === first.id) {
+            guard.current = { ...guard.current, version: row.version, fingerprint: row.fingerprint };
+          }
+        },
+        (error: unknown) => {
+          landingFailed.current = true;
+          console.error("[board] creating the new board failed:", error);
+          if (!alive) return;
+          setPhase({
+            key,
+            status: "failed",
+            reason: isBoardError(error)
+              ? error.message
+              : `The new board could not be created: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        },
+      );
+      landing.current = done;
+      return () => {
+        alive = false;
+      };
+    }
     loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW home board; it never picks which board opens
       (board) => {
         if (!alive) return;
@@ -198,6 +240,8 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   // ── stamp "opened" once per open ──
   useEffect(() => {
     if (!readyBoardId || touched.current === key) return;
+    // A board still being created already carries its opened stamp (the insert sets it).
+    if (getPendingCreate(readyBoardId)) return;
     touched.current = key;
     touchOpened(readyBoardId).then(
       ({ version }) => {
@@ -218,6 +262,9 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
     const instance = createAutosaver<() => BoardDocument>({
       delayMs: AUTOSAVE_DELAY_MS,
       write: async (build, { urgent }) => {
+        // A new board's first save waits for its row (a keepalive flush cannot wait: it goes out as is).
+        if (landing.current && !urgent) await landing.current;
+        if (landingFailed.current) throw new BoardError("not_found", "This new board was not created yet, so it could not be saved.", "Use Try again to create it.");
         const g = guard.current;
         if (!g || g.id !== boardId) return;
         const token = accessTokenRef.current;

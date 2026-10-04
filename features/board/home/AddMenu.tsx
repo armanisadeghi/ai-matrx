@@ -70,11 +70,16 @@ export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
   const news = types.flatMap((t) => startNewEntries(t).map((entry, i) => ({ t, entry, key: `new:${t.key}:${i}` })));
   const ins = types.filter((t) => t.bringIn);
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
+    <div
+      data-start-panel-frame
+      // The top and bottom padding is the board's chrome band (BoardViewport insets: 72 top for the
+      // Add toolbar and zoom bar, 56 bottom), so the panel can never sit under them at any width.
+      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4 pb-14 pt-[72px]"
+    >
       <section
         data-board-chrome
         aria-label="Start working on your board"
-        className="pointer-events-auto w-full max-w-2xl rounded-2xl border border-border bg-card/95 p-6 shadow-xl backdrop-blur"
+        className="pointer-events-auto max-h-full w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-card/95 p-6 shadow-xl backdrop-blur"
       >
         <h2 className="text-xl font-semibold tracking-tight text-foreground">What do you want to work on?</h2>
         <p className="mt-1 text-sm text-muted-foreground">

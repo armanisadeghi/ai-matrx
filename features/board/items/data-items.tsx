@@ -171,7 +171,7 @@ function AdoptTableName({ tableId, source, title, onSource }: { tableId: string 
   return null;
 }
 
-function TableRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: string }) {
+export function TableRecordBody({ id, source, title, onSource }: ItemBodyProps & { id: string }) {
   const mount = useUnifiedTable({ tableId: id, address: NO_ADDRESS });
   return (
     <div className={mount.mountsTheTable ? "h-full min-h-0 overflow-y-auto px-2 pb-2 pt-1" : "h-full min-h-0 overflow-y-auto p-4"}>

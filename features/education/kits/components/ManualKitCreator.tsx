@@ -42,7 +42,12 @@ export const MANUAL_KIT_SOURCES_KEY = "education:kits:new";
 /** Every door but "Topic": a kit is grouped under real material. */
 const KIT_SOURCE_KINDS: readonly SourceTileId[] = ["upload", "paste", "web", "youtube", "audio", "image", "existing"];
 
-export function ManualKitCreator() {
+export function ManualKitCreator({
+  onMade,
+}: {
+  /** The kit was made: the host (a Board tile) takes it from here and drops Cancel; the page itself opens the kit. */
+  onMade?: (kit: { sourceType: string; sourceId: string; title: string }) => void;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedSourceId = searchParams.get("source");
@@ -261,7 +266,8 @@ export function ManualKitCreator() {
       const anchorType = isExistingKit ? sourceType : "file";
       await createManualKit({ sourceId: anchorId, sourceType: anchorType, title, artifacts: selected, allowExisting: isExistingKit, expectedFingerprint: existingFingerprint ?? undefined });
       clearDraft();
-      router.push(kitHref(anchorType, anchorId));
+      if (onMade) onMade({ sourceType: anchorType, sourceId: anchorId, title });
+      else router.push(kitHref(anchorType, anchorId));
     }
     catch (cause) { setError(describeFailure(cause, { action: "creating this kit", fallback: "Could not create this kit." }).sentence); }
     finally { setSaving(false); }
@@ -320,6 +326,6 @@ export function ManualKitCreator() {
     </div>
     <div className="flex justify-between"><Button variant="outline" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">{page * PAGE_SIZE < total ? "More results available" : "End of results"}</span><Button variant="outline" disabled={page * PAGE_SIZE >= total} onClick={() => setPage((value) => value + 1)}>Next</Button></div>
     {error && <ErrorNotice size="inline" message={error} error={error} operation="Make a study kit" />}
-    <div className="flex gap-2"><Button variant="outline" onClick={() => { clearDraft(); router.push("/education/kits"); }}>Cancel</Button><Button disabled={saving || !saveReady} onClick={() => void save()}>{saving ? "Saving…" : isExistingKit ? "Add saved aids" : "Create kit"}</Button></div>
+    <div className="flex gap-2">{onMade ? null : <Button variant="outline" onClick={() => { clearDraft(); router.push("/education/kits"); }}>Cancel</Button>}<Button disabled={saving || !saveReady} onClick={() => void save()}>{saving ? "Saving…" : isExistingKit ? "Add saved aids" : "Create kit"}</Button></div>
   </main></SurfaceRuntimeProvider>;
 }

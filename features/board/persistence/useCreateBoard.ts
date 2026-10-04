@@ -14,7 +14,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { toast } from "@/lib/toast";
-import { boardHref, createBoard, isBoardError } from "./boardsService";
+import { beginBoardCreate, isBoardError } from "./boardsService";
+
+const BUSY_AFTER_OPEN_MS = 2000;
 
 export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<void> } {
   const router = useRouter();
@@ -26,9 +28,14 @@ export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<v
     if (busy.current) return;
     busy.current = true;
     setCreating(true);
+    let stayBusy = false;
     try {
-      const board = await createBoard({ organizationId });
-      router.push(boardHref(board));
+      // Optimistic: the id is minted here and the page opens at once; the insert lands behind it
+      // (a failed insert is reported on that page with Retry). Stay busy while the route changes so
+      // a double click still makes ONE board.
+      const { id } = await beginBoardCreate({ organizationId });
+      router.push(`/board/${id}`);
+      stayBusy = true;
     } catch (error) {
       if (!isOrganizationSelectionCancelled(error)) {
         toast.error(
@@ -38,8 +45,9 @@ export function useCreateBoard(): { creating: boolean; newBoard: () => Promise<v
         );
       }
     } finally {
-      busy.current = false;
       setCreating(false);
+      if (stayBusy) setTimeout(() => (busy.current = false), BUSY_AFTER_OPEN_MS);
+      else busy.current = false;
     }
   };
 

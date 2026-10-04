@@ -626,10 +626,17 @@ function CardPeek({
 export function SetDetailView({
   setId,
   initialName = null,
+  embedded = false,
 }: {
   setId: string;
   /** Read on the server so the header names the deck on its first paint. */
   initialName?: string | null;
+  /**
+   * The deck is shown inside a host that is not its own page (a Board tile): no shell
+   * header and no shell-header offset, and the card view is kept here instead of in the
+   * address bar (the host owns the address). Everything else is the page.
+   */
+  embedded?: boolean;
 }) {
   useFlashcardMandates(["enrichCard"]);
   const router = useRouter();
@@ -645,8 +652,13 @@ export function SetDetailView({
   const [cardSearch, setCardSearch] = useState("");
   // The card view rides the URL so a reload or a shared link keeps it.
   const searchParams = useSearchParams();
-  const view = asDeckView(searchParams.get("view"));
+  const [embeddedView, setEmbeddedView] = useState<DeckView>("overview");
+  const view = embedded ? embeddedView : asDeckView(searchParams.get("view"));
   const changeView = (next: DeckView) => {
+    if (embedded) {
+      setEmbeddedView(next);
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
     if (next === "overview") params.delete("view");
     else params.set("view", next);
@@ -1089,8 +1101,14 @@ export function SetDetailView({
 
   return (
     <div className="h-full w-full overflow-y-auto bg-textured">
-      <EducationToolHeader title={data?.set.name ?? initialName ?? "Deck"} />
-      <div className="matrx-touch-targets mx-auto max-w-6xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
+      {embedded ? null : <EducationToolHeader title={data?.set.name ?? initialName ?? "Deck"} />}
+      <div
+        className={
+          embedded
+            ? "matrx-touch-targets mx-auto max-w-6xl px-3 pb-4 pt-3"
+            : "matrx-touch-targets mx-auto max-w-6xl px-3 pb-safe pt-[calc(var(--shell-header-h)+0.5rem)] sm:px-6 sm:pb-8 sm:pt-[calc(var(--shell-header-h)+1.5rem)]"
+        }
+      >
         {loading ? (
           <>
             <Skeleton className="h-10 w-64 rounded-lg" />

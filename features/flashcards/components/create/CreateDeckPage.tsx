@@ -158,7 +158,15 @@ export function restoreStyleDraft(data: Record<string, unknown>): {
 }
 type Phase = "idle" | "reading" | "generating" | "saving";
 
-export function CreateDeckPage() {
+export function CreateDeckPage({
+  embedded = false,
+  onMade,
+}: {
+  /** Shown inside a host that is not its own page (a Board tile): no shell header or offset, no Cancel. */
+  embedded?: boolean;
+  /** The deck was made and saved: the host takes it from here (the page itself opens the deck). */
+  onMade?: (setId: string, name: string) => void;
+} = {}) {
   useFlashcardMandates(["generateCards", "generateFromSource"]);
   const router = useRouter();
   const params = useSearchParams();
@@ -307,6 +315,10 @@ export function CreateDeckPage() {
       `Created "${name}" with ${cards} ${cards === 1 ? "card" : "cards"}${gap ? ` — ${gap}` : ""}`,
     );
     clearDraft();
+    if (onMade) {
+      onMade(setId, name);
+      return;
+    }
     startNavigation(() => router.push(`${EDU_BASE}/${setId}`));
   };
 
@@ -504,13 +516,14 @@ export function CreateDeckPage() {
 
   return (
     <>
-      <EducationToolHeader title="New flashcard deck" />
+      {embedded ? null : <EducationToolHeader title="New flashcard deck" />}
       <div className="min-h-full w-full bg-textured">
         <div
           className={cn(
             ASSISTANT_MESSAGE_COLUMN_CLASS,
             ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
-            "matrx-touch-targets flex flex-col gap-4 pb-safe pt-[var(--shell-header-h)] sm:gap-5",
+            "matrx-touch-targets flex flex-col gap-4 pb-safe sm:gap-5",
+            embedded ? "pt-3" : "pt-[var(--shell-header-h)]",
           )}
         >
           {/* How to start: make cards, or bring a deck you already have. */}
@@ -786,15 +799,17 @@ export function CreateDeckPage() {
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <coppa.Gate />
                       <EntitlementMeter capability="education.generate_cards" className="mr-auto" />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-11 sm:h-9"
-                        onClick={() => startLeaving(() => router.push(EDU_BASE))}
-                        disabled={busy || isLeaving}
-                      >
-                        Cancel
-                      </Button>
+                      {embedded ? null : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-11 sm:h-9"
+                          onClick={() => startLeaving(() => router.push(EDU_BASE))}
+                          disabled={busy || isLeaving}
+                        >
+                          Cancel
+                        </Button>
+                      )}
                       <IntelligenceIndicator
                         feature="flashcards"
                         mandateKeys={[FC_MANDATES.generateCards, FC_MANDATES.generateFromSource]}

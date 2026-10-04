@@ -15,10 +15,9 @@ jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "org-1" }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "org-1" }));
 jest.mock("@/lib/organization/organization-gate", () => ({ isOrganizationSelectionCancelled: () => false }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
-const createBoard = jest.fn();
+const beginBoardCreate = jest.fn();
 jest.mock("../persistence/boardsService", () => ({
-  createBoard: (...a: unknown[]) => createBoard(...a),
-  boardHref: (b: { id: string }) => `/board/${b.id}`,
+  beginBoardCreate: (...a: unknown[]) => beginBoardCreate(...a),
   isBoardError: () => false,
 }));
 
@@ -37,12 +36,12 @@ function renderHook<T>(use: () => T) {
 
 beforeEach(() => {
   push.mockClear();
-  createBoard.mockReset();
+  beginBoardCreate.mockReset();
 });
 
 describe("useCreateBoard", () => {
   it("opens the board it created", async () => {
-    createBoard.mockResolvedValue({ id: "b9" });
+    beginBoardCreate.mockResolvedValue({ id: "b9" });
     const { result } = renderHook(() => useCreateBoard());
     await act(async () => {
       await result.current.newBoard();
@@ -52,14 +51,30 @@ describe("useCreateBoard", () => {
 
   it("ignores a second click while one board is being made", async () => {
     let resolve!: (b: { id: string }) => void;
-    createBoard.mockReturnValue(new Promise((r) => (resolve = r)));
+    beginBoardCreate.mockReturnValue(new Promise((r) => (resolve = r)));
     const { result } = renderHook(() => useCreateBoard());
     await act(async () => {
       void result.current.newBoard();
       void result.current.newBoard();
       resolve({ id: "b1" });
     });
-    expect(createBoard).toHaveBeenCalledTimes(1);
+    expect(beginBoardCreate).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("New board opens at once (optimistic)", () => {
+  it("navigates with the minted id without waiting for the insert, and a double click after it still makes one board", async () => {
+    beginBoardCreate.mockResolvedValue({ id: "minted-1" });
+    const { result } = renderHook(() => useCreateBoard());
+    await act(async () => {
+      await result.current.newBoard();
+    });
+    expect(push).toHaveBeenCalledWith("/board/minted-1");
+    await act(async () => {
+      await result.current.newBoard(); // a second click while the route is changing
+    });
+    expect(beginBoardCreate).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledTimes(1);
   });
 });
