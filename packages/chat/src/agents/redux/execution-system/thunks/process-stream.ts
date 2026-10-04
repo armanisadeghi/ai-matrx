@@ -13,7 +13,11 @@
  *  - Old CompletionStats replaced with UserRequestResult from completion.result
  */
 
-import { applyServerUsageState } from "@host/features/entitlements/usage-gate/usageGate";
+import {
+  applyServerUsageState,
+  applyUsageRefusal,
+  classifyUsageRefusal,
+} from "@host/features/entitlements/usage-gate/usageGate";
 import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { CompletionStats } from "../../../types/instance.types";
 import type { ClientMetrics } from "../../../types/request.types";
@@ -2776,6 +2780,20 @@ export async function processStream({
           }),
         );
         dispatch(setInstanceStatus({ conversationId, status: "error" }));
+        // A usage refusal that arrives ON the stream (USAGE-GATE.md
+        // "Contract": `error_type` + the refusal fields in `details`) gets the
+        // same answer as an HTTP one: a person's state goes `over` and the
+        // limit dialog opens; a guest gets the sign-up reminder.
+        const streamRefusal = classifyUsageRefusal(null, event.data, getState);
+        if (streamRefusal) {
+          applyUsageRefusal(
+            streamRefusal,
+            dispatch,
+            getState,
+            event.data,
+            event.data.user_message ?? event.data.message,
+          );
+        }
         dispatch(
           appendTimeline({
             requestId,

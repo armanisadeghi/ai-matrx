@@ -90,22 +90,24 @@ function parseFlat(v: Record<string, unknown>): UsageSnapshot | null {
 /**
  * Accepts the RPC's jsonb, and every envelope a server notification can carry
  * it in (a directive payload, an `info` stream event's `metadata`, a refusal
- * body): the object itself, or nested under `usage` / `usage_state` /
- * `metadata` / `detail` / `serverDetail`. Returns null for anything that is not
+ * body, a stream `error` event's `details`): the object itself, or nested
+ * under `usage` / `usage_state` / `metadata` / `detail` / `details` /
+ * `serverDetail`. Returns null for anything that is not
  * a usage state — the caller then leaves Redux untouched.
  */
 export function parseUsageSnapshot(raw: unknown): UsageSnapshot | null {
   const visit = (v: unknown, depth: number): UsageSnapshot | null => {
     if (!isRecord(v) || depth > 4) return null;
+    // A refusal body carries `state: "over"` and the binding window's numbers
+    // at its top level AND the full state under `usage` — the full one wins,
+    // or the windows would be lost.
+    for (const key of ["usage", "usage_state"]) {
+      const hit = visit(v[key], depth + 1);
+      if (hit) return hit;
+    }
     const flat = parseFlat(v);
     if (flat) return flat;
-    for (const key of [
-      "usage",
-      "usage_state",
-      "metadata",
-      "detail",
-      "serverDetail",
-    ]) {
+    for (const key of ["metadata", "detail", "details", "serverDetail"]) {
       const hit = visit(v[key], depth + 1);
       if (hit) return hit;
     }
@@ -125,4 +127,26 @@ export function bindingWindow(snapshot: UsageSnapshot): UsageWindow | null {
     snapshot.windows[0] ??
     null
   );
+}
+
+/** Windows whose reset slides forward with every recompute. */
+function isRollingPeriod(period: string | null): boolean {
+  return period !== null && period.startsWith("rolling_");
+}
+
+/**
+ * The once-per-session key of the near / over notice: the level plus the
+ * window that decided it. A fixed window (day / week / month) adds its reset —
+ * stable for the whole calendar period, new when the next one starts. A
+ * rolling window's reset moves on every recompute, so it is left out: one
+ * notice per level per rolling window per session.
+ */
+export function usageNoticeKey(
+  level: UsageGateLevel,
+  bindingPeriod: string | null,
+  resetsAt: string | null,
+): string {
+  const period = bindingPeriod ?? "";
+  const periodStart = isRollingPeriod(bindingPeriod) ? "" : (resetsAt ?? "");
+  return `${level}:${period}:${periodStart}`;
 }

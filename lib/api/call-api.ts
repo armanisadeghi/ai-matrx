@@ -55,12 +55,13 @@
 // ─── External dependencies ───────────────────────────────────────────────────
 
 import {
-  applyServerUsageRefusal,
+  applyUsageRefusal,
   checkUsageBeforeAiCall,
-  isServerUsageRefusal,
+  classifyUsageRefusal,
   noteAiCallEnded,
   USAGE_LIMIT_REACHED,
 } from "@/features/entitlements/usage-gate/usageGate";
+import { isPaidAiCall } from "@/features/entitlements/usage-gate/paidAiPaths";
 import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
 
@@ -998,10 +999,11 @@ export function callApi<
       }
 
       // ── Step 6b: THE USAGE GATE (USAGE-GATE.md rules 10-12) ─────────────
-      // AI turns only. Zero work while the held answer is ok/unknown; while
-      // near/over, ONE fresh read, and only a fresh `over` stops the call.
-      const isAiTurn = isAiTurnPath(config.path as string);
-      if (isAiTurn) {
+      // Every call that starts paid AI work (the census in paidAiPaths.ts).
+      // Zero work while the held answer is ok/unknown; while near/over, ONE
+      // fresh read, and only a fresh `over` stops the call.
+      const isPaidAi = isPaidAiCall(config.method, config.path as string);
+      if (isPaidAi) {
         const verdict = await checkUsageBeforeAiCall(_dispatch, getState);
         if (!verdict.allowed) {
           return {
@@ -1052,13 +1054,25 @@ export function callApi<
           parseStream: parseNdjsonStream,
         },
       );
-      if (isAiTurn) {
-        // The server's usage refusal → hold `over`, open the limit dialog.
-        if (
-          result.error?.status !== undefined &&
-          isServerUsageRefusal(result.error.status, result.error.serverDetail)
-        ) {
-          applyServerUsageRefusal(_dispatch, getState, result.error.serverDetail);
+      if (isPaidAi) {
+        // The server's usage refusal → a person gets `over` + the limit
+        // dialog; a guest gets the sign-up reminder only, never both.
+        const refusalKind =
+          result.error?.status !== undefined
+            ? classifyUsageRefusal(
+                result.error.status,
+                result.error.serverDetail,
+                getState,
+              )
+            : null;
+        if (refusalKind) {
+          applyUsageRefusal(
+            refusalKind,
+            _dispatch,
+            getState,
+            result.error?.serverDetail,
+            result.error?.message,
+          );
         }
         // Call ended — stale + background refresh, never awaited (rule 8).
         noteAiCallEnded(_dispatch, getState);
@@ -1120,6 +1134,7 @@ export function shouldCaptureApiError(
   return shouldReportMatrxCallError(status, expectedErrorStatuses);
 }
 
+/** The four agent-turn endpoints (desktop-target delegation applies to these). */
 function isAiTurnPath(path: string): boolean {
   return (
     path === "/ai/agents/{agent_id}" ||

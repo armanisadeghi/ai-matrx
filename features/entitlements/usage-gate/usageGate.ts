@@ -22,6 +22,10 @@ import {
   setUsageSnapshot,
   type UsageGateState,
 } from "../state/entitlementsSlice";
+import {
+  GUEST_AI_ALLOWANCE_USED,
+  noticeGuestAiAllowanceRefusal,
+} from "@/lib/guest/guest-ai-allowance";
 import { readUsageSnapshot } from "./usageRead";
 import {
   bindingWindow,
@@ -78,8 +82,14 @@ export async function checkUsageBeforeAiCall(
 
 // ── After a call: stale + one debounced background refresh ──────────────────
 
-/** Calls ending close together (a multi-call turn) share one refresh. */
-const REFRESH_DEBOUNCE_MS = 1_500;
+/**
+ * How long after a call ends the background refresh waits. The server banks a
+ * run's spend when the run SETTLES, which lands after the stream's last byte;
+ * a read sooner returns the pre-spend state and would mark it fresh. Calls
+ * ending inside the window share one refresh, and a settled server answer
+ * (the `usage_state_changed` directive) cancels it — the server already said.
+ */
+export const REFRESH_AFTER_CALL_MS = 8_000;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
@@ -97,7 +107,7 @@ export function noteAiCallEnded(
   refreshTimer = setTimeout(() => {
     refreshTimer = null;
     void refreshUsageInBackground(dispatch, getState);
-  }, REFRESH_DEBOUNCE_MS);
+  }, REFRESH_AFTER_CALL_MS);
 }
 
 /** Background refresh — fire-and-forget; a failure leaves the held answer. */
@@ -122,13 +132,23 @@ export function cancelPendingUsageRefreshForTests(): void {
  * A usage state the SERVER sent (the `usage_state_changed` directive, an
  * `info` stream event with code `usage_state`, or a refusal body). Returns true
  * when it carried a state and Redux was updated.
+ *
+ * `settled: true` — the answer was computed AFTER a run settled (the
+ * directive). It is newer than anything the pending after-call read could
+ * return, so that read is dropped. An `info` event is sent at the run's first
+ * paid call — before the spend — and never cancels it.
  */
 export function applyServerUsageState(
   dispatch: AnyDispatch,
   raw: unknown,
+  opts: { settled?: boolean } = {},
 ): boolean {
   const snapshot = parseUsageSnapshot(raw);
   if (!snapshot) return false;
+  if (opts.settled && refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
   dispatch(setUsageSnapshot({ snapshot, fetchedAt: Date.now() }));
   return true;
 }
@@ -137,33 +157,58 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-/**
- * Is this refused request the server's usage refusal (USAGE-GATE.md rule 2)?
- * Recognised by the documented contract fields — `fix_action: "upgrade_plan"`
- * beside a usage state, or an HTTP 402 — at any envelope depth.
- */
-export function isServerUsageRefusal(status: number, body: unknown): boolean {
-  if (status === 402) return true;
-  const visit = (v: unknown, depth: number): boolean => {
-    if (!isRecord(v) || depth > 3) return false;
-    if (
-      v.error === USAGE_LIMIT_REACHED ||
-      v.code === USAGE_LIMIT_REACHED ||
-      v.error_type === USAGE_LIMIT_REACHED
-    ) {
-      return true;
+/** Who a refusal is for: a person on a plan, or a guest past the allowance. */
+export type UsageRefusalKind = "person" | "guest";
+
+const REFUSAL_CODE_KEYS = ["error", "code", "error_type"] as const;
+const REFUSAL_NESTS = ["detail", "details", "serverDetail"] as const;
+
+function refusalCodeIn(body: unknown): UsageRefusalKind | null {
+  const visit = (v: unknown, depth: number): UsageRefusalKind | null => {
+    if (!isRecord(v) || depth > 3) return null;
+    for (const key of REFUSAL_CODE_KEYS) {
+      if (v[key] === GUEST_AI_ALLOWANCE_USED) return "guest";
     }
-    if (v.fix_action === "upgrade_plan" && parseUsageSnapshot(v)) return true;
-    return visit(v.detail, depth + 1) || visit(v.serverDetail, depth + 1);
+    for (const key of REFUSAL_CODE_KEYS) {
+      if (v[key] === USAGE_LIMIT_REACHED) return "person";
+    }
+    if (v.fix_action === "upgrade_plan" && parseUsageSnapshot(v)) {
+      return "person";
+    }
+    for (const key of REFUSAL_NESTS) {
+      const hit = visit(v[key], depth + 1);
+      if (hit) return hit;
+    }
+    return null;
   };
   return visit(body, 0);
+}
+
+/**
+ * Is this refused request (an HTTP failure, or a stream `error` event with
+ * `status` null) the server's usage refusal (USAGE-GATE.md "Contract"), and
+ * whose? The guest code always wins; a refusal for a caller with no signed-in
+ * user, or whose state names the `guest` plan, is a guest's whatever its code;
+ * an HTTP 402 is a usage refusal even when its body names nothing.
+ */
+export function classifyUsageRefusal(
+  status: number | null,
+  body: unknown,
+  getState: () => unknown,
+): UsageRefusalKind | null {
+  const coded = refusalCodeIn(body);
+  if (coded === "guest") return "guest";
+  if (!coded && status !== 402) return null;
+  if (!signedInUserId(getState() as UsageGateRoot)) return "guest";
+  if (parseUsageSnapshot(body)?.planKey === "guest") return "guest";
+  return "person";
 }
 
 /**
  * The server refused on usage: hold `over` (from the body when it carries the
  * state) and open the limit dialog.
  */
-export function applyServerUsageRefusal(
+function applyPersonRefusal(
   dispatch: AnyDispatch,
   getState: () => unknown,
   body: unknown,
@@ -182,4 +227,35 @@ export function applyServerUsageRefusal(
   dispatch(setUsageRefusal(window));
   // The body named no numbers — read them in the background for the dialog.
   void refreshUsageInBackground(dispatch, getState);
+}
+
+/**
+ * Show the ONE answer for a classified refusal — never both:
+ *   person → hold `over` + the limit / upgrade dialog;
+ *   guest  → the guest sign-up reminder (lib/guest/guest-ai-allowance.ts),
+ *            never the upgrade dialog, never a plan state in Redux.
+ * The reminder overlay is a singleton, so the capture sink noticing the same
+ * refusal again re-opens it rather than stacking a second one.
+ */
+export function applyUsageRefusal(
+  kind: UsageRefusalKind,
+  dispatch: AnyDispatch,
+  getState: () => unknown,
+  body: unknown,
+  userMessage?: string | null,
+): void {
+  if (kind === "guest") {
+    noticeGuestAiAllowanceRefusal({
+      code: GUEST_AI_ALLOWANCE_USED,
+      raw: body,
+      ...(userMessage ? { userMessage } : {}),
+    });
+    return;
+  }
+  applyPersonRefusal(dispatch, getState, body);
+}
+
+/** The machine code a classified refusal travels under. */
+export function usageRefusalCode(kind: UsageRefusalKind): string {
+  return kind === "guest" ? GUEST_AI_ALLOWANCE_USED : USAGE_LIMIT_REACHED;
 }

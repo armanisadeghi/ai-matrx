@@ -35,8 +35,9 @@ import {
   applyServerUsageState,
   refreshUsageInBackground,
 } from "./usageGate";
+import { usageNoticeKey } from "./usageState";
 
-/** Notices already shown this session, keyed by level + window + reset. */
+/** Notices already shown this session, keyed by `usageNoticeKey`. */
 const shownNotices = new Set<string>();
 
 function formatReset(iso: string | null): string | null {
@@ -94,7 +95,8 @@ export function UsageGateBridge() {
   useEffect(
     () =>
       registerDirectiveHandler("usage_state_changed", (payload) => {
-        if (!applyServerUsageState(dispatch, payload)) {
+        // Sent after the run settled — newer than the pending after-call read.
+        if (!applyServerUsageState(dispatch, payload, { settled: true })) {
           console.warn(
             "[usage-gate] usage_state_changed carried no usage state — ignored.",
             payload,
@@ -108,7 +110,7 @@ export function UsageGateBridge() {
   // shows the notice too — only a FRESH over blocks (rule 12).
   useEffect(() => {
     if (level !== "near" && level !== "over") return;
-    const key = `${level}:${bindingPeriod ?? ""}:${resetsAt ?? ""}`;
+    const key = usageNoticeKey(level, bindingPeriod, resetsAt);
     if (shownNotices.has(key)) return;
     shownNotices.add(key);
     const reset = formatReset(resetsAt);

@@ -23,6 +23,19 @@ import { answerRenderer } from "./RecordsAnswerView";
 /** The tools whose answers `answerRenderer` reads (`readRecordsAnswer`). */
 export const ANSWER_READ_FOR = ["records", "dataset"] as const;
 
+/**
+ * The `records` split experiment (aidream `matrx_records/agent/split.py`, records-split-2026-10):
+ * these tools run the same engine and answer in the same shape as `records`, so each is drawn by
+ * the `records` renderer under its own name. Remove with the losing concept.
+ */
+export const RECORDS_SPLIT_TOOLS = [
+  "records_read", "records_write", "records_tables", "records_build", "records_help",
+  "records_data", "records_structure",
+  "records_form", "records_capture", "records_booking", "records_checklist", "records_board",
+  "records_dashboard", "records_document", "records_portal", "records_signature_request",
+  "records_subscription", "records_enrich",
+] as const;
+
 const registered = new WeakSet<ToolRenderer>();
 
 export function registerDataToolRenderers(registry: Record<string, ToolRenderer> = toolRendererRegistry): void {
@@ -35,6 +48,14 @@ export function registerDataToolRenderers(registry: Record<string, ToolRenderer>
       OverlayComponent: answerRenderer(previous.OverlayComponent ?? previous.InlineComponent),
     };
     registered.add(next);
+    if (registry === toolRendererRegistry) registerToolRenderer(toolName, next);
+    else registry[toolName] = next;
+  }
+  const records = registry.records;
+  if (!records) return;
+  for (const toolName of RECORDS_SPLIT_TOOLS) {
+    if (registry[toolName]?.InlineComponent === records.InlineComponent) continue;
+    const next: ToolRenderer = { ...records, toolName };
     if (registry === toolRendererRegistry) registerToolRenderer(toolName, next);
     else registry[toolName] = next;
   }

@@ -95,9 +95,10 @@ import {
 } from "@ai-matrx/agents/matrx";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import {
-  applyServerUsageRefusal,
+  applyUsageRefusal,
   checkUsageBeforeAiCall,
-  isServerUsageRefusal,
+  classifyUsageRefusal,
+  usageRefusalCode,
   noteAiCallEnded,
   USAGE_LIMIT_REACHED,
 } from "@host/features/entitlements/usage-gate/usageGate";
@@ -644,12 +645,24 @@ async function runAiStreamOnce(
       }
 
       const code = response.status;
-      // The server's usage refusal (USAGE-GATE.md rule 2): hold `over` and
-      // open the limit dialog; the request fails as an expected refusal.
-      if (kind !== "rejoin" && isServerUsageRefusal(code, rawErrorBody)) {
-        applyServerUsageRefusal(dispatch, getState, rawErrorBody);
+      // The server's usage refusal (USAGE-GATE.md "Contract"), 402 or the
+      // guest's 403. A person gets the limit dialog; a guest gets the sign-up
+      // reminder and never the upgrade dialog. Checked BEFORE the 403 branch
+      // so a guest refusal is never mistaken for a plan refusal or lost.
+      const refusalKind =
+        kind === "rejoin"
+          ? null
+          : classifyUsageRefusal(code, rawErrorBody, getState);
+      if (refusalKind) {
+        applyUsageRefusal(
+          refusalKind,
+          dispatch,
+          getState,
+          rawErrorBody,
+          userMessage || serverMessage,
+        );
         throw new ExpectedRequestConflictError(
-          USAGE_LIMIT_REACHED,
+          usageRefusalCode(refusalKind),
           userMessage || serverMessage || "You've reached your AI usage limit.",
         );
       }

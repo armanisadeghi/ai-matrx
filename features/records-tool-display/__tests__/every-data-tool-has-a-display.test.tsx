@@ -17,7 +17,7 @@ jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () 
 jest.mock("@host/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
 import { getInlineRenderer, toolRendererRegistry } from "@ai-matrx/chat/tool-call-visualization/registry/registry";
-import { ANSWER_READ_FOR } from "../registerDataToolRenderers";
+import { ANSWER_READ_FOR, RECORDS_SPLIT_TOOLS, registerDataToolRenderers } from "../registerDataToolRenderers";
 import { DATA_TOOLS, toolsWithNoDisplay } from "../dataToolDisplays";
 import { readRecordsAnswer, writeSentence } from "../readRecordsAnswer";
 
@@ -32,6 +32,19 @@ describe("every common data tool draws its answer", () => {
       expect(name.startsWith("DataToolAnswer(")).toBe(true);
       expect(getInlineRenderer(tool).displayName).toContain("DataToolAnswer(");
     }
+  });
+
+  it("every records split tool is drawn by the records answer renderer under its own name", () => {
+    for (const tool of RECORDS_SPLIT_TOOLS) {
+      expect(toolRendererRegistry[tool]?.toolName).toBe(tool);
+      expect(getInlineRenderer(tool).displayName).toContain("DataToolAnswer(");
+    }
+  });
+
+  it("a plant is caught: a registry copy with no records renderer draws no split tool", () => {
+    const planted: typeof toolRendererRegistry = {};
+    registerDataToolRenderers(planted);
+    expect(toolsWithNoDisplay(planted, RECORDS_SPLIT_TOOLS)).toEqual([...RECORDS_SPLIT_TOOLS]);
   });
 
   it("a plant is caught: a registry without records has a tool with no display", () => {

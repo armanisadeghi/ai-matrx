@@ -201,3 +201,9 @@ export const selectUsageGateRefusal = createSelector(
   selectUsageGate,
   (u) => u.refusal,
 );
+
+/** The server's enforcement switch with the held answer. */
+export const selectUsageGateEnforced = createSelector(
+  selectUsageGate,
+  (u) => u.enforced,
+);
