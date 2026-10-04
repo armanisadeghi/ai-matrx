@@ -290,7 +290,13 @@ export function UserBoard({
   const addKey = guest ? null : searchParams.get("add");
   const addHandled = useRef<string | null>(null);
   useEffect(() => {
-    if (!addKey || !store || addHandled.current === addKey) return;
+    // The parameter is dropped once handled; when it is gone, the next click on the same
+    // menu row (same key) is a new request, not a repeat of this render's.
+    if (!addKey) {
+      addHandled.current = null;
+      return;
+    }
+    if (!store || addHandled.current === addKey) return;
     addHandled.current = addKey;
     const rest = new URLSearchParams(searchParams.toString());
     rest.delete("add");
