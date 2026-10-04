@@ -33,7 +33,7 @@ export default function Proof() {
  };
  if(email !== "admin@admin.com" || !actorId) return <main>Test identity: {email ?? "signed out"}</main>;
  return <main className="mx-auto max-w-xl p-4 space-y-3"><h1>Simulated Google Calendar — no provider or database operations</h1><p>Test identity: {email}</p>
- <label>Result <select value={mode} onChange={e=>setMode(e.target.value)}><option value="success">Success</option><option value="uncertain">Uncertain</option><option value="unsent">Known unsent</option></select></label>
+ <button onClick={()=>{sessionStorage.removeItem("matrx.google-calendar.create-recovery.v1"); location.reload();}}>Reset simulated recovery</button><label>Result <select value={mode} onChange={e=>setMode(e.target.value)}><option value="success">Success</option><option value="uncertain">Uncertain</option><option value="unsent">Known unsent</option></select></label>
  <label>Calendar role <select value={role} onChange={e=>setRole(e.target.value)}><option value="owner">Owner</option><option value="reader">Reader</option></select></label>
  <button onClick={()=>setScope(v=>v === "one" ? "two":"one")}>Change account</button>
  <CalendarCreateReview actorId={actorId} organizationId="proof-org" connectionId={`proof-${scope}`} accountLabel={scope === "one" ? "calendar-proof@example.com":"other-proof@example.com"} calendar={{id:`calendar-${scope}`,summary:"Harmless Calendar",access_role:role,primary:false,time_zone:"America/Los_Angeles"}} transport={transport}/>

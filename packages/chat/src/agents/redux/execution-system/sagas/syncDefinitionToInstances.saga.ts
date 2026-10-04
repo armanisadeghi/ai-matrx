@@ -49,6 +49,8 @@ import {
   redoAgentEdit,
   resetAgentField,
   resetAllAgentFields,
+  mergePartialAgent,
+  upsertAgent,
 } from "../../agent-definition/slice";
 import { updateInstanceDefinitions } from "../instance-variable-values/instance-variable-values.slice";
 import { updateBaseSettings } from "../instance-model-overrides/instance-model-overrides.slice";
@@ -217,7 +219,39 @@ function* handleUiGatesChanged(
 // Watcher — forked from rootSaga
 // ---------------------------------------------------------------------------
 
+/**
+ * An instance can be minted from a list-only agent record (no settings yet),
+ * so its base lacks the agent's CLASS pin. When the agent's settings arrive,
+ * give every instance still on the agent's own model that class — the server
+ * already runs it (settings.offering_id), and the picker/pill must name it.
+ * Only fills a missing pin; never touches an instance's own overrides.
+ */
+function* handleAgentSettingsLoaded(action: {
+  type: string;
+  payload: { id: string };
+}): Generator {
+  const agentId = action.payload.id;
+  const state = (yield select()) as ChatRootState;
+  const agent = state.agentDefinition.agents?.[agentId];
+  const pin = (agent?.settings as { offering_id?: unknown } | undefined)?.offering_id;
+  if (!agent?.modelId || typeof pin !== "string" || !pin) return;
+  const byId = state.conversations.byConversationId;
+  for (const conversationId of state.conversations.allConversationIds) {
+    if (byId[conversationId]?.agentId !== agentId) continue;
+    const entry = state.instanceModelOverrides?.byConversationId?.[conversationId];
+    const base = entry?.baseSettings;
+    if (!base || base.model !== agent.modelId || base.offering_id) continue;
+    yield put(
+      updateBaseSettings({
+        conversationId,
+        baseSettings: { ...base, offering_id: pin },
+      }),
+    );
+  }
+}
+
 export function* watchDefinitionChanges(): Generator {
+  yield takeEvery([mergePartialAgent.type, upsertAgent.type], handleAgentSettingsLoaded);
   yield debounce(
     DEBOUNCE_MS,
     setAgentVariableDefinitions.type,

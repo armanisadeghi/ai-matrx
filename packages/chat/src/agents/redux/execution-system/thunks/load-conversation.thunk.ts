@@ -558,10 +558,26 @@ export const loadConversation = createAsyncThunk<
     // conversation must NOT ship a config_overrides.model equal to the default.
     // (Settings base stays empty here: the server applies the agent defaults
     // and conv.overrides carries the persisted setting deltas.)
+    // The base carries the agent's CLASS for that model too: the server keeps
+    // the agent's settings.offering_id when the run's model is the agent's
+    // own, so a reopened Qwen3.8 27B · Matrx Lightning chat must not show (or
+    // diff against) the preferred Matrx Fast class.
+    const baseClassPin = conv.last_model_id
+      ? await agentClassPinForModel(
+          getState() as ChatRootState,
+          conv.initial_agent_id,
+          conv.last_model_id,
+        )
+      : null;
     dispatch(
       initInstanceOverrides({
         conversationId,
-        baseSettings: conv.last_model_id ? { model: conv.last_model_id } : {},
+        baseSettings: conv.last_model_id
+          ? {
+              model: conv.last_model_id,
+              ...(baseClassPin ? { offering_id: baseClassPin } : {}),
+            }
+          : {},
       }),
     );
     if (
@@ -768,4 +784,34 @@ function storedTtftMs(metadata: unknown): number | null {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
   const value = (metadata as Record<string, unknown>).ttft_ms;
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * The agent's class pin when `modelId` is the agent's own model, else null.
+ * Reads the loaded definition first; otherwise one row from agent.definition.
+ * A failed read answers null (the picker then names the model's preferred
+ * class, which is also what an unreadable agent's server run would use).
+ */
+async function agentClassPinForModel(
+  state: ChatRootState,
+  agentId: string | null | undefined,
+  modelId: string,
+): Promise<string | null> {
+  if (!agentId) return null;
+  const record = state.agentDefinition?.agents?.[agentId] as
+    | { modelId?: string | null; settings?: { offering_id?: unknown } | null }
+    | undefined;
+  if (record?.settings && record.modelId) {
+    const pin = record.settings.offering_id;
+    return record.modelId === modelId && typeof pin === "string" && pin ? pin : null;
+  }
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("definition")
+    .select("model_id, settings")
+    .eq("id", agentId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const pin = (data.settings as { offering_id?: unknown } | null)?.offering_id;
+  return data.model_id === modelId && typeof pin === "string" && pin ? pin : null;
 }
