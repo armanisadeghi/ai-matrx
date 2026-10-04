@@ -16,7 +16,7 @@
 import Link from "next/link";
 import { ArrowRight, ChevronRight, Coffee, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as ControlButton, ControlRow } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton, ControlRow, RowGroup, SettingRow } from "@ai-matrx/design-system/controls";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { InstallStudyAppButton } from "../../components/InstallStudyAppButton";
 import type { EducationSnapshot } from "../types";
@@ -94,44 +94,38 @@ export function StudyTodayBlock({ snapshot }: { snapshot: EducationSnapshot }) {
           </Button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        // THE ROW PATTERN (design-system RowGroup + SettingRow): the title gets
+        // the row's width and truncates last; the minutes ride in the 12px line
+        // with the reason; the one Start control never yields width. The old
+        // card-per-item gave the button and "~31 min" more room than the title
+        // ("Flashcards: r…" at 375px, 2026-10-04).
+        <RowGroup>
           {nextActions.map((action) => {
             const Icon = action.icon;
             return (
-              <li
+              <SettingRow
                 key={action.key}
-                className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/50 p-3"
+                label={
+                  <>
+                    <Icon className="mr-1.5 inline h-4 w-4 align-[-3px] text-primary" />
+                    {action.label}
+                  </>
+                }
+                line={
+                  action.minutes != null
+                    ? `~${action.minutes} min · ${action.why}`
+                    : action.why
+                }
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium text-foreground">
-                      {action.label}
-                    </span>
-                    {action.minutes != null && (
-                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                        ~{action.minutes} min
-                      </span>
-                    )}
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {action.why}
-                  </p>
-                </div>
                 {action.href && (
-                  <Button asChild size="sm" className="h-8 shrink-0 gap-1 px-3 text-xs">
-                    <Link href={action.href} data-tap-target>
-                      Start
-                      <ChevronRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
+                  <ControlButton variant="primary" asChild iconEnd={<ChevronRight />}>
+                    <Link href={action.href}>Start</Link>
+                  </ControlButton>
                 )}
-              </li>
+              </SettingRow>
             );
           })}
-        </ul>
+        </RowGroup>
       )}
     </section>
   );

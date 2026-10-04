@@ -55,11 +55,13 @@ function availabilityBadge(
  * Compact, touch-safe links for a module's real destinations and optional live
  * metrics. Callers own reads, access filtering, count semantics, and routes.
  *
- * Below `sm` the pills sit in a two-row, sideways-scrolling grid. A grid cell
- * stretches its item by default, which drew every pill as wide as the widest
- * one in its column with the label pushed left (2026-10-04, /education/overview
- * at 375px). A pill is never stretched: each one hugs its label
- * (`justify-self-start`); the design-system pill guard flags a stretched pill.
+ * The pills FLOW and wrap at every width, 6px apart (each pill's 3px
+ * half-gap). Each hugs its label and never grows past its row: a label wider
+ * than the space truncates inside the pill, never past the page gutter.
+ * History (2026-10-04, /education/overview at 375px): the phone layout was a
+ * two-row grid — first every pill stretched to its column (label pushed left),
+ * then, hugging, a long pill ran off the right edge. The design-system pill
+ * guard flags a stretched pill and a pill that overflows its container.
  */
 export function MetricNavigation({
   label,
@@ -70,7 +72,7 @@ export function MetricNavigation({
     <section
       aria-label={label}
       className={cn(
-        "grid max-w-full grid-flow-col auto-cols-max grid-rows-2 gap-2 overflow-x-auto pb-1 sm:flex sm:flex-wrap sm:overflow-visible sm:pb-0",
+        "flex max-w-full flex-wrap gap-1.5",
         className,
       )}
     >
@@ -97,7 +99,7 @@ export function MetricNavigation({
             data-surface-value={
               item.value !== undefined ? `${item.key}_count` : undefined
             }
-            className="inline-flex min-h-11 min-w-0 items-center gap-2 justify-self-start rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span
               className={cn(
@@ -115,11 +117,11 @@ export function MetricNavigation({
             ) : state === "unavailable" ? (
               <span className="text-xs text-muted-foreground">Count unavailable</span>
             ) : item.value !== undefined ? (
-              <span className="font-semibold tabular-nums text-foreground">
+              <span className="shrink-0 font-semibold tabular-nums text-foreground">
                 {formatValue(item.value)}
               </span>
             ) : null}
-            <span className="min-w-0 break-words text-muted-foreground">
+            <span className="min-w-0 truncate text-muted-foreground">
               {item.label}
             </span>
             {availabilityBadge(item.availability ?? "ready")}
