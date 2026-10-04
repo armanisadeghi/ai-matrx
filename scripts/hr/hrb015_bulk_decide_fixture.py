@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# matrx-agent-traffic: exempt calls only Supabase PostgREST/GoTrue; aimatrx.com appears only in fixture email addresses
 """HRB-015 / T-L10-3 — a timecard standing at MANAGER APPROVAL, attested by the employee himself.
 
 WHY THIS FIXTURE EXISTS

@@ -45,7 +45,7 @@ PLANT = os.environ.get("SN_A12_PLANT", "")
 ORG = "0a54df90-eab8-4d07-ab29-81a45fb41e04"  # Cedar Ridge Physical Therapy
 AGENT = os.environ.get("SN_A12_AGENT", "4075cc74-eae8-4885-ad50-963570c30a49")  # General Chat (Copy), carries `dataset`
 FORBIDDEN = ("3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7")
-UA = {"user-agent": "matrx-safety-net-a12/1.0"}
+UA = {"user-agent": "matrx-safety-net-a12/1.0", "X-Matrx-Agent-Traffic": "safety-net-a12"}  # marker mirrors lib/agent-traffic/marker.ts
 
 
 def _env_file(path: Path) -> dict[str, str]:

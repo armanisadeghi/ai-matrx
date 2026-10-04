@@ -23,6 +23,7 @@ from playwright.async_api import async_playwright
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 ORIGIN = "https://www.aimatrx.com"
+AGENT_TRAFFIC_TOOL = "t-l1-5-production-offboarding-check"  # mirrors lib/agent-traffic/marker.ts
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"
 ADMIN = "admin@admin.com"
 SHOTS = ("/private/tmp/claude-501/-Users-armanisadeghi-code-common-docs/"
@@ -75,6 +76,7 @@ async def main():
         browser = await pw.chromium.launch()
         ctx = await browser.new_context(viewport={"width": 1440, "height": 950})
         await ctx.add_cookies(cookies(session, "www.aimatrx.com"))
+        await ctx.add_cookies([{"name": "matrx_agent_traffic", "value": AGENT_TRAFFIC_TOOL, "url": ORIGIN}])
         page = await ctx.new_page()
 
         await page.goto(f"{ORIGIN}/hr/people?org={ORG}", wait_until="networkidle")

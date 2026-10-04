@@ -39,13 +39,13 @@ ADMIN=87a6e699-3622-4869-8843-d0867456c0dd        # admin@admin.com — the only
 # session is evicted.
 BASE=http://store-off.localhost:3001
 
-page() { curl -s "$BASE/f/$FORM" --max-time 90 | python3 -c "
+page() { curl -s -H "X-Matrx-Agent-Traffic: store-off-proof" "$BASE/f/$FORM" --max-time 90 | python3 -c "
 import sys,re,html
 t=re.sub(r'<script.*?</script>','',sys.stdin.read(),flags=re.S)
 m=re.search(r'<main.*?</main>',t,flags=re.S)
 print(' '.join(html.unescape(re.sub(r'<[^>]+>',' ',m.group(0) if m else '')).split())[:400])
 "; }
-code() { curl -s -o /dev/null -w '%{http_code}' "$BASE/f/$FORM" --max-time 90; }
+code() { curl -s -H "X-Matrx-Agent-Traffic: store-off-proof" -o /dev/null -w '%{http_code}' "$BASE/f/$FORM" --max-time 90; }
 
 # THE BORROW. It locks this organization's switch against every other proof, reads what
 # the crew actually has, and arms the trap that puts exactly that back on every exit path.

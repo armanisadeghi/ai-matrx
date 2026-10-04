@@ -1,3 +1,4 @@
+# matrx-agent-traffic: exempt calls only Supabase PostgREST/GoTrue; aimatrx.com appears only in fixture email addresses
 """hr_l1_62 — a scope-restricted grant gets a scope-restricted QUEUE. Real HTTPS PostgREST.
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with httpx \

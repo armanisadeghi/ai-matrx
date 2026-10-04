@@ -37,6 +37,7 @@
 import { createHash, randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
+import { agentTrafficHeaders } from "./lib/agent-traffic.mjs";
 
 // ---------------------------------------------------------------------------
 // Inventory — every file currently referenced from /public/ that we want
@@ -254,6 +255,7 @@ async function findExisting(
 
   const res = await fetch(url, {
     headers: {
+      ...agentTrafficHeaders("migrate-public-assets-to-cdn"),
       Authorization: `Bearer ${ADMIN_JWT}`,
       ...(ADMIN_ORGANIZATION_ID
         ? { "X-Organization-Id": ADMIN_ORGANIZATION_ID }
@@ -296,6 +298,7 @@ async function uploadOne(
   const res = await fetch(`${BACKEND_URL}/files/upload`, {
     method: "POST",
     headers: {
+      ...agentTrafficHeaders("migrate-public-assets-to-cdn"),
       Authorization: `Bearer ${ADMIN_JWT}`,
       ...(ADMIN_ORGANIZATION_ID
         ? { "X-Organization-Id": ADMIN_ORGANIZATION_ID }

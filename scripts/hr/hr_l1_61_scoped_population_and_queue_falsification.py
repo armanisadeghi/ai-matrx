@@ -1,3 +1,4 @@
+# matrx-agent-traffic: exempt calls only Supabase PostgREST/GoTrue; aimatrx.com appears only in fixture email addresses
 """hr_l1_61 — falsification of the two residuals hr_l1_59 left open, over real HTTPS PostgREST.
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with httpx \

@@ -27,6 +27,8 @@ load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 load_dotenv("/Users/armanisadeghi/code/matrx-frontend/.env.local", override=False)
 
 ORIGIN  = "http://localhost:3000"
+AGENT_TRAFFIC_TOOL = "continued-access-letter-render"
+AGENT_TRAFFIC_HEADERS = {"X-Matrx-Agent-Traffic": AGENT_TRAFFIC_TOOL}  # mirrors lib/agent-traffic/marker.ts
 BACKEND = os.environ.get("NEXT_PUBLIC_BACKEND_URL_PROD", "https://server.app.matrxserver.com").rstrip("/")
 ORG     = "2643e470-b275-47f3-95f3-ae275ad3ca47"
 LETTER  = "ab12c3fd-0f49-44be-b61b-3048d1951817"   # consented by the departed member
@@ -61,6 +63,7 @@ async def main():
         b = await pw.chromium.launch()
         ctx = await b.new_context(viewport={"width": 1400, "height": 950},
                                   accept_downloads=True)
+        await ctx.add_cookies([{"name": "matrx_agent_traffic", "value": AGENT_TRAFFIC_TOOL, "url": ORIGIN}])
         page = await ctx.new_page()
         # Single-use nonce handshake — the ONLY way into /api/dev-login. The old
         # ?token= path authenticated from DEV_LOGIN_TOKEN, a durable credential,
@@ -103,7 +106,8 @@ async def main():
             access = tok.json()["access_token"]
             r = await hc.post(
                 f"{BACKEND}/api/hr/verification-letters/{LETTER}/generate",
-                headers={"Authorization": f"Bearer {access}",
+                headers={**AGENT_TRAFFIC_HEADERS,
+                         "Authorization": f"Bearer {access}",
                          "X-Organization-Id": ORG,
                          "Content-Type": "application/json"},
                 json={"organization_id": ORG, "includes_compensation": True,

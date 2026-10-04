@@ -1,3 +1,4 @@
+// matrx-agent-traffic: exempt reads cookies from a persistent profile and calls only Supabase GoTrue; never requests our app or server
 /* Exact-run cleanup only. It never navigates, logs in, imports, or writes product data. */
 const fs = require("node:fs/promises");
 const syncFs = require("node:fs");

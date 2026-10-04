@@ -23,6 +23,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { markBrowserAgentTraffic } from "../lib/agent-traffic.mjs";
 
 const require = createRequire("/Users/armanisadeghi/code/matrx-frontend/package.json");
 const { chromium } = require("playwright");
@@ -93,7 +94,7 @@ await page.evaluate(() => {
 const L = (s) => page.locator(s).first();
 const out = (v) => console.log(typeof v === "string" ? v : JSON.stringify(v, null, 1));
 switch (cmd) {
-  case "goto": await page.goto(args[0], { waitUntil: "load", timeout: 120000 }); out(page.url()); break;
+  case "goto": await markBrowserAgentTraffic(ctx, "real-tests", args[0]).catch(() => {}); await page.goto(args[0], { waitUntil: "load", timeout: 120000 }); out(page.url()); break;
   case "url": out(page.url()); break;
   case "title": out(await page.title()); break;
   case "text": { const max = Number(args[1] ?? 8000); const t = args[0] ? await L(args[0]).innerText() : await page.evaluate(() => document.body.innerText); out(t.slice(0, max)); break; }

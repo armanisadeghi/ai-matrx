@@ -63,6 +63,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
+import { agentTrafficHeaders, markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -111,7 +112,7 @@ if (!opts.surface || opts.routes.length === 0)
 if (opts.commit) {
   let deployed;
   try {
-    const res = await fetch(`${opts.base}/api/version`, { redirect: "follow" });
+    const res = await fetch(`${opts.base}/api/version`, { headers: agentTrafficHeaders("surface-probe"), redirect: "follow" });
     deployed = (await res.json()).commit;
   } catch (error) {
     fail(`could not read ${opts.base}/api/version: ${error?.message ?? error}`);
@@ -461,6 +462,7 @@ const context = await chromium.launchPersistentContext(profileDir, {
   args: launchArgs,
   ...(executablePath ? { executablePath } : {}),
 });
+await markBrowserAgentTraffic(context, "surface-probe", opts.base);
 const page = context.pages()[0] ?? (await context.newPage());
 try {
   const cdp = await context.newCDPSession(page);

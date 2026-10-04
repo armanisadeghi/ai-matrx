@@ -1,3 +1,4 @@
+// matrx-agent-traffic: exempt static source lint; our hosts appear only in comments and fixture strings
 /**
  * check-cross-deployment-links — the guard for THE CROSS-DEPLOYMENT PREFETCH
  * CLASS.

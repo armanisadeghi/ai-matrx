@@ -1,3 +1,4 @@
+# matrx-agent-traffic: exempt calls only Supabase PostgREST/GoTrue; aimatrx.com appears only in fixture email addresses
 """hr_l1_59 — the six-way falsification of the PREHIRE CROSS-TENANT LEAK, over real HTTPS PostgREST.
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with httpx \

@@ -36,7 +36,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 FREEZE = os.environ.get("SN_B_FREEZE_FROM")
 SHIPPERS = ["ship-all-codex", "ship-all-repos"]
 REPOS = ["aidream", "matrx-frontend"]
-UA = {"user-agent": "matrx-safety-net-b/1.0"}
+UA = {"user-agent": "matrx-safety-net-b/1.0", "X-Matrx-Agent-Traffic": "safety-net-b"}  # marker mirrors lib/agent-traffic/marker.ts
 results: list[dict] = []
 
 

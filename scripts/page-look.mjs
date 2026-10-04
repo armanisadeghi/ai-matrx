@@ -66,6 +66,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { agentTrafficHeaders, markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -112,7 +113,7 @@ for (const file of [".env.local", ".env"]) {
 if (opts.commit) {
   let deployed;
   try {
-    deployed = (await (await fetch(`${opts.base}/api/version`)).json()).commit;
+    deployed = (await (await fetch(`${opts.base}/api/version`, { headers: agentTrafficHeaders("page-look") })).json()).commit;
   } catch (error) {
     fail(`could not read ${opts.base}/api/version: ${error?.message ?? error}`);
   }
@@ -333,6 +334,7 @@ const context = await chromium.launchPersistentContext(profileDir, {
   args: ["--no-sandbox"],
   ...(executablePath ? { executablePath } : {}),
 });
+await markBrowserAgentTraffic(context, "page-look", opts.base);
 // Header paint probe (see headerPaint above): samples the header slot — or,
 // before hydration, the server-rendered ghost over it — on every frame.
 await context.addInitScript(() => {

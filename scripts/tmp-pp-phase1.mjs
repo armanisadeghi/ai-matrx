@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { readFileSync, existsSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright-core");
+import { markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
 
 for (const file of [".env.local", ".env"]) {
   if (!existsSync(file)) continue;
@@ -16,6 +17,7 @@ const CLASS_NAME = "Agent Test Chemistry " + Date.now();
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+await markBrowserAgentTraffic(context, "tmp-pp-phase1", BASE);
 const page = await context.newPage();
 
 try {

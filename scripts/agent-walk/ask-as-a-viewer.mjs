@@ -16,6 +16,7 @@
  */
 import { formatDurationMs } from "@ai-matrx/kit/format";
 import { readFileSync, existsSync } from "node:fs";
+import { agentTrafficHeaders } from "../lib/agent-traffic.mjs";
 
 const SERVER = process.env.MATRX_SERVER ?? "https://server.app.matrxserver.com";
 // FIXTURE-ORGS 2026-09-23: repointed from the archived -719980a1 duplicate to the kept Ironclad and its Service Calls.
@@ -54,6 +55,7 @@ const started = Date.now();
 const answered = await fetch(`${SERVER}/ai/mandates/${MANDATE}`, {
   method: "POST",
   headers: {
+    ...agentTrafficHeaders("ask-as-a-viewer"),
     authorization: `Bearer ${session.access_token}`,
     "content-type": "application/json",
     "x-organization-id": ORG,

@@ -1,3 +1,4 @@
+// matrx-agent-traffic: exempt calls only Supabase GoTrue admin; fixtures.aimatrx.com is an email domain, not a request
 // scripts/lib/persona.mjs
 //
 // THE ONE WAY A NODE SCRIPT GETS A TEST PERSON. Twin of aidream/aidream/testing/persona.py.

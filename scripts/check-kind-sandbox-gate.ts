@@ -46,6 +46,7 @@ import path from "node:path";
 
 import { startGateServer, type GateServer } from "../features/content-ir/sandbox/browser/gate-server";
 import { exitAfterDrain } from "./lib/exit-after-drain";
+import { agentTrafficHeaders } from "./lib/agent-traffic.mjs";
 
 const ROOT = path.resolve(__dirname, "..");
 const ROUTE_FILE = path.join(ROOT, "app/kind-sandbox/route.ts");
@@ -115,7 +116,10 @@ function checkPolicySource(): void {
 async function checkLiveParity(server: GateServer): Promise<void> {
     let response: Response;
     try {
-        response = await fetch(PRODUCTION, { signal: AbortSignal.timeout(20_000) });
+        response = await fetch(PRODUCTION, {
+            headers: agentTrafficHeaders("check-kind-sandbox-gate"),
+            signal: AbortSignal.timeout(20_000),
+        });
     } catch (error) {
         fail(
             `LIVE PARITY — UNMEASURED: ${PRODUCTION} could not be read (${String(error)}). ` +

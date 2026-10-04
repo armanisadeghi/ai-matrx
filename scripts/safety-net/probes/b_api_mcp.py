@@ -92,14 +92,14 @@ elif TARGET == "clone":
     SERVER = os.environ.get("SN_CLONE_SERVER", "http://localhost:8200/api")
     if ref not in DB_URL:
         raise SystemExit(f"refused: the clone env does not name the current clone {ref}")
-    with urllib.request.urlopen(SERVER.removesuffix("/api") + "/health/database-identity", timeout=10) as r:  # noqa: S310
+    with urllib.request.urlopen(urllib.request.Request(SERVER.removesuffix("/api") + "/health/database-identity", headers={"X-Matrx-Agent-Traffic": "safety-net-b"}), timeout=10) as r:  # noqa: S310
         pairing = json.loads(r.read() or b"{}")
     if pairing.get("database_project_ref") != ref:
         raise SystemExit(f"refused: the local server is not paired with the clone {ref}: {pairing}")
 else:
     raise SystemExit("SN_TARGET must be live or clone")
 MCP_URL = SERVER + "/matrx-mcp"
-UA = {"user-agent": "matrx-safety-net-b/1.0"}
+UA = {"user-agent": "matrx-safety-net-b/1.0", "X-Matrx-Agent-Traffic": "safety-net-b"}  # marker mirrors lib/agent-traffic/marker.ts
 
 results: list[dict] = []
 signatures: dict[str, object] = {}

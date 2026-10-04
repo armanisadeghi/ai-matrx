@@ -1,3 +1,4 @@
+// matrx-agent-traffic: exempt fetch( calls are fixture source strings fed to a lint rule, never executed
 /**
  * The Cloud Browser regression was a raw authenticated fetch beside a canonical
  * `postJson` call. The guard must judge that fetch itself, not imports/comments

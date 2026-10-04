@@ -23,7 +23,11 @@ function answers(origin: string): boolean {
     try {
         const code = execFileSync(
             "curl",
-            ["-s", "-o", "/dev/null", "-m", "4", "-w", "%{http_code}", `${origin}/kind-sandbox`],
+            [
+                "-s", "-o", "/dev/null", "-m", "4", "-w", "%{http_code}",
+                "-H", "X-Matrx-Agent-Traffic: kind-sandbox-base-url",
+                `${origin}/kind-sandbox`,
+            ],
             { encoding: "utf8" },
         ).trim();
         return code === "200";

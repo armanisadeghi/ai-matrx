@@ -21,6 +21,9 @@
 // URL — forcing an organization from outside tests a state no person can reach, which is the
 // picker's own doctrine.
 
+import { basename } from "node:path";
+import { markBrowserAgentTraffic } from "./agent-traffic.mjs";
+
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function until(label, fn, timeoutMs = 25000) {
@@ -43,6 +46,8 @@ export async function until(label, fn, timeoutMs = 25000) {
  * in a URL. Returns the email the app itself says is signed in, so a caller never assumes.
  */
 export async function signIn(page, origin, email, password, who = email) {
+  // Label every walk that signs in here as our agent traffic (cookie, by the script's own name).
+  await markBrowserAgentTraffic(page.context(), basename(process.argv[1] ?? "seat-walk").replace(/\.[cm]?[jt]s$/, ""), origin);
   await page.goto(`${origin}/login`, { waitUntil: "domcontentloaded", timeout: 120000 });
   // Hydration: the form is server-rendered but only accepts input once the bundle attaches,
   // and a fill that lands before that silently does nothing.

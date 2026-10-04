@@ -1,3 +1,4 @@
+# matrx-agent-traffic: exempt calls only Supabase PostgREST/GoTrue; aimatrx.com appears only in fixture email addresses
 """hr_l1_65 — the directory narrows to the viewer. Real HTTPS PostgREST, real sessions.
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with httpx \

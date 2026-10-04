@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// matrx-agent-traffic: exempt self-test fixture strings only; makes no request to our app or server
 /**
  * check-no-placeholder-data.mjs — THE OWNER'S NO-FAKE-TEST-DATA LAW, ENFORCED.
  *

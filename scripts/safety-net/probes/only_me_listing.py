@@ -50,7 +50,7 @@ STAMP = os.environ.get("SN_STAMP") or datetime.now(ZoneInfo("America/Los_Angeles
 PLANT = os.environ.get("SN_OML_PLANT", "")
 ORG = "0a54df90-eab8-4d07-ab29-81a45fb41e04"  # Cedar Ridge Physical Therapy
 FORBIDDEN = ("3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7")
-UA = {"user-agent": "matrx-safety-net-only-me-listing/1.0"}
+UA = {"user-agent": "matrx-safety-net-only-me-listing/1.0", "X-Matrx-Agent-Traffic": "safety-net-only-me-listing"}  # marker mirrors lib/agent-traffic/marker.ts
 
 
 def _env_file(path: Path) -> dict[str, str]:

@@ -2,6 +2,7 @@ import { createRequire } from "node:module";
 import { readFileSync, existsSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright-core");
+import { markBrowserAgentTraffic } from "./lib/agent-traffic.mjs";
 
 for (const file of [".env.local", ".env"]) {
   if (!existsSync(file)) continue;
@@ -31,6 +32,7 @@ what enters and leaves the cell via diffusion, osmosis, and active transport.`;
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+await markBrowserAgentTraffic(context, "tmp-pp-phase2", BASE);
 const page = await context.newPage();
 page.on("pageerror", (e) => console.log("PAGEERROR:", String(e.message).slice(0, 200)));
 page.on("console", (m) => m.type() === "error" && console.log("CONSOLE ERROR:", m.text().slice(0, 200)));

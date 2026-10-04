@@ -52,7 +52,7 @@ STAMP = os.environ.get("SN_STAMP") or datetime.now(ZoneInfo("America/Los_Angeles
 PLANT = os.environ.get("SN_EXT_PLANT", "")
 ORG = os.environ.get("SN_EXT_ORG", "")  # resolved in main() when empty: admin owns it, test@test.com is outside it
 FORBIDDEN = ("3e790542-fdaf-40b2-8bf3-658bf94fe67f", "c1aabdc0-4d94-42d4-9ddc-91b68ef9c0a7")
-UA = {"user-agent": "matrx-safety-net-external-tables/1.0"}
+UA = {"user-agent": "matrx-safety-net-external-tables/1.0", "X-Matrx-Agent-Traffic": "safety-net-external-tables"}  # marker mirrors lib/agent-traffic/marker.ts
 OUTSIDE_SCHEMA, OUTSIDE_TABLE = os.environ.get("SN_EXT_TABLE", "scratch.appointments").split(".", 1)
 
 

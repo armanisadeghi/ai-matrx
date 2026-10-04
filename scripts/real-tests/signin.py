@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# matrx-agent-traffic: exempt its only requests go to Supabase GoTrue; the browser step is pw.mjs, which marks itself
 """Sign a real-test run's private Chrome in as admin@admin.com on the deployed site, no password.
 
 Mints a one-time magic-link token for admin@admin.com with the live project's secret key (read from

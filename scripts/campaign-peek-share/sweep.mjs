@@ -17,6 +17,7 @@
 import { chromium } from "playwright";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
+import { markBrowserAgentTraffic } from "../lib/agent-traffic.mjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const ROOT = "/Users/armanisadeghi/code/matrx-frontend";
@@ -54,6 +55,7 @@ async function main() {
 
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({ viewport: { width: 1600, height: 1100 } });
+  await markBrowserAgentTraffic(ctx, "campaign-peek-share-sweep", ORIGIN);
   const page = await ctx.newPage();
 
   if (loginUrl) {

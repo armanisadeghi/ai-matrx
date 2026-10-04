@@ -14,6 +14,8 @@ const { chromium } = require('/Users/armanisadeghi/code/matrx-frontend/node_modu
 
 const FRONTEND = 'https://www.aimatrx.com';
 const API = 'https://server.app.matrxserver.com';
+// mirrors lib/agent-traffic/marker.ts: our tool's requests carry the agent-traffic marker
+const AGENT_TRAFFIC_TOOL = 'proton-import-retry-acceptance';
 const DB = 'https://db.matrxserver.com';
 const EXE =
   '/Users/armanisadeghi/Library/Caches/ms-playwright/chromium-1243/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing';
@@ -416,6 +418,7 @@ async function api(url, options = {}) {
   assert(token && apiKey, 'canonical_auth_unavailable');
   const headers = {
     ...options.headers,
+    'X-Matrx-Agent-Traffic': AGENT_TRAFFIC_TOOL,
     Authorization: `Bearer ${token}`,
     apikey: apiKey,
   };
@@ -567,6 +570,7 @@ async function main() {
       executablePath: EXE,
       headless: true,
     });
+    await context.addCookies([{ name: 'matrx_agent_traffic', value: AGENT_TRAFFIC_TOOL, url: FRONTEND }]);
     setStage('login_navigation');
     page = await context.newPage();
     context.on('request', (request) => {
@@ -612,6 +616,7 @@ async function main() {
     const preflight = await fetch(`${API}/api/vault/items`, {
       method: 'OPTIONS',
       headers: {
+        'X-Matrx-Agent-Traffic': AGENT_TRAFFIC_TOOL,
         Origin: FRONTEND,
         'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'authorization,content-type,x-organization-id,idempotency-key',

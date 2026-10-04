@@ -189,7 +189,7 @@ release_outcome_serving() {
         return $?
     fi
     local body
-    body="$(curl -sS -m 20 -L "${domain}/api/version" 2>/dev/null || true)"
+    body="$(curl -sS -m 20 -L -H "X-Matrx-Agent-Traffic: release-outcome" "${domain}/api/version" 2>/dev/null || true)"
     node -e '
         try { const d = JSON.parse(process.argv[1]); process.stdout.write(String(d.deploymentId ?? "")); }
         catch (e) { process.stdout.write(""); }

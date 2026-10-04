@@ -16,6 +16,7 @@
  *   node --env-file=.env.local scripts/delete-is-archive/live-proof-2.mjs [--origin https://www.aimatrx.com] [--out dir]
  */
 import { chromium } from "playwright";
+import { markBrowserAgentTraffic } from "../lib/agent-traffic.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { mkdirSync, writeFileSync } from "node:fs";
 
@@ -71,6 +72,7 @@ function chunked(name, value) {
 async function signedInPage(session) {
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await markBrowserAgentTraffic(ctx, "delete-is-archive-live-proof-2", ORIGIN);
   const host = new URL(ORIGIN).hostname.replace(/^www\./, "");
   await ctx.addCookies(chunked("sb-matrx-auth-v2", cookieValue(session)).map((c) => ({
     ...c, domain: `.${host}`, path: "/", sameSite: "Lax", secure: true,

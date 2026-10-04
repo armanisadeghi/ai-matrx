@@ -1,4 +1,5 @@
 #!/usr/bin/env npx tsx
+// matrx-agent-traffic: exempt only calls Supabase RPCs; no request to our app or Python server
 /**
  * `pnpm check:backend-door-callers` — a SECURITY DEFINER door that the SERVER
  * itself calls must not refuse the server.

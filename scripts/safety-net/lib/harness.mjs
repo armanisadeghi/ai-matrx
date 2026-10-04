@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { chromium } from "playwright";
 
+import { markBrowserAgentTraffic } from "../../lib/agent-traffic.mjs";
 import { setOrganization as seatSetOrganization, signIn, sleep, until } from "../../lib/seat-browser.mjs";
 
 export { sleep, until };
@@ -145,6 +146,7 @@ export async function openWalk(name, { headless = true } = {}) {
       const s = SEATS[seat];
       if (!s?.password) throw new Error(`no password for seat ${seat} in .env.local / aidream/.env`);
       const context = await browser.newContext({ viewport: { width, height }, colorScheme });
+      await markBrowserAgentTraffic(context, "safety-net-walk", ORIGIN);
       await installIntercepts(context);
       if (process.env.SN_INJECT_CSS) {
         await context.addInitScript((css) => {
@@ -189,6 +191,7 @@ export async function openWalk(name, { headless = true } = {}) {
      */
     async anonPage({ width = 390, height = 844, colorScheme = "light" } = {}) {
       const context = await browser.newContext({ viewport: { width, height }, colorScheme });
+      await markBrowserAgentTraffic(context, "safety-net-walk", ORIGIN);
       await installIntercepts(context);
       if (process.env.SN_INJECT_CSS) {
         await context.addInitScript((css) => {
