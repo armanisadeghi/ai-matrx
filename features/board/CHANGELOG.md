@@ -1,5 +1,11 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Tile defects from the final walk (project, pickers, titles, picklist, pill guard)
+
+- Project tile: the header editors are the project page's own (`ProjectRecordWorkspace`); they are read-only only for a person with no admin/owner role on that project, on the page too (admin@admin.com is not a member of Arman's projects). The task-add input "ignored typing" because ProInput's hover cluster (mic, "...") sat over the middle of a 206 px field and a press there hit the mic, not the field. Below 260 px (`PRO_INPUT_NARROW_FIELD_PX`) the cluster now appears on focus, never on hover (`hoverRevealsCluster`, guard `components/official/__tests__/proInput-narrow-field.test.ts`).
+- Pickers hide trashed and archived by default. The Project picker offered trashed projects because `get_user_full_context` (the nav tree) listed them: the function now filters `p.deleted_at is null` (applied live through the Supabase MCP). `RecordList` gains `isArchived` (hidden until the "Archived (n)" disclosure opens, `ArchivedDisclosure`); the Picklist picker passes its `archivedIds`. Guard `__tests__/picker-archived-hidden.test.tsx`.
+- Deck and Study kit tiles follow the record's current name: `SetDetailView onNameKnown`, `KitHub renderHeader` -> `titleToAdopt`, like note, task, project, scope and table. Guard `__tests__/tile-title-follows-record.test.ts`.
+
 ## 2026-10-04 — Picklist, Flashcard deck, Study kit and Scope items
 
 - New item types, each with the feature's own page component: Picklist (`TableRecordBody`, the `/lists/<id>` table page body), Flashcard deck (`SetDetailView embedded`, `CreateDeckPage embedded` to start), Study kit (`KitHub`, `ManualKitCreator` to start), Scope (`ScopeDetailEditor`, `NewScopeInline` to start). Board menu rows added. New surface `matrx-user/scope-detail` (synced and checked live); `briefValues` added to the flashcard-set and kits surfaces. Remount ledger: list and scope green; fc_set and study-kit red with reasons (see FEATURE.md Open 8).
