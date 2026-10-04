@@ -200,6 +200,10 @@ export type ControlRule = {
   accepts?: unknown[];
   /** Applies only when every pair matches the request context (e.g. one media operation). */
   context?: Record<string, unknown>;
+  /** List settings: keep the first N items (e.g. Groq takes at most 4 stop sequences). */
+  max_items?: number;
+  /** List settings: drop every string item this regex fully matches (e.g. blank stops). */
+  drop_items_matching?: string;
   /** Declared drop: `{"drop": true, "why": ...}`. */
   drop?: boolean;
   why?: string;

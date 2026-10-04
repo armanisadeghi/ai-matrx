@@ -24,6 +24,8 @@ export const SERVER_RULE_FIELDS = [
   "drop",
   "why",
   "context",
+  "max_items",
+  "drop_items_matching",
 ] as const;
 
 /** Contract K6 fields the server model does not define yet. */
