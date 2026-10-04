@@ -191,8 +191,8 @@ begin
 end;
 $function$;
 
-revoke all on function custom.field_source_archived(uuid, uuid) from public, anon;
-
+-- No REVOKE here: a new definer is born with PUBLIC's EXECUTE cleared (§6d-4), and the door row below opens
+-- the signed-in lane before the grant.
 insert into platform.client_callable_door
   (schema_name, function_name, identity_args, declared_by, reason,
    signed_in_callers, anonymous_callers, non_client_lane, identity_argtypes, argument_rules)
