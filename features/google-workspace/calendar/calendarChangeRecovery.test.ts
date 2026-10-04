@@ -204,6 +204,80 @@ describe("calendar change recovery", () => {
     expect(calendarChangeResultMatches(rsvpAction, { ...result, event_id: "wrong-event" })).toBe(false);
   });
 
+  it("durably retains a well-shaped returned disagreement through source proof", () => {
+    const mismatchedResult = {
+      ...moveAction.preview,
+      event_id: "different-returned-event",
+      provider_etag: '"cedar-v2"',
+      reconciliation_pending: false,
+    };
+    const disagreed = attempt({
+      action: { ...moveAction, result: mismatchedResult },
+      phase: "reconciliation_required",
+      problem: "Returned result differs from the review.",
+    });
+    const storage = new MemoryStorage();
+    expect(writeCalendarChangeCollection(storage, scope, collection([disagreed]))).toBe(true);
+    const restored = readCalendarChangeCollection(storage, scope).collection.attempts[0];
+    expect(restored.action.result?.event_id).toBe("different-returned-event");
+
+    const proof = {
+      ...source,
+      target_etag: '"cedar-v2"',
+      starts_at: { dateTime: moveAction.request.starts_at },
+      ends_at: { dateTime: moveAction.request.ends_at },
+    };
+    const settled = { ...restored, source_proof: proof, phase: "source_requested" as const, problem: null };
+    expect(writeCalendarChangeCollection(storage, scope, collection([settled]))).toBe(true);
+    const reread = readCalendarChangeCollection(storage, scope).collection.attempts[0];
+    expect(reread.phase).toBe("source_requested");
+    expect(reread.action.result?.event_id).toBe("different-returned-event");
+  });
+
+  it("rejects every action carrying fields from a different generated request", () => {
+    expect(calendarChangeActionMatchesSource({
+      ...moveAction,
+      request: { ...moveAction.request, response_status: "accepted" },
+    }, source)).toBe(false);
+    const cancel = {
+      kind: "cancel",
+      request: {
+        connection_id: scope.connectionId, calendar_id: scope.calendarId, event_id: source.target_event_id,
+        occurrence: source.occurrence, expected_etag: source.target_etag, send_updates: "none",
+      },
+      preview: {
+        account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
+        access_role: "owner", event_id: source.target_event_id, occurrence: source.occurrence, event_summary: source.event_summary,
+        etag: source.target_etag, starts_at: source.starts_at, ends_at: source.ends_at, attendees: [], send_updates: "none",
+        guest_notification_behavior: "No updates.", action_notice: "Cancel organizer event.", recovery_notice: "No recreation.",
+      }, result: null,
+    } satisfies CalendarChangeAction;
+    expect(calendarChangeActionMatchesSource({ ...cancel, request: { ...cancel.request, ends_at: "2026-10-08T18:00:00Z" } }, source)).toBe(false);
+    const rsvp = {
+      kind: "rsvp",
+      request: {
+        connection_id: scope.connectionId, calendar_id: scope.calendarId, event_id: source.target_event_id,
+        occurrence: source.occurrence, expected_etag: source.target_etag, response_status: "accepted", send_updates: "none",
+      },
+      preview: {
+        account_email: source.account_email, calendar_id: source.calendar_id, calendar_summary: source.calendar_summary,
+        access_role: "owner", event_id: source.target_event_id, occurrence: source.occurrence, event_summary: source.event_summary,
+        organizer_email: source.organizer_email!, etag: source.target_etag, old_response_status: "tentative",
+        new_response_status: "accepted", send_updates: "none", guest_notification_behavior: "No updates.",
+        action_notice: "Only this response changes.", recovery_notice: "Fresh version required.",
+      }, result: null,
+    } satisfies CalendarChangeAction;
+    expect(calendarChangeActionMatchesSource({ ...rsvp, request: {
+      ...rsvp.request, starts_at: "2026-10-08T17:00:00Z", ends_at: "2026-10-08T18:00:00Z",
+    } }, source)).toBe(false);
+  });
+
+  it("binds stored account and calendar labels to the original source", () => {
+    const storage = new MemoryStorage();
+    expect(writeCalendarChangeCollection(storage, scope, collection([attempt({ account_label: "spoofed@example.com" })]))).toBe(false);
+    expect(writeCalendarChangeCollection(storage, scope, collection([attempt({ calendar_summary: "Spoofed calendar" })]))).toBe(false);
+  });
+
   it("distinguishes requested, unchanged, and divergent all-day RSVP states", () => {
     const allDaySource = {
       ...source,

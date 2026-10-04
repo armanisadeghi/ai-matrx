@@ -152,7 +152,7 @@ function attemptLabel(attempt: CalendarChangeAttempt): string {
 function resultSummary(attempt: CalendarChangeAttempt): string {
   if (attempt.phase === "reviewed_unattempted") return "Ready for confirmation. Nothing has been sent.";
   if (attempt.phase === "attempting") return "Confirmation started. Keep this action held until it settles.";
-  if (attempt.phase === "source_requested") return "The current Google source matches the reviewed change.";
+  if (attempt.phase === "source_requested") return "The current Google source matches the reviewed change. Notification delivery remains unverified.";
   if (attempt.phase === "source_unchanged") return "The current Google source still matches the original event.";
   if (attempt.phase === "source_divergent") return "The current Google source differs from both reviewed states.";
   if (attempt.phase === "succeeded") {
@@ -162,6 +162,20 @@ function resultSummary(attempt: CalendarChangeAttempt): string {
     return "Google returned a matching change result.";
   }
   return attempt.problem || "This action remains held until its source is checked.";
+}
+
+function ReturnedResultFacts({ attempt }: { attempt: CalendarChangeAttempt }) {
+  const result = attempt.action.result;
+  if (!result || calendarChangeResultMatches(attempt.action, result)) return null;
+  return <div className="grid gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+    <p className="font-medium text-foreground">Returned result differs</p>
+    <p>Reviewed account: {attempt.action.preview.account_email}</p>
+    <p>Returned account: {result.account_email}</p>
+    <p>Reviewed event: {attempt.action.preview.event_id}</p>
+    <p>Returned event: {result.event_id}</p>
+    <p>Reviewed version: {attempt.action.preview.etag}</p>
+    <p>Returned version: {result.etag}</p>
+  </div>;
 }
 
 function ReviewedChangeFacts({ attempt }: { attempt: CalendarChangeAttempt }) {
@@ -211,6 +225,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
   const [responseStatus, setResponseStatus] = useState<"" | CalendarRsvpRequest["response_status"]>("");
   const [busy, setBusy] = useState<Busy>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const epoch = useRef(0);
   const busyRef = useRef(false);
@@ -237,6 +252,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     setActiveAttemptId(held?.attempt_id ?? next.attempts.at(-1)?.attempt_id ?? null);
     setSource(null);
     setProblem(null);
+    setNotice(null);
   }, [actorId, organizationId, connectionId, accountLabel, calendar.id, storage]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -255,6 +271,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     setSendUpdates("");
     setResponseStatus("");
     setProblem(null);
+    setNotice(null);
   }
 
   function saveCollection(next: CalendarChangeCollection, failure: string): boolean {
@@ -278,7 +295,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     const requestedId = (selectedOverride ?? selectedEventId).trim();
     const requestedOccurrence = occurrenceOverride ?? occurrence;
     if (!requestedId || busyRef.current) return null;
-    setBusy(mode); busyRef.current = true; setProblem(null); setWarning(null);
+    setBusy(mode); busyRef.current = true; setProblem(null); setNotice(null); setWarning(null);
     const callEpoch = ++epoch.current;
     try {
       const value = await transport.readSource({ organizationId, request: {
@@ -351,7 +368,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     const request = buildRequest(source);
     if (!request) return;
     if (!invalidateUnattemptedReview()) return;
-    setBusy("preview"); busyRef.current = true; setProblem(null); setWarning(null);
+    setBusy("preview"); busyRef.current = true; setProblem(null); setNotice(null); setWarning(null);
     const callEpoch = ++epoch.current;
     try {
       let action: CalendarChangeAction;
@@ -414,7 +431,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     const attempting: CalendarChangeAttempt = { ...attempt, phase: "attempting", problem: null };
     const withAttempting = replaceCalendarChangeAttempt(collection, attempting);
     if (!withAttempting || !saveCollection(withAttempting, "The attempt could not be saved. Nothing was sent.")) return;
-    setBusy("confirm"); busyRef.current = true; setProblem(null);
+    setBusy("confirm"); busyRef.current = true; setProblem(null); setNotice(null);
     const callEpoch = ++epoch.current;
     try {
       let result: CalendarChangeAction["result"];
@@ -444,7 +461,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
 
   async function reconcile(attempt: CalendarChangeAttempt) {
     if (busyRef.current || attempt.action.kind === "cancel") return;
-    setBusy("reconcile"); busyRef.current = true; setProblem(null); setWarning(null);
+    setBusy("reconcile"); busyRef.current = true; setProblem(null); setNotice(null); setWarning(null);
     const callEpoch = ++epoch.current;
     try {
       const value = await transport.readSource({ organizationId: attempt.organization_id, request: {
@@ -459,7 +476,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
       }
       const settled: CalendarChangeAttempt = {
         ...attempt,
-        action: { ...attempt.action, result: null } as CalendarChangeAction,
+        action: attempt.action,
         source_proof: value,
         phase: outcome === "requested" ? "source_requested" : outcome === "unchanged" ? "source_unchanged" : "source_divergent",
         problem: outcome === "divergent" ? "The source differs from both reviewed states. Start from the current facts." : null,
@@ -490,6 +507,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     setSendUpdates("");
     setResponseStatus("");
     setProblem(null);
+    setNotice(null);
   }
 
   async function prepareRestore(attempt: CalendarChangeAttempt) {
@@ -508,7 +526,8 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
     } else {
       setResponseStatus(attempt.original_source.self_response_status ?? "");
     }
-    setProblem("Prior values loaded from the original source. Review them as a new action.");
+    setProblem(null);
+    setNotice("Prior values loaded from the original source. Review them as a new action.");
   }
 
   const visibleEvents = events.filter((event): event is SelectedEvent & { id: string } => Boolean(event.id && event.detail_visible));
@@ -522,6 +541,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
         <p className="text-xs text-muted-foreground">{accountLabel} · {calendar.summary}</p>
       </div>
       {warning ? <p className="text-xs text-amber-700 dark:text-amber-300">{warning}</p> : null}
+      {notice ? <p role="status" className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-2 text-xs text-foreground">{notice}</p> : null}
       {problem ? <p role="alert" className="text-xs text-destructive">{problem} <ErrorAlchemyMenu error={problem} /></p> : null}
       {collection.attempts.length ? (
         <div className="grid gap-1">
@@ -545,6 +565,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
           <p>Reviewed version: {activeAttempt.action.request.expected_etag}</p>
           <p>{resultSummary(activeAttempt)}</p>
           <ReviewedChangeFacts attempt={activeAttempt} />
+          <ReturnedResultFacts attempt={activeAttempt} />
           <p>{activeAttempt.action.preview.guest_notification_behavior}</p>
           {"action_notice" in activeAttempt.action.preview ? <p>{activeAttempt.action.preview.action_notice}</p> : null}
           <p>{activeAttempt.action.preview.recovery_notice}</p>
