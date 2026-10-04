@@ -52,14 +52,14 @@ export function EntityCommentPopover({
           type="button"
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+            "inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
             className,
           )}
           title="Comments"
           data-comment-door={`${token}:${id}`}
         >
           <MessageSquare className="size-3.5" />
-          {showCount && thread.status === "ready" && thread.comments.length > 0 ? thread.comments.length : "Comment"}
+          {showCount && thread.status === "ready" && thread.comments.length > 0 ? thread.comments.length : <span className="max-sm:sr-only">Comment</span>}
         </button>
       </PopoverTrigger>
       <PopoverContent

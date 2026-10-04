@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   ChevronDown,
   Circle,
+  Ellipsis,
   Frame,
   Hand,
   Minus,
@@ -48,6 +49,8 @@ const ICON: Record<SpatialTool, LucideIcon> = {
 };
 
 const MAIN_TOOLS: SpatialTool[] = ["select", "hand", "text", "frame", "note", "pen"];
+/** Tools that stay on the strip at phone width; the rest fold into one "More tools" menu. */
+export const PHONE_TOOLS: readonly SpatialTool[] = ["select", "hand"];
 
 export function ToolBar({ leading, className }: { leading?: ReactNode; className?: string }) {
   const store = useSpatialStore();
@@ -68,8 +71,45 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
       {leading}
       {leading && <span className="mx-1 h-5 w-px bg-border" />}
       {MAIN_TOOLS.map((tool) => (
-        <ToolButton key={tool} tool={tool} icon={ICON[tool]} active={active === tool} onPick={() => store.setTool(tool)} />
+        <ToolButton
+          key={tool}
+          tool={tool}
+          icon={ICON[tool]}
+          active={active === tool}
+          onPick={() => store.setTool(tool)}
+          className={PHONE_TOOLS.includes(tool) ? undefined : "max-sm:hidden"}
+        />
       ))}
+      {/* Phone width: the tools that do not fit fold into one menu, so the strip never reaches
+          the zoom controls on the right. */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            title="More tools"
+            aria-label="More tools"
+            data-toolbar-overflow
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground sm:hidden",
+              !PHONE_TOOLS.includes(active) && "bg-primary/15 text-primary",
+            )}
+          >
+            <Ellipsis className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-44" data-spatial-chrome>
+          {[...MAIN_TOOLS.filter((t) => !PHONE_TOOLS.includes(t)), ...SHAPE_TOOLS].map((tool) => {
+            const Icon = ICON[tool];
+            return (
+              <DropdownMenuItem key={tool} onSelect={() => store.setTool(tool)}>
+                <Icon className="mr-2 h-4 w-4" />
+                {TOOL_LABEL[tool]}
+                <DropdownMenuShortcut>{TOOL_KEY[tool]}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -77,7 +117,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
             title="Shapes"
             aria-label="Shapes"
             className={cn(
-              "flex h-8 items-center gap-0.5 rounded-md px-1.5 text-muted-foreground hover:bg-accent hover:text-foreground",
+              "flex h-8 items-center gap-0.5 rounded-md px-1.5 text-muted-foreground hover:bg-accent hover:text-foreground max-sm:hidden",
               shapeActive && "bg-primary/15 text-primary",
             )}
           >
@@ -110,7 +150,9 @@ function ToolButton({
   icon: Icon,
   active,
   onPick,
+  className,
 }: {
+  className?: string;
   tool: SpatialTool;
   icon: LucideIcon;
   active: boolean;
@@ -127,6 +169,7 @@ function ToolButton({
       className={cn(
         "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
         active && "bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary",
+        className,
       )}
     >
       <Icon className="h-4 w-4" />
