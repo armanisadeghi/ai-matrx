@@ -15,7 +15,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { columnsWithoutRoom } from "../columnPriority";
 import { usePhoneWidth } from "../usePhoneWidth";
-import { useHeaderRowFit } from "../useHeaderRowFit";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -275,10 +274,11 @@ export function EntityListPage<TRow>({
   // a page — its lane and filters belong in its address. `urlState: false`
   // is the explicit opt-out for a list that is NOT the page's own query.
   const urlState = config.urlState !== false;
-  // The page toolbar row's slot the table draws its own controls into — ONE
-  // chrome row for page and table (see EntityListTable `pageToolbarSlot`).
+  // The page toolbar row's two slots the table draws into — its saved-view tabs at the row's
+  // left edge, its own controls at the right (see EntityListTable `pageToolbarSlot`).
   const [tableControlsSlot, setTableControlsSlot] =
     useState<HTMLDivElement | null>(null);
+  const [tableTabsSlot, setTableTabsSlot] = useState<HTMLDivElement | null>(null);
   const defaultHidden = defaultHiddenColumns(config.columns);
   const { prefs, setPrefs, reset } = useListViewPrefs(config.surfaceKey, {
     version: config.prefsVersion,
@@ -1127,9 +1127,6 @@ export function EntityListPage<TRow>({
 
   // The toolbar, drawn in its own row from `sm` up and INSIDE the lane row on a phone (one row).
   const [phoneSearchOpen, setPhoneSearchOpen] = useState(false);
-  // From `sm` up the toolbar joins the lane row whenever both fit at this width (useHeaderRowFit).
-  const controlRowRef = useRef<HTMLDivElement | null>(null);
-  const oneHeaderRow = useHeaderRowFit(controlRowRef, !phoneWidth);
   const phoneSearching = phoneWidth && (phoneSearchOpen || list.query.search !== "");
   const renderToolbar = (phoneRow?: { searchOpen: boolean; onSearchOpenChange: (open: boolean) => void }) =>
     config.tableToolbar ? null : (
@@ -1171,6 +1168,7 @@ export function EntityListPage<TRow>({
             searchToggles={config.searchToggles}
             panelSwitches={config.panelSwitches}
             tableControlsRef={setTableControlsSlot}
+            tableTabsRef={setTableTabsSlot}
             onPatchQuery={list.patchQuery}
             // Sort changes route through commitSort so the panel's sort and the
             // table header's sort write the same two places (prefs + URL).
@@ -1200,7 +1198,8 @@ export function EntityListPage<TRow>({
       // 2026-09-27, /education/quizzes: the row kebab, Take, rows-per-page and
       // the pager measured 32×32 on a phone). Desktop density is untouched.
       // The row the row keys focused shows a ring (config.rowKeys).
-      className="matrx-touch-targets flex h-full flex-col overflow-hidden [&_[data-row-id]:focus-visible]:bg-accent [&_[data-row-id]:focus-visible]:outline-2 [&_[data-row-id]:focus-visible]:-outline-offset-2 [&_[data-row-id]:focus-visible]:outline-primary"
+      // (The focused row's ring is the row's own: the package table's rows and the phone cards.)
+      className="matrx-touch-targets flex h-full flex-col overflow-hidden"
       onMouseEnter={() => {
         pointerInPaneRef.current = true;
       }}
@@ -1258,7 +1257,6 @@ export function EntityListPage<TRow>({
           </div>
         )}
         <div
-          ref={controlRowRef}
           data-entity-list-control-row=""
           // THE TAP MODEL (matrx-tap-ring, app/globals.css): every control in
           // this row and the toolbar stays 28px and gets an invisible 44px hit
@@ -1272,8 +1270,7 @@ export function EntityListPage<TRow>({
           <div
             data-entity-list-lanes=""
             className={cn(
-              "min-w-0",
-              oneHeaderRow ? "flex-none" : "max-sm:flex-initial sm:flex-1",
+              "min-w-0 max-sm:flex-initial sm:flex-1",
               phoneSearching && "hidden",
             )}
           >
@@ -1294,7 +1291,6 @@ export function EntityListPage<TRow>({
             />
             )}
           </div>
-          {oneHeaderRow ? <div className="min-w-0 flex-1 [&_[data-entity-list-toolbar]]:flex-nowrap">{renderToolbar()}</div> : null}
           {/* THE DIMENSION FILTER (./EntityDimensionFilter): only where the surface's server honours it. */}
           {dimensionOffered && !(phoneSearching && !dimensionValueOf(list.query.filters)) && (
             <div
@@ -1345,7 +1341,9 @@ export function EntityListPage<TRow>({
             : null}
         </div>
 
-        {phoneWidth || oneHeaderRow ? null : renderToolbar()}
+        {/* TWO ROWS, ALWAYS (owner, /agents/all 2026-10-04: "These two rows should never attempt
+            to become one, regardless of space"): lanes · filters · actions above, the toolbar below. */}
+        {phoneWidth ? null : renderToolbar()}
 
         {config.filterChips && (
           <EntityFilterChips
@@ -1515,7 +1513,7 @@ export function EntityListPage<TRow>({
             emptyState={resolvedEmptyState}
             {...(config.tableToolbar
               ? {}
-              : { pageToolbarSlot: tableControlsSlot })}
+              : { pageToolbarSlot: tableControlsSlot, pageTabsSlot: tableTabsSlot })}
             viewTabsStore={{
               views: prefs.savedViews ?? [],
               onChange: (savedViews) => setPrefs({ savedViews }),
@@ -1572,10 +1570,15 @@ export function EntityListPage<TRow>({
           // page with no title, no explanation, and no way forward.
           // read-gate-exempt: resolvedEmptyState becomes failureEmptyState when list.error is set, and the alert slot above shows the failure with its menu
           <EntityListEmpty state={resolvedEmptyState} />
-        ) : view === "cards" && cardsView ? (
-          cardsView(altViewProps)
-        ) : rowsView ? (
-          rowsView(altViewProps)
+        ) : (view === "cards" && cardsView) || rowsView ? (
+          // The surface's own cards / rows (never the package table, whose rows ring themselves):
+          // the row the row keys focused shows where it is (config.rowKeys).
+          <div
+            data-entity-list-alt-view=""
+            className="contents [&_[data-row-id]:focus-visible]:bg-accent [&_[data-row-id]:focus-visible]:outline-2 [&_[data-row-id]:focus-visible]:-outline-offset-2 [&_[data-row-id]:focus-visible]:outline-primary"
+          >
+            {view === "cards" && cardsView ? cardsView(altViewProps) : rowsView?.(altViewProps)}
+          </div>
         ) : null}
 
         {view !== "table" && (

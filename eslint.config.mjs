@@ -17,6 +17,7 @@ import tseslint from "typescript-eslint";
 
 import { noNavigationForQueryState } from "./scripts/lint-rules/no-navigation-for-query-state.mjs";
 import { emptyStateNeedsReadGate, errorRenderCarriesAlchemy } from "./scripts/lint-rules/error-render-carries-alchemy.mjs";
+import { noCanonicalComponentOverride } from "./scripts/lint-rules/no-canonical-component-override.mjs";
 
 // eslint-plugin-react's `version: "detect"` (what eslint-config-next sets) calls
 // the `context.getFilename()` method that ESLint 10 removed, which made EVERY
@@ -197,6 +198,9 @@ const matrxLintPlugin = {
     "error-render-carries-alchemy": errorRenderCarriesAlchemy,
     // RC-B12 round 11: an empty view is an answer only after a successful read.
     "empty-state-needs-read-gate": emptyStateNeedsReadGate,
+    // THE CANONICAL-OVERRIDE LAW (owner, /agents/all 2026-10-04): a page never re-styles the
+    // package's table/toolbar — no class prop on it, no [&_…] reach into its internals.
+    "no-canonical-component-override": noCanonicalComponentOverride,
     "no-raw-storage-media": {
       meta: {
         type: "problem",
@@ -1682,6 +1686,10 @@ export default [
       "matrx/no-navigation-for-query-state": "error",
       "matrx/error-render-carries-alchemy": "error",
       "matrx/empty-state-needs-read-gate": "warn",
+      // THE CANONICAL-OVERRIDE LAW (owner, 2026-10-04: "things that scream very loud when they
+      // run linter checks"). Error in the editor; the census of what is left is `pnpm findings`
+      // (check:ui-drift rule canonical-override, shrink-only). Never an eslint-disable.
+      "matrx/no-canonical-component-override": "error",
       // Single-path JSON extraction — no parallel raw-stream scanners.
       // Loud but non-blocking, matching the other doctrine bans here.
       "matrx/no-parallel-stream-json-scan": "warn",

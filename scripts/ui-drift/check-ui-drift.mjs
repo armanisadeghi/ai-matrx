@@ -29,6 +29,13 @@
  *                            `truncate`/`line-clamp-1` + `max-w-*` clamp, or a Badge whose className
  *                            defeats the design-system clamp (`whitespace-normal`, `max-w-none`…).
  *                            A sentence-length value in a capsule is the owner's 2026-10-04 defect.
+ *   canonical-override       a page re-styling the package's canonical table/toolbar: a class prop
+ *                            (`className`, `tableClassName`, `*ClassName`) on MatrxDataTable /
+ *                            TableTitleRow / TableViewTabs / … from @ai-matrx/design-system, or a
+ *                            `[&_[data-matrx-…]]` / `[&_thead]` / `[&_td]` arbitrary variant reaching
+ *                            into a package's internals on ANY element (owner, /agents/all
+ *                            2026-10-04). Predicates shared with ESLint
+ *                            `matrx/no-canonical-component-override` (scripts/lint-rules/).
  *
  * ITEMS: one per rule × file, key `<rule>|<file>` (no line, so edits never move it), its count =
  * the sites in it. (One item per site was ~44,700 rows a day; the store held ~1,900 in all.)
@@ -62,6 +69,15 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 import { emitItem, endItems } from "../checks/items.mjs";
+import {
+  CANONICAL_OVERRIDE_FIX,
+  CANONICAL_TABLE_COMPONENTS,
+  isCanonicalTableModule,
+  isClassProp,
+  isRestylingProp,
+  isExemptFile,
+  reachesIntoPackage,
+} from "../lint-rules/canonical-override.mjs";
 
 export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const BASELINE_REL = "scripts/ui-drift/baseline.json";
@@ -96,6 +112,10 @@ export const RULES = {
   "glass-tap-on-solid": {
     title: "glass tap button on a solid surface",
     fix: "Glass only floats: on a card, dialog, popover or table use variant=\"transparent\" (or outline/solid) and TapTargetButtonGroup surface=\"solid\".",
+  },
+  "canonical-override": {
+    title: "page re-styles the canonical table/toolbar",
+    fix: CANONICAL_OVERRIDE_FIX,
   },
   "unclamped-text-pill": {
     title: "dynamic text in an unclamped pill",
@@ -291,6 +311,7 @@ export function scanSource(file, text) {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const sites = [];
   const local = {};
+  const canon = {};
   const tap = new Set();
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st) || !st.importClause || !ts.isStringLiteral(st.moduleSpecifier)) continue;
@@ -300,10 +321,12 @@ export function scanSource(file, text) {
     if (nb && ts.isNamedImports(nb)) for (const e of nb.elements) names.push([(e.propertyName || e.name).text, e.name.text]);
     if (st.importClause.name) names.push([st.importClause.name.text, st.importClause.name.text]);
     if (isTapModule(src)) for (const [imported, localName] of names) if (/TapButton$|^TapTargetButton(Group)?$/.test(imported)) tap.add(localName);
+    if (isCanonicalTableModule(src)) for (const [imported, localName] of names) if (CANONICAL_TABLE_COMPONENTS.has(imported)) canon[localName] = imported;
     if (!isPrimitiveModule(src)) continue;
     for (const [imported, localName] of names) if (PRIM[imported]) local[localName] = imported;
   }
   const defLayer = DEF_LAYER.test(file);
+  const packageSide = isExemptFile(file);
   const spinnerFile = SPINNER_FILE.test(file);
   const lineOf = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
   const add = (rule, node, what) => sites.push({ rule, file, line: lineOf(node), what: String(what) });
@@ -336,6 +359,19 @@ export function scanSource(file, text) {
           if (ts.isCallExpression(c)) handledCalls.add(c);
           c.forEachChild(mark);
         });
+      }
+      // THE CANONICAL-OVERRIDE LAW: a class prop on the package's table/toolbar, or a reach into a
+      // package's internals from any class prop on any element.
+      if (!packageSide) {
+        for (const a of attrs) {
+          if (!ts.isJsxAttribute(a) || !isClassProp(a.name.getText())) continue;
+          if (canon[tag] && isRestylingProp(a.name.getText())) add("canonical-override", open, `<${canon[tag]}> ${a.name.getText()}`);
+          if (!a.initializer) continue;
+          const s = [];
+          collectStrings(a.initializer, s);
+          const reach = [...new Set(tokens(s).filter((t) => reachesIntoPackage(t, tag)))];
+          if (reach.length) add("canonical-override", open, `<${tag}> ${reach.sort().join(" ")}`);
+        }
       }
       const styleAttr = attr(attrs, "style");
       if (styleAttr && styleAttr.initializer) {
@@ -410,6 +446,8 @@ export function scanSource(file, text) {
       const s = [];
       collectStrings(node, s);
       classRules(tokens(s), node, `${node.expression.text}()`);
+      const reach = packageSide ? [] : [...new Set(tokens(s).filter((t) => reachesIntoPackage(t)))];
+      if (reach.length) add("canonical-override", node, `${node.expression.text}() ${reach.sort().join(" ")}`);
       node.forEachChild(function mark(c) {
         if (ts.isCallExpression(c)) handledCalls.add(c);
         c.forEachChild(mark);
@@ -581,6 +619,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 export function Bad() {
   return (
     <Card>
@@ -597,6 +636,8 @@ export function Bad() {
       <a className="inline-flex rounded-full px-2 py-0.5">{item.title}</a>
       <a className="inline-flex max-w-full rounded-full px-2 sm:max-w-[24rem]"><span className="truncate">{s.title}</span></a>
       <Badge className="whitespace-normal">{item.title}</Badge>
+      <MatrxDataTable data={rows} tableClassName="h-auto" />
+      <section className="[&_[data-matrx-table-tabs]]:border-b-0" />
     </Card>
   );
 }
@@ -606,6 +647,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 export function Good() {
   return (
     <Card>
@@ -620,6 +662,8 @@ export function Good() {
       <a className="inline-flex max-w-[12rem] rounded-full px-2 py-0.5"><span className="truncate">{item.title}</span></a>
       <span className="rounded-full px-1.5">{count}</span>
       <Badge>{item.title}</Badge>
+      <MatrxDataTable data={rows} density="condensed" frameHeight="content" emptyHeader="hide" />
+      <section className="contents [&_[data-row-id]:focus-visible]:bg-accent" />
     </Card>
   );
 }
@@ -641,6 +685,8 @@ const PLANTED_SITES = [
   "unclamped-text-pill :: <a> rounded-full {item.title}",
   "unclamped-text-pill :: <a> rounded-full {s.title}",
   "unclamped-text-pill :: <Badge> whitespace-normal",
+  "canonical-override :: <MatrxDataTable> tableClassName",
+  "canonical-override :: <section> [&_[data-matrx-table-tabs]]:border-b-0",
 ];
 
 export function selfTest() {
@@ -662,7 +708,7 @@ export function selfTest() {
   const same = judge(groupSites(scanSource("a.tsx", PLANTED)), { counts }, () => before);
   if (same.some((j) => j.status !== "known")) problems.push("an unchanged file read as new against its own counts");
   const grown = judge(groupSites(after), { counts }, () => before).filter((j) => j.status === "new");
-  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 13) {
+  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 14) {
     problems.push(`a grown count did not name exactly its one new site: ${JSON.stringify(grown.map((g) => [g.key, g.fresh.map((f) => f.line)]))}`);
   }
   const shrunk = judge(groupSites(after.filter((x) => x.rule !== "raw-color")), { counts }, () => before);

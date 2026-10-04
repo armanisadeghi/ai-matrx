@@ -107,8 +107,10 @@ describe("an empty lane", () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 500));
     });
-    const scroll = container.querySelector("[data-matrx-table-scroll]");
-    expect(scroll?.className ?? "").toContain("[&_thead]:hidden");
+    // The package's own option (`emptyHeader="hide"`), never a `[&_thead]:hidden` reach.
+    const head = container.querySelector("[data-matrx-table-scroll] thead") as HTMLElement | null;
+    expect(head).not.toBeNull();
+    expect(head?.hidden).toBe(true);
     const text = container.textContent ?? "";
     expect(text).not.toContain("0 rows");
     expect(text).toContain("0 of 0");

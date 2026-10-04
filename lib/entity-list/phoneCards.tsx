@@ -236,7 +236,7 @@ export function EntityPhoneCard<TRow>({
       // The platform's ONE coarse-pointer hit-area utility, so every control a
       // card carries — this file's and any a surface's own cell renders — keeps
       // the 44px floor without a per-element size anywhere.
-      className="matrx-touch-targets shrink-0 rounded-lg border border-border bg-card px-3 py-2.5"
+      className="matrx-touch-targets shrink-0 rounded-lg border border-border bg-card px-3 py-2.5 focus-visible:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
     >
       <div className="flex min-w-0 items-start gap-1">
         {/*
@@ -398,7 +398,7 @@ function EntityPhoneLine<TRow>({
       data-entity-phone-card-density="line"
       // `relative`: the title's door is stretched over the whole card (below), so the card — not a
       // 20px line of text — is the tap target, as on Linear's mobile list.
-      className="matrx-touch-targets relative shrink-0 rounded-lg border border-border bg-card px-2 py-0.5"
+      className="matrx-touch-targets relative shrink-0 rounded-lg border border-border bg-card px-2 py-0.5 focus-visible:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
     >
       <div className="flex min-w-0 items-center gap-1">
         {controls.selectable ? (

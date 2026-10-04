@@ -39,10 +39,19 @@ describe("Entity List responsive contract", () => {
   // to "Defau…" and its "+" ran off-screen. Below sm the table controls take
   // the full row and the strip is not capped at 14rem. (Live proof: page:look
   // phone views of /education/quizzes and /education/flashcards.)
-  it("gives the phone's view tabs a full-width line, uncapped", () => {
+  it("opens the toolbar row with the table's view tabs, far left, without reaching into the table", () => {
+    // Owner, /agents/all 2026-10-04: "the view tabs … need to be all the way to the left", and the
+    // page may not re-style the canonical table (THE CANONICAL-OVERRIDE LAW).
     const toolbar = componentSource("EntityListToolbar.tsx");
-    expect(toolbar).toContain("max-sm:basis-full");
-    expect(toolbar).toContain("sm:[&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem]");
-    expect(toolbar).not.toContain(" [&_[data-matrx-table-toolbar-tabs]]:max-w-[14rem]");
+    const desktop = toolbar.slice(toolbar.indexOf('data-entity-list-toolbar=""'));
+    expect(desktop.indexOf("data-entity-list-table-tabs")).toBeGreaterThan(-1);
+    expect(desktop.indexOf("data-entity-list-table-tabs")).toBeLessThan(desktop.indexOf("{searchBox}"));
+    expect(toolbar).not.toMatch(/\[&[_>][^\]]*data-matrx-/);
+  });
+
+  it("draws two header rows at every width — the toolbar never joins the lane row", () => {
+    const page = componentSource("EntityListPage.tsx");
+    expect(page).not.toContain("useHeaderRowFit");
+    expect(page).toContain("{phoneWidth ? null : renderToolbar()}");
   });
 });

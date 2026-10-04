@@ -147,6 +147,8 @@ interface Props<TRow> {
    * mounting: the table draws nothing rather than flash a row of its own.
    */
   pageToolbarSlot?: HTMLElement | null;
+  /** The page row's LEFT slot the table draws its saved-view tabs into (`toolbar.tabsPortalInto`). */
+  pageTabsSlot?: HTMLElement | null;
   /** Where the table's "+" views are kept — this surface's view preferences. */
   viewTabsStore?: {
     views: readonly SavedListView[];
@@ -329,6 +331,7 @@ export function EntityListTable<TRow>({
   selection,
   tableToolbar,
   pageToolbarSlot,
+  pageTabsSlot,
   viewTabsStore,
   grouping,
   virtualize,
@@ -533,9 +536,6 @@ export function EntityListTable<TRow>({
       : fitted
   ).map((c) => withArchivedRowsReadOnly<typeof c, TRow>(c)); // an archived row takes no edit
 
-  const emptyWithoutColumnFilter =
-    !isLoading && rows.length === 0 && Object.keys(filters).length === 0;
-
   return (
     <MatrxDataTable<TRow>
       data={rows}
@@ -572,19 +572,18 @@ export function EntityListTable<TRow>({
       // "100000 per page", is chrome for nothing — each group header carries its own count.
       hidePagination={Boolean(grouping?.columnId)}
       pageSizeOptions={[...LIST_VIEW_PAGE_SIZES]}
-      className={cn(density === "compact" && "text-xs [&_td]:py-1 [&_th]:py-1")}
+      // Compact rows are the package's own condensed density, never a host `[&_td]` reach.
+      {...(density === "compact" ? { density: "condensed" as const } : {})}
       // SIZE TO CONTENT (page-pass 2026-09-27): the table's bordered box is
       // full-height by default, so a list of three rows drew ~450px of empty
       // box. A list's box ends at its last row and scrolls only when the rows
       // outgrow the page.
-      tableClassName={cn(
-        "h-auto max-h-full",
-        // AN EMPTY LANE DRAWS NO COLUMN HEADER (list-shell fix D, 2026-09-28):
-        // a full header row over "No quizzes from your team" is chrome for
-        // rows that do not exist. It stays while a column filter is set —
-        // that header is where the filter is cleared.
-        emptyWithoutColumnFilter && "[&_thead]:hidden",
-      )}
+      frameHeight="content"
+      // AN EMPTY LANE DRAWS NO COLUMN HEADER (list-shell fix D, 2026-09-28):
+      // a full header row over "No quizzes from your team" is chrome for rows
+      // that do not exist. The package keeps it while a column filter is set —
+      // that header is where the filter is cleared.
+      emptyHeader="hide"
       query={{
         mode: "controlled",
         // 🚨 A PAGE THE URL NAMES SURVIVES THE LOAD (list-shell fix D,
@@ -637,6 +636,10 @@ export function EntityListTable<TRow>({
               singleRow: true,
               ...(pageToolbarSlot !== undefined
                 ? { portalInto: pageToolbarSlot }
+                : {}),
+              // The saved-view tabs lead the page's row, far left.
+              ...(pageTabsSlot !== undefined
+                ? { tabsPortalInto: pageTabsSlot }
                 : {}),
               // The page owns the ONE column picker (EntityColumnPicker, which
               // lists hidden columns too); the table's own Columns modal saw
