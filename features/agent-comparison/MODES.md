@@ -19,6 +19,7 @@ conversations + telemetry + feedback for whatever the mode hands it.
 | **System Prompt** ✅ | source agent, version, variables, message, settings, tools | system prompt text | `/agents/battle/system-prompt` | `agentComparisonSystemPrompt` |
 | **Tools** ✅ | source agent, version, variables, message, system prompt, settings | tools list (built-in + custom + MCP) | `/agents/battle/tools` | `agentComparisonTools` |
 | **Request Modification** ✅ | agent, version | per-column variables + user message | `/agents/battle/request-mod` | `agentComparisonRequestMod` |
+| **Matrix** ✅ | a base patch | a patch per ROW and per COLUMN (agent, version, model, settings, message, variables, tools, surface); every cell is a server run | `/agents/battle/matrix` | `agentComparisonMatrix` |
 
 ### Model vs Tuning vs Settings — when to use which
 
@@ -299,3 +300,40 @@ All three follow Mode 2's directory shape. Notable differences:
   configured column without a content preflight. Persistence captures
   `metadata: { label, user_message, variables }` per entry.
   `apiEndpointMode: "agent"`.
+
+---
+
+## Matrix — two axes, server-run cells (`modes/matrix/`)
+
+Contract (both lanes): `common-docs` matrix-battle contract held by the dispatching session; the
+shapes are `modes/matrix/types.ts`. Nothing renders a live stream here: cells run on the SERVER
+(`POST /agent-battles/{set_id}/run` and `/cancel`, aidream `agent_battle_matrix.py`) and the page
+reads results from the database.
+
+- **Setup** = `metadata.matrix` on the set row: `base` Patch, `rows` / `columns` axes of
+  `{ id, label, patch }` variants, `repeats` 1..5. One editor (`PatchEditor`) edits the base and every
+  variant: a field is present (overrides the layer below) or absent (inherited); variant chips name
+  the overridden fields. `AxisEditor` adds / pastes (one per line, or blank-line blocks) /
+  duplicates / reorders / removes variants and renames the axis.
+- **Resolution** mirrors the server (`model.ts::resolvePatch`): last present scalar wins (null
+  clears), `settings`/`variables` shallow-merge, tools add/remove union with remove winning.
+  `setupProblems` is structural only (an axis is empty, a cell has no agent) — never message presence.
+- **Save writes ONLY the set row** (`saveMatrixBattle`: create with the org from `ensureOrgId`, else
+  `updateComparisonSetMetadata`). 🚨 Never `replaceEntries` / `createBattlePersistence` on a matrix
+  set: entries are the server's cells and replacing them archives every result.
+- **Cells** = entries with `metadata.kind = "matrix_cell"`, read by `entryToCell`; a `running` cell
+  whose heartbeat is older than 90 s shows as stalled. The page polls entries every 2 s while a run
+  call is in flight or any cell is queued/running, and stops when none are.
+- **Run / Re-run all / Re-run one cell / Cancel** go through `callApi` (server choice incl. an
+  admin's localhost override, auth, `scopeOverrides.organization_id` = the active org). The paths are
+  `as keyof paths` literals until `pnpm sync-types` picks the routes up. A failed call's real error
+  (HTTP status + server message) sits in the page's alert bar.
+- **Results** (`MatrixResults`): rows × columns, each cell status dots per repeat, cost (via
+  `<Cost>`), tokens, tool calls; the popover has per-run detail, the conversation door
+  (`canonicalConversationHref`) and Re-run. Footer: column totals, averages, delta vs the first
+  column; right: row totals. **Tools vs no tools**: a row used tools when any completed cell made a
+  real tool call — `bundle:list_*` lister calls never count (`isBundleLister`). Per-column averages
+  per group, and for every column pair the break-even share of tool rows (`breakEven`, by cost and
+  by tokens).
+- **Archive** archives every cell conversation (`softDeleteConversation`), every cell row, then the
+  set (soft delete), and says how many conversations could not be archived.

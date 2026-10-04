@@ -161,8 +161,8 @@ export const runMatrixBattle = createAsyncThunk<void, MatrixRunBody, ThunkApi>(
     try {
       const outcome = await runMatrixCells(dispatch, saved.id, organizationId, body);
       const message = outcome.error ?? (outcome.streamErrors.join(" · ") || null);
-      dispatch(setRunError(message));
-      if (message) throw new Error(message);
+      // The page's alert bar shows it, in the server's words.
+      dispatch(setRunError(message ? `Run failed: ${message}` : null));
     } finally {
       dispatch(setRunInFlight(false));
       void dispatch(refreshMatrixCells());
@@ -178,10 +178,7 @@ export const cancelMatrixBattle = createAsyncThunk<void, void, ThunkApi>(
     const organizationId = await ensureOrgId(null);
     const outcome = await cancelMatrixRun(dispatch, setId, organizationId);
     void dispatch(refreshMatrixCells());
-    if (outcome.error) {
-      dispatch(setRunError(outcome.error));
-      throw new Error(outcome.error);
-    }
+    if (outcome.error) dispatch(setRunError(`Cancel failed: ${outcome.error}`));
   },
 );
 

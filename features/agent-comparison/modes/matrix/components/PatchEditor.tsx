@@ -186,6 +186,7 @@ export function PatchEditor({
                   value={patch.model_id ?? null}
                   onValueChange={(id) => onChange({ ...patch, model_id: id })}
                   inputModalities={[]}
+                  modelOnly
                   selectionPurpose="agent"
                   emptyOptionLabel="Agent default"
                   onClear={() => onChange({ ...patch, model_id: null })}

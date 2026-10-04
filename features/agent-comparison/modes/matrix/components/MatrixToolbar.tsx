@@ -88,7 +88,6 @@ export function MatrixToolbar({ onRunStarted }: { onRunStarted: () => void }) {
   const cancel = async () => {
     try {
       await dispatch(cancelMatrixBattle()).unwrap();
-      toast.success("Cancel sent");
     } catch (err) {
       toast.error(`Couldn't cancel: ${message(err)}`);
     }
