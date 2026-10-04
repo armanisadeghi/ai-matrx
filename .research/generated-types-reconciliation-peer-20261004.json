@@ -1,0 +1,18 @@
+{
+  "review": "independent generated-types reconciliation peer review",
+  "reviewed_at": "2026-10-03",
+  "scope": "preservation/integration and bounded generated JSON/TypeScript syntax checks",
+  "status": "pass_with_limits",
+  "findings": [
+    "HEAD ea9bddc90f is main and was aligned with origin/main at review start; merge parents are 05a4c1c04e and f8b98610f5.",
+    "Stash commit 34bb4e7eb25a22c72b70bbd865e492fdc02648fc is a two-parent stash merge whose sole changed path is types/database.types.ts.",
+    "The stash adds exactly the _back_link_relation RPC typing; its generated types file is byte-identical to HEAD and the same four-line definition occurs once.",
+    "Reconciliation commit 05a4c1c04e also refreshes the schema snapshot with setting_profile, translation_cell, and offering_rules_compiled; merge ea9bddc90f retains that commit as first parent and incorporates incoming main as second parent.",
+    "Generated schema snapshot parses as JSON; TypeScript transpile syntax diagnostics are zero; git diff --check is clean."
+  ],
+  "artifact_limitation": "The builder report .research/generated-types-reconciliation-20261004.json was absent at review time; this file records independent evidence.",
+  "limits": [
+    "No semantic TypeScript check, database comparison, full contributor-content audit, tests, build, release, migration, or UI validation was performed.",
+    "The evidence establishes preservation of the identified stash contribution and merge ancestry; it does not establish the live database state."
+  ]
+}
