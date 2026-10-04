@@ -19,6 +19,9 @@ describe("Start panel clears the board chrome", () => {
     const frame = el.querySelector("[data-start-panel-frame]") as HTMLElement;
     expect(frame.className).toContain("pt-[72px]"); // the toolbar's 16px top + ~40px height + gap
     expect(frame.className).toContain("pb-14");
+    // md up the minimap (200px, bottom-right) would meet the 672px panel until the viewport is 1104px wide
+    expect(frame.className).toContain("md:pb-40");
+    expect(frame.className).toContain("min-[1104px]:pb-14");
     expect(frame.className).not.toMatch(/(^|\s)p-4(\s|$)/);
     const panel = frame.querySelector("section") as HTMLElement;
     expect(panel.className).toContain("max-h-full");

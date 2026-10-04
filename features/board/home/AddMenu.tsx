@@ -73,8 +73,9 @@ export function StartPanel({ types, onStartNew, onBringIn }: AddProps) {
     <div
       data-start-panel-frame
       // The top and bottom padding is the board's chrome band (BoardViewport insets: 72 top for the
-      // Add toolbar and zoom bar, 56 bottom), so the panel can never sit under them at any width.
-      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4 pb-14 pt-[72px]"
+      // Add toolbar and zoom bar, 56 bottom), so the panel can never sit under them at any width. The minimap (bottom-right, 200px wide, md and up)
+      // would meet a panel this wide below 1104px, so those widths also keep the minimap's height clear.
+      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4 pb-14 pt-[72px] md:pb-40 min-[1104px]:pb-14"
     >
       <section
         data-board-chrome
