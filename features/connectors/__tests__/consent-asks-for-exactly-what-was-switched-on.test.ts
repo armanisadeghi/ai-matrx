@@ -82,7 +82,7 @@ describe("buildConsentPlan", () => {
       selectedProductKeys: ["drive_browse"],
       account: null,
       rollout: rollout({
-        drive_browse: { phase: "internal_test", eligible: true },
+        drive_browse: { phase: "pending", eligible: true },
       }),
     });
     expect(plan.request?.capabilityKeys).toEqual(["drive_browse"]);
@@ -94,7 +94,7 @@ describe("buildConsentPlan", () => {
 
   it("keeps held grants when adding Drive browsing and excludes it from unrelated consent", () => {
     const internalReview = rollout({
-      drive_browse: { phase: "internal_test", eligible: true },
+      drive_browse: { phase: "pending", eligible: true },
     });
     const selected = buildConsentPlan({
       provider,
