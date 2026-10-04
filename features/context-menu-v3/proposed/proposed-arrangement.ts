@@ -74,6 +74,10 @@ const STRIP_FOR: Record<ClickedKind, readonly string[]> = {
 /** Universal rows outside regroup's "download" group that also turn the page text into a file. */
 const PAGE_TEXT_FILE_IDS = new Set(["save-as-pdf"]);
 
+/** The object's own Open row, and the Link verb that sits right after it. */
+const OPEN_ROW = /^open( record)?$/i;
+const LINK_A_RECORD = /^link a record/i;
+
 /** Own rows that fold into a strip verb instead of sitting beside it. */
 const FOLDS_INTO_SHARE = [/^copy link\b/i, /^share link\b/i];
 
@@ -193,6 +197,17 @@ export function proposedArrangement(
     if (isOwn(r.action)) return true;
     return kind === "editable" && (groupOf(r) === "edit" || r.action.id === "cm:save" || r.action.id === "cm:delete");
   });
+  // OPEN AND "LINK A RECORD…" LEAD THE OWN ROWS (CHAIR-UI-STORE item 3, 2026-10-03): on a store
+  // record's cell or row the cell's rows (Paste, Clear cell, …) and the row's (Copy row, Insert, …)
+  // filled the four top rows and "Link a record…" fell under "More … options", while every CRM row
+  // shows Open and Link top-level. They are the record's own verbs, so they go first, in that order.
+  const lead = (re: RegExp) => {
+    const at = ownCandidates.findIndex((r) => re.test(label(r)));
+    return at >= 0 ? ownCandidates.splice(at, 1)[0]! : null;
+  };
+  const openRow = lead(OPEN_ROW);
+  const linkRow = lead(LINK_A_RECORD);
+  ownCandidates.unshift(...[openRow, linkRow].filter((r): r is ResolvedAction => r !== null));
   const own: ResolvedAction[] = [];
   const more: Action[] = [];
   for (const r of ownCandidates) {

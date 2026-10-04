@@ -261,13 +261,16 @@ export function SmartAgentInputStacked({
       // ONE inset (Arman, 2026-10-03): the send button's distance from the
       // card edge is every edge's distance — variables, attachments, text and
       // toolbar carry no side padding of their own inside the card.
-      "[&_[data-variable-row]]:px-0 [&_[data-variable-heading]]:px-0",
+      // Splash · page: variable labels and text start where the + glyph does (6px in).
+      compact
+        ? "[&_[data-variable-row]]:px-0 [&_[data-variable-heading]]:px-0"
+        : "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5",
       // The drop target's hidden file input is not a row (it took a gap), and
       // an inline-block textarea leaves a 7px baseline strip under itself.
       "[&>input[type=file]]:!hidden [&_textarea]:block",
       compact
         ? "rounded-[14px] p-1.5 gap-1.5"
-        : "rounded-[22px] p-2 gap-2 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
+        : "rounded-[22px] p-2 gap-0 shadow-[0_2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_2px_0_rgba(0,0,0,0.4)]",
     );
     const textarea = (
       <AgentTextarea
@@ -285,7 +288,13 @@ export function SmartAgentInputStacked({
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
         textMenu={composer.textMenu}
-        minHeightPx={28}
+        // Two lines of text sit in the box without moving it; it grows from
+        // the third (Arman, 2026-10-03 — Claude and ChatGPT do the same).
+        // splash · page: THREE IDENTICAL 32px ROWS — two text lines + the
+        // toolbar (Arman, 2026-10-03). Compact keeps 24px lines.
+        minHeightPx={compact ? 48 : 64}
+        composerType
+        composerRows={!compact}
         flush
       />
     );

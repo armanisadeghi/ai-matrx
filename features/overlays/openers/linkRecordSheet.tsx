@@ -13,7 +13,8 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 const OVERLAY_ID = "linkRecordSheet" as const;
 
 export interface OpenLinkRecordSheetOptions {
-  target: { token: string; id: string; title: string };
+  /** `tableId` / `organizationId`: a store record's, so record ↔ record links through its columns. */
+  target: { token: string; id: string; title: string; tableId?: string; organizationId?: string };
 }
 
 export function useOpenLinkRecordSheet() {

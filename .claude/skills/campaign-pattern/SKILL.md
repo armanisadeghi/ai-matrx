@@ -55,7 +55,7 @@ disease, not of speed.
 Historical order: Arman asked for an independent reviewer to poke holes in plans before the team
 proceeded. That order seeded the entire culture: from then on, every plan got attacked before it was
 trusted, and every "done" got attacked before it was believed. Adversarialism was the OWNER'S
-order, so no agent ever treated it as optional. (Mechanics: `plan-attack`.) Current Claude reviewer selection: Opus 5.5.
+order, so no agent ever treated it as optional. (Mechanics: `plan-attack`.) Plan attackers run on Opus 5.5 (design judgment); verifiers of built work run on Sonnet unless the change is large or high-risk.
 
 ### 4. Rule the done-means-done law (the single most load-bearing message)
 Verbatim, from launch: *"I don't want fake tests that take in fake data that the agents
@@ -93,8 +93,10 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
 2. **Coordinate; don't build.** The chair dispatches fresh-context specialist agents with tight
    briefs (artifacts as file paths, never pasted history), adjudicates their findings, routes
    fixes, and flips register rows. Every brief passes down the laws (safety constraints, method
-   laws, and the model ladder: every dispatch NAMES its lane and model — Opus/Terra the default
-   worker, Sonnet/Luna when obviously easy, Fable/Astra only where the chair itself would struggle;
+   laws, and the model ladder: every dispatch NAMES its lane and model — Sonnet the default
+   worker, Opus with a stated reason (a large build, design judgment, a bug with no known cause;
+   at most 2 at once), Fable only where the chair itself would struggle; every brief carries a
+   "Done when" and a budget; workers never dispatch (only the `coordinator` lane can);
    effort medium unless the task needs sustained reasoning — `policies/subagent-model-ladder.md`).
    Every brief also carries the commit law verbatim: *"Commit locally, often, only
    with `git commit -m "<message>" -- <your paths>` — never push, never a branch or worktree;

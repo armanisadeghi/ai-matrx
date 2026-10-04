@@ -100,6 +100,13 @@ interface AgentTextareaProps {
   minHeightPx?: number;
   /** Drop the shell's own side padding — the composer card owns the one inset. */
   flush?: boolean;
+  /**
+   * The composer's type: 15px on a 24px line (Claude / ChatGPT density) instead
+   * of 16/28. Touch layouts still get 16px from THE iOS ZOOM FLOOR (globals.css).
+   */
+  composerType?: boolean;
+  /** With `composerType`: each text line is one 32px composer row (splash · page). */
+  composerRows?: boolean;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -125,6 +132,8 @@ export function AgentTextarea({
   placeholder,
   minHeightPx,
   flush = false,
+  composerType = false,
+  composerRows = false,
   maxHeightPx,
   textMenu,
 }: AgentTextareaProps) {
@@ -493,7 +502,7 @@ export function AgentTextarea({
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholderText}
-            className={`w-full bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide leading-7 ${
+            className={`w-full bg-transparent border-none outline-none ${composerType ? (composerRows ? "text-[15px] leading-8 px-1.5" : "text-[15px] leading-6") : "text-base leading-7"} text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide ${
               // The height transition belongs to the expand/collapse toggles
               // ONLY. While typing there is no transition class at all: a
               // line-count change snaps instantly, and an unchanged line count

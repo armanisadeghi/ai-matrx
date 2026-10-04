@@ -143,3 +143,32 @@ describe("the proposed right-click menu", () => {
     expect(rows().map((r) => r.action.id).filter((id) => !ids.has(id))).toEqual([...replaced]);
   });
 });
+
+// CHAIR-UI-STORE item 3 (2026-10-03): on a store record's grid row the own rows are Open record,
+// Row history, Copy row, Insert above/below, Duplicate, Merge with…, Link a record… — and "Link a
+// record…" fell under "More table options". It is the record's own verb: top level, after Open.
+describe("Link a record… sits beside Open", () => {
+  it("is a top-level row right after Open on a store record's row", () => {
+    const rows = [
+      ...universal(),
+      // A right-click on a CELL: the cell's own rows come first.
+      row("cm:x:cell-paste", "Paste", "edit"),
+      row("cm:x:cell-clear", "Clear cell", "edit"),
+      row("cm:x:cell-who", "Who changed this?", "edit"),
+      row("cm:x:cell-filter", "Show rows with this value", "edit"),
+      row("cm:x:row-open", "Open record", "edit"),
+      row("cm:x:row-history", "Row history", "edit"),
+      row("cm:x:row-copy", "Copy row", "edit"),
+      row("cm:x:row-insert-above", "Insert row above", "edit"),
+      row("cm:x:row-insert-below", "Insert row below", "edit"),
+      row("cm:x:row-merge", "Merge with…", "edit"),
+      row("cm:x:row-link", "Link a record…", "edit"),
+      row("cm:x:row-archive", "Delete row…", "edit"),
+    ];
+    const top = proposedArrangement(thing, rows, { noun: "table" });
+    const ids = top.map((r) => r.action.id);
+    expect(ids).toContain("cm:x:row-link");
+    expect(ids).toContain("cm:x:row-open");
+    expect(ids.indexOf("cm:x:row-link")).toBe(ids.indexOf("cm:x:row-open") + 1);
+  });
+});

@@ -218,9 +218,17 @@ export function useRecordsUiPorts({
   const openLinkRecordSheet = useOpenLinkRecordSheet();
   const linkRecord = useCallback(
     (target: { tableId: string; recordId: string; name: string }) => {
-      openLinkRecordSheet({ target: { token: "record", id: target.recordId, title: target.name } });
+      openLinkRecordSheet({
+        target: {
+          token: "record",
+          id: target.recordId,
+          title: target.name,
+          tableId: target.tableId,
+          ...(organizationId ? { organizationId } : {}),
+        },
+      });
     },
-    [openLinkRecordSheet],
+    [openLinkRecordSheet, organizationId],
   );
 
   /** WHO IS IN THIS ORGANIZATION — the package's `members` port (FLD-11). */

@@ -256,8 +256,13 @@ export async function GET() {
     const signal = signalOf(fact);
     const aiRequests = Number(fact?.ai_requests ?? 0);
     const aiRequests7d = Number(fact?.ai_requests_7d ?? 0);
+    const testFixture = isJsonObject(appMeta.test_fixture)
+      ? appMeta.test_fixture
+      : null;
     const segment = classifyPerson({
       email: u.email ?? null,
+      testFixtureSuite:
+        typeof testFixture?.suite === "string" ? testFixture.suite : null,
       isAnonymous: Boolean(u.is_anonymous),
       adminLevel,
       emailConfirmed: Boolean(u.email_confirmed_at),

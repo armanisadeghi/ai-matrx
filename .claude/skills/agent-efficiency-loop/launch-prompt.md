@@ -13,7 +13,7 @@ Paste the block below. Fill the four `[...]` blanks; leave the rest exactly as w
 ```
 Read the `agent-efficiency-loop` skill and its companions first, then the shared lessons register
 it points at. You own this loop end to end — plan, run, fix, verify, record — and you use
-subagents for discovery and bounded work (Sonnet for reading and censuses, Opus for code); you
+subagents for discovery and bounded work (Sonnet for reading, censuses and bounded code fixes; Opus only with a stated reason); you
 never hand work back to me.
 
 SUBJECT: [the agent, sandbox flow, job, or process — name it the way the platform names it]

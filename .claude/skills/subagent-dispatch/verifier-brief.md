@@ -8,7 +8,9 @@ timestamp: 2026-09-10T00:00:00Z
 
 # Independent verifier brief template
 
-Dispatch: `standard` (opus) by default; `quick` (sonnet) only with a mechanical oracle.
+Dispatch: `standard` (sonnet) by default; `model: opus` only for a large or high-risk change, reason in
+the brief. Budget: [N tool calls, default 120]. Browser: [tab id | open your own]; two environment
+failures → `BLOCKED_ENV`. Report only gaps against the person's words, the spec and doctrine — not taste.
 A FRESH seat every time — never the builder, never a resumed worker, never a reviewer that already
 looked at this. Zero authorship: you did not build this and did not write its brief.
 

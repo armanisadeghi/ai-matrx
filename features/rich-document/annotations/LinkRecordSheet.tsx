@@ -65,7 +65,13 @@ export function LinkRecordPickerSheet({
   onLink,
   attachedKeys,
   storeRecords = false,
+  question,
 }: {
+  /**
+   * A question the host asks INSIDE the sheet before a link (a store link that adds a column or
+   * replaces one). Inside, never a second dialog: a dialog over the sheet closes the sheet.
+   */
+  question?: ReactNode;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Registered entity token of the record links attach TO. */
@@ -79,7 +85,8 @@ export function LinkRecordPickerSheet({
   title: string;
   /** Replaces the default one-line description. */
   description?: ReactNode;
-  onLink: (token: string, id: string, title: string) => Promise<boolean>;
+  /** `"cancelled"`: the person said no to the sheet's question; nothing was linked. */
+  onLink: (token: string, id: string, title: string) => Promise<boolean | "cancelled">;
   attachedKeys?: Set<string>;
 }) {
   const [kinds, setKinds] = useState<EntityTypeToken[] | null>(null);
@@ -100,7 +107,15 @@ export function LinkRecordPickerSheet({
         // entityRegistry `record.listCandidates`). They are offered only where the host asks.
         const listable = new Set<string>(listableTokens());
         const canList = (t: string) => listable.has(t) || (storeRecords && t === STORE_RECORD_TOKEN);
-        if (live) setKinds(tokens.filter(canList) as EntityTypeToken[]);
+        // RECORD ↔ RECORD is not a free edge the relationship rules list: it is written through
+        // a link column of the two tables (`storeRecordLink.ts`), so a store record is offered
+        // first on a store record whenever the host asks (CHAIR-UI-STORE item 3).
+        const offered = tokens.filter(canList);
+        const recordFirst =
+          storeRecords && targetToken === STORE_RECORD_TOKEN
+            ? [STORE_RECORD_TOKEN, ...offered.filter((t) => t !== STORE_RECORD_TOKEN)]
+            : offered;
+        if (live) setKinds(recordFirst as EntityTypeToken[]);
       })
       .catch((e: unknown) => { if (live) setKindsError(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
@@ -114,6 +129,7 @@ export function LinkRecordPickerSheet({
             {description ?? "Pick a record to link here. Only kinds that can link to this are offered."}
           </SheetDescription>
         </SheetHeader>
+        {open && question}
         {open && kindsError && (
           <ErrorNotice size="inline" className="text-sm" message={kindsError} />
         )}
@@ -129,8 +145,10 @@ export function LinkRecordPickerSheet({
             attachedKeys={attachedKeys ?? new Set()}
             onAttach={async (token, id, title) => {
               const ok = await onLink(token, id, title);
-              if (ok) onOpenChange(false);
-              return ok ? { ok: true } : { ok: false, error: "Not linked — the panel says why." };
+              if (ok === true) onOpenChange(false);
+              return ok === true
+                ? { ok: true }
+                : { ok: false, error: ok === "cancelled" ? "cancelled, nothing was linked" : "Not linked — the panel says why." };
             }}
             onDetach={async () => ({ ok: false, error: "Detach a link from the annotations panel." })}
           />

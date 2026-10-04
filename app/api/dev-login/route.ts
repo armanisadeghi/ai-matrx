@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { agentTrafficOf, agentTrafficSetCookie } from "@/lib/agent-traffic/marker";
 import { readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
@@ -240,7 +241,23 @@ const DEV_LOGIN_ACCOUNTS: readonly string[] = [
   "test@test.com",
 ].filter(Boolean);
 
+/**
+ * Every response of the handshake marks this browser as OUR agent traffic
+ * (lib/agent-traffic/marker.ts): the walk that follows a dev-login is ours, and
+ * so is every guest identity the browser later mints after signing out.
+ */
 export async function GET(request: NextRequest) {
+  const response = await signIn(request);
+  if (process.env.NODE_ENV !== "production" && !agentTrafficOf(request.headers)) {
+    response.headers.append(
+      "Set-Cookie",
+      agentTrafficSetCookie("dev-login", request.nextUrl.protocol === "https:"),
+    );
+  }
+  return response;
+}
+
+async function signIn(request: NextRequest): Promise<NextResponse> {
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json(
       { error: "Disabled in production" },

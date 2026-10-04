@@ -33,6 +33,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { CalendarCreateReview } from "./CalendarCreateReview";
+import { CalendarEventChangeReview } from "./CalendarEventChangeReview";
 
 export interface SelectedCalendarProblem {
   message: string;
@@ -202,7 +203,7 @@ export function SelectedCalendarReview() {
   return <SelectedCalendarReviewContent key={organizationId} organizationId={organizationId} />;
 }
 
-function SelectedCalendarReviewContent({ organizationId }: { organizationId: string | null }) {
+export function SelectedCalendarReviewContent({ organizationId }: { organizationId: string | null }) {
   const inventory = useGoogleConnectionInventory();
   const capabilities = useGoogleCapabilities();
   const actorId = useAppSelector(selectUserId);
@@ -432,14 +433,25 @@ function SelectedCalendarReviewContent({ organizationId }: { organizationId: str
         </Button>
       ) : null}
       {actorId && organizationId && selectedCalendar && writeCapability?.eligible && writeConnection ? (
-        <CalendarCreateReview
-          key={`${actorId}:${organizationId}:${writeConnection.id}:${selectedCalendar.id}`}
-          actorId={actorId}
-          organizationId={organizationId}
-          connectionId={writeConnection.id}
-          accountLabel={writeConnection.account_email ?? googleConnectionLabel(writeConnection)}
-          calendar={selectedCalendar}
-        />
+        <div className="space-y-3">
+          <CalendarCreateReview
+            key={`create:${actorId}:${organizationId}:${writeConnection.id}:${selectedCalendar.id}`}
+            actorId={actorId}
+            organizationId={organizationId}
+            connectionId={writeConnection.id}
+            accountLabel={writeConnection.account_email ?? googleConnectionLabel(writeConnection)}
+            calendar={selectedCalendar}
+          />
+          <CalendarEventChangeReview
+            key={`change:${actorId}:${organizationId}:${writeConnection.id}:${selectedCalendar.id}`}
+            actorId={actorId}
+            organizationId={organizationId}
+            connectionId={writeConnection.id}
+            accountLabel={writeConnection.account_email ?? googleConnectionLabel(writeConnection)}
+            calendar={selectedCalendar}
+            events={currentRead?.events}
+          />
+        </div>
       ) : selectedCalendar && writeCapability && !writeCapability.eligible ? (
         <p className="text-xs text-muted-foreground">{writeCapability.limitation || writeCapability.remedy}</p>
       ) : selectedCalendar && writeCapability?.eligible && !writeConnection ? (

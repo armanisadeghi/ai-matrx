@@ -174,7 +174,13 @@ export function RunControlsMenu({
       }
       className={cn(
         "relative flex items-center justify-center rounded-full transition-colors",
-        variant === "plus" ? "h-11 w-11 lg:h-9 lg:w-9" : "h-8 w-8",
+        variant !== "plus"
+          ? "h-8 w-8"
+          : composer && composer.size !== "compact"
+            ? // THE COMPOSER ROW (Arman, 2026-10-03): one 32px row height for
+              // every text line and for the toolbar.
+              "h-11 w-11 lg:h-8 lg:w-8"
+            : "h-11 w-11 lg:h-9 lg:w-9",
         "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
       )}
     >
