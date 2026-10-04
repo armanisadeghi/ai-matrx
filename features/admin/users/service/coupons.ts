@@ -43,17 +43,15 @@ export async function fetchCoupons(): Promise<CouponRow[]> {
     .schema("billing")
     .from("coupon")
     .select(
-      "id, code, kind, plan_key, months, max_redemptions, redeemed_count, expires_at, recipient_user_id, recipient_email, recipient_phone, note, revoked_at, created_by, created_at, metadata, coupon_redemption(redeemer_user_id, redeemed_at, status)",
+      "id, code, kind, plan_key, months, max_redemptions, redeemed_count, expires_at, recipient_user_id, recipient_email, recipient_phone, note, revoked_at, created_by, created_at, sent, coupon_redemption(redeemer_user_id, redeemed_at, status)",
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(1000);
   if (error) throw error;
   return (data ?? []).map((row) => {
-    const meta = (row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-      ? row.metadata
-      : {}) as Record<string, Json | undefined>;
-    const sent = Array.isArray(meta.sent) ? (meta.sent as unknown as CouponSent[]) : [];
+    // billing.coupon.sent: the send log coupon_mark_sent appends to (metadata is platform-owned).
+    const sent = Array.isArray(row.sent) ? (row.sent as unknown as CouponSent[]) : [];
     return {
       id: row.id,
       code: row.code,

@@ -100,7 +100,9 @@ Blank keeps its meaning (unlimited over an existing row, nothing over a missing 
 ## Plan assignment (shared dialog)
 
 `components/ChangePlanDialog.tsx` is the ONE plan picker for admins: a person →
-`billing.user_plan_set` (expiry + note; "Default plan" clears the grant), an organization →
+`billing.free_months_apply` (months 1..`billing/free_period_max_months`; free time is never endless),
+"Default plan" → `billing.user_plan_set(null)`, which since 2026-10-04 refuses any non-null plan
+(`free_time_use_free_months`) so no undated grant can be written; an organization →
 `billing.org_plan_assign` (never `org_plan_set`, which writes only a tier and leaves `plan_id`
 stale). Used by the Accounts roster and the Organizations admin.
 `fetchOrgPlanAssignments` pages `org_plan_list` with `readAllRows` — every organization has a
