@@ -502,7 +502,7 @@ export function AgentTextarea({
             onChange={(e) => handleTextChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholderText}
-            className={`w-full bg-transparent border-none outline-none ${composerType ? (composerRows ? "text-[15px] leading-8 px-1.5" : "text-[15px] leading-6") : "text-base leading-7"} text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide ${
+            className={`w-full bg-transparent border-none outline-none ${composerType ? (composerRows ? "text-[15px] leading-8 px-1.5" : "text-[15px] leading-6 px-2 py-1") : "text-base leading-7"} text-foreground placeholder:text-muted-foreground/60 resize-none overflow-y-auto scrollbar-hide ${
               // The height transition belongs to the expand/collapse toggles
               // ONLY. While typing there is no transition class at all: a
               // line-count change snaps instantly, and an unchanged line count

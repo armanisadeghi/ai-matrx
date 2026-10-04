@@ -43,6 +43,7 @@ import {
   ComposerMenuLabel,
   ComposerMenuRow,
   ComposerSubmenu,
+  ComposerFoldedSection,
 } from "./ComposerMenu";
 import { ComposerOutputPanel } from "./ComposerOutput";
 import { ComposerEffortRows, useComposerEffort } from "./ComposerEffortPill";
@@ -155,15 +156,16 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
           ) : (
             <ComposerMenuRow icon={Webhook} label={info.agentName ?? "Agent"} checked />
           )}
-          <ComposerMenuDivider />
-          <ComposerSubmenu row={{ icon: AppWindow, label: "Output" }} panelClassName="w-80">
-            <ComposerOutputPanel conversationId={conversationId} />
-          </ComposerSubmenu>
-          {showEffort && effort ? (
-            <ComposerSubmenu row={{ icon: Gauge, label: "Effort", detail: effort.word }} panelClassName="w-56 p-1">
-              {(close) => <ComposerEffortRows effort={effort} onChosen={close} />}
+          <ComposerFoldedSection>
+            <ComposerSubmenu row={{ icon: AppWindow, label: "Output" }} panelClassName="w-80">
+              <ComposerOutputPanel conversationId={conversationId} />
             </ComposerSubmenu>
-          ) : null}
+            {showEffort && effort ? (
+              <ComposerSubmenu row={{ icon: Gauge, label: "Effort", detail: effort.word }} panelClassName="w-56 p-1">
+                {(close) => <ComposerEffortRows effort={effort} onChosen={close} />}
+              </ComposerSubmenu>
+            ) : null}
+          </ComposerFoldedSection>
         </PopoverContent>
       </Popover>
     );

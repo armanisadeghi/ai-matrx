@@ -103,6 +103,7 @@ import {
   ignoreOwnWrapper,
   ComposerMenuCloseAllContext,
   ComposerMenuDivider,
+  ComposerFoldedSection,
   ComposerMenuLabel,
   ComposerMenuLevel,
   ComposerMenuPresentationContext,
@@ -277,27 +278,6 @@ export function ComposerPlusMenu({
           }}
         />
 
-        {/* A narrow composer (under 480px) folds Scope — and Compact's live
-            audio — in here; Output and Effort ride the agent pill's menu. */}
-        {folded ? (
-          <>
-            <ComposerMenuDivider />
-            <ComposerSubmenu row={{ icon: Target, label: "Scope" }} panelClassName="w-[340px] p-0">
-              <ActiveContextTree conversationId={conversationId} maxHeight={360} className="w-full" />
-            </ComposerSubmenu>
-            {foldLiveAudio ? (
-              <ComposerMenuRow
-                icon={AudioLines}
-                label="Live audio"
-                onClick={() => {
-                  close();
-                  void announceComingSoon("chat.live-audio");
-                }}
-              />
-            ) : null}
-          </>
-        ) : null}
-
         {shows("plus.skills") || shows("plus.tools") || shows("plus.connectors") || shows("plus.environment") ? (
           <ComposerMenuDivider />
         ) : null}
@@ -466,6 +446,25 @@ export function ComposerPlusMenu({
             openRunControlsWindow({ conversationId });
           }}
         />
+        {/* A narrow composer (under 480px) folds Scope — and Compact's live
+            audio — down here; Output and Effort ride the agent menu. */}
+        {folded ? (
+          <ComposerFoldedSection>
+            <ComposerSubmenu row={{ icon: Target, label: "Scope" }} panelClassName="w-[340px] p-0">
+              <ActiveContextTree conversationId={conversationId} maxHeight={360} className="w-full" />
+            </ComposerSubmenu>
+            {foldLiveAudio ? (
+              <ComposerMenuRow
+                icon={AudioLines}
+                label="Live audio"
+                onClick={() => {
+                  close();
+                  void announceComingSoon("chat.live-audio");
+                }}
+              />
+            ) : null}
+          </ComposerFoldedSection>
+        ) : null}
         </ComposerMenuLevel>
         </ComposerMenuCloseAllContext.Provider>
   );

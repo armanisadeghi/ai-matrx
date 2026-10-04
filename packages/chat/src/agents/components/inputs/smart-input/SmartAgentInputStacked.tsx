@@ -270,7 +270,7 @@ export function SmartAgentInputStacked({
       // card edge is every edge's distance. Variable labels and text start
       // where the + glyph does (6px in).
       compact
-        ? "[&_[data-variable-row]]:px-0 [&_[data-variable-heading]]:px-0"
+        ? "[&_[data-variable-row]]:px-2 [&_[data-variable-heading]]:px-2"
         : "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5",
       // The drop target's hidden file input is not a row (it took a gap), and
       // an inline-block textarea leaves a 7px baseline strip under itself.
@@ -295,9 +295,11 @@ export function SmartAgentInputStacked({
         placeholder={composer.placeholder}
         maxHeightPx={composer.maxInputHeightPx}
         textMenu={composer.textMenu}
-        // Two lines sit still; the third grows it (Arman, 2026-10-03). Full:
-        // each line is one 32px composer row. Compact: 24px lines.
-        minHeightPx={compact ? 48 : 64}
+        // Full: two 32px rows sit still, the third grows it (Arman, 2026-10-03).
+        // Compact: ONE 24px line (+ 4px top and bottom = the 32px ↵ beside it),
+        // growing from the second; 8px side padding keeps a wrapped line clear
+        // of the card's rounded corner (Arman, 2026-10-04).
+        minHeightPx={compact ? 32 : 64}
         composerType
         composerRows={!compact}
         flush
