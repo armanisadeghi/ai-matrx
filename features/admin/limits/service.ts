@@ -124,7 +124,10 @@ export async function fetchPlans(): Promise<Plan[]> {
     // gained its canonical uuid identity. `billing.plan_limit.plan_id` still holds the
     // SLUG, and `plan_limit_set(p_plan_id)` still takes it, so this panel keys on
     // `plan_key` — never the uuid.
-    .select("plan_key, name, audience, rank, tier, active")
+    .select(
+      "plan_key, name, audience, rank, tier, active, monthly_cents, annual_cents, per_seat, is_default, listed_on_pricing",
+    )
+    .is("deleted_at", null)
     .order("rank");
   if (error) throw error;
   return (data ?? []) as Plan[];
@@ -246,9 +249,19 @@ export async function fetchOrganizationOptions(
  */
 export async function fetchOrgPlanAssignments(): Promise<OrgPlanAssignment[]> {
   const supabase = createClient();
-  const { data, error } = await supabase.schema("billing").rpc("org_plan_list");
-  if (error) throw error;
-  return (data ?? []).map((row) => ({
+  // Every organization has a row (~1,800 on 2026-10-03), and PostgREST caps a
+  // set-returning RPC at 1000 rows: a bare call silently dropped every org past
+  // that and they rendered as "default plan". Paged to completion.
+  const data = await readAllRows<Database["billing"]["Tables"]["org_plan"]["Row"]>(
+    ({ from, to }) =>
+      supabase
+        .schema("billing")
+        .rpc("org_plan_list", undefined, { count: "exact" })
+        .order("organization_id")
+        .range(from, to),
+    { label: "billing.org_plan_list" },
+  );
+  return data.map((row) => ({
     organization_id: row.organization_id,
     plan_id: row.plan_id,
     tier: row.tier,
@@ -279,6 +292,52 @@ export async function grantAccountAddon(input: GrantAddonInput): Promise<void> {
     p_source: "admin",
     p_note: input.note as string,
     p_expires_at: input.expiresAt as string,
+  });
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Plan assignment — which plan a PERSON (per user first) or an ORGANIZATION
+// is on. Both writes are super-admin SECURITY DEFINER functions; the browser
+// calls them directly (no server hop). The roster's read of each person's
+// effective plan is server-side (users.admin_account_plans via
+// /api/admin/users); an organization's assignment is `org_plan_list`.
+// ---------------------------------------------------------------------------
+
+export interface SetUserPlanInput {
+  userId: string;
+  /** `null` clears the per-person grant — the default plan applies again. */
+  planKey: string | null;
+  note: string | null;
+  /** ISO timestamp, or `null` for a grant that never expires. */
+  expiresAt: string | null;
+}
+
+export async function setUserPlan(input: SetUserPlanInput): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.schema("billing").rpc("user_plan_set", {
+    p_user: input.userId,
+    // NULL is the documented "clear to default" value; the generator renders
+    // SQL arguments as non-nullable (same gap as `setPlanLimit`).
+    p_plan_key: input.planKey as string,
+    p_note: input.note ?? undefined,
+    p_expires_at: input.expiresAt ?? undefined,
+  });
+  if (error) throw error;
+}
+
+export async function assignOrgPlan(
+  organizationId: string,
+  planKey: string,
+  note: string | null,
+): Promise<void> {
+  const supabase = createClient();
+  // `org_plan_assign` writes plan_id AND the plan's tier; `org_plan_set` takes
+  // only a tier and would leave plan_id stale, so it is not the door here.
+  const { error } = await supabase.schema("billing").rpc("org_plan_assign", {
+    p_org: organizationId,
+    p_plan: planKey,
+    p_note: note as string,
   });
   if (error) throw error;
 }

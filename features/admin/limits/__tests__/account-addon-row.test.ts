@@ -12,6 +12,11 @@ const plan: Plan = {
   rank: 1,
   tier: "pro",
   active: true,
+  monthly_cents: 4900,
+  annual_cents: 3920,
+  per_seat: false,
+  is_default: false,
+  listed_on_pricing: true,
 };
 const addon: AccountAddon = {
   id: "addon-1",

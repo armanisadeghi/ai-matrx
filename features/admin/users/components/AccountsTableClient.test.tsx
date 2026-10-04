@@ -187,6 +187,7 @@ describe("AccountsTableClient", () => {
       client: null,
       source: null,
       landing: null,
+      plan: null,
     };
 
     expect(mcpColumn.accessorFn(base)).toBe(true);

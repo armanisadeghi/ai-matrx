@@ -53,6 +53,29 @@ export interface AdminUserRow {
   source: string | null;
   /** First landing host + path, when captured. */
   landing: string | null;
+  /** The plan this person's allowance comes from; null when the read failed. */
+  plan: AdminUserPlan | null;
+}
+
+/** Usage state of one window, from billing._points_usage_state (never re-derived). */
+export type AdminUsageState = "ok" | "near" | "over";
+
+/** A person's effective plan + AI-points usage (users.admin_account_plans). */
+export interface AdminUserPlan {
+  key: string;
+  name: string;
+  /** guest = anonymous visitor; grant = per-person billing.user_plan row; default = the default plan. */
+  source: "guest" | "grant" | "default";
+  grant_expires_at: string | null;
+  grant_note: string | null;
+  state: AdminUsageState;
+  /** The window closest to its limit, with its numbers. */
+  binding: {
+    period: string;
+    used: number;
+    limit: number | null;
+    resets_at: string | null;
+  } | null;
 }
 
 /** Organization membership shown inline on the global account roster. */

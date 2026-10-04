@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Trash2,
   UserRound,
+  WalletCards,
   X,
 } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -59,6 +60,13 @@ import {
 } from "@/features/context-menu-v3/utils/availability";
 import { pushAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { readOf } from "@/components/read-state/ReadGate";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import {
+  ChangePlanDialog,
+  type ChangePlanSubject,
+} from "@/features/admin/limits/components/ChangePlanDialog";
+import { fetchOrgPlanAssignments, fetchPlans } from "@/features/admin/limits/service";
+import { audienceLabel, type OrgPlanAssignment, type Plan } from "@/features/admin/limits/types";
 
 interface MemberDisplayRow extends AdminOrganizationMembershipRow {
   email: string | null;
@@ -85,6 +93,13 @@ export function OrganizationsAdminClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Which plan each organization is on (billing.org_plan via org_plan_list,
+  // super-admin). An org with no row is on the default plan. A failed read is
+  // shown, never rendered as "default".
+  const [orgPlans, setOrgPlans] = useState<Map<string, OrgPlanAssignment>>(new Map());
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [plansError, setPlansError] = useState<string | null>(null);
+  const [planTarget, setPlanTarget] = useState<ChangePlanSubject | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [clickedOrganization, setClickedOrganization] =
     useState<AdminOrganizationRow | null>(null);
@@ -137,10 +152,36 @@ export function OrganizationsAdminClient() {
     }
 
     void load();
+    void Promise.all([fetchOrgPlanAssignments(), fetchPlans()])
+      .then(([assignments, planRows]) => {
+        if (cancelled) return;
+        setOrgPlans(new Map(assignments.map((a) => [a.organization_id, a])));
+        setPlans(planRows);
+        setPlansError(null);
+      })
+      .catch((planError: unknown) => {
+        if (!cancelled)
+          setPlansError(planError instanceof Error ? planError.message : String(planError));
+      });
     return () => {
       cancelled = true;
     };
   }, [refreshKey]);
+
+  const planByKey = new Map(plans.map((plan) => [plan.plan_key, plan]));
+  const defaultPlan = plans.find((plan) => plan.is_default && plan.active);
+  /** The org's plan as a label: assigned plan name, else the default plan. */
+  const orgPlanLabel = (organizationId: string): string => {
+    if (plansError) return "—";
+    const assignment = orgPlans.get(organizationId);
+    if (assignment?.plan_id) {
+      const plan = planByKey.get(assignment.plan_id);
+      // Two plans can share a name (Personal Pro, Business Pro) — name the group.
+      return plan ? `${plan.name} · ${audienceLabel(plan.audience)}` : assignment.plan_id;
+    }
+    if (assignment) return assignment.tier;
+    return defaultPlan ? `${defaultPlan.name} (default)` : "—";
+  };
 
   const membershipOrganizationIds = new Set(
     (directory?.memberships ?? [])
@@ -393,6 +434,13 @@ export function OrganizationsAdminClient() {
       width: 90,
     },
     {
+      id: "plan",
+      header: "Plan",
+      accessorFn: (organization) => orgPlanLabel(organization.id),
+      filter: "select",
+      width: 120,
+    },
+    {
       id: "member_count",
       accessorKey: "member_count",
       header: "Members",
@@ -487,6 +535,15 @@ export function OrganizationsAdminClient() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       {/* The read's failure is said once, by the table (read=). */}
+      {plansError ? (
+        <ErrorNotice
+          size="inline"
+          message="Organization plans could not load. Refresh to retry."
+          error={plansError}
+          operation="Load organization plans"
+          calls={["billing.org_plan_list", "billing.plan"]}
+        />
+      ) : null}
 
       {focusedUserId ? (
         <div className="flex items-center justify-between gap-3 rounded-md border bg-card px-3 py-2">
@@ -670,9 +727,27 @@ export function OrganizationsAdminClient() {
                     />{" "}
                     members
                   </span>
+                  <span aria-hidden>·</span>
+                  <span>{orgPlanLabel(selectedOrganization.id)}</span>
                 </div>
               ) : null}
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!selectedOrganization || Boolean(plansError)}
+              onClick={() =>
+                selectedOrganization &&
+                setPlanTarget({
+                  kind: "organization",
+                  id: selectedOrganization.id,
+                  name: selectedOrganization.name,
+                  currentPlanKey: orgPlans.get(selectedOrganization.id)?.plan_id ?? null,
+                })
+              }
+            >
+              <WalletCards className="mr-1 h-4 w-4" /> Change plan
+            </Button>
             <Button
               size="sm"
               onClick={() => setAddOpen(true)}
@@ -876,6 +951,11 @@ export function OrganizationsAdminClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ChangePlanDialog
+        subject={planTarget}
+        onClose={() => setPlanTarget(null)}
+        onChanged={() => setRefreshKey((current) => current + 1)}
+      />
     </div>
   );
 }

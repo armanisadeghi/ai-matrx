@@ -60,7 +60,75 @@ export interface Plan {
   rank: number;
   tier: string;
   active: boolean;
+  /** List price per month in cents; `null` = priced by contract (enterprise). */
+  monthly_cents: number | null;
+  /** Per-month price when billed yearly, in cents. */
+  annual_cents: number | null;
+  per_seat: boolean;
+  is_default: boolean;
+  listed_on_pricing: boolean;
 }
+
+/**
+ * The audience groups the plan matrix and the plan pickers render, in order.
+ * `billing.plan.audience` is the key; `company` reads "Business" (Arman,
+ * 2026-10-03: plans are grouped Personal and Business, plus Free, Guest and
+ * Enterprise). An audience not listed here still renders, under its own key.
+ */
+export const PLAN_AUDIENCE_GROUPS: ReadonlyArray<{ audience: string; label: string }> = [
+  { audience: "guest", label: "Guest" },
+  { audience: "free", label: "Free" },
+  { audience: "personal", label: "Personal" },
+  { audience: "company", label: "Business" },
+  { audience: "enterprise", label: "Enterprise" },
+];
+
+export function audienceLabel(audience: string): string {
+  return PLAN_AUDIENCE_GROUPS.find((g) => g.audience === audience)?.label ?? audience;
+}
+
+/** Plans grouped by audience (group order above, then `rank`). */
+export function groupPlansByAudience(plans: Plan[]): Array<{ audience: string; label: string; plans: Plan[] }> {
+  const known = PLAN_AUDIENCE_GROUPS.map((g) => g.audience);
+  const extra = [...new Set(plans.map((p) => p.audience))].filter((a) => !known.includes(a));
+  return [...known, ...extra]
+    .map((audience) => ({
+      audience,
+      label: audienceLabel(audience),
+      plans: plans.filter((p) => p.audience === audience).sort((a, b) => a.rank - b.rank),
+    }))
+    .filter((group) => group.plans.length > 0);
+}
+
+/** "$19/mo", "$39/seat/mo", "Free", "Custom" — read-only price label from `billing.plan`. */
+export function planPriceLabel(plan: Pick<Plan, "monthly_cents" | "per_seat">): string {
+  if (plan.monthly_cents === null) return "Custom";
+  if (plan.monthly_cents === 0) return "Free";
+  const dollars = plan.monthly_cents / 100;
+  const money = Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+  return `${money}${plan.per_seat ? "/seat" : ""}/mo`;
+}
+
+/** Every `billing.meter_period`, in the order the matrix shows windows. */
+export const METER_PERIODS = ["month", "week", "day", "rolling_5h", "rolling_1h", "lifetime"] as const;
+export type MeterPeriodKey = (typeof METER_PERIODS)[number];
+
+export const PERIOD_LABEL: Record<string, string> = {
+  month: "Month",
+  week: "Week",
+  day: "Day",
+  rolling_5h: "5-hour",
+  rolling_1h: "1-hour",
+  lifetime: "Total",
+};
+
+export function periodLabel(period: string): string {
+  return PERIOD_LABEL[period] ?? period;
+}
+
+/** AI-points windows shown by default; Day and 1-hour are a column toggle away. */
+export const DEFAULT_POINTS_WINDOWS: readonly string[] = ["month", "week", "rolling_5h"];
+export const OPTIONAL_POINTS_WINDOWS: readonly string[] = ["day", "rolling_1h"];
 
 export interface Capability {
   capability: string;
@@ -162,7 +230,7 @@ export function pointsToUsdLabel(
   if (typeof points === "string" && points.trim() === "") return null;
   if (!Number.isFinite(numeric) || numeric < 0) return null;
   const money = formatAdminCost(pointsToUsd(numeric, { rate }), { rate });
-  const per = period && period !== "lifetime" ? ` / ${period}` : "";
+  const per = period && period !== "lifetime" ? ` / ${periodLabel(period).toLowerCase()}` : "";
   return `~${money}${per} of AI`;
 }
 

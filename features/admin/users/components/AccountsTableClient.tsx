@@ -24,6 +24,7 @@ import {
   SlidersHorizontal,
   UserCog,
   UserRound,
+  WalletCards,
   X,
 } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
@@ -64,6 +65,11 @@ import { AdminUserRef } from "./AdminUserRef";
 import { USERS_ADMIN_LOCATION, ADMIN_LEVEL_LABEL } from "../constants";
 import type { AdminUserRow } from "../types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import {
+  ChangePlanDialog,
+  type ChangePlanSubject,
+} from "@/features/admin/limits/components/ChangePlanDialog";
+import { periodLabel } from "@/features/admin/limits/types";
 import { UserResearchDialog } from "./UserResearchDialog";
 import { readUserResearch } from "../service/userResearch";
 import { RELATIONSHIP_LABELS, CONTACT_STATE_LABELS, feedbackDmKey, type UserResearch } from "../lib/userResearch";
@@ -98,6 +104,26 @@ function fmtDate(iso: string | null): string {
     month: "short",
     day: "numeric",
   });
+}
+
+const USAGE_TONE: Record<NonNullable<AdminUserRow["plan"]>["state"], string> = {
+  ok: "text-muted-foreground",
+  near: "text-amber-600 border-amber-500/40 bg-amber-500/10",
+  over: "text-rose-600 border-rose-500/40 bg-rose-500/10",
+};
+
+const PLAN_SOURCE_LABEL: Record<NonNullable<AdminUserRow["plan"]>["source"], string> = {
+  grant: "Assigned to this person",
+  default: "Default plan",
+  guest: "Guest allowance",
+};
+
+function usageTitle(plan: NonNullable<AdminUserRow["plan"]>): string | undefined {
+  const b = plan.binding;
+  if (!b) return undefined;
+  const limit = b.limit === null ? "unlimited" : formatCount(b.limit);
+  const resets = b.resets_at ? ` · resets ${new Date(b.resets_at).toLocaleString()}` : "";
+  return `${periodLabel(b.period)}: ${formatCount(b.used)} / ${limit} points${resets}`;
 }
 
 const KIND_TONE: Record<AdminUserRow["kind"], string> = {
@@ -141,6 +167,8 @@ export function AccountsTableClient() {
   const { prefs: viewPrefs, setPrefs: setViewPrefs } =
     useListViewPrefs("admin-user-accounts");
   const [rows, setRows] = useState<AdminUserRow[]>([]);
+  const [plansError, setPlansError] = useState<string | null>(null);
+  const [planTarget, setPlanTarget] = useState<ChangePlanSubject | null>(null);
   const researchOwnerId = useAppSelector(state => state.userAuth.id);
   const costDisplay = useCostDisplay();
   const [refreshKey, setRefreshKey] = useState(0);
@@ -180,7 +208,10 @@ export function AccountsTableClient() {
         const res = await fetch("/api/admin/users", { cache: "no-store" });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Failed to load users");
-        if (!cancelled) setRows(json.users as AdminUserRow[]);
+        if (!cancelled) {
+          setRows(json.users as AdminUserRow[]);
+          setPlansError(typeof json.plans_error === "string" ? json.plans_error : null);
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load");
@@ -411,6 +442,51 @@ export function AccountsTableClient() {
           </span>
         ),
         width: 130,
+      },
+      {
+        id: "plan",
+        header: "Plan",
+        accessorFn: (row) => row.plan?.name ?? "—",
+        filter: "select",
+        cell: (row) =>
+          row.plan ? (
+            <span
+              className="text-xs"
+              title={`${PLAN_SOURCE_LABEL[row.plan.source]}${row.plan.grant_expires_at ? ` · until ${fmtDate(row.plan.grant_expires_at)}` : ""}${row.plan.grant_note ? ` · ${row.plan.grant_note}` : ""}`}
+            >
+              {row.plan.name}
+              <span className="ml-1 text-muted-foreground">
+                {row.plan.source === "grant" ? "" : row.plan.source === "guest" ? "(guest)" : "(default)"}
+              </span>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 130,
+      },
+      {
+        id: "usage",
+        header: "Usage",
+        accessorFn: (row) => row.plan?.state ?? "—",
+        filter: "select",
+        cell: (row) =>
+          row.plan ? (
+            <Badge
+              variant="outline"
+              className={USAGE_TONE[row.plan.state]}
+              title={usageTitle(row.plan)}
+            >
+              {row.plan.state}
+              {row.plan.binding && row.plan.binding.limit ? (
+                <span className="ml-1 tabular-nums">
+                  {Math.min(999, Math.round((row.plan.binding.used / row.plan.binding.limit) * 100))}%
+                </span>
+              ) : null}
+            </Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+        width: 100,
       },
       {
         id: "ai_requests",
@@ -938,6 +1014,20 @@ export function AccountsTableClient() {
                 >
                   <ShieldCheck className="mr-2 h-4 w-4" /> Admin level
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={row.is_anonymous}
+                  onClick={() =>
+                    setPlanTarget({
+                      kind: "user",
+                      id: row.id,
+                      name: row.display_name ?? row.email ?? row.id,
+                      currentPlanKey: row.plan?.key ?? null,
+                      grantActive: row.plan?.source === "grant",
+                    })
+                  }
+                >
+                  <WalletCards className="mr-2 h-4 w-4" /> Change plan…
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => void toggleMcpFullAccess(row)}
@@ -1067,7 +1157,7 @@ export function AccountsTableClient() {
                 `id=${r.id}`,
                 r.admin_level ? `admin=${r.admin_level}` : null,
                 `providers=${r.providers.join("/") || "none"} confirmed=${r.email_confirmed} onboarded=${r.onboarding_completed} mcp_full_access=${Boolean(r.admin_level) || r.mcp_full_access}`,
-                `kind=${r.kind} (${r.kind_reason}) stage=${r.stage} ai_requests=${r.ai_requests} ai_requests_7d=${r.ai_requests_7d} ai_cost=${costDisplay.format(r.ai_cost)} source=${r.source ?? "unknown"} client=${r.client ?? "unknown"}`,
+                `kind=${r.kind} (${r.kind_reason}) stage=${r.stage} plan=${r.plan ? `${r.plan.key} (${r.plan.source}) usage=${r.plan.state}` : "unknown"} ai_requests=${r.ai_requests} ai_requests_7d=${r.ai_requests_7d} ai_cost=${costDisplay.format(r.ai_cost)} source=${r.source ?? "unknown"} client=${r.client ?? "unknown"}`,
                 `created=${r.created_at ?? "?"} last_sign_in=${r.last_sign_in_at ?? "never"}`,
                 `organizations=${r.organizations.map((organization) => `${organization.name}:${organization.role}`).join(",") || "none"}`,
               ]
@@ -1104,6 +1194,12 @@ export function AccountsTableClient() {
         </NonEditableContextMenu>
       </div>
 
+      {plansError && <ErrorNotice size="inline" message="Plans and usage could not load. Refresh to retry." error={plansError} operation="Load account plans" calls={["users.admin_account_plans"]} />}
+      <ChangePlanDialog
+        subject={planTarget}
+        onClose={() => setPlanTarget(null)}
+        onChanged={() => setRefreshKey((key) => key + 1)}
+      />
       {researchError && <ErrorNotice size="inline" message="Personal notes could not load. Refresh to retry." error={researchError} operation="Load personal user notes" calls={["crm.party_research"]} />}
       {researchTarget && researchOwnerId && <UserResearchDialog
         key={researchTarget.id} row={researchTarget} ownerId={researchOwnerId}

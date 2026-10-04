@@ -186,6 +186,14 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ---
 
+- **Plan and Usage columns (Accounts).** Both come from `users.admin_account_plans()` (service-role,
+  one pass, ~0.65 s): `billing.user_effective_plan` + `billing._points_usage_state` — never
+  recomputed in TypeScript. Source is `grant` / `default` / `guest`; Usage shows ok/near/over with
+  the binding window's used/limit on hover. A failed read returns `plans_error` and the roster
+  still loads (ErrorNotice). "Change plan…" (row action) and the Organizations "Change plan" button
+  open the shared `features/admin/limits/components/ChangePlanDialog.tsx`; the Organizations Plan
+  column reads `org_plan_list` paged to completion, and names the audience (two plans share "Pro").
+
 ## Doctrine compliance
 
 **Searches performed**

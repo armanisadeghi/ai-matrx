@@ -24,6 +24,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import { classifyPerson } from "@/features/admin/users/lib/personSegments";
 import { describeAcquisitionClient } from "@/lib/product-analytics/user-acquisition";
+import { toAdminUserPlan, type AccountPlanRow } from "@/features/admin/users/lib/accountPlan";
 
 const PER_PAGE = 1000;
 const MAX_PAGES = 50; // hard ceiling: 50k users
@@ -86,6 +87,23 @@ function readAccountFacts(admin: AdminClient): Promise<AccountFactsRow[]> {
         .order("user_id")
         .range(from, to),
     { label: "users.admin_account_facts" },
+  );
+}
+
+/**
+ * Each account's effective plan and AI-points usage state, one pass
+ * (users.admin_account_plans: billing.user_effective_plan +
+ * billing._points_usage_state, ~0.65 s for ~570 accounts on 2026-10-03).
+ */
+function readAccountPlans(admin: AdminClient): Promise<AccountPlanRow[]> {
+  return readAllRows<AccountPlanRow>(
+    ({ from, to }) =>
+      admin
+        .schema("users")
+        .rpc("admin_account_plans", undefined, { count: "exact" })
+        .order("user_id")
+        .range(from, to),
+    { label: "users.admin_account_plans" },
   );
 }
 
@@ -190,6 +208,15 @@ export async function GET() {
       { status: 500 },
     );
   }
+  // The plan column is read separately so its failure is reported, not fatal:
+  // the roster still loads and `plans_error` says why the column is empty.
+  let plansError: string | null = null;
+  const planById = new Map<string, AccountPlanRow>();
+  try {
+    for (const row of await readAccountPlans(admin)) planById.set(row.user_id, row);
+  } catch (error) {
+    plansError = extractErrorMessage(error, "Failed to read account plans");
+  }
   const profileById = new Map(profiles.map((p) => [p.id, p]));
   const factsById = new Map(facts.map((f) => [f.user_id, f]));
   const partiesByUser = new Map<string, string[]>();
@@ -253,6 +280,7 @@ export async function GET() {
         : [];
     const adminLevel = levelByUser.get(u.id) ?? null;
     const fact = factsById.get(u.id);
+    const planRow = planById.get(u.id);
     const signal = signalOf(fact);
     const aiRequests = Number(fact?.ai_requests ?? 0);
     const aiRequests7d = Number(fact?.ai_requests_7d ?? 0);
@@ -314,10 +342,11 @@ export async function GET() {
       landing: signal?.landingPath
         ? `${signal.landingHost ?? ""}${signal.landingPath}`
         : null,
+      plan: planRow ? toAdminUserPlan(planRow) : null,
     };
   });
 
-  return NextResponse.json({ users: rows });
+  return NextResponse.json({ users: rows, plans_error: plansError });
 }
 
 // PATCH /api/admin/users — update server-managed account controls.

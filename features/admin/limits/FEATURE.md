@@ -43,6 +43,28 @@ as expired — it never vanishes. `org_plan_list` is super-admin only; when it
 refuses, the list still renders and the plan column says *unreadable* with the
 real error, never a blank.
 
+## Plan allowances is ONE matrix (Arman, 2026-10-03)
+
+- Every plan number is set here, never in code. Rows = plans grouped Guest, Free, Personal,
+  Business (`audience = company`), Enterprise, ordered by `rank` (`groupPlansByAudience`).
+  Name and price are read-only `billing.plan` columns (`planPriceLabel`).
+- AI points has a column per window — Month, Week, 5-hour by default; Day and 1-hour behind a
+  toggle; a window any plan already holds always shows. Limits are per person.
+- Other capabilities are a second matrix, one column per (capability, window) that exists, plus
+  "Add window". Each cell saves on Enter/blur through `plan_limit_set` and re-reads the rows.
+- Three cell states, never collapsed: blank = unlimited (`NULL`), `0` = not included (struck,
+  "not included"), `—` = no row for that window (it does not apply). Blank over a missing row
+  writes nothing. There is no delete RPC, so a created window can only be changed.
+
+## Plan assignment (shared dialog)
+
+`components/ChangePlanDialog.tsx` is the ONE plan picker for admins: a person →
+`billing.user_plan_set` (expiry + note; "Default plan" clears the grant), an organization →
+`billing.org_plan_assign` (never `org_plan_set`, which writes only a tier and leaves `plan_id`
+stale). Used by the Accounts roster and the Organizations admin.
+`fetchOrgPlanAssignments` pages `org_plan_list` with `readAllRows` — every organization has a
+row (~1,800) and a bare call stopped at 1000, showing the rest as "default".
+
 ## Rules this UI must keep
 
 - 🚨 **Blank is UNLIMITED. `0` is "not included at all."** They are different
@@ -113,7 +135,8 @@ real error, never a blank.
 | [`types.ts`](./types.ts) | Row shapes, the micro-dollar declaration, the points↔dollar constant, `addonIsInEffect`. |
 | [`service.ts`](./service.ts) | Client-direct Supabase reads; writes through the three admin-gated RPCs (`feature_knob_set`, `plan_limit_set`, `addon_grant`). |
 | [`components/LimitsAdminClient.tsx`](./components/LimitsAdminClient.tsx) | The three-tab shell, with quiet links to the two usage surfaces (`/administration/knowledge/kg-cost`, `/administration/users/usage`) so this is never a disconnected third place. |
-| [`components/PlanAllowancesPanel.tsx`](./components/PlanAllowancesPanel.tsx) | The grid that IS the free tier; exports `EnforcementBadge`. |
+| [`components/PlanAllowancesPanel.tsx`](./components/PlanAllowancesPanel.tsx) | The plan × window matrix; exports `EnforcementBadge`. |
+| [`components/ChangePlanDialog.tsx`](./components/ChangePlanDialog.tsx) | The one admin plan picker (person or organization). |
 | [`components/AccountAddonsPanel.tsx`](./components/AccountAddonsPanel.tsx) | Per-org grants (list + grant dialog with searchable org picker) over `billing.account_addon` / `addon_grant` / `org_plan_list` / `iam.organizations`. |
 | [`components/FeatureKnobsPanel.tsx`](./components/FeatureKnobsPanel.tsx) | The universal editor's system destination plus the register affordances: search, the `?knob=` deep link, the overdue-review banner and override counts. |
 | [`components/KnobOverridesAdmin.tsx`](./components/KnobOverridesAdmin.tsx) | One key's every level: the override table, add/change/remove, and the effective-value probe. |

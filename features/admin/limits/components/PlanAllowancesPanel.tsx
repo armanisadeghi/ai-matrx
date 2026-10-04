@@ -1,30 +1,49 @@
 "use client";
 
-// The allowances half of Limits & Knobs — what each plan includes, per metered
-// capability, editable in place.
+// The allowances half of Limits & Knobs — every plan's numbers in ONE matrix,
+// editable in place (Arman, 2026-10-03: every plan number is set from the
+// admin console, never in code).
 //
-// These are the numbers `billing.resolve_capability` hands to every gate on the
-// platform, so this grid IS the free tier. Two rules the UI has to carry or the
-// data becomes untrustworthy:
+// Rows are plans grouped by audience (Guest, Free, Personal, Business,
+// Enterprise), ordered by rank. Columns are (capability, window) pairs:
+// AI points gets one column per window — Month, Week, 5-hour by default, Day
+// and 1-hour behind a toggle — because a plan carries several windows at once
+// (`billing.plan_limit` is unique on plan × capability × period). Every other
+// capability gets its own matrix below, one column per window that exists,
+// plus "Add window" for a window no plan has yet.
 //
-//   * BLANK IS UNLIMITED, and it is not the same thing as 0. `0` means "this
-//     plan does not include this at all"; blank means "no ceiling". Rendering
-//     them the same way is how a plan silently loses a capability.
-//   * A money dimension is stored in micro-dollars. The admin edits dollars;
-//     the conversion happens here, once, next to the constant that declares it.
-//   * `platform.points` is stored and edited in POINTS; the dollar figure beside
-//     it (20,000 points = $1 of AI) is commentary so the number means something
-//     to a human. It is never what gets saved.
-//   * A capability with `enforced = false` is TRACKING ONLY. Its number stops
-//     nothing yet, and the panel says so in plain words wherever the number
-//     appears — a limit that looks enforced and is not is a screen that lies.
+// Rules the cells carry or the data becomes untrustworthy:
+//
+//   * BLANK IS UNLIMITED and is never the same thing as 0. `0` means "this plan
+//     does not include this at all". A third state exists: NO ROW for that
+//     window — the window simply does not apply to the plan (the usage state
+//     never judges it). The three render differently: placeholder
+//     "unlimited", a "not included" hint, and a "—" placeholder.
+//   * Blank typed over an existing row saves NULL (unlimited). Blank over a
+//     missing row saves nothing. There is no RPC that deletes a window, so a
+//     row once created can only be changed, never removed.
+//   * Money dimensions are stored in micro-dollars, points in points (the
+//     dollar figure beside points is a hint from the `billing.points_per_usd`
+//     knob via `pointsToUsdLabel`). Conversions live in `types.ts`, once.
+//   * A capability with `enforced = false` is TRACKING ONLY and says so in
+//     words wherever its numbers appear.
+//   * Name and price are read-only here — they are `billing.plan` columns.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import { formatFileSize } from "@ai-matrx/kit/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import {
   fetchCapabilities,
   fetchPlanLimits,
@@ -33,11 +52,17 @@ import {
 } from "../service";
 import type { Capability, Plan, PlanLimit } from "../types";
 import {
+  DEFAULT_POINTS_WINDOWS,
+  METER_PERIODS,
+  OPTIONAL_POINTS_WINDOWS,
+  POINTS_CAPABILITY,
+  groupPlansByAudience,
   isMicroUsd,
   isPoints,
   limitToDisplay,
-  limitToHuman,
   limitToStored,
+  periodLabel,
+  planPriceLabel,
   pointsToUsdLabel,
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -68,13 +93,276 @@ function cellId(planId: string, capability: string, period: string): string {
   return `${planId}|${capability}|${period}`;
 }
 
+interface MatrixColumn {
+  capability: string;
+  period: string;
+}
+
+const BYTES_CAPABILITIES = new Set(["platform.storage_bytes"]);
+
+/** One short hint under a saved or typed value — ≤ 60 chars, one line. */
+function valueHint(
+  capability: string,
+  period: string,
+  raw: string,
+  rate: number | null,
+): string | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") return null;
+  if (limitToStored(capability, trimmed) === undefined) return "not a number";
+  if (Number(trimmed) === 0) return "not included";
+  if (isPoints(capability)) return pointsToUsdLabel(trimmed, period, rate);
+  if (BYTES_CAPABILITIES.has(capability)) return formatFileSize(Number(trimmed));
+  return null;
+}
+
+function LimitCell({
+  plan,
+  column,
+  existing,
+  rate,
+  onSave,
+}: {
+  plan: Plan;
+  column: MatrixColumn;
+  existing: PlanLimit | undefined;
+  rate: number | null;
+  onSave: (value: number | null) => Promise<void>;
+}) {
+  const saved = existing ? limitToDisplay(column.capability, existing.limit_value) : "";
+  const [draft, setDraft] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const value = draft ?? saved;
+  const dirty = draft !== null && draft.trim() !== saved;
+  const hint = valueHint(column.capability, column.period, value, rate);
+  const isZero = value.trim() !== "" && Number(value.trim()) === 0;
+
+  const commit = async () => {
+    if (!dirty || draft === null) {
+      setDraft(null);
+      return;
+    }
+    // Blank over a missing row is "leave the window off", not a write.
+    if (!existing && draft.trim() === "") {
+      setDraft(null);
+      return;
+    }
+    const stored = limitToStored(column.capability, draft);
+    if (stored === undefined) {
+      toast.error("Enter a number, or leave it blank for unlimited");
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSave(stored);
+      setDraft(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <td className="px-1.5 py-1 align-top">
+      <div className="relative">
+        {isMicroUsd(column.capability) && (
+          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+            $
+          </span>
+        )}
+        <Input
+          className={cn(
+            "h-8 w-full min-w-24 text-right tabular-nums text-sm",
+            isMicroUsd(column.capability) && "pl-5",
+            !existing && "border-dashed",
+            isZero && "text-muted-foreground line-through",
+            dirty && "border-primary",
+          )}
+          placeholder={existing ? "unlimited" : "—"}
+          title={existing ? undefined : "This window does not apply to the plan"}
+          aria-label={`${plan.name} ${column.capability} ${periodLabel(column.period)}`}
+          value={value}
+          disabled={saving}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={() => void commit()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void commit();
+            if (event.key === "Escape") setDraft(null);
+          }}
+        />
+        {saving && (
+          <Loader2 className="absolute right-[-14px] top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-muted-foreground" />
+        )}
+      </div>
+      <p
+        className={cn(
+          "mt-0.5 h-4 truncate text-right text-[11px] text-muted-foreground",
+          isZero && "text-warning",
+        )}
+      >
+        {hint ?? (existing && value.trim() === "" ? "unlimited" : "")}
+      </p>
+    </td>
+  );
+}
+
+function PlanMatrix({
+  plans,
+  columns,
+  capabilityByKey,
+  limitIndex,
+  rate,
+  showCapability,
+  onSave,
+}: {
+  plans: Plan[];
+  columns: MatrixColumn[];
+  capabilityByKey: Map<string, Capability>;
+  limitIndex: Map<string, PlanLimit>;
+  rate: number | null;
+  showCapability: boolean;
+  onSave: (planKey: string, column: MatrixColumn, value: number | null) => Promise<void>;
+}) {
+  const groups = groupPlansByAudience(plans);
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <table className="w-full border-collapse text-sm">
+        <thead className="bg-muted/40">
+          <tr className="border-b border-border">
+            <th className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left text-xs font-medium text-muted-foreground">
+              Plan
+            </th>
+            <th className="px-2 py-2 text-right text-xs font-medium text-muted-foreground">
+              Price
+            </th>
+            {columns.map((column) => {
+              const cap = capabilityByKey.get(column.capability);
+              return (
+                <th
+                  key={`${column.capability}|${column.period}`}
+                  className="min-w-28 px-1.5 py-2 text-right text-xs font-medium"
+                >
+                  {showCapability && (
+                    <span className="block truncate font-mono text-[11px] text-muted-foreground">
+                      {column.capability}
+                    </span>
+                  )}
+                  <span>{periodLabel(column.period)}</span>
+                  {showCapability && cap && !cap.enforced && (
+                    <span className="block text-[10px] font-normal text-warning">
+                      tracking only
+                    </span>
+                  )}
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) => (
+            <GroupRows
+              key={group.audience}
+              label={group.label}
+              plans={group.plans}
+              columns={columns}
+              limitIndex={limitIndex}
+              rate={rate}
+              onSave={onSave}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function GroupRows({
+  label,
+  plans,
+  columns,
+  limitIndex,
+  rate,
+  onSave,
+}: {
+  label: string;
+  plans: Plan[];
+  columns: MatrixColumn[];
+  limitIndex: Map<string, PlanLimit>;
+  rate: number | null;
+  onSave: (planKey: string, column: MatrixColumn, value: number | null) => Promise<void>;
+}) {
+  return (
+    <>
+      <tr className="border-b border-border bg-muted/20">
+        <td
+          colSpan={columns.length + 2}
+          className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+        >
+          {label}
+        </td>
+      </tr>
+      {plans.map((plan) => (
+        <tr key={plan.plan_key} className="border-b border-border last:border-b-0">
+          <td className="sticky left-0 z-10 bg-card px-3 py-1.5 align-top">
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium">{plan.name}</span>
+              {plan.is_default && (
+                <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                  default
+                </Badge>
+              )}
+            </div>
+            <span className="block font-mono text-[10px] text-muted-foreground">
+              {plan.plan_key}
+            </span>
+          </td>
+          <td
+            className="px-2 py-1.5 text-right align-top text-xs tabular-nums text-muted-foreground"
+            title={
+              plan.annual_cents !== null && plan.annual_cents !== plan.monthly_cents
+                ? `Billed yearly: ${planPriceLabel({ monthly_cents: plan.annual_cents, per_seat: plan.per_seat })}`
+                : undefined
+            }
+          >
+            {planPriceLabel(plan)}
+          </td>
+          {columns.map((column) => (
+            <LimitCell
+              key={`${column.capability}|${column.period}`}
+              plan={plan}
+              column={column}
+              existing={limitIndex.get(cellId(plan.plan_key, column.capability, column.period))}
+              rate={rate}
+              onSave={(value) => onSave(plan.plan_key, column, value)}
+            />
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+function sortColumns(columns: MatrixColumn[]): MatrixColumn[] {
+  const order = (p: string) => {
+    const i = (METER_PERIODS as readonly string[]).indexOf(p);
+    return i === -1 ? 99 : i;
+  };
+  return [...columns].sort(
+    (a, b) =>
+      a.capability.localeCompare(b.capability) || order(a.period) - order(b.period),
+  );
+}
+
 export function PlanAllowancesPanel() {
   const { rate: costRate } = useCostDisplay();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [limits, setLimits] = useState<PlanLimit[]>([]);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState<string | null>(null);
+  const [extraPointWindows, setExtraPointWindows] = useState<string[]>([]);
+  const [addedColumns, setAddedColumns] = useState<MatrixColumn[]>([]);
+  const [newCapability, setNewCapability] = useState<string>("");
+  const [newPeriod, setNewPeriod] = useState<string>("month");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,14 +378,6 @@ export function PlanAllowancesPanel() {
       setPlans(planRows.filter((plan) => plan.active));
       setCapabilities(capRows);
       setLimits(limitRows);
-      setDrafts(
-        Object.fromEntries(
-          limitRows.map((row) => [
-            cellId(row.plan_id, row.capability, row.period),
-            limitToDisplay(row.capability, row.limit_value),
-          ]),
-        ),
-      );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -120,35 +400,40 @@ export function PlanAllowancesPanel() {
     return index;
   }, [limits]);
 
-  /** Only capabilities somebody actually meters get a row. */
-  const meteredCapabilities = useMemo(
-    () =>
-      capabilities.filter((cap) =>
-        limits.some((row) => row.capability === cap.capability),
-      ),
-    [capabilities, limits],
+  const capabilityByKey = useMemo(
+    () => new Map(capabilities.map((cap) => [cap.capability, cap])),
+    [capabilities],
   );
 
+  // A window that already holds a row is always shown; Day / 1-hour join by toggle.
+  const pointsColumns = useMemo(() => {
+    const withRows = new Set(
+      limits.filter((row) => isPoints(row.capability)).map((row) => row.period),
+    );
+    const periods = new Set<string>([...DEFAULT_POINTS_WINDOWS, ...extraPointWindows, ...withRows]);
+    return sortColumns(
+      [...periods].map((period) => ({ capability: POINTS_CAPABILITY, period })),
+    );
+  }, [limits, extraPointWindows]);
+
+  const otherColumns = useMemo(() => {
+    const seen = new Map<string, MatrixColumn>();
+    for (const row of limits) {
+      if (isPoints(row.capability)) continue;
+      seen.set(`${row.capability}|${row.period}`, { capability: row.capability, period: row.period });
+    }
+    for (const column of addedColumns) seen.set(`${column.capability}|${column.period}`, column);
+    return sortColumns([...seen.values()]);
+  }, [limits, addedColumns]);
+
   const save = useCallback(
-    async (planId: string, capability: string, period: string) => {
-      const id = cellId(planId, capability, period);
-      const stored = limitToStored(capability, drafts[id] ?? "");
-      if (stored === undefined) {
-        toast.error("Enter a number, or leave it blank for unlimited");
-        return;
-      }
-      setSaving(id);
-      try {
-        await setPlanLimit(planId, capability, period, stored);
-        toast.success("Allowance saved");
-        await load();
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
-      } finally {
-        setSaving(null);
-      }
+    async (planKey: string, column: MatrixColumn, value: number | null) => {
+      await setPlanLimit(planKey, column.capability, column.period, value);
+      // Re-read the rows so the cell shows what the database now holds.
+      setLimits(await fetchPlanLimits());
+      toast.success("Allowance saved");
     },
-    [drafts, load],
+    [],
   );
 
   if (loading) {
@@ -165,144 +450,108 @@ export function PlanAllowancesPanel() {
     );
   }
 
+  const pointsCap = capabilityByKey.get(POINTS_CAPABILITY);
+  const addableCapabilities = capabilities.filter((cap) => !isPoints(cap.capability));
+
   return (
     <div className="space-y-8">
-      <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
-        <p
-          className="font-medium"
-          title="Blank means unlimited; 0 means the plan excludes it."
-        >
-          This grid is the free tier.
-        </p>
-      </div>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold">AI points</h3>
+          {pointsCap && <EnforcementBadge enforced={pointsCap.enforced} />}
+          <span
+            className="text-xs text-muted-foreground"
+            title="Blank is unlimited, 0 is not included, — means the window is off."
+          >
+            per person, in points
+          </span>
+          <div className="ml-auto flex items-center gap-1">
+            {OPTIONAL_POINTS_WINDOWS.map((period) => {
+              const on = pointsColumns.some((c) => c.period === period);
+              const locked = limits.some((row) => isPoints(row.capability) && row.period === period);
+              return (
+                <Button
+                  key={period}
+                  size="sm"
+                  variant={on ? "secondary" : "outline"}
+                  className="h-7 text-xs"
+                  disabled={locked}
+                  title={locked ? "A plan already has this window" : undefined}
+                  onClick={() =>
+                    setExtraPointWindows((prev) =>
+                      prev.includes(period) ? prev.filter((p) => p !== period) : [...prev, period],
+                    )
+                  }
+                >
+                  {on ? "Hide" : "Show"} {periodLabel(period)}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+        <PlanMatrix
+          plans={plans}
+          columns={pointsColumns}
+          capabilityByKey={capabilityByKey}
+          limitIndex={limitIndex}
+          rate={costRate}
+          showCapability={false}
+          onSave={save}
+        />
+      </section>
 
-      {meteredCapabilities.map((cap) => {
-        const money = isMicroUsd(cap.capability);
-        const points = isPoints(cap.capability);
-        return (
-          <section key={cap.capability} className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-mono text-sm font-semibold">{cap.capability}</h3>
-              <EnforcementBadge enforced={cap.enforced} />
-              <Badge variant="secondary" className="text-xs">
-                per {cap.period ?? "lifetime"}
-              </Badge>
-              {cap.usage_source === "external" && (
-                <Badge variant="outline" className="text-xs">
-                  usage measured by the owning system
-                </Badge>
-              )}
-              {money && (
-                <span className="text-xs text-muted-foreground">
-                  entered in US dollars
-                </span>
-              )}
-              {points && (
-                <span className="text-xs text-muted-foreground">
-                  entered in points — 20,000 points = $1 of AI
-                </span>
-              )}
-            </div>
-            {!cap.enforced && (
-              <p className="text-xs text-warning">
-                Tracking only — nobody is blocked at this limit.
-              </p>
-            )}
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {plans.map((plan) => {
-                const period = cap.period ?? "lifetime";
-                const id = cellId(plan.plan_key, cap.capability, period);
-                const existing = limitIndex.get(id);
-                const draft = drafts[id] ?? "";
-                const savedValue = existing?.limit_value ?? null;
-                const dirty =
-                  draft !== limitToDisplay(cap.capability, savedValue);
-                // The live hint follows what is being TYPED; the saved line
-                // follows what is in the row. When they differ the admin sees
-                // both, which is the point of showing a draft at all.
-                const draftUsd = points ? pointsToUsdLabel(draft, period, costRate) : null;
-                const savedUsd = points
-                  ? pointsToUsdLabel(savedValue, period, costRate)
-                  : null;
-                return (
-                  <div
-                    key={id}
-                    className="rounded-md border border-border p-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {plan.name}
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            {plan.audience}
-                          </span>
-                        </p>
-                        {existing?.note && (
-                          <p className="truncate text-xs text-muted-foreground">
-                            {existing.note}
-                          </p>
-                        )}
-                      </div>
-                      {money && (
-                        <span className="text-sm text-muted-foreground">$</span>
-                      )}
-                      <Input
-                        className="w-28"
-                        placeholder="unlimited"
-                        aria-label={`${plan.name} ${cap.capability} allowance`}
-                        value={draft}
-                        onChange={(event) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [id]: event.target.value,
-                          }))
-                        }
-                      />
-                      <Button
-                        size="sm"
-                        variant={dirty ? "default" : "ghost"}
-                        disabled={!dirty || saving === id}
-                        aria-label="Save allowance"
-                        onClick={() => void save(plan.plan_key, cap.capability, period)}
-                      >
-                        <Save className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                    {points && (
-                      <div className="mt-1.5 flex flex-wrap justify-end gap-x-3 text-xs text-muted-foreground">
-                        {dirty ? (
-                          <span>
-                            typing:{" "}
-                            {draft.trim() === ""
-                              ? "unlimited"
-                              : (draftUsd ?? "not a number")}
-                          </span>
-                        ) : null}
-                        <span>
-                          saved: {limitToHuman(cap.capability, savedValue, costRate)}
-                          {savedValue === 0
-                            ? " (not included)"
-                            : savedUsd
-                              ? ` · ${savedUsd}`
-                              : ""}
-                        </span>
-                        {!cap.enforced && (
-                          <span className="text-warning">tracking only</span>
-                        )}
-                      </div>
-                    )}
-                    {!points && !cap.enforced && (
-                      <p className="mt-1.5 text-right text-xs text-warning">
-                        tracking only — does not stop anything yet
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-sm font-semibold">Other allowances</h3>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Select value={newCapability} onValueChange={setNewCapability}>
+              <SelectTrigger className="h-8 w-52 text-xs" aria-label="Capability">
+                <SelectValue placeholder="Capability" />
+              </SelectTrigger>
+              <SelectContent>
+                {addableCapabilities.map((cap) => (
+                  <SelectItem key={cap.capability} value={cap.capability} className="font-mono text-xs">
+                    {cap.capability}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={newPeriod} onValueChange={setNewPeriod}>
+              <SelectTrigger className="h-8 w-28 text-xs" aria-label="Window">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {METER_PERIODS.map((period) => (
+                  <SelectItem key={period} value={period} className="text-xs">
+                    {periodLabel(period)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              disabled={!newCapability}
+              onClick={() => {
+                setAddedColumns((prev) => [...prev, { capability: newCapability, period: newPeriod }]);
+                setNewCapability("");
+              }}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" /> Add window
+            </Button>
+          </div>
+        </div>
+        <PlanMatrix
+          plans={plans}
+          columns={otherColumns}
+          capabilityByKey={capabilityByKey}
+          limitIndex={limitIndex}
+          rate={costRate}
+          showCapability
+          onSave={save}
+        />
+      </section>
     </div>
   );
 }
