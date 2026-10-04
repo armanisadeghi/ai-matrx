@@ -304,10 +304,20 @@ export function InputActionButtons({
     );
     // The mic and its device chevron are ONE control group (Arman, 2026-10-03):
     // both clickable, side by side. Live audio stands alone, no chevron.
-    const micGroup = micButton ? (
-      <span className="inline-flex items-center">
-        {micButton}
-        <MicDeviceMenu className={INPUT_BUTTON_IDLE_TINT} />
+    // ONE split button: a single pill whose hover lights the whole thing; the
+    // mic half records, the chevron half picks the device. The halves carry
+    // no background of their own, so it never reads as two buttons.
+    const micGroup = showMicrophone ? (
+      <span className="inline-flex h-8 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
+        <AgentMicrophoneButton
+          conversationId={conversationId}
+          size="md"
+          label="Record audio"
+          className="w-7 justify-end rounded-l-full rounded-r-none pr-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground"
+          iconClassName=""
+          onRecordingStateChange={handleVoiceBusyChange}
+        />
+        <MicDeviceMenu className="h-8 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
       </span>
     ) : null;
     const sendControls = showSendButton ? (

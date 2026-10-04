@@ -10,6 +10,7 @@ const CHROME_MAC =
 
 const base: PersonSignals = {
   email: "someone@gmail.com",
+  testFixtureSuite: null,
   isAnonymous: false,
   adminLevel: null,
   emailConfirmed: true,
@@ -27,6 +28,10 @@ describe("classifyPerson — kind", () => {
   it.each([
     [{ userAgent: CHROME_MAC.replace("Chrome/", "HeadlessChrome/") }, "bot"],
     [{ userAgent: "curl/8.7.1" }, "bot"],
+    // The marker outranks every user-agent guess, including a "real" browser.
+    [{ testFixtureSuite: "agent-traffic", isAnonymous: true, email: null }, "test"],
+    [{ testFixtureSuite: "agent-traffic", userAgent: "curl/8.7.1" }, "test"],
+    [{ testFixtureSuite: "records/door-write-suite" }, "test"],
     [{ userAgent: "python-httpx/0.28.1" }, "bot"],
     [{ userAgent: `${CHROME_MAC} Claude/2.9939.2` }, "bot"],
     [{ userAgent: "MatrxExtendGuestIncidentProbe/1" }, "test"],
@@ -101,5 +106,13 @@ describe("withOwnerCategory", () => {
     expect(withOwnerCategory(row, "unknown")).toBe(row);
     expect(withOwnerCategory({ ...row, kind: "bot" }, "real_user").kind).toBe("bot");
     expect(withOwnerCategory(row, undefined)).toBe(row);
+  });
+});
+
+describe("classifyPerson — our agent", () => {
+  it("names the marker as the reason", () => {
+    expect(
+      classifyPerson({ ...base, testFixtureSuite: "agent-traffic" }).kindReason,
+    ).toBe("Our agent");
   });
 });

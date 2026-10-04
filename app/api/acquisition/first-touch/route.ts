@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { FirstTouchPayloadSchema } from "@/lib/product-analytics/user-acquisition";
 import { recordAcquisitionFirstTouch } from "@/lib/product-analytics/server/acquisition-persistence";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
+import { agentTrafficOf } from "@/lib/agent-traffic/marker";
 
 function requestIp(request: NextRequest): string | null {
   return (
@@ -13,6 +14,11 @@ function requestIp(request: NextRequest): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  // Our own agents and test browsers are not acquired visitors: answered
+  // honestly, recorded nowhere (lib/agent-traffic/marker.ts).
+  if (agentTrafficOf(request.headers)) {
+    return NextResponse.json({ captured: false, reason: "agent_traffic" });
+  }
   const parsed = FirstTouchPayloadSchema.safeParse(
     await request.json().catch(() => null),
   );

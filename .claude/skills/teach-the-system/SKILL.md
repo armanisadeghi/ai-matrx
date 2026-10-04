@@ -43,14 +43,15 @@ source's unique knowledge into an agent's instructions, a workflow step, a tool 
 built desk is a by-product; a run that succeeded without a new row is worth nothing here (PROGRAM.md
 ruling 6).
 
-**"The developer" running a trial can be a dispatched Sonnet 5 subagent.**
+**"The developer" running a trial can be a dispatched Sonnet 5 subagent. Dispatch it in the `coordinator` lane (`model: sonnet`) with a dispatch budget — the only lane that can dispatch fixers.**
 Driving the product as a non-technical Expert, judging outputs, logging walls, and writing the
 register is not complex code — it is exactly the discovery/big-task work the Sonnet lane is for.
 An owning session dispatches a Sonnet driver for the trial itself, and that driver in turn
-dispatches Opus subagents for the bounded platform code fixes each wall needs; Fable/default stays
+dispatches fixers for the bounded platform code fixes each wall needs (Sonnet for a wall with a known
+repro and files, Opus only for one with no known cause); Fable/default stays
 reserved for planning and heavy reasoning, never for driving a trial end to end. If you are a
 dispatched Sonnet driver reading this: you are authorized to run the whole trial loop (§4) and
-dispatch your own Opus fixes — do not hand the trial back up as "too big" or "campaign-scale". The
+dispatch your own fixes — do not hand the trial back up as "too big" or "campaign-scale". The
 stop condition in your dispatch brief (a deliverable reached, or a pushed build to wait on — §5) is
 your bound; treat it as the actual scope of the job, not a reason to escalate.
 

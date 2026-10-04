@@ -18,6 +18,7 @@
 // Nothing here guesses from a UUID-looking name.
 
 import { classifyAcquisitionTraffic } from "@/lib/product-analytics/user-acquisition";
+import { MATRX_AGENT_TRAFFIC } from "@/lib/agent-traffic/marker";
 
 export const PERSON_KINDS = ["person", "circle", "team", "test", "bot"] as const;
 export type PersonKind = (typeof PERSON_KINDS)[number];
@@ -89,6 +90,13 @@ const AGENT_BROWSER = /\bClaude\/[\d.]+/;
 
 export interface PersonSignals {
   email: string | null;
+  /**
+   * `app_metadata.test_fixture.suite` — set only by the service role: the
+   * persona factory, or aidream when a guest was minted by a request carrying
+   * the agent-traffic marker (lib/agent-traffic/marker.ts). The one signal that
+   * is not a guess, so it is read first.
+   */
+  testFixtureSuite: string | null;
   isAnonymous: boolean;
   adminLevel: string | null;
   emailConfirmed: boolean;
@@ -121,6 +129,10 @@ export function classifyPerson(signals: PersonSignals): PersonSegment {
 function classifyKind(
   signals: PersonSignals,
 ): Pick<PersonSegment, "kind" | "kindReason"> {
+  if (signals.testFixtureSuite === MATRX_AGENT_TRAFFIC.fixtureSuite)
+    return { kind: "test", kindReason: "Our agent" };
+  if (signals.testFixtureSuite)
+    return { kind: "test", kindReason: "Test fixture" };
   if (signals.email && TEST_EMAIL.test(signals.email))
     return { kind: "test", kindReason: "Test email address" };
   // Before the browser checks: our own people first open the app on a local

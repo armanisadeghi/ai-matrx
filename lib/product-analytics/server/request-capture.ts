@@ -10,6 +10,10 @@ import {
   type FirstTouchPayload,
 } from "../user-acquisition";
 import { recordAcquisitionFirstTouch } from "./acquisition-persistence";
+import {
+  agentTrafficOf,
+  agentTrafficSetCookie,
+} from "@/lib/agent-traffic/marker";
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
@@ -55,6 +59,9 @@ function shouldCapture(request: NextRequest): boolean {
     // instance busy after the response and so costs the NEXT request in a
     // burst a cold start. `unknown` (no User-Agent at all) is excluded for the
     // same reason: a real browser always sends one.
+    // OUR OWN TRAFFIC HAS NO ACQUISITION STORY EITHER: a request carrying
+    // the agent-traffic marker (header or cookie) is never a first touch.
+    !agentTrafficOf(request.headers) &&
     classifyAcquisitionTraffic(request.headers.get("user-agent")) ===
       "browser" &&
     !path.startsWith("/administration") &&
@@ -150,5 +157,26 @@ export function applyAcquisitionCookie(
   if (sharedDomain) parts.push(`Domain=${sharedDomain}`);
   if (request.nextUrl.protocol === "https:") parts.push("Secure");
   response.headers.append("Set-Cookie", parts.join("; "));
+  return response;
+}
+
+/**
+ * Every browser on a local preview host (`localhost`, `<session>.localhost`)
+ * is ours by definition, so it is marked on its first page load — the Claude
+ * browser pane then carries the agent-traffic cookie to every later request,
+ * and forwards it to the Python server (lib/agent-traffic/browser-forwarder).
+ * Raw append for the same reason as `applyAcquisitionCookie`.
+ */
+export function applyLocalAgentTrafficCookie(
+  response: NextResponse,
+  request: NextRequest,
+): NextResponse {
+  if (!isLocalAcquisitionHost(request.headers.get("host") ?? request.nextUrl.host))
+    return response;
+  if (agentTrafficOf(request.headers)) return response;
+  response.headers.append(
+    "Set-Cookie",
+    agentTrafficSetCookie("local-preview", request.nextUrl.protocol === "https:"),
+  );
   return response;
 }
