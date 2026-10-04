@@ -102,12 +102,11 @@ export function ReadOnlySweepWorkspace({
       <main className="flex min-h-full items-center justify-center bg-background p-6">
         <Card className="max-w-xl">
           <CardHeader>
-            <CardTitle>More read-only Google connections are coming</CardTitle>
+            <CardTitle>Google connection testing</CardTitle>
           </CardHeader>
           <CardContent className="text-sm leading-6 text-muted-foreground">
-            Contacts, Calendar, Tasks, YouTube Analytics, and Tag Manager are in
-            Google&apos;s approval preparation lane. They remain unavailable to
-            ordinary users until verification is complete.
+            This review workspace is available to designated test accounts while
+            public rollout is prepared.
           </CardContent>
         </Card>
       </main>
