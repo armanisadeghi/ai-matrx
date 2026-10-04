@@ -29,7 +29,7 @@ export const GOOGLE_SCOPE = {
   // Future internal-test source preview only; excluded from all consent bundles until reviewed feature/provider approval.
   contactsOtherReadonly:
     "https://www.googleapis.com/auth/contacts.other.readonly",
-  // Unexposed Workspace directory preview only; never included in a consent request or bundle.
+  // Internal reviewer Workspace directory product; never included in legacy bundles.
   directoryReadonly: "https://www.googleapis.com/auth/directory.readonly",
   // Meet review is requested only through its dedicated internal-test product.
   meetingsSpaceReadonly:

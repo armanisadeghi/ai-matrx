@@ -33,6 +33,7 @@ import {
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
+import { readGoogleContactsImportLaunchData } from "@/features/overlays/openers/googleImportWindows";
 import { useCloseOverlaysOnNavigation } from "@/features/overlays/useCloseOverlaysOnNavigation";
 import { isWalkUnitKind } from "@/features/review-walk/address";
 
@@ -4850,21 +4851,18 @@ export default function OverlayController() {
       {/* googleContactsImportWindow — "Import from Google Contacts" (PLAN §4.5) */}
       {(() => {
         if (!isOpenById.googleContactsImportWindow) return null;
-        const data = dataById.googleContactsImportWindow;
+        const data = readGoogleContactsImportLaunchData(
+          dataById.googleContactsImportWindow,
+        );
         return (
           <GoogleContactsImportWindow
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "googleContactsImportWindow" }))
             }
-            organizationId={
-              typeof data?.organizationId === "string" ? data.organizationId : null
-            }
-            initialExternalId={
-              typeof data?.initialExternalId === "string"
-                ? data.initialExternalId
-                : null
-            }
+            organizationId={data.organizationId}
+            initialExternalId={data.initialExternalId ?? null}
+            initialView={data.initialView}
           />
         );
       })()}

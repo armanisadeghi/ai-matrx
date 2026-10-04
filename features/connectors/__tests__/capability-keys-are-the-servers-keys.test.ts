@@ -106,10 +106,6 @@ const NOT_SURFACED: Record<
   string,
   { reason: string; internalFilesRoute?: boolean }
 > = {
-  directory: {
-    reason:
-      "Workspace directory preview remains internal and has no consent row.",
-  },
   drive_browse: {
     reason:
       "Whole-Drive browsing has an internal Files route, not a public consent row.",

@@ -71,6 +71,7 @@ import { ConnectorMark } from "./ConnectorMark";
 import { getConnector } from "./registry";
 import {
   productsInGroup,
+  userOwnedGoogleProductNames,
   type ConnectorFirstActionContextKey,
   type ConnectorProduct,
   type ConnectorProviderConfig,
@@ -619,12 +620,9 @@ export function ConnectorConsentBody({
   const mayConnectForOrganization =
     activeOrganization?.role === "owner" || activeOrganization?.role === "admin";
   const [forOrganization, setForOrganization] = useState(false);
-  const gmailChangesSelected = selected.includes("gmail_modify");
-  const meetSelected = selected.includes("meet");
-  const personalOnlySelected = gmailChangesSelected || meetSelected;
-  const personalOnlyName = gmailChangesSelected && meetSelected
-    ? "Gmail changes and Google Meet review"
-    : meetSelected ? "Google Meet review" : "Gmail changes";
+  const personalOnlyNames = userOwnedGoogleProductNames(selected);
+  const personalOnlySelected = personalOnlyNames.length > 0;
+  const personalOnlyName = personalOnlyNames.join(", ");
 
   const plan = buildConsentPlan({
     provider,

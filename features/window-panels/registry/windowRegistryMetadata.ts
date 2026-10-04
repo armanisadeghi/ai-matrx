@@ -526,7 +526,11 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     overlayId: "googleContactsImportWindow",
     kind: "window",
     label: "Import from Google Contacts",
-    defaultData: { organizationId: null, initialExternalId: null },
+    defaultData: {
+      organizationId: null,
+      initialExternalId: null,
+      initialView: "contacts",
+    },
     ephemeral: true,
     mobilePresentation: "drawer",
     // V-23 / R35 — the panel's subject is one Google contact, so it gets a

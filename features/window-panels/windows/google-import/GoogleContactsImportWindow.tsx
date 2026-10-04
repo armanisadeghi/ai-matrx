@@ -14,7 +14,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { GoogleContactsImportPanel } from "@/features/connectors/import/GoogleContactsImportPanel";
 import { DirectoryReview } from "@/features/google-workspace/directory/DirectoryReview";
@@ -25,12 +25,14 @@ import {
   selectIsSuperAdmin,
   selectUserEmail,
 } from "@/lib/redux/selectors/userSelectors";
+import type { GoogleContactsImportInitialView } from "@/features/overlays/openers/googleImportWindows";
 
 export interface GoogleContactsImportWindowProps {
   isOpen: boolean;
   onClose: () => void;
   organizationId: string | null;
   initialExternalId: string | null;
+  initialView?: GoogleContactsImportInitialView;
 }
 
 export default function GoogleContactsImportWindow({
@@ -38,13 +40,16 @@ export default function GoogleContactsImportWindow({
   onClose,
   organizationId,
   initialExternalId,
+  initialView = "contacts",
 }: GoogleContactsImportWindowProps) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const email = useAppSelector(selectUserEmail);
   const canReviewDirectory = canUseGoogleOAuthInternalTest(isSuperAdmin, email);
-  const [selectedTab, setSelectedTab] = useState<"contacts" | "directory">(
-    "contacts",
-  );
+  const [selectedTab, setSelectedTab] =
+    useState<GoogleContactsImportInitialView>(initialView);
+  useEffect(() => {
+    setSelectedTab(canReviewDirectory ? initialView : "contacts");
+  }, [canReviewDirectory, initialView]);
   const activeTab = canReviewDirectory ? selectedTab : "contacts";
   if (!isOpen) return null;
   return (

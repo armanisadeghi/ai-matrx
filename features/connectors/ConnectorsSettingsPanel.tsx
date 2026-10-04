@@ -68,6 +68,7 @@ import {
 } from "./google-adapter";
 import {
   GOOGLE_CONNECTOR_PROVIDER,
+  userOwnedGoogleProductNames,
   type ConnectorProviderConfig,
 } from "./provider-config";
 import { confirmGmailChangesDisclosure, confirmGmailReadDisclosure } from "./gmail-read-disclosure";
@@ -151,9 +152,12 @@ function ProviderConnectorsPanel({
   ) => {
     const account = state.accounts.find((row) => row.id === accountId);
     if (!account) return;
-    if (account.ownerKind === "organization" && productKeys.includes("gmail_modify")) {
+    if (
+      account.ownerKind === "organization" &&
+      userOwnedGoogleProductNames(productKeys).length > 0
+    ) {
       setFailure({
-        sentence: "Gmail changes can connect only to a personal Google account. Choose your own account in the consent panel below.",
+        sentence: "This selection can connect only to a user-owned Google account. Choose your own account in the consent panel below.",
         details: null,
       });
       return;

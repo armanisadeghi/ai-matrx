@@ -59,7 +59,7 @@ describe("GoogleContactsImportWindow Directory tab", () => {
     host.remove();
   });
 
-  const render = () => {
+  const render = (initialView: "contacts" | "directory" = "contacts") => {
     act(() =>
       root.render(
         <GoogleContactsImportWindow
@@ -67,6 +67,7 @@ describe("GoogleContactsImportWindow Directory tab", () => {
           onClose={() => undefined}
           organizationId="org-harbor"
           initialExternalId="google-person-harbor"
+          initialView={initialView}
         />,
       ),
     );
@@ -98,6 +99,26 @@ describe("GoogleContactsImportWindow Directory tab", () => {
     expect(directoryProps).toHaveBeenLastCalledWith({
       organizationId: "org-harbor",
     });
+  });
+
+  it("opens Directory first for an eligible launch and follows later launch data", () => {
+    admission = { isSuperAdmin: false, email: "oauth-review@aimatrx.com" };
+    render("directory");
+    expect(host.textContent).toContain("Canonical Directory body");
+    expect(directoryProps).toHaveBeenLastCalledWith({
+      organizationId: "org-harbor",
+    });
+
+    render("contacts");
+    expect(host.textContent).toContain("Contacts import body");
+    expect(host.textContent).not.toContain("Canonical Directory body");
+  });
+
+  it("falls back to Contacts when an ineligible launch asks for Directory", () => {
+    render("directory");
+    expect(host.textContent).toContain("Contacts import body");
+    expect(host.textContent).not.toContain("Directory");
+    expect(directoryProps).not.toHaveBeenCalled();
   });
 
   it("returns to Contacts when reviewer eligibility is lost", () => {

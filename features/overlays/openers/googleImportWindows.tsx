@@ -19,12 +19,34 @@ export interface GoogleImportWindowHandle {
   close: () => void;
 }
 
-export interface OpenGoogleContactsImportOptions {
+export type GoogleContactsImportInitialView = "contacts" | "directory";
+
+export interface GoogleContactsImportWindowLaunchData {
   /** The organization the imported People are written into. Required by the
    *  server: nothing chooses one for the caller. */
   organizationId: string | null;
   /** Opens with one contact preselected — the "Update from Google" door. */
   initialExternalId?: string | null;
+  /** The existing reviewer tab to reveal first. */
+  initialView?: GoogleContactsImportInitialView;
+}
+
+export type OpenGoogleContactsImportOptions = GoogleContactsImportWindowLaunchData;
+
+export function readGoogleContactsImportLaunchData(
+  value: unknown,
+): GoogleContactsImportWindowLaunchData {
+  const data =
+    value && typeof value === "object"
+      ? (value as Record<string, unknown>)
+      : {};
+  return {
+    organizationId:
+      typeof data.organizationId === "string" ? data.organizationId : null,
+    initialExternalId:
+      typeof data.initialExternalId === "string" ? data.initialExternalId : null,
+    initialView: data.initialView === "directory" ? "directory" : "contacts",
+  };
 }
 
 export function useOpenGoogleContactsImport() {
@@ -37,6 +59,7 @@ export function useOpenGoogleContactsImport() {
           data: {
             organizationId: opts.organizationId ?? null,
             initialExternalId: opts.initialExternalId ?? null,
+            initialView: opts.initialView ?? "contacts",
           },
         }),
       );

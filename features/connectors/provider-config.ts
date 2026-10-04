@@ -45,6 +45,7 @@ import {
   GOOGLE_WORKSPACE_FILE_SCOPES,
 } from "@/lib/googleScopes";
 import type { GoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
+import type { GoogleContactsImportWindowLaunchData } from "@/features/overlays/openers/googleImportWindows";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import type { ConnectorId, ConnectorLogo } from "./types";
 import {
@@ -110,7 +111,17 @@ export type ConnectorFirstAction =
       needs?: readonly ConnectorFirstActionContextKey[];
     } & (
       | { overlayId: "googleAgendaWindow"; data?: GoogleAgendaWindowLaunchData }
-      | { overlayId: Exclude<OverlayId, "googleAgendaWindow">; data?: never }
+      | {
+          overlayId: "googleContactsImportWindow";
+          data?: Partial<GoogleContactsImportWindowLaunchData>;
+        }
+      | {
+          overlayId: Exclude<
+            OverlayId,
+            "googleAgendaWindow" | "googleContactsImportWindow"
+          >;
+          data?: never;
+        }
     )
   /** Nothing to offer YET, and the row says why in writing. Never a bare null. */
   | { kind: "none"; because: string };
@@ -148,6 +159,19 @@ export interface ConnectorProduct {
   stopsOnRevoke: string;
   /** The first useful thing to do once it is connected. No dead ends. */
   firstAction: ConnectorFirstAction;
+}
+
+const USER_OWNED_GOOGLE_PRODUCTS: Readonly<Record<string, string>> = {
+  directory: "Workspace Directory",
+  gmail_modify: "Gmail changes",
+  meet: "Google Meet review",
+};
+
+/** Products whose provider credential must belong to the person, even in a mixed selection. */
+export function userOwnedGoogleProductNames(keys: readonly string[]): string[] {
+  return [...new Set(keys)]
+    .map((key) => USER_OWNED_GOOGLE_PRODUCTS[key])
+    .filter((name): name is string => name !== undefined);
 }
 
 export interface ConnectorProductGroup {
@@ -218,6 +242,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "Google permits viewing and editing events on all your calendars. AI Matrx only runs the exact create, move, cancel, or RSVP you review",
   [GOOGLE_SCOPE.meetingsSpaceReadonly]:
     "Read Meet conference details and selected transcript entries. No recording downloads or meeting changes",
+  [GOOGLE_SCOPE.directoryReadonly]:
+    "Read one page of colleagues shared with your own Google Workspace account. No saving or AI model transfer",
   [GOOGLE_SCOPE.tasksReadonly]: "Read your Google Tasks lists",
   [GOOGLE_SCOPE.tasksWrite]:
     "Google permits creating, editing, organizing and deleting your tasks. AI Matrx currently offers reviewed task creation and selected complete or reopen changes",
@@ -505,6 +531,26 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "overlay",
         label: "Review contact name changes",
         overlayId: "googleContactsImportWindow",
+        needs: ["organizationId"],
+      },
+    },
+    {
+      key: "directory",
+      name: "Workspace Directory",
+      promise:
+        "Preview one page of colleagues shared with your own Google Workspace account. Nothing is saved or sent to an AI model.",
+      group: WORKSPACE_GROUP,
+      icon: Contact,
+      mark: GoogleContactsMark,
+      capabilityKeys: ["directory"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.directoryReadonly],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "previewing colleagues shared by this Workspace account",
+      firstAction: {
+        kind: "overlay",
+        label: "Preview Workspace Directory",
+        overlayId: "googleContactsImportWindow",
+        data: { initialView: "directory" },
         needs: ["organizationId"],
       },
     },
