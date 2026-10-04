@@ -33,6 +33,7 @@ import {
   type ArtifactOrigin,
   type GeneratedArtifact,
 } from "./lineage";
+import { LineageArtifactList } from "./LineageArtifactList";
 
 export function MadeFromSource({
   /** The artifact's canonical token ("fc_set", "study_media", "note", "assessment"). */
@@ -118,7 +119,7 @@ export function MadeFromSource({
             </span>
           );
         })}
-        {/* The KIT door. Siblings as chips answer "what else exists"; this
+        {/* The KIT door. The sibling list answers "what else exists"; this
             answers "take me to the whole thing", which is the page the learner
             actually wants when they arrive on one piece of it. */}
         <Link
@@ -132,29 +133,11 @@ export function MadeFromSource({
         </Link>
       </div>
 
-      {siblings.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">
-            Also made from it:
-          </span>
-          {siblings.map((s) => (
-            <Link
-              key={s.edgeId}
-              href={s.href}
-              title={s.detail ? `${s.title} · ${s.detail}` : s.title}
-              data-tap-target
-              className="inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-full border border-border bg-card px-2 py-0.5 text-xs text-foreground transition-colors hover:bg-muted sm:max-w-[24rem]"
-            >
-              <span className="min-w-0 truncate">{s.title}</span>
-              {s.detail && (
-                <span className="max-w-[12rem] shrink truncate text-muted-foreground">
-                  · {s.detail}
-                </span>
-              )}
-            </Link>
-          ))}
-        </div>
-      )}
+      <LineageArtifactList
+        heading="Also made from it"
+        items={siblings}
+        className="mt-2 border-t border-border/60 pt-2"
+      />
     </div>
   );
 }

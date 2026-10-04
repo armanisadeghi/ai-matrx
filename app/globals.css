@@ -1821,6 +1821,10 @@
       --item-fade-w: 2.75rem;
     }
   }
+  /* No kebab → nothing to clear: the label keeps the whole line. */
+  .item-row[data-no-menu] {
+    --item-fade-w: 0px;
+  }
 
   .item-fade {
     overflow: hidden;

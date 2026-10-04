@@ -205,7 +205,6 @@ import { Search, X } from "lucide-react";
 import { CrumbTrailHeader, type CrumbOption } from "@/features/shell/components/header/templates/CrumbTrailHeader";
 import { EDUCATION_NAV_ITEMS } from "@/features/education/components/EducationHeader";
 import { SampleScale } from "../../_components/kit";
-import { ReplacesLine } from "../../_components/replaces-line";
 
 const SAMPLE_PATH = "/demos/ui-unification/samples/education-flashcards";
 
@@ -1160,7 +1159,6 @@ export function FlashcardSetSample({
         {loading ? (
           <>
             <div className="flex flex-col gap-2">
-              <ReplacesLine href={`${EDU_BASE}/${setId}`} />
               <div className="flex items-center gap-1.5" aria-busy="true" aria-label="Loading deck">
                 <Skeleton className="h-7 w-28 rounded-full" />
                 <Skeleton className="h-7 w-24 rounded-full" />
@@ -1187,7 +1185,6 @@ export function FlashcardSetSample({
           </>
         ) : error || !data ? (
           <>
-            <ReplacesLine href={`${EDU_BASE}/${setId}`} />
             <AccessGate
               token="fc_set"
               id={setId}
@@ -1200,7 +1197,6 @@ export function FlashcardSetSample({
             {/* IDENTITY + ACTIONS — provenance, the one action bar, the deck's
                 own description and lineage. Every control is the 28px one. */}
             <section className="flex flex-col gap-2" aria-label="Deck">
-              <ReplacesLine href={`${EDU_BASE}/${setId}`} />
 
               {/* Desktop action bar: how to study (left), deck tools as quiet
                   icons, then Add — the one primary write (right). */}

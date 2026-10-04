@@ -168,7 +168,13 @@ export function ItemRow({
       )}
       {labelNode}
       {secondaryLabel && (
-        <span className="item-shift shrink-0 text-xs text-muted-foreground">
+        // Clamped: a secondary value can be a sentence (a lineage edge's
+        // "140 cards - 1 section could not be covered …"). Unclamped it pushed
+        // the label out of the row (owner, 2026-10-04).
+        <span
+          className="item-shift min-w-0 max-w-[50%] truncate text-xs text-muted-foreground"
+          title={secondaryLabel}
+        >
           {secondaryLabel}
         </span>
       )}
@@ -253,6 +259,9 @@ export function ItemRow({
   const row = (
     <div
       data-active={active || undefined}
+      // The deep fade exists to clear the kebab; a menu-less row has none, so
+      // its label keeps every pixel (touch used to fade it permanently).
+      data-no-menu={mappedMenu ? undefined : true}
       className={cn(
         "item-row group/item relative rounded-lg transition-colors",
         !active && "hover:bg-accent/60",
