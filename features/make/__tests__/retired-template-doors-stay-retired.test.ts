@@ -75,7 +75,7 @@ function codeOnly(path: string): string {
 
 describe("RETIRE-1 — the scope-template apply and the example tables stay retired", () => {
   it("measures something: the gallery href every door uses is found", () => {
-    expect(readFileSync(join(REPO, "features", "make", "gallery", "galleryHref.ts"), "utf8")).toMatch(/TEMPLATE_GALLERY_HREF = "\/make#make-templates"/);
+    expect(readFileSync(join(REPO, "features", "make", "gallery", "galleryHref.ts"), "utf8")).toMatch(/TEMPLATE_GALLERY_HREF = "\/templates"/);
   });
 
   it("no code calls context_template_apply, tableFromExample, ExampleTables or the scope-template drawer", () => {

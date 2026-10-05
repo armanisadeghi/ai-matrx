@@ -94,7 +94,7 @@ it("with one chosen, the name box opens in the dialog, in that organization", as
   const html = await open("create");
   expect(html).toContain('data-asked="{&quot;create&quot;:1}"');
   // "Start from a template" leads to the one gallery (lane TEMPLATES, RETIRE-1), never a second list.
-  expect(html).toContain('data-templates="/make#make-templates"');
+  expect(html).toContain('data-templates="/templates"');
 });
 
 it("the data home never hides New table behind the active organization", () => {

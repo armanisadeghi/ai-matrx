@@ -577,6 +577,7 @@ const GUEST_OK_SINCE_DOMAIN_TREE: readonly string[] = [
   "/print/branded-qr",
   "/print/zpl",
   "/search",
+  "/templates",
   "/voice",
 ];
 
