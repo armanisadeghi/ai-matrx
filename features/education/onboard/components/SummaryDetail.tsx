@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, ListChecks, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { VerifyAgainstSourceButton } from "@/features/education/trust/components/VerifyAgainstSourceButton";
@@ -229,7 +229,7 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
       )}
 
       <div className="prose-sm max-w-none">
-        <MarkdownStream imagePolicy="ai" content={markdown} hideCopyButton />
+        <RichContent level="full" imagePolicy="ai" source={markdown} hideCopyButton />
       </div>
       </div>
 
