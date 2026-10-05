@@ -11,6 +11,7 @@ import { unfinishedKindLabel } from "@/features/content-ir/surfaces/kind-text-to
 import {
   firstKindSlug,
   hasKindKey,
+  normalizeKindSpellings,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 
 export type KindCell =
@@ -23,9 +24,11 @@ function ownKind(value: unknown): string | null {
   return typeof kind === "string" && kind.trim() ? kind : null;
 }
 
-export function kindCell(raw: unknown): KindCell | null {
-  const direct = ownKind(raw);
-  if (direct) return { state: "kind", kind: direct, value: raw as Record<string, unknown> };
+export function kindCell(value: unknown): KindCell | null {
+  const direct = ownKind(value);
+  if (direct) return { state: "kind", kind: direct, value: value as Record<string, unknown> };
+  // Every spelling of the key reads as one (round 8): escaped, entities, repr…
+  const raw = typeof value === "string" ? normalizeKindSpellings(value) : value;
   if (typeof raw !== "string" || !hasKindKey(raw)) return null;
   let parsed: unknown;
   try {

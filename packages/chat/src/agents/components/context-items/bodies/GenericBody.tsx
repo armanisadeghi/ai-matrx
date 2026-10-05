@@ -12,7 +12,7 @@
 
 import type { ContextItemBodyProps } from "../types";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { hasKindKey, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
+import { hasKindKeyAnySpelling, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 function carriesKind(value: unknown): boolean {
   return valueCarriesKind(value);
@@ -36,7 +36,7 @@ export function GenericBody({ item }: ContextItemBodyProps) {
   const text = item.refs.text;
 
   // A kind is drawn as its kind, never as JSON text (kind-never-raw O2).
-  if (text && hasKindKey(text)) {
+  if (text && hasKindKeyAnySpelling(text)) {
     return (
       <div className="h-full min-h-0 overflow-y-auto p-4">
         <AnswerValueView text={text} />

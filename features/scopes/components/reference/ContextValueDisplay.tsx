@@ -25,7 +25,7 @@ import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-signal";
 import type { ContextValueType } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 
@@ -140,7 +140,7 @@ function renderTyped(
     case "markdown":
       if (!text) return undefined;
       // A kind is drawn as its kind, never as JSON (kind-never-raw O2).
-      if (hasKindKey(text)) {
+      if (hasKindKeyAnySpelling(text)) {
         return (
           <div className={className}>
             <AnswerValueView text={text} />
@@ -217,7 +217,7 @@ export function ContextValueDisplay({
   if (rendered !== undefined) return rendered;
 
   if (value.value_text != null) {
-    if (hasKindKey(value.value_text)) {
+    if (hasKindKeyAnySpelling(value.value_text)) {
       return (
         <div className={className}>
           <AnswerValueView text={value.value_text} />

@@ -9,7 +9,7 @@
 
 import React, { useState } from "react";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import type { CanvasArtifactRow } from "@/features/canvas/services/canvasArtifactService";
@@ -40,8 +40,8 @@ export function ArtifactVersionBody({ row }: { row: CanvasArtifactRow }) {
   const [showJson, setShowJson] = useState(false);
   const data = dataOf(row);
   const text = versionText(row);
-  // `hasKindKey` is the one detector (a kind at any depth, escaped spellings too).
-  const holdsKind = hasKindKey(text);
+  // The one detector, every spelling (a kind at any depth, round 8).
+  const holdsKind = hasKindKeyAnySpelling(text);
   const rawPre = (
     <pre
       data-kind-source={holdsKind ? "explicit" : undefined}

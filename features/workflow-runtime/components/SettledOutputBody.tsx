@@ -24,7 +24,7 @@
 
 import { RichContent } from "@/components/rich-content/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKey, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 
 import { looksLikeJsonDocument, readAgentRunOutput } from "../agent-run-output";
 import { AgentContentList } from "./AgentContentList";
@@ -62,7 +62,7 @@ export function JsonTextBody({ text }: { text: string }) {
     return (
       <RichContent level="full"
         imagePolicy="ai"
-        source={hasKindKey(text) ? `\u0060\u0060\u0060json\n${text}\n\u0060\u0060\u0060` : text}
+        source={hasKindKey(normalizeKindSpellings(text)) ? `\u0060\u0060\u0060json\n${normalizeKindSpellings(text)}\n\u0060\u0060\u0060` : text}
       />
     );
   }
