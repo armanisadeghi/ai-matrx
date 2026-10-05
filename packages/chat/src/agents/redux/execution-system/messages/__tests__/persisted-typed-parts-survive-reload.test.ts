@@ -22,8 +22,8 @@ import {
 } from "../messages.selectors";
 import { parsePersistedMessageContent } from "../persisted-content-boundary";
 import { normalizeMessagePart } from "../../../../components/context-items/normalize";
-import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
-import { fromCxVideoPart } from "@host/features/files/blocks/adapters/from-cx-av-part";
+import { fromCxMediaPart } from "@ai-matrx/media/files";
+import { fromCxVideoPart } from "@ai-matrx/media/files";
 import type { MessageRecord } from "../messages.slice";
 import type { ChatRootState } from "../../../../../store/root-state";
 import type {

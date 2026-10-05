@@ -17,8 +17,8 @@ import {
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import type { ContextItemBodyProps } from "../types";
-import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
-import { videoPublishDateFromMetadata } from "@host/lib/media/video-date";
+import { VideoPublishDate } from "@ai-matrx/media/files";
+import { videoPublishDateFromMetadata } from "@ai-matrx/media/files";
 
 function youtubeId(url: string): string | null {
   const m = url.match(

@@ -23,7 +23,7 @@ import { SurfaceAgentsPanelImpl } from "../../../next/lazy/SurfaceAgentsPanelImp
 import { Loader2 } from "lucide-react";
 
 import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
-import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
+import { INTELLIGENCE_ICON } from "@ai-matrx/icons/domain";
 import {
   Popover,
   PopoverContent,

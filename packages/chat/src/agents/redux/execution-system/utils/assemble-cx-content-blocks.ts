@@ -58,8 +58,8 @@ import type {
   TimelineRenderBlock,
 } from "../../../types/request.types";
 import { computeChildOwnedRanges } from "./child-owned-ranges";
-import { toCxMediaPart } from "@host/features/files/blocks/image/adapters/to-cx-media-part";
-import { isUnifiedImageBlock } from "@host/features/files/blocks/image/guards";
+import { toCxMediaPart } from "@ai-matrx/media/files";
+import { isUnifiedImageBlock } from "@ai-matrx/media/files";
 import { SPECIAL_CODE_LANGUAGES } from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import type { NormalizedCitation } from "../messages/message-citations";

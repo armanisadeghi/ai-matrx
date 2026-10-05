@@ -28,9 +28,9 @@ import { ResourceAttachmentTile } from "../../messages-display/user/ResourceAtta
 import { useContextItemsTab } from "../../context-items/contextItemsTab";
 import { normalizeResource } from "../../context-items/normalize";
 import type { ContextDrawerItem } from "../../context-items/types";
-import { MediaAttachmentThumbnail } from "@host/features/files/components/inline/MediaAttachmentThumbnail";
+import { MediaAttachmentThumbnail } from "@ai-matrx/chat/host/ui-slots";
 import { parseReferenceFence } from "@ai-matrx/agents/envelope";
-import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
+import { revokeTrackedObjectUrl } from "@ai-matrx/media/files";
 
 import { resolveContextItemDef } from "../../context-items/registry";
 import { remarkKindDisplay } from "../../context-items/remark-display";

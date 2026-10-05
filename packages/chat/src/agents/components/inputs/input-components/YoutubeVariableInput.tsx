@@ -16,7 +16,7 @@
  * raw text so the user can see what they typed and fix it.
  */
 
-import { Youtube as YoutubeIcon } from "@host/components/icons/brand-icons";
+import { Youtube as YoutubeIcon } from "@ai-matrx/icons/brand";
 import { Input } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 

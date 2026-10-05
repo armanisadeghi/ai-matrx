@@ -14,7 +14,7 @@
 
 import type { ComponentType } from "react";
 import type { DataRef } from "@ai-matrx/agents/message-parts";
-import type { FileIdentityHint } from "@host/features/files/types";
+import type { FileIdentityHint } from "@ai-matrx/media/files";
 import type {
   ListInputPart,
   PreFetchedUrl,

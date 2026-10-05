@@ -22,7 +22,7 @@
 
 import type { ResourceBlockType } from "../../../types/instance.types";
 import type { FileSource, NormalizedFile } from "@host/features/files/handler/types";
-import type { MediaRef } from "@host/features/files/types";
+import type { MediaRef } from "@ai-matrx/media/files";
 import { normalize } from "@host/features/files/handler/input/normalize";
 import { toMediaRef } from "@host/features/files/handler/output/target";
 

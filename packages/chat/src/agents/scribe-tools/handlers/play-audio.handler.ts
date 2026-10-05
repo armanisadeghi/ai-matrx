@@ -13,7 +13,7 @@
  */
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { requestScribeAudioSeek } from "@host/features/transcript-studio/state/scribeAudioBus";
+import { requestScribeAudioSeek } from "@ai-matrx/chat/host/ui-slots";
 import type { ChatRootState } from "../../../store/root-state";
 import type { ScribeToolHandler, ScribeToolResultBase } from "./types";
 import type { ScribePlayAudioArgs } from "../tools/schemas";

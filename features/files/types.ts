@@ -44,8 +44,9 @@ import type { readFileRowById } from "@/features/files/filesDb";
  *    and, on any write-back, silently DOWNGRADED the file to `personal`.
  *    Never send `shared` or `private` to the server.
  */
-export type Visibility = "personal" | "internal" | "link" | "public";
-export type PermissionLevel = "read" | "write" | "admin";
+// Visibility, PermissionLevel, MediaRef and FileIdentityHint live in `@ai-matrx/media/files` (P16f).
+import type { Visibility, PermissionLevel, MediaRef, FileIdentityHint } from "@ai-matrx/media/files";
+export type { Visibility, PermissionLevel, MediaRef, FileIdentityHint };
 export type ResourceType = "file" | "folder";
 /**
  * Who a grant targets. Mirrors the canonical `iam.permissions` three-way
@@ -90,32 +91,14 @@ export type GranteeType = "user" | "group" | "public";
 //
 // **Don't hand-build MediaRefs at callsites.** The builders make sure we
 // never accidentally drift from this contract.
-export interface MediaRef {
-  /** cld_files UUID — preferred form for any file we own. */
-  file_id?: string;
-  /** Any URL we issued (durable download route, share link) OR external https://. */
-  url?: string;
-  /** Optional client hint; backend overrides with `cld_files.mime_type` for owned files. */
-  mime_type?: string;
-  /** Free-form per-call metadata. Keep small — this rides on every request. */
-  metadata?: Record<string, unknown>;
-}
+// (MediaRef: see the import above.)
 
 /**
  * Metadata a caller may already know when all it has is a durable file id.
  * These values seed the canonical Redux record before field hydration runs;
  * omitted keys remain genuinely unloaded and are fetched on demand.
  */
-export interface FileIdentityHint {
-  fileName?: string;
-  mimeType?: string | null;
-  fileSize?: number | null;
-  visibility?: Visibility;
-  /** Permanent public delivery only. Never place a signed URL here. */
-  publicUrl?: string | null;
-  /** Permanent public CDN delivery only. Never place a signed URL here. */
-  cdnUrl?: string | null;
-}
+// (FileIdentityHint: see the import above.)
 
 // ---------------------------------------------------------------------------
 // 2. DB row types — straight from Supabase-generated Database type

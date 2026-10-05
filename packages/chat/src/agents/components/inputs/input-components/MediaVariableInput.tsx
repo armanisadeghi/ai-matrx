@@ -36,12 +36,12 @@ import {
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Dialog, DialogContent, DialogTitle } from "@ai-matrx/design-system";
-import { FileRagBadge } from "@host/features/files/components/core/FileBadges/FileRagBadge";
-import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { FileRagBadge } from "@ai-matrx/chat/host/ui-slots";
+import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { useFileDocument } from "@host/features/files/hooks/useFileDocument";
+import { useFileDocument } from "@ai-matrx/chat/host/ui-slots";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
+import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
 import { FilesResourcePicker } from "../../../../host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";

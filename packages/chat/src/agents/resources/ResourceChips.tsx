@@ -10,10 +10,10 @@
 
 import React, { useState, useCallback } from "react";
 import { X, StickyNote, CheckSquare, Table2, Globe, File, FolderKanban, FileText, Image, Mic } from "lucide-react";
-import { Youtube } from "@host/components/icons/brand-icons";
+import { Youtube } from "@ai-matrx/icons/brand";
 import { motion } from "motion/react";
 import { Resource } from "./types";
-import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
+import { VideoPublishDate } from "@ai-matrx/media/files";
 
 interface ResourceChipsProps {
     resources: Resource[];

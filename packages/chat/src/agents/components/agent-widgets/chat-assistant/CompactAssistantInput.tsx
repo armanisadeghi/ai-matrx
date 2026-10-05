@@ -36,8 +36,8 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { ArrowUp, Mic, Braces, CircleStop, CornerDownLeft } from "lucide-react";
 
 // Voice input
-import { useRecordAndTranscribe } from "@host/features/audio/hooks/useRecordAndTranscribe";
-import { TranscriptionLoader } from "@host/features/audio/components/TranscriptionLoader";
+import { useRecordAndTranscribe } from "@ai-matrx/chat/host/ui-slots";
+import { TranscriptionLoader } from "@ai-matrx/chat/host/ui-slots";
 
 // Resource picker + paste-image attach
 import { SmartAgentResourcePickerButton } from "../../inputs/resources/SmartAgentResourcePickerButton";
@@ -92,7 +92,7 @@ export function CompactAssistantInput({
     startRecording,
     stopRecording,
   } = useRecordAndTranscribe({
-    onTranscriptionComplete: (result) => {
+    onTranscriptionComplete: (result: { success: boolean; text?: string | null }) => {
       if (result.success && result.text) {
         const newText = inputText
           ? `${inputText}\n${result.text}`
@@ -101,7 +101,7 @@ export function CompactAssistantInput({
         dispatch(setUserInputText({ conversationId, text: newText }));
       }
     },
-    onError: (error) => {
+    onError: (error: string) => {
       toast.error("Transcription failed", { description: error });
     },
     autoTranscribe: true,

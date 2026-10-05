@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@ai-matrx/design-system";
-import type { MediaRef } from "@host/features/files/types";
+import type { MediaRef } from "@ai-matrx/media/files";
 import { useOpenCloudBrowserCanvas } from "@ai-matrx/chat/host/ui-slots";
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { cn } from "@ai-matrx/design-system";

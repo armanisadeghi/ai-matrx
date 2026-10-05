@@ -131,7 +131,50 @@ const ResourcePickerWindow = dynamic(
 // The agent builder's write thunks, for the package's agent headers (host/builder-door).
 registerBuilderDoor({ saveAgent, saveAgentField, createAgent, deleteAgent, duplicateAgent, setAgentFavorite });
 
+// P16 / P16f: files, audio, PDF, diff, search toolbar and list doors.
+import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
+import { MediaAttachmentThumbnail } from "@/features/files/components/inline/MediaAttachmentThumbnail";
+import { UnifiedImageBlockRenderer } from "@/features/files/blocks/image/UnifiedImageBlockRenderer";
+import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
+import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
+import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
+import { PdfNamedSurfaceSwitcher } from "@/features/pdf/components/PdfNamedSurfaceSwitcher";
+import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
+import { ChangeDiff } from "@/components/ui/change-diff";
+import { SearchGroup, SearchGroupTrigger } from "@/components/icons/SearchToolbar";
+import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useFile } from "@/features/files/handler/hooks/useFile";
+import { useFileDocument } from "@/features/files/hooks/useFileDocument";
+import { useFileResourceFamily } from "@/features/files/hooks/useFileResourceFamily";
+import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
+import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
+import { fileHandler } from "@/features/files/handler/handler";
+import { renameFile } from "@/features/files/redux/thunks";
+import { requestScribeAudioSeek } from "@/features/transcript-studio/state/scribeAudioBus";
+import { readListRpc } from "@/lib/entity-list/readListRpc";
+
 registerChatUi({
+  FileRagBadge,
+  MediaAttachmentThumbnail,
+  UnifiedImageBlockRenderer,
+  MicrophoneIconButton,
+  TranscriptionLoader,
+  MicDeviceMenu,
+  PdfNamedSurfaceSwitcher,
+  ChangeDiff,
+  SearchGroup,
+  SearchGroupTrigger,
+  useFileUpload,
+  useFile,
+  useFileDocument,
+  useFileResourceFamily,
+  useFileActions,
+  useRecordAndTranscribe,
+  resolveFile: (source: Parameters<typeof fileHandler.resolve>[0]) => fileHandler.resolve(source),
+  renameFile,
+  requestScribeAudioSeek,
+  resolvePdfSurfaceIds,
+  readListRpc,
   WindowPanel,
   ResourcePickerWindow,
   FullScreenOverlay,

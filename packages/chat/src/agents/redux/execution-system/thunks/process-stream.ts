@@ -161,8 +161,8 @@ import {
   selectMessageCount,
   selectNextMessagePosition,
 } from "../messages/messages.selectors";
-import { fromImageOutputData } from "@host/features/files/blocks/image/adapters/from-image-output-data";
-import { fromPartialImageData } from "@host/features/files/blocks/image/adapters/from-partial-image-data";
+import { fromImageOutputData } from "@ai-matrx/media/files";
+import { fromPartialImageData } from "@ai-matrx/media/files";
 import { getCapabilitiesForConversation } from "../../../runtime/get-model-capabilities";
 import type { ContentType } from "@ai-matrx/agents/models";
 import { toast } from "../../../../host/notify";
@@ -210,14 +210,14 @@ function renderBlockToContentType(type: string): ContentType | null {
 import {
   fromMediaBlock,
   isMediaBlockData,
-} from "@host/features/files/blocks/adapters/from-media-block";
+} from "@ai-matrx/media/files";
 import type {
   ContextReceiptData,
   ImageOutputData,
   PartialImageData,
 } from "@ai-matrx/agents/generated/stream-events";
-import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
-import type { UnifiedMediaBlock } from "@host/features/files/blocks/types";
+import type { UnifiedImageBlock } from "@ai-matrx/media/files";
+import type { UnifiedMediaBlock } from "@ai-matrx/media/files";
 import {
   upsertUserRequest,
   patchUserRequest,

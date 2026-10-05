@@ -21,7 +21,7 @@
  */
 
 import type { ChatThunk, ChatRootState } from "../../../../store/root-state";
-import { isSignedUrl } from "@host/lib/media/signed-url";
+import { isSignedUrl } from "@ai-matrx/data/files";
 import type {
   BuilderAdvancedSettings,
   InstanceContextEntry,

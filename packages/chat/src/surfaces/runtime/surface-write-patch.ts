@@ -60,7 +60,7 @@
  * `str_replace` instead of quietly getting an append.
  */
 
-import { matchText } from "@host/features/text-diff/lib/matchText";
+import { matchText } from "@ai-matrx/diff/text";
 
 /**
  * The commands a surface text patch may use — the subset of the backend

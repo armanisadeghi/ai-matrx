@@ -27,6 +27,9 @@ import type {
   Visibility,
 } from "@/features/files/types";
 import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareLinks";
+// toVisibility / fileIdToMediaRef / urlToMediaRef moved to `@ai-matrx/media/files` (P16f).
+import { toVisibility, fileIdToMediaRef, urlToMediaRef } from "@ai-matrx/media/files";
+export { toVisibility, fileIdToMediaRef, urlToMediaRef };
 
 // ---------------------------------------------------------------------------
 // Narrowing helpers
@@ -48,12 +51,6 @@ import type { ShareLink as CanonicalShareLink } from "@/utils/permissions/shareL
  * for a legacy read (scripts/visibility-vocab/remedies.mjs) — one normalizer,
  * never a private copy per surface.
  */
-export function toVisibility(raw: string | null | undefined): Visibility {
-  if (raw === "public") return "public";
-  if (raw === "link") return "link";
-  if (raw === "internal") return "internal";
-  return "personal";
-}
 
 function toPermissionLevel(raw: string | null | undefined): PermissionLevel {
   return raw === "write" || raw === "admin" ? raw : "read";
@@ -525,29 +522,5 @@ export function parseCloudTreeRows(raw: unknown): CloudTreeRow[] {
 export function cloudFileToMediaRef(file: CloudFile): MediaRef {
   const ref: MediaRef = { file_id: file.id };
   if (file.mimeType) ref.mime_type = file.mimeType;
-  return ref;
-}
-
-/**
- * Build a MediaRef from just a `file_id` (e.g. when an upload completes
- * and the caller has the id but not the full record yet).
- */
-export function fileIdToMediaRef(
-  fileId: string,
-  mimeType?: string | null,
-): MediaRef {
-  const ref: MediaRef = { file_id: fileId };
-  if (mimeType) ref.mime_type = mimeType;
-  return ref;
-}
-
-/**
- * Build a MediaRef from an external URL (public website image, signed URL
- * we don't own, etc.). Use this ONLY when you don't have a `file_id` —
- * otherwise the backend has to follow the URL to resolve the file.
- */
-export function urlToMediaRef(url: string, mimeType?: string | null): MediaRef {
-  const ref: MediaRef = { url };
-  if (mimeType) ref.mime_type = mimeType;
   return ref;
 }

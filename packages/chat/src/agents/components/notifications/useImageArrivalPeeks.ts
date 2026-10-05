@@ -22,8 +22,8 @@ import { useCallback, useEffect, useState } from "react";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "../../../store/hooks";
 import type { ChatRootState } from "../../../store/root-state";
-import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
-import { isUnifiedImageBlock } from "@host/features/files/blocks/image/guards";
+import type { UnifiedImageBlock } from "@ai-matrx/media/files";
+import { isUnifiedImageBlock } from "@ai-matrx/media/files";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

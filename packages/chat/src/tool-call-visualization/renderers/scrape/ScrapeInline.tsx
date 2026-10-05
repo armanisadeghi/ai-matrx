@@ -49,7 +49,7 @@ import type { ToolRendererProps } from "../../types";
 import { collectMessages, isTerminal, isSuccess } from "../_shared";
 import { getDomain, getFaviconUrl } from "../search/parseSearch";
 import { parseScrape, type ScrapePage } from "./parseScrape";
-import { AGENT_ICON } from "@host/components/icons/domain-icons";
+import { AGENT_ICON } from "@ai-matrx/icons/domain";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 // ─────────────────────────────────────────────────────────────────────────────

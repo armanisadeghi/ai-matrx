@@ -13,8 +13,8 @@ import {
   Music,
   FileText,
 } from "lucide-react";
-import { Youtube } from "@host/components/icons/brand-icons";
-import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { Youtube } from "@ai-matrx/icons/brand";
+import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { SmartAgentResourceChips } from "../../inputs/resources/SmartAgentResourceChips";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";

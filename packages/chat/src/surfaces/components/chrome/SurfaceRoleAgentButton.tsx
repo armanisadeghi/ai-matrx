@@ -29,7 +29,7 @@ import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-featu
 import { useSurfaceAgentRoles } from "../../hooks/useSurfaceConfig";
 import { useSurfaceRuntime } from "../../runtime/SurfaceRuntimeContext";
 import { cn } from "@ai-matrx/design-system";
-import { AGENT_ICON } from "@host/components/icons/domain-icons";
+import { AGENT_ICON } from "@ai-matrx/icons/domain";
 
 export function SurfaceRoleAgentButton({
   surfaceName,

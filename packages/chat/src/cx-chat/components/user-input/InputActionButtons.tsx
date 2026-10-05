@@ -3,7 +3,7 @@
 import { Loader2, Bug } from "lucide-react";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { ArrowUpTapButton } from "@ai-matrx/tap-target/buttons";
-import { MicrophoneIconButton } from "@host/features/audio/components/MicrophoneIconButton";
+import { MicrophoneIconButton } from "@ai-matrx/chat/host/ui-slots";
 
 interface InputActionButtonsProps {
   /** Show the voice mic button */

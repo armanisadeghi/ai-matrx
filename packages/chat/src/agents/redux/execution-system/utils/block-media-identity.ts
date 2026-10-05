@@ -15,8 +15,11 @@
  * server side no longer hands out URLs, so the model has nothing to paste. This
  * makes that a STRUCTURAL guarantee rather than a bet on model behaviour.
  */
-import { fileIdFromUserFilesUrl } from "@host/lib/media/durability";
+import { createFileUrlRecognizer } from "@ai-matrx/data/files";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
+
+/** The same recognizer the host's `lib/media/durability` wraps (one implementation, `@ai-matrx/data/files`). */
+const { fileIdFromUserFilesUrl } = createFileUrlRecognizer();
 
 /**
  * Only media-bearing blocks participate. A `text` block that happens to contain

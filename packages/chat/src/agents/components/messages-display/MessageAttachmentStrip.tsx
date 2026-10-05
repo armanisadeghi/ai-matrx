@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@ai-matrx/design-system";
-import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { contextItemsListKey, useContextItemsTab } from "../context-items/contextItemsTab";
 import { normalizeMessagePart } from "../context-items/normalize";
 import { BlockHoverPreview } from "@host/features/agents/components/previews/BlockHoverPreview";

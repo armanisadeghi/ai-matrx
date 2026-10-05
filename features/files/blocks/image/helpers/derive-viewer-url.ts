@@ -1,15 +1,7 @@
 /**
- * features/files/blocks/image/helpers/derive-viewer-url.ts
- *
- * Derive the internal viewer route for a matrx-owned image. The route
- * `/files/f/{fileId}` is the canonical "deep link" for any cld_files row.
- *
- * External blocks do not have a viewer URL — return null.
+ * Moved to `@ai-matrx/media/files` (P16f). This path re-exports the package so existing
+ * app imports keep resolving to the ONE implementation.
  */
-
-import type { UnifiedImageBlock } from "../types";
-
-export function deriveViewerUrl(block: UnifiedImageBlock): string | null {
-  if (block.origin === "external") return null;
-  return `/files/f/${block.fileId}`;
-}
+export {
+  deriveViewerUrl,
+} from "@ai-matrx/media/files";

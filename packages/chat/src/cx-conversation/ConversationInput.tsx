@@ -55,10 +55,10 @@ import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "../host/prefs";
 import { ResourceChips } from "../agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "../host/ui-slots";
-import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
-import { useRecordAndTranscribe } from "@host/features/audio/hooks/useRecordAndTranscribe";
-import { TranscriptionLoader } from "@host/features/audio/components/TranscriptionLoader";
+import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
+import { composeUploadFolderPath } from "@ai-matrx/media/files";
+import { useRecordAndTranscribe } from "@ai-matrx/chat/host/ui-slots";
+import { TranscriptionLoader } from "@ai-matrx/chat/host/ui-slots";
 import { openOverlay, CHAT_WINDOWS } from "../host/windows";
 import { toast } from "../host/notify";
 import type { Resource } from "../agents/resources/types";
@@ -365,7 +365,7 @@ export function ConversationInput({
   // ── Voice / transcribe ─────────────────────────────────────────────────────
   const { isRecording, isTranscribing, startRecording, stopRecording } =
     useRecordAndTranscribe({
-      onTranscriptionComplete: (result) => {
+      onTranscriptionComplete: (result: { success: boolean; text?: string | null }) => {
         if (!result.success || !result.text) return;
         const newContent = content ? `${content} ${result.text}` : result.text;
         dispatch(
@@ -379,7 +379,7 @@ export function ConversationInput({
           handleSubmit(newContent);
         }
       },
-      onError: (err) =>
+      onError: (err: string) =>
         toast.error("Transcription failed", { description: err }),
     });
 

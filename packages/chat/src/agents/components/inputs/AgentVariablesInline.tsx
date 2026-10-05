@@ -39,7 +39,7 @@ import { variableRunHint, variableRunLabel } from "@ai-matrx/agents";
 import { variableValueToDisplay, variableValueToInputText } from "../../utils/variable-utils";
 import { readMediaVariableFileId } from "../../utils/media-variable-value";
 import { isMediaVariableType } from "../../types/agent-definition.types";
-import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { calculateVisualViewportLift } from "@ai-matrx/kit/dom";
 import { collapsedRowChoices, collapsedRowKind } from "./collapsed-row";
 import { TableReferenceNames } from "./input-components/TableVariableInput";

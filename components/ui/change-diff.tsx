@@ -17,20 +17,10 @@ import { ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsListLegacy as TabsList, TabsTriggerLegacy as TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { InlineTextDiff } from "@ai-matrx/diff/react";
+import type { ChangeFieldDiff } from "@ai-matrx/diff/text";
 
-export interface ChangeFieldDiff {
-  /** Field name, Sentence case: "Title", "Status", "Due date", "Description". */
-  label: string;
-  /**
-   * Current value. `undefined` ⇒ a brand-new value (an add) — only `after`
-   * renders. `null` / "" ⇒ the field is currently empty/unset.
-   */
-  before?: string | null;
-  /** Proposed value. `null` ⇒ the change clears the field. */
-  after: string | null;
-  /** Render as a multi-line block (description / note body) instead of inline. */
-  block?: boolean;
-}
+// `ChangeFieldDiff` lives in `@ai-matrx/diff/text` (P16).
+export type { ChangeFieldDiff };
 
 /** Humanize a value for display: null/empty → a muted placeholder marker. */
 function display(value: string | null | undefined): {

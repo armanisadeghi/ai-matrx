@@ -21,8 +21,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon } from "lucide-react";
-import { UnifiedImageBlockRenderer } from "@host/features/files/blocks/image/UnifiedImageBlockRenderer";
-import type { UnifiedImageBlock } from "@host/features/files/blocks/image/types";
+import { UnifiedImageBlockRenderer } from "@ai-matrx/chat/host/ui-slots";
+import type { UnifiedImageBlock } from "@ai-matrx/media/files";
 
 export interface ImageArrivalPeekProps {
   /** `${requestId}:${blockId}` — globally unique across all requests. */
@@ -132,7 +132,7 @@ export function ImageArrivalPeek({
             <UnifiedImageBlockRenderer
               block={block}
               variant="compact"
-              onCompactClick={(src) => {
+              onCompactClick={(src: string) => {
                 dismiss();
                 onImageClick(src);
               }}

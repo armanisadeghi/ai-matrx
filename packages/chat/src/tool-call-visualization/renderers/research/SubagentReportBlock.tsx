@@ -41,7 +41,7 @@ import { cn } from "@ai-matrx/design-system";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { RichDocument } from "@ai-matrx/chat/host/ui-slots";
 import { useAutoScrollOnStream } from "../useAutoScrollOnStream";
-import { AGENT_ICON } from "@host/components/icons/domain-icons";
+import { AGENT_ICON } from "@ai-matrx/icons/domain";
 
 /** Collapse state of the report viewport. */
 type ReportView = "none" | "partial" | "full";

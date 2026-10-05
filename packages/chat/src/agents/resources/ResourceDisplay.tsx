@@ -23,12 +23,12 @@ import {
     ChevronRight,
     ExternalLink,
 } from "lucide-react";
-import { Youtube } from "@host/components/icons/brand-icons";
+import { Youtube } from "@ai-matrx/icons/brand";
 import { ParsedResource } from "./types";
 import { Badge } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
-import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
+import { VideoPublishDate } from "@ai-matrx/media/files";
 
 interface ResourceDisplayProps {
     resource: ParsedResource;

@@ -20,7 +20,7 @@ import { useEffect, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 import type { ContextItemBodyProps } from "../types";
 import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
-import { resolvePdfSurfaceIds } from "@host/features/pdf/hooks/usePdfSurfaceLinks";
+import { resolvePdfSurfaceIds } from "@ai-matrx/chat/host/ui-slots";
 
 export function ProcessedDocumentBody({
   item,
@@ -49,7 +49,7 @@ export function ProcessedDocumentBody({
     void resolvePdfSurfaceIds({
       fileId: item.refs.fileId ?? null,
       processedDocumentId: edgeDocumentId,
-    }).then((ids) => {
+    }).then((ids: { processedDocumentId?: string | null }) => {
       if (!cancelled) {
         setViewDocumentId(ids.processedDocumentId ?? edgeDocumentId);
       }

@@ -8,11 +8,11 @@ import type {
   DocumentMediaPart,
   YouTubeMediaPart,
 } from "@ai-matrx/agents/generated/stream-events";
-import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
+import { fromCxMediaPart } from "@ai-matrx/media/files";
 import {
   fromCxAudioPart,
   fromCxVideoPart,
-} from "@host/features/files/blocks/adapters/from-cx-av-part";
+} from "@ai-matrx/media/files";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
 import { withPerformedScript } from "../../../speech-script/types";
 import { seedPersistedEnvelopeCache } from "@host/features/content-ir/registry/region-envelope-memo";

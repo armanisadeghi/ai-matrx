@@ -131,6 +131,36 @@ export interface ChatUiSlots {
   useOverlaySurfaceRenderAck: AnyFn;
   disposeFullScreenEditorCallbackGroup: AnyFn;
   emitFullScreenEditorSave: AnyFn;
+  // Files, audio, PDF and list doors the app owns (P16 / P16f): its upload pipeline, file
+  // store, recorder, PDF surfaces and list reads. A bare host draws a labelled stand-in or
+  // nothing, and a hook answers "nothing here" — each reported once.
+  FileRagBadge: AnyComponent;
+  MediaAttachmentThumbnail: AnyComponent;
+  UnifiedImageBlockRenderer: AnyComponent;
+  MicrophoneIconButton: AnyComponent;
+  TranscriptionLoader: AnyComponent;
+  MicDeviceMenu: AnyComponent;
+  PdfNamedSurfaceSwitcher: AnyComponent;
+  ChangeDiff: AnyComponent;
+  SearchGroup: AnyComponent;
+  SearchGroupTrigger: AnyComponent;
+  /** The host's upload hook: `{ upload, uploadMany, uploading, progress, result, error, reset }`. */
+  useFileUpload: AnyFn;
+  /** One file from the host's file store by source: `{ file }`. */
+  useFile: AnyFn;
+  useFileDocument: AnyFn;
+  useFileResourceFamily: AnyFn;
+  useFileActions: AnyFn;
+  /** The host's record-then-transcribe hook (`isRecording`, `startRecording`, ...). */
+  useRecordAndTranscribe: AnyFn;
+  /** Resolves a file source to its stored file (the host's file handler). */
+  resolveFile: AnyFn;
+  /** The host's rename-file thunk creator (`dispatch(renameFile({ fileId, newName })).unwrap()`). */
+  renameFile: AnyFn;
+  requestScribeAudioSeek: AnyFn;
+  resolvePdfSurfaceIds: AnyFn;
+  /** The host's list RPC reader (`{ data, error }`). */
+  readListRpc: AnyFn;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -350,3 +380,54 @@ export const disposeFullScreenEditorCallbackGroup = slotFn("disposeFullScreenEdi
 export const emitFullScreenEditorSave = slotFn("emitFullScreenEditorSave", () =>
   Promise.reject(new Error("This host has no full-screen editor save target")),
 );
+
+// ── Files, audio, PDF and list doors (P16 / P16f) ────────────────────────────
+/** A host with no RAG status shows no badge (reported once). */
+export const FileRagBadge = slotComponent("FileRagBadge");
+export const MediaAttachmentThumbnail = slotComponent("MediaAttachmentThumbnail", unregisteredWidget("MediaAttachmentThumbnail"));
+export const UnifiedImageBlockRenderer = slotComponent("UnifiedImageBlockRenderer", unregisteredWidget("UnifiedImageBlockRenderer"));
+/** A host with no recorder offers no microphone (reported once). */
+export const MicrophoneIconButton = slotComponent("MicrophoneIconButton");
+export const TranscriptionLoader = slotComponent("TranscriptionLoader");
+export const MicDeviceMenu = slotComponent("MicDeviceMenu");
+/** A host with no PDF surfaces offers no surface switcher (reported once). */
+export const PdfNamedSurfaceSwitcher = slotComponent("PdfNamedSurfaceSwitcher");
+/** A host with no diff card lists each change as plain `label: before -> after` text, marked as the stand-in. */
+export const ChangeDiff = slotComponent(
+  "ChangeDiff",
+  ({ fields, className }: { fields?: ReadonlyArray<{ label: string; before?: string | null; after: string | null }>; className?: string }) =>
+    createElement(
+      "ul",
+      { className: `text-xs ${className ?? ""}`, "data-chat-slot-fallback": "ChangeDiff" },
+      ...(fields ?? []).map((c, i) =>
+        createElement("li", { key: i }, `${c.label}: ${c.before === undefined ? "" : `${c.before ?? "(empty)"} -> `}${c.after ?? "(cleared)"}`),
+      ),
+    ),
+);
+/** A host with no search toolbar lays the group's buttons out in a plain row. */
+export const SearchGroup = slotComponent("SearchGroup", ({ children, className }: { children?: ReactNode; className?: string }) =>
+  createElement("div", { className: `flex items-center ${className ?? ""}`, "data-chat-slot-fallback": "SearchGroup" }, children ?? null),
+);
+export const SearchGroupTrigger = slotComponent("SearchGroupTrigger");
+
+const noUploadHere = () => Promise.reject(new Error("This host has no file upload (registerChatUi useFileUpload)"));
+export const useFileUpload = slotFn("useFileUpload", () => ({
+  upload: noUploadHere,
+  uploadMany: noUploadHere,
+  uploading: false,
+  progress: null,
+  result: null,
+  error: null,
+  reset: () => undefined,
+}));
+export const useFile = slotFn("useFile", () => ({ file: null }));
+export const useFileDocument = slotFn("useFileDocument");
+export const useFileResourceFamily = slotFn("useFileResourceFamily");
+export const useFileActions = slotFn("useFileActions");
+export const useRecordAndTranscribe = slotFn("useRecordAndTranscribe");
+export const resolveFile = slotFn("resolveFile");
+export const renameFile = slotFn("renameFile");
+/** A host with no transcript studio has no audio to seek; the request is a reported no-op. */
+export const requestScribeAudioSeek = slotFn("requestScribeAudioSeek", () => undefined);
+export const resolvePdfSurfaceIds = slotFn("resolvePdfSurfaceIds");
+export const readListRpc = slotFn("readListRpc");

@@ -20,8 +20,8 @@
 import { useEffect, useRef } from "react";
 import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppStore } from "../../../../store/hooks";
-import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
+import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
+import { composeUploadFolderPath } from "@ai-matrx/media/files";
 import { normalize } from "@host/features/files/handler/input/normalize";
 import {
   addResource,
@@ -33,9 +33,9 @@ import {
   ensureExecutionOrganization,
   requireExecutionOrganizationId,
 } from "../../../redux/execution-system/utils/required-organization";
-import { isUploadCancelledError } from "@host/features/files/handler/errors";
+import { isUploadCancelledError } from "@ai-matrx/media/files";
 import { useAttachResource } from "./attach-resource";
-import { revokeTrackedObjectUrl } from "@host/lib/media/object-url-registry";
+import { revokeTrackedObjectUrl } from "@ai-matrx/media/files";
 import type { ResourceBlockType } from "../../../types/instance.types";
 import { isOrganizationSelectionCancelled } from "../../../../host/org";
 

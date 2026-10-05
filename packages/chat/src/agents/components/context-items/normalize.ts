@@ -22,7 +22,7 @@ import { resolveContextItemDef } from "./registry";
 import { hasContextItemDef } from "./context-item-block-types";
 import { REMARKS_BLOCK_TYPE } from "../../redux/execution-system/instance-resources/remarks";
 import { referenceRoleCaption } from "@ai-matrx/agents";
-import type { FileIdentityHint, Visibility } from "@host/features/files/types";
+import type { FileIdentityHint, Visibility } from "@ai-matrx/media/files";
 import type {
   ContextBookmark,
   ContextDrawerItem,

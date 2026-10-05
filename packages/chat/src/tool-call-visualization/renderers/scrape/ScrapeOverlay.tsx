@@ -25,7 +25,7 @@ import { BasicMarkdownContent } from "@host/components/mardown-display/chat-mark
 import type { ToolRendererProps } from "../../types";
 import { getFaviconUrl } from "../search/parseSearch";
 import { parseScrape } from "./parseScrape";
-import { AGENT_ICON } from "@host/components/icons/domain-icons";
+import { AGENT_ICON } from "@ai-matrx/icons/domain";
 
 const Favicon: React.FC<{ url: string; className?: string }> = ({
     url,

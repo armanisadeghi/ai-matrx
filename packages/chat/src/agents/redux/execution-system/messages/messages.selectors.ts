@@ -36,11 +36,11 @@ import {
   parsePersistedMessageContent,
   unknownPersistedPartBlock,
 } from "./persisted-content-boundary";
-import { fromCxMediaPart } from "@host/features/files/blocks/image/adapters/from-cx-media-part";
+import { fromCxMediaPart } from "@ai-matrx/media/files";
 import {
   fromCxAudioPart,
   fromCxVideoPart,
-} from "@host/features/files/blocks/adapters/from-cx-av-part";
+} from "@ai-matrx/media/files";
 import { seedPersistedEnvelopeCache } from "@host/features/content-ir/registry/region-envelope-memo";
 import {
   readEnvelope,

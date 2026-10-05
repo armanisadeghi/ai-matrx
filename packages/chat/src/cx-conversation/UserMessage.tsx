@@ -12,7 +12,7 @@ import {
   Globe,
   Paperclip,
 } from "lucide-react";
-import { Youtube } from "@host/components/icons/brand-icons";
+import { Youtube } from "@ai-matrx/icons/brand";
 import { Button } from "@ai-matrx/design-system/controls";
 import {
   parseResourcesFromMessage,
@@ -21,7 +21,7 @@ import {
 } from "../conversation/utils/resource-parsing";
 import { ResourcesContainer } from "../agents/resources/ResourceDisplay";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
+import { VideoPublishDate } from "@ai-matrx/media/files";
 import type {
   ConversationMessage,
   ConversationResource,

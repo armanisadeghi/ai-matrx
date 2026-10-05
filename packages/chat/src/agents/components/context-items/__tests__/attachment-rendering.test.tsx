@@ -1,4 +1,5 @@
 import React, { act } from "react";
+import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { createRoot, type Root } from "react-dom/client";
 import type { ContextDrawerItem } from "../types";
 import type { PreFetchedUrl } from "@ai-matrx/agents/generated/stream-events";
@@ -63,12 +64,15 @@ jest.mock("../contextItemsTab", () => ({
   useContextItemsTab: () => ({ isShowing: () => false, open: openAt }),
 }));
 
-jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({
-  FileResourceChip: (props: { fileId: string; nameOverride?: string }) => {
-    fileResourceChipProps(props);
-    return <span>{props.fileId}</span>;
-  },
-}));
+// The host registers its file chip (P16f slot); this test registers a recording double.
+beforeEach(() =>
+  registerChatUi({
+    FileResourceChip: (props: { fileId: string; nameOverride?: string }) => {
+      fileResourceChipProps(props);
+      return <span>{props.fileId}</span>;
+    },
+  }),
+);
 
 jest.mock("../../messages-display/user/ResourceAttachmentTile", () => ({
   ResourceAttachmentTile: ({

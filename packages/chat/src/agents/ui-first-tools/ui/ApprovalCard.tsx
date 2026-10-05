@@ -42,7 +42,7 @@ import {
 import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@host/components/ui/checkbox";
 import { Textarea } from "@ai-matrx/design-system";
-import { ChangeDiff } from "@host/components/ui/change-diff";
+import { ChangeDiff } from "@ai-matrx/chat/host/ui-slots";
 import KindInstanceRender from "@host/features/content-ir/studio/components/KindInstanceRender";
 import { StructuredValueView } from "@host/components/official/structured-value/StructuredValueView";
 import { cn } from "@ai-matrx/design-system";

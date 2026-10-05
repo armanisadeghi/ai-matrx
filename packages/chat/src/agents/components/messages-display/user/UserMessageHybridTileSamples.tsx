@@ -15,7 +15,7 @@ import {
   Music,
   FileText,
 } from "lucide-react";
-import { Youtube } from "@host/components/icons/brand-icons";
+import { Youtube } from "@ai-matrx/icons/brand";
 import { cn } from "@ai-matrx/design-system";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";
 import {

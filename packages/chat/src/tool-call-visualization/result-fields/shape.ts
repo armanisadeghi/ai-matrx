@@ -15,7 +15,7 @@
  *  - Every branch is reachable and documented.
  */
 
-import type { MediaRef } from "@host/features/files/types";
+import type { MediaRef } from "@ai-matrx/media/files";
 import {
     fileNameFromUrl,
     recognizeOurFileUrl,

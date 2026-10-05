@@ -14,7 +14,7 @@
  * the same shape and get the same card + auto-approve affordance for free.
  */
 
-import type { ChangeFieldDiff } from "@host/components/ui/change-diff";
+import type { ChangeFieldDiff } from "@ai-matrx/diff/text";
 
 export type ApprovalVerb =
   | "add"

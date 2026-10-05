@@ -50,7 +50,7 @@ import {
   smartExecute,
   cancelExecution,
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
-import { MicDeviceMenu } from "@host/components/audio/MicDeviceMenu";
+import { MicDeviceMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 
 // ── Inline button primitive ──────────────────────────────────────────────────

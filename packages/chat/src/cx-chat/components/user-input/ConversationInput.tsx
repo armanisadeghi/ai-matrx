@@ -31,7 +31,7 @@ import {
   addResource,
   removeResource,
 } from "../../../agents/redux/execution-system/instance-resources/instance-resources.slice";
-import { fileIdToMediaRef } from "@host/features/files/redux/converters";
+import { fileIdToMediaRef } from "@ai-matrx/media/files";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
@@ -46,8 +46,8 @@ import { selectIsDebugMode } from "../../../host/prefs";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { ResourceChips } from "../../../agents/resources/ResourceChips";
 import { useClipboardPaste } from "@ai-matrx/chat/host/ui-slots";
-import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
-import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
+import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
+import { composeUploadFolderPath } from "@ai-matrx/media/files";
 import { RunControlsMenu } from "../../../agents/components/inputs/smart-input/RunControlsMenu";
 import { PlusAttachMenu } from "../../../agents/components/inputs/smart-input/PlusAttachMenu";
 import { toast } from "../../../host/notify";

@@ -14,7 +14,7 @@
 
 import liveEvent from "./fixtures/gemini-live-media-block-event.json";
 import persistedPart from "./fixtures/gemini-persisted-audio-part.json";
-import { fromMediaBlock, type WireMediaBlock } from "@host/features/files/blocks/adapters/from-media-block";
+import { fromMediaBlock, type WireMediaBlock } from "@ai-matrx/media/files";
 import { normalizeContentBlocks } from "../../redux/execution-system/utils/normalize-content-blocks";
 import { withPerformedScript } from "../types";
 import { readPerformedScript } from "@host/components/mardown-display/blocks/audio/SpeechScriptPanel";

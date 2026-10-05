@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
-import type { MediaRef } from "@host/features/files/types";
+import type { MediaRef } from "@ai-matrx/media/files";
 import { coerceMediaRef } from "../../result-fields/shape";
 import { getArg, resultAsObject } from "../_shared";
 

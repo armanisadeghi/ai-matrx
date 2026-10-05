@@ -14,7 +14,7 @@ import {
 } from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import type { DocumentRepresentation } from "../../../types/instance.types";
-import { useFileResourceFamily } from "@host/features/files/hooks/useFileResourceFamily";
+import { useFileResourceFamily } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import {
   addFamilyPromotion,
@@ -55,7 +55,11 @@ export function ResourceFamilyPolicyEditor({
   primaryRepresentation,
   onPrimaryRepresentationChange,
 }: ResourceFamilyPolicyEditorProps) {
-  const family = useFileResourceFamily(fileId);
+  const family: {
+    data: { representations: Array<{ key: string; label: string; count: number; promotable: boolean }>; capabilities: string[] } | null;
+    loading: boolean;
+    error: string | null;
+  } = useFileResourceFamily(fileId);
   const policy = normalizeResourceFamilyPolicy(value);
   const readonly = disabled || !onChange;
   const promotions = policy.promote ?? [];

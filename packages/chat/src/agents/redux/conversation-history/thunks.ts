@@ -33,7 +33,7 @@ import {
   defaultScopeState,
   type SourceFacet,
 } from "./types";
-import { readListRpc } from "@host/lib/entity-list/readListRpc";
+import { readListRpc } from "@ai-matrx/chat/host/ui-slots";
 import { getUserId, hasBrowserSession } from "../../../host/identity";
 
 export interface FetchConversationHistoryArgs {

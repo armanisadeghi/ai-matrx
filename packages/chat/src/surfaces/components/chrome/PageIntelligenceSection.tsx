@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, Link } from "../../../host/navigation";
 import { ArrowUpRight } from "lucide-react";
-import { INTELLIGENCE_ICON } from "@host/components/icons/domain-icons";
+import { INTELLIGENCE_ICON } from "@ai-matrx/icons/domain";
 import {
   declaredKeysForRoute,
   declaredPlacesFor,

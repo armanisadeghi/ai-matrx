@@ -2,8 +2,7 @@
 
 import type { ChatRootState } from "../../../../store/root-state";
 import { useEffect, useState } from "react";
-import { useFile } from "@host/features/files/handler/hooks/useFile";
-import { fileHandler } from "@host/features/files/handler/handler";
+import { resolveFile, useFile } from "@ai-matrx/chat/host/ui-slots";
 
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
@@ -198,9 +197,8 @@ export function useAttachedDocumentFileNames(
     if (!idsKey) return undefined;
     let cancelled = false;
     for (const fileId of idsKey.split(",")) {
-      fileHandler
-        .resolve({ kind: "file_id", fileId })
-        .then((file) => {
+      resolveFile({ kind: "file_id", fileId })
+        .then((file: { meta: { fileName?: string | null } }) => {
           const name = file.meta.fileName?.trim();
           if (cancelled || !name) return;
           setNames((prev) => (prev[fileId] === name ? prev : { ...prev, [fileId]: name }));

@@ -15,9 +15,9 @@
 
 import { toast } from "../../../../host/notify";
 import { useAppDispatch } from "../../../../store/hooks";
-import { renameFile } from "@host/features/files/redux/thunks";
+import { renameFile } from "@ai-matrx/chat/host/ui-slots";
 import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
-import { PdfNamedSurfaceSwitcher } from "@host/features/pdf/components/PdfNamedSurfaceSwitcher";
+import { PdfNamedSurfaceSwitcher } from "@ai-matrx/chat/host/ui-slots";
 import type { ContextItemTitleProps } from "../types";
 
 export function ProcessedDocumentTitle({
