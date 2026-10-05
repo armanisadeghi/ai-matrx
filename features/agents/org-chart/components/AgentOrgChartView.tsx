@@ -23,6 +23,7 @@ import {
   ArrowDownToLine,
   ArrowRightLeft,
   ArrowUpToLine,
+  Stethoscope,
   Focus,
   LinkIcon,
   MoreHorizontal,
@@ -69,6 +70,7 @@ import {
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import { announceReversible } from "@/lib/reversible/announceReversible";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
@@ -82,6 +84,8 @@ import {
 import { crossLinksOf, type AgentOrgNodeData } from "../buildAgentOrgForest";
 import { useAgentOrgChart } from "../useAgentOrgChart";
 import { OrgChartActivityProvider, useOrgChartActivity } from "../useOrgChartActivity";
+import { orgChartHealth, type HealthIssueId } from "../orgChartHealth";
+import { knobInt } from "@/lib/knobs/featureKnobs";
 import { loadOrgDirectory } from "../useBoxIdentity";
 import type { OrgPosition } from "../positionsService";
 import { AgentOrgCard, boxHref } from "./AgentOrgCard";
@@ -150,6 +154,27 @@ export function AgentOrgChartView({
   const { byKey, firstKeyOf } = indexForest(forest);
   const chartAgentIds = [...firstKeyOf.keys()].map(parseBoxId).filter((b) => b.type === "agent").map((b) => b.id);
   const activity = useOrgChartActivity(chartAgentIds);
+  const [spreadWarnAt, setSpreadWarnAt] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    knobInt("agents.org_chart", "spread_warn_places")
+      .then((n) => live && setSpreadWarnAt(n))
+      .catch(() => live && setSpreadWarnAt(null)); // without the knob the spread check is skipped, not guessed
+    return () => {
+      live = false;
+    };
+  }, []);
+  const health = orgChartHealth(forest, {
+    activity: activity.byAgentId,
+    spreadWarnAt,
+    isOpenPosition: (id) => {
+      const p = positions.find((x) => x.id === id);
+      return Boolean(p && !p.filledByUserId);
+    },
+  });
+  const seriousCount = health.filter((h) => h.serious).reduce((n, h) => n + h.keys.length, 0);
+  const [healthView, setHealthView] = useState<HealthIssueId | null>(null);
+  const shownIssue = health.find((h) => h.id === healthView) ?? null;
   const positionById = new Map(positions.map((p) => [p.id, p]));
 
   // Names of people and teams for menus and messages (cards resolve their own).
@@ -632,6 +657,38 @@ export function AgentOrgChartView({
       <Button variant="outline" icon={<Plus />} onClick={() => setPick({ kind: "new-root" })}>
         Add to chart
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" icon={<Stethoscope />}>
+            {seriousCount ? `Health · ${seriousCount}` : "Health"}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-72">
+          {health.length === 0 ? (
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Nothing needs attention</DropdownMenuLabel>
+          ) : (
+            health.map((h) => (
+              <DropdownMenuItem
+                key={h.id}
+                className="flex items-start gap-2"
+                onSelect={() => setHealthView(h.id)}
+              >
+                <span
+                  className={cn(
+                    "mt-1 h-2 w-2 shrink-0 rounded-full",
+                    h.serious ? "bg-warning" : "bg-muted-foreground/50",
+                  )}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm">{h.label}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{h.hint}</span>
+                </span>
+                <span className="text-xs tabular-nums text-muted-foreground">{h.keys.length}</span>
+              </DropdownMenuItem>
+            ))
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
       {branchRoot && (
         <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 text-xs shadow-sm">
           <Focus className="h-3.5 w-3.5 text-muted-foreground" />
@@ -710,6 +767,9 @@ export function AgentOrgChartView({
         edgeKinds={ORG_LINK_KIND_META}
         crossLinks={crossLinks}
         selection={selection}
+        highlight={
+          shownIssue ? { keys: shownIssue.keys, label: shownIssue.label, onClear: () => setHealthView(null) } : null
+        }
         onSelectionChange={setSelection}
         focusKey={focusKey}
         persistKey={`agents:${(effectiveRoots ?? ["all"]).join(",")}`}
@@ -751,6 +811,7 @@ export function AgentOrgChartView({
                 <AgentOrgCard
                   node={n}
                   state={state}
+                  spreadWarnAt={spreadWarnAt}
                   memberCount={
                     n.node.data.boxType === "agent" ? orchestras.get(n.node.data.entityId)?.members.length : undefined
                   }

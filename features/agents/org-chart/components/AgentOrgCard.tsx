@@ -70,6 +70,7 @@ export function AgentOrgCard({
   memberCount,
   menu,
   readOnly = false,
+  spreadWarnAt = null,
 }: {
   node: PlacedOrgNode<AgentOrgNodeData>;
   state: OrgChartCardState;
@@ -79,6 +80,8 @@ export function AgentOrgCard({
   menu?: React.ReactNode;
   /** Not selectable (e.g. a nested box on the Orchestra canvas); its buttons still work. */
   readOnly?: boolean;
+  /** Placements at which "also in N places" turns into a warning (knob). */
+  spreadWarnAt?: number | null;
 }) {
   const d = node.node.data;
   const who = useBoxIdentity(d.boxType, d.entityId);
@@ -182,8 +185,17 @@ export function AgentOrgCard({
         {activity && <ActivityBadge activity={activity} />}
         {d.otherPlacements > 0 && (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-            title="Also appears elsewhere on the chart"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              spreadWarnAt !== null && d.otherPlacements + 1 >= spreadWarnAt
+                ? "bg-warning/15 text-warning"
+                : "bg-muted text-muted-foreground",
+            )}
+            title={
+              spreadWarnAt !== null && d.otherPlacements + 1 >= spreadWarnAt
+                ? `Spread thin: on ${d.otherPlacements + 1} teams`
+                : "Also appears elsewhere on the chart"
+            }
           >
             <Copy className="h-2.5 w-2.5" />
             Also in {d.otherPlacements} more {d.otherPlacements === 1 ? "place" : "places"}

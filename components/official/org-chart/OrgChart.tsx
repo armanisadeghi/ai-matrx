@@ -108,6 +108,11 @@ export interface OrgChartProps<T> {
   cardHeight?: number;
   /** Extra controls rendered at the left of the top bar. */
   toolbar?: ReactNode;
+  /**
+   * Point at a set of cards (a health issue, a filter): they read as matches,
+   * everything else dims, and the bar steps through them like search results.
+   */
+  highlight?: { keys: readonly string[]; label: string; onClear: () => void } | null;
   /** Shown instead of the canvas when `roots` is empty. */
   emptyState?: ReactNode;
   ariaLabel?: string;
@@ -175,6 +180,7 @@ export function OrgChart<T>({
   cardWidth = DEFAULT_ORG_CHART_LAYOUT.cardWidth,
   cardHeight = DEFAULT_ORG_CHART_LAYOUT.cardHeight,
   toolbar,
+  highlight,
   emptyState,
   ariaLabel = "Org chart",
   className,
@@ -262,7 +268,14 @@ export function OrgChart<T>({
   // collapsed team is revealed, not missed.
   const matches: string[] = [];
   const q = query.trim().toLowerCase();
-  if (q && getSearchText) {
+  const highlightSet = highlight ? new Set(highlight.keys) : null;
+  if (highlightSet && !q) {
+    const walk = (n: OrgChartTreeNode<T>) => {
+      if (highlightSet.has(n.key)) matches.push(n.key);
+      n.children.forEach(walk);
+    };
+    roots.forEach(walk);
+  } else if (q && getSearchText) {
     const walk = (n: OrgChartTreeNode<T>) => {
       if (getSearchText(n.data).toLowerCase().includes(q)) matches.push(n.key);
       n.children.forEach(walk);
@@ -304,6 +317,12 @@ export function OrgChart<T>({
     pendingFocus.current = null;
     centerOn(n.x + cardWidth / 2, n.y + cardHeight / 2, Math.max(view.zoom, 0.8));
   }, [byKey, centerOn, cardWidth, cardHeight, view.zoom]);
+
+  // A new highlight starts at its first card.
+  const highlightLabel = highlight?.label ?? null;
+  useEffect(() => {
+    if (highlightLabel) setMatchIndex(0);
+  }, [highlightLabel]);
 
   const goToMatch = (i: number) => {
     if (matches.length === 0) return;
@@ -753,6 +772,7 @@ export function OrgChart<T>({
                   "group/oc absolute left-0 top-0 max-w-none",
                   glide,
                   drag?.keys.includes(n.key) && "opacity-40",
+                  highlightSet && !q && !matchSet.has(n.key) && "opacity-35",
                 )}
                 style={{
                   transform: `translate(${n.x}px, ${n.y}px)`,
@@ -835,6 +855,22 @@ export function OrgChart<T>({
         <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex items-start justify-between gap-2">
           <div className="pointer-events-auto flex min-w-0 flex-wrap items-center gap-2" data-no-pan>
             {toolbar}
+            {highlight && !q && (
+              <div className="flex h-9 items-center gap-1 rounded-lg border border-warning/50 bg-card/95 pl-2.5 pr-1 shadow-sm backdrop-blur">
+                <span className="max-w-48 truncate text-xs font-medium text-foreground" title={highlight.label}>
+                  {highlight.label}
+                </span>
+                <span className="whitespace-nowrap px-1 text-[11px] tabular-nums text-muted-foreground">
+                  {matches.length ? `${Math.min(matchIndex, matches.length - 1) + 1}/${matches.length}` : "0"}
+                </span>
+                <ControlButton label="Next" onClick={() => goToMatch(selectedKey === matches[matchIndex] ? matchIndex + 1 : matchIndex)}>
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </ControlButton>
+                <ControlButton label="Clear" onClick={highlight.onClear}>
+                  <X className="h-3.5 w-3.5" />
+                </ControlButton>
+              </div>
+            )}
             {getSearchText && (
               <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 shadow-sm backdrop-blur">
                 <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
