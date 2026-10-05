@@ -123,6 +123,17 @@ function OutcomePanel({
         Keep it anyway
       </Button>
     );
+  } else if (outcome === "unproven") {
+    line = "Not kept. Too few real cases to prove it.";
+    actions = agentId ? (
+      <Button variant="outline" onClick={onKeep} disabled={busy}>
+        Keep it anyway
+      </Button>
+    ) : (
+      <Button variant="outline" onClick={onBuildUnproven} disabled={busy}>
+        Build unproven
+      </Button>
+    );
   } else if (outcome === "no_proof_inputs") {
     line = "The proof needs 3 example inputs.";
     actions = (

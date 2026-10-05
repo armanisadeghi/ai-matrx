@@ -393,6 +393,7 @@ const OUTCOME_TONE: Record<string, ChipTone> = {
   judge_not_blind: "warn",
   no_proof_inputs: "warn",
   needs_new_kind: "warn",
+  unproven: "warn",
 };
 const OUTCOME_LABEL: Record<string, string> = {
   passed: "Passed",
@@ -403,6 +404,7 @@ const OUTCOME_LABEL: Record<string, string> = {
   judge_not_blind: "Not judged blind",
   no_proof_inputs: "Needs examples",
   needs_new_kind: "Needs new shape",
+  unproven: "Too few real cases",
 };
 
 export function outcomeChip(outcome: string | null) {

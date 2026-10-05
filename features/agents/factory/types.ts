@@ -94,7 +94,8 @@ export type FactoryOutcome =
   | "send_backs_exhausted"
   | "judge_not_blind"
   | "no_proof_inputs"
-  | "needs_new_kind";
+  | "needs_new_kind"
+  | "unproven";
 
 /** Outcomes that keep the saved agent active (pipeline.KEPT_OUTCOMES). */
 export const KEPT_OUTCOMES: ReadonlySet<string> = new Set(["passed", "saved_unproven"]);
