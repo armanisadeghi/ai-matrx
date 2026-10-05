@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import type { AgentAppComponentProps } from "../../types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -201,7 +201,7 @@ export default function FactCheckerApp({
           <CardContent className="pt-5 border-none shadow-none">
             {response ? (
               <>
-                <MarkdownStream imagePolicy="ai" content={response} />
+                <RichContent level="full" imagePolicy="ai" source={response} />
                 {isStreaming && (
                   <div className="flex items-center gap-2 mt-6 pt-4">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-600 dark:text-sky-400" />

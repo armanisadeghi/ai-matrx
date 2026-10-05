@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import MarkdownStream from '@/components/MarkdownStream';
+import { RichContent } from "@/components/rich-content/RichContent";
 import type { AgentAppComponentProps } from '../../types';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -196,7 +196,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6 bg-textured">
-            <MarkdownStream imagePolicy="ai" content={response} />
+            <RichContent level="full" imagePolicy="ai" source={response} />
             
             {isStreaming && (
               <div className="flex items-center gap-2 mt-6 pt-4 border-t border-border">

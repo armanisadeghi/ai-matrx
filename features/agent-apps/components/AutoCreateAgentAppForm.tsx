@@ -56,7 +56,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface AutoCreateAgentAppFormProps {
@@ -1604,9 +1604,9 @@ function StreamPanel({
       <CardContent className="p-0">
         {text ? (
           <div className="p-3">
-            <MarkdownStream imagePolicy="ai"
-              content={text}
-              isStreamActive={isActive}
+            <RichContent level="full" imagePolicy="ai"
+              source={text}
+              isStreaming={isActive}
               hideCopyButton
             />
           </div>
@@ -1710,7 +1710,7 @@ function ErrorCard({
             {showFullResponse && (
               <div className="rounded-md border border-border bg-muted/30 max-h-[500px] overflow-y-auto p-3">
                 {/* MarkdownStream includes built-in copy button and full-screen editor */}
-                <MarkdownStream imagePolicy="ai" content={fullResponse} isStreamActive={false} />
+                <RichContent level="full" imagePolicy="ai" source={fullResponse} isStreaming={false} />
               </div>
             )}
           </div>

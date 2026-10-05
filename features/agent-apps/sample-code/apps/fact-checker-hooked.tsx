@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -177,7 +177,7 @@ export default function FactCheckerHooked({
           </CardHeader>
           <CardContent className="pt-5">
             {response ? (
-              <MarkdownStream imagePolicy="ai" content={response} isStreamActive={isStreaming} />
+              <RichContent level="full" imagePolicy="ai" source={response} isStreaming={isStreaming} />
             ) : (
               <div className="flex flex-col items-center justify-center py-12 space-y-3">
                 <Loader2 className="w-8 h-8 animate-spin text-sky-600 dark:text-sky-400" />
