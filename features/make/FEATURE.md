@@ -36,3 +36,7 @@ dialog on the page — no builder is forked.
 
 - 2026-10-02 — wave 1: route, seven tiles, step 1, Recent, templates row, entries, G1/G2.
 - 2026-10-03 — wave 4b: public template gallery (one drawing, two hosts), sitemap entries.
+- 2026-10-05 — lane CHAIR-DESCRIBE: the describe box runs mandate `make.describe_template` (one sentence →
+  one Template spec), checks it with `validateTemplate` (describe profile; a failure is one line + Try again),
+  declares it `template_declare('org')` and installs it with the gallery's `runTemplateDoor`, `Progress` and
+  `Landing` (`describe/describeTemplate.ts`). Guard: `describe/__tests__/describe-installs-only-what-passes-the-check.test.ts`.

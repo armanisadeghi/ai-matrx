@@ -194,7 +194,7 @@ export function DescribeBox() {
         <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="">
           <div className="flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 text-sm text-destructive">{run.why}</p>
-            <Button size="sm" variant="outline" onClick={() => void start()} data-make-describe-retry="">
+            <Button variant="outline" onClick={() => void start()} data-make-describe-retry="">
               Try again
             </Button>
           </div>
