@@ -68,6 +68,8 @@ const setting = {
   default_value: 1,
   deleted_at: null,
   description: "Controls response variation",
+  family: null,
+  value_positions: null,
   is_system: true,
   metadata: {},
   organization_id: "00000000-0000-4000-8000-000000000001",
