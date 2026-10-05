@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "69d14418e180";
+export const KIND_REGISTRY_FINGERPRINT = "0a2ad116a7cb";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -9792,13 +9792,15 @@ export interface ComparisonSet {
 /**
  * Output of ``seo.competitors.name_lookup`` — likely official websites for a company name.
  *  *
- *  * Kind `competitor_lookup_result` (registry v7).
+ *  * Kind `competitor_lookup_result` (registry v8).
  */
 export interface CompetitorLookupResult {
+  reuse?: string | null;
   /**
    * The registered kind this payload is an instance of.
    */
   __kind?: "competitor_lookup_result";
+  run_id?: string | null;
   results?: CompetitorLookupCandidate[];
 }
 
