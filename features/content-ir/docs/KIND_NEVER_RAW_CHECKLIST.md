@@ -272,6 +272,27 @@ a machine; explicit raw controls ("Copy JSON", the extraction "JSON" download, t
 - [x] W6. `AgentExecutionTestModal` plain "Copy" now copies the markdown of what the harness shows. Guard
       `execution-test-modal-never-raw-kind.test.tsx` (new case).
 
+## Y. Round 3 attacker findings (2026-10-05)
+
+- [x] Y2. Workflow approval card: `contextEntriesForPeople` marks EVERY context value that carries a kind at any depth (second
+      top-level kind, array of kinds, nested kind, string of kind JSON); each goes through `AnswerValueView`, the rest stay plain facts.
+      Guards `interrupt-view.test.ts` (new block) + `interrupt-context-kind-door.test.tsx`.
+- [x] Y5. Context snapshot body (`ContextInputBody`): a kind-carrying value draws through `AnswerValueView`. Guard
+      `context-input-body-never-raw-kind.test.tsx`.
+- [x] Y6. `kindTextToMarkdown`: kind in an HTML comment, kind as front matter, a cut-off kind with an escaped key (preview now
+      finds the key with `hasKindKey`), and a `__kind` that is a number/null/empty/non-slug ("Structured output could not be read"). LF + CRLF.
+      Guard `kind-text-to-markdown-hidden-forms.test.ts`.
+- [x] Y7. Tool ARGUMENTS human copy and the image result copy go through `resultToHuman`. Guard
+      `tool-copy-human-callsites-never-raw-kind.test.tsx`.
+- [x] Y8. Copy sweep. Fixed: commerce + print kind block header copy, `TextActionResultModal` Copy, `AgentAppFullyCustomShell` result
+      copy, `CleanupPad` "copy both". Guards `kind-block-copy-human-never-raw.test.tsx`, `text-action-result-copy-never-raw-kind.test.tsx`
+      (the custom shell and cleanup pad edits have no render test — hosts too heavy). Kept as explicit raw controls: "Copy raw JSON"
+      (`StructuredAgentAnswerBlock`), "Copy JSON" (`StructuredValueTabs`, `UnknownDataEventBlock`), "Raw AI Response" copies
+      (`CodeEditErrorCanvas`, `AICodeEditor`, `SmartCodeEditor`), "Copy raw response" (`AgentGenerator`, `FullPromptOptimizer`,
+      `SystemPromptOptimizer`), request payload copy (`PayloadTab`), JSON editors/viewers.
+      OPEN (display, not copy): `CleanupPad` shows `cleanAi.answerText` raw in its response field (the official-candidate twin uses
+      `answerFieldText`); left because that text is also persisted via `persistCleanRun`.
+
 ## Out of scope (deliberate raw views — keep)
 
 Admin debug windows and panels, Error Inspector, tool overlay "Raw" tab, directive item "Raw" tab, text-sections
