@@ -71,6 +71,8 @@ export interface SpaceDoc {
   };
   blocks: SpaceBlock[];
   isArchived: boolean;
+  /** Integer row version — the optimistic-concurrency token (guardedUpdate), never updatedAt. */
+  version: number;
   createdAt: string;
   updatedAt: string;
   updatedBy?: string | null;
@@ -85,8 +87,8 @@ export interface SpacesStore {
   list(options?: { includeArchived?: boolean }): Promise<SpaceSummary[]>;
   get(id: SpaceId): Promise<SpaceDoc | null>;
   create(input: { parentId: SpaceId | null; title?: string; blocks?: SpaceBlock[]; afterId?: SpaceId }): Promise<SpaceDoc>;
-  /** Whole-document save with optimistic concurrency on `updatedAt`. */
-  save(doc: SpaceDoc, expectedUpdatedAt: string): Promise<SpaceDoc>;
+  /** Whole-document save; refused when the stored `version` is no longer `expectedVersion`. */
+  save(doc: SpaceDoc, expectedVersion: number): Promise<SpaceDoc>;
   move(id: SpaceId, parentId: SpaceId | null, position: string): Promise<void>;
   duplicate(id: SpaceId, options: { withChildren: boolean }): Promise<SpaceDoc>;
   archive(id: SpaceId): Promise<void>;
