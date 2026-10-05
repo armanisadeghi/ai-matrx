@@ -187,7 +187,8 @@ export async function domElementVerdict(element: React.ReactElement): Promise<Do
       raw,
       empty,
       failed: raw || empty,
-      text: visibleKindText(container, 4000),
+      // As drawn (typographic quotes kept), so "as written" is checkable byte for byte.
+      text: visibleKindText(container, 4000, false),
       html: container.innerHTML.slice(0, 600),
     };
   } finally {

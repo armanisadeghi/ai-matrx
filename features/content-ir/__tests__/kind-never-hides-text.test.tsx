@@ -48,6 +48,9 @@ const SPELLED: ReadonlyArray<readonly [string, string]> = [
   ["javascript literal", "{ __kind: 'note', title: 'Hi', body: 'Mitochondria make ATP' }"],
 ];
 
+/** The real-JSON rows (round 10): the rest are detection only and stay as written. */
+const JSON_ROWS = new Set(["literal (L-4)", "markdown-escaped", "zero-width key"]);
+
 const CASES = SPELLED.map(([name, spelled]) => [name, `Example: ${unclosed(spelled)} ${TAIL}`] as const);
 
 const squash = (text: string) => text.replace(/\s+/g, " ").trim();
@@ -113,7 +116,9 @@ describe("an unclosed kind never hides the text after it — rendered", () => {
     const reload = await reloadText(text);
     expect(reload.raw).toBe(false);
     expect(reload.text).toContain(TAIL);
-    expect(reload.text).toMatch(/Note/);
+    // Round 10: a real JSON spelling reads as its label; every other spelling draws exactly as written.
+    if (JSON_ROWS.has(_name)) expect(reload.text).toMatch(/Note/);
+    else expect(reload.text).toContain(squash(text));
     const live = await liveText(text);
     expect(live.raw).toBe(false);
     expect(live.text).toContain(TAIL);

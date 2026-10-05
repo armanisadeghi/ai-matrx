@@ -95,7 +95,7 @@ export function isInsideKindSource(node: Node): boolean {
  * characters. Typographic quotes count as straight ones (a smart-quoting
  * renderer still shows the key).
  */
-export function visibleKindText(root: Node, cap = Number.POSITIVE_INFINITY): string {
+export function visibleKindText(root: Node, cap = Number.POSITIVE_INFINITY, smartAsStraight = true): string {
   let out = "";
   const walk = (node: Node): boolean => {
     if (out.length >= cap) return false;
@@ -118,7 +118,8 @@ export function visibleKindText(root: Node, cap = Number.POSITIVE_INFINITY): str
     return true;
   };
   walk(root);
-  return out.slice(0, cap).replace(/[“”„‟″]/g, '"');
+  const text = out.slice(0, cap);
+  return smartAsStraight ? text.replace(/[“”„‟″]/g, '"') : text;
 }
 
 /** Whether `root`'s visible text holds a `__kind` key outside source containers. */
@@ -248,7 +249,8 @@ export function findKindAttributeLeaks(root: Node, limit = 20): KindAttributeLea
  */
 export function domLeaksKind(root: Node): boolean {
   if (isInsideKindSource(root)) return false;
-  if (screenTextShowsJsonKind(visibleKindText(root))) return true;
+  // As drawn: typographic quotes are not JSON (round 10 — detection only).
+  if (screenTextShowsJsonKind(visibleKindText(root, Number.POSITIVE_INFINITY, false))) return true;
   return findKindAttributeLeaks(root).some((leak) => screenTextShowsJsonKind(attributeScreenText(leak)));
 }
 
@@ -263,9 +265,8 @@ export function domShowsDetectionOnlyKind(root: Node): boolean {
 
 /** What a person reads of an attribute leak (an iframe srcdoc: its body text). */
 function attributeScreenText(leak: KindAttributeLeak): string {
-  const value = leak.value.replace(/[“”„‟″]/g, '"');
-  if (leak.attribute !== "srcdoc" || typeof DOMParser === "undefined") return value;
-  return visibleKindText(new DOMParser().parseFromString(leak.value, "text/html").body);
+  if (leak.attribute !== "srcdoc" || typeof DOMParser === "undefined") return leak.value;
+  return visibleKindText(new DOMParser().parseFromString(leak.value, "text/html").body, Number.POSITIVE_INFINITY, false);
 }
 
 const IDENTIFYING_ATTRS = ["id", "data-testid", "data-block-type", "data-mtx-ctx", "data-language", "data-slot", "data-surface", "role", "aria-label"];
