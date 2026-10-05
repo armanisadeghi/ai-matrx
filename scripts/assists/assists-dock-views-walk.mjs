@@ -89,11 +89,11 @@ try {
   const who = await signIn(page, ORIGIN, EMAIL, PASSWORD, SEAT);
   pass("signed in as the intended seat", who === EMAIL, who === EMAIL ? "identity matches" : "a different identity answered");
 
-  await page.goto(`${ORIGIN}/data?home=new`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await ready();
   await check("table");
 
-  await page.goto(`${ORIGIN}/data?home=new&group=kind`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data?group=kind`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await ready();
   const grouped = await check("grouped-kind");
   pass("grouped-kind: in a slot (no pager on this view)", grouped.slot === "header" || grouped.slot === "footer", grouped.slot);
@@ -106,7 +106,7 @@ try {
   });
   await check("grouped-kind-scrolled");
 
-  await page.goto(`${ORIGIN}/data?home=new`, { waitUntil: "domcontentloaded", timeout: 240000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 240000 });
   await ready();
   await page.getByRole("button", { name: "Cards" }).first().click();
   await sleep(1500);

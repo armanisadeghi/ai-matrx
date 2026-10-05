@@ -17,7 +17,7 @@ import { signIn, sleep, until } from "../lib/seat-browser.mjs";
 const ORIGIN = process.env.WALK_ORIGIN;
 const EMAIL = process.env.WALK_EMAIL;
 const PASSWORD = process.env.WALK_PASSWORD;
-const PATH = process.env.WALK_PATH ?? "/data?home=new";
+const PATH = process.env.WALK_PATH ?? "/data";
 const ONLY = (process.env.WALK_ONLY ?? "search,scroll").split(",");
 if (!ORIGIN || !EMAIL || !PASSWORD) throw new Error("WALK_ORIGIN, WALK_EMAIL and WALK_PASSWORD must be set");
 

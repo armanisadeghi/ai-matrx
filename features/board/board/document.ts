@@ -76,6 +76,12 @@ export interface BoardNode {
   source: NodeSource;
   /** On the shelf rather than the board. */
   parked?: boolean;
+  /**
+   * The item's last-known basics (a few of its own values, small), kept while its tile is awake so an
+   * agent knows what it is when the tile is asleep or the board was just opened
+   * (`tools/item-surfaces.ts` `StoredBasics`). Never the item's content — that lives in its record.
+   */
+  basics?: { values: Record<string, unknown>; at: string; stale?: boolean };
 }
 
 export interface BoardGroup {
@@ -135,7 +141,16 @@ export function parseBoardDocument(raw: {
       problems.push(`node "${n.title}" has an unknown source`);
       continue;
     }
-    nodes.push({ id: n.id, rect: n.rect, title: n.title, source: n.source, parked: n.parked === true });
+    const basics = isBasics(n.basics) ? n.basics : undefined;
+    if (n.basics !== undefined && !basics) problems.push(`node "${n.title}" has malformed basics; dropped them`);
+    nodes.push({
+      id: n.id,
+      rect: n.rect,
+      title: n.title,
+      source: n.source,
+      parked: n.parked === true,
+      ...(basics ? { basics } : {}),
+    });
   }
   if (!Array.isArray(raw.nodes)) problems.push("nodes was not a list");
   const edges: BoardEdge[] = [];
@@ -223,6 +238,14 @@ function isPoint(v: unknown): v is { x: number; y: number } {
 }
 function isRect(v: unknown): v is Rect {
   return isObject(v) && isFiniteNumber(v.x) && isFiniteNumber(v.y) && isFiniteNumber(v.w) && isFiniteNumber(v.h);
+}
+function isBasics(v: unknown): v is NonNullable<BoardNode["basics"]> {
+  return (
+    isObject(v) &&
+    isObject(v.values) &&
+    typeof v.at === "string" &&
+    (v.stale === undefined || typeof v.stale === "boolean")
+  );
 }
 function isSource(v: unknown): v is NodeSource {
   if (!isObject(v)) return false;

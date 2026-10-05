@@ -1,12 +1,13 @@
-// Checks for area "cutover" — lane SAFETY-NET-B (2026-10-01). Items C01–C13 (+ A11 copy edits).
+// Checks for area "cutover" — lane SAFETY-NET-B (2026-10-01); store-only since the switch's soak (lane ONE-HOME wave 4:
+// the press, undo and Copy again checks retired with the machinery they judged).
 // Each: { id, area, kind: "walk"|"sql"|"cmd", file|cmd/args, items: [ids], targets: ["live","clone"], liveReadOnly? }
 //
-// AFTER the press (the switch hour): run with SN_B_BEFORE=<before run dir>/b-cutover-state.json so the state check
-// compares the plan; with SN_B_FREEZE_FROM=<freeze-start dir>/b-release-state.json so C11 judges movement.
+// C11: with SN_B_FREEZE_FROM=<freeze-start dir>/b-release-state.json the release check judges movement.
 export default [
   {
-    // Read-only on live: readiness truthful + in time, the plan, test edits the press puts back, doors/births state,
-    // follow backlog, the window policy, the undo's reach, nothing in the deprecated schema. AFTER: exactly the plan switched.
+    // Store only (lane ONE-HOME wave 4, after the soak; read-only, live or clone): the older data tables live only in
+    // `deprecated`, no client role reaches them, no older write door answers a signed-in caller, the context follow
+    // backlog is 0. The probe that judged the switch's hour (readiness, the plan, the undo) retired with the press.
     id: "cutover.state",
     area: "cutover",
     kind: "cmd",
@@ -14,11 +15,20 @@ export default [
     cmd: "uv",
     args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_cutover_state.py"],
     stepsJson: "b-cutover-state.json",
-    items: ["C01", "C02", "C04", "C05", "C06", "C08", "C09", "C10", "C12", "A11"],
-    // Live only: it judges the state the hour presses. Its red proof is the same script pointed at the clone
-    // (SN_TARGET=clone python3 scripts/safety-net/probes/b_cutover_state.py), which reads the clone's real holds.
-    targets: ["live"],
+    items: ["C04", "C05", "C08"],
+    targets: ["live", "clone"],
     timeoutMs: 10 * 60 * 1000,
+  },
+  {
+    // Its red, one rule at a time: planted facts judged in memory (each turns exactly its own step red).
+    id: "cutover.state-self-test",
+    area: "cutover",
+    kind: "cmd",
+    cmd: "uv",
+    args: ["run", "--project", "../aidream", "python", "scripts/safety-net/probes/b_cutover_state.py", "--self-test"],
+    items: ["C04", "C05", "C08"],
+    targets: ["live", "clone"],
+    passWhen: "self-test: GREEN",
   },
   {
     // The read path's own proof: 6543 refused for production, the session port used, an error inside a read-only

@@ -54,7 +54,13 @@ import { LayersPanel } from "../components/LayersPanel";
 import { ParkedShelf } from "../components/ParkedShelf";
 import { Minimap, ZoomHud } from "../components/BoardChrome";
 import type { AddTileInput, BoardToolHost, EditTileInput } from "../tools/useBoardAgentTools";
-import { createItemSurfaceIndex, type ItemSurfaceIndex } from "../tools/item-surfaces";
+import {
+  createItemSurfaceIndex,
+  ITEM_BASICS_SAMPLE_MS,
+  sampleItemBasics,
+  type ItemSurfaceIndex,
+  type StoredBasics,
+} from "../tools/item-surfaces";
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
 import { startNewEntries, type BoardItemType, type PickerProps, type PlacedItem, type StartNewEntry } from "../items/types";
 import { filesToBoardItems } from "../items/file-drop";
@@ -70,6 +76,17 @@ export interface UserBoardTile {
   rect: Rect;
   title: string;
   source: NodeSource;
+  /** Last-known basics (`BoardNode.basics`): what an agent knows of the item while its tile sleeps. */
+  basics?: StoredBasics;
+}
+
+/** An item's kind word and the agent surface its feature publishes (null for board-only content). */
+function describeItem(source: NodeSource): { kind: string; surface: string | null } {
+  const type = itemTypeFor(source);
+  return {
+    kind: type?.kindLabel ?? type?.key ?? "item",
+    surface: type && "name" in type.surface ? type.surface.name : null,
+  };
 }
 
 /** Down only takes a tile off this board — what it shows lives on. */
@@ -108,7 +125,13 @@ export function UserBoard({
 }) {
   const addableTypes = guest ? BOARD_ITEM_TYPES.filter((t) => t.guestSafe) : BOARD_ITEM_TYPES;
   const board = useBoardStore<UserBoardTile>(() => ({
-    tiles: doc.nodes.map((n) => ({ id: n.id, rect: n.rect, title: n.title, source: n.source })),
+    tiles: doc.nodes.map((n) => ({
+      id: n.id,
+      rect: n.rect,
+      title: n.title,
+      source: n.source,
+      ...(n.basics ? { basics: n.basics } : {}),
+    })),
     parked: doc.nodes.filter((n) => n.parked).map((n) => n.id),
     frames: doc.groups,
     shapes: doc.shapes,
@@ -144,6 +167,7 @@ export function UserBoard({
         title: t.title,
         source: t.source,
         ...(parkedIds.has(t.id) ? { parked: true } : {}),
+        ...(t.basics ? { basics: t.basics } : {}),
       })),
       groups: now.frames,
       edges: now.connections,
@@ -176,6 +200,38 @@ export function UserBoard({
     if (board.read() !== opened.view) report();
     return unsubscribe;
   }, [board, opened]);
+
+  // Last-known basics: while a tile is awake its brief is sampled into the saved board, so an agent
+  // knows every item even when its tile is asleep or the board was just opened (`board_items`). Only a
+  // change is written (`sampleItemBasics` returns nothing for unchanged basics — never a write loop),
+  // without history (undo never sees it), and it rides the board's debounced autosave.
+  useEffect(() => {
+    let running = false;
+    const sample = async () => {
+      if (running || document.visibilityState !== "visible") return;
+      running = true;
+      try {
+        const now = board.read();
+        const tiles = [...now.tiles, ...now.parked].map((t) => ({
+          id: t.id,
+          title: t.title,
+          ...describeItem(t.source),
+          basics: t.basics,
+        }));
+        for (const update of await sampleItemBasics(tiles, itemSurfaces)) {
+          board.updateTile(update.id, { basics: update.basics }, { history: false });
+        }
+      } finally {
+        running = false;
+      }
+    };
+    const first = setTimeout(sample, 2500);
+    const every = setInterval(sample, ITEM_BASICS_SAMPLE_MS);
+    return () => {
+      clearTimeout(first);
+      clearInterval(every);
+    };
+  }, [board, itemSurfaces]);
 
   // The person's view is kept once it settles (the URL hash follows it live).
   // It is THEIR view, not board content: it never goes into the saved board,
@@ -452,6 +508,7 @@ export function UserBoard({
     store,
     boardTitle: title,
     itemSurfaces,
+    storedBasics: (tile) => tile.basics ?? null,
     createTile: (id, input, size) => agentTile(id, input, size),
     // board_add_items / board_find_records: the catalog, and the ONE placement path every way in uses.
     itemTypes: BOARD_ITEM_TYPES,
@@ -465,13 +522,7 @@ export function UserBoard({
       return out;
     },
     editTile: (tile, input) => agentEdit(tile, input),
-    describe: (tile) => {
-      const type = itemTypeFor(tile.source);
-      return {
-        kind: type?.kindLabel ?? type?.key ?? "item",
-        surface: type && "name" in type.surface ? type.surface.name : null,
-      };
-    },
+    describe: (tile) => describeItem(tile.source),
   };
 
   const onBoard = new Set(layout.tileIds);

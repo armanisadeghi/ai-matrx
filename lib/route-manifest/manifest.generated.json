@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1334,
+  "routeCount": 1335,
   "routes": [
     {
       "pattern": "/",
@@ -644,11 +644,6 @@
       "source": "app/(admin)/administration/database/enums/page.tsx"
     },
     {
-      "pattern": "/administration/database/final-switch",
-      "status": "live",
-      "source": "app/(admin)/administration/database/final-switch/page.tsx"
-    },
-    {
       "pattern": "/administration/database/relationships",
       "status": "live",
       "source": "app/(admin)/administration/database/relationships/page.tsx"
@@ -719,9 +714,9 @@
       "source": "app/(admin)/administration/database/store-tables/page.tsx"
     },
     {
-      "pattern": "/administration/database/unified-data-ramp",
+      "pattern": "/administration/database/switch-presses",
       "status": "live",
-      "source": "app/(admin)/administration/database/unified-data-ramp/page.tsx"
+      "source": "app/(admin)/administration/database/switch-presses/page.tsx"
     },
     {
       "pattern": "/administration/database/workbench",
@@ -2302,6 +2297,16 @@
       "pattern": "/data/connect",
       "status": "live",
       "source": "app/(core)/data/connect/page.tsx"
+    },
+    {
+      "pattern": "/data/pages",
+      "status": "live",
+      "source": "app/(core)/data/pages/page.tsx"
+    },
+    {
+      "pattern": "/data/pages/[pageId]",
+      "status": "live",
+      "source": "app/(core)/data/pages/[pageId]/page.tsx"
     },
     {
       "pattern": "/data/try-everything",

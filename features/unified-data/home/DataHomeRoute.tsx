@@ -1,29 +1,17 @@
 "use client";
 
-// features/unified-data/home/DataHomeRoute.tsx — LANE DATA-HOME-3A
+// features/unified-data/home/DataHomeRoute.tsx — /data's one home.
 //
-// WHICH DATA HOME /data SHOWS: the knob `custom.data_home_shell` (platform default off = the old
-// hub), or `?home=new` / `?home=old` for one visit, so old and new can be opened side by side
-// (Arman, 2026-10-01: no redirects until validated; copy mode; one flip later). Until the knob
-// answers (and the server did not hand one down), the old page is shown — it is what everybody sees today, and a knob that never answers
-// must not leave a blank page.
-//
-// THE HEADER'S PRESSES LIVE HERE, ABOVE BOTH HOMES (lane DATA-PAGE-DEFECTS, safety net T01/L02):
-// the old home's New table is on screen ~2 s before the knob answers and the new home replaces it.
-// A press counted in the old page's own state died with it, so the first press never opened the
-// name box. Owned here, a press reaches whichever home is showing.
+// THE HEADER'S PRESSES LIVE HERE (lane DATA-PAGE-DEFECTS, safety net T01/L02): New table and Start
+// from an example open the one New table dialog where they were pressed (G5 b, lane MAKE-HOME).
+// The old hub, its knob `custom.data_home_shell` and `?home=old` were removed after the switch's
+// soak (lane ONE-HOME wave 4): there is one data home and nothing to choose between.
 
-import { useState, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
-
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
+import { useState } from "react";
 
 import { NewTableDialog } from "@/features/make/MakeMount";
 
 import { DataHomeShellPage } from "./DataHomeShellPage";
-import { DATA_HOME_PREVIEW_PARAM, DATA_HOME_SHELL_KNOB, resolveDataHomeShell } from "./dataHomeKnobs";
 
 /** How many times the header's New table / Start from an example was pressed, and the press. */
 export interface DataHomeMaking {
@@ -31,20 +19,7 @@ export interface DataHomeMaking {
   ask: (what: "create" | "examples") => void;
 }
 
-export function DataHomeRoute({
-  old,
-  serverKnob,
-}: {
-  old: (making: DataHomeMaking) => ReactNode;
-  /** The knob as the SERVER resolved it for this person (page.tsx); the first paint uses it, no swap. */
-  serverKnob?: unknown;
-}) {
-  const userId = useAppSelector(selectUserId);
-  const browserKnob = useEffectiveKnob(null, userId, DATA_HOME_SHELL_KNOB);
-  // The browser's own answer wins once it lands (it also knows this device's rung); until then the
-  // server's answer draws the right home from the first byte.
-  const knob = browserKnob !== undefined ? browserKnob : serverKnob;
-  const preview = useSearchParams().get(DATA_HOME_PREVIEW_PARAM);
+export function DataHomeRoute() {
   const [asked, setAsked] = useState({ create: 0, examples: 0 });
   // THE PRESS OPENS ONE DIALOG, WHERE IT WAS PRESSED (G5 b, lane MAKE-HOME): never a name box at the
   // foot of the list, and never a missing button when no organization is chosen — the dialog asks.
@@ -58,7 +33,7 @@ export function DataHomeRoute({
   };
   return (
     <>
-      {resolveDataHomeShell(knob, preview) ? <DataHomeShellPage making={making} /> : old(making)}
+      <DataHomeShellPage making={making} />
       <NewTableDialog what={opened} onClose={() => setOpened(null)} />
     </>
   );

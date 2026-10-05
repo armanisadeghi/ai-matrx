@@ -70,6 +70,14 @@ export const ITEM_BASICS_FLOOR_CHARS = 70;
 export const ITEM_BASICS_CEILING_CHARS = 1200;
 /** The selected tile, when it is not the live one, carries its full values up to this many characters. */
 export const SELECTED_FULL_MAX_CHARS = 12_000;
+/**
+ * The whole `board_items` value (JSON) never outgrows this, and the Board manifest declares it as the
+ * value's `inlineUpTo`, so the server always inlines it in the agent's first request (its default
+ * inlines only values under 200 chars; anything bigger was DEFERRED behind a lookup). Room for the
+ * basics budget, a non-live selected tile's full values and every listed item's identity; a board too
+ * big for it sheds the tail first, then detail (`boardItemsOverview`).
+ */
+export const BOARD_ITEMS_INLINE_CHARS = 24_000;
 /** An item whose scope cannot be read in this long is listed without basics. */
 export const ITEM_SCOPE_READ_TIMEOUT_MS = 1500;
 /** How long `board_open_item` waits for a tile brought back onto the board to mount its surface. */
@@ -162,6 +170,19 @@ export interface BoardItemRow {
   selected?: boolean;
   parked?: boolean;
   removed?: boolean;
+  /** The item's last-known basics from the saved board, for when its tile is asleep or never woke. */
+  stored_basics?: StoredBasics | null;
+}
+
+/**
+ * An item's basics as the saved board keeps them (`BoardNode.basics`): sampled while its tile is awake
+ * (`sampleItemBasics`), or — for a tile that has never been awake — what the add knew (type and name),
+ * marked `stale`. `at` is when they were taken.
+ */
+export interface StoredBasics {
+  values: Record<string, unknown>;
+  at: string;
+  stale?: boolean;
 }
 
 export interface BoardItemsOverview {
@@ -181,6 +202,10 @@ export interface BoardItemsOverview {
     parked?: true;
     removed?: true;
     basics?: Record<string, unknown>;
+    /** When `basics` were taken, for an item whose tile is not awake (its last-known basics). */
+    basics_at?: string;
+    /** The basics are only what the add knew (type and name): the tile has not been awake since. */
+    basics_stale?: true;
     /** The selected tile's declared values in full, when its surface is not the live one. */
     full_values?: Record<string, unknown>;
     /** Why this item carries no basics. */
@@ -249,16 +274,17 @@ function declaredValues(
  * `board_items` — every item, each with a fair share of the basics budget:
  * allowance = budget / (items carrying basics), between a floor and a ceiling.
  * The selected tile carries its full values (when it is not the live one, whose
- * full surface already travels as a surface-chain level).
+ * full surface already travels as a surface-chain level). An item whose tile is
+ * asleep or has never been awake carries its last-known basics (`stored_basics`,
+ * kept in the saved board) with when they were taken.
  */
 export async function boardItemsOverview(
   rows: readonly BoardItemRow[],
   index: ItemSurfaceIndex | null,
 ): Promise<BoardItemsOverview> {
-  const listed = rows.slice(0, BOARD_ITEMS_MAX);
-  const tail = rows.slice(BOARD_ITEMS_MAX, BOARD_ITEMS_MAX + BOARD_ITEMS_TAIL_MAX);
+  const listedAll = rows.slice(0, BOARD_ITEMS_MAX);
   const reads = await Promise.all(
-    listed.map(async (row) => {
+    listedAll.map(async (row) => {
       if (row.live || row.parked || row.removed || !row.surface) return null;
       const runtime = index?.get(row.id)?.primary() ?? null;
       if (!runtime) return null;
@@ -266,12 +292,62 @@ export async function boardItemsOverview(
       return scope ? { manifest: getManifest(runtime.surfaceName), scope } : null;
     }),
   );
+  // The value always fits its inline allowance: a board too big sheds the compact tail first, then the
+  // selected tile's full values shrink, then every item's share, then the listed items.
+  const steps: OverviewLimits[] = [
+    { listed: BOARD_ITEMS_MAX, tail: BOARD_ITEMS_TAIL_MAX, full: SELECTED_FULL_MAX_CHARS, budget: BOARD_ITEMS_BRIEF_BUDGET_CHARS },
+    { listed: BOARD_ITEMS_MAX, tail: 100, full: SELECTED_FULL_MAX_CHARS, budget: BOARD_ITEMS_BRIEF_BUDGET_CHARS },
+    { listed: BOARD_ITEMS_MAX, tail: 0, full: SELECTED_FULL_MAX_CHARS, budget: BOARD_ITEMS_BRIEF_BUDGET_CHARS },
+    { listed: BOARD_ITEMS_MAX, tail: 0, full: 6000, budget: BOARD_ITEMS_BRIEF_BUDGET_CHARS },
+    { listed: BOARD_ITEMS_MAX, tail: 0, full: 3000, budget: 4000 },
+    { listed: 40, tail: 0, full: 3000, budget: 3000 },
+    { listed: 20, tail: 0, full: 2000, budget: 2000 },
+  ];
+  let overview = buildOverview(rows, index, reads, steps[0]);
+  for (const step of steps.slice(1)) {
+    if (JSON.stringify(overview).length <= BOARD_ITEMS_INLINE_CHARS) break;
+    overview = buildOverview(rows, index, reads, step);
+  }
+  return overview;
+}
+
+interface OverviewLimits {
+  listed: number;
+  tail: number;
+  full: number;
+  budget: number;
+}
+
+type ScopeRead = { manifest: ReturnType<typeof getManifest>; scope: SurfaceScopePayload } | null;
+
+/** What the add knew about an item whose tile has never been awake: its type and name. */
+export function addTimeBasics(kind: string, title: string, at: string = new Date().toISOString()): StoredBasics {
+  return { values: { type: kind, name: title }, at, stale: true };
+}
+
+function buildOverview(
+  rows: readonly BoardItemRow[],
+  index: ItemSurfaceIndex | null,
+  reads: readonly ScopeRead[],
+  limits: OverviewLimits,
+): BoardItemsOverview {
+  const listed = rows.slice(0, limits.listed);
+  const tail = rows.slice(limits.listed, limits.listed + limits.tail);
   // Selected but not live: its FULL values travel here (its surface is dormant, so nothing else carries them).
-  const sharing = listed.filter((row, i) => reads[i] && !row.selected).length;
+  const sharing = listed.filter((row, i) => !row.live && row.surface && index && !(reads[i] && row.selected)).length;
   const allowance = Math.max(
     ITEM_BASICS_FLOOR_CHARS,
-    Math.min(ITEM_BASICS_CEILING_CHARS, Math.floor(BOARD_ITEMS_BRIEF_BUDGET_CHARS / Math.max(1, sharing))),
+    Math.min(ITEM_BASICS_CEILING_CHARS, Math.floor(limits.budget / Math.max(1, sharing))),
   );
+  // Last-known basics: what the saved board kept while the tile was awake, else what the add knew.
+  const lastKnown = (row: BoardItemRow) => {
+    const kept = row.stored_basics ?? addTimeBasics(row.kind, row.title);
+    return {
+      basics: fitStoredBasics(kept.values, allowance),
+      basics_at: kept.at,
+      ...(kept.stale ? { basics_stale: true as const } : {}),
+    };
+  };
   const items = listed.map((row, i) => {
     const base = {
       id: row.id,
@@ -289,22 +365,23 @@ export async function boardItemsOverview(
       return { ...base, basics_note: "Live: its full surface is in your context as that surface." };
     }
     if (row.parked || row.removed) {
-      return { ...base, basics_note: "Off the board: board_open_item brings it back and opens it." };
+      return {
+        ...base,
+        ...(row.stored_basics ? lastKnown(row) : {}),
+        basics_note: "Off the board: board_open_item brings it back and opens it.",
+      };
     }
     const read = reads[i];
-    if (!read) return { ...base, basics_note: "Not loaded yet: board_open_item reads it." };
-    if (row.selected) {
-      const full = declaredValues(read.manifest, read.scope, SELECTED_FULL_MAX_CHARS);
-      if (Object.keys(full).length === 0) {
-        return { ...base, basics_note: "Not loaded yet: board_open_item reads it." };
-      }
-      return { ...base, full_values: full };
+    if (read && row.selected) {
+      const full = declaredValues(read.manifest, read.scope, limits.full);
+      if (Object.keys(full).length > 0) return { ...base, full_values: full };
     }
-    const basics = fitBasics(read.manifest, read.scope, allowance);
-    if (Object.keys(basics).length === 0) {
-      return { ...base, basics_note: "Not loaded yet: board_open_item reads it." };
+    if (read && read.scope[SURFACE_NOT_LOADED_KEY] !== true) {
+      const basics = fitBasics(read.manifest, read.scope, allowance);
+      if (Object.keys(basics).length > 0) return { ...base, basics };
     }
-    return { ...base, basics };
+    // Asleep, never woken, or not loaded yet: the last-known basics, with when they were taken.
+    return { ...base, ...lastKnown(row) };
   });
   const shape = basicsShape(allowance);
   return {
@@ -315,15 +392,83 @@ export async function boardItemsOverview(
     items,
     ...(tail.length > 0 ? { more_items: tail.map((row) => ({ id: row.id, title: row.title })) } : {}),
     limits: {
-      max_items: BOARD_ITEMS_MAX,
-      tail_max: BOARD_ITEMS_TAIL_MAX,
+      max_items: limits.listed,
+      tail_max: limits.tail,
       basics_chars_per_item: allowance,
       basics_floor_chars: ITEM_BASICS_FLOOR_CHARS,
       basics_values_per_item: shape.maxValues,
       basics_text_chars: shape.textChars,
-      basics_total_chars: BOARD_ITEMS_BRIEF_BUDGET_CHARS,
+      basics_total_chars: limits.budget,
     },
   };
+}
+
+function cutText(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+/** One brief value (already projected by `surfaceBrief`) shortened again: its strings cut to `textChars`. */
+function shortenBriefValue(value: unknown, textChars: number): unknown {
+  if (typeof value === "string") return cutText(value, textChars);
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, typeof v === "string" ? cutText(v, textChars) : v]),
+    );
+  }
+  return value;
+}
+
+/** Kept basics fitted to an item's allowance: the same shape rule as `fitBasics`, on an already-projected brief. */
+export function fitStoredBasics(values: Record<string, unknown>, allowance: number): Record<string, unknown> {
+  let { maxValues, textChars } = basicsShape(allowance);
+  const project = () =>
+    Object.fromEntries(
+      Object.entries(values)
+        .slice(0, maxValues)
+        .map(([k, v]) => [k, shortenBriefValue(v, textChars)]),
+    );
+  let out = project();
+  while (JSON.stringify(out).length > allowance) {
+    if (Object.keys(out).length > 2) maxValues = Object.keys(out).length - 1;
+    else if (textChars > 8) textChars = Math.max(8, Math.floor(textChars / 2));
+    else break;
+    out = project();
+  }
+  return out;
+}
+
+// ── last-known basics: kept in the saved board while a tile is awake ────────
+
+/** How often a board samples its awake tiles' basics (only changes are written, with the autosave). */
+export const ITEM_BASICS_SAMPLE_MS = 10_000;
+
+/**
+ * The basics to keep for each tile whose kept basics are missing or out of date: an awake tile's brief
+ * (the richest shape, so any later share can be cut from it), or — for a tile that has never been awake —
+ * what the add knew (type and name), marked stale. Unchanged basics are never returned, so writing the
+ * result never causes another write.
+ */
+export async function sampleItemBasics(
+  tiles: ReadonlyArray<{ id: string; title: string; kind: string; surface: string | null; basics?: StoredBasics | null }>,
+  index: ItemSurfaceIndex,
+): Promise<Array<{ id: string; basics: StoredBasics }>> {
+  const at = new Date().toISOString();
+  const out = await Promise.all(
+    tiles.map(async (tile): Promise<{ id: string; basics: StoredBasics } | null> => {
+      if (!tile.surface) return null;
+      const runtime = index.get(tile.id)?.primary() ?? null;
+      const scope = runtime ? await readScope(runtime, ITEM_SCOPE_READ_TIMEOUT_MS) : null;
+      if (runtime && scope && scope[SURFACE_NOT_LOADED_KEY] !== true) {
+        const values = surfaceBrief(getManifest(runtime.surfaceName), scope).values;
+        if (Object.keys(values).length === 0) return null;
+        if (tile.basics && !tile.basics.stale && JSON.stringify(tile.basics.values) === JSON.stringify(values)) return null;
+        return { id: tile.id, basics: { values, at } };
+      }
+      if (tile.basics) return null;
+      return { id: tile.id, basics: addTimeBasics(tile.kind, tile.title, at) };
+    }),
+  );
+  return out.filter((u): u is { id: string; basics: StoredBasics } => u !== null);
 }
 
 // ── request two: open an item, act on it ────────────────────────────────────

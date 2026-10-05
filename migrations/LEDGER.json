@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:59:57.318Z",
+  "generated_at": "2026-10-05T04:01:07.573Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -31,6 +31,12 @@
       "filename": "accesspersonal_the_tables_i_can_open_door_can_be_reached.sql",
       "checksum": "2f44387f39cd625f2dcc11a5e0dbff112bd34bc9de8fc4266ad0051d6db185ff",
       "applied_at": "2026-09-24 05:49:49.494882+00"
+    },
+    "migrations/campaign/agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql": {
+      "source": "matrx-frontend",
+      "filename": "agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql",
+      "checksum": "cae0f134b2279951b2701abd88c9040fbca3af8341ecde687a590f0d395920c2",
+      "applied_at": "2026-10-05 04:01:05.755308+00"
     },
     "migrations/campaign/aggwithheld_a_withheld_measure_answers_as_withheld_never_an_error.sql": {
       "source": "matrx-frontend",

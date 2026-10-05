@@ -1,6 +1,6 @@
 // scripts/data-home/data-home-lane-e-walk.mjs — LANE DATA-HOME-3E
 //
-// MEASURES the four layout/speed defects of VERIFY-DATA-HOME-3 (V2-V5) on `/data?home=new`
+// MEASURES the four layout/speed defects of VERIFY-DATA-HOME-3 (V2-V5) on `/data`
 // from a real seat (headless), and takes the named screenshots:
 //   keystroke→paint  — ms from the input event to the first frame after the first row changed
 //   scroll           — wheel-scroll the list (150+ rows, virtualized), longest frame gap + long tasks
@@ -22,7 +22,7 @@ const SHOTS = process.env.DH_SHOTS ?? "tmp/data-home-3e";
 const TAG = process.env.DH_TAG ?? "after";
 const SCHEME = process.env.DH_SCHEME ?? "light";
 // DH_PATH: the same probes on another list for the comparison (`/agents/all`).
-const PATH = process.env.DH_PATH ?? "/data?home=new";
+const PATH = process.env.DH_PATH ?? "/data";
 const ONLY = (process.env.DH_ONLY ?? "search,scroll,1024,390,1440").split(",");
 const EMAIL = process.env.DH_EMAIL;
 const PASSWORD = process.env.DH_PASSWORD;

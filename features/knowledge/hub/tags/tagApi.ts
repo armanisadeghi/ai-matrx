@@ -1,38 +1,27 @@
 /**
- * features/knowledge/hub/tags/tagApi.ts — tags are FILING, not a second system
- * (KNOWLEDGE-HUB §4): a tag is an org scope of scope type `tag`, and tagging
- * files the item under it through the association door.
+ * features/knowledge/hub/tags/tagApi.ts — a tag is a row of the platform tag table
+ * (`platform.tag`, Arman 2026-10-02: tags are not scopes and not custom data), and tagging files
+ * the item under it through the association door (edge `<kind> -> tag`).
  *
- *   fileUnderTag(token, id, name) → `platform.file_under_tag` creates-or-finds
- *                                   the tag scope by slug in the ITEM's
- *                                   organization and files it there (refuses
- *                                   what I cannot edit, in its own sentence)
- *   listTags()                    → every tag scope in my organizations, with
- *                                   how many things are filed under each
- *   findTagsByName(name)          → the tag scopes with that slug/name, one
- *                                   per organization (a `#tag` chip filters by
- *                                   all of them)
+ *   fileUnderTag(token, id, name) → `platform.file_under_tag` creates-or-finds the tag by slug in
+ *                                   the ITEM's organization and files it there (refuses what I
+ *                                   cannot edit, in its own sentence)
+ *   listTags()                    → every tag in my organizations, with how many things are filed
+ *                                   under each
+ *   findTagsByName(name)          → the tags with that slug/name, one per organization (a `#tag`
+ *                                   chip filters by all of them)
  *
- * Tag scopes are read from the RECORD STORE's scope doors only (lane 9 flip, 2026-10-03) —
- * `custom.context_tree` for my organizations' tags, `custom.context_scopes` for tags named by id.
  * References survive archive: a record filed under a tag that was later archived still carries it,
- * so a tag named by id that the live door leaves unanswered is looked up in my organizations' tag
- * archives (`custom.read_records_archived`) — the pre-flip read had no `deleted_at` test either.
+ * so the readers that name a tag BY ID read archived rows too (an archive is `deleted_at`).
  */
 
 import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
-import {
-  readArchivedScopesOfType,
-  readScopeTree,
-  readScopeTypes,
-  readScopesById,
-} from "@/features/scopes/service/storeScopeReads";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { refusalMessage } from "@/features/knowledge/hub/triage/triageApi";
 
 export interface HubTag {
-  /** The tag scope's id (what `within` filters by). */
+  /** The tag's id (what `within` filters by). */
   id: string;
   name: string;
   slug: string | null;
@@ -66,27 +55,33 @@ export async function fileUnderTag(entityToken: string, entityId: string, name: 
   return String(data ?? "");
 }
 
-/** Every live tag scope (a scope of the type whose slug is `tag`) in my organizations, from the store. */
-async function myTagScopes(): Promise<ScopeRow[]> {
-  const orgIds = (await getUserOrganizations()).map((o) => o.id);
-  if (!orgIds.length) return [];
-  const res = await readScopeTree(orgIds);
-  if (!res.ok) throw new Error(`Reading your tag types: ${res.error.message}`);
-  return res.data.types
-    .filter((t) => t.slug === "tag")
-    .flatMap((t) =>
-      t.scopes.map((sc) => ({ id: sc.id, name: sc.name, slug: sc.slug, organization_id: sc.organization_id })),
-    );
-}
-
-interface ScopeRow {
+interface TagRow {
   id: string;
   name: string | null;
   slug: string | null;
   organization_id: string;
+  deleted_at?: string | null;
 }
 
-const toTag = (r: ScopeRow, count = 0): HubTag => ({
+/** Every live tag in my organizations (never capped at 1000). */
+async function myTags(): Promise<TagRow[]> {
+  const orgIds = (await getUserOrganizations()).map((o) => o.id);
+  if (!orgIds.length) return [];
+  return (await readAllRows(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("tag")
+        .select("id, name, slug, organization_id", { count: "exact" })
+        .in("organization_id", orgIds)
+        .is("deleted_at", null)
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "platform.tag (my tags)" },
+  )) as TagRow[];
+}
+
+const toTag = (r: TagRow, count = 0): HubTag => ({
   id: r.id,
   name: r.name?.trim() || r.slug || "Untitled tag",
   slug: r.slug,
@@ -105,7 +100,7 @@ async function filedCounts(ids: string[]): Promise<Map<string, number>> {
           .schema("platform")
           .from("associations")
           .select("id, target_id", { count: "exact" })
-          .eq("target_type", "scope")
+          .eq("target_type", "tag")
           .in("target_id", chunk)
           .is("deleted_at", null)
           .order("id", { ascending: true })
@@ -119,21 +114,21 @@ async function filedCounts(ids: string[]): Promise<Map<string, number>> {
 
 /** Every tag in my organizations, most-used first. */
 export async function listTags(): Promise<HubTag[]> {
-  const rows = await myTagScopes();
+  const rows = await myTags();
   const counts = await filedCounts(rows.map((r) => r.id));
   return rows
     .map((r) => toTag(r, counts.get(r.id) ?? 0))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
-/** The tag scopes named `name` (by slug, or by exact name), one per organization. */
+/** The tags named `name` (by slug, or by exact name), one per organization. */
 export async function findTagsByName(name: string): Promise<HubTag[]> {
   const clean = normalizeTagName(name);
   if (!clean) return [];
   const slug = tagSlug(clean);
   const lower = clean.toLowerCase();
   const out: HubTag[] = [];
-  for (const r of await myTagScopes()) {
+  for (const r of await myTags()) {
     if ((slug && r.slug === slug) || (r.name ?? "").trim().toLowerCase() === lower) out.push(toTag(r));
     if (out.length >= 50) break;
   }
@@ -148,53 +143,36 @@ export async function listItemTags(entityToken: string, entityId: string): Promi
     .select("target_id")
     .eq("source_type", entityToken)
     .eq("source_id", entityId)
-    .eq("target_type", "scope")
+    .eq("target_type", "tag")
     .is("deleted_at", null)
     .limit(200);
   if (error) throw new Error(refusalMessage(error, "Reading its tags"));
   const ids = ((edges ?? []) as { target_id: string }[]).map((e) => e.target_id);
   if (!ids.length) return [];
-  // Those scopes, from the store (each in its own organization); only the TAG ones name a tag.
-  const tags = await tagScopesAmong(ids, "Reading its tags");
+  const tags = await tagsAmong(ids, "Reading its tags");
   return [...new Set(tags.map((r) => toTag(r).name))].sort((a, b) => a.localeCompare(b));
 }
 
-/** A tag on one record: the scope it is filed under, and its name. */
+/** A tag on one record: the tag it is filed under, and its name. */
 export interface ItemTagRef {
-  scopeId: string;
+  tagId: string;
   name: string;
-  /** The tag's scope was archived after this record was filed under it (it still names it). */
+  /** The tag was archived after this record was filed under it (it still names it). */
   archived?: true;
 }
 
-/** Of these scope ids, the TAG scopes (a scope of the type whose slug is `tag`), live or archived. */
-async function tagScopesAmong(scopeIds: string[], doing: string): Promise<Array<ScopeRow & { archived?: true }>> {
-  if (!scopeIds.length) return [];
-  const res = await readScopesById(scopeIds);
-  if (!res.ok) throw new Error(refusalMessage(res.error, doing));
-  const answered = new Set(res.data.map((r) => r.id));
-  const live = res.data
-    .filter((r) => r.scope_type?.slug === "tag")
-    .map((r) => ({ id: r.id, name: r.name ?? null, slug: r.slug ?? null, organization_id: r.organization_id }));
-  const unanswered = new Set(scopeIds.filter((id) => id && !answered.has(id)));
-  if (!unanswered.size) return live;
-  return [...live, ...(await archivedTagScopesAmong(unanswered, doing))];
-}
-
-/** Of these ids (the live door did not answer them), the ARCHIVED tag scopes of my organizations. */
-async function archivedTagScopesAmong(ids: Set<string>, doing: string): Promise<Array<ScopeRow & { archived: true }>> {
-  const orgIds = (await getUserOrganizations()).map((o) => o.id);
-  if (!orgIds.length) return [];
-  const types = await readScopeTypes(orgIds, false);
-  if (!types.ok) throw new Error(refusalMessage(types.error, doing));
-  const out: Array<ScopeRow & { archived: true }> = [];
-  for (const t of types.data.types.filter((t) => t.slug === "tag")) {
-    const wanted = new Set([...ids].filter((id) => !out.some((o) => o.id === id)));
-    if (!wanted.size) break;
-    const res = await readArchivedScopesOfType(t.organization_id, t.id, wanted);
-    if (!res.ok) throw new Error(refusalMessage(res.error, doing));
-    for (const r of res.data)
-      out.push({ id: r.id, name: r.name, slug: r.slug, organization_id: t.organization_id, archived: true });
+/** Of these ids, the tags (live or archived — a reference survives archive). */
+async function tagsAmong(ids: string[], doing: string): Promise<Array<TagRow & { archived?: true }>> {
+  const out: Array<TagRow & { archived?: true }> = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase
+      .schema("platform")
+      .from("tag")
+      .select("id, name, slug, organization_id, deleted_at")
+      .in("id", ids.slice(i, i + 100))
+      .limit(100);
+    if (error) throw new Error(refusalMessage(error, doing));
+    for (const r of (data ?? []) as TagRow[]) out.push(r.deleted_at ? { ...r, archived: true } : r);
   }
   return out;
 }
@@ -217,15 +195,15 @@ export async function listTagsForItems(items: { entity: string; id: string }[]):
         .select("source_type, source_id, target_id")
         .eq("source_type", type)
         .in("source_id", ids.slice(i, i + 100))
-        .eq("target_type", "scope")
+        .eq("target_type", "tag")
         .is("deleted_at", null)
         .limit(2000);
       if (error) throw new Error(refusalMessage(error, "Reading the rows' tags"));
       edges.push(...((data ?? []) as typeof edges));
     }
-  const scopeIds = [...new Set(edges.map((e) => e.target_id))];
+  const tagIds = [...new Set(edges.map((e) => e.target_id))];
   const names = new Map<string, { name: string; archived?: true }>();
-  for (const r of await tagScopesAmong(scopeIds, "Reading the rows' tags"))
+  for (const r of await tagsAmong(tagIds, "Reading the rows' tags"))
     names.set(r.id, r.archived ? { name: toTag(r).name, archived: true } : { name: toTag(r).name });
   for (const e of edges) {
     const tag = names.get(e.target_id);
@@ -233,16 +211,16 @@ export async function listTagsForItems(items: { entity: string; id: string }[]):
     const { name } = tag;
     const key = `${e.source_type}:${e.source_id}`;
     const list = out.get(key) ?? [];
-    if (!list.some((t) => t.name.toLowerCase() === name.toLowerCase())) list.push({ scopeId: e.target_id, ...tag });
+    if (!list.some((t) => t.name.toLowerCase() === name.toLowerCase())) list.push({ tagId: e.target_id, ...tag });
     out.set(key, list);
   }
   return out;
 }
 
-/** Which of these scope ids are tags (the peek's Filed under leaves them to its Tags section). */
-export async function tagScopeIdsAmong(scopeIds: string[]): Promise<Set<string>> {
+/** Which of these ids are tags (the peek's Filed under leaves them to its Tags section). */
+export async function tagScopeIdsAmong(ids: string[]): Promise<Set<string>> {
   const out = new Set<string>();
-  if (!scopeIds.length) return out;
-  for (const r of await tagScopesAmong(scopeIds.slice(0, 200), "Reading which are tags")) out.add(r.id);
+  if (!ids.length) return out;
+  for (const r of await tagsAmong(ids.slice(0, 200), "Reading which are tags")) out.add(r.id);
   return out;
 }

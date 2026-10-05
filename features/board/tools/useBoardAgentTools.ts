@@ -51,6 +51,7 @@ import {
   ITEM_MOUNT_TIMEOUT_MS,
   openItemSurface,
   type ItemSurfaceIndex,
+  type StoredBasics,
 } from "./item-surfaces";
 import { settleFrames } from "./settle-frames";
 import type { BoardItemType, PlacedItem } from "../items/types";
@@ -143,6 +144,11 @@ export interface BoardToolHost<T extends BoardTileBase & { title: string }> {
    * Absent on a board whose tiles carry no feature surface.
    */
   itemSurfaces?: ItemSurfaceIndex;
+  /**
+   * A tile's last-known basics as the saved board keeps them, for `board_items` when the tile is
+   * asleep or has never been awake. Absent = an asleep item carries only its type and name.
+   */
+  storedBasics?: (tile: T) => StoredBasics | null;
   /**
    * The item catalog this board places from (`items/catalog.ts`), for
    * `board_add_items` / `board_find_records`. Absent = those tools are refused.

@@ -28,7 +28,7 @@ const pass = (clause, ok, detail = "") => {
 };
 
 const PAGES = [
-  { name: "data-home", path: "/data?home=new", ready: "[data-row-id]" },
+  { name: "data-home", path: "/data", ready: "[data-row-id]" },
   { name: "agents-all", path: "/agents/all", ready: "[data-row-id], [data-agent-card], main a[href^='/agents/']" },
 ];
 const VIEWPORTS = [

@@ -2,11 +2,10 @@
 
 // features/unified-data/home/DataHomeShellPage.tsx — LANE DATA-HOME-3A
 //
-// /data ON THE LIST SHELL: the same mount as the old page (`app/(core)/data/page.tsx`'s
-// UnifiedDataPage — header, the per-organization store switch, `RecordsMount` with its realtime,
-// chat, share and members ports), with the list shell where the ten hand-drawn sections were.
-// Shown when the knob `custom.data_home_shell` says so (see dataHomeKnobs.ts); the old page is
-// untouched beside it until Arman's one flip.
+// /data ON THE LIST SHELL — the data home: header, the per-organization store switch,
+// `RecordsMount` with its realtime, chat, share and members ports, and the list shell. (The old hub
+// it replaced, and the knob `custom.data_home_shell` that chose between them, left after the
+// switch's soak — lane ONE-HOME wave 4.)
 //
 // The census (DATA-HOME-3-SPEC §3) items this file keeps: 1 header (Back, no "Data" word, New
 // table / Start from an example always, opening the one New table dialog — G5 b), 12 the store
@@ -38,7 +37,7 @@ import { DataHomeList } from "./DataHomeList";
 import { MountWhenNear } from "./MountWhenNear";
 import type { DataHomeMaking } from "./DataHomeRoute";
 
-/** `making` is the route's: a press made on the old home before the swap still opens here. */
+/** `making` is the route's: the header's presses open the route's one New table dialog. */
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);

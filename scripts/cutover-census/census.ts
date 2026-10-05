@@ -152,11 +152,13 @@ let stepTwoDone: boolean | null = null;
 async function stepTwoIsDone(db: pg.Client): Promise<boolean> {
   if (stepTwoDone !== null) return stepTwoDone;
   try {
+    // The undo is retired when its press row says so, or — after the switch's soak (lane ONE-HOME wave 4) — when
+    // the final-switch seams themselves are retired (`platform.cutover_seam.retired_at`), which hides that row.
     const moved = await db.query(
-      "select to_regclass('workbench.udt_datasets') is null and to_regclass('deprecated.udt_datasets') is not null as moved, to_regprocedure('platform._final_switch_undo_retired()') is not null as has_door",
+      "select to_regclass('workbench.udt_datasets') is null and to_regclass('deprecated.udt_datasets') is not null as moved, to_regprocedure('platform._final_switch_undo_retired()') is not null as has_door, exists (select 1 from platform.cutover_seam where seam_key = 'final_switch_undo' and retired_at is not null) as seam_retired",
     );
-    let retired = false;
-    if (moved.rows[0]?.has_door) {
+    let retired = moved.rows[0]?.seam_retired === true;
+    if (!retired && moved.rows[0]?.has_door) {
       const r = await db.query("select (platform._final_switch_undo_retired()).id is not null as retired");
       retired = r.rows[0]?.retired === true;
     }

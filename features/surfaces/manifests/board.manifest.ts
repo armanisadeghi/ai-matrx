@@ -47,10 +47,13 @@ const values: SurfaceValue[] = [
     name: "board_items",
     label: "Items on the board",
     description:
-      "Every item on the board: {live_item_ids, item_count, omitted_count, items, limits}. Each item is {id, title, kind, surface, live, parked?, removed?, basics?, basics_note?}. `surface` names the item's feature surface (null for board-only content). The LIVE item's full surface is already in your context as that surface. `basics` are a few of a dormant item's own values (a note's title and first line with its word count, a table's name and row count, a task's status and due date), bounded by `limits`. Every item on this board — a note, a table, a list, a task, a file — is reached with board_open_item(id) then board_item_act(id, …), in this same turn; do not look for them with knowledge_search or the data tool, and do not call apply_surface_write for an item that is not live.",
+      "Every item on the board: {live_item_ids, item_count, omitted_count, items, limits}. Each item is {id, title, kind, surface, live, selected?, parked?, removed?, basics?, basics_at?, basics_stale?, full_values?, basics_note?}. `surface` names the item's feature surface (null for board-only content). The LIVE item's full surface is already in your context as that surface; a selected item that is not live carries `full_values`. `basics` are a few of every other item's own values (a note's title and first line with its word count, a table's name and row count, a task's status and due date), bounded by `limits` — fewer and shorter as the board grows. An item whose tile is asleep carries its last-known basics with `basics_at` (when they were taken); `basics_stale: true` means only its type and name are known so far. Every item on this board — a note, a table, a list, a task, a file — is reached with board_open_item(id) then board_item_act(id, …), in this same turn; do not look for them with knowledge_search or the data tool, and do not call apply_surface_write for an item that is not live.",
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 4000,
+    // Always inline in the first request (the server's default inlines only values under 200 chars):
+    // = BOARD_ITEMS_INLINE_CHARS in features/board/tools/item-surfaces.ts, which the value never outgrows.
+    inlineUpTo: 24_000,
     group: "board",
     sortOrder: 110,
   },
@@ -74,6 +77,8 @@ export const boardManifest: SurfaceManifest = {
     "An infinite, zoomable board of tiles — live AI results, notes, pages and images grouped into frames — that the person pans and zooms like a map.",
   executionMode: "python-stream",
   agentRosterMode: "universal",
+  contextBudgetApproval:
+    "Arman 2026-10-04: \"the agent should instantly know the basics of what I have on my board and if I have one selected, then it should have the full data for that one ... it always sees enough to know what I'm talking about and has id references\" — board_items (every item's basics, 8,000, plus a non-live selected tile's full values, 12,000, plus ids) is always inline, up to 24,000.",
   readiness: "partial",
   readinessNote:
     "Board agent tools live on every mounted board (read, add, add items, find records, edit, move, arrange, group, connect, focus, open item, act on item, park, remove, undo). board_add_items puts the person's real records (or new ones) on the person's own Board; board_find_records finds them by name across every organization. board_items names every item with its basics; board_open_item / board_item_act reach any item's own surface on the person's Board (hosts that keep no per-tile capture list identity only); board_read carries positions and excerpts.",

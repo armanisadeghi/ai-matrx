@@ -22,7 +22,7 @@ import { resolveMentions, type FindContainerByName } from "./knowledgeQueryText"
 import { findTagsByName } from "@/features/knowledge/hub/tags/tagApi";
 import { resolveTagRefs, wireWithin, type FindTags } from "@/features/knowledge/hub/tags/tagActions";
 
-/** Tokens a person files things under (associations containers). Tags are scopes. */
+/** Tokens a person files things under (associations containers). A `#tag` resolves through the tag table, not here. */
 export const CONTAINER_TOKENS: EntityTypeToken[] = [
   "project",
   "scope",

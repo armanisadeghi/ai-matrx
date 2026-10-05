@@ -11,6 +11,7 @@
  *   shift+0 ....................... 100%             + / - .................... zoom
  *   enter ......................... focus selected   esc ...................... leave focus / tool, then deselect
  *   V H T F N P R O L ⇧L .......... tools (engine/tools.ts)   ⇧G ........... layout guides
+ *   ⌘' / Ctrl+' ................... snap to grid      hold ⌘ / Ctrl / Alt while dragging ... no snapping
  *   arrows ........................ nudge the view (in focus: previous / next tile)
  * Scroll over a TILE never moves the board (engine/wheel-input.ts `routeWheel`):
  * content that can scroll scrolls, content that can't doesn't. Pinch and
@@ -42,8 +43,10 @@ import { isAccidentalScroll } from "../engine/native-scroll";
 import { type ScreenRect, clipToVisible, panToReveal, shouldReveal } from "../engine/reveal";
 import { FocusHostContext, BoardCameraStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
+import { SnapGuidesLayer } from "./SnapGuidesLayer";
+import { GRID_SIZE } from "../engine/snapping";
+import { loadSnapSettings, saveSnapSettings } from "../engine/snap-preference";
 
-const GRID_WORLD_PX = 24;
 const HASH_THROTTLE_MS = 400;
 /** Screen px kept between a revealed element and the board's edge. */
 const REVEAL_MARGIN_PX = 24;
@@ -85,6 +88,18 @@ export function BoardViewport({
   useEffect(() => {
     store.setWheelMode(wheelMode);
   }, [store, wheelMode]);
+  // The viewer's snapping choices (smart guides, snap to grid): read once on
+  // mount, written on every change — the same browser-only home as wheelMode.
+  useEffect(() => {
+    store.setSnapSettings(loadSnapSettings());
+    let saved = store.getSnapSettings();
+    return store.subscribeUi(() => {
+      const now = store.getSnapSettings();
+      if (now === saved) return;
+      saved = now;
+      saveSnapSettings(now);
+    });
+  }, [store]);
   useEffect(() => onStore?.(store), [store, onStore]);
   useEffect(() => store.setInsets({ top, right, bottom, left }), [store, top, right, bottom, left]);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -121,8 +136,8 @@ export function BoardViewport({
       // Dot grid: one CSS background that fades out as it gets dense. A pan
       // moves it by TRANSFORM within one cell (compositor only); changing
       // background-position instead repaints the whole viewport every frame.
-      const step = GRID_WORLD_PX * z;
-      const shown = step >= 7 && store.getGuides();
+      const step = GRID_SIZE * z;
+      const shown = step >= 7 && (store.getGuides() || store.getSnapSettings().grid);
       grid.style.opacity = shown ? String(Math.min(1, (step - 7) / 10)) : "0";
       const size = `${step}px ${step}px`;
       if (grid.style.backgroundSize !== size) grid.style.backgroundSize = size;
@@ -505,6 +520,12 @@ export function BoardViewport({
       // A key inside a tile's content (a grid cell, an editor, a control)
       // belongs to that content: Enter there never opens full screen.
       if (e.key !== "Escape" && !boardOwnsKey(e.target)) return;
+      // ⌘' / Ctrl+' — snap to grid (tldraw's grid shortcut; ⇧G is Layout guides).
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === "Quote" && !isTyping(e.target)) {
+        e.preventDefault();
+        store.setSnapSettings({ grid: !store.getSnapSettings().grid });
+        return;
+      }
       if (isTyping(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
       // While a tile is interacting its content owns the keyboard (lists,
       // players, editors) — the board answers only Esc, which steps back out.
@@ -583,6 +604,7 @@ export function BoardViewport({
         <div ref={worldRef} className="absolute left-0 top-0 max-w-none origin-top-left">
           <div ref={zoomVarRef} className="max-w-none">
             {children}
+            <SnapGuidesLayer />
           </div>
         </div>
         {overlay}

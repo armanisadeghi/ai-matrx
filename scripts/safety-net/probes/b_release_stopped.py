@@ -12,7 +12,7 @@ refuse). So "stopped" is proven by what would have to move if anything shipped:
   2. no ship-all ran since the freeze (~/.matrx/ship-all/latest.json `stamp`);
   3. GitHub main did not move for aidream and matrx-frontend (`git ls-remote origin refs/heads/main`, no fetch);
   4. the live web build did not change (https://www.aimatrx.com/api/version `commit`);
-  5. the live server's build did not change (`/cutover/final-switch/capabilities` git_sha as admin@admin.com, sampled
+  5. the live server's build did not change (`/health/version` git_sha, sampled
      three times because several server tasks answer behind the balancer; uptime is reported, never judged).
 Snapshot mode records all five (FAIL only when it cannot read one). Freeze mode FAILs on any movement.
 """
@@ -71,30 +71,12 @@ def snapshot() -> dict:
     return s
 
 
-def _env(path: Path) -> dict:
-    out = {}
-    if path.exists():
-        for line in path.read_text().splitlines():
-            if "=" in line and not line.lstrip().startswith("#"):
-                k, v = line.split("=", 1)
-                out.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-    return out
-
-
 def server_shas() -> list:
-    """The build the live server runs, as the Final switch page asks it (admin seat; the token never printed)."""
-    env = {**_env(CODE / "aidream/.env"), **_env(CODE / "matrx-frontend/.env.local")}
-    if env.get("AI_ADMIN_USERNAME") != "admin@admin.com":
-        return ["unread: the admin seat is not admin@admin.com"]
-    body = json.dumps({"email": env["AI_ADMIN_USERNAME"], "password": env["AI_ADMIN_PASSWORD"]}).encode()
-    req = urllib.request.Request("https://db.matrxserver.com/auth/v1/token?grant_type=password", data=body, method="POST",
-                                 headers={**UA, "content-type": "application/json", "apikey": env["SUPABASE_MATRIX_PUBLISHABLE_KEY"]})
-    with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
-        jwt = json.loads(r.read())["access_token"]
+    """The build the live server runs: its public build identity, /health/version (no sign-in; the Final switch page's
+    capabilities door that used to answer it retired with the switch, lane ONE-HOME wave 4)."""
     shas = set()
     for _ in range(3):
-        req = urllib.request.Request("https://server.app.matrxserver.com/cutover/final-switch/capabilities",
-                                     headers={**UA, "authorization": f"Bearer {jwt}", "origin": "https://manage.aimatrx.com"})
+        req = urllib.request.Request("https://server.app.matrxserver.com/health/version", headers=UA)
         try:
             with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
                 shas.add(json.loads(r.read()).get("git_sha") or "none")

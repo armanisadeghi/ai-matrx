@@ -18,7 +18,7 @@
  * the table itself.
  */
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import type { PageView, RecordsMountProps, TablePageActionHost } from "@ai-matrx/records-ui";
@@ -31,7 +31,7 @@ import {
   PendingTableInvitation,
   usePendingTableInvitation,
 } from "@/features/sharing/outside/PendingTableInvitation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
@@ -44,13 +44,11 @@ import { PREVIEW_RIGHTS, recordsUiHostFor, useRecordsUiPorts } from "@/features/
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
 import { toast } from "@/lib/toast";
-import { copyAgain } from "@/features/unified-data/cutover/copyAgain";
 import { useRowChangeAgentOffer } from "@/features/unified-data/row-change-agent/RowChangeAgentLink";
 import { tableMenuExtensions } from "@/features/unified-data/actions/tableMenuExtensions";
 import { useTableFavorite } from "@/features/unified-data/actions/useTableFavorite";
 import { DataMenuProvider } from "@/features/unified-data/actions/DataMenuProvider";
 import { useTablePageCommands } from "@/features/unified-data/actions/tableActionCommands";
-import { tableCopyEvaluation, useTableCopyEvaluation } from "@/features/unified-data/tableCopyEvaluation";
 import { RecordStoreTableSurface, useGridContextChannel } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import type { ShownViewLike } from "@/features/unified-data/page-capture/shownViewCapture";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -185,47 +183,12 @@ export function useUnifiedTable({
     ? `/data?org=${encodeURIComponent(readingOrganizationId)}`
     : "/data";
 
-  /** A TEST COPY SAYS SO IN THE TABLE MENU, NOT IN A BANNER (lane COPY-WRITABLE). */
-  const [copyVersion, setCopyVersion] = useState(0);
-  const copyEvaluation = useTableCopyEvaluation(object.state === "found" ? tableId : null, copyVersion);
-  const dispatchCopy = useAppDispatch();
-  /** "Copy this table again" (lane COPY-AGAIN-DOOR): the mover's rerun for this one table. */
-  const copyThisTableAgain = () => {
-    const id = toast.loading("Copying this table again from the older table…");
-    void copyAgain(
-      dispatchCopy,
-      { tableId, ...(object.state === "found" ? { organizationId: object.organizationId } : {}) },
-      (p) => toast.loading(p.says, { id }),
-    ).then((answer) => {
-      if (answer.ok) toast.success(answer.says, { id });
-      else toast.error("This table was not copied again", { id, description: answer.says });
-      setCopyVersion((v) => v + 1);
-    });
-  };
-  /** The test-copy line: says what this copy is, and re-checks it, in the table's one menu. */
-  const testCopyStatus = () => {
-    void tableCopyEvaluation(createClient(), tableId).then((now) => {
-      const said = now.state === "test-copy" ? now : copyEvaluation;
-      if (said.state !== "test-copy") return;
-      toast.info(said.says, {
-        description: said.detail,
-        ...(object.state === "found"
-          ? {
-              action: {
-                label: "Data switch",
-                onClick: () => router.push(`/organizations/${object.organizationId}/settings#data`),
-              },
-            }
-          : {}),
-      });
-    });
-  };
   /** The table's favorite — the Data home's own star (`useTableFavorite`). */
   const favorite = useTableFavorite(tableId, object.state === "found" ? object.organizationId : null);
   /**
    * THE APP'S PART OF THE TABLE'S ONE ACTION LIST (lane TABLE-ACTIONS): favorite, the page origin
-   * for Copy link, a re-read after Move, and this app's own entries (`tableMenuExtensions`: the
-   * test-copy line, "Copy this table again", the row-change agent) — always listed, disabled with a
+   * for Copy link, a re-read after Move, and this app's own entries (`tableMenuExtensions`: Workflows
+   * and the row-change agent) — always listed, disabled with a
    * reason where they do not apply. Duplicate is left unbound until its store door is live, so it
    * says "Not available here".
    */
@@ -239,9 +202,6 @@ export function useUnifiedTable({
       ...tableMenuExtensions({
         // WORKFLOWS ON THIS TABLE (lane 11 wave 2): the simple builder.
         workflows: () => router.push(`/workflows/builder/${tableId}`),
-        ...(copyEvaluation.state === "test-copy"
-          ? { testCopy: { label: copyEvaluation.says, run: testCopyStatus }, copyAgain: copyThisTableAgain }
-          : {}),
         ...(rowChangeOffer.state === "offered"
           ? { rowChangeAgent: () => router.push((rowChangeOffer as { href: string }).href) }
           : rowChangeOffer.state === "refused"

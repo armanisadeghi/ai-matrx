@@ -23,7 +23,6 @@ jest.mock("../seamSwitches", () => ({
   readSeamBoard: (...args: unknown[]) => readSeamBoard(...args),
   pressSeam: (...args: unknown[]) => pressSeam(...args),
 }));
-jest.mock("../copyAgain", () => ({ copyAgain: jest.fn(), copyAgainClears: () => false }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppDispatch: () => jest.fn() }));
 jest.mock("@/components/agent-copy/page-capture/usePageCapture", () => ({ usePageCaptureContribution: () => {} }));
 jest.mock("@/components/ui/confirm-dialog", () => ({
@@ -75,7 +74,6 @@ function board(seam: Seam, mayPress = true): SeamBoard {
     mayPress,
     mayPressDetail: "You are an owner of this organization.",
     seams: [seam],
-    finalSwitch: null,
   };
 }
 

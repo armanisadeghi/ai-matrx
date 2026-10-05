@@ -72,14 +72,9 @@ jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
 }));
 jest.mock("@/features/data-tables/records-ui-host/mergedGridKnob", () => ({ useMergedGridKnob: () => true }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), loading: jest.fn(), success: jest.fn(), info: jest.fn() } }));
-jest.mock("@/features/unified-data/cutover/copyAgain", () => ({ copyAgain: jest.fn() }));
 jest.mock("@/features/unified-data/row-change-agent/RowChangeAgentLink", () => ({
   ROW_CHANGE_AGENT_LABEL: "When a row changes, run an agent…",
   useRowChangeAgentOffer: () => ({ state: "absent" }),
-}));
-jest.mock("@/features/unified-data/tableCopyEvaluation", () => ({
-  tableCopyEvaluation: jest.fn(),
-  useTableCopyEvaluation: () => ({ state: "not-a-test-copy" }),
 }));
 jest.mock("@/features/unified-data/grid-agent-context/RecordStoreTableSurface", () => ({
   RecordStoreTableSurface: ({ children }: { children: React.ReactNode }) => children,

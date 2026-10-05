@@ -1,17 +1,11 @@
-// app/(core)/data/page.tsx — the server half of /data.
+// app/(core)/data/page.tsx — /data, the data home.
 //
-// WHICH DATA HOME DRAWS FIRST IS DECIDED ON THE SERVER (lane DATA-PAGE-DEFECTS): the page used to
-// render the old home until the browser's read of `custom.data_home_shell` landed (~2 s), then swap to
-// the new one. The knob is read here, for the signed-in person, and handed down, so the right home is
-// in the first paint. `?home=new|old` still decides one visit, and a server read that cannot answer
-// hands down `undefined`, which the browser's own read then settles as before.
+// One home: the list shell (features/unified-data/home/DataHomeShellPage.tsx, every screen from
+// @ai-matrx/records-ui). The old hub, the knob `custom.data_home_shell` that chose between them and
+// `?home=old` were removed after the switch's soak (lane ONE-HOME wave 4).
 
-import { readEffectiveKnobOnServer } from "@/lib/scoped-config/effectiveKnobs.server";
-import { DATA_HOME_SHELL_KNOB } from "@/features/unified-data/home/dataHomeKnobs";
+import { DataHomeRoute } from "@/features/unified-data/home/DataHomeRoute";
 
-import DataHomePageClient from "./DataHomePageClient";
-
-export default async function DataHomeRoutePage() {
-  const serverKnob = await readEffectiveKnobOnServer(DATA_HOME_SHELL_KNOB);
-  return <DataHomePageClient serverKnob={serverKnob} />;
+export default function DataHomeRoutePage() {
+  return <DataHomeRoute />;
 }

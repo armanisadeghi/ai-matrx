@@ -41,6 +41,8 @@ import { recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { standingSentence, useApprovalStanding } from "./approvalDecision";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 /** One data source for every card on the page — the organization lookup's dependency stays stable. */
 let sharedDataSource: ReturnType<typeof recordsDataSource> | null = null;
@@ -60,8 +62,11 @@ export interface RecordChangeApprovalCardProps {
   tableName?: string | null;
   /** Hide "Open the table" — set by the table's own page, which is already there. */
   hideOpen?: boolean;
-  /** Told once the decision is taken, so a list can refresh. */
-  onDecided?: () => void;
+  /**
+   * Told once the decision is taken here, with what was chosen and the store's sentence for
+   * it — a list refreshes; the chat tells the agent so it carries on without being nudged.
+   */
+  onDecided?: (decided: { choice: "approve" | "decline"; sentence: string }) => void;
   /**
    * The organization the WAIT lives in, when the mounting surface knows it (the
    * table's page reads it from the table). Access is personal: the switch is
@@ -75,6 +80,21 @@ type Decision =
   | { state: "applying" }
   | { state: "decided"; sentence: string }
   | { state: "failed"; sentence: string };
+
+/** Who can answer, by name — and "You" when the person reading is one of them. */
+function deciderSentence(
+  approvers: RecordChangeWait["approvers"],
+  viewerId: string | null | undefined,
+): string {
+  const others = approvers.filter((who) => who.userId !== viewerId);
+  const viewerDecides = others.length < approvers.length;
+  const named = others.map((who) => who.name).filter(Boolean) as string[];
+  if (viewerDecides) {
+    return named.length > 0 ? `You or ${named.join(", ")} can decide this.` : "You can decide this.";
+  }
+  if (approvers.length === 1) return `${approvers[0]!.name ?? "One person"} can decide this.`;
+  return `${named.join(", ")} can decide this.`;
+}
 
 export function RecordChangeApprovalCard({
   wait,
@@ -110,6 +130,7 @@ export function RecordChangeApprovalCard({
     Boolean(objectOrganizationId) || object.state !== "resolving";
 
   const [decision, setDecision] = useState<Decision>({ state: "open" });
+  const viewerId = useAppSelector(selectUserId);
   // THE ROW'S OWN STANDING. The tool result says "held" forever; the queue row says whether
   // somebody already decided — here earlier, in another tab, on the table's page. A decided
   // change never offers Approve again (lane HANDOVER, 2026-09-27).
@@ -155,7 +176,7 @@ export function RecordChangeApprovalCard({
             return;
           }
           setDecision({ state: "decided", sentence: outcome.detail });
-          onDecided?.();
+          onDecided?.({ choice, sentence: outcome.detail });
         },
         (error: unknown) => {
           setDecision({
@@ -244,7 +265,7 @@ export function RecordChangeApprovalCard({
         allowRespond={false}
         labels={{ approve: "Approve", decline: "Refuse" }}
         secondaryAction={openTable}
-        note={`${wait.policy.why} ${wait.policy.howToChange}`}
+        note={wait.policy.why}
         {...(outcome ? { outcome } : {})}
       />
       {/* WHO CAN ANSWER THIS, BY NAME. The 2026-09-19 pass found a refusal that
@@ -253,12 +274,7 @@ export function RecordChangeApprovalCard({
           still open: after it is taken, who could have taken it is noise. */}
       {decision.state === "open" && !decidedElsewhere && wait.approvers.length > 0 && (
         <p className="px-2.5 text-xs leading-relaxed text-muted-foreground">
-          {wait.approvers.length === 1
-            ? `${wait.approvers[0]!.name ?? "One person"} can decide this.`
-            : `${wait.approvers
-                .map((who) => who.name)
-                .filter(Boolean)
-                .join(", ")} can decide this.`}
+          {deciderSentence(wait.approvers, viewerId)}
         </p>
       )}
       {decision.state === "failed" && (

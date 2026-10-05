@@ -49,12 +49,12 @@ export function PeekTags({
     };
   }, [live, target.entity, target.id, nonce]);
 
-  const link = { sourceType: target.entity, sourceId: target.id, targetType: "scope" };
+  const link = { sourceType: target.entity, sourceId: target.id, targetType: "tag" };
   const remove = async (name: string) => {
     const ref = state.tags.find((t) => t.name === name);
     if (!ref) return;
-    setState((s) => ({ ...s, tags: s.tags.filter((t) => t.scopeId !== ref.scopeId) }));
-    const res = await associationsService.remove({ ...link, targetId: ref.scopeId });
+    setState((s) => ({ ...s, tags: s.tags.filter((t) => t.tagId !== ref.tagId) }));
+    const res = await associationsService.remove({ ...link, targetId: ref.tagId });
     if ("error" in res && res.error) {
       toast.error(`#${name} was not removed: ${(res.error as { message?: string }).message ?? "the server refused."}`);
       setNonce((n) => n + 1);
@@ -66,7 +66,7 @@ export function PeekTags({
         label: "Undo",
         onClick: () =>
           void associationsService
-            .add({ ...link, targetId: ref.scopeId } as never)
+            .add({ ...link, targetId: ref.tagId } as never)
             .then((r: unknown) => {
               const failed = r && typeof r === "object" && "error" in r && (r as { error?: unknown }).error;
               if (failed) toast.error(`#${name} was not put back.`);

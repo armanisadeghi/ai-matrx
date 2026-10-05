@@ -2,7 +2,7 @@
  "generatedBy": "scripts/record-pages/generate.ts",
  "counts": {
   "list.sourceWithoutCustomFields": 1,
-  "route.pending": 1281,
+  "route.pending": 1280,
   "route.none": 35,
   "route.tokens": 16,
   "route.host": 1,
@@ -13,9 +13,10 @@
   "peek.tokens": 19,
   "peek.none": 5,
   "peek.any": 1,
+  "route.manifestRowWithoutFile": 2,
   "table.pending": 243,
   "table.noncanonical": 26,
-  "table.none": 4,
+  "table.none": 5,
   "table.set": 1
  },
  "tokens": [
@@ -559,10 +560,6 @@
    "file": "app/(admin)/administration/database/enums/page.tsx",
    "pending": true
   },
-  "route:/administration/database/final-switch": {
-   "file": "app/(admin)/administration/database/final-switch/page.tsx",
-   "pending": true
-  },
   "route:/administration/database/relationships": {
    "file": "app/(admin)/administration/database/relationships/page.tsx",
    "pending": true
@@ -618,10 +615,6 @@
   "route:/administration/database/store-tables": {
    "file": "app/(admin)/administration/database/store-tables/page.tsx",
    "none": "an admin list of store tables"
-  },
-  "route:/administration/database/unified-data-ramp": {
-   "file": "app/(admin)/administration/database/unified-data-ramp/page.tsx",
-   "pending": true
   },
   "route:/administration/database/workbench": {
    "file": "app/(admin)/administration/database/workbench/page.tsx",
@@ -1535,6 +1528,10 @@
   },
   "route:/board/all": {
    "file": "app/(core)/board/all/page.tsx",
+   "pending": true
+  },
+  "route:/bring-your-work": {
+   "file": "app/(core)/bring-your-work/page.tsx",
    "pending": true
   },
   "route:/c/[handle]": {
@@ -6400,6 +6397,7 @@
   "features/administration/kg-cost/components/KgCostDashboard.tsx": "pending",
   "features/administration/kg-inspector/components/KgInspector.tsx": "pending",
   "features/administration/store-tables/StoreTablesAdmin.tsx": "pending",
+  "features/administration/switch-presses/SwitchPressHistory.tsx": "none — rows are switch presses (platform.cutover_seam_press), an audit record with no registry token",
   "features/agent-shortcuts/components/ShortcutDirectory.tsx": "pending",
   "features/agent-shortcuts/components/ShortcutList.tsx": "pending",
   "features/agents/components/scope-batch-import/ScopeBatchImportBody.tsx": "noncanonical",

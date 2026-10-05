@@ -113,7 +113,6 @@
   "app/(admin)/administration/database/schema-visualizer/page.tsx",
   "app/(admin)/administration/database/sql-functions/page.tsx",
   "app/(admin)/administration/database/sql-queries/page.tsx",
-  "app/(admin)/administration/database/unified-data-ramp/page.tsx",
   "app/(admin)/administration/database/workbench/page.tsx",
   "app/(admin)/administration/documentation/feature-docs/codebase/page.tsx",
   "app/(admin)/administration/documentation/feature-docs/docs/page.tsx",

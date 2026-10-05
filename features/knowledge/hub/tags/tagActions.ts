@@ -83,7 +83,7 @@ export async function resolveTagRefs(
     if (!name) continue;
     const found = await findTags(name).catch(() => []);
     if (found.length) {
-      for (const f of found) add({ type: "scope", id: f.id });
+      for (const f of found) add({ type: "tag", id: f.id });
       continue;
     }
     const scope = findScope ? await findScope(name).catch(() => null) : null;

@@ -25,6 +25,7 @@ import {
 
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { smartExecute } from "../../agents/redux/execution-system/thunks/smart-execute.thunk";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { ShimmerText } from "@host/components/loaders/ShimmerText";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
@@ -702,6 +703,32 @@ const ToolCallVisualizationInner: React.FC<{
                         wait={entryWait}
                         callId={entry.callId}
                         {...(conversationId ? { conversationId } : {})}
+                        {...(conversationId && !readOnly
+                          ? {
+                              // THE LOOP CLOSES ITSELF (AGENTS-ON-DATA item 2): a decision taken on
+                              // this card tells the agent, so it carries on with the rest of the
+                              // job instead of waiting for the person to type "go on".
+                              onDecided: ({ choice, sentence }) => {
+                                const text =
+                                  choice === "approve"
+                                    ? `Approved — ${sentence} Carry on.`
+                                    : `Refused — ${sentence} Do not make that change; tell me what you will do instead.`;
+                                void dispatch(
+                                  smartExecute({
+                                    conversationId,
+                                    submission: {
+                                      text,
+                                      messageParts: [],
+                                      resources: [],
+                                      resourceIds: [],
+                                      editorResourceXml: "",
+                                      userValues: {},
+                                    },
+                                  }),
+                                );
+                              },
+                            }
+                          : {})}
                         {...(entry === headerTool && heldTableName
                           ? { tableName: heldTableName }
                           : {})}

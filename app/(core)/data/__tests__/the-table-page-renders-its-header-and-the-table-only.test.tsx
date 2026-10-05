@@ -62,10 +62,6 @@ jest.mock("@ai-matrx/records/react", () => ({
   useRecordsClient: () => ({ config: {}, recordUpdate: async () => ({ ok: true }) }),
 }));
 jest.mock("@ai-matrx/design-system", () => ({ Button: () => null }));
-jest.mock("@/features/unified-data/tableCopyEvaluation", () => ({
-  tableCopyEvaluation: async () => ({ state: "none" }),
-  useTableCopyEvaluation: () => ({ state: "none" }),
-}));
 jest.mock("@ai-matrx/agents/mandates", () => ({
   ...jest.requireActual("@ai-matrx/agents/mandates"),
   MANDATE_KEYS: { data__page_guidance: "data.page_guidance" },
@@ -128,7 +124,6 @@ jest.mock("@/features/unified-data/row-change-agent/RowChangeAgentLink", () => (
   ROW_CHANGE_AGENT_LABEL: "When a row changes, run an agent…",
   useRowChangeAgentOffer: () => ({ state: "absent" }),
 }));
-jest.mock("@/features/unified-data/tableCopyEvaluation", () => ({ tableCopyEvaluation: jest.fn(), useTableCopyEvaluation: () => ({ state: "not-a-test-copy" }) }));
 jest.mock("@/features/data-tables/records-ui-host/mergedGridKnob", () => ({ useMergedGridKnob: () => false }));
 jest.mock("@/features/unified-data/recordsNotify", () => ({ RECORDS_NOTIFY: {} }));
 // The real writer (a history write, no navigation) so the address the page leaves is asserted.

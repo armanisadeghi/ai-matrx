@@ -1417,26 +1417,17 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Unified Data Ramp",
-        description:
-          "The switch screen for the unified data store: every consumer with its state, its Test 1 gate verdict, and a switch only where there is something honest to switch. Turning a consumer OFF is never gated.",
-        iconName: "ToggleRight",
-        link: "/administration/database/unified-data-ramp",
-        isNew: true,
-      },
-      {
-        title: "Final Switch",
-        description:
-          "Every organization onto the new record store at once, and one undo: every organization's readiness (what copying again clears, what it cannot, scopes parity, edits waiting), the press, the undo, and the last rehearsal on the dev clone.",
-        iconName: "Power",
-        link: "/administration/database/final-switch",
-        isNew: true,
-      },
-      {
         title: "Store Tables",
         description: "Every organization's tables; archive many at once",
         iconName: "Table",
         link: "/administration/database/store-tables",
+        isNew: true,
+      },
+      {
+        title: "Switch Presses",
+        description: "Every press of the old-to-new switches, newest first",
+        iconName: "History",
+        link: "/administration/database/switch-presses",
         isNew: true,
       },
       {

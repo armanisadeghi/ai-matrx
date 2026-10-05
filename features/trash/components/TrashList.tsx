@@ -32,16 +32,6 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { getResourceIcon } from "@/features/sharing/resourceIcons";
-import Link from "next/link";
-import {
-  isMovedOlderTable,
-  isOwnerOrAdminRole,
-  mayOfferSwitchBack,
-  MOVED_BY_ITS_ORGANIZATION,
-  switchBackHrefFor,
-  SWITCH_BACK_EXPLAINED,
-} from "@/features/trash/movedOlderTable";
-import { membershipsService } from "@/features/organizations/service/membershipsService";
 import {
   getOrgTrashCounts,
   listOrgTrash,
@@ -56,8 +46,6 @@ import {
   sourceForItem,
   type MergedTrashCounts,
 } from "@/features/trash/sources";
-import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { isScopesRpcErr } from "@/features/scopes/types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** Rows per page — per kind in personal mode, per merged page in organization mode. */
@@ -305,52 +293,8 @@ export function TrashList({
 
   const busyId = scope.mode === "personal" ? (scope.busyId ?? null) : null;
 
-  // WHO MAY BE SENT TO SWITCH BACK (lane SWITCH-BACK-CARRIES). Organization Trash is itself an
-  // owners-and-admins page for that one organization. Personal Trash can list moved older tables of
-  // any organization, so it asks once which organizations this person owns or administers.
-  const [managed, setManaged] = useState<ReadonlySet<string>>(new Set());
-  // The organizations-you-manage read failed: the switch-back link is not
-  // offered, and the screen says why (never a silently missing control).
-  const [managedError, setManagedError] = useState<string | null>(null);
-  const hasMoved = !org && items.some(isMovedOlderTable);
-  useEffect(() => {
-    if (!hasMoved) return;
-    let live = true;
-    void (async () => {
-      try {
-        const res = await membershipsService.forUser("organization");
-        if (!live) return;
-        if (isScopesRpcErr(res)) {
-          setManagedError(res.error.message);
-          return;
-        }
-        setManagedError(null);
-        setManaged(
-          new Set(
-            res.data.memberships
-              .filter((m) => isOwnerOrAdminRole(m.role))
-              .map((m) => m.containerId),
-          ),
-        );
-      } catch (err) {
-        if (live) setManagedError(err instanceof Error ? err.message : String(err));
-      }
-    })();
-    return () => {
-      live = false;
-    };
-  }, [hasMoved]);
-  const offersSwitchBack = (item: TrashListItem) =>
-    org ? item.organization_id === org.organizationId : mayOfferSwitchBack(item.organization_id, managed);
-
   return (
     <div data-trash-scope={scope.mode}>
-      {hasMoved && managedError ? (
-        <p role="alert" className="pb-2 text-xs text-destructive">
-          Couldn&apos;t check which organizations you manage, so the switch-back link isn&apos;t offered on moved tables.
-          <ErrorAlchemyMenu error={managedError} operation="Read the organizations you manage" />
-        </p>
-      ) : null}
       {org && (
         <div className="flex flex-wrap items-center gap-2 pb-3">
           <span className="text-muted-foreground text-sm">Archived by</span>
@@ -462,10 +406,6 @@ export function TrashList({
                       <span className="text-muted-foreground italic">Untitled</span>
                     )}
                   </span>
-                  {isMovedOlderTable(item) && (
-                    // Said on every width: on a phone the kind column is hidden.
-                    <span className="text-muted-foreground block truncate text-xs sm:hidden">{item.label}</span>
-                  )}
                 </span>
                 {renderRowExtra?.(item)}
                 {org && (
@@ -480,25 +420,6 @@ export function TrashList({
                 <span className="text-muted-foreground w-18 shrink-0 text-right text-xs tabular-nums whitespace-nowrap">
                   {formatRelativeTime(item.deleted_at, { absolute: "date" })}
                 </span>
-                {isMovedOlderTable(item) && !offersSwitchBack(item) ? (
-                  // Not an owner or admin of that organization: say where it went, offer no door.
-                  <span
-                    className="text-muted-foreground shrink-0 text-xs"
-                    data-testid="moved-older-table-moved-by-its-organization"
-                  >
-                    {MOVED_BY_ITS_ORGANIZATION}
-                  </span>
-                ) : isMovedOlderTable(item) ? (
-                  // One restore would bring back ONE older table beside a switch that says the
-                  // organization lives in the new system; the store refuses it. Switch back does all.
-                  <Button size="sm" variant="ghost" asChild title={`${SWITCH_BACK_EXPLAINED}.`}>
-                    <Link href={switchBackHrefFor(item.organization_id)} data-testid="moved-older-table-switch-back">
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      <span className="ml-1.5 hidden sm:inline">{SWITCH_BACK_EXPLAINED}</span>
-                      <span className="ml-1.5 sm:hidden">Switch back</span>
-                    </Link>
-                  </Button>
-                ) : (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -512,7 +433,6 @@ export function TrashList({
                   )}
                   <span className="ml-1.5 hidden sm:inline">Restore</span>
                 </Button>
-                )}
               </li>
             );
           })}

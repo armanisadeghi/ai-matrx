@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { zoomAt } from "../engine/camera";
-import { useLayoutGuides, useBoardCameraStore } from "../engine/react";
+import { useLayoutGuides, useBoardCameraStore, useSnapSettings } from "../engine/react";
 
 const PRESETS = [0.25, 0.5, 0.75, 1, 1.5, 2];
 
@@ -35,6 +35,7 @@ export interface HistoryControls {
 export function ZoomMenu({ history, className }: { history?: HistoryControls; className?: string }) {
   const store = useBoardCameraStore();
   const guides = useLayoutGuides();
+  const snap = useSnapSettings();
   const pctRef = useRef<HTMLSpanElement>(null);
 
   // The trigger reads the camera through a frame listener (no React render per frame).
@@ -108,6 +109,19 @@ export function ZoomMenu({ history, className }: { history?: HistoryControls; cl
         <DropdownMenuCheckboxItem checked={guides} onCheckedChange={(on) => store.setGuides(on === true)}>
           Layout guides
           <DropdownMenuShortcut>⇧G</DropdownMenuShortcut>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={snap.smartGuides}
+          onCheckedChange={(on) => store.setSnapSettings({ smartGuides: on === true })}
+        >
+          Smart guides
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={snap.grid}
+          onCheckedChange={(on) => store.setSnapSettings({ grid: on === true })}
+        >
+          Snap to grid
+          <DropdownMenuShortcut>⌘'</DropdownMenuShortcut>
         </DropdownMenuCheckboxItem>
         {history && (
           <>

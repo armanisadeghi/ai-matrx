@@ -1,6 +1,6 @@
 // scripts/data-home/data-home-lane-f-walk.mjs — LANE DATA-HOME-3F
 //
-// Walks the three fix-before-Arman defects of VERIFY-DATA-HOME-3 Verify 2 on `/data?home=new`
+// Walks the three fix-before-Arman defects of VERIFY-DATA-HOME-3 Verify 2 on `/data`
 // from a real seat (headless) and takes the named screenshots:
 //   W3 390   — phone cards: height of each, how many fit the first screen, no "more fields"
 //   W5 1440  — Cards view: every Table card's Records is a count once the store answers, and the
@@ -51,7 +51,7 @@ check("identity matches seat", who === EMAIL, { seat: SEAT });
 const ROW = "[data-row-id]:visible";
 const shot = (name) => page.screenshot({ path: `${SHOTS}/f-${SEAT}-${name}-${SCHEME}.png`, fullPage: false });
 const goto = async () => {
-  await page.goto(`${ORIGIN}/data?home=new`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await until("rows", async () => (await page.locator(ROW).count()) > 0, 180000);
   await sleep(2500);
 };

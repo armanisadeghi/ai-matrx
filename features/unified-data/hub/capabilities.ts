@@ -1,7 +1,7 @@
 // features/unified-data/hub/capabilities.ts — LANE DATA-HUB
 //
 // THE DECLARATION. Every capability the record store has is ONE row in this
-// file, and `HubListing` draws all of them with the same component.
+// file.
 //
 // Why a declaration and not ten components: on 20 September /data listed an
 // organization's TABLES and nothing else, while forms, bookings, portals,

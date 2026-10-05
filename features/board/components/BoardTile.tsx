@@ -31,6 +31,7 @@ import type { Rect } from "../engine/camera";
 import {
   RESIZE_CURSOR,
   RESIZE_HANDLES,
+  MIN_TILE_SIZE,
   RESIZE_HANDLE_SCREEN_PX,
   type ResizeHandle,
   doubleClickAction,
@@ -38,6 +39,7 @@ import {
   resizeRect,
 } from "../engine/tile-gestures";
 import type { PaceTier } from "../engine/lod";
+import { beginSnap } from "../engine/snap-gesture";
 import {
   FocusHostContext,
   useIsEditing,
@@ -273,16 +275,25 @@ export function BoardTile({
       e.preventDefault(); // a move never starts a text selection
       e.stopPropagation();
       gesture?.();
+      // Smart guides / snap to grid: the pointer proposes, the snap session
+      // answers; the store only ever sees the answer (one undo step as before).
+      const snap = beginSnap(store, id);
       gesture = startPointerGesture(e, tile, {
         onMove: (m) => {
           tracker.push({ x: m.clientX, y: m.clientY, t: m.timeStamp });
           const z = store.getCamera().z;
-          onMoveRef.current?.(id, from.x + (m.clientX - from.px) / z, from.y + (m.clientY - from.py) / z);
+          const r = rectRef.current;
+          const at = snap.move(
+            { x: from.x + (m.clientX - from.px) / z, y: from.y + (m.clientY - from.py) / z, w: r.w, h: r.h },
+            m,
+          );
+          onMoveRef.current?.(id, at.x, at.y);
           const dir = detectThrow(tracker.velocity(), { dx: m.clientX - from.px, dy: m.clientY - from.py });
           showHint(dir && onThrowRef.current ? throwActionsRef.current[dir] : "none");
         },
         onEnd: (how, end) => {
           gesture = null;
+          snap.end();
           showHint("none");
           if (how === "escape") onMoveRef.current?.(id, from.x, from.y);
           else if (how === "up" && end) release(from, end);
@@ -573,17 +584,24 @@ function ResizeHandles({
     const py = e.clientY;
     store.select(id);
     setActive(handle);
+    const snap = beginSnap(store, id);
     gesture.current = startPointerGesture(e.nativeEvent, e.currentTarget, {
       onMove: (m) =>
         onResizeRef.current(
           id,
-          resizeRect(start, handle, m.clientX - px, m.clientY - py, {
-            z: store.getCamera().z,
-            keepAspect: m.shiftKey,
-          }),
+          snap.resize(
+            resizeRect(start, handle, m.clientX - px, m.clientY - py, {
+              z: store.getCamera().z,
+              keepAspect: m.shiftKey,
+            }),
+            handle,
+            m,
+            MIN_TILE_SIZE,
+          ),
         ),
       onEnd: (how) => {
         gesture.current = null;
+        snap.end();
         setActive(null);
         if (how === "escape") onResizeRef.current(id, start);
       },

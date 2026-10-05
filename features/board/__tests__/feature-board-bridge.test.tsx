@@ -166,11 +166,11 @@ describe("feature boards (War Room, workflow run) publish the same two-request b
     act(() => root.unmount());
   });
 
-  it("control: a tile with no capture (how these boards were) is listed with no basics", async () => {
+  it("control: a tile with no capture (how these boards were) has only its type and name, marked stale", async () => {
     const { root } = await mount(false);
     const other = (await overviewOf()).items.find((i) => i.id === "other");
-    expect(other?.basics).toBeUndefined();
-    expect(other?.basics_note).toMatch(/Not loaded yet/);
+    expect(Object.keys(other?.basics ?? {})).toEqual(["type", "name"]);
+    expect(other?.basics_stale).toBe(true);
     act(() => root.unmount());
   });
 });

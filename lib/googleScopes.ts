@@ -23,6 +23,8 @@ export const GOOGLE_SCOPE = {
   youtubeReadonly: "https://www.googleapis.com/auth/youtube.readonly",
   youtubeAnalyticsReadonly:
     "https://www.googleapis.com/auth/yt-analytics.readonly",
+  // Separate Business Profile review; excluded from ordinary consent bundles.
+  businessManage: "https://www.googleapis.com/auth/business.manage",
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
   // Internal-only reviewed Contact edits; excluded from consent bundles until provider approval.
   contactsWrite: "https://www.googleapis.com/auth/contacts",

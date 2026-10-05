@@ -41,6 +41,29 @@ function normalizeNode<T>(item: T): unknown {
   return n && typeof n === "object" && "source" in n ? { ...n, parked: n.parked === true } : item;
 }
 
+/**
+ * A node's kept basics (`BoardNode.basics`) are a sample of what the item holds, not an edit: a tab
+ * that only refreshed them never overrides the other tab's move, and a difference in them alone is
+ * never a conflict — the later sample is kept.
+ */
+type WithBasics = { basics?: { at: string } };
+function withoutBasics<T>(item: T): T {
+  if (!item || typeof item !== "object" || !("basics" in item)) return item;
+  const { basics: _basics, ...rest } = item as T & WithBasics;
+  return rest as T;
+}
+function laterBasics<T>(a: T | undefined, b: T | undefined): WithBasics["basics"] {
+  const x = (a as WithBasics | undefined)?.basics;
+  const y = (b as WithBasics | undefined)?.basics;
+  if (!x) return y;
+  if (!y) return x;
+  return y.at > x.at ? y : x;
+}
+function withBasicsOf<T>(item: T, a: T | undefined, b: T | undefined): T {
+  const basics = laterBasics(a, b);
+  return basics ? ({ ...withoutBasics(item), basics } as T) : withoutBasics(item);
+}
+
 function mergeList<T extends { id: string }>(
   base: readonly T[],
   theirs: readonly T[],
@@ -62,6 +85,13 @@ function mergeList<T extends { id: string }>(
     const theirsChanged = !same(bv, tv);
     if (!oursChanged) return tv;
     if (!theirsChanged) return ov;
+    if (tv !== undefined && ov !== undefined) {
+      const core = (x: T | undefined) => (x === undefined ? x : withoutBasics(x));
+      // One side only refreshed basics: the other side's change stands, with the later basics.
+      if (same(core(bv), core(ov))) return withBasicsOf(tv, tv, ov);
+      if (same(core(bv), core(tv))) return withBasicsOf(ov, tv, ov);
+      if (same(core(tv), core(ov))) return withBasicsOf(ov, tv, ov);
+    }
     if (!same(tv, ov)) conflicts += 1;
     return ov;
   };

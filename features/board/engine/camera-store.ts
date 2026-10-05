@@ -26,6 +26,8 @@ import {
 import { type DetailTier, detailTierForZoom } from "./lod";
 import { type WheelMode, WheelInterpreter } from "./wheel-input";
 import type { BoardTool } from "./tools";
+import { DEFAULT_SNAP_SETTINGS, type SnapSettings } from "./snap-preference";
+import type { SnapOverlay } from "./snapping";
 
 type Listener = () => void;
 
@@ -82,6 +84,9 @@ export class BoardCameraStore {
   readonly wheel = new WheelInterpreter();
   private tool: BoardTool = "select";
   private guides = true;
+  private snapSettings: SnapSettings = DEFAULT_SNAP_SETTINGS;
+  private snapOverlay: SnapOverlay | null = null;
+  private snapOverlayListeners = new Set<Listener>();
   private uiListeners = new Set<Listener>();
 
   private tier: DetailTier;
@@ -396,6 +401,33 @@ export class BoardCameraStore {
     for (const l of this.uiListeners) l();
     for (const l of this.frameListeners) l();
   }
+
+  /** Snapping choices (smart guides, snap to grid) — the viewer's, see `snap-preference.ts`. */
+  getSnapSettings = (): SnapSettings => this.snapSettings;
+
+  setSnapSettings(next: Partial<SnapSettings>): void {
+    const merged = { ...this.snapSettings, ...next };
+    if (merged.smartGuides === this.snapSettings.smartGuides && merged.grid === this.snapSettings.grid) return;
+    this.snapSettings = merged;
+    if (!merged.smartGuides && this.snapOverlay) this.setSnapOverlay(null);
+    for (const l of this.uiListeners) l();
+    // The dot grid is drawn from the frame listener.
+    for (const l of this.frameListeners) l();
+  }
+
+  /** The guide lines of the drag in flight; null when none. */
+  getSnapOverlay = (): SnapOverlay | null => this.snapOverlay;
+
+  setSnapOverlay(next: SnapOverlay | null): void {
+    if (next === null && this.snapOverlay === null) return;
+    this.snapOverlay = next;
+    for (const l of this.snapOverlayListeners) l();
+  }
+
+  subscribeSnapOverlay = (l: Listener): (() => void) => {
+    this.snapOverlayListeners.add(l);
+    return () => this.snapOverlayListeners.delete(l);
+  };
 
   subscribeUi = (l: Listener): (() => void) => {
     this.uiListeners.add(l);

@@ -518,8 +518,6 @@ export function seedDataTable(): void {
   });
   // features/unified-data/hub/doors.ts — nothing shared with this person from elsewhere.
   seedRpc("tables_shared_with_me", []);
-  // features/unified-data/tableCopyEvaluation.ts — not a test copy.
-  seedRpc("table_copy_evaluation_state", { found: true, test_copy: false });
   // The records client's row actions for the table (none declared).
   seedRpc("row_actions", []);
   // features/data-tables/data-source/record-store-grid.ts — no row actions declared.

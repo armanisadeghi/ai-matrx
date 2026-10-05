@@ -15,7 +15,7 @@ const BUDGET = { P07: 1000, P08: 3000, P09: 3000 };
 
 const ctx = await openWalk("platform");
 const appPages = ["/data", `/data/${TABLE}`, "/lists/v3", "/trash", "/scopes", "/notes", "/tasks", "/chat", "/schedules"];
-const adminPages = ["/administration/usage", "/administration/database/final-switch"];
+const adminPages = ["/administration/usage", "/administration/database/switch-presses"];
 
 async function visit(page, path, origin = ctx.origin) {
   const t0 = Date.now();

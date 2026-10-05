@@ -60,7 +60,7 @@ pass("signed in as the intended seat", who === EMAIL);
 const ROW = "[data-row-id]:visible";
 try {
   calls.length = 0;
-  await page.goto(`${ORIGIN}/data?home=new`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await until("rows", async () => (await page.locator(ROW).count()) > 0, 120000);
   const view = await page.locator('button[aria-label="Table"], button[title="Table"]').first();
   const startedView = Date.now();

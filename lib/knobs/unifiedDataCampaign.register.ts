@@ -344,16 +344,6 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "the organization first and stopping with the store's words when the switch is off.",
   },
   {
-    id: "data-hub-organization-hub",
-    file: "features/unified-data/hub/OrganizationHub.tsx",
-    kind: "runtime",
-    why:
-      "Lane DATA-HUB — /data's landing: the organization's front door for the record store. " +
-      "It is mounted INSIDE RecordsMount on app/(core)/data/page.tsx, which is already behind " +
-      "UNIFIED_DATA_CAMPAIGN's one per-organization switch, so with the store off this component " +
-      "never renders and the honest switch notice stays in its place.",
-  },
-  {
     id: "records-realtime-port",
     file: "features/unified-data/realtime/recordsRealtimePort.ts",
     kind: "runtime",

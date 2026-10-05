@@ -8,15 +8,13 @@
 // answers as they are. Lane FLIP-SEAMS, 2026-09-25.
 
 import React from "react";
-import { Check, CircleDashed, Copy, Loader2, RefreshCw } from "lucide-react";
+import { Check, CircleDashed, Loader2, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import { pressSeam, readSeamBoard, type Seam, type SeamBoard, type SeamCheck, type SeamState } from "./seamSwitches";
-import { copyAgain, copyAgainClears } from "./copyAgain";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 type Pending = { seam: Seam; to: SeamState } | null;
@@ -62,10 +60,6 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   // Switch back: the person's "leave these in the new system" (lane SWITCH-BACK-CARRIES).
   const [leaveBehind, setLeaveBehind] = React.useState(false);
   const [outcome, setOutcome] = React.useState<{ seamKey: string; ok: boolean; says: string } | null>(null);
-  const dispatch = useAppDispatch();
-  // "Copy again" (lane COPY-AGAIN-DOOR): the mover's rerun from this page, then measured again.
-  const [copying, setCopying] = React.useState<string | null>(null);
-  const [copied, setCopied] = React.useState<{ ok: boolean; says: string } | null>(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -91,11 +85,11 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
         id: "data-switches",
         title: "Old system to new system switches",
         role: "data",
-        value: { board, problem, pending: pending ? { seam: pending.seam.key, to: pending.to } : null, outcome, copyAgain: copied },
+        value: { board, problem, pending: pending ? { seam: pending.seam.key, to: pending.to } : null, outcome },
         brief: problem ?? (board ? "Board loaded" : "Loading"),
       },
     ],
-    `${board ? JSON.stringify(board).length : 0}|${problem}|${outcome?.says}|${pending?.seam.key}|${copied?.says}`,
+    `${board ? JSON.stringify(board).length : 0}|${problem}|${outcome?.says}|${pending?.seam.key}`,
   );
 
   const press = async () => {
@@ -112,15 +106,6 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
     setPressing(false);
     setPending(null);
     setLeaveBehind(false);
-    await load();
-  };
-
-  const runCopyAgain = async () => {
-    setCopied(null);
-    setCopying("Starting…");
-    const answer = await copyAgain(dispatch, { organizationId }, (p) => setCopying(p.says));
-    setCopying(null);
-    setCopied({ ok: answer.ok, says: answer.says });
     await load();
   };
 
@@ -148,13 +133,6 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
   // A switch made for every organization at once (the scope and context screens) is listed with the
   // other platform switches; one organization is switched only from the admin scope console.
   const pressable = board.seams.filter((s) => s.pressKind === "owner_press" && s.pressedForEveryone !== true);
-  // Offered only when the tables switch is on the old side and an unmet check has a difference copying
-  // again clears (the readiness answer says so per check; the rest are named with what to do instead).
-  const tables = board.seams.find((s) => s.key === "older_tables");
-  const offerCopyAgain =
-    board.mayPress &&
-    tables?.state === "old" &&
-    tables.checks.some(copyAgainClears);
   const elsewhere = board.seams.filter((s) => s.pressKind !== "owner_press" || s.pressedForEveryone === true);
 
   return (
@@ -165,30 +143,8 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
           Check again
         </Button>
-        {(offerCopyAgain || copying) && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-2"
-            onClick={() => void runCopyAgain()}
-            disabled={copying != null || loading}
-          >
-            {copying ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            ) : (
-              <Copy className="h-3.5 w-3.5 mr-1" />
-            )}
-            Copy again
-          </Button>
-        )}
         {!board.mayPress && <span>{board.mayPressDetail}</span>}
       </div>
-      {copying && <p className="text-xs text-muted-foreground -mt-2">Copying the older tables again. {copying}</p>}
-      {copied && !copying && (
-        <p className={`text-xs -mt-2 ${copied.ok ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"}`}>
-          {copied.says}
-        </p>
-      )}
 
       <ul className="flex flex-col divide-y rounded-lg border">
         {pressable.map((seam) => (
@@ -282,14 +238,6 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
         ))}
       </ul>
 
-      {board.finalSwitch?.state === "new" && (
-        <p className="text-xs text-muted-foreground" data-testid="final-switch-on">
-          Every organization switched to the new system together with the final switch
-          {board.finalSwitch.at ? ` on ${new Date(board.finalSwitch.at).toLocaleDateString()}` : ""}
-          {board.finalSwitch.by ? ` by ${board.finalSwitch.by}` : ""}; they switch back together from Administration.
-        </p>
-      )}
-
       {elsewhere.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p className="text-xs font-medium text-muted-foreground">Switched for everyone at once, not from here</p>
@@ -298,8 +246,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
               <li key={seam.key} className="flex flex-wrap items-baseline gap-x-2 text-xs">
                 <span className="font-medium">{seam.title}</span>
                 {/* THE STATE, NOT THE MECHANISM (lane HANDOVER): each line printed what the switch
-                    does in the database, down to a setting's internal key; that lives on the
-                    Final switch page, where the platform presses it. */}
+                    does in the database, down to a setting's internal key. */}
                 <span className="text-muted-foreground">
                   {seam.pressKind === "already_switched" || seam.state === "new"
                     ? "On the new system"

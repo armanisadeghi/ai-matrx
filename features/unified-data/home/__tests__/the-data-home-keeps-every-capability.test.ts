@@ -200,10 +200,12 @@ describe("census items that are wiring", () => {
     expect(seed).not.toMatch(/group/i);
   });
 
-  it("the old page is behind the knob, untouched beside the new one (copy mode)", () => {
-    expect(route).toContain("DATA_HOME_SHELL_KNOB");
-    const appPage = readFileSync(join(__dirname, "../../../../app/(core)/data/DataHomePageClient.tsx"), "utf8");
-    expect(appPage).toMatch(/<DataHomeRoute[^>]*old=\{\(making\) => <UnifiedDataPage making=\{making\} \/>\}/);
-    expect(appPage).toContain("<OrganizationHub");
+  it("/data has one home: no old hub, no knob or ?home= choosing between two", () => {
+    const appPage = readFileSync(join(__dirname, "../../../../app/(core)/data/page.tsx"), "utf8");
+    expect(appPage).toContain("<DataHomeRoute />");
+    expect(route).toContain("<DataHomeShellPage making={making} />");
+    for (const src of [appPage, route]) {
+      expect(src).not.toMatch(/OrganizationHub|UnifiedDataPage|useSearchParams|useEffectiveKnob|readEffectiveKnobOnServer/);
+    }
   });
 });

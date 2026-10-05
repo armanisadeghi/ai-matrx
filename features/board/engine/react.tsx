@@ -8,6 +8,8 @@
 import { createContext, useContext, useSyncExternalStore } from "react";
 import type { BoardCameraStore, TileLife } from "./camera-store";
 import type { DetailTier, PaceTier } from "./lod";
+import type { SnapSettings } from "./snap-preference";
+import type { SnapOverlay } from "./snapping";
 
 export const BoardCameraStoreContext = createContext<BoardCameraStore | null>(null);
 
@@ -67,6 +69,17 @@ export function useActiveTool() {
 export function useLayoutGuides(): boolean {
   const store = useBoardCameraStore();
   return useSyncExternalStore(store.subscribeUi, store.getGuides, store.getGuides);
+}
+
+export function useSnapSettings(): SnapSettings {
+  const store = useBoardCameraStore();
+  return useSyncExternalStore(store.subscribeUi, store.getSnapSettings, store.getSnapSettings);
+}
+
+/** The guide lines of the drag in flight (null when none). Read in ONE leaf, never a tile. */
+export function useSnapOverlay(): SnapOverlay | null {
+  const store = useBoardCameraStore();
+  return useSyncExternalStore(store.subscribeSnapOverlay, store.getSnapOverlay, store.getSnapOverlay);
 }
 
 /** The tile whose content currently receives input natively, if any. */

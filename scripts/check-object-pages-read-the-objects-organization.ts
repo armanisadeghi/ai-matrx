@@ -386,7 +386,7 @@ function selfTest(): number {
   // GREEN-1: a list route (no dynamic segment) may read the active organization.
   write(
     "app/(core)/data/page.tsx",
-    `import { OrganizationHub } from "@/features/unified-data/hub/OrganizationHub";\nimport { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";\nconst x = useOrganizationRequired();\n`,
+    `import { DataHomeRoute } from "@/features/unified-data/home/DataHomeRoute";\nimport { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";\nconst x = useOrganizationRequired();\n`,
   );
   // GREEN-2: an object route that resolves from the object.
   write(

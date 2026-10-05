@@ -60,7 +60,7 @@ const shot = (name) => page.screenshot({ path: `${SHOTS}/${SEAT}-${name}.png`, f
 const ROW = "[data-row-id]:visible";
 const waitRows = async () => (await until("rows", async () => (await page.locator(ROW).count()) > 0, 120000)).v;
 const goto = async (query = "") => {
-  await page.goto(`${ORIGIN}/data?home=new${query}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+  await page.goto(`${ORIGIN}/data${query.replace(/^&/, "?")}`, { waitUntil: "domcontentloaded", timeout: 180000 });
   await waitRows();
   await sleep(1200);
 };

@@ -25,7 +25,6 @@ import { PeekSourceSegments } from "./PeekSourceSegments";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { FiledRef, KnowledgeHit } from "@/features/knowledge/api/knowledgeSearch";
 import { actionTarget } from "@/features/knowledge/hub/hubActions";
-import { tagScopeIdsAmong } from "@/features/knowledge/hub/tags/tagApi";
 import { embedFor } from "@/features/knowledge/hub/embeds/embedFor";
 import { HubDetailEmbed } from "@/features/knowledge/hub/embeds/HubDetailEmbed";
 import {
@@ -98,27 +97,11 @@ function LiveFiledUnder({ entity, id }: { entity: string; id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entity, id]);
   // Tags have their own section above: a tag is not also "filed under" here.
-  const scopeIds = edges.filter((e) => e.direction === "outgoing" && e.otherType === "scope").map((e) => e.otherId);
-  const scopeKey = scopeIds.sort().join("|");
-  const [tagIds, setTagIds] = useState<Set<string> | null>(scopeIds.length ? null : new Set());
-  useEffect(() => {
-    let cancelled = false;
-    if (!scopeKey) {
-      setTagIds(new Set());
-      return;
-    }
-    tagScopeIdsAmong(scopeKey.split("|"))
-      .then((ids) => !cancelled && setTagIds(ids))
-      .catch(() => !cancelled && setTagIds(new Set()));
-    return () => {
-      cancelled = true;
-    };
-  }, [scopeKey]);
-  const outgoing = edges.filter((e) => e.direction === "outgoing" && !(e.otherType === "scope" && tagIds?.has(e.otherId)));
+  const outgoing = edges.filter((e) => e.direction === "outgoing" && e.otherType !== "tag");
   const { titleFor } = useEntityTitles(
     outgoing.map((e) => ({ token: e.otherType, id: e.otherId, label: e.label })),
   );
-  if (status === "loading" || status === "idle" || tagIds === null)
+  if (status === "loading" || status === "idle")
     return <p className="text-xs text-muted-foreground">Reading where it is filed…</p>;
   if (status === "error")
     return (

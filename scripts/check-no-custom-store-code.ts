@@ -254,8 +254,6 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: where_id_opens → new records door whereIdOpens",
   "features/unified-data/record-chat/RecordScopedChat.tsx":
     "ready to move: conversation_scope_bind → RecordsClient.conversationScopeBind",
-  "features/unified-data/tableCopyEvaluation.ts":
-    "move: table_copy_evaluation_state → new records door tableCopyEvaluationState",
   "features/unified-data/test-bench/TryEverythingScreen.tsx":
     "move: work_inbox → RecordsClient.workInbox (exists); the document and cadence doors → new records doors",
   "features/unified-data/whereThisTableLives.ts":

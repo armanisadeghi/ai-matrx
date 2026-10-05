@@ -84,11 +84,6 @@ export type SeamBoard = {
   mayPress: boolean;
   mayPressDetail: string;
   seams: Seam[];
-  /**
-   * The final switch (lane FINAL-SWITCH): while it is on, every organization switched together and
-   * switches back together from Administration → Database → Final switch; no seam is pressed here.
-   */
-  finalSwitch?: { state: SeamState; at: string | null; by: string | null } | null;
 };
 
 type RawSeam = {
@@ -126,7 +121,6 @@ type RawBoard =
       may_press: boolean;
       may_press_detail: string;
       seams: RawSeam[];
-      final_switch?: { state: SeamState; data_screen?: SeamState; at: string | null; by: string | null } | null;
     }
   | { ok: false; reason: string; says: string };
 
@@ -151,12 +145,6 @@ export async function readSeamBoard(organizationId: string): Promise<SeamBoard> 
   const raw = data as RawBoard | null;
   if (!raw) throw new Error("The switches could not be read: the database answered nothing.");
   if (!raw.ok) throw new Error(raw.says);
-  // FINAL-SWITCH: the platform switches' state lives on the platform, not on this organization's
-  // presses. The read door answers them "old" from this organization's log, so the card asks the
-  // platform's one state and says it (null — a database without the final switch — changes nothing).
-  const final = raw.final_switch ?? (await readFinalSwitchStateForCard());
-  const platformState = (key: string, state: SeamState): SeamState =>
-    !final ? state : key === "final_switch" ? final.state : key === "data_screen" ? (final.data_screen ?? state) : state;
   return {
     organizationId: raw.organization_id,
     checkedAt: raw.checked_at,
@@ -169,16 +157,15 @@ export async function readSeamBoard(organizationId: string): Promise<SeamBoard> 
       newSide: s.new_side,
       perOrganization: s.per_organization,
       pressKind: s.press_kind,
-      state: s.press_kind === "platform_switch" ? platformState(s.key, s.state) : s.state,
+      state: s.state,
       flipDoes: s.flip_does,
       needsFirst: s.needs_first,
       reverseDoes: s.reverse_does,
       ready: s.readiness.ready,
       checkedAt: s.readiness.checked_at,
       checks: s.readiness.checks ?? [],
-      // While the final switch is on no organization switches on its own (the database refuses it).
-      mayFlip: s.may_flip && final?.state !== "new",
-      mayReverse: s.may_reverse && final?.state !== "new",
+      mayFlip: s.may_flip,
+      mayReverse: s.may_reverse,
       reverseChecks: s.reverse_readiness?.checks ?? [],
       reverseCarries: Array.isArray(s.reverse_readiness?.carries) ? s.reverse_readiness.carries : [],
       reverseNotCarried: Array.isArray(s.reverse_readiness?.not_carried) ? s.reverse_readiness.not_carried : [],
@@ -187,17 +174,7 @@ export async function readSeamBoard(organizationId: string): Promise<SeamBoard> 
       pressedForEveryone: s.pressed_for_everyone === true,
       lastPress: s.last_press,
     })),
-    finalSwitch: final ? { state: final.state, at: final.at, by: final.by } : null,
   };
-}
-
-/** The platform's final-switch state (lane FINAL-SWITCH); null on a database without it. */
-async function readFinalSwitchStateForCard(): Promise<
-  { state: SeamState; data_screen?: SeamState; at: string | null; by: string | null } | null
-> {
-  const { data, error } = await platformRpc().rpc("final_switch_state", {});
-  if (error || !data || typeof data !== "object") return null;
-  return data as { state: SeamState; data_screen?: SeamState; at: string | null; by: string | null };
 }
 
 /** Press one seam to `to`. The answer is the door's; a refusal carries its own sentence. */

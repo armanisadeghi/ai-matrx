@@ -49,11 +49,11 @@ const everyHandler: TableActionHost = {
   archive: noop,
   extend: () => [
     { id: "link-record", label: "Link a record…", icon: "link-2", group: "organize", run: noop },
-    ...tableMenuExtensions({ testCopy: { label: "This is a test copy", run: noop }, copyAgain: noop, rowChangeAgent: noop }),
+    ...tableMenuExtensions({ workflows: noop, rowChangeAgent: noop }),
   ],
 };
 
-/** A real host with gaps: no duplicate door, no built-on screens, not a test copy. */
+/** A real host with gaps: no duplicate door, no built-on screens, no Workflows screen. */
 const someMissing: TableActionHost = (() => {
   const { duplicate: _d, openBuiltOn: _b, ...rest } = everyHandler;
   return { ...rest, extend: () => tableMenuExtensions({ rowChangeAgent: noop }) };
@@ -112,7 +112,7 @@ describe("one table action list, every renderer", () => {
         it("the table page's own entries are in the list, and Archive table is last", () => {
           const ids = actions().map((a) => a.id);
           expect(ids).toEqual(
-            expect.arrayContaining(host === everyHandler ? ["test-copy", "copy-again", "row-change-agent"] : ["row-change-agent"]),
+            expect.arrayContaining(["workflows", "row-change-agent"]),
           );
           expect(ids[ids.length - 1]).toBe("archive");
         });
@@ -120,22 +120,17 @@ describe("one table action list, every renderer", () => {
     }
   }
 
-  // OBJECT STATE, NOT RIGHTS (coordinator ruling, wave 1 fix round): an entry that can never apply
-  // to THIS table — the copy line and "Copy this table again" on a table that is not a copy — is
-  // absent. Rights still only ever set a reason (G2, records-ui).
+  // THE COPY ENTRIES LEFT WITH COPY AGAIN (lane ONE-HOME wave 4): no seat, on any table, meets them.
   it.each([
     ["an admin", "admin"],
     ["a viewer", "viewer"],
-  ] as const)("%s on a table that is not a copy meets no copy-only entry", (_who, seat) => {
-    const ids = tableActions({ table: TABLE, rights: tableRightsAt(seat), host: someMissing }).map((a) => a.id);
-    expect(ids).not.toContain("test-copy");
-    expect(ids).not.toContain("copy-again");
-    expect(ids).toContain("row-change-agent");
-  });
-
-  it("a test copy keeps both copy entries", () => {
-    const ids = tableActions({ table: TABLE, rights: tableRightsAt("viewer"), host: everyHandler }).map((a) => a.id);
-    expect(ids).toEqual(expect.arrayContaining(["test-copy", "copy-again"]));
+  ] as const)("%s meets no copy entry on any table", (_who, seat) => {
+    for (const host of [everyHandler, someMissing]) {
+      const ids = tableActions({ table: TABLE, rights: tableRightsAt(seat), host }).map((a) => a.id);
+      expect(ids).not.toContain("test-copy");
+      expect(ids).not.toContain("copy-again");
+      expect(ids).toContain("row-change-agent");
+    }
   });
 
   it("a viewer on a table that is not a copy meets the other entries disabled, saying why", () => {

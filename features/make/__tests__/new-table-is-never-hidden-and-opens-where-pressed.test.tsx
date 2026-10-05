@@ -32,7 +32,7 @@ const source = (file: string) =>
   PLANT_REF
     ? execFileSync("git", ["show", `${PLANT_REF}:${file}`], { cwd: REPO, encoding: "utf8" })
     : readFileSync(path.join(REPO, file), "utf8");
-const HOMES = ["features/unified-data/home/DataHomeShellPage.tsx", "app/(core)/data/DataHomePageClient.tsx"];
+const HOMES = ["features/unified-data/home/DataHomeShellPage.tsx"];
 
 let ACTIVE: { organizationId: string | null; organizationState: string } = { organizationId: null, organizationState: "required" };
 
@@ -95,7 +95,7 @@ it("with one chosen, the name box opens in the dialog, in that organization", as
   expect(await open("examples")).toContain('data-asked="{&quot;create&quot;:0,&quot;examples&quot;:1}"');
 });
 
-it("neither data home hides New table behind the active organization", () => {
+it("the data home never hides New table behind the active organization", () => {
   for (const file of HOMES) {
     const src = source(file);
     expect([file, /storeOn\s*&&\s*active\.organizationId/.test(src)]).toEqual([file, false]);

@@ -480,9 +480,8 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Unified Data",
         iconName: "ToggleLeft",
         destinations: [
-          destination("/administration/database/unified-data-ramp"),
-          destination("/administration/database/final-switch"),
           destination("/administration/database/store-tables"),
+          destination("/administration/database/switch-presses"),
         ],
       },
       {

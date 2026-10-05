@@ -1,5 +1,5 @@
 {
-  "about": "check:old-system-unreachable baseline \u2014 every place that may still name an older table, door or module, with its owner and why. It only shrinks; a new place is added by hand with its owner (lane OLD-READERS-REMOVAL).",
+  "about": "check:old-system-unreachable baseline — every place that may still name an older table, door or module, with its owner and why. It only shrinks; a new place is added by hand with its owner (lane OLD-READERS-REMOVAL).",
   "entries": {
     "aidream:aidream/services/kind_records/children.py content_ir.kind_instance": "KIND-RECORDS: content_ir.kind_instance readers retire with the kind-record campaign (coordinator ruling 2026-09-27)",
     "aidream:aidream/services/kind_records/routed.py content_ir.kind_instance": "KIND-RECORDS: content_ir.kind_instance readers retire with the kind-record campaign (coordinator ruling 2026-09-27)",
@@ -22,6 +22,7 @@
     "matrx-frontend:features/marketing/seo/keyword-research/data/server.ts content_ir.kind_instance": "KIND-RECORDS: content_ir.kind_instance readers retire with the kind-record campaign (coordinator ruling 2026-09-27)",
     "matrx-frontend:features/scopes/service/scopesService.ts list_udt_dataset_templates": "CONTEXT-DAY: the dataset templates stay in workbench until the context.* tables move (PROGRESS-SWITCH-STEP-TWO B10)",
     "matrx-frontend:scripts/check-list-scope.ts content_ir.kind_instance": "KIND-RECORDS: content_ir.kind_instance readers retire with the kind-record campaign (coordinator ruling 2026-09-27)",
+    "matrx-frontend:scripts/check-no-data-v2.ts workbench.udt_datasets": "NOT-OLDER: a guard that names the older table in its banned list so it can refuse it; it reads nothing",
     "matrx-frontend:scripts/cutover-census/census.ts append_rows_to_user_table": "CUTOVER-CENSUS: the switch's census names every older door and table to prove each one gone",
     "matrx-frontend:scripts/cutover-census/census.ts udt_bulk_write": "CUTOVER-CENSUS: the census's own self-test plants an older door call in memory to prove it is seen",
     "matrx-frontend:scripts/cutover-census/census.ts workbench.udt_dataset_rows": "CUTOVER-CENSUS: the switch's census names every older door and table to prove each one gone",
