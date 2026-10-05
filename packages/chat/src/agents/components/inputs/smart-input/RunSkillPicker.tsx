@@ -46,7 +46,7 @@ import {
   type PicksCatalogItem,
 } from "./RunPicksSurface";
 import { groupCatalog, toolCategoryLabel } from "./run-tool-catalog";
-import { catalogProseText } from "@host/features/content-ir/surfaces/kind-one-line";
+import { catalogProseText } from "../../../../utils/content-ir/surfaces/kind-one-line";
 
 type AgentSkillTier = "included" | "listed" | "forbidden";
 

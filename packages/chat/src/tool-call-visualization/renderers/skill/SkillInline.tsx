@@ -30,7 +30,7 @@ import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ToolErrorCard } from "../../result-fields/ToolErrorCard";
 import { humanizeEnumValue } from "../../result-fields/shape";
 import { ToolResultCard } from "../_shared-entity/ToolResultCard";
-import { catalogProseText } from "@host/features/content-ir/surfaces/kind-one-line";
+import { catalogProseText } from "../../../utils/content-ir/surfaces/kind-one-line";
 
 const SKILL_ICON_TINT = "text-violet-600 dark:text-violet-400";
 
