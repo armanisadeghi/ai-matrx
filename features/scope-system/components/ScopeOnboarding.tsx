@@ -27,7 +27,6 @@ import {
   MapPin,
   Plus,
   LayoutTemplate,
-  Boxes,
   Check,
   Loader2,
   type LucideIcon,
@@ -43,7 +42,8 @@ import {
 } from "@/features/scopes/redux/contextItemCatalog";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
+import { useRouter } from "next/navigation";
+import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,
@@ -129,9 +129,7 @@ export function ScopeOnboarding({
 }: ScopeOnboardingProps) {
   const dispatch = useAppDispatch();
   const [addOpen, setAddOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<
-    "templates" | "individual" | null
-  >(null);
+  const router = useRouter();
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
 
   const dimensions = PRO_DIMENSIONS;
@@ -207,7 +205,7 @@ export function ScopeOnboarding({
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Or start another way
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <PathCard
             icon={Plus}
             title="Create my own"
@@ -218,25 +216,12 @@ export function ScopeOnboarding({
             icon={LayoutTemplate}
             title="Use an industry template"
             description="Pick a ready-made set for your line of work — fully editable after."
-            onClick={() => setDrawerMode("templates")}
-          />
-          <PathCard
-            icon={Boxes}
-            title="Start with one scope"
-            description="Add a single common scope, like Clients, and learn the idea as you go."
-            onClick={() => setDrawerMode("individual")}
+            onClick={() => router.push(TEMPLATE_GALLERY_HREF)}
           />
         </div>
       </div>
 
       <AddScopeModal open={addOpen} onOpenChange={setAddOpen} orgId={orgId} />
-      <TemplateGalleryDrawer
-        open={drawerMode !== null}
-        onOpenChange={(o) => !o && setDrawerMode(null)}
-        orgId={orgId}
-        initialMode={drawerMode ?? "templates"}
-        onApplied={onChanged}
-      />
     </div>
   );
 }

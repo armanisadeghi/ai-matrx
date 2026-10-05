@@ -537,15 +537,6 @@ export interface UpdateContextItemParams {
   reference_source?: Json | null;
 }
 
-/** What `apply_template` reports back (jsonb envelope from the RPC). */
-export interface ApplyTemplateResult {
-  template_id: string;
-  organization_id: string;
-  /** The created `context.scope_types` rows (jsonb array from the RPC). */
-  scope_types_created: Json;
-  context_items_count: number;
-}
-
 // ─── Resolution shapes ─────────────────────────────────────────────────
 
 export type ContextSourceKind = "scope" | "project" | "task" | "user" | "org";

@@ -8,6 +8,9 @@
  */
 
 import * as XLSX from "xlsx";
+import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 export interface ExportColumn {
   key: string;
@@ -29,13 +32,33 @@ export function cellToString(value: unknown): string {
   }
 }
 
+/**
+ * The cell as a PERSON reads it — for CSV / XLSX / TSV / markdown-table / sheet
+ * destinations. A kind (a string cell that is kind JSON, a "Response" text with
+ * a kind inside, or an object cell carrying `__kind`) becomes that kind's
+ * markdown; everything else is exactly `cellToString`. `__kind` stays in the
+ * stored data and in the explicitly raw "JSON" download (`toJSON`).
+ */
+export function cellToHumanString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return kindTextToMarkdown(value);
+  if (typeof value === "object" && valueCarriesKind(value)) {
+    const own = (value as Record<string, unknown>).__kind;
+    if (!Array.isArray(value) && typeof own === "string" && own.trim()) {
+      return kindValueToMarkdown(value as Record<string, unknown>);
+    }
+    return kindTextToMarkdown(cellToString(value));
+  }
+  return cellToString(value);
+}
+
 /** A 2-D array (header row + body) — the lingua franca for CSV / XLSX / Univer. */
 export function toMatrix(
   columns: ExportColumn[],
   rows: ExportRow[],
 ): string[][] {
   const header = columns.map((c) => c.label);
-  const body = rows.map((r) => columns.map((c) => cellToString(r[c.key])));
+  const body = rows.map((r) => columns.map((c) => cellToHumanString(r[c.key])));
   return [header, ...body];
 }
 
@@ -78,7 +101,7 @@ export function toMarkdownTable(
     (r) =>
       `| ${columns
         .map((c) =>
-          cellToString(r[c.key]).replace(/\|/g, "\\|").replace(/\r?\n/g, " "),
+          cellToHumanString(r[c.key]).replace(/\|/g, "\\|").replace(/\r?\n/g, " "),
         )
         .join(" | ")} |`,
   );

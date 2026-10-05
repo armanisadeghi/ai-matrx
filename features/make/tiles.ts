@@ -10,7 +10,7 @@
 // author-facing (who we measure the flow against) and never renders.
 //
 // Flows:
-//   table      — TablesHome `makingOnly` (blank, from an example, or a file) in the organization
+//   table      — TablesHome `makingOnly` (blank, from a template, or a file) in the organization
 //                new things are saved to.
 //   form · booking · checklist · dashboard
 //              — the shared first step "Which table, or make one?" (TableChoice), then the

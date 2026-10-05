@@ -17,6 +17,7 @@
  */
 
 import type { BulkOp } from "./types";
+import { kindCellCopyText } from "./utils/kind-cell";
 
 /** A row as the grid holds it — only what the builders actually read. */
 export type SelectableRow = {
@@ -133,12 +134,15 @@ export function selectedRowsToTsv(
   fields: readonly { field_name: string; display_name: string }[],
 ): string {
   const cell = (raw: unknown): string => {
+    // A cell holding a kind copies its markdown — the display shows a kind
+    // chip, never JSON, so the clipboard agrees (kind-cell.ts).
     const text =
-      raw === null || raw === undefined
+      kindCellCopyText(raw) ??
+      (raw === null || raw === undefined
         ? ""
         : typeof raw === "object"
           ? JSON.stringify(raw)
-          : String(raw);
+          : String(raw));
     return /[\t\r\n"]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   };
 

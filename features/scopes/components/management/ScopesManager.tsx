@@ -12,8 +12,6 @@
 
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -44,7 +42,7 @@ import { updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutatio
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
 import { ScopeOnboarding } from "@/features/scopes/components/management/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
+import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -82,15 +80,6 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const treeRead = readStatusOf({ status: treeStatus, error: treeError });
   const countsTrusted = treeRead === "ready" || (treeRead === "loading" && scopeTypes.length > 0);
   const [addScopeOpen, setAddScopeOpen] = useState(false);
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const addressSearch = useSearchParams();
-  const addressedTemplateId = addressSearch.get("template");
-  const dropAddressedTemplate = () => {
-    const next = new URLSearchParams(addressSearch.toString());
-    next.delete("template");
-    const query = next.toString();
-    replaceAddressWithoutNavigating(query ? `${window.location.pathname}?${query}` : window.location.pathname);
-  };
   const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md): the
   // default list hides removed scope types, and revealing them is ONE click
@@ -300,14 +289,11 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               Add Scope Type
             </Button>
             <span className="text-muted-foreground/50">·</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setGalleryOpen(true)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LayoutTemplate className="h-4 w-4 mr-1.5" />
-              Add from template
+            <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+              <Link href={TEMPLATE_GALLERY_HREF} data-templates-entry="">
+                <LayoutTemplate className="h-4 w-4 mr-1.5" />
+                Add from template
+              </Link>
             </Button>
             {canManage && scopeTypes.length > 1 && (
               <>
@@ -406,19 +392,6 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         open={addScopeOpen}
         onOpenChange={setAddScopeOpen}
         orgId={organization.id}
-      />
-      {/* THE LINK FINISHES ITS SENTENCE (lane HANDOVER, 2026-09-27): the Templates page's
-          "Apply to <organization>" lands here with `?template=<id>`, which nothing read, so the
-          person arrived on the empty scopes page with no template in sight. It opens the drawer on
-          that template; closing it drops the address's template. */}
-      <TemplateGalleryDrawer
-        open={galleryOpen || addressedTemplateId !== null}
-        onOpenChange={(next) => {
-          setGalleryOpen(next);
-          if (!next && addressedTemplateId !== null) dropAddressedTemplate();
-        }}
-        orgId={organization.id}
-        initialTemplateId={addressedTemplateId}
       />
       <ReorderDialog
         open={reorderTypesOpen}

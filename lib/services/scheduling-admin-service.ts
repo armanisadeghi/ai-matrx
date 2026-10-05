@@ -249,21 +249,46 @@ export async function fetchRunsAdminPage(
   state: MatrxDataTableQueryState,
   pickers: { status?: RunStatus | null; surface?: string | null } = {},
 ): Promise<{ rows: AdminRunRow[]; total: number }> {
-  // `!inner` makes the task title filterable (search + column filter) as part of the same query.
+  // A run holds only its task's id, and PostgREST cannot OR across an embedded column, so the
+  // task titles that match the search (and the Task column filter) are resolved to ids first.
+  const taskFilter = state.columnFilters.task_id;
+  const taskTerm = taskFilter?.kind === "text" ? taskFilter.value.trim() : "";
+  const searchTerm = state.search.trim();
+  const [searchTasks, filterTasks] = await Promise.all([
+    searchTerm ? taskIdsByTitle(searchTerm) : Promise.resolve([] as string[]),
+    taskTerm ? taskIdsByTitle(taskTerm) : Promise.resolve(null),
+  ]);
   let base = schedulerDb(supabase)
     .schema("scheduler").from("sch_run")
-    .select("*, task:sch_task!inner(title)", { count: "exact" });
+    .select(RUN_WITH_TASK_SELECT, { count: "exact" });
   if (pickers.status) base = base.eq("status", pickers.status);
   if (pickers.surface) base = base.eq("surface", pickers.surface);
-  const { data, error, count } = await applyServerTableState(base, state, {
-    searchColumns: ["task.title", "result_summary", "error_message"],
-    text: { task_id: "task.title" },
-    date: { created_at: "created_at", finished_at: "finished_at" },
-    sort: { started: "started_at", created_at: "created_at", finished_at: "finished_at", status: "status", surface: "surface" },
-    defaultSort: { column: "created_at", ascending: false },
-  });
+  if (filterTasks) base = base.in("task_id", filterTasks.length ? filterTasks : [NO_ROW]);
+  const { data, error, count } = await applyServerTableState(
+    base,
+    state,
+    {
+      searchColumns: ["result_summary", "error_message"],
+      date: { created_at: "created_at", finished_at: "finished_at" },
+      sort: { started: "started_at", created_at: "created_at", finished_at: "finished_at", status: "status", surface: "surface" },
+      defaultSort: { column: "created_at", ascending: false },
+    },
+    { searchOrExtra: searchTasks.length ? [`task_id.in.(${searchTasks.join(",")})`] : [] },
+  );
   if (error) throw pgErrorToError(error);
   return { rows: toAdminRunRows(data), total: count ?? 0 };
+}
+
+const NO_ROW = "00000000-0000-0000-0000-000000000000";
+
+async function taskIdsByTitle(term: string): Promise<string[]> {
+  const { data, error } = await schedulerDb(supabase)
+    .schema("scheduler").from("sch_task")
+    .select("id")
+    .ilike("title", `%${term.replace(/[%,()]/g, " ")}%`)
+    .limit(1000);
+  if (error) throw pgErrorToError(error);
+  return (data ?? []).map((r) => (r as { id: string }).id);
 }
 
 // ── Orphan leases ──────────────────────────────────────────────────────────

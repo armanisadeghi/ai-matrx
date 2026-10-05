@@ -36,6 +36,7 @@ import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { DataHomeList } from "./DataHomeList";
 import { MountWhenNear } from "./MountWhenNear";
 import type { DataHomeMaking } from "./DataHomeRoute";
+import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 
 /** `making` is the route's: the header's presses open the route's one New table dialog. */
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
@@ -88,8 +89,8 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
                   { icon: "Plus", label: "New table", onPress: () => making.ask("create") },
                   {
                     icon: "LayoutTemplate",
-                    label: "Start from an example",
-                    onPress: () => making.ask("examples"),
+                    label: "Start from a template",
+                    onPress: () => router.push(TEMPLATE_GALLERY_HREF),
                   },
                 ],
               }

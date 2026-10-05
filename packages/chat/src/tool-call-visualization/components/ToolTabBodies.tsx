@@ -19,6 +19,7 @@
  *   CopyButton     — kept for backward-compat; thin clipboard helper.
  */
 
+import { resultToHuman } from "../utils/human-copy";
 import React, { useState } from "react";
 import { Check, CircleAlert, Copy, FileCode2, Route, Settings2 } from "lucide-react";
 
@@ -45,14 +46,6 @@ import { ErrorAlchemyMenu } from "@host/components/errors/ErrorAlchemyMenu";
 
 // ─── Copy payload helpers ──────────────────────────────────────────────────
 
-function resultToHuman(result: unknown): string {
-  if (typeof result === "string") return result;
-  try {
-    return JSON.stringify(result, null, 2);
-  } catch {
-    return String(result);
-  }
-}
 
 function buildAgentInput(
   entry: ToolLifecycleEntry,

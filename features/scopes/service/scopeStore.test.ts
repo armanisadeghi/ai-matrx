@@ -121,14 +121,6 @@ describe("every scope write goes through the record store's scope doors", () => 
     expect(!refused.ok && refused.error.message).toBe("You can read Marisol Ortega, but only an editor can change her.");
     expect(publicRpc).not.toHaveBeenCalled();
   });
-
-  it("a template is applied through custom.context_template_apply", async () => {
-    customRpc.mockResolvedValue({ data: { template_id: "t1", organization_id: ORG, scope_types_created: [], context_items_count: 12, writer: "store" }, error: null });
-    const res = await writer.applyTemplate({ template_id: "t1", org_id: ORG });
-    expect(customRpc).toHaveBeenCalledWith("context_template_apply", { p_organization_id: ORG, p_template_id: "t1" });
-    expect(res.ok && res.data.context_items_count).toBe(12);
-    expect(publicRpc).not.toHaveBeenCalled();
-  });
 });
 
 describe("nothing in the app writes scopes through the legacy service", () => {

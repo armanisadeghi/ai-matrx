@@ -1,13 +1,13 @@
 // features/scopes/components/management/ScopesHubHeader.tsx
 //
-// The ONE shell header for the scopes hub level (`/scopes`, `/scopes/templates`,
+// The ONE shell header for the scopes hub level (`/scopes`,
 // `/scopes/settings`). Center is the canonical section nav (RouteModeNav) — the
 // nav IS the identity, no title text. Right carries the cross-feature quick
 // links that used to live in an in-body header bar on ScopesHub.
 
 "use client";
 
-import { Building, ListChecks, Network, Settings as SettingsIcon, Zap } from "lucide-react";
+import { Building, ListChecks, Network, Settings as SettingsIcon } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav, type RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
 import { TapTargetButton } from "@ai-matrx/tap-target";
@@ -15,7 +15,6 @@ import { KgSuggestionsNavButton } from "@/features/kg-suggestions/components/KgS
 
 const HUB_NAV_ITEMS: RouteNavItem[] = [
   { name: "Scopes", href: "/scopes", icon: Building },
-  { name: "Templates", href: "/scopes/templates", icon: Zap },
   { name: "Settings", href: "/scopes/settings", icon: SettingsIcon },
 ];
 

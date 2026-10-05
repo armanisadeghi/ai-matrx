@@ -37,8 +37,8 @@ const HOMES = ["features/unified-data/home/DataHomeShellPage.tsx"];
 let ACTIVE: { organizationId: string | null; organizationState: string } = { organizationId: null, organizationState: "required" };
 
 jest.mock("@ai-matrx/records-ui", () => ({
-  TablesHome: ({ askedBy }: { askedBy?: { create: number; examples: number } }) => (
-    <div data-builder="TablesHome" data-asked={JSON.stringify(askedBy ?? null)} />
+  TablesHome: ({ askedBy, templatesHref }: { askedBy?: { create: number }; templatesHref?: string }) => (
+    <div data-builder="TablesHome" data-asked={JSON.stringify(askedBy ?? null)} data-templates={templatesHref ?? ""} />
   ),
   RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   personActor: () => ({}),
@@ -71,7 +71,7 @@ jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ creat
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded after the mocks above
 const { NewTableDialog } = require("../MakeMount") as typeof import("../MakeMount");
 
-async function open(what: "create" | "examples") {
+async function open(what: "create") {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -91,8 +91,10 @@ it("with no active organization, New table asks where to save it — never nothi
 
 it("with one chosen, the name box opens in the dialog, in that organization", async () => {
   ACTIVE = { organizationId: "0a54df90-eab8-4d07-ab29-81a45fb41e04", organizationState: "ready" };
-  expect(await open("create")).toContain('data-asked="{&quot;create&quot;:1,&quot;examples&quot;:0}"');
-  expect(await open("examples")).toContain('data-asked="{&quot;create&quot;:0,&quot;examples&quot;:1}"');
+  const html = await open("create");
+  expect(html).toContain('data-asked="{&quot;create&quot;:1}"');
+  // "Start from a template" leads to the one gallery (lane TEMPLATES, RETIRE-1), never a second list.
+  expect(html).toContain('data-templates="/make#make-templates"');
 });
 
 it("the data home never hides New table behind the active organization", () => {

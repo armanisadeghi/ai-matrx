@@ -6,6 +6,8 @@
  * Kindless JSON stays JSON. The detector is the one in content-ir.
  */
 
+import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
+import { unfinishedKindLabel } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import {
   firstKindSlug,
   hasKindKey,
@@ -35,4 +37,20 @@ export function kindCell(raw: unknown): KindCell | null {
   return kind
     ? { state: "kind", kind, value: parsed as Record<string, unknown> }
     : null;
+}
+
+/**
+ * What a COPY of this cell puts on a person's clipboard, when the cell holds a
+ * kind: the kind's markdown (the same text the display's kind chip opens), or
+ * the one-line "did not finish" note for a kind that never completed. `null`
+ * for every other cell — the caller copies it as it always did. Display and
+ * copy read the cell through the SAME `kindCell` door, so they cannot
+ * disagree. The stored value is never touched.
+ */
+export function kindCellCopyText(raw: unknown): string | null {
+  const cell = kindCell(raw);
+  if (!cell) return null;
+  return cell.state === "kind"
+    ? kindValueToMarkdown(cell.value)
+    : unfinishedKindLabel(cell.kind);
 }

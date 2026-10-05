@@ -70,7 +70,7 @@ import {
 import { RichContent } from "@/components/rich-content/RichContent";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { KindCellPeek } from "@/features/data-tables/components/KindCellPeek";
-import { kindCell } from "@/features/data-tables/utils/kind-cell";
+import { kindCell, kindCellCopyText } from "@/features/data-tables/utils/kind-cell";
 import { formatFieldValue, getFieldFormat, resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
 import { readCellWord, type CellWord } from "@/features/data-tables/cell-word";
 import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
@@ -1239,6 +1239,8 @@ const UserTableViewer = ({
   };
 
   const cellValueForReader = (row: { data?: Record<string, unknown> | null } | null | undefined, fieldName: string): unknown =>
+      // A cell holding a kind reads as its markdown (the display shows a kind chip, never JSON).
+      kindCellCopyText(row?.data?.[fieldName]) ??
       cellTextForReader(
         row?.data?.[fieldName] ?? null,
         formatByField.get(fieldName),
@@ -2733,6 +2735,7 @@ const UserTableViewer = ({
   /** What a cell puts on the clipboard — the same text a spreadsheet would. */
   const getCellText = (address: CellAddress): string =>
       cellClipboardText(
+        kindCellCopyText(readCell(address)) ??
         cellTextForReader(readCell(address), formatByField.get(address.fieldName), relationWords, address.fieldName),
       );
 

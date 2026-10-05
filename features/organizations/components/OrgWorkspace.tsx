@@ -67,7 +67,7 @@ import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree"
 import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
+import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 import {
   CONTENT_ROLES,
   entriesByRole,
@@ -112,7 +112,6 @@ export function OrgWorkspace() {
   const [loadNonce, setLoadNonce] = React.useState(0);
 
   const [addScopeOpen, setAddScopeOpen] = React.useState(false);
-  const [galleryOpen, setGalleryOpen] = React.useState(false);
   const [contributeOpen, setContributeOpen] = React.useState(false);
   const [contributeKey, setContributeKey] = React.useState<string | null>(null);
   const [refreshKey, setRefreshKey] = React.useState(0);
@@ -595,14 +594,11 @@ export function OrgWorkspace() {
                   <Plus className="h-4 w-4 mr-1.5" />
                   Add Scope Type
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setGalleryOpen(true)}
-                  className="text-muted-foreground"
-                >
-                  <LayoutTemplate className="h-4 w-4 mr-1.5" />
-                  Templates
+                <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                  <Link href={TEMPLATE_GALLERY_HREF} data-templates-entry="">
+                    <LayoutTemplate className="h-4 w-4 mr-1.5" />
+                    Templates
+                  </Link>
                 </Button>
               </div>
             )}
@@ -700,11 +696,6 @@ export function OrgWorkspace() {
           <AddScopeModal
             open={addScopeOpen}
             onOpenChange={setAddScopeOpen}
-            orgId={organization.id}
-          />
-          <TemplateGalleryDrawer
-            open={galleryOpen}
-            onOpenChange={setGalleryOpen}
             orgId={organization.id}
           />
         </>

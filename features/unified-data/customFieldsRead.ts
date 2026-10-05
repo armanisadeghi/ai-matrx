@@ -29,7 +29,6 @@ export async function readRecordReadable(
   token: string,
   recordId: string,
 ): Promise<RecordReadableAnswer> {
-  process.stderr.write('DBGREAD '+organizationId+' '+token+' '+recordId+'\n'+new Error().stack+'\n');
   let answer: Awaited<ReturnType<typeof entityRecordReadable>>;
   try {
     answer = await entityRecordReadable(recordsDataSource(createClient()), organizationId, token, recordId);

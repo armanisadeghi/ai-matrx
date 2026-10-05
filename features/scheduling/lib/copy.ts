@@ -17,6 +17,7 @@
 // Pure — no React, no fetching. Callsites pass these as functions to
 // CopyButtons/ExportMenu so they resolve against live data at click time.
 
+import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import type { AiVariant } from "@/components/agent-copy/AiCopyMenu";
 import { humanizeRelative, humanizeTrigger } from "../utils/triggerHumanize";
@@ -146,7 +147,8 @@ export function runCsvRows(runs: SchRunRow[]): Array<Record<string, unknown>> {
     claimed_at: r.claimed_at ?? "",
     started_at: r.started_at ?? "",
     finished_at: r.finished_at ?? "",
-    result_summary: r.result_summary ?? "",
+    // A CSV / Google Sheet is a human destination: a kind result goes out as its markdown.
+    result_summary: kindTextToMarkdown(r.result_summary ?? ""),
     error_message: r.error_message ?? "",
     output_ref_kind: r.output_ref?.kind ?? "",
     output_ref_id: r.output_ref?.id ?? "",

@@ -136,6 +136,7 @@ type Readable = "checking" | "ok" | "absent" | "error";
  * The readable read is shared with a surface provider that owns `custom_fields`
  * (`features/unified-data/customFieldsRead.ts`): same key, one request.
  */
+export const recordHomeKey = (token: string, recordId: string) => `unified-data.record-home:${token}:${recordId}`;
 export { recordReadableKey };
 
 function useRecordReadable(token: string, recordId: string, organizationId: string | null) {

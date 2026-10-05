@@ -35,7 +35,6 @@ import {
   resolveSlug,
 } from "@/features/scopes/service/scopeRows";
 import type {
-  ApplyTemplateResult,
   ContextItemRow,
   CreateContextItemParams,
   CreateScopeParams,
@@ -62,8 +61,7 @@ type DoorName =
   | "context_item_write"
   | "context_item_archive"
   | "context_item_restore"
-  | "context_value_write"
-  | "context_template_apply";
+  | "context_value_write";
 
 /** The store's doors live in the `custom` schema; the generated types do not list them yet. */
 function customDoor(): SupabaseClient {
@@ -315,25 +313,6 @@ export const scopeStore = {
         return err(mapped, envelope.error?.message ?? "Could not set value");
       }
       return ok(envelope.data as SetContextValueResult);
-    } catch (e) {
-      return { ok: false, error: mapPgError(e) };
-    }
-  },
-
-  // ── TEMPLATES ────────────────────────────────────────────────────────────────────────────────
-  /** A template is a set of scope types and their fields, applied through the same doors. */
-  async applyTemplate(params: { template_id: string; org_id: string }): Promise<ScopesRpcResult<ApplyTemplateResult>> {
-    try {
-      requireUserId();
-      const res = await callDoor("context_template_apply", {
-        p_organization_id: params.org_id,
-        p_template_id: params.template_id,
-      });
-      if (isScopesRpcErr(res)) return res;
-      if (typeof res.data.template_id !== "string") {
-        return err("internal", "context_template_apply returned no result");
-      }
-      return ok(res.data as unknown as ApplyTemplateResult);
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

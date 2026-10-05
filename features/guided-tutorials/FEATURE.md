@@ -57,8 +57,9 @@ reports its own outcome; a failed email never hides a sent DM.
 
 ## Seeded
 
-`connect-your-ai` on `/bring-your-work`: Pick your AI (`byw-pick-ai`, click) → Get your key
-(`byw-get-key`) → Connect (`byw-connect`, copy) → Pick what to move (`byw-move-work`, copy).
+`connect-your-ai` on `/bring-your-work`: Pick your AI (`byw-pick-ai`, click) → Connect AI Matrx
+(`byw-connect`, click) → Try it (`byw-get-key` — the id is kept; the key step is gone, copy) →
+What do you want to do? (`byw-move-work`, copy).
 
 ## Open items
 

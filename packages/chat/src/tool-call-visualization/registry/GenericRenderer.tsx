@@ -19,6 +19,7 @@
  * All interactive elements `stopPropagation()` so they don't toggle the row.
  */
 
+import { resultToHuman } from "../utils/human-copy";
 import React from "react";
 import { Loader2, Maximize2 } from "lucide-react";
 import type { ToolRendererProps } from "../types";
@@ -58,15 +59,6 @@ function extractUrl(message: string): string | null {
   return match ? match[0] : null;
 }
 
-/** Human-readable result string for the agent/human copy payload. */
-function resultToHuman(result: unknown): string {
-  if (typeof result === "string") return result;
-  try {
-    return JSON.stringify(result, null, 2);
-  } catch {
-    return String(result);
-  }
-}
 
 /** Skip the overlay CTA for small, flat object results (e.g. note/task acks). */
 function resultWarrantsOverlay(result: unknown): boolean {

@@ -2,9 +2,9 @@
  * Surface manifest — Scopes (`matrx-user/scopes`).
  *
  * Drives the scope hub level: `/scopes` (ScopesHub — one table per scope type,
- * rows = scopes, columns = that type's context items, cells = current values),
- * `/scopes/templates` (the read-only template catalog) and `/scopes/settings`
- * (tree diagnostics + per-org jump-off). `/scopes/manage` is a redirect to
+ * rows = scopes, columns = that type's context items, cells = current values)
+ * and `/scopes/settings` (tree diagnostics + per-org jump-off). `/scopes/templates`
+ * forwards to /make's template gallery (lane TEMPLATES, RETIRE-1) and emits nothing. `/scopes/manage` is a redirect to
  * `/scopes` and emits nothing.
  *
  * VOCABULARY — Scope is NOT Context (see `features/scopes/FEATURE.md`):
@@ -26,7 +26,6 @@
  *
  * Runtime emitters (all via `createScopesScope`):
  *   - `features/scopes/components/management/ScopesHub.tsx`            (view "hub")
- *   - `features/scopes/components/management/TemplatesGalleryPanel.tsx` (view "templates")
  *   - `features/scopes/components/management/ScopesSettingsPanel.tsx`   (view "settings")
  *
  * ---------------------------------------------------------------------------
@@ -126,13 +125,6 @@ const groups: SurfaceValueGroup[] = [
     sortOrder: 300,
     description:
       "A read-only reflection of the user's global working context (appContextSlice). Shown so an agent knows what the user is currently scoped to; this surface never writes it.",
-  },
-  {
-    key: "templates",
-    label: "Templates",
-    sortOrder: 400,
-    description:
-      "The read-only quick-start catalog: bundles of scope types + context items for a known industry. Emitted on /scopes/templates.",
   },
   {
     key: "navigation",
@@ -354,60 +346,12 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "active_context",
   },
 
-  // ── Templates ─────────────────────────────────────────────────────────
-  {
-    name: "template_count",
-    label: "Template count",
-    description:
-      "How many scope templates are in the read-only quick-start catalog. Emitted on /scopes/templates only; absent on the hub and settings views.",
-    valueType: "number",
-    alwaysAvailable: false,
-    typicalCharCount: 3,
-    sortOrder: 300,
-    group: "templates",
-  },
-  {
-    name: "templates_summary",
-    label: "Templates",
-    description:
-      "One entry per catalog template: { id, key, name, description, category, scope_type_count, context_item_count }. A template is a starter bundle of scope types + context items, never part of any active context. Emitted on /scopes/templates only.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 2000,
-    autoContext: false,
-    sortOrder: 310,
-    group: "templates",
-  },
-  {
-    name: "template_categories",
-    label: "Template categories",
-    description:
-      "Distinct category names the templates gallery groups by (e.g. marketing, legal, general). Emitted on /scopes/templates only; empty array when the catalog is empty.",
-    valueType: "array",
-    alwaysAvailable: false,
-    typicalCharCount: 120,
-    sortOrder: 320,
-    group: "templates",
-  },
-  {
-    name: "template_target_organization_id",
-    label: "Template target organization",
-    description:
-      "Id of the organization the gallery's 'Apply to…' links point at (the globally-active org, else the first org). Emitted on /scopes/templates; absent when the user has no organizations.",
-    valueType: "string",
-    alwaysAvailable: false,
-    typicalCharCount: 36,
-    autoContext: false,
-    sortOrder: 330,
-    group: "templates",
-  },
-
   // ── Navigation & load state ───────────────────────────────────────────
   {
     name: "current_view",
     label: "Current view",
     description:
-      '"hub" on /scopes, "templates" on /scopes/templates, "settings" on /scopes/settings. Always present — every emitter knows which route it is.',
+      '"hub" on /scopes, "settings" on /scopes/settings. Always present — every emitter knows which route it is.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 9,

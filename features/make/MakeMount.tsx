@@ -7,7 +7,7 @@
 //     (`recordsUiHostFor` + `useRecordsUiPorts`, the ports every table surface binds). The store
 //     is never off (CHAIR-ALWAYS-ON, 2026-10-03), so nothing is asked before it mounts.
 //   · `NewTableDialog` — THE one place a new table's name box opens (G5 b): both data homes' header
-//     "New table" / "Start from an example" and /make's Table tile. It says where the table will be
+//     "New table" and /make's Table tile ("Start from a template" leads to /make's one gallery). It says where the table will be
 //     saved (the active organization, changeable in place) and, with none chosen, asks for one
 //     right there — the control is never hidden for want of an organization, and none is picked
 //     for the person. Guard: __tests__/new-table-is-never-hidden-and-opens-where-pressed.test.tsx.
@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Building2, Database } from "lucide-react";
 import { RecordsMount, TablesHome, personActor } from "@ai-matrx/records-ui";
+import { TEMPLATE_GALLERY_HREF } from "./gallery/galleryHref";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -78,9 +79,9 @@ export function SavesTo() {
 /**
  * The ways to make a table — blank, from an example, from a file — in the organization new things
  * are saved to; with none chosen, the organization question in its place. `what` opens the name box
- * or the examples at once; absent, the person picks from the three.
+ * at once; absent, the person picks: blank, a template from the gallery, or a file.
  */
-export function NewTableBody({ what }: { what?: "create" | "examples" | undefined }) {
+export function NewTableBody({ what }: { what?: "create" | undefined }) {
   const router = useRouter();
   // org-filter: write-target a new table is made in the organization new things are saved to
   const active = useOrganizationRequired();
@@ -88,11 +89,12 @@ export function NewTableBody({ what }: { what?: "create" | "examples" | undefine
     const state = active.organizationState === "ready" ? "required" : active.organizationState;
     return <OrganizationContextNotice state={state} what="New tables" description={SAVED_WHERE_CHOSEN} compact />;
   }
-  const asked = what ? { create: what === "create" ? 1 : 0, examples: what === "examples" ? 1 : 0 } : undefined;
+  const asked = what ? { create: 1 } : undefined;
   return (
     <MakeMount organizationId={active.organizationId}>
       <TablesHome
         makingOnly
+        templatesHref={TEMPLATE_GALLERY_HREF}
         {...(asked ? { askedBy: asked } : {})}
         onOpenTable={(tableId: string, dashboardId?: string | null) =>
           router.push(dashboardId ? `/data/${tableId}?dashboard=${dashboardId}` : `/data/${tableId}`)
@@ -102,14 +104,14 @@ export function NewTableBody({ what }: { what?: "create" | "examples" | undefine
   );
 }
 
-/** The data homes' New table / Start from an example, opened where it was pressed. */
-export function NewTableDialog({ what, onClose }: { what: "create" | "examples" | null; onClose: () => void }) {
+/** The data homes' New table, opened where it was pressed. */
+export function NewTableDialog({ what, onClose }: { what: "create" | null; onClose: () => void }) {
   return (
     <Dialog open={what !== null} onOpenChange={(next) => (next ? undefined : onClose())}>
       <DialogContent className="flex max-h-[90dvh] w-[min(44rem,calc(100vw-2rem))] max-w-none flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <DialogTitle className="text-base font-medium">
-            {what === "examples" ? "Start from an example" : "New table"}
+            New table
           </DialogTitle>
           <div className="flex flex-wrap items-center gap-1">
             {/* An outside Postgres table as a Synced table (lane VISION-REACH wave 3). */}

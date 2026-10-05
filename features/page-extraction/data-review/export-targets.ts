@@ -25,7 +25,7 @@ import {
   saveSnapshot,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure } from "@/features/data-tables/types";
-import { cellToString, type ExportColumn, type ExportRow } from "./export";
+import { cellToHumanString, cellToString, type ExportColumn, type ExportRow } from "./export";
 
 export interface PushResult {
   ok: boolean;
@@ -63,7 +63,7 @@ function rowsToUniverSnapshot(
       } else if (typeof raw === "boolean") {
         out[ci] = { v: raw, t: CellValueType.BOOLEAN };
       } else {
-        out[ci] = { v: cellToString(raw), t: CellValueType.STRING };
+        out[ci] = { v: cellToHumanString(raw), t: CellValueType.STRING };
       }
     });
     if (Object.keys(out).length > 0) cellData[ri + 1] = out;

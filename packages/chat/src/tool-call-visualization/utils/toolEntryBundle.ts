@@ -5,6 +5,7 @@
  */
 
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
+import { bundleToHuman, kindMarkdownOf } from "./human-copy";
 
 export interface ToolEntryToolMeta {
   toolName: string;
@@ -66,7 +67,7 @@ export function buildToolEntryBundle(entry: ToolLifecycleEntry): ToolEntryBundle
 
 /** Human-readable dump of one entry (for Copy). */
 export function toolEntryBundleToHuman(entry: ToolLifecycleEntry): string {
-  return JSON.stringify(buildToolEntryBundle(entry), null, 2);
+  return bundleToHuman(buildToolEntryBundle(entry));
 }
 
 /** Multi-entry summary for "copy all tools in this list". */
@@ -96,6 +97,8 @@ export function toolEntriesSummaryToHuman(entries: ToolLifecycleEntry[]): string
     "",
     "---",
     "",
-    JSON.stringify(summary, null, 2),
+    summary.tools.some((b) => kindMarkdownOf(b.result) !== null)
+      ? summary.tools.map(bundleToHuman).join("\n\n---\n\n")
+      : JSON.stringify(summary, null, 2),
   ].join("\n");
 }

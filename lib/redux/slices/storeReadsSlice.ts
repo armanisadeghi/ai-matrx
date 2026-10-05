@@ -187,7 +187,6 @@ export const ensureStoreRead =
       return next;
     }
     const entry = selectStoreRead(getState() as StateWithStoreReads, key);
-    if (key.includes('record-readable')) process.stderr.write('DBGENS '+key+' '+JSON.stringify(entry)+' force='+options.force+'\n');
     if (!options.force && entry && entry.status === "ready") return Promise.resolve(entry.data as T);
     return run();
   };

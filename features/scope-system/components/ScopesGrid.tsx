@@ -12,7 +12,7 @@ import {
 import { ScopeTypeCard } from "./ScopeTypeCard";
 import { AddScopeTypeCard } from "./AddScopeTypeCard";
 import { AddScopeModal } from "./AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
+import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
 import {
   selectScopeTypesByOrg,
   selectScopeTypesLoading,
@@ -37,7 +37,6 @@ export function ScopesGrid({
   const allItems = useAppSelector(selectAllContextItems);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [galleryOpen, setGalleryOpen] = useState(false);
 
   useEffect(() => {
     dispatch(ensureScopeTree());
@@ -94,7 +93,7 @@ export function ScopesGrid({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AddScopeTypeCard
               onAddBlank={() => setModalOpen(true)}
-              onPickTemplate={() => setGalleryOpen(true)}
+              onPickTemplate={() => router.push(TEMPLATE_GALLERY_HREF)}
             />
           </div>
         </Card>
@@ -113,7 +112,7 @@ export function ScopesGrid({
           ))}
           <AddScopeTypeCard
             onAddBlank={() => setModalOpen(true)}
-            onPickTemplate={() => setGalleryOpen(true)}
+            onPickTemplate={() => router.push(TEMPLATE_GALLERY_HREF)}
           />
         </div>
       )}
@@ -121,11 +120,6 @@ export function ScopesGrid({
       <AddScopeModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        orgId={orgId}
-      />
-      <TemplateGalleryDrawer
-        open={galleryOpen}
-        onOpenChange={setGalleryOpen}
         orgId={orgId}
       />
     </div>

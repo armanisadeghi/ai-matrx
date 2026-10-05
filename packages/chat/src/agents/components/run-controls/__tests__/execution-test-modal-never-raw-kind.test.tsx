@@ -69,3 +69,17 @@ it("inline mode draws a kind answer as its kind", async () => {
   expect(host.textContent).not.toContain("__kind");
   expect(host.querySelector('[data-testid="answer-value-view"]')).not.toBeNull();
 });
+
+it("direct mode's plain Copy puts the kind's markdown on the clipboard, never raw JSON", async () => {
+  const writeText = jest.fn(async () => {});
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  const host = await mountAndRun(<DirectTestMode {...props} />);
+  const copy = [...host.querySelectorAll("button")].find((b) => b.textContent === "Copy");
+  await act(async () => {
+    copy!.click();
+  });
+  expect(writeText).toHaveBeenCalledTimes(1);
+  const text = (writeText.mock.calls[0] as unknown as [string])[0];
+  expect(text).not.toContain("__kind");
+  expect(text).toContain("Cell biology");
+});
