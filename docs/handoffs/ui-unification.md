@@ -75,6 +75,11 @@
 - Kit sample = real KitHub + 4 listed changes. Flashcards "Also made from" = LineageArtifactList on ItemRow. MetricNavigation: one sideways row on phones.
 - OPEN: owner decision on rebuilding the table playground (design-system dev app, port 3026) controls onto the shared controls + the 12 flaws reported in chat 2026-10-04 (grouping per-page only, total misaligned, etc.). Hand-built lane tabs/filters/Education pill still carry `matrx-glyph-trim` by hand until rebuilt on controls. Research topics: saved-view "+" scrolls out of the strip at narrow panes. Education header route-mode nav off-centre at 768.
 
+## 2026-10-05 — LAW + build-out (in flight)
+- LAW: common-docs/policies/one-ui-system.md ("grow the system, never an exception"); lines in matrx-frontend + aidream CLAUDE.md.
+- Owner feedback: double bottom padding on table-footer pages; feature cards need more space above/below (top too busy); kit-card coloured chips all different sizes — annihilate; system page internal page-top (two lines + back chevron) busy; builder proposals OK.
+- Lanes running: page rhythm (spacing scale + clearance, no double padding); canonical chip + sweep; page-top templates (one-line internal) + rollout; table playground rebuild on controls + 12 flaws (APPROVED); app-wide rollout coordinator (doors → controls, codemods, census leftovers).
+
 ## OPEN / NEXT
 - **The rollout, after the owner finalises the pages above:**
   - DONE 2026-10-04: the system is in `@ai-matrx/design-system/controls`, locked in `matrx-tap-lock`; `ControlScope` stands in for the tap tokens' 28/34 flip until it lands app-wide;
