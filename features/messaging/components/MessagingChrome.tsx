@@ -3,12 +3,13 @@
 /**
  * The app chrome `@ai-matrx/messaging` wraps around its own bubbles and rows.
  *
- * Two tiny things, both of them ours and neither of them the package's:
+ * Three small things, all of them ours and none of them the package's:
  *
  *  - `data-message-id` / `data-conversation-id`, so the pane-level v3 context
  *    menu can tell WHICH message or row was right-clicked. The menu resolves
  *    its target from the DOM on open (`resolveContextOnOpen`), which is how one
  *    menu serves a whole list instead of one menu per row.
+ *  - the message's "Linked" section (`MessageLinks`), only when it has a link;
  *  - the app's fence renderer, so a ```matrx reference in a DM renders exactly
  *    as it does in chat, notes and every other surface — through the ONE kind
  *    registry, never a second treatment of one shape.
@@ -22,6 +23,8 @@ import type {
   MessageWrapperProps,
 } from "@ai-matrx/messaging/react";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
+import { messageSenderName } from "@/features/messaging/lib/messaging-menu-actions";
+import { MessageLinks } from "./MessageLinks";
 
 export function MessagingMessageChrome({
   message,
@@ -30,6 +33,8 @@ export function MessagingMessageChrome({
   return (
     <div data-message-id={message.id} className="contents">
       {children}
+      {/* What this message is linked to (W1.4's "Link a record…"), drawn only when it has a link. */}
+      <MessageLinks messageId={message.id} title={messageSenderName(message)} />
     </div>
   );
 }
