@@ -5,7 +5,7 @@
 // Every line here is a fact read off real results; nothing advises.
 
 import { AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import {
   formatDate,
@@ -80,6 +80,10 @@ export function BrandSearchCard({
   domain: string;
 }) {
   const capture = readCapture(metadata);
+  // An all-clear is a claim about results we received; with none it is silence.
+  const received = capture
+    ? capture.runs.some((run) => run.status === "ok")
+    : false;
 
   const copy = webCopy({
     kind: "web-site-brand-search",
@@ -105,7 +109,9 @@ export function BrandSearchCard({
             signal.key,
             signal.statement,
           ])
-        : [["Status", "No issues in the stored brand searches"]]
+        : received
+          ? [["Status", "No issues in the stored brand searches"]]
+          : [["Status", "No search results were received"]]
       : [["Status", "Not searched yet"]],
     attributes: { signals: capture?.signals.length ?? 0 },
   });
@@ -151,11 +157,15 @@ export function BrandSearchCard({
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : received ? (
             <div className="flex items-center gap-2.5 px-3 py-3 text-sm text-muted-foreground">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               No issues in these searches.
             </div>
+          ) : (
+            <p className="px-3 py-3 text-sm text-muted-foreground">
+              No search results were received.
+            </p>
           )}
 
           <div className="overflow-x-auto px-3 py-2">
@@ -193,6 +203,7 @@ export function BrandSearchCard({
                       title={run.error ?? undefined}
                     >
                       {ownPosition(run, capture.own_domain)}
+                      {run.error ? <ErrorAlchemyMenu error={run.error} /> : null}
                     </td>
                   </tr>
                 ))}
