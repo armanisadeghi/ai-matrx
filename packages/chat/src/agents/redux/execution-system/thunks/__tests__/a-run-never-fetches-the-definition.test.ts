@@ -54,6 +54,7 @@ import {
 import { selectAgentRunTier } from "../../../agent-definition/selectors";
 import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";
 import { createManualInstance } from "../create-instance.thunk";
+import type { ChatDispatch } from "../../../../../store/root-state";
 
 const AGENT_ID = "harbor-front-desk-helper";
 const CONVERSATION_ID = "run-tier-conversation";
@@ -85,6 +86,11 @@ function makeStore() {
       instanceModelOverrides: instanceModelOverridesReducer,
     },
   });
+}
+
+/** The thunks are typed against the whole chat store; this suite mounts two slices. */
+function dispatchOf(store: ReturnType<typeof makeStore>): ChatDispatch {
+  return store.dispatch as unknown as ChatDispatch;
 }
 
 function rpcNames(): string[] {
@@ -143,7 +149,7 @@ describe("a run never fetches the definition", () => {
 
   it("the pre-P24 'minimal' name is the run tier too", async () => {
     const store = makeStore();
-    await store.dispatch(fetchAgentExecutionMinimal(AGENT_ID)).unwrap();
+    await dispatchOf(store)(fetchAgentExecutionMinimal(AGENT_ID)).unwrap();
 
     expect(rpcNames()).toEqual(["agx_get_run_tier"]);
     const tier = selectAgentRunTier(store.getState() as never, AGENT_ID);
@@ -158,13 +164,12 @@ describe("a run never fetches the definition", () => {
 
   it("a ready run tier is not refetched; a forced refresh refetches it", async () => {
     const store = makeStore();
-    await store.dispatch(fetchAgentRunTier(AGENT_ID)).unwrap();
-    await store.dispatch(fetchAgentRunTier(AGENT_ID)).unwrap();
+    const dispatch = dispatchOf(store);
+    await dispatch(fetchAgentRunTier(AGENT_ID)).unwrap();
+    await dispatch(fetchAgentRunTier(AGENT_ID)).unwrap();
     expect(rpcNames()).toEqual(["agx_get_run_tier"]);
 
-    await store
-      .dispatch(fetchAgentRunTier({ agentId: AGENT_ID, force: true }))
-      .unwrap();
+    await dispatch(fetchAgentRunTier({ agentId: AGENT_ID, force: true })).unwrap();
     expect(rpcNames()).toEqual(["agx_get_run_tier", "agx_get_run_tier"]);
   });
 });
