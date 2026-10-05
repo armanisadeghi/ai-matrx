@@ -103,10 +103,8 @@ const EXPECTED_CHECKS = [
   // exactly ONE composition parent. A second parent (context_item) would OR an
   // org-wide id set back into the read lane and undo the membrane.
   "values_registered_as_component_of_scope",
-  // The live policies are the GENERATED component set, resolving the parent id
-  // set once per query (THE COMPONENT-ACCESS PRECEDENT, 2026-08-08) — not a
-  // hand-written twin and not the retired organization-membership predicate.
-  "values_policies_are_generated_component_lane",
+  // "values_policies_are_generated_component_lane" retired 2026-10-05 (FTS-1g): the old
+  // value table takes no client access and a value is a key of its scope's Record.
   // anon holds nothing on the table. It held SELECT+INSERT+UPDATE+DELETE until
   // 2026-09-11, with only RLS between an anonymous caller and customer data.
   "no_anon_grants_on_values",
