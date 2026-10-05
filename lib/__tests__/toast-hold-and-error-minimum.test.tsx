@@ -24,7 +24,7 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("next/navigation", () => ({ usePathname: () => "/notes" }));
 
 import { Toaster } from "@/components/ui/sonner";
-import { toast, dismissAllTrackedToasts, MIN_ERROR_TOAST_MS } from "@/lib/toast";
+import { toast, dismissAllTrackedToasts, MIN_ACTION_TOAST_MS, MIN_ERROR_TOAST_MS } from "@/lib/toast";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -79,6 +79,19 @@ it("an error toast stays at least five seconds, whatever duration the caller ask
   await pass(MIN_ERROR_TOAST_MS - 2000 + 700);
   expect(toastText()).not.toContain("Could not save the note");
 }, 15_000);
+
+it("a toast with an action (Undo) stays long enough to press it", async () => {
+  // Live 2026-10-05: the deck Archive toast's Undo left after sonner's 4 s.
+  expect(MIN_ACTION_TOAST_MS).toBeGreaterThanOrEqual(6000);
+  await act(async () => {
+    toast.success("Archived the deck.", { action: { label: "Undo", onClick: () => {} } });
+  });
+  await settle();
+  await pass(5000);
+  expect(toastText()).toContain("Archived the deck.");
+  await pass(MIN_ACTION_TOAST_MS - 5000 + 700);
+  expect(toastText()).not.toContain("Archived the deck.");
+}, 20_000);
 
 it("a hovered toast never closes, and leaving it restarts its full lifetime", async () => {
   await act(async () => {

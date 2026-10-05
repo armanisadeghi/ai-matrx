@@ -120,6 +120,14 @@ const DEFAULT_TOAST_MS = 4000;
  */
 export const MIN_ERROR_TOAST_MS = 5000;
 
+/**
+ * 🚨 A TOAST WITH AN ACTION STAYS LONG ENOUGH TO PRESS IT (2026-10-05: the
+ * deck Archive toast's Undo left after sonner's 4 s default, on a page the
+ * person had just been navigated away from). Any toast carrying an `action`
+ * (Undo, Open, Retry) never leaves sooner than this, whatever was asked.
+ */
+export const MIN_ACTION_TOAST_MS = 8000;
+
 /** A person reading a toast is not a stale toast: re-check this often. */
 const HOVER_DEFER_MS = 800;
 
@@ -455,7 +463,10 @@ function track(
       : typeof requested === "number" && Number.isFinite(requested)
         ? requested
         : DEFAULT_TOAST_MS;
-  const lifetimeMs = minimumMs > 0 ? Math.max(asked, minimumMs) : asked;
+  // Error/warning toasts carry their own floor (and the Alchemy menu rides the
+  // `action` slot there, which is not a press the person must make in time).
+  const floor = minimumMs > 0 ? minimumMs : options?.action ? MIN_ACTION_TOAST_MS : 0;
+  const lifetimeMs = floor > 0 ? Math.max(asked, floor) : asked;
 
   // "Sonner, don't you time this" — not "forever".
   const passthrough: RecordToastOptions = { ...options, duration: Infinity };
