@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { Copy, ChevronDown, FileCode2, FileText, Code, Brain } from "lucide-react";
 import { copyRichContent, copyToClipboard, type CopyFlavor } from "@/components/matrx/buttons/markdown-copy-utils";
 
+import { Tile } from "@ai-matrx/design-system/controls";
 interface CopyDropdownButtonProps {
   content: string;
   onCopySuccess?: () => void;
@@ -128,43 +129,13 @@ export function CopyDropdownButton({
               style={menuStyle}
               className="z-[9999] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg"
             >
-              <button
-                onClick={() => copyAs("default")}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors first:rounded-t-lg"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copy
-              </button>
-              <button
-                onClick={() => copyAs("markdown")}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
-              >
-                <FileCode2 className="h-4 w-4 mr-2" />
-                Copy markdown
-              </button>
-              <button
-                onClick={() => copyAs("text")}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Copy text
-              </button>
+              <Tile variant="quiet" icon={<Copy />} title="Copy" onClick={() => copyAs("default")} />
+              <Tile variant="quiet" icon={<FileCode2 />} title="Copy markdown" onClick={() => copyAs("markdown")} />
+              <Tile variant="quiet" icon={<FileText />} title="Copy text" onClick={() => copyAs("text")} />
               {onShowHtmlPreview && (
-                <button
-                  onClick={handleHtmlPreview}
-                  className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600"
-                >
-                  <Code className="h-4 w-4 mr-2 text-green-600" />
-                  HTML
-                </button>
+                <Tile variant="quiet" icon={<Code />} title="HTML" onClick={handleHtmlPreview} />
               )}
-              <button
-                onClick={handleCopyWithThinking}
-                className="flex items-center w-full px-3 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors border-t border-zinc-100 dark:border-zinc-600 last:rounded-b-lg"
-              >
-                <Brain className="h-4 w-4 mr-2 text-purple-600" />
-                With Thinking
-              </button>
+              <Tile variant="quiet" icon={<Brain />} title="With Thinking" onClick={handleCopyWithThinking} />
             </div>
           </>,
           document.body,

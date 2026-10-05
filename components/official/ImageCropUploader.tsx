@@ -338,13 +338,7 @@ function CropStep({
         className="bg-card border-t border-border"
       />
       <div className="flex items-center justify-between gap-2 p-3 bg-card border-t border-border">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <X className="h-3.5 w-3.5" /> Cancel
-        </button>
+        <Button variant="quiet" icon={<X />} onClick={onCancel}>Cancel</Button>
         <Button
           variant="primary"
           type="button"
@@ -401,21 +395,8 @@ function PreviewStrip({
       </div>
       {!disabled && (
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={onChangePending}
-            className="h-8 px-2.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            Change
-          </button>
-          <button
-            type="button"
-            onClick={onClear}
-            title="Remove image"
-            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <Button variant="quiet" onClick={onChangePending}>Change</Button>
+          <Button variant="quiet" icon={<Trash2 />} aria-label="Remove image" onClick={onClear} title="Remove image" />
         </div>
       )}
     </div>
@@ -541,13 +522,7 @@ export function ImageCropUploader({
             disabled={disabled}
           />
           {currentUrl && (
-            <button
-              type="button"
-              onClick={() => setShowPicker(false)}
-              className="text-xs text-muted-foreground hover:text-foreground self-end"
-            >
-              Cancel
-            </button>
+            <Button variant="quiet" onClick={() => setShowPicker(false)} className="self-end">Cancel</Button>
           )}
         </>
       )}

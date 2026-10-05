@@ -2,18 +2,12 @@
 
 import { useId } from "react";
 import { SettingsRow } from "../SettingsRow";
-import { cn } from "@/lib/utils";
+import { Tabs } from "@ai-matrx/design-system/controls";
 import type {
   SettingsCommonProps,
   SettingsOption,
   SettingsControlSize,
 } from "../types";
-
-const sizeClass: Record<SettingsControlSize, string> = {
-  sm: "h-7 max-lg:h-11 pointer-coarse:h-11 text-xs",
-  md: "h-8 max-lg:h-11 pointer-coarse:h-11 text-sm",
-  lg: "h-10 text-base",
-};
 
 export type SettingsSegmentedProps<T extends string = string> =
   SettingsCommonProps & {
@@ -31,9 +25,10 @@ export function SettingsSegmented<T extends string = string>({
   value,
   onValueChange,
   options,
-  size = "md",
   fullWidth,
   last,
+  // `size` is retired: the control has one geometry.
+  size: _size,
   ...rowProps
 }: SettingsSegmentedProps<T>) {
   const generatedId = useId().replace(/:/g, "");
@@ -47,42 +42,24 @@ export function SettingsSegmented<T extends string = string>({
       controlLayout="wide"
       last={last}
     >
-      <div
-        role="tablist"
-        className={cn(
-          "flex max-w-full flex-wrap rounded-md bg-muted p-0.5",
-          // Labels never shatter mid-word; when the options genuinely don't
-          // fit (many options at mobile widths) the control scrolls instead.
-          fullWidth && "w-full flex-nowrap overflow-x-auto",
-        )}
-      >
-        {options.map((opt) => {
-          const isActive = opt.value === value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              disabled={opt.disabled || rowProps.disabled}
-              onClick={() => onValueChange(opt.value)}
-              className={cn(
-                "relative flex items-center justify-center rounded-[0.2rem] px-3 transition-all gap-1.5",
-                sizeClass[size],
-                fullWidth && "min-w-max shrink-0 flex-1",
-                isActive
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50",
-                (opt.disabled || rowProps.disabled) &&
-                  "opacity-50 cursor-not-allowed",
-              )}
-            >
-              {opt.icon && <opt.icon className="h-3.5 w-3.5" />}
-              <span className="whitespace-nowrap">{opt.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      <Tabs
+        variant="capsule"
+        aria-label={rowProps.label}
+        value={value}
+        onValueChange={onValueChange}
+        data={options.map((opt) => ({
+          value: opt.value,
+          label: opt.icon ? (
+            <>
+              <opt.icon />
+              {opt.label}
+            </>
+          ) : (
+            opt.label
+          ),
+          disabled: opt.disabled || rowProps.disabled,
+        }))}
+      />
     </SettingsRow>
   );
 }

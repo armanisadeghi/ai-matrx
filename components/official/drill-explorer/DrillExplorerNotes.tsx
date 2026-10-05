@@ -22,6 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system
 
 import { InfoHint } from "@/components/official/InfoHint";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export interface DrillNoteChip {
   key: string;
   label: string;
@@ -61,9 +62,7 @@ export function DrillExplorerNotes({ chips, notes }: { chips: readonly DrillNote
           <span className="truncate">{c.label}</span>
           {c.tip ? <InfoHint text={tipWords(c.tip)} label={c.label} /> : null}
           {c.onClear ? (
-            <button type="button" aria-label={c.onClear.label} title={c.onClear.label} data-drill-explorer-carried-drop className="rounded hover:bg-foreground/10" onClick={c.onClear.run}>
-              <X className="h-3 w-3" />
-            </button>
+            <Button variant="quiet" icon={<X />} aria-label={c.onClear.label} title={c.onClear.label} data-drill-explorer-carried-drop onClick={c.onClear.run} />
           ) : null}
         </span>
       ))}

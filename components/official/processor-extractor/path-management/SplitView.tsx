@@ -5,6 +5,7 @@ import { convertWildcardPathToConcreteIndexPath } from "@/components/official/pr
 import React, { useMemo, useState } from "react";
 import { PathArray } from "../types";
 
+import { Button } from "@ai-matrx/design-system/controls";
 interface SplitViewProps {
   originalData: unknown;
   wildcardPath: string;
@@ -108,12 +109,7 @@ const SplitView: React.FC<SplitViewProps> = ({
       {hasMore && (
         <div className="text-center text-gray-500 my-2">
           Showing {showItemCount} of {totalItemCount} items. 
-          <button 
-            className="text-blue-500 ml-2 hover:underline"
-            onClick={handleShowMore}
-          >
-            Show more
-          </button>
+          <Button variant="quiet" onClick={handleShowMore} className="ml-2">Show more</Button>
         </div>
       )}
     </div>

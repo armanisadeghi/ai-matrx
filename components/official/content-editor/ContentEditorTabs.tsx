@@ -13,6 +13,7 @@ import {
 import { ContentEditor, MODE_CONFIGS } from "./ContentEditor";
 import type { EditorMode, ContentEditorProps } from "./types";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export interface ContentEditorTab {
   id: string;
   title: string;
@@ -223,14 +224,7 @@ export function ContentEditorTabs({
           })}
 
           {allowAddTab && onAddTab && (
-            <button
-              type="button"
-              onClick={handleAddTab}
-              className="flex-none flex items-center justify-center px-2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 transition-colors"
-              title="New tab"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" icon={<Plus />} aria-label="New tab" onClick={handleAddTab} title="New tab" />
           )}
         </div>
 
@@ -321,14 +315,7 @@ export function ContentEditorTabs({
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-white dark:to-zinc-900"
               />
-              <button
-                type="button"
-                onClick={() => setIsCollapsed(false)}
-                className="absolute left-1/2 bottom-1 -translate-x-1/2 flex items-center justify-center h-6 w-6 rounded-full bg-white dark:bg-zinc-800 border border-border shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors"
-                title="Expand"
-              >
-                <ChevronDown className="h-3.5 w-3.5 text-zinc-600 dark:text-zinc-300" />
-              </button>
+              <Button variant="quiet" icon={<ChevronDown />} aria-label="Expand" onClick={() => setIsCollapsed(false)} title="Expand" className="absolute left-1/2 bottom-1" />
             </>
           )}
         </div>

@@ -1,5 +1,6 @@
 // New usages: a label's one-sentence definition belongs in `components/official/InfoHint.tsx` (reachable by mouse, keyboard and touch); this icon opens on mouse hover only.
 import React, { useState, useEffect, useRef } from 'react';
+import { Button } from "@ai-matrx/design-system/controls";
 import { InfoIcon, HelpCircleIcon, CopyIcon, CheckIcon, CircleDot } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -169,17 +170,13 @@ const HelpIcon: React.FC<HelpIconProps> = ({
                 </h3>
               )}
               {text && (
-                <button 
-                  onClick={handleCopy} 
-                  className="ml-auto p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                  title="Copy to clipboard"
-                >
-                  {copied ? (
-                    <CheckIcon className="h-3.5 w-3.5 text-green-500" />
-                  ) : (
-                    <CopyIcon className="h-3.5 w-3.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
-                  )}
-                </button>
+                <Button
+                  variant="quiet"
+                  className="ml-auto"
+                  icon={copied ? <CheckIcon /> : <CopyIcon />}
+                  aria-label="Copy to clipboard"
+                  onClick={handleCopy}
+                />
               )}
             </div>
             
@@ -198,13 +195,9 @@ const HelpIcon: React.FC<HelpIconProps> = ({
             
             {/* AI Assistance button */}
             {onAiAssistance && (
-              <button
-                onClick={handleAiClick}
-                className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white text-sm font-medium rounded-md transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <CircleDot className="h-4 w-4" />
+              <Button variant="primary" icon={<CircleDot />} className="mt-3 w-full" onClick={handleAiClick}>
                 Get Help From Matrx AI
-              </button>
+              </Button>
             )}
           </div>
           

@@ -31,6 +31,7 @@ import {
     filterByFolder
 } from "./utils";
 
+import { Button } from "@ai-matrx/design-system/controls";
 /**
  * UnifiedListLayout
  * 
@@ -327,12 +328,7 @@ export function UnifiedListLayout<T extends BaseListItem>({
                         {config.page.emptyMessage || "No items found. Create your first item to get started!"}
                     </p>
                     {config.page.emptyAction && (
-                        <button
-                            onClick={config.page.emptyAction.onClick}
-                            className="mt-4 text-primary "
-                        >
-                            {config.page.emptyAction.label}
-                        </button>
+                        <Button variant="quiet" onClick={config.page.emptyAction.onClick} className="mt-4">{config.page.emptyAction.label}</Button>
                     )}
                 </div>
 

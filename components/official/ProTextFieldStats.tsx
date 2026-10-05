@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, Check, X } from "lucide-react";
+import { Button, Tile } from "@ai-matrx/design-system/controls";
 import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 import { cn } from "@/lib/utils";
 import {
@@ -41,24 +42,14 @@ export function ProTextFieldStatsMenuItems({
 }: ProTextFieldStatsMenuItemsProps) {
   return (
     <div className={cn("flex flex-col", className)}>
-      <button
-        type="button"
-        onClick={onOpenStatsPanel}
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-      >
-        <BarChart3 className="h-4 w-4" />
-        Text stats
-      </button>
-      <button
-        type="button"
+      <Tile variant="quiet" icon={<BarChart3 />} title="Text stats" onClick={onOpenStatsPanel} />
+      <Tile
+        variant="quiet"
+        icon={showStatsBar ? <Check /> : <span aria-hidden className="size-4" />}
+        title="Show stats bar"
+        selected={showStatsBar}
         onClick={onToggleStatsBar}
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-      >
-        <span className="inline-flex h-4 w-4 items-center justify-center">
-          {showStatsBar ? <Check className="h-4 w-4" /> : null}
-        </span>
-        Show stats bar
-      </button>
+      />
     </div>
   );
 }
@@ -85,14 +76,7 @@ export function ProTextFieldStatsPanel({
           Text stats
         </div>
         {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<X />} aria-label="Close" onClick={onClose} />
         ) : null}
       </div>
 
@@ -120,13 +104,9 @@ export function ProTextFieldStatsPanel({
 
       {onBack ? (
         <div className="border-t border-border px-3 py-2">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
+          <Button variant="quiet" onClick={onBack}>
             Back
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

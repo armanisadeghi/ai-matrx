@@ -3,6 +3,7 @@
 import { Loader2, Slash } from "lucide-react";
 import { type SettingsTreeNode, findAncestorPath, findNodeById } from "./types";
 
+import { Button } from "@ai-matrx/design-system/controls";
 type SettingsBreadcrumbProps = {
   nodes: SettingsTreeNode[];
   activeId: string | null;
@@ -86,14 +87,7 @@ function Crumb({
 }) {
   if (interactive && onClick) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="inline-flex min-h-11 min-w-0 items-center truncate transition-colors hover:text-foreground disabled:cursor-wait disabled:opacity-60 sm:min-h-0"
-      >
-        {label}
-      </button>
+      <Button variant="quiet" onClick={onClick} disabled={disabled}>{label}</Button>
     );
   }
   return <span>{label}</span>;

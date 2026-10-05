@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { SingleImageSelect } from "@/components/image/shared/SingleImageSelect";
 import ImageCropper, { AspectRatioOption } from "./ImageCropper";
 
+import { Button } from "@ai-matrx/design-system/controls";
 interface EasyImageCropperProps {
   onComplete: (croppedImageUrl: string) => void;
   aspectRatios?: AspectRatioOption[];
@@ -74,12 +75,7 @@ const EasyImageCropper = ({
         />
         
         {displayImageUrl && (
-          <button 
-            onClick={handleReset}
-            className="absolute top-2 right-2 text-xs border border-border bg-textured text-gray-900 dark:text-gray-100 rounded-xl p-2"
-          >
-            Reset
-          </button>
+          <Button variant="outline" onClick={handleReset} className="absolute top-2 right-2">Reset</Button>
         )}
       </div>
       

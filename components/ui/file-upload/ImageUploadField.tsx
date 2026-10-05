@@ -4,6 +4,7 @@ import { toast } from "@/lib/toast";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { Button } from "@ai-matrx/design-system/controls";
 interface ImageUploadFieldProps {
   value?: string;
   onChange: (url: string) => void;
@@ -112,13 +113,7 @@ const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
-              <button
-                className="p-2 rounded-full bg-white text-gray-700 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
-                onClick={handleClearImage}
-                aria-label="Clear image"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <Button variant="quiet" icon={<X />} aria-label="Clear image" onClick={handleClearImage} className="transition-opacity" />
             </div>
           </div>
         ) : (

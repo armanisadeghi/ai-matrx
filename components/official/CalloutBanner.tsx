@@ -9,6 +9,7 @@
 import { X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export type CalloutTone = "destructive" | "warning" | "info" | "success";
 
 const TONE: Record<CalloutTone, { container: string; icon: string }> = {
@@ -62,15 +63,7 @@ export function CalloutBanner({
       <div className="flex shrink-0 items-center gap-1.5 sm:ml-2">
         {actions}
         {onDismiss && (
-          <button
-            type="button"
-            onClick={onDismiss}
-            disabled={dismissing}
-            aria-label="Dismiss"
-            className="rounded-md p-1 text-muted-foreground hover:bg-background/60 hover:text-foreground disabled:opacity-50"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<X />} aria-label="Dismiss" onClick={onDismiss} disabled={dismissing} />
         )}
       </div>
     </div>

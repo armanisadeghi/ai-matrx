@@ -24,6 +24,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 
+import { Button } from "@ai-matrx/design-system/controls";
 /** Source-selector dimensions shared by configuration choices and pickers. */
 export const CONFIGURATION_CHOICE_SIZE =
   "h-[34px] min-h-[34px] rounded-lg px-2.5 text-[11.5px] font-medium";
@@ -174,14 +175,7 @@ export function FieldHelp({
       >
         <div className="flex items-center justify-between gap-3">
           <span className="font-medium">{label}</span>
-          <button
-            type="button"
-            aria-label={`Close help: ${label}`}
-            onClick={() => changeOpen(false)}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
+          <Button variant="quiet" icon={<X />} aria-label={`Close help: ${label}`} onClick={() => changeOpen(false)} className="shrink-0" />
         </div>
         <div className="whitespace-pre-wrap break-words text-foreground">
           {children}

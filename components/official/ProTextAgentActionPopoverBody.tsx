@@ -17,13 +17,13 @@ import { CheckTapButton, CopyTapButton } from "@ai-matrx/tap-target/buttons";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export function ProTextAgentActionPopoverBody({
   title,
   phase,
@@ -81,14 +81,7 @@ export function ProTextAgentActionPopoverBody({
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label="Close"
-          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <Button variant="quiet" icon={<X />} aria-label="Close" onClick={onCancel} />
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 border-b border-border px-3 py-2">
@@ -99,26 +92,15 @@ export function ProTextAgentActionPopoverBody({
             className="w-full"
           />
         </div>
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          className="shrink-0"
           onClick={onRun}
           disabled={!canRun}
-          className={cn(
-            "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold transition-colors",
-            !canRun
-              ? "cursor-not-allowed bg-muted text-muted-foreground"
-              : "bg-primary text-primary-foreground hover:bg-primary/90",
-          )}
+          icon={isBusy ? <Loader2 className="animate-spin" /> : hasRun ? <RotateCcw /> : <AGENT_ICON />}
         >
-          {isBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : hasRun ? (
-            <RotateCcw className="h-3.5 w-3.5" />
-          ) : (
-            <AGENT_ICON className="h-3.5 w-3.5" />
-          )}
           {hasRun ? "Re-run" : "Run"}
-        </button>
+        </Button>
       </div>
 
       {hasRun && (
@@ -161,46 +143,20 @@ export function ProTextAgentActionPopoverBody({
       )}
 
       <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-3 py-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          Back
-        </button>
+        <Button variant="quiet" onClick={onBack}>Back</Button>
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            Cancel
-          </button>
+          <Button variant="quiet" onClick={onCancel}>Cancel</Button>
           {onCompare && isComplete && hasResult && (
-            <button
-              type="button"
-              onClick={onCompare}
-              className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              title="Compare your current text with the AI result before applying"
-            >
-              <GitCompareArrows className="h-3.5 w-3.5" />
-              Compare
-            </button>
+            <Button variant="quiet" icon={<GitCompareArrows />} onClick={onCompare} title="Compare your current text with the AI result before applying">Compare</Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={onApply}
             disabled={!isComplete || !hasResult}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-colors",
-              !isComplete || !hasResult
-                ? "cursor-not-allowed bg-muted text-muted-foreground"
-                : "bg-primary text-primary-foreground hover:bg-primary/90",
-            )}
+            icon={<Check />}
           >
-            <Check className="h-3.5 w-3.5" />
             Apply
-          </button>
+          </Button>
         </div>
       </div>
     </div>

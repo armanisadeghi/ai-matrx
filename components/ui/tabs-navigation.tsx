@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export type TabItem = {
   id: string;
   label: string;
@@ -183,15 +184,7 @@ const TabsNavigation: React.FC<TabsNavigationProps> = ({
           {/* More dropdown button for mobile */}
           {isMobile && hiddenTabs.length > 0 && (
             <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={toggleDropdown}
-                className="px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
-                aria-label="More tabs"
-                aria-haspopup="true"
-                aria-expanded={dropdownOpen}
-              >
-                •••
-              </button>
+              <Button variant="quiet" onClick={toggleDropdown} aria-haspopup="true" aria-expanded={dropdownOpen}>•••</Button>
               
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-textured rounded-md shadow-lg z-20 border-border">

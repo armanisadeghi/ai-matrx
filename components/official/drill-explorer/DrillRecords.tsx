@@ -43,6 +43,7 @@ import { plainWords } from "./dimensionWords";
 import { grainNoun, isMoment, measureFactWords, momentWords, pluralNoun, shortId } from "./explorerWords";
 import { formatCount } from "@ai-matrx/kit/format";
 
+import { Button } from "@ai-matrx/design-system/controls";
 const PAGE = 100;
 /** Sums the header row names at most (the first Measures the question shows). */
 const SUMS_SHOWN = 3;
@@ -248,9 +249,7 @@ export function DrillRecords({
               {words}
             </AppLink>
           ) : (
-            <button type="button" className="underline underline-offset-2" data-drill-explorer-record-open={v} onClick={() => openRecord.open?.(v)}>
-              {words}
-            </button>
+            <Button variant="quiet" data-drill-explorer-record-open={v} onClick={() => openRecord.open?.(v)}>{words}</Button>
           );
         }
         if (v === null || v === undefined) return <span className="text-muted-foreground">{dim?.labelFor ? dim.labelFor(null) : "—"}</span>;
