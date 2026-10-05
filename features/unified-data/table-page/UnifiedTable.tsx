@@ -5,7 +5,7 @@
  *
  * `/data/[tableId]` and a Board tile (`features/board/items/data-items.tsx`) render the SAME
  * table page: records-ui's `TablePage` inside `RecordsMount`, reading as the TABLE's organization,
- * with the same ports, realtime, merged-grid knob, table action list and
+ * with the same ports, realtime, Sheet layout, merged-grid knob, table action list and
  * `matrx-user/data-tables` agent surface (`RecordStoreTableSurface`). Only the route adds route
  * chrome: its header (back, title switcher), the shell's page-organization declaration, the page
  * capture, and the address the view follows.
@@ -39,6 +39,7 @@ import { useObjectOrganization } from "@/features/unified-data/objectOrganizatio
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
+import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
 import { PREVIEW_RIGHTS, recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
@@ -255,6 +256,28 @@ export function useUnifiedTable({
         merged: mergedGrid,
         gridContext,
         ...(readOnly ? { rights: PREVIEW_RIGHTS } : {}),
+        // THE SHEET — the classic /data grid on the one data seam, the fifth layout (owner, 2026-09-23).
+        // A preview leaves the Sheet out: it edits through its own doors, not the `rights` port.
+        layouts: readOnly ? [] : [
+          {
+            id: "sheet",
+            label: "Sheet",
+            render: (args) => (
+              <SheetLayout
+                tableId={args.tableId}
+                organizationId={mountOrganizationId}
+                userId={userId ?? null}
+                openExport={(args as { openExport?: () => void }).openExport}
+                {...((args as { toolbarSlot?: HTMLElement | null }).toolbarSlot !== undefined
+                  ? { toolbarSlot: (args as { toolbarSlot?: HTMLElement | null }).toolbarSlot }
+                  : {})}
+                {...((args as { footer?: "sticky" | "inline" }).footer
+                  ? { footer: (args as { footer?: "sticky" | "inline" }).footer }
+                  : {})}
+              />
+            ),
+          },
+        ],
       })
     : null;
 

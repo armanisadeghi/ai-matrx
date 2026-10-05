@@ -15,7 +15,8 @@ export const DATA_PLACES: FeaturePlaces = {
   roots: ["features/data-tables", "components/user-generated-table-data", "app/(core)/data"],
   places: [
     {
-      // ONE table page (lane CHAIR-ONE-GRID): /data/<table> and every host that mounts it.
+      // ONE table page (lane CHAIR-ONE-GRID): /data/<table> and every host that mounts it. The
+      // classic sheet (UserTableViewer) is its "Sheet" layout and starts the same row job.
       id: "table",
       label: "A table",
       trigger: "Row actions, page assistant",
@@ -23,6 +24,7 @@ export const DATA_PLACES: FeaturePlaces = {
       mandateKeys: [K.data__row_action, K.data__page_guidance],
       sources: [
         "features/data-tables/records-ui-host/recordsUiHost.tsx",
+        "components/user-generated-table-data/UserTableViewer.tsx",
       ],
     },
     {

@@ -1,0 +1,392 @@
+/**
+ * Undo for user-table cell writes.
+ *
+ * WHY THIS SHIPS WITH INLINE EDITING, NOT AFTER IT. Lowering the friction to
+ * change data raises the rate of accidental change: a single click now toggles
+ * a boolean, a bare keystroke now starts an edit, and Delete now empties a
+ * cell. Every one of those is a good affordance ONLY if the floor underneath it
+ * is recoverable. Shipping the easier editing without the undo would be trading
+ * the user's safety for our convenience.
+ *
+ * WHAT IT IS NOT. This is not a general document history — the store already
+ * versions every write (`custom.record_history`), and the Row History viewer is still the authority for "what did this row look like last
+ * Tuesday". This stack is the SESSION-LOCAL memory of what *you* just did, so
+ * Cmd-Z means what it means everywhere else.
+ *
+ * THE INVERSE IS CAPTURED BEFORE THE WRITE, NEVER DERIVED AFTER IT. Each entry
+ * carries the prior value read at the moment of the edit. Re-reading the cell
+ * afterwards to discover what to restore would race with realtime and with
+ * agent writes, and would happily "undo" to a value someone else just set.
+ *
+ * Undo is itself a write, so it goes through the SAME `upsertCell` path as a
+ * hand edit — it validates, it versions, and it is refused on a read-only table
+ * exactly like any other write. An undo that bypassed the write path would be
+ * a second way to change data, and the second way is always the one that
+ * corrupts something.
+ */
+"use client";
+
+import { useCallback, useRef, useState } from "react";
+import {
+  DEFAULT_UNDO_DEPTH,
+  createUndoStack,
+  popRedo,
+  popUndo,
+  pushUndo,
+  undoEntryFor,
+  type UndoEntry,
+  type UndoStack,
+} from "@ai-matrx/design-system/data-table/cell-undo";
+
+import { toast } from "@/components/ui/use-toast";
+
+import { bulkWrite, seenRowVersion, upsertCell } from "../service";
+import { versionRefusalLabel } from "@/lib/records/record-versions";
+import { describeBulkFailures, isBulkOpError, isServiceFailure } from "../types";
+
+/** One reversible cell write. */
+export type CellEdit = {
+  tableId: string;
+  rowId: string;
+  fieldName: string;
+  /** Human label for the toast — the column header, not the machine name. */
+  fieldDisplayName: string;
+  /** The value BEFORE the write. Restoring this is the undo. */
+  priorValue: unknown;
+  /** The value written. Restoring this is the redo. */
+  nextValue: unknown;
+  /**
+   * The version the last write of this cell produced — what its undo (or redo) is sent against, so
+   * a colleague's change since is refused ("Changed by someone else"), never overwritten. Captured
+   * by the stack itself right after the write; `null` = could not be read, and the undo refuses.
+   */
+  version?: number | null;
+};
+
+/** An edit's version capture still in flight — its undo waits for it. */
+const capturing = new WeakMap<CellEdit, Promise<void>>();
+
+/** The version each row is at right after THIS browser's write (the seam's ledger, raised by that write). */
+function captureVersions(group: readonly CellEdit[]): Promise<void> {
+  const done = (async () => {
+    const byRow = new Map<string, number | null>();
+    for (const e of group) if (!byRow.has(e.rowId)) byRow.set(e.rowId, await seenRowVersion(e.rowId));
+    for (const e of group) e.version = byRow.get(e.rowId) ?? null;
+  })();
+  for (const e of group) capturing.set(e, done);
+  return done;
+}
+
+/** A whole-row step with its own two doors; each answers whether it landed (and says so if not). */
+export type RowStep = { undo: () => Promise<boolean>; redo: () => Promise<boolean> };
+
+/** The handle `recordGroup` returns, so the toast that announced a change can undo exactly it. */
+export type UndoHandle = UndoEntry;
+
+/** "1 cell" / "4 cells on 3 rows" — what an undo of a group puts back. */
+export function describeCellGroup(edits: readonly CellEdit[]): string {
+  const rows = new Set(edits.map((e) => e.rowId)).size;
+  const cells = `${edits.length} cell${edits.length === 1 ? "" : "s"}`;
+  return rows > 1 ? `${cells} on ${rows} rows` : cells;
+}
+
+/**
+ * THE STACK IS THE DESIGN SYSTEM'S (`@ai-matrx/design-system/data-table/cell-undo`):
+ * its depth, its redo contract and its "a fresh edit clears the future" rule are
+ * spreadsheet law shared by every grid. This hook owns only what the pure stack
+ * cannot: the write, the toast, and the table/column labels an entry needs for
+ * its message.
+ *
+ * An entry is ONE thing the person did. A cell edit is one cell; a row action
+ * ("New Week" on 12 rows) is every cell it wrote, recorded with `recordGroup`
+ * as ONE entry — one Cmd-Z, one toolbar Undo, or the "Undo" on the action's own
+ * toast puts every one of those cells back in ONE transaction (`bulkWrite`
+ * merge ops), so a half-restored row cannot happen (Arman, 2026-09-21: "an easy
+ * undo that would guarantee a full recovery"). There is exactly one undo system:
+ * the toast's button and Cmd-Z pop the same stack.
+ */
+export function useCellUndo(options: {
+  /**
+   * An undo/redo landed. Carries the exact cell and the value now stored, so
+   * the grid can patch that ONE cell instead of refetching the table — a
+   * reload would remount the body and throw away the user's place, which is
+   * especially wrong for undo, whose whole job is to put things back.
+   */
+  onApplied: (edit: CellEdit, appliedValue: unknown) => void;
+  /** True when the table is not writable — undo must be refused too. */
+  readOnly: boolean;
+}) {
+  const { onApplied, readOnly } = options;
+
+  // The stack lives in a ref so recording an edit never re-renders the grid
+  // mid-typing; depths are mirrored into state ONLY for the toolbar buttons.
+  const stack = useRef<UndoStack>(createUndoStack(DEFAULT_UNDO_DEPTH));
+  // What the pure entry does not carry (the table, the columns' human labels),
+  // keyed by the entry object the stack hands back.
+  const edits = useRef(new WeakMap<UndoEntry, CellEdit[]>());
+  /**
+   * A step that is not cell values — a row archived by Delete (grids review 3: the toolbar Undo did
+   * not bring a deleted row back, because the stack only held cells). Its two sides are the
+   * store's own doors (restore / archive), recorded with the step so Cmd-Z, the toolbar Undo and
+   * the notice's Undo are the SAME step on the ONE stack.
+   */
+  const actions = useRef(new WeakMap<UndoEntry, RowStep>());
+  const [depths, setDepths] = useState({ undo: 0, redo: 0 });
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+
+  const commit = useCallback((next: UndoStack) => {
+    stack.current = next;
+    setDepths({ undo: next.past.length, redo: next.future.length });
+  }, []);
+
+  /**
+   * Record several cell writes that already succeeded TOGETHER as one step.
+   * Returns the entry, which `undoThis` takes, or null when there was nothing.
+   */
+  const recordGroup = useCallback(
+    (group: readonly CellEdit[], label: string): UndoHandle | null => {
+      if (group.length === 0) return null;
+      const entry = undoEntryFor(
+        group.map((e) => ({ rowId: e.rowId, columnId: e.fieldName, value: e.priorValue })),
+        group.map((e) => ({ rowId: e.rowId, columnId: e.fieldName, value: e.nextValue })),
+        label,
+      );
+      const held = [...group];
+      edits.current.set(entry, held);
+      void captureVersions(held);
+      commit(pushUndo(stack.current, entry));
+      return entry;
+    },
+    [commit],
+  );
+
+  /** Record a step that already happened and is undone by its own doors (a row archived). */
+  const recordStep = useCallback(
+    (step: RowStep, label: string): UndoHandle => {
+      const entry = undoEntryFor([], [], label);
+      actions.current.set(entry, step);
+      commit(pushUndo(stack.current, entry));
+      return entry;
+    },
+    [commit],
+  );
+
+  /** Record a single cell write that already succeeded. */
+  const record = useCallback(
+    (edit: CellEdit) => {
+      recordGroup([edit], edit.fieldDisplayName);
+    },
+    [recordGroup],
+  );
+
+  /**
+   * Write one side of an entry. One cell goes through `upsertCell` exactly as a
+   * hand edit; several go as ONE `bulkWrite` (one merge op per row), so a
+   * group is restored all together or not at all.
+   */
+  const applySide = useCallback(
+    async (group: readonly CellEdit[], side: "undo" | "redo"): Promise<boolean> => {
+      const valueOf = (e: CellEdit) => (side === "undo" ? e.priorValue : e.nextValue);
+      await Promise.all(group.map((e) => capturing.get(e)));
+      if (group.length === 1) {
+        const edit = group[0];
+        const result = await upsertCell({
+          tableId: edit.tableId,
+          rowId: edit.rowId,
+          fieldName: edit.fieldName,
+          value: valueOf(edit) as never,
+          expectedVersion: edit.version ?? null,
+        });
+        if (isServiceFailure(result)) {
+          // Loud, never silent: the stack is NOT popped on failure, so the user
+          // can try again rather than losing the step.
+          toast({
+            title: versionRefusalLabel(result.refusal) ?? "Could not undo that change",
+            description: result.error,
+            variant: "destructive",
+          });
+          return false;
+        }
+        await captureVersions(group);
+        return true;
+      }
+      const byRow = new Map<string, Record<string, unknown>>();
+      const versionOf = new Map<string, number | null>();
+      for (const e of group) {
+        const data = byRow.get(e.rowId) ?? {};
+        data[e.fieldName] = valueOf(e);
+        byRow.set(e.rowId, data);
+        versionOf.set(e.rowId, e.version ?? null);
+      }
+      const result = await bulkWrite({
+        tableId: group[0].tableId,
+        operations: [...byRow].map(([row_id, data]) => ({
+          op: "merge" as const,
+          row_id,
+          data,
+          expected_version: versionOf.get(row_id) ?? null,
+        })),
+      });
+      if (isServiceFailure(result)) {
+        toast({
+          title: versionRefusalLabel(result.refusal) ?? (side === "undo" ? "Could not undo that change" : "Could not redo that change"),
+          description: `${result.error} Nothing was changed; try again.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      await captureVersions(group);
+      const missing = (result.data?.results ?? []).filter(isBulkOpError);
+      if (missing.length > 0) {
+        toast({
+          title: side === "undo" ? "Undo was only partly possible" : "Redo was only partly possible",
+          description: `${describeBulkFailures(missing)} Row history still has ${missing.length === 1 ? "its" : "their"} earlier values.`,
+          variant: "destructive",
+        });
+      }
+      return true;
+    },
+    [],
+  );
+
+  const land = useCallback(
+    (group: readonly CellEdit[], side: "undo" | "redo", label: string) => {
+      for (const e of group) onApplied(e, side === "undo" ? e.priorValue : e.nextValue);
+      const what = group.length === 1 ? label : `${label}: ${describeCellGroup(group)}`;
+      toast({
+        title: side === "undo" ? "Undone" : "Redone",
+        description: side === "undo" ? `${what} restored.` : `${what} reapplied.`,
+      });
+    },
+    [onApplied],
+  );
+
+  const step = useCallback(
+    async (direction: "undo" | "redo") => {
+      if (readOnly || busyRef.current) return;
+      const popped = direction === "undo" ? popUndo(stack.current) : popRedo(stack.current);
+      const entry = popped.entry;
+      const rowStep = entry ? actions.current.get(entry) : undefined;
+      if (entry && rowStep) {
+        busyRef.current = true;
+        setBusy(true);
+        try {
+          // Loud, never silent: the step's own door says what went wrong; the stack only moves once it landed.
+          if (await (direction === "undo" ? rowStep.undo() : rowStep.redo())) commit(popped.stack);
+        } finally {
+          busyRef.current = false;
+          setBusy(false);
+        }
+        return;
+      }
+      const group = entry ? edits.current.get(entry) : undefined;
+      if (!entry || !group || group.length === 0) return;
+
+      busyRef.current = true;
+      setBusy(true);
+      try {
+        // Loud, never silent: the stack only moves once the write landed, so
+        // a failed step can be tried again rather than lost.
+        if (await applySide(group, direction)) {
+          commit(popped.stack);
+          land(group, direction, entry.label);
+        }
+      } finally {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    },
+    [applySide, commit, land, readOnly],
+  );
+
+  const undo = useCallback(() => step("undo"), [step]);
+  const redo = useCallback(() => step("redo"), [step]);
+
+  /**
+   * Undo ONE particular step — the "Undo" button on the toast that announced
+   * it. When it is the latest step this is exactly Cmd-Z. When newer steps came
+   * after it, it is still undone as long as none of them touched the same
+   * cells (restoring over a newer edit would silently throw that edit away);
+   * otherwise it says so and leaves everything as it is.
+   */
+  const undoThis = useCallback(
+    async (handle: UndoHandle | null): Promise<boolean> => {
+      if (!handle || readOnly || busyRef.current) return false;
+      const past = stack.current.past;
+      const at = past.lastIndexOf(handle);
+      const rowStep = actions.current.get(handle);
+      if (rowStep) {
+        if (at < 0) {
+          toast({ title: "Already undone", description: "That change is no longer on the undo list." });
+          return false;
+        }
+        busyRef.current = true;
+        setBusy(true);
+        try {
+          if (!(await rowStep.undo())) return false;
+          // Out of the past; into the future, so Redo archives it again.
+          commit({ ...stack.current, past: stack.current.past.filter((e) => e !== handle), future: [...stack.current.future, handle] });
+          return true;
+        } finally {
+          busyRef.current = false;
+          setBusy(false);
+        }
+      }
+      const group = edits.current.get(handle);
+      if (at < 0 || !group) {
+        toast({ title: "Already undone", description: "That change is no longer on the undo list." });
+        return false;
+      }
+      if (at === past.length - 1) {
+        await step("undo");
+        return !stack.current.past.includes(handle);
+      }
+      const touched = new Set(group.map((e) => `${e.rowId}::${e.fieldName}`));
+      const newer = past.slice(at + 1).flatMap((e) => edits.current.get(e) ?? []);
+      if (newer.some((e) => touched.has(`${e.rowId}::${e.fieldName}`))) {
+        toast({
+          title: "Newer edits changed the same cells",
+          description: "Undo those first (Cmd-Z or the toolbar Undo), then this one.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      busyRef.current = true;
+      setBusy(true);
+      try {
+        if (!(await applySide(group, "undo"))) return false;
+        commit({ ...stack.current, past: stack.current.past.filter((e) => e !== handle) });
+        land(group, "undo", handle.label);
+        return true;
+      } finally {
+        busyRef.current = false;
+        setBusy(false);
+      }
+    },
+    [applySide, commit, land, readOnly, step],
+  );
+
+  /**
+   * Drop everything. Called when the viewer switches to a different table —
+   * an undo stack that outlived its table would restore values into a table
+   * the user is no longer looking at.
+   */
+  const reset = useCallback(() => {
+    commit(createUndoStack(stack.current.depth));
+  }, [commit]);
+
+  return {
+    record,
+    recordGroup,
+    recordStep,
+    undoThis,
+    undo,
+    redo,
+    reset,
+    canUndo: depths.undo > 0 && !readOnly,
+    canRedo: depths.redo > 0 && !readOnly,
+    undoDepth: depths.undo,
+    busy,
+  };
+}

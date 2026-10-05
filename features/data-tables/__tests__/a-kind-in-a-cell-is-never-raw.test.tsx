@@ -13,6 +13,8 @@
  * with JSON.stringify (the source assertion) and kind-cell did not exist.
  */
 import React, { act } from "react";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { createRoot, type Root } from "react-dom/client";
 
 const opened: unknown[] = [];
@@ -107,4 +109,13 @@ describe("KindCellPeek", () => {
     );
     expect(container.textContent).toBe("Flashcard Set · unreadable");
   });
+});
+
+it("UserTableViewer routes a json/array cell through kindCell before formatting", () => {
+  const source = readFileSync(
+    join(__dirname, "..", "..", "..", "components", "user-generated-table-data", "UserTableViewer.tsx"),
+    "utf8",
+  );
+  expect(source).toMatch(/kindCell\(rawValue\)/);
+  expect(source).toMatch(/<KindCellPeek cell=\{kindInCell\}/);
 });

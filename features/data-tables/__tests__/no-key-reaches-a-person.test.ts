@@ -13,6 +13,18 @@ import { join } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..");
 const DIALOGS = [
+  "components/user-generated-table-data/AddColumnModal.tsx",
+  "components/user-generated-table-data/AddRowModal.tsx",
+  "components/user-generated-table-data/EditRowModal.tsx",
+  "components/user-generated-table-data/ColumnSettingsDialog.tsx",
+  "components/user-generated-table-data/TableConfigModal.tsx",
+  "components/user-generated-table-data/TableReferenceModal.tsx",
+  "components/user-generated-table-data/TableReferenceOverlay.tsx",
+  "components/user-generated-table-data/DeleteRowModal.tsx",
+  "components/user-generated-table-data/RowOrderingModal.tsx",
+  "components/user-generated-table-data/PasteRowsDialog.tsx",
+  "features/data-tables/components/ColorRulesDialog.tsx",
+  "features/data-tables/components/BulkRowActions.tsx",
   "features/sharing/components/ShareButton.tsx",
   "features/sharing/components/ShareModal.tsx",
   "features/sharing/components/RecordStoreShareSurface.tsx",

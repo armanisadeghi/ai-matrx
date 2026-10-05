@@ -1,0 +1,1301 @@
+"use client";
+
+import { columnNameProblem, columnNameToKeep } from "@/features/data-tables/column-name-taken";
+import { COLUMN_STORAGE_TYPES, storageTypesToChangeInto } from "@/features/data-tables/column-storage-types";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  changeFieldType,
+  deleteField,
+  getTableProfile,
+  rewriteFormulasForRename,
+  RECORD_STORE_COLUMN_TYPES,
+  setFieldFormat,
+  updateTableConfig,
+} from "@/features/data-tables/service";
+import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
+import {
+  offerFormatWhereRelationIs,
+  useRelationColumnsEnabled,
+} from "@/features/data-tables/relation-knob";
+import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
+import { FormulaExpressionEditor } from "@/features/data-tables/components/FormulaExpressionEditor";
+import {
+  parseValidationRules,
+  serializeValidationRules,
+  type ValidationRules,
+} from "@/features/data-tables/validation";
+import { resolveFieldFormat } from "@ai-matrx/design-system/field-formats";
+import { parseFormula } from "@ai-matrx/design-system/formulas";
+import type { FieldFormatConfig } from "@ai-matrx/design-system/field-formats";
+import {
+  isServiceFailure,
+  type FieldDataType,
+  type TableProfile,
+} from "@/features/data-tables/types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@ai-matrx/design-system";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RowLabelPicker } from "@/features/data-tables/components/RowLabelPicker";
+import { RowActionsEditor } from "@/features/data-tables/components/RowActionsEditor";
+import { Badge } from "@/components/ui/badge";
+import {
+  GripVertical,
+  Settings,
+  Type,
+  AlertTriangle,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  sanitizeFieldName,
+  validateFieldName,
+} from "@/features/data-tables/field-name-key";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import {
+  SurfaceLayerBoundary,
+  SurfaceRuntimeProvider,
+} from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { SURFACE_LAYER_ATTRIBUTE } from "@ai-matrx/chat/surfaces/runtime/window-forms";
+import {
+  createTableSettingsScope,
+  TABLE_SETTINGS_SURFACE_NAME,
+} from "@/features/surfaces/manifests/table-settings.manifest";
+
+interface TableField {
+  id: string;
+  field_name: string;
+  display_name: string;
+  data_type: string;
+  field_order: number;
+  is_required: boolean;
+  is_public: boolean;
+  default_value?: any;
+  /**
+   * The column's validation rules. Read with `parseValidationRules`, written
+   * with `serializeValidationRules` — never touched by hand. `required` is NOT
+   * in here; the Req checkbox writes `is_required`, which is that fact's home.
+   */
+  validation_rules?: unknown;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface TableInfo {
+  /** The table's metadata; `metadata.row_label` names rows (row-label.ts). */
+  metadata?: unknown;
+  id: string;
+  table_name: string;
+  description: string;
+  version: number;
+}
+
+interface TableConfigModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  tableId: string;
+  tableInfo: TableInfo;
+  fields: TableField[];
+  onSuccess: () => void;
+  /** One loaded row, so the row-label picker can show an example. */
+  sampleRow?: { data: Record<string, unknown> } | null;
+  /** Which tab opens first; "fields" by default. */
+  defaultTab?: "fields" | "table" | "actions";
+  /** The table page's header ⋯ carries Share (TABLE-ACTIONS item 11): no second Share here. */
+  pageOwnsShare?: boolean;
+  /** The rows on screen — the Actions tab previews an action against a real row. */
+  rows?: readonly { id: string; data: Record<string, unknown> }[];
+  /**
+   * Open the add-column form. The place columns are MANAGED must be able to
+   * add one. Omitted on mounts that cannot add a column.
+   */
+  onAddColumn?: () => void;
+}
+
+// One list for every picker, in a person's words (DATA-V2-BASICS-2 T3).
+const DATA_TYPES = COLUMN_STORAGE_TYPES;
+
+export default function TableConfigModal({
+  isOpen,
+  onClose,
+  tableId,
+  tableInfo: initialTableInfo,
+  fields: initialFields,
+  onAddColumn,
+  sampleRow,
+  rows,
+  defaultTab,
+  onSuccess,
+  pageOwnsShare = false,
+}: TableConfigModalProps) {
+  const [loading, setLoading] = useState(false);
+  // Which tab is showing, so the footer speaks for THAT tab's save model
+  // (register ARE-033): row actions save as each is saved, the other tabs on
+  // Save Changes.
+  const [activeTab, setActiveTab] = useState<string>(defaultTab ?? "fields");
+  // The tab is controlled (an agent can switch it — `settings_tab`), and every
+  // open starts on `defaultTab`, exactly as the uncontrolled tabs did.
+  const openedAs = `${isOpen}:${defaultTab ?? "fields"}`;
+  const [lastOpenedAs, setLastOpenedAs] = useState(openedAs);
+  if (lastOpenedAs !== openedAs) {
+    setLastOpenedAs(openedAs);
+    setActiveTab(defaultTab ?? "fields");
+  }
+  const onActionsTab = activeTab === "actions";
+  const [error, setError] = useState<string | null>(null);
+
+  // Table metadata state
+  const [tableInfo, setTableInfo] = useState<TableInfo>(initialTableInfo);
+  const relationEnabled = useRelationColumnsEnabled(
+    (tableInfo as { organization_id?: string | null }).organization_id ?? null,
+  );
+
+  // Fields state
+  const [fields, setFields] = useState<TableField[]>([]);
+  const [draggedField, setDraggedField] = useState<string | null>(null);
+  // Index where the dragged item would land (drop ghost position). This is the
+  // index in the list *between* cards (0 = before first card, length = after last).
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+
+  // Scroll container + auto-scroll machinery. While dragging near the top/bottom
+  // edges we scroll the list so the user can reach off-screen rows.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRaf = useRef<number | null>(null);
+  const autoScrollVelocity = useRef(0);
+
+  // Track changes
+  const [hasChanges, setHasChanges] = useState(false);
+  const [dataTypeChanges, setDataTypeChanges] = useState<
+    Record<string, string>
+  >({});
+  /** fieldId → format the user picked this session (saved on Save Changes). */
+  const [formatChanges, setFormatChanges] = useState<
+    Record<string, FieldFormatConfig>
+  >({});
+  /** fieldId → validation rules the user edited this session. */
+  const [validationChanges, setValidationChanges] = useState<
+    Record<string, ValidationRules>
+  >({});
+  const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null);
+
+  /**
+   * The table's real column values, so declaring a choice column's options is a
+   * one-click confirmation of what is already there instead of retyping a list
+   * the user already has. One call for every column; failure is silent because
+   * this only ever ADDS a convenience — the editor works without it.
+   */
+  const [profile, setProfile] = useState<TableProfile | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !tableId) {
+      setProfile(null);
+      return undefined;
+    }
+    let cancelled = false;
+    void getTableProfile({ tableId }).then((result) => {
+      if (cancelled || isServiceFailure(result)) return;
+      setProfile(result.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, tableId]);
+
+  // Initialize fields when modal opens
+  useEffect(() => {
+    if (isOpen && initialFields) {
+      const sortedFields = [...initialFields].sort(
+        (a, b) => a.field_order - b.field_order,
+      );
+      setFields(sortedFields);
+      setTableInfo(initialTableInfo);
+      setHasChanges(false);
+      setDataTypeChanges({});
+      setFormatChanges({});
+      setValidationChanges({});
+      setError(null);
+    }
+  }, [isOpen, initialFields, initialTableInfo]);
+
+  /**
+   * Remove a column. THE ONLY delete-column path in the product — before this
+   * existed a user could add columns forever and never remove one.
+   *
+   * Applies immediately (not on Save Changes) because it is a destructive
+   * server-side operation the user has explicitly confirmed; batching it behind
+   * an unrelated Save button is how people delete things by accident.
+   */
+  const handleDeleteField = async (field: TableField) => {
+    if (fields.length <= 1) {
+      toast({
+        title: "Cannot remove the last column",
+        description: "Add another column first, then remove this one.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const ok = await confirm({
+      title: `Remove "${field.display_name}"?`,
+      description:
+        "This column leaves the table and every screen that shows it. Its values are kept on every row, and adding a column with the same name brings it back with them.",
+      confirmLabel: "Remove column",
+      variant: "destructive",
+    });
+    if (!ok) return;
+
+    setDeletingFieldId(field.id);
+    const result = await deleteField({ tableId, fieldId: field.id });
+    setDeletingFieldId(null);
+
+    if (isServiceFailure(result)) {
+      toast({
+        title: "Could not remove the column",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setFields((prev) => prev.filter((f) => f.id !== field.id));
+    toast({
+      title: `Removed "${result.data.display_name}"`,
+      // Removing a column archives it and keeps its values (delete means archive).
+      description: "Its values are kept on every row. Adding a column with the same name brings it back.",
+      variant: "success",
+    });
+    onSuccess();
+  };
+
+  // Handle table info changes
+  const handleTableInfoChange = (key: keyof TableInfo, value: any) => {
+    setTableInfo((prev) => ({ ...prev, [key]: value }));
+    setHasChanges(true);
+  };
+
+  // Handle field changes
+  const handleFieldChange = (
+    fieldId: string,
+    key: keyof TableField,
+    value: any,
+  ) => {
+    setFields((prev) =>
+      prev.map((field) =>
+        field.id === fieldId ? { ...field, [key]: value } : field,
+      ),
+    );
+
+    // Track data type changes specifically
+    if (key === "data_type") {
+      // A format is only valid over certain storage types, so changing the
+      // storage type resets the column to its plain format rather than leaving
+      // a Currency format sitting on a boolean.
+      setFormatChanges((prev) => {
+        const next = { ...prev };
+        delete next[fieldId];
+        return next;
+      });
+      // Rules are written against a storage type — a min/max drawn for a
+      // number column is nonsense on a boolean — so retyping the column clears
+      // them rather than leaving an un-editable rule armed behind the new type.
+      setValidationChanges((prev) => ({ ...prev, [fieldId]: {} }));
+      const originalField = initialFields.find((f) => f.id === fieldId);
+      if (originalField && originalField.data_type !== value) {
+        setDataTypeChanges((prev) => ({ ...prev, [fieldId]: value }));
+      } else {
+        setDataTypeChanges((prev) => {
+          const updated = { ...prev };
+          delete updated[fieldId];
+          return updated;
+        });
+      }
+    }
+
+    setHasChanges(true);
+  };
+
+  // Continuous auto-scroll loop. Runs while a non-zero velocity is set; the
+  // velocity is recalculated on every dragOver based on pointer proximity to
+  // the scroll container's top/bottom edges.
+  const stepAutoScroll = useCallback(() => {
+    const el = scrollRef.current;
+    const v = autoScrollVelocity.current;
+    if (el && v !== 0) {
+      el.scrollTop += v;
+      autoScrollRaf.current = requestAnimationFrame(stepAutoScroll);
+    } else {
+      autoScrollRaf.current = null;
+    }
+  }, []);
+
+  const updateAutoScroll = useCallback(
+    (clientY: number) => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Activation zone height (px) at each edge.
+      const zone = 64;
+      const maxSpeed = 18;
+      let velocity = 0;
+      const distTop = clientY - rect.top;
+      const distBottom = rect.bottom - clientY;
+      if (distTop < zone) {
+        // Closer to the edge → faster. Ease quadratically.
+        const ratio = Math.max(0, Math.min(1, (zone - distTop) / zone));
+        velocity = -Math.ceil(maxSpeed * ratio * ratio);
+      } else if (distBottom < zone) {
+        const ratio = Math.max(0, Math.min(1, (zone - distBottom) / zone));
+        velocity = Math.ceil(maxSpeed * ratio * ratio);
+      }
+      autoScrollVelocity.current = velocity;
+      if (velocity !== 0 && autoScrollRaf.current === null) {
+        autoScrollRaf.current = requestAnimationFrame(stepAutoScroll);
+      }
+    },
+    [stepAutoScroll],
+  );
+
+  const stopAutoScroll = useCallback(() => {
+    autoScrollVelocity.current = 0;
+    if (autoScrollRaf.current !== null) {
+      cancelAnimationFrame(autoScrollRaf.current);
+      autoScrollRaf.current = null;
+    }
+  }, []);
+
+  // Cleanup any pending RAF on unmount.
+  useEffect(() => () => stopAutoScroll(), [stopAutoScroll]);
+
+  // Handle drag and drop for field reordering
+  const handleDragStart = (e: React.DragEvent, fieldId: string) => {
+    setDraggedField(fieldId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  // Compute the drop index for a card based on whether the pointer is in the
+  // top or bottom half of the hovered card.
+  const handleCardDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    updateAutoScroll(e.clientY);
+    if (!draggedField) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isAfter = e.clientY > rect.top + rect.height / 2;
+    setDropIndex(isAfter ? index + 1 : index);
+  };
+
+  const reorder = (toIndex: number) => {
+    if (!draggedField) return;
+    const draggedIndex = fields.findIndex((f) => f.id === draggedField);
+    if (draggedIndex === -1) return;
+
+    // Adjust target when removing an earlier item shifts indices.
+    let insertAt = toIndex;
+    if (draggedIndex < toIndex) insertAt -= 1;
+
+    const newFields = [...fields];
+    const [draggedItem] = newFields.splice(draggedIndex, 1);
+    newFields.splice(insertAt, 0, draggedItem);
+
+    const updatedFields = newFields.map((field, idx) => ({
+      ...field,
+      field_order: idx + 1,
+    }));
+
+    if (insertAt !== draggedIndex) {
+      setFields(updatedFields);
+      setHasChanges(true);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dropIndex !== null) reorder(dropIndex);
+    setDraggedField(null);
+    setDropIndex(null);
+    stopAutoScroll();
+  };
+
+  const handleDragEnd = () => {
+    setDraggedField(null);
+    setDropIndex(null);
+    stopAutoScroll();
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    if (!hasChanges) {
+      onClose();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Prepare table updates
+      const tableUpdates = {
+        table_name:
+          tableInfo.table_name !== initialTableInfo.table_name
+            ? tableInfo.table_name
+            : undefined,
+        description:
+          tableInfo.description !== initialTableInfo.description
+            ? tableInfo.description
+            : undefined,
+      };
+
+      // Remove undefined values
+      const cleanTableUpdates = Object.fromEntries(
+        Object.entries(tableUpdates).filter(
+          ([_, value]) => value !== undefined,
+        ),
+      );
+
+      // EVERY CHANGED NAME JUDGED LIKE ADD COLUMN'S (BREAKER-2 B2-08/09/17/18): blank, a spacing variant
+      // of another column's name, too long, or a name the table keeps for itself — refused before anything
+      // is written, naming the column.
+      for (const field of fields) {
+        const was = initialFields.find((f) => f.id === field.id);
+        if (!was || columnNameToKeep(field.display_name) === columnNameToKeep(was.display_name)) continue;
+        const problem = columnNameProblem(field.display_name, fields.filter((f) => f.id !== field.id));
+        if (problem) throw new Error(`${was.display_name}: ${problem}`);
+        field.display_name = columnNameToKeep(field.display_name);
+      }
+
+      // A pattern the browser cannot compile is skipped at validation time —
+      // a rule that looks armed and does nothing. Refuse it here rather than
+      // store it: nothing fails silently.
+      for (const [fieldId, rules] of Object.entries(validationChanges)) {
+        if (!rules.pattern) continue;
+        try {
+          new RegExp(rules.pattern);
+        } catch (err) {
+          const label =
+            fields.find((f) => f.id === fieldId)?.display_name ?? fieldId;
+          throw new Error(
+            `The validation pattern on "${label}" is not a valid regular expression (${err instanceof Error ? err.message : "unreadable"}). Fix it under Rules, or clear it — a pattern that cannot be read would accept everything.`,
+          );
+        }
+      }
+
+      // Prepare field updates AND collect type-change candidates.
+      // Type changes are split off because they walk every row in the table and
+      // rewrite each value (`changeFieldType`); the settings write only names things.
+      const typeChanges: Array<{
+        fieldId: string;
+        displayName: string;
+        from: string;
+        to: FieldDataType;
+      }> = [];
+
+      const fieldUpdates = fields
+        .map((field) => {
+          const originalField = initialFields.find((f) => f.id === field.id);
+          if (!originalField) return null;
+
+          const updates: any = { id: field.id };
+
+          // CRITICAL: Sanitize field_name before allowing updates
+          if (field.field_name !== originalField.field_name) {
+            const sanitizedFieldName = sanitizeFieldName(field.field_name);
+
+            // Validate the sanitized field name
+            if (!validateFieldName(sanitizedFieldName)) {
+              throw new Error(
+                `"${field.display_name}" could not be saved under that name. Try a name with at least one letter in it.`,
+              );
+            }
+
+            // Log warning if field name was modified during sanitization
+            if (field.field_name !== sanitizedFieldName) {
+              console.warn(
+                `Field name "${field.field_name}" was sanitized to "${sanitizedFieldName}"`,
+              );
+            }
+
+            updates.field_name = sanitizedFieldName;
+          }
+
+          if (field.display_name !== originalField.display_name)
+            updates.display_name = field.display_name;
+          if (field.data_type !== originalField.data_type) {
+            // DD-260: `data_type` deliberately does NOT ride this metadata write.
+            // `changeFieldType` below changes the declared type ITSELF, in the
+            // same transaction as the row rewrite and the row-history proof — and
+            // it reads the OLD type to stamp `type_change:<from>→<to>` on that
+            // history. Flipping it here first made the function read the NEW type
+            // as the "from", so the row-history badge on production read
+            // `integer→integer` and told the user nothing about what their value
+            // used to be (V-113 finding F1). The function now REFUSES a call whose
+            // stored type already equals the requested one, so this cannot regress
+            // silently. Sending it here is also unsafe on its own terms: if the
+            // row rewrite failed, the declared type had already changed and the
+            // table was left new-typed over old-shaped rows.
+            typeChanges.push({
+              fieldId: field.id,
+              displayName: field.display_name,
+              from: originalField.data_type,
+              to: field.data_type as FieldDataType,
+            });
+          }
+          if (field.field_order !== originalField.field_order)
+            updates.field_order = field.field_order;
+          if (field.is_required !== originalField.is_required)
+            updates.is_required = field.is_required;
+
+          // Validation rules ride the SAME write every other field property
+          // uses. An empty object is the only way to CLEAR rules; that is exactly
+          // what `serializeValidationRules` returns for an empty rule set.
+          const editedRules = validationChanges[field.id];
+          if (editedRules !== undefined) {
+            const next = serializeValidationRules(editedRules);
+            const prior = serializeValidationRules(
+              parseValidationRules(originalField.validation_rules),
+            );
+            if (JSON.stringify(next) !== JSON.stringify(prior)) {
+              updates.validation_rules = next;
+            }
+          }
+
+          // Only return if there are actual changes
+          return Object.keys(updates).length > 1 ? updates : null;
+        })
+        .filter(Boolean);
+
+      // Confirm row-rewrite before doing it. The legacy code silently flipped
+      // declared types only; this confirms the destructive part is intentional.
+      if (typeChanges.length > 0) {
+        const summary = typeChanges
+          .map((t) => `• ${t.displayName}: ${t.from} → ${t.to}`)
+          .join("\n");
+        const ok = await confirm({
+          title: `Convert ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`}?`,
+          // DD-244: it used to say values "will become null" and stop there,
+          // which read as destruction. They are emptied from the grid AND kept
+          // in each row's history, restorable — say both, and say the count
+          // afterwards (the toast does).
+          description: `${summary}\n\nExisting cell values are converted to the new type. A value that cannot be converted is emptied from the grid and saved in that row's history — open the row and choose Restore in its history to bring it back. You will be told how many.`,
+          confirmLabel: "Convert",
+          variant: "destructive",
+        });
+        if (!ok) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      // The table-and-column settings write, through the data seam (the store's own field doors).
+      const saved = await updateTableConfig({
+        tableId,
+        tableUpdates: cleanTableUpdates as Record<string, unknown>,
+        fieldUpdates: fieldUpdates as Array<Record<string, unknown> & { id: string }>,
+      });
+      if (isServiceFailure(saved)) throw new Error(saved.error);
+
+      // Now the type changes. The store owns BOTH halves — it walks every row and
+      // converts the values AND changes the column's declared type, in one transaction, stamping the real `type_change:<from>→<to>` on the row
+      // history it produces (DD-260: nothing above may flip the declared type
+      // first, or the "from" it records is a lie). cast_or_null is the safer
+      // default — un-castable values become null rather than silently keeping the
+      // old shape, and the value itself goes to row history, restorable.
+      let totalRewritten = 0;
+      // DD-244: a value that cannot become the new type is emptied from the
+      // grid, and its only surviving copy is the row's history. The screen says
+      // so, with the number and the way back — never a silent null.
+      let totalMovedToHistory = 0;
+      const typeFailures: string[] = [];
+      for (const change of typeChanges) {
+        const res = await changeFieldType({
+          tableId,
+          fieldId: change.fieldId,
+          newType: change.to,
+          strategy: "cast_or_null",
+        });
+        if (isServiceFailure(res)) {
+          typeFailures.push(`${change.displayName}: ${res.error}`);
+        } else {
+          totalRewritten += res.data.rows_rewritten;
+          totalMovedToHistory += res.data.values_moved_to_history ?? 0;
+        }
+      }
+
+      // Display formats are a pure UI layer over the stored type — no data is
+      // touched, so they save unconditionally and need no confirmation.
+      const formatFailures: string[] = [];
+      for (const [fieldId, format] of Object.entries(formatChanges)) {
+        const res = await setFieldFormat({ tableId, fieldId, format });
+        if (isServiceFailure(res)) {
+          const label =
+            fields.find((f) => f.id === fieldId)?.display_name ?? fieldId;
+          formatFailures.push(`${label}: ${res.error}`);
+        }
+      }
+      // A renamed header must not break the formulas that name it — the same
+      // rewrite the header's inline rename does, run AFTER the format saves
+      // above so it edits the expression as it now stands.
+      const brokenFormulas: string[] = [];
+      for (const field of fields) {
+        const before = initialFields.find((f) => f.id === field.id);
+        if (!before || before.display_name === field.display_name) continue;
+        const outcome = await rewriteFormulasForRename({
+          tableId,
+          fields: fields.map((f) => ({
+            id: f.id,
+            field_name: f.field_name,
+            display_name: f.display_name,
+            metadata: formatChanges[f.id]
+              ? { ...((f.metadata as object | null) ?? {}), format: formatChanges[f.id] }
+              : f.metadata,
+          })),
+          renamedFieldId: field.id,
+          from: before.display_name,
+          to: field.display_name,
+        });
+        brokenFormulas.push(...outcome.formulasFailed);
+      }
+      if (brokenFormulas.length > 0) {
+        toast({
+          title: "A formula still uses an old column name",
+          description: `Fix the formula in: ${brokenFormulas.join(", ")}. Until then it shows #ERROR.`,
+          variant: "destructive",
+        });
+      }
+
+      if (formatFailures.length > 0) {
+        toast({
+          title: "Some formats could not be saved",
+          description: formatFailures.join("\n"),
+          variant: "destructive",
+        });
+      }
+
+      if (typeChanges.length > 0) {
+        if (typeFailures.length > 0) {
+          toast({
+            title: "Some columns could not be converted",
+            description: typeFailures.join("\n"),
+            variant: "destructive",
+          });
+        } else if (totalMovedToHistory > 0) {
+          toast({
+            title: `Converted ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`} — ${totalMovedToHistory} value${totalMovedToHistory === 1 ? "" : "s"} moved to row history`,
+            description:
+              `${totalRewritten} row${totalRewritten === 1 ? "" : "s"} rewritten. ` +
+              `${totalMovedToHistory} value${totalMovedToHistory === 1 ? " did" : "s did"} not fit the new type and ` +
+              `${totalMovedToHistory === 1 ? "was" : "were"} emptied — ` +
+              `${totalMovedToHistory === 1 ? "it is" : "they are"} saved in each row's history. ` +
+              `Open the row and choose Restore in its history to bring ` +
+              `${totalMovedToHistory === 1 ? "it" : "them"} back.`,
+            variant: "default",
+            duration: 15000,
+          });
+        } else {
+          toast({
+            title: `Converted ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`}`,
+            description: `${totalRewritten} row${totalRewritten === 1 ? "" : "s"} rewritten`,
+            variant: "success",
+          });
+        }
+      }
+
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Error updating table configuration:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update table configuration",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    // On desktop the package Dialog is a non-blocking window (design-system
+    // 0.38.0, register ARE-006): the grid, the Agents menu, the assist dock and
+    // right-click AI stay usable while Table settings is open; the header drags it.
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        {...{ [SURFACE_LAYER_ATTRIBUTE]: TABLE_SETTINGS_SURFACE_NAME }}
+        className="flex max-h-[92dvh] flex-col w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl"
+      >
+        {/* A LAYER over the data table (register ARE-010): while open it is the
+            primary surface for the Agents menu, right-click AI and the assist
+            dock, and the table under it stays in the run as a page level of
+            the surface chain. Mounted inside the content, so it registers only
+            while the window is open. */}
+        <SurfaceLayerBoundary>
+        <SurfaceRuntimeProvider
+          surfaceName={TABLE_SETTINGS_SURFACE_NAME}
+          getScope={() => {
+            const nameOf = (fieldId: string) =>
+              fields.find((f) => f.id === fieldId)?.field_name ?? fieldId;
+            const byName = <T,>(changes: Record<string, T>) =>
+              Object.fromEntries(
+                Object.entries(changes).map(([id, change]) => [nameOf(id), change]),
+              );
+            const pending = {
+              ...(Object.keys(dataTypeChanges).length ? { type_changes: byName(dataTypeChanges) } : {}),
+              ...(Object.keys(formatChanges).length ? { format_changes: byName(formatChanges) } : {}),
+              ...(Object.keys(validationChanges).length
+                ? { validation_changes: byName(validationChanges) }
+                : {}),
+            };
+            return createTableSettingsScope({
+              settings_tab: activeTab,
+              has_unsaved_changes: hasChanges,
+              table_details_draft: {
+                table_name: tableInfo.table_name,
+                description: tableInfo.description,
+              },
+              ...(Object.keys(pending).length ? { pending_column_changes: pending } : {}),
+            });
+          }}
+          getWriteHandlers={() => ({
+            // Both write through the SAME handlers the person's own edits use;
+            // nothing is saved until Save Changes (register ARE-011).
+            table_details: (value) => {
+              const next = (value && typeof value === "object" ? value : null) as Record<string, unknown> | null;
+              if (!next) throw new Error('table_details expects { "table_name"?, "description"? }.');
+              const problems: string[] = [];
+              if ("table_name" in next && (typeof next.table_name !== "string" || !next.table_name.trim())) problems.push("table_name must be a non-empty name");
+              if ("description" in next && typeof next.description !== "string") problems.push("description must be text");
+              if (problems.length) throw new Error(`Nothing was staged: ${problems.join("; ")}.`);
+              if (typeof next.table_name === "string") handleTableInfoChange("table_name", next.table_name.trim());
+              if (typeof next.description === "string") handleTableInfoChange("description", next.description);
+            },
+            column_changes: (value) => {
+              const changes = (value as { changes?: unknown } | null)?.changes;
+              if (!Array.isArray(changes) || changes.length === 0) {
+                throw new Error('column_changes expects { "changes": [{ "column": "<name>", … }] }.');
+              }
+              const byName = (name: string) => {
+                const lower = name.trim().toLowerCase();
+                return fields.find((f) => f.field_name.toLowerCase() === lower) ?? fields.find((f) => f.display_name.toLowerCase() === lower);
+              };
+              const types = new Set<string>(DATA_TYPES.map((t) => t.value));
+              const problems: string[] = [];
+              const staged: Array<() => void> = [];
+              for (const raw of changes) {
+                const change = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+                const field = typeof change.column === "string" ? byName(change.column) : undefined;
+                if (!field) {
+                  problems.push(`no column "${String(change.column)}" (columns: ${fields.map((f) => f.field_name).join(", ")})`);
+                  continue;
+                }
+                if ("display_name" in change) {
+                  if (typeof change.display_name !== "string" || !change.display_name.trim()) problems.push(`"${field.display_name}": display_name must be a non-empty label`);
+                  else { const label = change.display_name.trim(); staged.push(() => handleFieldChange(field.id, "display_name", label)); }
+                }
+                if ("data_type" in change) {
+                  if (typeof change.data_type !== "string" || !types.has(change.data_type)) problems.push(`"${field.display_name}": data_type must be one of ${[...types].join(", ")}`);
+                  else { const type = change.data_type; staged.push(() => handleFieldChange(field.id, "data_type", type)); }
+                }
+                if ("is_required" in change) {
+                  if (typeof change.is_required !== "boolean") problems.push(`"${field.display_name}": is_required must be true or false`);
+                  else { const required = change.is_required; staged.push(() => handleFieldChange(field.id, "is_required", required)); }
+                }
+                if ("formula" in change) {
+                  const expression = typeof change.formula === "string" ? change.formula.trim() : "";
+                  const parsed = parseFormula(expression);
+                  if (!parsed.ok) problems.push(`"${field.display_name}": the formula does not parse — ${parsed.error}`);
+                  else {
+                    const unknown = parsed.references.filter((ref) => !byName(ref));
+                    if (unknown.length) problems.push(`"${field.display_name}": no column is called ${unknown.map((r) => `{${r}}`).join(", ")}`);
+                    else staged.push(() => {
+                      setFormatChanges((prev) => ({
+                        ...prev,
+                        [field.id]: { id: "formula", options: { formula: { expression, resultFormat: "text" } } },
+                      }));
+                      setHasChanges(true);
+                    });
+                  }
+                }
+              }
+              if (problems.length) throw new Error(`Nothing was staged: ${problems.join("; ")}.`);
+              for (const apply of staged) apply();
+            },
+            settings_tab: (value) => {
+              if (value !== "fields" && value !== "table" && value !== "actions") {
+                throw new Error('settings_tab expects "fields", "table" or "actions".');
+              }
+              setActiveTab(value);
+            },
+          })}
+        >
+        <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-5">
+          <DialogTitle className="flex min-w-0 items-center gap-2">
+            <Settings className="h-5 w-5" />
+            <span className="shrink-0">Configure Table:</span>
+            <EntityRef
+              token="dataset"
+              id={tableId}
+              name={tableInfo.table_name}
+              openInNewTab
+              alwaysShowActions
+              className="min-w-0"
+              labelClassName="truncate"
+            />
+            {hasChanges && <span className="text-orange-500">*</span>}
+          </DialogTitle>
+        </DialogHeader>
+
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          <TabsList className="mx-3 mt-2 grid shrink-0 w-auto grid-cols-3 sm:mx-4">
+            <TabsTrigger value="fields">Fields & Order</TabsTrigger>
+            <TabsTrigger value="table">Table Settings</TabsTrigger>
+            <TabsTrigger value="actions">Actions</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="fields" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              ref={scrollRef}
+              className="min-h-0 max-h-[62dvh] space-y-2 overflow-x-hidden overflow-y-auto px-3 py-3 scroll-smooth [scrollbar-gutter:stable] sm:px-4"
+              onDragOver={(e) => {
+                // Keep auto-scroll responsive even when hovering gaps between cards.
+                if (draggedField) {
+                  e.preventDefault();
+                  updateAutoScroll(e.clientY);
+                }
+              }}
+              onDrop={handleDrop}
+            >
+              {fields.map((field, index) => (
+                <React.Fragment key={field.id}>
+                  {/* Drop ghost — a colored bar showing exactly where the
+                      dragged card will land. */}
+                  {draggedField && dropIndex === index && (
+                    <div className="h-1.5 -my-0.5 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)] transition-all" />
+                  )}
+                  <Card
+                    data-field-card={field.id}
+                    data-converting={Boolean(dataTypeChanges[field.id])}
+                    className={`cursor-move border-2 transition-[border-color,background-color,opacity,transform] ${
+                      draggedField === field.id ? "opacity-40 scale-[0.98]" : ""
+                    } ${
+                      dataTypeChanges[field.id]
+                        ? "border-amber-400 bg-amber-50/40 dark:bg-amber-950/20"
+                        : "border-border"
+                    }`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, field.id)}
+                    onDragOver={(e) => handleCardDragOver(e, index)}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-x-2 gap-y-2 px-2.5 py-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:grid-cols-[auto_minmax(11rem,1fr)_7.5rem_9rem_9rem_7rem_6rem_auto] lg:gap-x-3">
+                      <GripVertical className="col-start-1 row-start-1 h-4 w-4 self-center text-muted-foreground lg:row-start-1" />
+                      <div className="col-span-2 col-start-2 row-start-1 min-w-0 sm:col-span-2 lg:col-span-1 lg:col-start-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={field.display_name}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                field.id,
+                                "display_name",
+                                e.target.value,
+                              )
+                            }
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Two adjacent selects that can both read "Text" are
+                            unreadable without captions — "Stores" is the
+                            database type (changing it rewrites data), "Shows
+                            as" is the display format (changing it never does). */}
+                      <div className="col-start-2 row-start-2 min-w-0 lg:col-start-3 lg:row-start-1">
+                        <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Stores
+                        </span>
+                        <Select
+                          value={field.data_type}
+                          onValueChange={(value) =>
+                            handleFieldChange(field.id, "data_type", value)
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-full text-xs">
+                            <span className="truncate">
+                              {DATA_TYPES.find(
+                                (type) => type.value === field.data_type,
+                              )?.label ?? "Text"}
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {storageTypesToChangeInto({
+                              changeInto: RECORD_STORE_COLUMN_TYPES,
+                              current: field.data_type,
+                            }).map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                <div>
+                                  <div className="font-medium">
+                                    {type.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {type.description}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <FieldFormatPicker
+                        offerFormat={offerFormatWhereRelationIs(relationEnabled)}
+                        label="Shows as"
+                        className="col-start-3 row-start-2 min-w-0 space-y-0 lg:col-start-4 lg:row-start-1"
+                        optionsPresentation="popover"
+                        triggerClassName="h-8 w-full"
+                        dataType={field.data_type}
+                        suggestions={
+                          profile?.columns.find(
+                            (c) => c.field_name === field.field_name,
+                          )?.top_values
+                        }
+                        siblingFields={fields
+                          .filter((f) => f.field_name !== field.field_name)
+                          .map((f) => ({
+                            field_name: f.field_name,
+                            display_name: f.display_name,
+                          }))}
+                        value={
+                          formatChanges[field.id] ??
+                          resolveFieldFormat(field.data_type, field.metadata)
+                        }
+                        onChange={(next) => {
+                          setFormatChanges((prev) => ({
+                            ...prev,
+                            [field.id]: next,
+                          }));
+                          setHasChanges(true);
+                        }}
+                        onDataTypeChange={(base, next) => {
+                          // A kind that lives on another storage type: retype
+                          // the column (the type change resets the draft
+                          // format) and then set the picked format on top.
+                          handleFieldChange(field.id, "data_type", base);
+                          setFormatChanges((prev) => ({
+                            ...prev,
+                            [field.id]: next,
+                          }));
+                          setHasChanges(true);
+                        }}
+                      />
+
+                      {/* A formula column's expression — the one place it is
+                          written. Only rendered when the format is `formula`,
+                          so every other column card keeps its shape. */}
+                      {(formatChanges[field.id] ??
+                        resolveFieldFormat(field.data_type, field.metadata)).id ===
+                        "formula" && (
+                        <FormulaExpressionEditor
+                          className="col-span-full"
+                          value={
+                            formatChanges[field.id] ??
+                            resolveFieldFormat(field.data_type, field.metadata)
+                          }
+                          siblingFields={fields
+                            .filter((f) => f.field_name !== field.field_name)
+                            .map((f) => ({
+                              field_name: f.field_name,
+                              display_name: f.display_name,
+                            }))}
+                          disabled={loading}
+                          onChange={(next) => {
+                            setFormatChanges((prev) => ({
+                              ...prev,
+                              [field.id]: next,
+                            }));
+                            setHasChanges(true);
+                          }}
+                        />
+                      )}
+
+                      {/* What this column ACCEPTS, next to what it stores and
+                          what it shows as — the third question about a column,
+                          in the same row as the other two. */}
+                      <ColumnValidationEditor
+                        className="col-span-2 col-start-2 row-start-4 min-w-0 sm:col-span-2 sm:col-start-2 sm:row-start-3 lg:col-span-1 lg:col-start-5 lg:row-start-1"
+                        dataType={field.data_type}
+                        format={
+                          formatChanges[field.id] ??
+                          resolveFieldFormat(field.data_type, field.metadata)
+                        }
+                        value={
+                          validationChanges[field.id] ??
+                          parseValidationRules(field.validation_rules)
+                        }
+                        disabled={loading}
+                        onChange={(next) => {
+                          setValidationChanges((prev) => ({
+                            ...prev,
+                            [field.id]: next,
+                          }));
+                          setHasChanges(true);
+                        }}
+                      />
+
+                      <div className="col-start-2 row-start-3 flex h-8 items-center gap-3 sm:col-span-2 sm:col-start-4 sm:row-start-2 lg:col-span-1 lg:col-start-6 lg:row-start-1">
+                        <div className="flex items-center gap-1.5">
+                          <Checkbox
+                            id={`required-${field.id}`}
+                            checked={field.is_required}
+                            onCheckedChange={(checked) =>
+                              handleFieldChange(
+                                field.id,
+                                "is_required",
+                                checked,
+                              )
+                            }
+                          />
+                          <Label
+                            htmlFor={`required-${field.id}`}
+                            className="text-[11px]"
+                          >
+                            Req
+                          </Label>
+                        </div>
+                      </div>
+
+                      <div className="col-span-2 col-start-3 row-start-3 flex h-8 items-center justify-end sm:col-span-1 sm:col-start-4 sm:row-start-1 lg:col-start-7 lg:row-start-1 lg:justify-start">
+                        {dataTypeChanges[field.id] && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 border-amber-400 text-amber-600"
+                          >
+                            Will convert
+                          </Badge>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="col-start-4 row-start-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive sm:col-start-5 lg:col-start-8 lg:row-start-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDeleteField(field);
+                        }}
+                        disabled={
+                          loading ||
+                          fields.length <= 1 ||
+                          deletingFieldId === field.id
+                        }
+                        title={
+                          fields.length <= 1
+                            ? "A table must keep at least one column"
+                            : `Remove ${field.display_name}`
+                        }
+                      >
+                        {deletingFieldId === field.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                  {/* Drop ghost at the very end of the list. */}
+                  {draggedField &&
+                    dropIndex === index + 1 &&
+                    index === fields.length - 1 && (
+                      <div className="h-1.5 -my-0.5 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)] transition-all" />
+                    )}
+                </React.Fragment>
+              ))}
+              {onAddColumn &&
+                (hasChanges ? (
+                  // Adding a column reloads this list from the table, which
+                  // would discard edits made here — say so instead of
+                  // offering a button that silently throws work away.
+                  <p className="px-1 pt-1 text-xs text-muted-foreground">
+                    Save or cancel your changes to add a column.
+                  </p>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 w-full justify-center gap-1.5 border-dashed"
+                    onClick={onAddColumn}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add column
+                  </Button>
+                ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="table" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+            {/* Own scroll area, same as the Fields tab: this tab's content is
+                taller than the dialog on a laptop, and the parent's
+                `overflow-hidden` clips the tail with no scrollbar — which is
+                how the Data Validation section arrived unreachable. */}
+            <div className="min-h-0 max-h-[62dvh] space-y-6 overflow-y-auto px-4 py-3 [scrollbar-gutter:stable]">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="table-name">Table Name</Label>
+                  <Input
+                    id="table-name"
+                    value={tableInfo.table_name}
+                    onChange={(e) =>
+                      handleTableInfoChange("table_name", e.target.value)
+                    }
+                    placeholder="Enter table name"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="table-description">Description</Label>
+                  <ProTextarea
+                    id="table-description"
+                    value={tableInfo.description || ""}
+                    onChange={(e) =>
+                      handleTableInfoChange("description", e.target.value)
+                    }
+                    placeholder="Describe what this table contains..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Row label — saved immediately (a table property, like colors),
+                  so it is deliberately outside this dialog's Save / Cancel. */}
+              <RowLabelPicker
+                tableId={tableId}
+                metadata={tableInfo.metadata}
+                fields={fields}
+                sampleRow={sampleRow ?? null}
+                onSaved={(next) => {
+                  setTableInfo((prev) => {
+                    const metadata = {
+                      ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
+                    };
+                    if (next) metadata.row_label = next;
+                    else delete metadata.row_label;
+                    return { ...prev, metadata };
+                  });
+                  onSuccess();
+                }}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="actions" className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+              {/* Row actions — saved immediately (a table property), so they are
+                  deliberately outside this dialog's Save / Cancel. */}
+              <RowActionsEditor
+                tableId={tableId}
+                metadata={tableInfo.metadata}
+                fields={fields}
+                rows={rows ?? (sampleRow ? [{ id: "sample", ...sampleRow }] : [])}
+                onSaved={(next) => {
+                  setTableInfo((prev) => ({
+                    ...prev,
+                    metadata: {
+                      ...((prev.metadata as Record<string, unknown> | null | undefined) ?? {}),
+                      row_actions: next,
+                    },
+                  }));
+                  onSuccess();
+                }}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+            <ErrorAlchemyMenu error={error} />
+          </div>
+        )}
+
+        <DialogFooter className="mx-0 shrink-0 border-t px-4 py-3 sm:px-5">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-h-5 items-center gap-2 text-sm text-muted-foreground">
+              {Object.keys(dataTypeChanges).length > 0 && (
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+              )}
+              {onActionsTab
+                ? hasChanges
+                  ? "Row actions save one at a time. Other tabs have unsaved changes."
+                  : "Row actions save one at a time, as you save each."
+                : Object.keys(dataTypeChanges).length > 0
+                  ? `${Object.keys(dataTypeChanges).length} ${Object.keys(dataTypeChanges).length === 1 ? "column" : "columns"} will be converted when saved`
+                  : hasChanges
+                    ? "You have unsaved changes"
+                    : "No changes made"}
+            </div>
+            <div className="flex shrink-0 flex-wrap justify-end gap-2">
+              {!pageOwnsShare && (
+              <ShareButton
+                // A table is shared as the record it is (data seam).
+                resourceType="record"
+                {...((tableInfo as { organization_id?: string } | null)?.organization_id
+                  ? { organizationId: (tableInfo as { organization_id?: string }).organization_id as string }
+                  : {})}
+                resourceId={tableId}
+                resourceName={tableInfo.table_name}
+                showStatus={false}
+              />
+              )}
+              {onActionsTab && !hasChanges ? (
+                <Button variant="outline" onClick={onClose}>
+                  Close
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={onClose} disabled={loading}>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={loading || !hasChanges}>
+                    <Save className="h-4 w-4 mr-2" />
+                    {loading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </DialogFooter>
+        </SurfaceRuntimeProvider>
+        </SurfaceLayerBoundary>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -172,7 +172,7 @@ export const INTEGRATIONS: Integration[] = [
       {
         kind: "nowhere", repo: "matrx-frontend",
         pattern: "(?:from\\s*|import\\(\\s*)[\"'][^\"']*user-generated-table-data/UserTableViewer[\"']",
-        except: ["components/user-generated-table-data/**", "app/(core)/data/**", "app/(dev)/**", "features/data-tables/components/LocatedTableViewer.tsx"],
+        except: ["components/user-generated-table-data/**", "app/(core)/data/**", "app/(dev)/**", "features/data-tables/components/LocatedTableViewer.tsx", "features/data-tables/components/SheetLayout.tsx"],
         says: "no host mounts the older grid by id without locating the table",
       },
       ...[

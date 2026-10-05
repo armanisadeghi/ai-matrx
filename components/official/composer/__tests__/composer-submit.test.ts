@@ -133,6 +133,7 @@ const SHARED_RULE = /enterSendsHere|composerKeyIntent/;
 /** Files whose Enter branch does NOT send a message — with the reason. */
 const NOT_A_SEND: Record<string, string> = {
   "components/matrx/ConfigBuilder/index.tsx": "Enter moves focus to the next field; textareas keep their newline",
+  "features/data-tables/components/EditableCell.tsx": "a spreadsheet cell: Enter commits the edit and moves down, as in every spreadsheet",
   "packages/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx": "Enter moves to the next variable, never sends",
   "features/podcasts/generator/components/CreateShowDialog.tsx": "the Enter branch is on a single-line <Input>",
   "features/tasks/widgets/AssociateTaskButton.tsx": "the Enter branch is on a single-line <Input>",

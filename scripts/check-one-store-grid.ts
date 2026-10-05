@@ -4,11 +4,12 @@
  * and never a second host binding (lane CHAIR-ONE-GRID, 2026-10-04; Arman: "adopt, don't replace").
  * Red on any hit:
  *
- *  1. old-grid      — the retired classic sheet (`UserTableViewer`, and `SheetLayout` that drew it as
- *                     the table page's "Sheet" layout; both deleted, FTS-5e) is imported nowhere.
- *  2. table-page    — records-ui's `TablePage` is mounted only by `UnifiedTable.tsx`; a host that
+ *  1. old-grid      — the classic sheet (`components/user-generated-table-data/UserTableViewer`) is
+ *                     imported only by `SheetLayout`, the table page's "Sheet" layout.
+ *  2. sheet-layout  — `SheetLayout` is imported only by `UnifiedTable.tsx` (one table page).
+ *  3. table-page    — records-ui's `TablePage` is mounted only by `UnifiedTable.tsx`; a host that
  *                     opens a table by id goes through `LocatedTableViewer` / `UnifiedTableBody`.
- *  3. second-host   — `RecordStoreTableHost` (the retired second binding) is named nowhere.
+ *  4. second-host   — `RecordStoreTableHost` (the retired second binding) is named nowhere.
  *
  * Tests (`__tests__/`, `*.test.*`) may mock these and are not scanned.
  * Usage: pnpm check:one-store-grid   ·   pnpm check:one-store-grid --self-test
@@ -18,8 +19,9 @@ import { existsSync, readFileSync } from "node:fs";
 
 const SELF = "scripts/check-one-store-grid.ts";
 const THE_TABLE_PAGE = "features/unified-data/table-page/UnifiedTable.tsx";
+const THE_SHEET_LAYOUT = "features/data-tables/components/SheetLayout.tsx";
 
-type Rule = "old-grid" | "table-page" | "second-host";
+type Rule = "old-grid" | "sheet-layout" | "table-page" | "second-host";
 export type Finding = { file: string; line: number; rule: Rule; text: string };
 
 const IMPORT_FROM = /\bfrom\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/;
@@ -36,8 +38,11 @@ export function scan(files: ReadonlyArray<{ path: string; text: string }>): Find
       const from = spec?.[1] ?? spec?.[2] ?? "";
       const line = text.slice(0, m.index ?? 0).split("\n").length + (text[m.index ?? 0] === "\n" ? 1 : 0);
       const say = stmt.replace(/\s+/g, " ").trim().slice(0, 160);
-      if (/user-generated-table-data\/UserTableViewer$|data-tables\/components\/SheetLayout$/.test(from)) {
+      if (/user-generated-table-data\/UserTableViewer$/.test(from) && path !== THE_SHEET_LAYOUT) {
         out.push({ file: path, line, rule: "old-grid", text: say });
+      }
+      if (/data-tables\/components\/SheetLayout$/.test(from) && path !== THE_TABLE_PAGE) {
+        out.push({ file: path, line, rule: "sheet-layout", text: say });
       }
       if (
         /^@ai-matrx\/records-ui$/.test(from) &&
@@ -73,7 +78,8 @@ function selfTest(): void {
     { path: "features/data-tables/records-ui-host/h.tsx", text: "export function RecordStoreTableHost() {}" },
   ]);
   const green = scan([
-    { path: THE_TABLE_PAGE, text: 'import { RecordsMount, TablePage } from "@ai-matrx/records-ui";' },
+    { path: THE_SHEET_LAYOUT, text: 'import UserTableViewer from "@/components/user-generated-table-data/UserTableViewer";' },
+    { path: THE_TABLE_PAGE, text: 'import { SheetLayout } from "@/features/data-tables/components/SheetLayout";\nimport { RecordsMount, TablePage } from "@ai-matrx/records-ui";' },
     { path: "features/x/a.tsx", text: 'import type { TablePageActionHost } from "@ai-matrx/records-ui";\nimport { TablesHome, type TablePage } from "@ai-matrx/records-ui";' },
     { path: "features/x/__tests__/a.test.tsx", text: 'jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({ RecordStoreTableHost: () => null }));' },
     { path: "features/x/b.tsx", text: 'import { LocatedTableViewer } from "@/features/data-tables/components/LocatedTableViewer";' },

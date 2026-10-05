@@ -32,3 +32,15 @@ it("says both when a batch hits both", () => {
     "1 row is in Trash — restore it from Trash to edit; 1 row could not be found — it may have been removed by someone else.",
   );
 });
+
+it("no bulk surface hand-writes the 'could not be found' sentence any more", () => {
+  const root = join(__dirname, "..", "..", "..");
+  for (const file of [
+    "components/user-generated-table-data/UserTableViewer.tsx",
+    "features/data-tables/hooks/useCellUndo.ts",
+  ]) {
+    const src = readFileSync(join(root, file), "utf8");
+    expect(src).toContain("describeBulkFailures(");
+    expect(src).not.toMatch(/could not be found — they may have been removed/);
+  }
+});

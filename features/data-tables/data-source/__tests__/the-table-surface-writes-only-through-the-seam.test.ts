@@ -22,6 +22,7 @@ import { dataTablesManifest } from "@/features/surfaces/manifests/data-tables.ma
 
 const ROOT = path.resolve(__dirname, "../../../..");
 const SEAM_ONLY = [
+  "features/data-tables/hooks/useDataTableWriteHandlers.ts",
   "features/data-tables/agent-context/buildDataTablesScope.ts",
   "lib/field-formats/ChoiceOptionsEditor.tsx",
   "lib/field-formats/FieldFormatPicker.tsx",

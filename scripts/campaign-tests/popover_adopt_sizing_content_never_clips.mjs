@@ -47,6 +47,8 @@ const SURFACES = [
   { slug: "column-workorder",label: "Column menu — Work order",         file: "components/user-generated-table-data/ColumnHeaderMenu.tsx",  was: "w-72",   route: TABLE,     sel: '[aria-haspopup="dialog"][title="Sort or filter Work order"]', shortContent: true },
   { slug: "entity-filters",  label: "Agents list — filters & sort",     file: "lib/entity-list/components/EntityFilterPanel.tsx",           was: "w-[360px]", route: "/agents", aria: "Filters and sort" },
   { slug: "entity-columns",  label: "Agents list — choose columns",     file: "lib/entity-list/components/EntityColumnPicker.tsx",          was: "w-56",   route: "/agents", aria: "Choose columns", shortContent: true },
+  { slug: "column-view",     label: "Data table — column view menu",    file: "features/data-tables/components/ColumnViewMenu.tsx",         was: "w-72",   route: TABLE,     trigger: "Columns",    desktopOnly: true },
+  { slug: "table-layout",    label: "Data table — layout menu",         file: "features/data-tables/components/TableLayoutMenu.tsx",        was: "w-72",   route: TABLE,     trigger: "Layout",     desktopOnly: true },
   { slug: "org-switcher",    label: "Organization switcher",            file: "features/shell/components/account-rail/ShellOrgSwitcher.tsx", was: "w-72", route: TABLE, sel: "[data-shell-org-switcher=rail]", desktopOnly: true },
   { slug: "inbox",           label: "Notifications inbox",              file: "features/notifications/components/InboxHeaderButton.tsx",    was: "w-[380px] max-w-[92vw]", route: TABLE, trigger: "99+", desktopOnly: true },
 ];

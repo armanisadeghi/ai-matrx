@@ -4473,6 +4473,10 @@
       "name": "TOAST_LIMIT"
     },
     {
+      "file": "matrx-frontend/components/user-generated-table-data/UserTableViewer.tsx",
+      "name": "CLIENT_SORT_THRESHOLD"
+    },
+    {
       "file": "matrx-frontend/features/admin/agent-review/surface-scope.ts",
       "name": "QUEUE_SAMPLE_SIZE"
     },
@@ -5055,6 +5059,10 @@
     {
       "file": "matrx-frontend/features/data-tables/components/WorkbookCursorOverlay.tsx",
       "name": "STALE_AFTER_MS"
+    },
+    {
+      "file": "matrx-frontend/features/data-tables/hooks/useDataTableWriteHandlers.ts",
+      "name": "MAX_DESCRIPTION_CHARS"
     },
     {
       "file": "matrx-frontend/features/data-tables/resolve-unique-dataset-name.ts",

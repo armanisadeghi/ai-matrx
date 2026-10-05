@@ -172,7 +172,7 @@ describe("Rooms · a hand-set order is the Sheet's sort", () => {
     expect(saved.success).toBe(true);
     expect(client.viewDeclare).toHaveBeenCalledTimes(1);
     const spec = (client.viewDeclare.mock.calls[0]![0] as { spec: { definition: Record<string, unknown> } }).spec;
-    expect(spec.definition.layout).toBe("grid");
+    expect(spec.definition.layout).toBe("sheet");
   });
 
   it("saving a column sort replaces the hand-set order on its view", async () => {
