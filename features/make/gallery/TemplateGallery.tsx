@@ -39,9 +39,12 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/templates/agentCopyHost";
 import { addInstalledAgent, agentsLeftBy, hostStepsPending, type Claim } from "./installAgent";
 import { InstalledTemplate, type TemplateTryIt } from "@/features/templates/components/InstalledTemplate";
+import { TEMPLATES_CHANGED_EVENT } from "@/features/templates/events";
+import { useOpenSaveTemplateDialog } from "@/features/overlays/openers/saveTemplateDialog";
+import { EntityOrgFilter } from "@/lib/entity-list/components/EntityOrgFilter";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
 import { templateKnob } from "@/features/templates/knobs";
 import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
-import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
@@ -55,8 +58,6 @@ import {
   galleryFilter,
   hrefForMade,
   openableMade,
-  orgRowCards,
-  orgRowFilter,
   platformCards,
   type GalleryAnswer,
   type GalleryCard,
@@ -139,7 +140,7 @@ export function TemplateGallerySection() {
         </div>
       </div>
 
-      {organizationId ? <OrganizationRow organizationId={organizationId} /> : null}
+      <OrganizationsRow installedIn={organizationId} />
 
       {shown.phase === "reading" ? (
         <Skeleton className="h-28 w-full" />
@@ -154,14 +155,34 @@ export function TemplateGallerySection() {
   );
 }
 
-function OrganizationRow({ organizationId }: { organizationId: string }) {
-  // org-filter: write-target the row names the active organization because its rows are that organization's saved templates
-  const name = useAppSelector(selectActiveOrganizationName);
-  const read = useCatalogue(`org:${organizationId}`, orgRowFilter(organizationId));
-  const cards = read.phase === "read" ? orgRowCards(read.data.cards, organizationId) : [];
+/**
+ * "Your organizations' templates": every template the person's organizations saved, beside the
+ * platform's. The active organization is NOT a filter (access ladder): a page-local organization
+ * filter narrows it, defaulting to All organizations. Save as template opens from here too.
+ */
+function OrganizationsRow({ installedIn }: { installedIn: string | null }) {
+  const [orgFilter, setOrgFilter] = useOrgFilterParam();
+  const [changed, setChanged] = useState(0);
+  useEffect(() => {
+    const again = () => setChanged((n) => n + 1);
+    window.addEventListener(TEMPLATES_CHANGED_EVENT, again);
+    return () => window.removeEventListener(TEMPLATES_CHANGED_EVENT, again);
+  }, []);
+  const openSave = useOpenSaveTemplateDialog();
+  const read = useCatalogue(
+    `orgs:${orgFilter ?? "all"}:${installedIn ?? ""}:${changed}`,
+    galleryFilter({}, { scope: "org", organizationId: orgFilter, installedIn }),
+  );
+  const cards = read.phase === "read" ? read.data.cards.filter((c) => c.scope === "org" && (!orgFilter || c.owner_organization_id === orgFilter)) : [];
   return (
-    <div className="flex flex-col gap-2" data-make-org-row={organizationId}>
-      <h3 className="truncate text-xs font-medium text-muted-foreground">{name ? `${name}’s templates` : "Your organization’s templates"}</h3>
+    <div className="flex flex-col gap-2" data-make-org-row={orgFilter ?? "all"}>
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="truncate text-xs font-medium text-muted-foreground">Your organizations’ templates</h3>
+        <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
+        <Button size="sm" variant="outline" className="ml-auto" onClick={() => openSave({})} data-make-save-template="">
+          Save as template
+        </Button>
+      </div>
       {read.phase === "reading" ? (
         <Skeleton className="h-10 w-full" />
       ) : read.phase === "failed" ? (

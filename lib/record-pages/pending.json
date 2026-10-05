@@ -1293,7 +1293,7 @@
   "window:features/dictionary/components/DictionarySelectorWindow.tsx",
   "window:features/files/components/core/ShareLinkDialog/ShareLinkDialog.tsx",
   "window:features/image-studio/components/CropStudioWindow.tsx",
-  "window:features/kits/components/SaveKitDialog.tsx",
+  "window:features/templates/components/SaveTemplateDialog.tsx",
   "window:features/knowledge/command-bar/KnowledgeCommandBar.tsx",
   "window:features/marketing/search-console/windows/GscDrilldownWindow.tsx",
   "window:features/marketing/search-console/windows/GscWhyScoreWindow.tsx",

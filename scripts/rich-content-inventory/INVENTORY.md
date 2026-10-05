@@ -7,25 +7,26 @@ GENERATED — never edit by hand. Regenerate with `pnpm rich-content:inventory` 
 | Category | Status | Pieces | Sites | Files |
 |---|---|---:|---:|---:|
 | document-generator | banned | 6 | 0 | 0 |
-| hand-rolled-helper | banned | 3 | 10 | 10 |
+| hand-rolled-helper | banned | 4 | 1 | 1 |
 | hand-rolled-textarea | banned | 1 | 4 | 4 |
 | legacy-actions | banned | 2 | 0 | 0 |
-| legacy-editor | banned | 6 | 15 | 14 |
-| markdown-package | banned | 7 | 18 | 13 |
+| legacy-editor | banned | 6 | 14 | 13 |
+| markdown-package | banned | 7 | 14 | 11 |
 | prompt-editor | banned | 2 | 7 | 5 |
-| raw-content-render | review | 3 | 856 | 682 |
-| raw-html | review | 1 | 32 | 25 |
-| renderer-entry-point | tracked | 7 | 182 | 171 |
-| **total** | | 38 | 1124 | 884 |
+| raw-content-render | banned | 1 | 0 | 0 |
+| raw-content-render | review | 2 | 677 | 547 |
+| raw-html | review | 1 | 35 | 27 |
+| renderer-entry-point | tracked | 7 | 103 | 95 |
+| **total** | | 39 | 855 | 685 |
 
-Files scanned: 16082. Surfaces reached: 1299. Unresolved local code imports (broken or generated paths the graph cannot follow): 3.
+Files scanned: 15919. Surfaces reached: 1292. Unresolved local code imports (broken or generated paths the graph cannot follow): 3.
 
 ## Pieces
 
 | Piece | Category | Status | Files | Sites | Replacement |
 |---|---|---|---:|---:|---|
-| react-markdown | markdown-package | banned | 10 | 10 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
-| remark-* plugins | markdown-package | banned | 5 | 7 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
+| react-markdown | markdown-package | banned | 8 | 8 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
+| remark-* plugins | markdown-package | banned | 3 | 5 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | rehype-* plugins | markdown-package | banned | 0 | 0 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | katex (direct) | markdown-package | banned | 0 | 0 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
 | react-katex | markdown-package | banned | 1 | 1 | Render through the ONE markdown core: `BasicMarkdownContent` / `MarkdownStream` (components/markdown-core/MarkdownCore → MarkdownCoreImpl is the only react-markdown/remark/rehype/katex edge). Target: `<RichContent source level>` — rich-content-unification PLAN §3.1–3.2. Never import the package directly. |
@@ -40,581 +41,464 @@ Files scanned: 16082. Surfaces reached: 1299. Unresolved local code imports (bro
 | @toast-ui/* (Toast UI editor) | legacy-editor | banned | 0 | 0 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
 | TuiEditorContent | legacy-editor | banned | 0 | 0 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
 | @remirror/* (installed, unused) | legacy-editor | banned | 2 | 2 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
-| FullScreenMarkdownEditor (16-tab editor) | legacy-editor | banned | 4 | 5 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
+| FullScreenMarkdownEditor (16-tab editor) | legacy-editor | banned | 3 | 4 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
 | BasicContentEditor (split editor) | legacy-editor | banned | 3 | 3 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
 | components/official/content-editor/ContentEditor | legacy-editor | banned | 5 | 5 | THE ONE EDITOR (Tiptap 3 visual + CodeMirror 6 source, save = splice) — rich-content-unification PLAN §3.5–3.6. Until it lands, add NO new consumer: extend the surface's existing editor call site instead of adding a new one. |
 | messageActionRegistry (chat, both copies) | legacy-actions | banned | 0 | 0 | Register the action in the ONE action registry: features/rich-document/actions/provider.ts (the rich-document provider of the Alchemy action registry, ALC-15) (rich-content-unification PLAN §3.10). The chat registry and both AssistantActionBar copies are being deleted. |
 | AssistantActionBar (both copies) | legacy-actions | banned | 0 | 0 | Register the action in the ONE action registry: features/rich-document/actions/provider.ts (the rich-document provider of the Alchemy action registry, ALC-15) (rich-content-unification PLAN §3.10). The chat registry and both AssistantActionBar copies are being deleted. |
 | HighlightedText (prompt {{var}} contentEditable) | prompt-editor | banned | 5 | 5 | The one editor's CodeMirror 6 source mode with {{variable}} highlighting (rich-content-unification PLAN §3.5). Do not extend the hand-rolled contentEditable prompt pieces. |
 | MessageViewModeMenu (bespoke mode toggle) | prompt-editor | banned | 2 | 2 | The one editor's CodeMirror 6 source mode with {{variable}} highlighting (rich-content-unification PLAN §3.5). Do not extend the hand-rolled contentEditable prompt pieces. |
-| cleanMarkdownPreview (regex markdown stripping) | hand-rolled-helper | banned | 6 | 6 | Render the preview at the inline level through the markdown core (`BasicMarkdownContent`; target `<RichContent level="inline">`, PLAN §3.1) instead of stripping markdown with regexes. |
-| renderAnnouncementMessage (regex link parser) | hand-rolled-helper | banned | 4 | 4 | Render the message through the markdown core at the inline level: `<RichContent level="inline">` (PLAN §3.1). |
+| cleanMarkdownPreview (regex markdown stripping) | hand-rolled-helper | banned | 0 | 0 | Render the preview at the inline level through the markdown core (`BasicMarkdownContent`; target `<RichContent level="inline">`, PLAN §3.1) instead of stripping markdown with regexes. |
+| renderAnnouncementMessage (regex link parser) | hand-rolled-helper | banned | 0 | 0 | Render the message through the markdown core at the inline level: `<RichContent level="inline">` (PLAN §3.1). |
 | a second inline markdown renderer (InlineMarkdownWithLinks / applyInlineMarkdownHtmlFormatting) | hand-rolled-helper | banned | 0 | 0 | Render inline markdown (table cells, titles, labels) through the ONE core: `<RichContent level="inline" source isStreaming>` — math, links, code and the stream heal come with it. |
 | hand-rolled AutoTextarea / AutoResizeTextarea | hand-rolled-textarea | banned | 4 | 4 | Use `ProTextarea` (components/official/ProTextarea.tsx) — it auto-grows and carries dictation, cleanup and agent actions. Never hand-roll another auto-resizing textarea. |
-| MarkdownStream | renderer-entry-point | tracked | 92 | 95 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
-| BasicMarkdownContent | renderer-entry-point | tracked | 32 | 32 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
-| ConfigurableMarkdownContent | renderer-entry-point | tracked | 5 | 6 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
-| MarkdownRenderer | renderer-entry-point | tracked | 8 | 8 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
-| CardFaceContent | renderer-entry-point | tracked | 15 | 15 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
-| RichDocument | renderer-entry-point | tracked | 23 | 23 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
+| MarkdownStream | renderer-entry-point | tracked | 25 | 28 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
+| BasicMarkdownContent | renderer-entry-point | tracked | 22 | 22 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
+| ConfigurableMarkdownContent | renderer-entry-point | tracked | 6 | 7 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
+| MarkdownRenderer | renderer-entry-point | tracked | 7 | 7 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
+| CardFaceContent | renderer-entry-point | tracked | 16 | 16 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
+| RichDocument | renderer-entry-point | tracked | 20 | 20 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
 | MarkdownPreview | renderer-entry-point | tracked | 3 | 3 | Current entry point — keep using it; it is absorbed by `<RichContent source level>` at cutover (PLAN §3.1). |
-| dangerouslySetInnerHTML | raw-html | review | 25 | 32 | Rich text renders through the markdown core; HTML-origin bodies go through the HTML-sanitizing path (PLAN §2). |
-| {x.content\|body\|description\|prompt\|reasoning\|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td> | raw-content-render | review | 560 | 692 | If the field can hold markdown, render it through the core at the right level (PLAN §3.1). |
+| dangerouslySetInnerHTML | raw-html | review | 27 | 35 | Rich text renders through the markdown core; HTML-origin bodies go through the HTML-sanitizing path (PLAN §2). |
+| {x.content\|body\|description\|prompt\|reasoning\|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td> | raw-content-render | review | 542 | 670 | If the field can hold markdown, render it through the core at the right level (PLAN §3.1). |
 | .split("\n").map(→ JSX) paragraph renderer | raw-content-render | review | 7 | 7 | Paragraphs come from the markdown core, never a hand split on newlines (PLAN §3.1). |
-| whitespace-pre-wrap / pre-line on a content field | raw-content-render | review | 138 | 157 | pre-wrap shows markdown source; render it through the core instead (PLAN §3.1). |
+| whitespace-pre-wrap / pre-line on a content field | raw-content-render | banned | 0 | 0 | pre-wrap shows markdown source; render it through the core instead: `<RichContent source level="inline\|standard\|full">` (one-line previews: `<RichContentPreview>`) — PLAN §3.1. |
+| a markdown-link regex in a component file (hand-rolled markdown parsing for display) | hand-rolled-helper | banned | 1 | 1 | Never parse markdown links with a regex to build JSX (the announcement parser class): render the text through `<RichContent source level>` — the core handles links, emphasis, code and math (PLAN §3.1). |
 
 ## Top surfaces (by their OWN legacy sites — shared files excluded)
 
 | Surface | Own files | Own banned | Own tracked | Own review | All banned (incl. shared) |
 |---|---:|---:|---:|---:|---:|
-| overlay agentAdvancedEditorWindow (Agent Advanced Editor) | 12 | 8 | 6 | 10 | 16 |
-| route /administration/agents/system-agents/agents/[id]/build | 12 | 8 | 6 | 10 | 16 |
-| route /agents/[id]/build | 12 | 8 | 6 | 10 | 16 |
-| route /agents/battle/variations | 12 | 8 | 6 | 10 | 16 |
-| route /agents/battle/variations/[setId] | 12 | 8 | 6 | 10 | 16 |
-| route /agents/battle/system-prompt | 9 | 6 | 5 | 2 | 14 |
-| route /agents/battle/system-prompt/[setId] | 9 | 6 | 5 | 2 | 14 |
-| route /administration/utilities/markdown-tester | 14 | 4 | 4 | 14 | 12 |
-| route /markdown-studio | 14 | 4 | 4 | 14 | 12 |
-| overlay markdownEditor (Markdown Editor (fullscreen)) | 6 | 4 | 0 | 7 | 12 |
-| overlay markdownEditorWindow (Markdown Editor) | 6 | 4 | 0 | 7 | 12 |
-| route /administration/users/feedback | 8 | 3 | 0 | 11 | 11 |
-| route /s/[token] | 3 | 2 | 0 | 2 | 10 |
-| route /seo/ai-visibility | 2 | 2 | 0 | 1 | 10 |
-| overlay announcements (Announcements) | 2 | 2 | 0 | 0 | 2 |
-| overlay noteInfoWindow (Note Info) | 1 | 2 | 0 | 0 | 10 |
-| route /administration/agents/support | 2 | 2 | 0 | 0 | 10 |
-| route /administration/agents/system-agents/agents | 2 | 2 | 0 | 0 | 10 |
-| route /agents/all | 2 | 2 | 0 | 0 | 10 |
-| route /marketing/ai-visibility/runs/[runId] | 1 | 2 | 0 | 0 | 10 |
-| route /workflows/all | 2 | 2 | 0 | 0 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId] | 8 | 1 | 1 | 10 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId]/ai-runs | 8 | 1 | 1 | 10 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId]/brief | 8 | 1 | 1 | 10 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId]/entities | 8 | 1 | 1 | 10 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId]/map | 8 | 1 | 1 | 10 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId]/setup | 8 | 1 | 1 | 10 | 10 |
-| route /marketing/[brandId]/content/plan/[siteId]/table | 8 | 1 | 1 | 10 | 10 |
-| route /cms/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 9 |
-| route /cms/[siteId]/pages/new | 5 | 1 | 1 | 4 | 9 |
-| route /marketing/[brandId]/websites/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 9 |
-| overlay contentEditorWorkspaceWindow (Content Workspace) | 3 | 1 | 2 | 2 | 9 |
-| overlay contentEditorListWindow (Content List Editor) | 3 | 1 | 2 | 1 | 9 |
-| overlay contentEditorWindow (Content Editor) | 3 | 1 | 2 | 1 | 9 |
-| route /masterwork/all | 3 | 1 | 0 | 2 | 9 |
-| route /administration/agents/system-agents/content-blocks | 1 | 1 | 1 | 0 | 9 |
-| route /administration/utilities/content-blocks | 1 | 1 | 1 | 0 | 9 |
-| route /administration/utilities/message-templates | 1 | 1 | 1 | 0 | 9 |
+| overlay agentAdvancedEditorWindow (Agent Advanced Editor) | 12 | 9 | 1 | 12 | 14 |
+| route /administration/agents/system-agents/agents/[id]/build | 12 | 9 | 1 | 12 | 14 |
+| route /agents/[id]/build | 12 | 9 | 1 | 12 | 14 |
+| route /agents/battle/variations | 12 | 9 | 1 | 12 | 14 |
+| route /agents/battle/variations/[setId] | 12 | 9 | 1 | 12 | 14 |
+| route /agents/battle/system-prompt | 8 | 7 | 1 | 2 | 11 |
+| route /agents/battle/system-prompt/[setId] | 8 | 7 | 1 | 2 | 11 |
+| route /administration/utilities/markdown-tester | 12 | 4 | 4 | 10 | 8 |
+| route /markdown-studio | 12 | 4 | 4 | 10 | 8 |
+| overlay markdownEditor (Markdown Editor (fullscreen)) | 6 | 4 | 0 | 7 | 8 |
+| overlay markdownEditorWindow (Markdown Editor) | 6 | 4 | 0 | 7 | 8 |
+| route /administration/utilities/message-templates | 2 | 2 | 1 | 0 | 6 |
+| overlay noteInfoWindow (Note Info) | 1 | 2 | 0 | 0 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId] | 8 | 1 | 1 | 10 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId]/ai-runs | 8 | 1 | 1 | 10 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId]/brief | 8 | 1 | 1 | 10 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId]/entities | 8 | 1 | 1 | 10 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId]/map | 8 | 1 | 1 | 10 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId]/setup | 8 | 1 | 1 | 10 | 6 |
+| route /marketing/[brandId]/content/plan/[siteId]/table | 8 | 1 | 1 | 10 | 6 |
+| route /cms/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 5 |
+| route /cms/[siteId]/pages/new | 5 | 1 | 1 | 4 | 5 |
+| route /marketing/[brandId]/websites/[siteId]/pages/[pageId] | 5 | 1 | 1 | 4 | 5 |
+| overlay contentEditorWorkspaceWindow (Content Workspace) | 3 | 1 | 1 | 2 | 5 |
+| overlay contentEditorListWindow (Content List Editor) | 3 | 1 | 1 | 1 | 5 |
+| overlay contentEditorWindow (Content Editor) | 3 | 1 | 1 | 1 | 5 |
+| route /administration/agents/system-agents/content-blocks | 1 | 1 | 1 | 0 | 5 |
+| route /administration/utilities/content-blocks | 1 | 1 | 1 | 0 | 5 |
 | opener fullScreenEditor | 1 | 1 | 0 | 0 | 1 |
-| overlay extractionCellEditorWindow (Extraction Cell Editor) | 1 | 1 | 0 | 0 | 9 |
-| route /chat/message-templates/edit/[id] | 1 | 1 | 0 | 0 | 1 |
-| route /chat/message-templates/new | 1 | 1 | 0 | 0 | 1 |
-| layout / | 20 | 0 | 3 | 20 | 8 |
-| route /p/[slug] | 14 | 0 | 8 | 6 | 8 |
-| route /knowledge | 12 | 0 | 3 | 9 | 9 |
-| route /knowledge/sources/[id] | 11 | 0 | 3 | 8 | 9 |
-| route /organizations/[orgId]/settings | 4 | 0 | 0 | 10 | 8 |
-| overlay credentialVaultWindow (Vault) | 3 | 0 | 0 | 9 | 8 |
-| overlay mandateWindow (Mandates) | 7 | 0 | 3 | 6 | 8 |
-| overlay mandateWindowNext (Mandates (new)) | 7 | 0 | 3 | 6 | 8 |
+| overlay extractionCellEditorWindow (Extraction Cell Editor) | 1 | 1 | 0 | 0 | 5 |
+| layout / | 19 | 0 | 4 | 15 | 4 |
+| route /board/[id] | 16 | 0 | 7 | 12 | 5 |
+| route /meet/[slug] | 16 | 0 | 7 | 12 | 5 |
+| route /knowledge/hub | 10 | 0 | 0 | 10 | 4 |
+| route /education/flashcards/[setId] | 6 | 0 | 4 | 5 | 4 |
+| overlay agentConnectionsWindow (Agent Connections) | 6 | 0 | 0 | 8 | 4 |
+| route /agents/battle/tools | 2 | 0 | 0 | 8 | 4 |
+| route /agents/battle/tools/[setId] | 2 | 0 | 0 | 8 | 4 |
+| route /images/tools | 6 | 0 | 0 | 8 | 4 |
+| route /knowledge/transcripts/[id] | 8 | 0 | 0 | 8 | 4 |
+| overlay userPreferences (Settings) | 7 | 0 | 0 | 7 | 4 |
+| route /administration/users/feedback | 5 | 0 | 0 | 7 | 4 |
+| route /knowledge/sources/[id] | 7 | 0 | 0 | 7 | 4 |
+| overlay googleAgendaWindow (Agenda) | 4 | 0 | 0 | 6 | 4 |
+| route /administration/shared-knowledge | 3 | 0 | 0 | 6 | 4 |
+| route /administration/ui/surfaces | 4 | 0 | 0 | 6 | 4 |
+| route /agents/orchestras/[conductorId] | 6 | 0 | 0 | 6 | 4 |
+| route /education/fastfire | 6 | 0 | 3 | 3 | 4 |
+| route /knowledge/library-curate | 3 | 0 | 0 | 6 | 4 |
+| route /organizations/[orgId]/settings | 4 | 0 | 0 | 6 | 4 |
 
 ## Shared files — reach more than 10 surfaces (convert once, every surface benefits)
 
-### `components/MarkdownStreamImpl.tsx` — reaches 1161 surfaces
+### `components/MarkdownStreamImpl.tsx` — reaches 1130 surfaces
 
 - [ ] `components/MarkdownStreamImpl.tsx:8` — **MarkdownStream** (tracked) — `./MarkdownStream` (type-only)
 
-### `components/content-cleanup/CellCleanupOptionsPopover.tsx` — reaches 1161 surfaces
+### `components/content-cleanup/CellCleanupOptionsPopover.tsx` — reaches 1130 surfaces
 
 - [ ] `components/content-cleanup/CellCleanupOptionsPopover.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{m.description}`
 
-### `components/mardown-display/MarkdownRenderer.tsx` — reaches 21 surfaces
+### `components/mardown-display/MarkdownRenderer.tsx` — reaches 16 surfaces
 
-- [ ] `components/mardown-display/MarkdownRenderer.tsx:11` — **react-markdown** (BANNED) — `react-markdown` (type-only)
+- [ ] `components/mardown-display/MarkdownRenderer.tsx:12` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 
-### `components/mardown-display/blocks/agent-result/AgentResultBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/agent-result/AgentResultBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/agent-result/AgentResultBlock.tsx:60` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
-### `components/mardown-display/blocks/artifact/ArtifactBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/artifact/ArtifactBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/artifact/ArtifactBlock.tsx:23` — **BasicMarkdownContent** (tracked) — `../../chat-markdown/BasicMarkdownContent`
+- [ ] `components/mardown-display/blocks/artifact/ArtifactBlock.tsx:25` — **BasicMarkdownContent** (tracked) — `../../chat-markdown/BasicMarkdownContent`
 
-### `components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx:587` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{comparison.description}`
+- [ ] `components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx:592` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{comparison.description}`
 
-### `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx:571` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
-- [ ] `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx:599` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{recipe.notes}`
+- [ ] `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx:581` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
+- [ ] `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx:609` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{recipe.notes}`
 
-### `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:397` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
-- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:462` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
-- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:605` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{decisionTree.description}`
-- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:804` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{currentNode.description}`
+- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:404` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
+- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
+- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:623` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{decisionTree.description}`
+- [ ] `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx:822` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{currentNode.description}`
 
-### `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx:3077` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{diagram.description}`
+- [ ] `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx:3208` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{diagram.description}`
 
-### `components/mardown-display/blocks/flashcards/CardFaceContent.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/flashcards/CardFaceContent.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/flashcards/CardFaceContent.tsx:20` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent` (type-only)
 
-### `components/mardown-display/blocks/flashcards/FlashcardItem.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/flashcards/FlashcardItem.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/flashcards/FlashcardItem.tsx:6` — **CardFaceContent** (tracked) — `./CardFaceContent`
 - [ ] `components/mardown-display/blocks/flashcards/FlashcardItem.tsx:5` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
 
-### `components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx:24` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
 - [ ] `components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx:25` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent` (type-only)
 
-### `components/mardown-display/blocks/inline-decision/InlineDecisionBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/inline-decision/InlineDecisionBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/inline-decision/InlineDecisionBlock.tsx:111` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{decision.prompt}`
+- [ ] `components/mardown-display/blocks/inline-decision/InlineDecisionBlock.tsx:130` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{decision.prompt}`
 
-### `components/mardown-display/blocks/json/StructuredAgentAnswerBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/map/MapBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/json/StructuredAgentAnswerBlock.tsx:298` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{rawContent}`
+- [ ] `components/mardown-display/blocks/map/MapBlock.tsx:276` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
 
-### `components/mardown-display/blocks/map/MapCanvas.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/map/MapCanvas.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/map/MapCanvas.tsx:69` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
+- [ ] `components/mardown-display/blocks/map/MapCanvas.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
 
-### `components/mardown-display/blocks/markdown/MarkdownKindBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/markdown/MarkdownKindBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/markdown/MarkdownKindBlock.tsx:42` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
-### `components/mardown-display/blocks/masterwork-unfolding/CaseDisclosureBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/masterwork-unfolding/CaseDisclosureBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/masterwork-unfolding/CaseDisclosureBlock.tsx:157` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.answer}`
+- [ ] `components/mardown-display/blocks/masterwork-unfolding/CaseDisclosureBlock.tsx:158` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.answer}`
 
-### `components/mardown-display/blocks/masterwork/MasterworkResultBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/masterwork/MasterworkResultBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/masterwork/MasterworkResultBlock.tsx:45` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
-### `components/mardown-display/blocks/matrx-file/MatrxFileBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/matrx-file/MatrxFileBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/matrx-file/MatrxFileBlock.tsx:25` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### `components/mardown-display/blocks/media-chapters/MediaChaptersBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/media-chapters/MediaChaptersBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/media-chapters/MediaChaptersBlock.tsx:115` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{chapter.summary}`
 
-### `components/mardown-display/blocks/media-io/MediaAssetBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/media-io/MediaAssetBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/media-io/MediaAssetBlock.tsx:208` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{data.transcript}`
+- [ ] `components/mardown-display/blocks/media-io/MediaAssetBlock.tsx:208` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{data.transcript}`
 
-### `components/mardown-display/blocks/media-io/PodcastEpisodeBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/media-io/PodcastEpisodeBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/media-io/PodcastEpisodeBlock.tsx:164` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 
-### `components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx:177` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{controls.editor.content}`
 - [ ] `components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx:224` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{controls.editor.content}`
 - [ ] `components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx:248` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{controls.editor.content}`
 - [ ] `components/mardown-display/blocks/memory-aid/MemoryAidBlock.tsx:291` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{controls.editor.content}`
 
-### `components/mardown-display/blocks/memory-aid/MemoryHintBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/memory-aid/MemoryHintBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/memory-aid/MemoryHintBlock.tsx:89` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{hint.explanation}`
 
-### `components/mardown-display/blocks/page-pipeline/PlanPageDraftBlock.tsx` — reaches 1161 surfaces
-
-- [ ] `components/mardown-display/blocks/page-pipeline/PlanPageDraftBlock.tsx:148` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{section.body}`
-
-### `components/mardown-display/blocks/page-pipeline/PlanPageResearchBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/page-pipeline/PlanPageResearchBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/page-pipeline/PlanPageResearchBlock.tsx:184` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{source.notes}`
 
-### `components/mardown-display/blocks/plan/StructuredPlanViewer.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/plan/StructuredPlanViewer.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/plan/StructuredPlanViewer.tsx:8` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:442` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.pdf.description}`
-- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:461` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.html.description}`
-- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:480` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.powerpoint.description}`
-- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:530` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.googleSlides.description}`
+- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:445` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.pdf.description}`
+- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:464` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.html.description}`
+- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:483` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.powerpoint.description}`
+- [ ] `components/mardown-display/blocks/presentations/PresentationExportMenu.tsx:533` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capabilities.googleSlides.description}`
 
-### `components/mardown-display/blocks/presentations/Slideshow.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/presentations/Slideshow.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/presentations/Slideshow.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{p.description}`
+- [ ] `components/mardown-display/blocks/presentations/Slideshow.tsx:244` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{p.description}`
 
-### `components/mardown-display/blocks/progress/ProgressTrackerBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/progress/ProgressTrackerBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/progress/ProgressTrackerBlock.tsx:414` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tracker.description}`
 - [ ] `components/mardown-display/blocks/progress/ProgressTrackerBlock.tsx:605` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{category.description}`
 
-### `components/mardown-display/blocks/rag-kinds/collection-blocks.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/rag-kinds/collection-blocks.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/rag-kinds/collection-blocks.tsx:35` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### `components/mardown-display/blocks/research/ResearchBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/research/ResearchBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/research/ResearchBlock.tsx:562` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{theme.description}`
-- [ ] `components/mardown-display/blocks/research/ResearchBlock.tsx:744` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{section.content}`
+- [ ] `components/mardown-display/blocks/research/ResearchBlock.tsx:576` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{theme.description}`
 
-### `components/mardown-display/blocks/resources/ResourceCollectionBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/resources/ResourceCollectionBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/resources/ResourceCollectionBlock.tsx:335` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{collection.description}`
 - [ ] `components/mardown-display/blocks/resources/ResourceCollectionBlock.tsx:480` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{category.description}`
 - [ ] `components/mardown-display/blocks/resources/ResourceCollectionBlock.tsx:521` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{resource.description}`
 
-### `components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/result-kinds/PickListBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx:362` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{active.body}`
+- [ ] `components/mardown-display/blocks/result-kinds/PickListBlock.tsx:85` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{choice.description}`
 
-### `components/mardown-display/blocks/scraper-kinds/primitive-blocks.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/scraper-kinds/primitive-blocks.tsx:568` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{body}`
+- [ ] `components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx:362` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{active.body}`
 
-### `components/mardown-display/blocks/seo-package/SeoPackageBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/seo-package/SeoPackageBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/seo-package/SeoPackageBlock.tsx:280` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.answer}`
 
-### `components/mardown-display/blocks/study-notes/StudyNotesBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/study-notes/StudyNotesBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/study-notes/StudyNotesBlock.tsx:73` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{section.summary}`
 
-### `components/mardown-display/blocks/timeline/TimelineBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/timeline/TimelineBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/timeline/TimelineBlock.tsx:425` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{event.description}`
+- [ ] `components/mardown-display/blocks/timeline/TimelineBlock.tsx:443` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{event.description}`
 
-### `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:400` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{troubleshooting.description}`
-- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:505` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{issue.description}`
-- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:590` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{solution.description}`
-- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:698` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
+- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:403` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{troubleshooting.description}`
+- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:508` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{issue.description}`
+- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:593` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{solution.description}`
+- [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx:701` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 
-### `components/mardown-display/blocks/troubleshooting/TroubleshootingLoadingVisualization.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/troubleshooting/TroubleshootingLoadingVisualization.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/blocks/troubleshooting/TroubleshootingLoadingVisualization.tsx:108` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 
-### `components/mardown-display/blocks/video-prompt-options/VideoPromptOptionsBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/blocks/video-prompt-options/VideoPromptOptionsBlock.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/video-prompt-options/VideoPromptOptionsBlock.tsx:176` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{variation.prompt}`
+- [ ] `components/mardown-display/blocks/video-prompt-options/VideoPromptOptionsBlock.tsx:176` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{variation.prompt}`
 
-### `components/mardown-display/blocks/xml/XmlBlock.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/blocks/xml/XmlBlock.tsx:115` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{content}`
+- [ ] `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx:172` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }}`
 
-### `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/BasicMarkdownContent.tsx:147` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }}`
-
-### `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx` — reaches 1161 surfaces
-
-- [ ] `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx:999` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: dynamicStyles }}`
+- [ ] `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx:1024` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: dynamicStyles }}`
 - [ ] `components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx:30` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 
-### `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx:45` — **FullScreenMarkdownEditor (16-tab editor)** (BANNED) — `./FullScreenMarkdownEditor`
-- [ ] `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx:1168` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{block?.content || "[Render error]"}`
+- [ ] `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx:46` — **FullScreenMarkdownEditor (16-tab editor)** (BANNED) — `./FullScreenMarkdownEditor`
+- [ ] `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx:1212` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{block?.content || "[Render error]"}`
 
-### `components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/KindTextGate.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx:27` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx:920` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content}`
+- [ ] `components/mardown-display/chat-markdown/KindTextGate.tsx:17` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
-### `components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionGroupTab.tsx` — reaches 1161 surfaces
-
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionGroupTab.tsx:163` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<td pre-wrap>{text}`
-
-### `components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionViewerWithSidebar.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionViewerWithSidebar.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionViewerWithSidebar.tsx:69` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/SectionViewerWithSidebar.tsx:80` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
 
-### `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:125` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:137` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:233` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:242` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:126` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:138` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:234` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx:243` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: content }}`
 
-### `components/mardown-display/chat-markdown/analyzer/analyzer-options/section-viewer-V2.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/analyzer/analyzer-options/section-viewer-V2.tsx` — reaches 1130 surfaces
 
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/section-viewer-V2.tsx:158` — **.split("\n").map(→ JSX) paragraph renderer** (review) — `item.split('\n').map((row, rowIndex) => ( <tr key={rowIndex} className="border-b border-b…`
 
-### `components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx:200` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: safeContent }}`
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx:211` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: safeContent }}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx:201` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: safeContent }}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx:212` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: safeContent }}`
 
-### `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx:218` — **BasicMarkdownContent** (tracked) — `../BasicMarkdownContent`
+- [ ] `components/mardown-display/chat-markdown/block-registry/BlockComponentRegistry.tsx:223` — **BasicMarkdownContent** (tracked) — `../BasicMarkdownContent`
 
-### `components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx` — reaches 1161 surfaces
+### `components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx:1128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{decisionData.prompt || "Decision loading..."}`
+- [ ] `components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx:1211` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{decisionData.prompt || "Decision loading..."}`
 
-### `components/mardown-display/chat-markdown/internal-handlers/BlockFallback.tsx` — reaches 1161 surfaces
+### `components/matrx/MatrxSplit.tsx` — reaches 1130 surfaces
 
-- [ ] `components/mardown-display/chat-markdown/internal-handlers/BlockFallback.tsx:20` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content || "[empty block]"}`
-
-### `components/markdown-core/syntax/elements/WikiEmbed.tsx` — reaches 1161 surfaces
-
-- [ ] `components/markdown-core/syntax/elements/WikiEmbed.tsx:81` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{body}`
-
-### `components/matrx/MatrxSplit.tsx` — reaches 1161 surfaces
-
-- [ ] `components/matrx/MatrxSplit.tsx:10` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `components/matrx/MatrxSplit.tsx:11` — **MarkdownStream** (tracked) — `@/components/MarkdownStream` (type-only)
 - [ ] `components/matrx/MatrxSplit.tsx:36` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
-### `components/matrx/Tooltip.tsx` — reaches 1161 surfaces
-
-- [ ] `components/matrx/Tooltip.tsx:75` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{text}`
-
-### `components/official-candidate/json-inspector/JsonInspector.tsx` — reaches 1161 surfaces
-
-- [ ] `components/official-candidate/json-inspector/JsonInspector.tsx:522` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{rawJsonText}`
-
-### `components/official/FullScreenOverlay.tsx` — reaches 1161 surfaces
+### `components/official/FullScreenOverlay.tsx` — reaches 1130 surfaces
 
 - [ ] `components/official/FullScreenOverlay.tsx:547` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{selectedTab.content}`
 
-### `components/official/item/ItemMenu.tsx` — reaches 1161 surfaces
+### `components/official/item/ItemMenu.tsx` — reaches 1130 surfaces
 
-- [ ] `components/official/item/ItemMenu.tsx:503` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{resolved.header.description}`
+- [ ] `components/official/item/ItemMenu.tsx:504` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{resolved.header.description}`
 
-### `components/official/item/ItemMenuDrawer.tsx` — reaches 1161 surfaces
+### `components/official/item/ItemMenuDrawer.tsx` — reaches 1130 surfaces
 
 - [ ] `components/official/item/ItemMenuDrawer.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{config.header.description}`
 
-### `components/official/json-explorer/BookmarksDialog.tsx` — reaches 1161 surfaces
+### `components/official/json-explorer/BookmarksDialog.tsx` — reaches 1130 surfaces
 
 - [ ] `components/official/json-explorer/BookmarksDialog.tsx:51` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bookmark.description}`
 
-### `components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx` — reaches 1161 surfaces
+### `components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx` — reaches 1130 surfaces
 
 - [ ] `components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx:400` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{bookmark.description}`
 
-### `components/rich-content/RichContent.tsx` — reaches 1161 surfaces
+### `components/rich-content/RichContent.tsx` — reaches 1130 surfaces
 
 - [ ] `components/rich-content/RichContent.tsx:19` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
-### `components/rich-content/prose/variant-root.tsx` — reaches 1161 surfaces
+### `components/rich-content/prose/variant-root.tsx` — reaches 1130 surfaces
 
 - [ ] `components/rich-content/prose/variant-root.tsx:63` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: READING_VARIANT_CSS }}`
+
+### `components/rich-content/rich-content-types.ts` — reaches 1130 surfaces
+
+- [ ] `components/rich-content/rich-content-types.ts:20` — **MarkdownStream** (tracked) — `@/components/MarkdownStream` (type-only)
 
 ### `components/rich-content/server/RichContentServer.tsx` — reaches 16 surfaces
 
 - [ ] `components/rich-content/server/RichContentServer.tsx:96` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }}`
 
-### `components/rich-content/standard/StandardBlocks.tsx` — reaches 1161 surfaces
+### `components/rich-content/standard/StandardBlocks.tsx` — reaches 1130 surfaces
 
-- [ ] `components/rich-content/standard/StandardBlocks.tsx:30` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `components/rich-content/standard/StandardBlocks.tsx:33` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### `components/rich-editor/RichEditorImpl.tsx` — reaches 1161 surfaces
+### `components/rich-editor/RichEditorImpl.tsx` — reaches 1130 surfaces
 
 - [ ] `components/rich-editor/RichEditorImpl.tsx:60` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
-### `components/rich-editor/islands/IslandPreview.tsx` — reaches 1161 surfaces
-
-- [ ] `components/rich-editor/islands/IslandPreview.tsx:10` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `components/rich-editor/visual/menus/SuggestionMenu.tsx` — reaches 1161 surfaces
+### `components/rich-editor/visual/menus/SuggestionMenu.tsx` — reaches 1130 surfaces
 
 - [ ] `components/rich-editor/visual/menus/SuggestionMenu.tsx:111` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 
-### `components/user-generated-table-data/TableConfigModal.tsx` — reaches 1161 surfaces
+### `components/rich-editor/visual/nodes/InlineIslandView.tsx` — reaches 1130 surfaces
 
-- [ ] `components/user-generated-table-data/TableConfigModal.tsx:1007` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{type.description}`
+- [ ] `components/rich-editor/visual/nodes/InlineIslandView.tsx:36` — **a markdown-link regex in a component file (hand-rolled markdown parsing for display)** (BANNED) — `/^!\[([^\]]*)\]\(([^)\s]+)/`
 
-### `components/user-generated-table-data/UserTableViewer.tsx` — reaches 1161 surfaces
+### `components/user-generated-table-data/TableConfigModal.tsx` — reaches 1130 surfaces
 
-- [ ] `components/user-generated-table-data/UserTableViewer.tsx:5027` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tableInfo.description}`
+- [ ] `components/user-generated-table-data/TableConfigModal.tsx:967` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{type.description}`
 
-### `features/access-gate/components/AccessDenied.tsx` — reaches 1161 surfaces
+### `components/user-generated-table-data/UserTableViewer.tsx` — reaches 1130 surfaces
 
-- [ ] `features/access-gate/components/AccessDenied.tsx:520` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.description}`
+- [ ] `components/user-generated-table-data/UserTableViewer.tsx:5104` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tableInfo.description}`
+
+### `features/access-gate/components/AccessDenied.tsx` — reaches 1130 surfaces
+
+- [ ] `features/access-gate/components/AccessDenied.tsx:506` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.description}`
 
 ### `features/admin/components/AdminDomainSection.tsx` — reaches 16 surfaces
 
 - [ ] `features/admin/components/AdminDomainSection.tsx:73` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{destination.description}`
 
-### `features/agent-apps/utils/allowed-imports.ts` — reaches 1161 surfaces
+### `features/agent-apps/components/AgentAppPublicRendererImpl.tsx` — reaches 1130 surfaces
 
-- [ ] `features/agent-apps/utils/allowed-imports.ts:155` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/utils/allowed-imports.ts:163` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/utils/allowed-imports.ts:171` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/utils/allowed-imports.ts:179` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agent-apps/components/AgentAppPublicRendererImpl.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
-### `features/agent-shortcuts/components/AgentVersionPicker.tsx` — reaches 12 surfaces
+### `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx` — reaches 1130 surfaces
+
+- [ ] `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+
+### `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx` — reaches 1130 surfaces
+
+- [ ] `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx:38` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+
+### `features/agent-apps/components/shells/AgentAppMarkdownStreamBridge.tsx` — reaches 1130 surfaces
+
+- [ ] `features/agent-apps/components/shells/AgentAppMarkdownStreamBridge.tsx:4` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+
+### `features/agent-apps/components/shells/AgentAppWidgetShell.tsx` — reaches 1130 surfaces
+
+- [ ] `features/agent-apps/components/shells/AgentAppWidgetShell.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+
+### `features/agent-apps/utils/allowed-imports.ts` — reaches 1130 surfaces
+
+- [ ] `features/agent-apps/utils/allowed-imports.ts:157` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agent-apps/utils/allowed-imports.ts:165` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agent-apps/utils/allowed-imports.ts:173` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agent-apps/utils/allowed-imports.ts:181` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+
+### `features/agent-shortcuts/components/AgentVersionPicker.tsx` — reaches 11 surfaces
 
 - [ ] `features/agent-shortcuts/components/AgentVersionPicker.tsx:324` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
 
-### `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx` — reaches 11 surfaces
-
-- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:91` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
-
-### `features/agent-shortcuts/components/ShortcutContextsPicker.tsx` — reaches 17 surfaces
+### `features/agent-shortcuts/components/ShortcutContextsPicker.tsx` — reaches 16 surfaces
 
 - [ ] `features/agent-shortcuts/components/ShortcutContextsPicker.tsx:101` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
 
-### `features/agents/components/agent-listings/AgentSneakPeekModal.tsx` — reaches 1161 surfaces
+### `features/agents/components/agent-listings/AgentSneakPeekModal.tsx` — reaches 1130 surfaces
 
-- [ ] `features/agents/components/agent-listings/AgentSneakPeekModal.tsx:674` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{outputSchema.description}`
-- [ ] `features/agents/components/agent-listings/AgentSneakPeekModal.tsx:700` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{field.description}`
-- [ ] `features/agents/components/agent-listings/AgentSneakPeekModal.tsx:420` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{record.description}`
-
-### `packages/chat/src/agents/components/context-items/bodies/GenericBody.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/context-items/bodies/GenericBody.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{text}`
-
-### `packages/chat/src/agents/components/context-items/bodies/NoteBody.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/context-items/bodies/NoteBody.tsx:100` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{note.content}`
-
-### `packages/chat/src/agents/components/context-policies-display/ContextPolicyDetailSheet.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/context-policies-display/ContextPolicyDetailSheet.tsx:151` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{policy.description}`
-
-### `packages/chat/src/agents/components/context-policies-display/ContextValueBody.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/context-policies-display/ContextValueBody.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/agents/components/context-policies-display/ContextValueBody.tsx:124` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-
-### `packages/chat/src/agents/components/debug/StreamDebugPanel.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/debug/StreamDebugPanel.tsx:845` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{block.content}`
-- [ ] `packages/chat/src/agents/components/debug/StreamDebugPanel.tsx:1269` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{reasoning}`
-- [ ] `packages/chat/src/agents/components/debug/StreamDebugPanel.tsx:1275` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text || ( <span className="text-muted-foreground/40 italic"> No text yet..…`
-
-### `packages/chat/src/agents/components/inputs/smart-input/QuicksetPanel.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/inputs/smart-input/QuicksetPanel.tsx:164` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{item.content}`
-
-### `packages/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx:404` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{skill.description}`
-
-### `packages/chat/src/agents/components/inputs/smart-input/RunToolPicker.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/inputs/smart-input/RunToolPicker.tsx:670` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-
-### `packages/chat/src/agents/components/live-run/LiveRunDisplay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/live-run/LiveRunDisplay.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `packages/chat/src/agents/components/live-run/RunSetDisplay.tsx` — reaches 12 surfaces
-
-- [ ] `packages/chat/src/agents/components/live-run/RunSetDisplay.tsx:28` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `packages/chat/src/agents/components/memory/components/AgentMemoryAllView.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/memory/components/AgentMemoryAllView.tsx:98` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{memory.content}`
-
-### `packages/chat/src/agents/components/messages-display/assistant/AgentAssistantMessage.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/messages-display/assistant/AgentAssistantMessage.tsx:41` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `packages/chat/src/agents/components/messages-display/assistant/AgentEmptyMessageDisplay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/messages-display/assistant/AgentEmptyMessageDisplay.tsx:10` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `packages/chat/src/agents/components/messages-display/assistant/ProviderRetryCard.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/messages-display/assistant/ProviderRetryCard.tsx:154` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{copy.body}`
-
-### `packages/chat/src/agents/components/messages-display/message-options/userEditActions.ts` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/messages-display/message-options/userEditActions.ts:18` — **FullScreenMarkdownEditor (16-tab editor)** (BANNED) — `@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor` (type-only)
-
-### `packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx:43` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `packages/chat/src/agents/components/messages-display/user/CollabNoteMessage.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/messages-display/user/CollabNoteMessage.tsx:26` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/agents/components/run-controls/AgentExecutionTestModal.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/run-controls/AgentExecutionTestModal.tsx:184` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{responseText}`
-- [ ] `packages/chat/src/agents/components/run-controls/AgentExecutionTestModal.tsx:362` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{responseText}`
-
-### `packages/chat/src/agents/components/run-controls/PayloadTab.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/run-controls/PayloadTab.tsx:117` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
+- [ ] `features/agents/components/agent-listings/AgentSneakPeekModal.tsx:680` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{outputSchema.description}`
+- [ ] `features/agents/components/agent-listings/AgentSneakPeekModal.tsx:706` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{field.description}`
 
 ### `features/agents/components/samples/TestCaseInputs.tsx` — reaches 11 surfaces
 
 - [ ] `features/agents/components/samples/TestCaseInputs.tsx:227` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{part.description}`
 
-### `features/agents/components/settings-management/AgentSettingsCore.tsx` — reaches 41 surfaces
+### `features/agents/components/schema-proposal/CreateShapeDialog.tsx` — reaches 1130 surfaces
 
-- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:334` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
-- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:342` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/schema-proposal/CreateShapeDialog.tsx:482` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{choice.description}`
 
-### `packages/chat/src/agents/components/working-document/WorkingDocumentVersionHistory.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/components/working-document/WorkingDocumentVersionHistory.tsx:261` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{selectedContent || "(empty)"}`
-
-### `features/agents/decision-questions/DecisionQuestionsTranscriptView.tsx` — reaches 1161 surfaces
+### `features/agents/decision-questions/DecisionQuestionsTranscriptView.tsx` — reaches 1130 surfaces
 
 - [ ] `features/agents/decision-questions/DecisionQuestionsTranscriptView.tsx:52` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{q.instructions}`
 
-### `packages/chat/src/agents/ui-first-tools/ui/ApprovalCard.tsx` — reaches 1161 surfaces
+### `features/ai-models/components/lab/ModelListDropdown.tsx` — reaches 44 surfaces
 
-- [ ] `packages/chat/src/agents/ui-first-tools/ui/ApprovalCard.tsx:354` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{change.description}`
+- [ ] `features/ai-models/components/lab/ModelListDropdown.tsx:656` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{model.description}`
 
-### `packages/chat/src/agents/ui-first-tools/ui/AskCard.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/ui-first-tools/ui/AskCard.tsx:647` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{opt.description}`
-- [ ] `packages/chat/src/agents/ui-first-tools/ui/AskCard.tsx:878` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{plan.reasoning}`
-
-### `packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx:197` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{plan.reasoning}`
-
-### `features/ai-models/components/lab/ModelListDropdown.tsx` — reaches 1161 surfaces
-
-- [ ] `features/ai-models/components/lab/ModelListDropdown.tsx:632` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{model.description}`
-
-### `features/approvals/kinds/contact-import.tsx` — reaches 14 surfaces
+### `features/approvals/kinds/contact-import.tsx` — reaches 1130 surfaces
 
 - [ ] `features/approvals/kinds/contact-import.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{row.explanation ?? (row.values.length > 0 ? 'Value from Google Contacts: ${row.value…`
 
-### `features/approvals/kinds/document-append.tsx` — reaches 14 surfaces
-
-- [ ] `features/approvals/kinds/document-append.tsx:85` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-
-### `features/approvals/kinds/task-import.tsx` — reaches 14 surfaces
+### `features/approvals/kinds/task-import.tsx` — reaches 1130 surfaces
 
 - [ ] `features/approvals/kinds/task-import.tsx:94` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
 
-### `features/assists/components/AssistActionTextEditor.tsx` — reaches 101 surfaces
+### `features/assists/components/AssistActionTextEditor.tsx` — reaches 1130 surfaces
 
 - [ ] `features/assists/components/AssistActionTextEditor.tsx:98` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{definition.description}`
 
-### `features/assists/components/AssistCard.tsx` — reaches 101 surfaces
+### `features/assists/components/AssistCard.tsx` — reaches 1130 surfaces
 
-- [ ] `features/assists/components/AssistCard.tsx:42` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/assists/components/AssistCard.tsx:309` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{assist.reasoning}`
-- [ ] `features/assists/components/AssistCard.tsx:296` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{assist.body}`
+- [ ] `features/assists/components/AssistCard.tsx:43` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/assists/components/AssistCard.tsx:312` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{assist.reasoning}`
 
-### `features/audio/components/MicrophoneRecordingModal.tsx` — reaches 1161 surfaces
-
-- [ ] `features/audio/components/MicrophoneRecordingModal.tsx:306` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{editedText}`
-
-### `features/auth/components/module-landing/ModuleLanding.tsx` — reaches 28 surfaces
+### `features/auth/components/module-landing/ModuleLanding.tsx` — reaches 40 surfaces
 
 - [ ] `features/auth/components/module-landing/ModuleLanding.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{feature.description}`
 - [ ] `features/auth/components/module-landing/ModuleLanding.tsx:257` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 
-### `features/code-editor/components/code-block/highlight/ShikiCodeView.tsx` — reaches 1161 surfaces
+### `features/code-editor/components/code-block/highlight/ShikiCodeView.tsx` — reaches 1130 surfaces
 
 - [ ] `features/code-editor/components/code-block/highlight/ShikiCodeView.tsx:176` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{token.content}`
 
@@ -622,81 +506,52 @@ Files scanned: 16082. Surfaces reached: 1299. Unresolved local code imports (bro
 
 - [ ] `features/content-ir/studio/components/KindExampleManager.tsx:258` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
-### `features/data-tables/components/BulkRowActions.tsx` — reaches 1161 surfaces
+### `features/data-tables/components/BulkRowActions.tsx` — reaches 1130 surfaces
 
 - [ ] `features/data-tables/components/BulkRowActions.tsx:341` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{a.description}`
 
-### `features/dynamic-react/toolRendererScope.ts` — reaches 1161 surfaces
+### `features/dynamic-react/toolRendererScope.ts` — reaches 1130 surfaces
 
 - [ ] `features/dynamic-react/toolRendererScope.ts:313` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/dynamic-react/toolRendererScope.ts:347` — **react-katex** (BANNED) — `react-katex`
 
-### `features/education/trust/components/VerifyAgainstSourceButton.tsx` — reaches 14 surfaces
+### `features/education/trust/components/VerifyAgainstSourceButton.tsx` — reaches 16 surfaces
 
 - [ ] `features/education/trust/components/VerifyAgainstSourceButton.tsx:213` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{result.explanation}`
 
-### `features/file-analysis/content/RawView.tsx` — reaches 12 surfaces
-
-- [ ] `features/file-analysis/content/RawView.tsx:116` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{jsonText}`
-
-### `features/files/blocks/image/UnifiedImageBlockRenderer.tsx` — reaches 1161 surfaces
+### `features/files/blocks/image/UnifiedImageBlockRenderer.tsx` — reaches 1130 surfaces
 
 - [ ] `features/files/blocks/image/UnifiedImageBlockRenderer.tsx:760` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
 - [ ] `features/files/blocks/image/UnifiedImageBlockRenderer.tsx:786` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
 
-### `features/files/components/core/FilePreview/PreviewerSwitch.tsx` — reaches 1161 surfaces
+### `features/files/components/core/FilePreview/PreviewerSwitch.tsx` — reaches 1130 surfaces
 
 - [ ] `features/files/components/core/FilePreview/PreviewerSwitch.tsx:52` — **MarkdownPreview** (tracked) — `./previewers/MarkdownPreview`
 
-### `features/files/components/core/FilePreview/previewers/OfficePreview.tsx` — reaches 1161 surfaces
-
-- [ ] `features/files/components/core/FilePreview/previewers/OfficePreview.tsx:47` — **react-markdown** (BANNED) — `react-markdown`
-- [ ] `features/files/components/core/FilePreview/previewers/OfficePreview.tsx:48` — **remark-* plugins** (BANNED) — `remark-gfm`
-
-### `features/flashcards/fast-fire/components/AnswerGradeBlock.tsx` — reaches 1161 surfaces
+### `features/flashcards/fast-fire/components/AnswerGradeBlock.tsx` — reaches 1130 surfaces
 
 - [ ] `features/flashcards/fast-fire/components/AnswerGradeBlock.tsx:91` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{grade.verdict.explanation}`
 - [ ] `features/flashcards/fast-fire/components/AnswerGradeBlock.tsx:100` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{grade.transcript}`
 
-### `features/flashcards/fast-fire/voice-test/SingleCardVoiceTest.tsx` — reaches 1161 surfaces
+### `features/flashcards/fast-fire/voice-test/SingleCardVoiceTest.tsx` — reaches 1130 surfaces
 
 - [ ] `features/flashcards/fast-fire/voice-test/SingleCardVoiceTest.tsx:3` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
 
-### `features/flashcards/fast-fire/voice-test/VoiceTestAudioSetup.tsx` — reaches 1161 surfaces
+### `features/flashcards/fast-fire/voice-test/VoiceTestAudioSetup.tsx` — reaches 1130 surfaces
 
 - [ ] `features/flashcards/fast-fire/voice-test/VoiceTestAudioSetup.tsx:3` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-
-### `features/google-workspace/documents/GoogleDocumentPanel.tsx` — reaches 1161 surfaces
-
-- [ ] `features/google-workspace/documents/GoogleDocumentPanel.tsx:409` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{body}`
-
-### `features/kg-suggestions/components/KgSuggestionRowItem.tsx` — reaches 20 surfaces
-
-- [ ] `features/kg-suggestions/components/KgSuggestionRowItem.tsx:1120` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{body}`
-
-### `features/mandates/components/MandateNotesPanel.tsx` — reaches 12 surfaces
-
-- [ ] `features/mandates/components/MandateNotesPanel.tsx:245` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{note.body}`
-
-### `features/mandates/peek/MandatePeek.tsx` — reaches 1161 surfaces
-
-- [ ] `features/mandates/peek/MandatePeek.tsx:322` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{ready.description}`
 
 ### `features/marketing/seo/topical-map/components/TopicalMapHomeCard.tsx` — reaches 14 surfaces
 
 - [ ] `features/marketing/seo/topical-map/components/TopicalMapHomeCard.tsx:93` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{map.description ?? "No description"}`
 
-### `features/marketing/seo/topical-map/panel/sections/IdentitySection.tsx` — reaches 1161 surfaces
+### `features/marketing/seo/topical-map/panel/sections/IdentitySection.tsx` — reaches 1130 surfaces
 
-- [ ] `features/marketing/seo/topical-map/panel/sections/IdentitySection.tsx:165` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/panel/sections/IdentitySection.tsx:162` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
 
-### `features/marketing/seo/topical-map/proposals/MapTopicProposalView.tsx` — reaches 1161 surfaces
+### `features/marketing/seo/topical-map/proposals/MapTopicProposalView.tsx` — reaches 1130 surfaces
 
 - [ ] `features/marketing/seo/topical-map/proposals/MapTopicProposalView.tsx:127` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.summary}`
-
-### `features/marketing/seo/topical-map/start/StartMapResult.tsx` — reaches 15 surfaces
-
-- [ ] `features/marketing/seo/topical-map/start/StartMapResult.tsx:116` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{result.summary}`
 
 ### `features/marketing/seo/value-system/workbench/RulingDialog.tsx` — reaches 43 surfaces
 
@@ -704,123 +559,74 @@ Files scanned: 16082. Surfaces reached: 1299. Unresolved local code imports (bro
 
 ### `features/marketing/strategy/components/StrategyBriefWorkspace.tsx` — reaches 14 surfaces
 
-- [ ] `features/marketing/strategy/components/StrategyBriefWorkspace.tsx:32` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
+- [ ] `features/marketing/strategy/components/StrategyBriefWorkspace.tsx:33` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
 
-### `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx` — reaches 1161 surfaces
+### `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx` — reaches 1130 surfaces
 
-- [ ] `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx:79` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{task.description}`
-- [ ] `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx:123` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{task.description}`
+- [ ] `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx:80` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{task.description}`
+- [ ] `features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{task.description}`
 
-### `features/message-templates/components/SmartInputMessageTemplatePicker.tsx` — reaches 1161 surfaces
-
-- [ ] `features/message-templates/components/SmartInputMessageTemplatePicker.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-
-### `features/notes/components/CreateFolderDialog.tsx` — reaches 1161 surfaces
+### `features/notes/components/CreateFolderDialog.tsx` — reaches 1130 surfaces
 
 - [ ] `features/notes/components/CreateFolderDialog.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{category.description}`
 
-### `features/notes/components/NoteConflictWindow.tsx` — reaches 1161 surfaces
+### `features/notes/components/NoteEditorCore.tsx` — reaches 1130 surfaces
 
-- [ ] `features/notes/components/NoteConflictWindow.tsx:145` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{analysis.summary}`
-- [ ] `features/notes/components/NoteConflictWindow.tsx:232` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{remoteContent}`
+- [ ] `features/notes/components/NoteEditorCore.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
-### `features/notes/components/NoteEditorCore.tsx` — reaches 1161 surfaces
-
-- [ ] `features/notes/components/NoteEditorCore.tsx:39` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### `features/notes/components/cleanup/CleanupOptionsPopover.tsx` — reaches 1161 surfaces
+### `features/notes/components/cleanup/CleanupOptionsPopover.tsx` — reaches 1130 surfaces
 
 - [ ] `features/notes/components/cleanup/CleanupOptionsPopover.tsx:163` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{CLEANUP_REGION_OPERATION_META.find((m) => m.id === regionOp) ?.description}`
 - [ ] `features/notes/components/cleanup/CleanupOptionsPopover.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{m.description}`
 
-### `features/organizations/peek/kinds/OrganizationPeek.tsx` — reaches 1161 surfaces
+### `features/notes/components/mobile/MobileNoteEditor.tsx` — reaches 1130 surfaces
 
-- [ ] `features/organizations/peek/kinds/OrganizationPeek.tsx:76` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{row.description}`
+- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:18` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
-### `features/organizations/peek/kinds/ProjectPeek.tsx` — reaches 1161 surfaces
-
-- [ ] `features/organizations/peek/kinds/ProjectPeek.tsx:63` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{row.description}`
-
-### `features/organizations/peek/kinds/ShortcutPeek.tsx` — reaches 1161 surfaces
-
-- [ ] `features/organizations/peek/kinds/ShortcutPeek.tsx:62` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{row.description}`
-
-### `features/organizations/peek/kinds/SkillPeek.tsx` — reaches 1161 surfaces
-
-- [ ] `features/organizations/peek/kinds/SkillPeek.tsx:68` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{row.description}`
-
-### `features/organizations/peek/kinds/TaskPeek.tsx` — reaches 1161 surfaces
-
-- [ ] `features/organizations/peek/kinds/TaskPeek.tsx:71` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{description}`
-
-### `features/organizations/peek/kinds/TranscriptPeek.tsx` — reaches 1161 surfaces
-
-- [ ] `features/organizations/peek/kinds/TranscriptPeek.tsx:68` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{row.description}`
-
-### `features/pdf/components/PdfSurfaceSwitcher.tsx` — reaches 1161 surfaces
+### `features/pdf/components/PdfSurfaceSwitcher.tsx` — reaches 15 surfaces
 
 - [ ] `features/pdf/components/PdfSurfaceSwitcher.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{surface.description}`
 
-### `features/rag/components/data-stores/DataStoreBindPanel.tsx` — reaches 13 surfaces
+### `features/rag/components/data-stores/DataStoreBindPanel.tsx` — reaches 15 surfaces
 
 - [ ] `features/rag/components/data-stores/DataStoreBindPanel.tsx:192` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
 
-### `features/resource-manager/resource-picker/NotesResourcePicker.tsx` — reaches 1161 surfaces
+### `features/resource-manager/resource-picker/TasksResourcePicker.tsx` — reaches 1130 surfaces
 
-- [ ] `features/resource-manager/resource-picker/NotesResourcePicker.tsx:151` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{note.content || "Empty note"}`
-- [ ] `features/resource-manager/resource-picker/NotesResourcePicker.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{note.content || "Empty note"}`
-- [ ] `features/resource-manager/resource-picker/NotesResourcePicker.tsx:188` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{note.content || "Empty note"}`
-- [ ] `features/resource-manager/resource-picker/NotesResourcePicker.tsx:306` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{note.content || "Empty note"}`
+- [ ] `features/resource-manager/resource-picker/TasksResourcePicker.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{task.description}`
 
-### `features/resource-manager/resource-picker/TablesResourcePicker.tsx` — reaches 1161 surfaces
-
-- [ ] `features/resource-manager/resource-picker/TablesResourcePicker.tsx:385` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{table.description}`
-
-### `features/resource-manager/resource-picker/TasksResourcePicker.tsx` — reaches 1161 surfaces
-
-- [ ] `features/resource-manager/resource-picker/TasksResourcePicker.tsx:309` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{task.description}`
-- [ ] `features/resource-manager/resource-picker/TasksResourcePicker.tsx:359` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{task.description}`
-
-### `features/rich-document/RichDocument.tsx` — reaches 1161 surfaces
+### `features/rich-document/RichDocument.tsx` — reaches 1130 surfaces
 
 - [ ] `features/rich-document/RichDocument.tsx:69` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### `features/scope-system/components/forms/ContextItemSettingsForm.tsx` — reaches 12 surfaces
 
-- [ ] `features/scope-system/components/forms/ContextItemSettingsForm.tsx:455` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{FETCH_HINT_CONFIG[fetchHint].description}`
-- [ ] `features/scope-system/components/forms/ContextItemSettingsForm.tsx:482` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{SENSITIVITY_CONFIG[sensitivity].description}`
+- [ ] `features/scope-system/components/forms/ContextItemSettingsForm.tsx:457` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{FETCH_HINT_CONFIG[fetchHint].description}`
+- [ ] `features/scope-system/components/forms/ContextItemSettingsForm.tsx:484` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{SENSITIVITY_CONFIG[sensitivity].description}`
 
-### `features/scopes/components/active-context/binding-target/BindingTargetPicker.tsx` — reaches 25 surfaces
+### `features/scopes/components/active-context/binding-target/BindingTargetPicker.tsx` — reaches 24 surfaces
 
 - [ ] `features/scopes/components/active-context/binding-target/BindingTargetPicker.tsx:243` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{RUNG_COPY[rung].description}`
 - [ ] `features/scopes/components/active-context/binding-target/BindingTargetPicker.tsx:265` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{copy.description}`
 
-### `features/scopes/components/reference/ContextValueDisplay.tsx` — reaches 1161 surfaces
+### `features/scopes/components/reference/ContextValueDisplay.tsx` — reaches 12 surfaces
 
 - [ ] `features/scopes/components/reference/ContextValueDisplay.tsx:26` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### `features/scopes/components/reference/ContextValueInput.tsx` — reaches 1161 surfaces
+### `features/scopes/components/reference/ContextValueInput.tsx` — reaches 21 surfaces
 
 - [ ] `features/scopes/components/reference/ContextValueInput.tsx:44` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
 
-### `features/scraper/parts/ScrapedContentPretty.tsx` — reaches 1161 surfaces
+### `features/shell/components/header/RouteModeNav.tsx` — reaches 1151 surfaces
 
-- [ ] `features/scraper/parts/ScrapedContentPretty.tsx:4` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/shell/components/header/RouteModeNav.tsx:444` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/shell/components/header/RouteModeNav.tsx:509` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 
-### `features/scraper/parts/ScraperHookErrorDetails.tsx` — reaches 1161 surfaces
+### `features/shell/components/header/ServerRenderedHeaderSlot.tsx` — reaches 1232 surfaces
 
-- [ ] `features/scraper/parts/ScraperHookErrorDetails.tsx:52` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
+- [ ] `features/shell/components/header/ServerRenderedHeaderSlot.tsx:293` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: HEADER_GHOST_SCRIPT }}`
 
-### `features/shell/components/header/RouteModeNav.tsx` — reaches 1177 surfaces
-
-- [ ] `features/shell/components/header/RouteModeNav.tsx:442` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/shell/components/header/RouteModeNav.tsx:507` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-
-### `features/shell/components/header/ServerRenderedHeaderSlot.tsx` — reaches 1237 surfaces
-
-- [ ] `features/shell/components/header/ServerRenderedHeaderSlot.tsx:274` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: HEADER_GHOST_SCRIPT }}`
-
-### `features/shell/components/header/templates/MobilePanelShell.tsx` — reaches 33 surfaces
+### `features/shell/components/header/templates/MobilePanelShell.tsx` — reaches 35 surfaces
 
 - [ ] `features/shell/components/header/templates/MobilePanelShell.tsx:218` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{panel.content}`
 - [ ] `features/shell/components/header/templates/MobilePanelShell.tsx:265` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{p.content}`
@@ -828,159 +634,36 @@ Files scanned: 16082. Surfaces reached: 1299. Unresolved local code imports (bro
 
 ### `features/surfaces/components/bind/WritePolicyEditor.tsx` — reaches 15 surfaces
 
-- [ ] `features/surfaces/components/bind/WritePolicyEditor.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{target.description}`
+- [ ] `features/surfaces/components/bind/WritePolicyEditor.tsx:184` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{target.description}`
 
-### `packages/chat/src/tool-call-visualization/renderers/agent-call/CollabCallCard.tsx` — reaches 1161 surfaces
+### `features/transcript-studio/components/scribe/ActionSheet.tsx` — reaches 1130 surfaces
 
-- [ ] `packages/chat/src/tool-call-visualization/renderers/agent-call/CollabCallCard.tsx:22` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/transcript-studio/components/scribe/ActionSheet.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 
-### `packages/chat/src/tool-call-visualization/renderers/ask/AskInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/ask/AskInline.tsx:158` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{qa.answer}`
-
-### `packages/chat/src/tool-call-visualization/renderers/dataset/DatasetInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/dataset/DatasetInline.tsx:123` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ds.description}`
-
-### `packages/chat/src/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/document-content/DocumentContentInline.tsx:67` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text || <span className="text-muted-foreground">No text on these pages.</s…`
-
-### `packages/chat/src/tool-call-visualization/renderers/document/DocumentOverlay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/document/DocumentOverlay.tsx:5` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### `packages/chat/src/tool-call-visualization/renderers/fs/FsInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/fs/FsInline.tsx:30` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsInline.tsx:202` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
-
-### `packages/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsOverlay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsOverlay.tsx:309` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
-
-### `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx:207` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{chunk.content || ( <span className="text-muted-foreground">Empty chunk.</s…`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeChunkInline.tsx:228` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{chunk.parent.content}`
-
-### `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeStoreInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeStoreInline.tsx:149` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{store.description}`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeStoreInline.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{m.notes}`
-
-### `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeStoresInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/knowledge-browse/KnowledgeStoresInline.tsx:73` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{store.description}`
-
-### `packages/chat/src/tool-call-visualization/renderers/news-api/NewsInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/news-api/NewsInline.tsx:177` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{article.description}`
-
-### `packages/chat/src/tool-call-visualization/renderers/news-api/NewsOverlay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/news-api/NewsOverlay.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{article.description}`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/news-api/NewsOverlay.tsx:229` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{article.content}`
-
-### `packages/chat/src/tool-call-visualization/renderers/note/NoteToolParts.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/note/NoteToolParts.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx:45` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx:682` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-
-### `packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx:33` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx:30` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx:31` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### `packages/chat/src/tool-call-visualization/renderers/research/SubagentReportBlock.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/research/SubagentReportBlock.tsx:40` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/tool-call-visualization/renderers/research/SubagentReportBlock.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### `packages/chat/src/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/scrape/ScrapeOverlay.tsx:24` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx:58` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/tool-call-visualization/renderers/search/SearchOverlay.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/search/SearchOverlay.tsx:37` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/tool-call-visualization/renderers/skill/SkillInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/skill/SkillInline.tsx:149` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{description}`
-
-### `packages/chat/src/tool-call-visualization/renderers/sql/SqlInline.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/renderers/sql/SqlInline.tsx:31` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/tool-call-visualization/result-fields/ResultMarkdown.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/result-fields/ResultMarkdown.tsx:15` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-
-### `packages/chat/src/tool-call-visualization/surface-write/SurfaceWriteDiff.tsx` — reaches 1161 surfaces
-
-- [ ] `packages/chat/src/tool-call-visualization/surface-write/SurfaceWriteDiff.tsx:38` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `features/user-lists/components/ListItem.tsx` — reaches 1161 surfaces
-
-- [ ] `features/user-lists/components/ListItem.tsx:68` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description || item.help_text}`
-
-### `features/user-lists/components/ListMetaHeader.tsx` — reaches 1161 surfaces
-
-- [ ] `features/user-lists/components/ListMetaHeader.tsx:95` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
-
-### `features/workflow-emit/GenericEmitRenderer.tsx` — reaches 14 surfaces
-
-- [ ] `features/workflow-emit/GenericEmitRenderer.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `features/workflow-runtime/components/SettledOutputBody.tsx` — reaches 1161 surfaces
-
-- [ ] `features/workflow-runtime/components/SettledOutputBody.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `features/workflow-runtime/components/readout-parts.tsx` — reaches 35 surfaces
-
-- [ ] `features/workflow-runtime/components/readout-parts.tsx:30` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### `features/workflow-runtime/interrupt/InterruptQuestion.tsx` — reaches 35 surfaces
+### `features/workflow-runtime/interrupt/InterruptQuestion.tsx` — reaches 43 surfaces
 
 - [ ] `features/workflow-runtime/interrupt/InterruptQuestion.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{view.prompt}`
 
-### `features/workflow-runtime/listings/core/WorkflowDetailCard.tsx` — reaches 13 surfaces
+### `features/workflow-runtime/listings/core/WorkflowDetailCard.tsx` — reaches 23 surfaces
 
 - [ ] `features/workflow-runtime/listings/core/WorkflowDetailCard.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{workflow.description}`
 
-### `features/workflow-runtime/listings/core/WorkflowSneakPeek.tsx` — reaches 13 surfaces
+### `features/workflow-runtime/listings/core/WorkflowSneakPeek.tsx` — reaches 23 surfaces
 
 - [ ] `features/workflow-runtime/listings/core/WorkflowSneakPeek.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{peek.description}`
 
-### `lib/entity-list/components/EntityListPage.tsx` — reaches 38 surfaces
+### `lib/entity-list/components/EntityListPage.tsx` — reaches 44 surfaces
 
-- [ ] `lib/entity-list/components/EntityListPage.tsx:1107` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
+- [ ] `lib/entity-list/components/EntityListPage.tsx:1667` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
 
-### `lib/field-formats/FieldFormatPicker.tsx` — reaches 1161 surfaces
+### `lib/field-formats/FieldFormatPicker.tsx` — reaches 1130 surfaces
 
-- [ ] `lib/field-formats/FieldFormatPicker.tsx:427` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{f.description}`
-- [ ] `lib/field-formats/FieldFormatPicker.tsx:444` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{f.description}`
+- [ ] `lib/field-formats/FieldFormatPicker.tsx:511` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{f.description}`
+- [ ] `lib/field-formats/FieldFormatPicker.tsx:529` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{f.description}`
 
 ### `lib/guided-setup/components/GuidedChecklist.tsx` — reaches 15 surfaces
 
 - [ ] `lib/guided-setup/components/GuidedChecklist.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{resolved.description}`
-
-### `utils/markdown-processors/clean-markdown-to-text.ts` — reaches 1161 surfaces
-
-- [ ] `utils/markdown-processors/clean-markdown-to-text.ts:71` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `definition of cleanMarkdownPreview`
 
 ## By surface
 
@@ -988,34 +671,29 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### layout /
 
-- [ ] `components/audio/AudioModal.tsx:62` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text}`
-- [ ] `components/debug/AgentExecutionDebugPanel.tsx:195` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<code pre-wrap>{content}`
-- [ ] `components/debug/AgentExecutionDebugPanel.tsx:756` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{accumulatedText}`
-- [ ] `components/debug/SystemPromptDebugModal.tsx:136` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{selectedText || <span className="text-muted-foreground italic">No selectio…`
 - [ ] `components/errors/ChunkRecoveryBootScript.tsx:82` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: SCRIPT }}`
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `components/official/settings/primitives/SettingsRadioGroup.tsx:78` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
-- [ ] `packages/chat/src/agents/components/debug/SandboxFileViewer.tsx:146` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content}`
-- [ ] `features/audio/components/AudioRecoveryModal.tsx:267` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{localText}`
+- [ ] `features/admin/system-context/SystemContextPreview.tsx:69` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{e.description}`
+- [ ] `features/canvas/core/SavedCanvasItemCard.tsx:158` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/cloud-browser/components/Walkthrough.tsx:13` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 - [ ] `features/cloud-browser/components/WrittenProgressFace.tsx:15` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 - [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
+- [ ] `features/connectors/IntegrationDirectory.tsx:525` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/marketing/seo/ai-visibility/canvas/AiAnswerCanvasView.tsx:10` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 - [ ] `features/organizations/components/OrganizationCard.tsx:178` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:592` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:695` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:791` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{msg.content}`
-- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:948` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `lib/sync/components/SyncBootScript.tsx:69` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: script }}`
+- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:593` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:1058` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/shell/components/BoardEmbedBootScript.tsx:18` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: SCRIPT }}`
+- [ ] `features/vision-interview/group-chat/GroupChatInspector.tsx:28` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `lib/sync/components/SyncBootScript.tsx:73` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: script }}`
 
 ### layout /notes
 
-- [ ] `app/(core)/notes/layout.tsx:76` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: highlightStyles }}`
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `app/(core)/notes/layout.tsx:83` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: highlightStyles }}`
 
 ### opener fullScreenEditor
 
@@ -1048,47 +726,37 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:60` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:43` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:45` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:46` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:48` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### overlay agentAssistantMarkdownDebugWindow (MD Debug)
-
-- [ ] `packages/chat/src/window-panels/windows/agents/AgentAssistantMarkdownDebugWindow.tsx:5` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### overlay agentConnectionsWindow (Agent Connections)
 
 - [ ] `components/official/settings/primitives/SettingsRadioGroup.tsx:78` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
-- [ ] `features/agent-connections/components/sections/AgentsSection.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{agent.description ?? agent.id}`
+- [ ] `features/agent-connections/components/sections/AgentsSection.tsx:141` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{agent.description ?? agent.id}`
 - [ ] `features/agent-connections/components/sections/McpServersSection.tsx:264` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/agent-connections/components/sections/McpServersSection.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
 - [ ] `features/agent-connections/components/sections/OverviewSection.tsx:156` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{card.description}`
-- [ ] `features/agent-connections/components/sections/RenderBlocksSection.tsx:318` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
-- [ ] `features/skills/components/SkillDetailEditor.tsx:40` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agent-connections/components/sections/RenderBlocksSection.tsx:181` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{def.description}`
+- [ ] `features/agent-connections/components/sections/RenderBlocksSection.tsx:362` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
 - [ ] `features/skills/components/SkillsBrowser.tsx:245` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
-
-### overlay agentDebugWindow (Agent Debug)
-
-- [ ] `packages/chat/src/window-panels/windows/agents/AgentDebugWindow.tsx:511` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
 
 ### overlay agentFindUsagesWindow (Find Usages)
 
@@ -1096,12 +764,11 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### overlay agentSettingsWindow (Agent Settings)
 
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### overlay agentSkillsWindow (Agent Skills)
 
 - [ ] `features/skills/components/SkillConfigPicker.tsx:497` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{skill.description || "No description provided."}`
-- [ ] `features/skills/components/SkillDetailView.tsx:30` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/skills/components/SkillDetailView.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{skill.description || "No description provided."}`
 
 ### overlay aiVoiceWindow (AI Voice)
@@ -1109,18 +776,9 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/audio/voice/VoicesList.tsx:233` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{voice.description}`
 - [ ] `features/audio/voice/components/VoiceSelectionModal.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{voice.description || "No description available"}`
 
-### overlay announcements (Announcements)
-
-- [ ] `components/layout/AnnouncementExperience.tsx:33` — **renderAnnouncementMessage (regex link parser)** (BANNED) — `renderAnnouncementMessage ← @/utils/render-announcement-message`
-- [ ] `utils/render-announcement-message.tsx:96` — **renderAnnouncementMessage (regex link parser)** (BANNED) — `definition of renderAnnouncementMessage`
-
 ### overlay approvalsWindow (Waiting on you)
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
-
-### overlay audioControlWindow (Media)
-
-- [ ] `features/media-capture/components/CaptureItemActions.tsx:130` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{transcript}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 
 ### overlay cloudBrowserWindow
 
@@ -1129,51 +787,26 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### overlay codeWorkspaceWindow (Code Workspace)
 
-- [ ] `features/code/views/extensions/ExtensionsPanel.tsx:115` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-- [ ] `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx:980` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fileContent || "(empty file)"}`
+- [ ] `features/code/views/extensions/ExtensionsPanel.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
 
 ### overlay contentEditorListWindow (Content List Editor)
 
-- [ ] `components/official/content-editor/ContentEditor.tsx:27` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/official/content-editor/ContentEditor.tsx:307` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
+- [ ] `components/official/content-editor/ContentEditor.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
 - [ ] `features/html-pages/components/tabs/MarkdownPreviewTab.tsx:4` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/window-panels/windows/content-editors/ContentEditorListWindow.tsx:14` — **components/official/content-editor/ContentEditor** (BANNED) — `@/components/official/content-editor/ContentEditor`
 
 ### overlay contentEditorWindow (Content Editor)
 
-- [ ] `components/official/content-editor/ContentEditor.tsx:27` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/official/content-editor/ContentEditor.tsx:307` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
+- [ ] `components/official/content-editor/ContentEditor.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
 - [ ] `features/html-pages/components/tabs/MarkdownPreviewTab.tsx:4` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/window-panels/windows/content-editors/ContentEditorWindow.tsx:13` — **components/official/content-editor/ContentEditor** (BANNED) — `@/components/official/content-editor/ContentEditor`
 
 ### overlay contentEditorWorkspaceWindow (Content Workspace)
 
-- [ ] `components/official/content-editor/ContentEditor.tsx:27` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/official/content-editor/ContentEditor.tsx:307` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
+- [ ] `components/official/content-editor/ContentEditor.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
 - [ ] `components/official/content-editor/ContentEditorTabs.tsx:13` — **components/official/content-editor/ContentEditor** (BANNED) — `./ContentEditor`
 - [ ] `components/official/content-editor/ContentEditorTabs.tsx:265` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{config.description}`
 - [ ] `features/html-pages/components/tabs/MarkdownPreviewTab.tsx:4` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### overlay contextPreviewPanel
-
-- [ ] `packages/chat/src/agents/components/context-preview/ContextCompareView.tsx:48` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/agents/components/context-preview/ContextCompareView.tsx:231` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-- [ ] `packages/chat/src/agents/components/context-preview/ContextCompareView.tsx:429` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-
-### overlay copySubsetWindow
-
-- [ ] `components/agent-copy/copy-subset/CopySubsetWindow.tsx:232` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{text || <span className="text-muted-foreground">—</span>}`
-
-### overlay createProjectWindow (Create Project)
-
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
-
-### overlay creatorHub (Creator Hub)
-
-- [ ] `packages/chat/src/agents/components/debug/SandboxFileViewer.tsx:146` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content}`
-- [ ] `packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx:475` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-- [ ] `packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx:755` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-- [ ] `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx:980` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fileContent || "(empty file)"}`
 
 ### overlay credentialVaultWindow (Vault)
 
@@ -1181,15 +814,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1830` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{draft.def.description}`
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1981` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
 - [ ] `features/secrets/components/VaultHandlingControl.tsx:80` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{presentation.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2560` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:356` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:922` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<dd pre-wrap>{attachment.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:1333` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{field.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2563` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.notes}`
-
-### overlay customAgentWindow (Custom agent)
-
-- [ ] `packages/chat/src/agents/components/custom-agent/CustomAgentWindow.tsx:294` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.description}`
+- [ ] `features/secrets/components/VaultItemDetail.tsx:2559` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
 
 ### overlay executionInspectorWindow (Execution Inspector)
 
@@ -1206,25 +831,19 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### overlay googleAgendaWindow (Agenda)
 
 - [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
-- [ ] `features/google-workspace/calendar/SelectedCalendarReview.tsx:150` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.calendar.summary}`
+- [ ] `features/google-workspace/calendar/CalendarCreateReview.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{calendar.summary}`
+- [ ] `features/google-workspace/calendar/CalendarCreateReview.tsx:477` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{saved.request.summary}`
+- [ ] `features/google-workspace/calendar/CalendarCreateReview.tsx:528` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{saved.request.summary}`
+- [ ] `features/google-workspace/calendar/CalendarEventChangeReview.tsx:556` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{calendar.summary}`
+- [ ] `features/google-workspace/calendar/SelectedCalendarReview.tsx:155` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.calendar.summary}`
 
 ### overlay googleContactsImportWindow (Import from Google Contacts)
 
-- [ ] `features/connectors/import/GoogleContactsImportPanel.tsx:842` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{decision.explanation}`
+- [ ] `features/connectors/import/GoogleContactsImportPanel.tsx:851` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{decision.explanation}`
 
-### overlay hindsightFindingWindow (Hindsight Finding)
+### overlay googleTasksImportWindow (Import from Google Tasks)
 
-- [ ] `features/hindsight/components/DiscussPanel.tsx:35` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/components/FindingCard.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/components/ThreadMessageRow.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### overlay htmlPreviewBridge
-
-- [ ] `features/html-pages/components/tabs/MarkdownPreviewTab.tsx:4` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### overlay impactBatchWindow (Change impact)
-
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/connectors/import/GoogleTasksWriteControls.tsx:276` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{createRecovery.request.notes}`
 
 ### overlay keywordResearchWindow (Keyword Research)
 
@@ -1234,33 +853,35 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/marketing/seo/keyword/KeywordMeaningPanel.tsx:318` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{stamp.notes}`
 
+### overlay linkRecordSheet
+
+- [ ] `features/rich-document/annotations/LinkRecordOverlay.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{words.description}`
+
 ### overlay listManagerWindow (List Manager)
 
 - [ ] `features/user-lists/components/ListCard.tsx:129` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
 
+### overlay liveIntegrationsWindow (Live Integrations)
+
+- [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
+- [ ] `features/connectors/IntegrationDirectory.tsx:525` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:1058` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+
 ### overlay mandateWindow (Mandates)
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1683` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1690` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### overlay mandateWindowNext (Mandates (new))
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1683` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1690` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### overlay markdownEditor (Markdown Editor (fullscreen))
 
@@ -1295,10 +916,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/masterwork/checkup/CheckupWindow.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/masterwork/checkup/CheckupWindow.tsx:329` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{run.summary ?? "Nothing to change — your Rulebook holds up."}`
 
-### overlay masterworkYourWordsWindow (Your words)
-
-- [ ] `features/masterwork/record/ExpertRecordPage.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
 ### overlay newsWindow (News)
 
 - [ ] `features/news/components/NewsFloatingWorkspace.tsx:197` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{article.description}`
@@ -1308,120 +925,48 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge.tsx:44` — **FullScreenMarkdownEditor (16-tab editor)** (BANNED) — `@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor` (type-only)
 - [ ] `components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge.tsx:48` — **FullScreenMarkdownEditor (16-tab editor)** (BANNED) — `@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor`
 
-### overlay observationalMemoryWindow (Memory Inspector)
-
-- [ ] `packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx:475` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-- [ ] `packages/chat/src/agents/components/observational-memory/components/MemoryStateInspector.tsx:755` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-
 ### overlay pdfExtractorWindow (PDF Extractor)
 
 - [ ] `features/pdf-extractor/components/CopyPagesOverlay.tsx:777` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{copyAllTier.notes || "—"}`
 - [ ] `features/pdf-extractor/components/CopyPagesOverlay.tsx:865` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{tier.notes || "—"}`
-- [ ] `features/pdf-extractor/components/PdfAiContent.tsx:3` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/pdf-extractor/components/PdfExtractorWorkspace.tsx:960` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content}`
-- [ ] `features/pdf-extractor/components/SyncedPdfTextView.tsx:268` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text || ( <span className="italic text-muted-foreground"> (no text on this…`
-
-### overlay quickNotes (Quick Notes)
-
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### overlay quickScribe
-
-- [ ] `features/transcript-studio/components/scribe/ActionSheet.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/transcript-studio/components/scribe/FullTranscriptDrawer.tsx:113` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{rawText || ( <span className="italic text-muted-foreground"> No transcript w…`
-- [ ] `features/transcript-studio/components/scribe/FullTranscriptDrawer.tsx:176` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{cleanText || ( <span className="italic text-muted-foreground"> Not cleaned y…`
-- [ ] `features/transcript-studio/components/scribe/ScribeCaptureScreen.tsx:76` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text || ( <span className="italic text-muted-foreground"> Speak — your wor…`
-- [ ] `features/transcript-studio/components/scribe/SessionTranscriptViewer.tsx:167` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{text || ( <span className="italic text-muted-foreground"> {isClean ? "Nothin…`
-
-### overlay quickTasks (Quick Tasks)
-
-- [ ] `features/tasks/components/TaskDetailsPanel.tsx:794` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{description || ( <span className="text-muted-foreground italic"> No descri…`
-
-### overlay quickTasksWindow (Tasks)
-
-- [ ] `features/tasks/components/TaskDetailsPanel.tsx:794` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{description || ( <span className="text-muted-foreground italic"> No descri…`
-
-### overlay quickUtilities (Utilities)
-
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/tasks/components/TaskDetailsPanel.tsx:794` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{description || ( <span className="text-muted-foreground italic"> No descri…`
-
-### overlay researchContextPreviewWindow (Context Preview)
-
-- [ ] `features/window-panels/windows/text-sections/TextSectionsWindow.tsx:35` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/window-panels/windows/text-sections/TextSectionsWindow.tsx:285` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{shownContent}`
-
-### overlay reviewWalkWindow
-
-- [ ] `features/review-walk/components/TurnDiagnosis.tsx:38` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### overlay sandboxManagementWindow (Sandbox management)
-
-- [ ] `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx:980` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fileContent || "(empty file)"}`
-
-### overlay saveKitDialog
-
-- [ ] `features/kits/components/SaveKitDialog.tsx:492` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{w.description}`
-
-### overlay sendToAgentWindow (Send to another agent)
-
-- [ ] `packages/chat/src/agents/components/send-to-agent/SendToAgentWindow.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
 
 ### overlay siteDiscoveryWindow (Business discovery)
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 - [ ] `features/marketing/seo/value-system/discovery/DiscoveryLadder.tsx:415` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{door.body}`
-
-### overlay smartCodeEditorWindow (Smart Code Editor)
-
-- [ ] `features/code-editor/agent-code-editor/components/parts/ReviewStage.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### overlay sourceInspectorWindow (Source inspector)
 
-- [ ] `features/page-extraction/components/ChunkCard.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/page-extraction/components/ResultsTable.tsx:785` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text}`
-- [ ] `features/rag/components/source-inspector/SourceInspectorPane.tsx:43` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{doc.content ?? "(no extracted text)"}`
+- [ ] `features/rag/components/source-inspector/SourceInspectorPane.tsx:45` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### overlay structuredValueWindow (Details)
+### overlay structuredListManagerV2Window (Picklists — v2)
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/user-lists/components/PicklistsIndex.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
 
 ### overlay surfaceAgentBindWindow (Add Agent to Surface)
 
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### overlay surfaceContextInspector (Surface Context Admin)
 
-- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:943` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
-- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:1266` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{child.description ?? "—"}`
+- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:934` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
+- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:1253` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{child.description ?? "—"}`
 - [ ] `features/surfaces/components/NewSurfaceDialog.tsx:270` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
 - [ ] `features/surfaces/components/SurfaceValuesTable.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{display.description}`
-- [ ] `features/tool-registry/shared/ToolSearchDialog.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-
-### overlay surfaceContextWindow (Surface Context)
-
-- [ ] `features/window-panels/windows/surfaces/SurfaceContextWindow.tsx:716` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selected.declaration.description}`
-
-### overlay taskQuickCreateWindow (Create Task)
-
-- [ ] `features/agents/components/previews/ConversationHoverPreview.tsx:142` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{conv.description}`
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
-- [ ] `packages/chat/src/tool-call-visualization/window-panel/ToolCallWindowPanel.tsx:682` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{activeTab?.content ?? null}`
+- [ ] `features/tool-registry/shared/ToolSearchDialog.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
 
 ### overlay topicalMapWindow (Topical map)
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
-- [ ] `features/window-panels/windows/marketing/TopicalMapWindow.tsx:275` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/window-panels/windows/marketing/TopicalMapWindow.tsx:267` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
 
 ### overlay transcriptStudioWindow (Transcript Studio)
 
 - [ ] `features/transcript-studio/components/columns/ConceptsColumn.tsx:301` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.description}`
-- [ ] `features/transcript-studio/components/columns/ModuleColumn.tsx:7` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/transcript-studio/components/settings/ModulePicker.tsx:56` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
 
 ### overlay userPreferences (Settings)
@@ -1429,11 +974,10 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/official/settings/primitives/SettingsRadioGroup.tsx:78` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
 - [ ] `components/official/settings/tree/SettingsDrawerNav.tsx:324` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{node.description}`
 - [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
+- [ ] `features/connectors/IntegrationDirectory.tsx:525` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 - [ ] `features/organizations/components/OrganizationCard.tsx:178` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:592` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:695` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:791` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{msg.content}`
-- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:948` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:593` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:1058` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 
 ### overlay whatsappShellWindow (WhatsApp)
 
@@ -1461,38 +1005,23 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/agents/agent-apps
 
-- [ ] `app/(admin)/administration/agents/agent-apps/page.tsx:303` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tile.description}`
+- [ ] `app/(admin)/administration/agents/agent-apps/page.tsx:308` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tile.description}`
 - [ ] `features/agent-apps/components/layouts/AgentAppCard.tsx:38` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{app.description}`
-
-### route /administration/agents/agent-apps/edit/[id]
-
-- [ ] `features/agent-apps/components/AgentAppPublicRendererImpl.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx:43` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppMarkdownStreamBridge.tsx:4` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppWidgetShell.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /administration/agents/bundles
 
-- [ ] `features/tool-registry/bundles/components/BundlesAdminPage.tsx:280` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{b.description}`
-- [ ] `features/tool-registry/bundles/components/BundlesAdminPage.tsx:945` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{r.description}`
+- [ ] `features/tool-registry/bundles/components/BundlesAdminPage.tsx:283` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{b.description}`
+- [ ] `features/tool-registry/bundles/components/BundlesAdminPage.tsx:950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{r.description}`
 
 ### route /administration/agents/executor-surfaces
 
-- [ ] `features/tool-registry/executor-surfaces/components/ExecutorSurfaceDetailPanel.tsx:190` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{executor.description}`
-- [ ] `features/tool-registry/shared/ToolSearchDialog.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-
-### route /administration/agents/hindsight
-
-- [ ] `features/hindsight/components/DiscussPanel.tsx:35` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/components/FindingCard.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/components/ReviewRow.tsx:87` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{review.summary}`
-- [ ] `features/hindsight/components/ThreadMessageRow.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/tool-registry/executor-surfaces/components/ExecutorSurfaceDetailPanel.tsx:197` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{executor.description}`
+- [ ] `features/tool-registry/shared/ToolSearchDialog.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
 
 ### route /administration/agents/mcp-servers
 
-- [ ] `features/tool-registry/mcp-admin/components/McpServersAdminPage.tsx:691` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{server.description}`
-- [ ] `features/tool-registry/mcp-admin/components/McpServersAdminPage.tsx:1068` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.notes}`
+- [ ] `features/tool-registry/mcp-admin/components/McpServersAdminPage.tsx:708` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{server.description}`
+- [ ] `features/tool-registry/mcp-admin/components/McpServersAdminPage.tsx:1096` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.notes}`
 
 ### route /administration/agents/mcp-tools
 
@@ -1500,23 +1029,15 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/agents/mcp-tools/[toolId]
 
-- [ ] `features/tool-call-visualization/admin/ToolTestSamplesViewer.tsx:513` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{modelFacingContent}`
 - [ ] `features/tool-call-visualization/admin/mcp-tools/ToolViewPage.tsx:133` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description || ( <span className="text-muted-foreground italic">No description</…`
-- [ ] `features/tool-registry/tools-admin/components/RegistryTab.tsx:716` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
-- [ ] `features/tool-registry/tools-admin/components/RegistryTab.tsx:767` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{g.description}`
+- [ ] `features/tool-registry/tools-admin/components/RegistryTab.tsx:707` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
+- [ ] `features/tool-registry/tools-admin/components/RegistryTab.tsx:758` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{g.description}`
 
 ### route /administration/agents/mcp-tools/[toolId]/ui
 
-- [ ] `features/tool-call-visualization/admin/ToolUiComponentEditor.tsx:744` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{imp.description}`
-- [ ] `features/tool-call-visualization/admin/ToolUiComponentEditor.tsx:1139` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{imp.description}`
-- [ ] `features/tool-call-visualization/admin/ToolUiComponentGenerator.tsx:49` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/tool-call-visualization/admin/ToolUiComponentGenerator.tsx:1185` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{selectedTool.description}`
-- [ ] `features/tool-call-visualization/admin/ToolUiComponentGenerator.tsx:495` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-- [ ] `features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview.tsx:40` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### route /administration/agents/relationships/directives
-
-- [ ] `features/directive-catalog/components/DirectiveBuilderPanel.tsx:595` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{r.summary}`
+- [ ] `features/tool-call-visualization/admin/ToolUiComponentEditor.tsx:745` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{imp.description}`
+- [ ] `features/tool-call-visualization/admin/ToolUiComponentEditor.tsx:1141` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{imp.description}`
+- [ ] `features/tool-call-visualization/admin/ToolUiComponentGenerator.tsx:1186` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{selectedTool.description}`
 
 ### route /administration/agents/reports/agent-drift
 
@@ -1524,30 +1045,12 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/agents/skills
 
-- [ ] `features/skills/components/SkillDetailEditor.tsx:40` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/skills/components/SkillsBrowser.tsx:245` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
-
-### route /administration/agents/support
-
-- [ ] `features/agents/browse/columns.tsx:27` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
-- [ ] `features/agents/browse/components/AgentBrowseCards.tsx:35` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
 
 ### route /administration/agents/system-agents
 
 - [ ] `app/(admin)/administration/agents/system-agents/page.tsx:292` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tile.description}`
-- [ ] `app/(admin)/administration/agents/system-agents/page.tsx:335` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{action.description}`
-
-### route /administration/agents/system-agents/agents
-
-- [ ] `features/agents/browse/columns.tsx:27` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
-- [ ] `features/agents/browse/components/AgentBrowseCards.tsx:35` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
-
-### route /administration/agents/system-agents/agents/[id]
-
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:77` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:900` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{slot.description}`
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:217` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content || "—"}`
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:69` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `app/(admin)/administration/agents/system-agents/page.tsx:331` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{action.description}`
 
 ### route /administration/agents/system-agents/agents/[id]/apps
 
@@ -1557,44 +1060,50 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:60` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:43` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:45` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:46` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:48` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /administration/agents/system-agents/agents/[id]/shortcuts
 
 - [ ] `features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx:313` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
 - [ ] `features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx:528` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{shortcut.description}`
 
+### route /administration/agents/system-agents/agents/[id]/shortcuts/[shortcutId]
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
+
+### route /administration/agents/system-agents/agents/[id]/shortcuts/new
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
+
 ### route /administration/agents/system-agents/agents/[id]/surfaces
 
 - [ ] `features/surfaces/admin/columns/AgentColumn.tsx:63` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
 - [ ] `features/surfaces/admin/columns/AgentColumn.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{slot.description}`
-- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:507` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
+- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:498` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
 - [ ] `features/surfaces/admin/columns/SurfaceDetailsColumn.tsx:234` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
 
 ### route /administration/agents/system-agents/agents/[id]/surfaces/batch
 
-- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:507` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
+- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:498` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
 
 ### route /administration/agents/system-agents/agents/new
 
@@ -1606,8 +1115,12 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/agents/system-agents/content-blocks
 
-- [ ] `components/admin/ContentBlocksManager.tsx:135` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `components/admin/ContentBlocksManager.tsx:86` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `components/admin/ContentBlocksManager.tsx:136` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `components/admin/ContentBlocksManager.tsx:100` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+
+### route /administration/agents/system-agents/edit/[id]
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
 
 ### route /administration/agents/system-agents/lineage
 
@@ -1615,7 +1128,8 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/agents/system-agents/shortcuts
 
-- [ ] `features/agent-shortcuts/components/ImportShortcutsBrowserModal.tsx:260` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
+- [ ] `features/agent-shortcuts/components/ImportShortcutsBrowserModal.tsx:261` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 - [ ] `features/agent-shortcuts/components/ShortcutList.tsx:665` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{shortcut.description}`
 
 ### route /administration/agents/system-agents/shortcuts/all
@@ -1625,70 +1139,64 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /administration/ai/ai-models
 
 - [ ] `components/official/error-detail/ReplaceFailureBanner.tsx:24` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{explained.summary}`
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/ai-models/components/controls/ControlRuleRow.tsx:231` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.setting.description}`
+- [ ] `features/ai-models/components/controls/ControlRuleRow.tsx:232` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.setting.description}`
 
 ### route /administration/ai/ai-models/aliases
 
-- [ ] `features/ai-models/components/aliases/AliasesContainer.tsx:260` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.notes || "—"}`
-- [ ] `features/ai-models/components/aliases/AliasesContainer.tsx:458` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.notes}`
+- [ ] `features/ai-models/components/aliases/AliasesContainer.tsx:261` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.notes || "—"}`
+- [ ] `features/ai-models/components/aliases/AliasesContainer.tsx:460` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.notes}`
 
 ### route /administration/ai/ai-models/audit
 
 - [ ] `components/official/error-detail/ReplaceFailureBanner.tsx:24` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{explained.summary}`
-- [ ] `features/ai-models/components/controls/ControlRuleRow.tsx:231` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.setting.description}`
+- [ ] `features/ai-models/components/controls/ControlRuleRow.tsx:232` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.setting.description}`
 
 ### route /administration/ai/ai-models/deprecated-audit
 
 - [ ] `components/official/error-detail/ReplaceFailureBanner.tsx:24` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{explained.summary}`
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /administration/ai/ai-models/offerings
 
-- [ ] `features/ai-models/components/ModelPricingEditor.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{opt.description}`
+- [ ] `features/ai-models/components/ModelPricingEditor.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{opt.description}`
 
 ### route /administration/ai/ai-models/provider-sync
 
 - [ ] `components/official/error-detail/ReplaceFailureBanner.tsx:24` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{explained.summary}`
-- [ ] `features/ai-models/components/controls/ControlRuleRow.tsx:231` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.setting.description}`
+- [ ] `features/ai-models/components/controls/ControlRuleRow.tsx:232` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.setting.description}`
 
 ### route /administration/ai/ai-models/settings
 
-- [ ] `features/ai-models/components/settings/SettingTable.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description || "—"}`
+- [ ] `features/ai-models/components/settings/SettingTable.tsx:316` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description || "—"}`
 
 ### route /administration/applications/catalogs
 
-- [ ] `features/admin/applications/catalogs/components/AddFromLinkDialog.tsx:336` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/admin/applications/catalogs/components/AddFromLinkDialog.tsx:335` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 - [ ] `features/admin/applications/catalogs/components/CatalogEntryEditor.tsx:600` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeKindDef.description}`
-- [ ] `features/admin/applications/catalogs/components/CatalogKindTable.tsx:415` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
-- [ ] `features/admin/applications/catalogs/components/CatalogsClient.tsx:300` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description || "—"}`
+- [ ] `features/admin/applications/catalogs/components/CatalogKindTable.tsx:414` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
+- [ ] `features/admin/applications/catalogs/components/CatalogsClient.tsx:301` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description || "—"}`
 
 ### route /administration/automation/scheduling/system-jobs
 
-- [ ] `app/(admin)/administration/automation/scheduling/system-jobs/page.tsx:350` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{r.description}`
+- [ ] `app/(admin)/administration/automation/scheduling/system-jobs/page.tsx:351` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{r.description}`
 
 ### route /administration/automation/scheduling/tasks
 
-- [ ] `app/(admin)/administration/automation/scheduling/tasks/page.tsx:130` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{r.description}`
+- [ ] `app/(admin)/administration/automation/scheduling/tasks/page.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{r.description}`
 
 ### route /administration/automation/scheduling/tasks/[id]
 
 - [ ] `features/scheduling/components/detail/ScheduleDetail.tsx:555` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{task.description}`
-- [ ] `features/scheduling/components/detail/SpecCard.tsx:131` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{task.prompt}`
+- [ ] `features/scheduling/components/detail/SpecCard.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{task.prompt}`
 
 ### route /administration/automation/scheduling/templates
 
-- [ ] `app/(admin)/administration/automation/scheduling/templates/page.tsx:50` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
+- [ ] `app/(admin)/administration/automation/scheduling/templates/page.tsx:49` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
+
+### route /administration/automation/workflow-runs
+
+- [ ] `components/official/drill-explorer/DrillExplorerHeadline.tsx:36` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{fact.content}`
 
 ### route /administration/chat/cx-dashboard
-
-- [ ] `components/ui/chart.tsx:88` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: Object.entries(THEMES) .map( ([theme, prefix]) => ' ${…`
-
-### route /administration/chat/cx-dashboard/conversations/[id]
-
-- [ ] `app/(admin)/administration/chat/cx-dashboard/conversations/[id]/conversation-detail-content.tsx:47` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### route /administration/chat/cx-dashboard/usage
 
 - [ ] `components/ui/chart.tsx:88` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: Object.entries(THEMES) .map( ([theme, prefix]) => ' ${…`
 
@@ -1696,11 +1204,11 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/proof-runs/components/ProofRunsClient.tsx:147` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
 - [ ] `features/proof-runs/components/ProofRunsClient.tsx:582` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scenario.description}`
-- [ ] `features/proof-runs/components/ScenarioEditor.tsx:521` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{mandate.description}`
+- [ ] `features/proof-runs/components/ScenarioEditor.tsx:523` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{mandate.description}`
 
 ### route /administration/compute/resilience-lab
 
-- [ ] `app/(admin)/administration/compute/resilience-lab/page.tsx:957` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
+- [ ] `app/(admin)/administration/compute/resilience-lab/page.tsx:938` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
 
 ### route /administration/database
 
@@ -1708,19 +1216,15 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/database/data-integrity
 
-- [ ] `app/(admin)/administration/database/data-integrity/page.tsx:258` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `app/(admin)/administration/database/data-integrity/page.tsx:271` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /administration/database/enums
 
 - [ ] `app/(admin)/administration/database/sql-functions/components/EnumDetail.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{enumType.description}`
 
-### route /administration/database/final-switch
-
-- [ ] `features/administration/final-switch/FinalSwitchScreen.tsx:779` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{REHEARSAL.summary}`
-
 ### route /administration/database/relationships/planner
 
-- [ ] `features/admin/relationships/access-planner/AccessPlannerImpl.tsx:1173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{DISPOSITION_COPY[selectedTable.disposition].description}`
+- [ ] `features/admin/relationships/access-planner/AccessPlannerImpl.tsx:1164` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{DISPOSITION_COPY[selectedTable.disposition].description}`
 
 ### route /administration/database/schema-visualizer-enhanced
 
@@ -1733,9 +1237,8 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /administration/database/sql-queries
 
 - [ ] `components/admin/query-history/query-history-overlay.tsx:394` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{query.description}`
-- [ ] `features/notes/actions/CategoryNotesModal.tsx:374` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{note.content}`
-- [ ] `features/notes/actions/CategoryNotesModal.tsx:562` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{note.content}`
-- [ ] `features/notes/actions/CategoryNotesModal.tsx:435` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{selectedNote.content}`
+- [ ] `features/notes/actions/CategoryNotesModal.tsx:375` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{note.content}`
+- [ ] `features/notes/actions/CategoryNotesModal.tsx:561` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{note.content}`
 
 ### route /administration/documentation/feature-docs/view/[[...path]]
 
@@ -1745,55 +1248,47 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/admin/hr/jurisdiction-rules/components/JurisdictionRuleDetailClient.tsx:416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ruleClass.description}`
 
-### route /administration/intelligence/mandates
-
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-
 ### route /administration/intelligence/mandates/[mandateKey]
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1683` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
-
-### route /administration/intelligence/mandates/support
-
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
+- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1690` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### route /administration/intelligence/mandates/support/[mandateId]
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1683` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1690` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### route /administration/knowledge/cms-agents
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+
+### route /administration/knowledge/kg-cost
+
+- [ ] `components/official/drill-explorer/DrillExplorerHeadline.tsx:36` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{fact.content}`
+
+### route /administration/knowledge/kg-cost/explore
+
+- [ ] `components/official/drill-explorer/DrillExplorerHeadline.tsx:36` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{fact.content}`
 
 ### route /administration/knowledge/research-system
 
-- [ ] `features/research/admin/AgentWiringDashboard.tsx:169` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{constant.description}`
-- [ ] `features/research/admin/AgentWiringDashboard.tsx:233` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{AGENT_CONFIG_META[key].description}`
-- [ ] `features/research/admin/TemplatesManager.tsx:169` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{template.description || "No description"}`
-- [ ] `features/research/admin/TemplatesManager.tsx:783` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{AGENT_CONFIG_META[key].description}`
+- [ ] `features/research/admin/AgentWiringDashboard.tsx:171` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{constant.description}`
+- [ ] `features/research/admin/AgentWiringDashboard.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{AGENT_CONFIG_META[key].description}`
+- [ ] `features/research/admin/TemplatesManager.tsx:178` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{template.description || "No description"}`
+- [ ] `features/research/admin/TemplatesManager.tsx:817` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{AGENT_CONFIG_META[key].description}`
 
 ### route /administration/knowledge/search-lab
 
+- [ ] `features/rag/components/search/KnowledgeSearchResult.tsx:18` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 - [ ] `features/rag/components/search/RagPageReferences.tsx:17` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 - [ ] `features/rag/components/search/RagPageReferences.tsx:1067` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{group.description}`
 - [ ] `features/rag/components/search/RagReviewRepairWorkspace.tsx:25` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/rag/components/search/RagSearchExperience.tsx:2317` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{assembledPrompt}`
 
 ### route /administration/knowledge/seo-value-settings
 
@@ -1805,15 +1300,13 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/marketing/seo-operations
 
-- [ ] `features/admin/seo-operations/SeoOperationsClient.tsx:30` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/admin/seo-operations/SeoOperationsClient.tsx:647` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{spec.description}`
-- [ ] `features/admin/seo-operations/SeoOperationsClient.tsx:266` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{row.description || "— no goal recorded —"}`
+- [ ] `features/admin/seo-operations/SeoOperationsClient.tsx:631` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{spec.description}`
 
 ### route /administration/preview/one-binding-ui
 
-- [ ] `app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx:165` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{chosen.description}`
-- [ ] `app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{v.description}`
-- [ ] `app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx:566` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{input.prompt || "What should we ask the user?"}`
+- [ ] `app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx:156` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{chosen.description}`
+- [ ] `app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx:311` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{v.description}`
+- [ ] `app/(admin)/administration/preview/one-binding-ui/OneBindingUi.tsx:554` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{input.prompt || "What should we ask the user?"}`
 
 ### route /administration/preview/unified-management/batch
 
@@ -1821,45 +1314,33 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/preview/unified-management/places
 
-- [ ] `app/(admin)/administration/preview/unified-management/places/CompletenessStrip.tsx:111` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{section.description}`
+- [ ] `app/(admin)/administration/preview/unified-management/places/CompletenessStrip.tsx:110` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{section.description}`
 - [ ] `app/(admin)/administration/preview/unified-management/places/ManifestPanel.tsx:228` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{v.description}`
 - [ ] `app/(admin)/administration/preview/unified-management/places/PlacesWorkspace.tsx:123` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{note.body}`
-
-### route /administration/question-desk/[interviewId]
-
-- [ ] `features/question-desk/components/QuestionScreen.tsx:178` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{body}`
 
 ### route /administration/reporting/reports
 
 - [ ] `features/reports/components/ReportsLanding.tsx:50` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{report.description}`
 
-### route /administration/scopes-context/context-inspector
-
-- [ ] `packages/chat/src/agents/components/context-preview/ContextCompareView.tsx:48` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/agents/components/context-preview/ContextCompareView.tsx:231` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-- [ ] `packages/chat/src/agents/components/context-preview/ContextCompareView.tsx:429` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text}`
-
 ### route /administration/scopes-context/organizations/[orgId]
 
 - [ ] `features/agent-context/components/scope-admin/ScopeInstancePanel.tsx:286` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:508` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:644` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
 
 ### route /administration/scopes-context/system-context
 
 - [ ] `features/admin/system-context/FeedConfigEditor.tsx:487` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
-- [ ] `features/admin/system-context/ItemDialogs.tsx:413` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{CLASS_META[itemClass].description}`
-- [ ] `features/admin/system-context/PreviewDialog.tsx:88` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{e.description}`
-- [ ] `features/admin/system-context/SystemContextConsole.tsx:296` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.description}`
+- [ ] `features/admin/system-context/ItemDialogs.tsx:412` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{CLASS_META[itemClass].description}`
+- [ ] `features/admin/system-context/SystemContextConsole.tsx:309` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.description}`
+- [ ] `features/admin/system-context/SystemContextPreview.tsx:69` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{e.description}`
 
 ### route /administration/shared-knowledge
 
 - [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:290` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{b.description}`
 - [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:291` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{b.notes}`
-- [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:345` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.notes}`
+- [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:346` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.notes}`
 - [ ] `features/admin/shared-knowledge/packs/PackMeaningSection.tsx:471` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/admin/shared-knowledge/packs/PackMeaningSection.tsx:475` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.notes}`
-- [ ] `features/admin/shared-knowledge/packs/PackTopicsSection.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{t.notes}`
+- [ ] `features/admin/shared-knowledge/packs/PackTopicsSection.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{t.notes}`
 
 ### route /administration/ui/experimental-routes
 
@@ -1873,7 +1354,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /administration/ui/surfaces
 
 - [ ] `features/surfaces/components/NewSurfaceDialog.tsx:270` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
-- [ ] `features/surfaces/components/SurfaceCandidatesDialog.tsx:221` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.description}`
+- [ ] `features/surfaces/components/SurfaceCandidatesDialog.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.description}`
 - [ ] `features/surfaces/components/SurfaceDetailPanel.tsx:266` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description || ( <em className="text-muted-foreground">no description</em> )}`
 - [ ] `features/surfaces/components/SurfaceDetailPanel.tsx:329` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{tier.description}`
 - [ ] `features/surfaces/components/SurfaceDetailPanel.tsx:341` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{READINESS_META[readinessBucketOf(surface)].description}`
@@ -1881,15 +1362,19 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/ui/surfaces/[...name]
 
-- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:943` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
-- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:1266` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{child.description ?? "—"}`
+- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:934` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
+- [ ] `features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx:1253` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{child.description ?? "—"}`
 - [ ] `features/surfaces/components/NewSurfaceDialog.tsx:270` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{t.description}`
 - [ ] `features/surfaces/components/SurfaceValuesTable.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{display.description}`
-- [ ] `features/tool-registry/shared/ToolSearchDialog.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
+- [ ] `features/tool-registry/shared/ToolSearchDialog.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
+
+### route /administration/usage
+
+- [ ] `components/official/drill-explorer/DrillExplorerHeadline.tsx:36` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{fact.content}`
 
 ### route /administration/users/agent-review/[id]
 
-- [ ] `features/admin/agent-review/components/AgentReviewWorkspace.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/admin/agent-review/components/AgentReviewWorkspace.tsx:617` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 
 ### route /administration/users/announcements
 
@@ -1901,42 +1386,38 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /administration/users/feedback
 
-- [ ] `app/(admin)/administration/users/feedback/components/AnnouncementTable.tsx:26` — **renderAnnouncementMessage (regex link parser)** (BANNED) — `renderAnnouncementMessage ← @/utils/render-announcement-message`
 - [ ] `app/(admin)/administration/users/feedback/components/CategoriesTab.tsx:437` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{category.description}`
 - [ ] `app/(admin)/administration/users/feedback/components/CategoriesTab.tsx:505` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 - [ ] `app/(admin)/administration/users/feedback/components/CategoriesTab.tsx:636` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{cat.description}`
-- [ ] `app/(admin)/administration/users/feedback/components/EditAnnouncementDialog.tsx:190` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{type.description}`
-- [ ] `app/(admin)/administration/users/feedback/components/EditAnnouncementDialog.tsx:15` — **renderAnnouncementMessage (regex link parser)** (BANNED) — `renderAnnouncementMessage ← @/utils/render-announcement-message`
-- [ ] `app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx:1179` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{item.description}`
-- [ ] `app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx:2170` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{comment.content}`
-- [ ] `app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx:2218` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{item.description}`
-- [ ] `app/(admin)/administration/users/feedback/components/FeedbackDetailDialog.tsx:2791` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{msg.content}`
+- [ ] `app/(admin)/administration/users/feedback/components/EditAnnouncementDialog.tsx:191` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{type.description}`
 - [ ] `app/(admin)/administration/users/feedback/components/FeedbackTable.tsx:540` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{r.description}`
 - [ ] `app/(admin)/administration/users/feedback/components/RepoDiffProposalPanel.tsx:126` — **.split("\n").map(→ JSX) paragraph renderer** (review) — `proposal.unified_diff.split("\n").map((line, i) => ( <DiffLine key={i} line={line} /> ))`
 - [ ] `features/admin/users/components/CreateAnnouncementDialog.tsx:146` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{type.description}`
-- [ ] `utils/render-announcement-message.tsx:96` — **renderAnnouncementMessage (regex link parser)** (BANNED) — `definition of renderAnnouncementMessage`
 
 ### route /administration/users/invitations
 
-- [ ] `features/admin/users/components/InvitationsTableClient.tsx:391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{r.notes}`
+- [ ] `features/admin/users/components/InvitationsTableClient.tsx:413` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{r.notes}`
+
+### route /administration/users/meetings/[id]
+
+- [ ] `features/meet/components/manage/MeetingDetail.tsx:86` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/meet/components/record/ActivityLogPanel.tsx:160` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.answer}`
 
 ### route /administration/users/preferences
 
-- [ ] `features/admin/users/components/PreferencesTabClient.tsx:413` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{r.summary}`
+- [ ] `features/admin/users/components/PreferencesTabClient.tsx:449` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{r.summary}`
 
 ### route /administration/utilities/content-blocks
 
-- [ ] `components/admin/ContentBlocksManager.tsx:135` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `components/admin/ContentBlocksManager.tsx:86` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `components/admin/ContentBlocksManager.tsx:136` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `components/admin/ContentBlocksManager.tsx:100` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /administration/utilities/kind-registry/[kind]
 
-- [ ] `features/code-editor/agent-code-editor/components/parts/ReviewStage.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/content-ir/admin/KindVariantsTab.tsx:292` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{variant.description}`
 
 ### route /administration/utilities/markdown-tester
 
-- [ ] `components/admin/AudioTestModal.tsx:264` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{speechText || ( <span className="text-muted-foreground italic"> No content…`
 - [ ] `components/mardown-display/markdown-classification/custom-views/common/MarkdownTextDisplay.tsx:5` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 - [ ] `components/mardown-display/markdown-classification/custom-views/view-components/AstRendererView.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.content}`
 - [ ] `components/mardown-display/markdown-classification/custom-views/view-components/AstRendererView.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.content}`
@@ -1948,21 +1429,19 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/mardown-display/markdown-classification/markdown-processor-util.ts:21` — **remark-* plugins** (BANNED) — `remark-parse`
 - [ ] `components/mardown-display/markdown-classification/markdown-processor-util.ts:22` — **remark-* plugins** (BANNED) — `remark-gfm`
 - [ ] `components/mardown-display/markdown-classification/parts/CodeComponent.tsx:4` — **react-markdown** (BANNED) — `react-markdown` (type-only)
-- [ ] `components/markdown-studio/AnalysisView.tsx:611` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `components/markdown-studio/AnalysisView.tsx:743` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text || "(empty)"}`
+- [ ] `components/markdown-studio/AnalysisView.tsx:612` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
 - [ ] `components/markdown-studio/AnnotateView.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `components/markdown-studio/PreviewPanel.tsx:44` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `components/markdown-studio/SampleLibrarySheet.tsx:245` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{sample.description}`
 - [ ] `components/markdown-studio/SampleLibrarySheet.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{sample.description}`
 - [ ] `components/markdown-studio/lab/BlockProcessingPanel.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/markdown-studio/lab/ServerEventInspector.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/markdown-studio/lab/ServerEventInspector.tsx:600` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{rawOutputText}`
-- [ ] `components/markdown-studio/lab/SpeechTextPanel.tsx:46` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{speechText}`
+- [ ] `components/markdown-studio/lab/ServerEventInspector.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /administration/utilities/message-templates
 
-- [ ] `features/message-templates/admin/MessageTemplateManager.tsx:96` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/admin/MessageTemplateManager.tsx:73` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/message-templates/admin/MessageTemplateManager.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/admin/MessageTemplateManager.tsx:75` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
 
 ### route /administration/utilities/server-cache
 
@@ -1974,37 +1453,17 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /agent-apps/[id]
 
-- [ ] `features/agent-apps/route/AgentAppOverviewContent.tsx:265` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{app.description}`
-- [ ] `features/agent-apps/route/AgentAppOverviewContent.tsx:645` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{slot.description}`
+- [ ] `features/agent-apps/route/AgentAppOverviewContent.tsx:263` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{app.description}`
+- [ ] `features/agent-apps/route/AgentAppOverviewContent.tsx:646` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{slot.description}`
 
 ### route /agent-apps/[id]/code
 
-- [ ] `features/agent-apps/components/AgentAppPublicRendererImpl.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx:43` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppMarkdownStreamBridge.tsx:4` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppWidgetShell.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/code/views/extensions/ExtensionsPanel.tsx:115` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-- [ ] `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx:980` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fileContent || "(empty file)"}`
-
-### route /agent-apps/[id]/run
-
-- [ ] `features/agent-apps/components/AgentAppPublicRendererImpl.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx:43` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppMarkdownStreamBridge.tsx:4` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppWidgetShell.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/code/views/extensions/ExtensionsPanel.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
 
 ### route /agent-apps/[id]/settings
 
 - [ ] `features/agent-apps/components/builder/ShellPicker.tsx:48` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
 - [ ] `features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
-
-### route /agent-apps/new
-
-- [ ] `features/agent-apps/components/AutoCreateAgentAppForm.tsx:59` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppWidgetShell.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /agent-apps/templates
 
@@ -2020,7 +1479,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /agent-connections/agents
 
-- [ ] `features/agent-connections/components/sections/AgentsSection.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{agent.description ?? agent.id}`
+- [ ] `features/agent-connections/components/sections/AgentsSection.tsx:141` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{agent.description ?? agent.id}`
 
 ### route /agent-connections/mcp-servers
 
@@ -2033,23 +1492,16 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /agent-connections/render-blocks
 
-- [ ] `features/agent-connections/components/sections/RenderBlocksSection.tsx:318` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
+- [ ] `features/agent-connections/components/sections/RenderBlocksSection.tsx:181` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{def.description}`
+- [ ] `features/agent-connections/components/sections/RenderBlocksSection.tsx:362` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
 
 ### route /agent-connections/skills
 
-- [ ] `features/skills/components/SkillDetailEditor.tsx:40` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/skills/components/SkillsBrowser.tsx:245` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
-
-### route /agents/[id]
-
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:77` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:900` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{slot.description}`
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:217` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content || "—"}`
-- [ ] `packages/chat/src/agents/route/AgentViewContent.tsx:69` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /agents/[id]/answers
 
-- [ ] `features/agents/decision-review/components/ReviewQueue.tsx:427` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{selected.instructions ?? "Question text not recorded"}`
+- [ ] `features/agents/decision-review/components/ReviewQueue.tsx:440` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{selected.instructions ?? "Question text not recorded"}`
 
 ### route /agents/[id]/apps
 
@@ -2059,164 +1511,158 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:60` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:43` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:45` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:46` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:48` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### route /agents/[id]/hindsight
-
-- [ ] `features/hindsight/components/DiscussPanel.tsx:35` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/components/FindingCard.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/components/ThreadMessageRow.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/hindsight/workspace/ReviewerChat.tsx:67` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{review.summary}`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /agents/[id]/shortcuts
 
 - [ ] `features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx:313` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
 - [ ] `features/agent-shortcuts/components/LinkAgentToShortcutModal.tsx:528` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{shortcut.description}`
 
+### route /agents/[id]/shortcuts/old/edit/[shortcutId]
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
+
+### route /agents/[id]/shortcuts/old/new
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
+
 ### route /agents/[id]/surfaces
 
 - [ ] `features/surfaces/admin/columns/AgentColumn.tsx:63` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
 - [ ] `features/surfaces/admin/columns/AgentColumn.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{slot.description}`
-- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:507` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
+- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:498` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
 - [ ] `features/surfaces/admin/columns/SurfaceDetailsColumn.tsx:234` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
 
 ### route /agents/[id]/surfaces/batch
 
-- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:507` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
-
-### route /agents/all
-
-- [ ] `features/agents/browse/columns.tsx:27` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
-- [ ] `features/agents/browse/components/AgentBrowseCards.tsx:35` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
+- [ ] `features/surfaces/admin/columns/BindingColumn.tsx:498` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
 
 ### route /agents/battle/system-prompt
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /agents/battle/system-prompt/[setId]
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /agents/battle/tools
 
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
 
 ### route /agents/battle/tools/[setId]
 
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+
+### route /agents/battle/tuning
+
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+
+### route /agents/battle/tuning/[setId]
+
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
 
 ### route /agents/battle/variations
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:60` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:43` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:45` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:46` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:48` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /agents/battle/variations/[setId]
 
 - [ ] `features/agents/components/builder/message-builders/AddBlockButton.tsx:28` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
 - [ ] `features/agents/components/builder/message-builders/DecisionQuestionsEditor.tsx:41` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:60` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:43` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:45` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:46` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/MessageItem.tsx:48` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/builder/message-builders/MessageViewModeMenu.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 - [ ] `features/agents/components/builder/message-builders/SpeechScriptEditor.tsx:60` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/FullPromptOptimizer.tsx:36` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:29` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:21` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:25` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
-- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemPromptOptimizer.tsx:52` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:470` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1906` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2894` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3391` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3756` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3871` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
-- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4061` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:31` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
-- [ ] `features/message-templates/components/SaveTemplateModal.tsx:14` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:47` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:23` — **HighlightedText (prompt {{var}} contentEditable)** (BANNED) — `@/features/agents/components/variables-management/HighlightedText`
+- [ ] `features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx:27` — **MessageViewModeMenu (bespoke mode toggle)** (BANNED) — `@/features/agents/components/builder/message-builders/MessageViewModeMenu`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:340` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/settings-management/AgentSettingsCore.tsx:348` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: colored }}`
+- [ ] `features/agents/components/tools-management/AgentBundlesPanel.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{bundle.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1733` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:1950` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:2920` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3416` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedConfig.notes}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3781` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:3896` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{pDef.description ?? "—"}`
+- [ ] `features/agents/components/tools-management/AgentToolsManager.tsx:4089` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
+- [ ] `features/message-templates/components/AutoResizeTextarea.tsx:14` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoResizeTextarea`
+- [ ] `features/message-templates/components/SaveTemplateModal.tsx:4` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `AutoResizeTextarea ← @/features/message-templates/components/AutoResizeTextarea`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
+- [ ] `features/message-templates/components/TemplateBrowserModal.tsx:46` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /agents/categories
 
@@ -2241,9 +1687,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /agents/new/generate
 
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 
 ### route /agents/new/studio
@@ -2252,18 +1696,16 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /agents/orchestras/[conductorId]
 
-- [ ] `components/official/org-chart/OrgChart.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{kind.description}`
-- [ ] `features/agents/orchestras/components/ConductorInspector.tsx:78` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
-- [ ] `features/agents/orchestras/components/MemberInspector.tsx:193` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
-- [ ] `features/agents/orchestras/components/OrchestraBuilderCanvasImpl.tsx:147` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent?.description ?? "Presides over this Orchestra."}`
-- [ ] `features/agents/orchestras/components/OrchestraMemberGrid.tsx:115` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent?.description ?? "Presides over this Orchestra."}`
+- [ ] `components/official/org-chart/OrgChart.tsx:973` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{kind.description}`
+- [ ] `features/agents/orchestras/components/ConductorInspector.tsx:77` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent.description}`
+- [ ] `features/agents/orchestras/components/MemberInspector.tsx:197` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
+- [ ] `features/agents/orchestras/components/OrchestraBuilderCanvasImpl.tsx:146` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent?.description ?? "Presides over this Orchestra."}`
+- [ ] `features/agents/orchestras/components/OrchestraMemberGrid.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{agent?.description ?? "Presides over this Orchestra."}`
 - [ ] `features/agents/orchestras/components/OrchestraSettingsDialog.tsx:167` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
-- [ ] `features/agents/org-chart/components/AgentOrgCard.tsx:132` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{agent.description}`
 
 ### route /agents/org-chart
 
-- [ ] `components/official/org-chart/OrgChart.tsx:469` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{kind.description}`
-- [ ] `features/agents/org-chart/components/AgentOrgCard.tsx:132` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{agent.description}`
+- [ ] `components/official/org-chart/OrgChart.tsx:973` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{kind.description}`
 
 ### route /agents/shortcuts
 
@@ -2272,6 +1714,14 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /agents/shortcuts/all
 
 - [ ] `features/agent-shortcuts/components/ShortcutDirectory.tsx:228` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.description}`
+
+### route /agents/shortcuts/edit/[id]
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
+
+### route /agents/shortcuts/new
+
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
 
 ### route /agents/templates/[id]
 
@@ -2283,87 +1733,57 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /approvals
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 
 ### route /artifacts
 
-- [ ] `features/artifacts/components/CmsArtifactList.tsx:306` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{artifact.description || "—"}`
+- [ ] `features/artifacts/components/CmsArtifactList.tsx:347` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{artifact.description || "—"}`
 
 ### route /artifacts/[id]
 
-- [ ] `features/artifacts/components/CmsArtifactDetail.tsx:413` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.description}`
-
-### route /b/[bookingId]
-
-- [ ] `app/(link)/b/[bookingId]/BookingPicker.tsx:217` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{thanks?.body ?? "We have sent a confirmation."}`
-
-### route /board
-
-- [ ] `features/agents/components/previews/ConversationHoverPreview.tsx:142` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{conv.description}`
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
-- [ ] `features/research/components/document/DocumentViewer.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/board/items/feature-items.tsx:962` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
-- [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/workflow-runtime/interrupt/RunDecisions.tsx:94` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{answer}`
+- [ ] `features/artifacts/components/CmsArtifactDetail.tsx:510` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.description}`
 
 ### route /board/[id]
 
-- [ ] `features/agents/components/previews/ConversationHoverPreview.tsx:142` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{conv.description}`
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
-- [ ] `features/research/components/document/DocumentViewer.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/board/items/feature-items.tsx:962` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
-- [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/workflow-runtime/interrupt/RunDecisions.tsx:94` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{answer}`
+- [ ] `features/education/kits/components/KitHub.tsx:806` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{stage.description}`
+- [ ] `features/flashcards/components/create/LiveGenerationPreview.tsx:15` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/flashcards/components/set-detail/DeckCardViews.tsx:44` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/IllustrateSetWindow.tsx:139` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{judgment.reasoning}`
+- [ ] `features/flashcards/components/set-detail/MergeCardsDialog.tsx:29` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:108` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1221` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.set.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1865` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{mode.description}`
+- [ ] `features/meet/components/manage/MeetingDetail.tsx:86` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/meet/components/record/ActivityLogPanel.tsx:160` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.answer}`
+- [ ] `features/research/components/init/TemplatePicker.tsx:85` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
+- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scope-system/components/NewScopeInline.tsx:401` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:364` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
+- [ ] `features/scope-system/components/ScopeFieldInput.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/transcription-cleanup/components/CleanupOutput.tsx:5` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/workflow-runtime/components/ReadoutView.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /c/[handle]
 
 - [ ] `features/education/creators/components/CreatorLandingPage.tsx:173` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}`
 
-### route /camera
-
-- [ ] `features/media-capture/components/CaptureItemActions.tsx:130` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{transcript}`
-- [ ] `features/media-capture/components/CaptureReview.tsx:329` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{transcript}`
-
 ### route /canvas/discover
 
 - [ ] `features/canvas/discovery/CanvasCard.tsx:110` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{canvas.description}`
 
-### route /chat/[conversationId]
-
-- [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
-
 ### route /chat/message-templates
 
-- [ ] `features/message-templates/components/TemplateActionDrawer.tsx:85` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{template.content}`
-- [ ] `features/message-templates/components/TemplateCard.tsx:96` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
-
-### route /chat/message-templates/edit/[id]
-
-- [ ] `features/message-templates/components/TemplateEditor.tsx:64` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoTextarea`
-
-### route /chat/message-templates/new
-
-- [ ] `features/message-templates/components/TemplateEditor.tsx:64` — **hand-rolled AutoTextarea / AutoResizeTextarea** (BANNED) — `definition of AutoTextarea`
-
-### route /chat/new
-
-- [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
-
-### route /chat/voice
-
-- [ ] `packages/chat/src/voice-agent/components/playground/ToolToggleList.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-
-### route /chat/voice/playground
-
-- [ ] `packages/chat/src/voice-agent/components/playground/ToolToggleList.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
+- [ ] `features/message-templates/components/TemplateCard.tsx:95` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
 
 ### route /cms/[siteId]/pages/[pageId]
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
 
 ### route /cms/[siteId]/pages/new
@@ -2371,26 +1791,39 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
 
 ### route /code
 
-- [ ] `features/code/views/extensions/ExtensionsPanel.tsx:115` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-- [ ] `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx:980` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fileContent || "(empty file)"}`
-
-### route /commerce/drafts
-
-- [ ] `features/commerce-review/components/DraftReviewQueue.tsx:235` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.reasoning}`
+- [ ] `features/code/views/extensions/ExtensionsPanel.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
 
 ### route /commerce/intake/answer
 
-- [ ] `features/commerce-intake/components/IntakeAnswerQueue.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
+- [ ] `features/commerce-intake/components/IntakeAnswerQueue.tsx:283` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
 
-### route /commerce/triage
+### route /compare/old/data-stores
 
-- [ ] `features/commerce-review/components/TriageQueue.tsx:243` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.notes}`
+- [ ] `features/rag/components/data-stores/DataStoresPage.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{store.description}`
+- [ ] `features/rag/components/data-stores/DataStoresPage.tsx:927` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
+- [ ] `features/rag/components/data-stores/DataStoresPage.tsx:1140` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{m.notes ?? "—"}`
+
+### route /compare/old/knowledge-home
+
+- [ ] `app/(core)/compare/old/_restored/LibraryCatalogPane.tsx:93` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{it.description}`
+
+### route /compare/old/library-catalog
+
+- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:584` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.description}`
+- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/rag/components/library-catalog/PackDetailPanel.tsx:247` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/rag/components/library-catalog/RulebookDetailPanel.tsx:263` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+
+### route /compare/old/transcripts
+
+- [ ] `features/transcripts/browse/TranscriptBrowseCards.tsx:88` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/transcripts/browse/columns.tsx:334` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
 
 ### route /connected-sources
 
@@ -2409,31 +1842,27 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /crm/chasebox
 
-- [ ] `features/crm/chasebox/components/ChaseboxDraftDialog.tsx:515` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{draft.body || "(this draft has no body)"}`
-- [ ] `features/crm/chasebox/components/ChaseboxPage.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
-
-### route /crm/deals/[dealId]
-
-- [ ] `features/crm/components/deals/DealRecordPage.tsx:385` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{deal.description}`
+- [ ] `features/crm/chasebox/components/ChaseboxDraftDialog.tsx:515` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{draft.body || "(this draft has no body)"}`
+- [ ] `features/crm/chasebox/components/ChaseboxPage.tsx:301` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
 
 ### route /crm/inbox
 
-- [ ] `features/crm/components/outreach-lists/SingleSendDialog.tsx:324` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{draft.body}`
+- [ ] `features/crm/components/outreach-lists/SingleSendDialog.tsx:329` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{draft.body}`
 
 ### route /crm/outreach-lists
 
-- [ ] `features/crm/components/outreach-lists/OutreachListsPage.tsx:108` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/crm/components/outreach-lists/OutreachListsPage.tsx:113` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
 
 ### route /crm/outreach-lists/[listId]
 
-- [ ] `features/crm/components/outreach-lists/OutreachListDetailPage.tsx:507` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.notes ?? "—"}`
-- [ ] `features/crm/components/outreach-lists/OutreachListDetailPage.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
-- [ ] `features/crm/components/outreach-lists/SingleSendDialog.tsx:324` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{draft.body}`
+- [ ] `features/crm/components/outreach-lists/OutreachListDetailPage.tsx:502` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.notes ?? "—"}`
+- [ ] `features/crm/components/outreach-lists/OutreachListDetailPage.tsx:671` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
+- [ ] `features/crm/components/outreach-lists/SingleSendDialog.tsx:329` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{draft.body}`
 
 ### route /crm/outreach-lists/[listId]/dial
 
-- [ ] `features/crm/components/outreach-lists/CallQueuePage.tsx:701` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{entry.member.notes}`
-- [ ] `features/crm/components/outreach-lists/CallQueuePage.tsx:726` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{i.body}`
+- [ ] `features/crm/components/outreach-lists/CallQueuePage.tsx:702` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{entry.member.notes}`
+- [ ] `features/crm/components/outreach-lists/CallQueuePage.tsx:727` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{i.body}`
 
 ### route /crm/sending-identities
 
@@ -2450,11 +1879,11 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /data/try-everything
 
-- [ ] `features/unified-data/test-bench/TryEverythingScreen.tsx:70` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/unified-data/test-bench/TryEverythingScreen.tsx:74` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /decisions/review
 
-- [ ] `features/agents/decision-review/components/ReviewQueue.tsx:427` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{selected.instructions ?? "Question text not recorded"}`
+- [ ] `features/agents/decision-review/components/ReviewQueue.tsx:440` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{selected.instructions ?? "Question text not recorded"}`
 
 ### route /developers/oauth
 
@@ -2463,7 +1892,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /documents
 
 - [ ] `features/data-tables/components/DocumentListCard.tsx:49` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{doc.description}`
-- [ ] `features/data-tables/components/DocumentsHubTable.tsx:595` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{doc.description || "—"}`
+- [ ] `features/data-tables/components/DocumentsHubTable.tsx:56` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{doc.description || "—"}`
 
 ### route /education/audio-study/review
 
@@ -2477,8 +1906,9 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/education/classes/components/AccessModeField.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ACCESS_MODES.find((m) => m.value === value)?.description}`
 - [ ] `features/education/classes/components/ClassAccessPanel.tsx:118` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{modeMeta?.description}`
-- [ ] `features/education/classes/components/ClassHubView.tsx:505` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{cls.description}`
-- [ ] `features/education/classes/components/ClassHubView.tsx:696` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
+- [ ] `features/education/classes/components/ClassHubView.tsx:504` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{cls.description}`
+- [ ] `features/education/classes/components/ClassHubView.tsx:642` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
 
 ### route /education/classes/join
 
@@ -2486,7 +1916,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /education/exam-prep/[slug]
 
-- [ ] `features/education/components/AxisDetail.tsx:128` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
+- [ ] `features/education/components/AxisDetail.tsx:121` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
 - [ ] `features/education/components/ExamHubActions.tsx:84` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.description}`
 - [ ] `features/education/library/components/DeckCard.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{deck.description}`
 
@@ -2505,37 +1935,26 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /education/features/[slug]
 
-- [ ] `features/education/components/AxisDetail.tsx:128` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
+- [ ] `features/education/components/AxisDetail.tsx:121` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
 - [ ] `features/education/components/ExamHubActions.tsx:84` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.description}`
 - [ ] `features/education/library/components/DeckCard.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{deck.description}`
 
-### route /education/flashcards
-
-- [ ] `features/flashcards/components/home/useFlashcardSetRowActions.tsx:330` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{choice.description}`
-- [ ] `features/flashcards/components/sharing/SetVisibilityControl.tsx:134` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{o.description}`
-
-### route /education/flashcards-2
-
-- [ ] `features/flashcards/components/home/useFlashcardSetRowActions.tsx:330` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{choice.description}`
-- [ ] `features/flashcards/components/sharing/SetVisibilityControl.tsx:134` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{o.description}`
-
 ### route /education/flashcards/[setId]
 
-- [ ] `features/flashcards/components/set-detail/IllustrateSetWindow.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{judgment.reasoning}`
+- [ ] `features/flashcards/components/create/LiveGenerationPreview.tsx:15` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/flashcards/components/set-detail/DeckCardViews.tsx:44` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/IllustrateSetWindow.tsx:139` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{judgment.reasoning}`
 - [ ] `features/flashcards/components/set-detail/MergeCardsDialog.tsx:29` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:84` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:860` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.set.description}`
-- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:944` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
-- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:958` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
-- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1452` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{mode.description}`
-- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1468` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{mode.description}`
-- [ ] `features/flashcards/components/sharing/SetVisibilityControl.tsx:134` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{o.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:108` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1221` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.set.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1865` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{mode.description}`
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
 
 ### route /education/flashcards/[setId]/edit
 
 - [ ] `features/flashcards/components/editor/EditSetView.tsx:90` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
 - [ ] `features/flashcards/components/editor/EditSetView.tsx:49` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
-- [ ] `features/flashcards/components/sharing/SetVisibilityControl.tsx:134` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{o.description}`
 
 ### route /education/flashcards/[setId]/learn
 
@@ -2546,7 +1965,13 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /education/flashcards/[setId]/match
 
-- [ ] `features/flashcards/components/study/MatchSurface.tsx:32` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `components/mardown-display/blocks/flashcards/CardFaceBlock.tsx:16` — **CardFaceContent** (tracked) — `./CardFaceContent`
+- [ ] `components/mardown-display/blocks/flashcards/CardFaceBlock.tsx:15` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
+
+### route /education/flashcards/[setId]/sessions
+
+- [ ] `components/ui/chart.tsx:88` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: Object.entries(THEMES) .map( ([theme, prefix]) => ' ${…`
+- [ ] `features/flashcards/components/set-detail/DeckProgressView.tsx:59` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
 
 ### route /education/flashcards/[setId]/study
 
@@ -2557,20 +1982,19 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /education/flashcards/[setId]/test
 
-- [ ] `features/flashcards/components/study/TestSurface.tsx:34` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-- [ ] `features/flashcards/components/study/TestSurface.tsx:207` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.explanation}`
+- [ ] `components/mardown-display/blocks/flashcards/CardFaceBlock.tsx:16` — **CardFaceContent** (tracked) — `./CardFaceContent`
+- [ ] `components/mardown-display/blocks/flashcards/CardFaceBlock.tsx:15` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
+- [ ] `features/flashcards/components/study/TestSurface.tsx:258` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.explanation}`
 
 ### route /education/flashcards/[setId]/write
 
-- [ ] `features/flashcards/components/study/WriteSurface.tsx:45` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `components/mardown-display/blocks/flashcards/CardFaceBlock.tsx:16` — **CardFaceContent** (tracked) — `./CardFaceContent`
+- [ ] `components/mardown-display/blocks/flashcards/CardFaceBlock.tsx:15` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
 
 ### route /education/flashcards/new
 
 - [ ] `features/flashcards/components/create/LiveGenerationPreview.tsx:15` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### route /education/flashcards/new/from-source
-
-- [ ] `features/flashcards/components/create/LiveGenerationPreview.tsx:15` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
 
 ### route /education/flashcards/review
 
@@ -2582,7 +2006,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /education/flashcards/sessions/[sessionId]
 
 - [ ] `features/education/study/components/BatchReviewBlock.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/education/study/components/SessionDetailView.tsx:549` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{label.answer}`
+- [ ] `features/education/study/components/SessionDetailView.tsx:566` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{label.answer}`
 
 ### route /education/flashcards/weak-areas
 
@@ -2603,21 +2027,21 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/education/engage/components/play/PlaySurface.tsx:114` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
 
-### route /education/grade-work
-
-- [ ] `features/education/assessment/components/GradedAnswerBlock.tsx:79` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{graded.explanation}`
-
 ### route /education/kits/[sourceId]
 
-- [ ] `features/education/kits/components/KitHub.tsx:662` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{stage.description}`
+- [ ] `features/education/kits/components/KitHub.tsx:806` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{stage.description}`
+
+### route /education/kits/new
+
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
 
 ### route /education/learn/[...slug]
 
-- [ ] `features/education/components/LearnArticle.tsx:69` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
+- [ ] `features/education/components/LearnArticle.tsx:62` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
 
 ### route /education/levels/[slug]
 
-- [ ] `features/education/components/AxisDetail.tsx:128` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
+- [ ] `features/education/components/AxisDetail.tsx:121` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
 - [ ] `features/education/components/ExamHubActions.tsx:84` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.description}`
 - [ ] `features/education/library/components/DeckCard.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{deck.description}`
 
@@ -2629,36 +2053,23 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/education/library/components/DeckCard.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{deck.description}`
 
-### route /education/library/suggestions
-
-- [ ] `features/education/library/components/OwnerSuggestionInbox.tsx:164` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{s.body}`
-
 ### route /education/media/[id]
 
 - [ ] `features/education/media/mindmap/components/MindMapView.tsx:3` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-- [ ] `features/education/media/mindmap/components/MindMapView.tsx:126` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
-- [ ] `features/education/media/mindmap/components/MindMapView.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
-- [ ] `features/education/onboard/components/SummaryDetail.tsx:19` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/education/media/mindmap/components/MindMapView.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
+- [ ] `features/education/media/mindmap/components/MindMapView.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
 
 ### route /education/mind-maps/[id]
 
 - [ ] `features/education/media/mindmap/components/MindMapView.tsx:3` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-- [ ] `features/education/media/mindmap/components/MindMapView.tsx:126` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
-- [ ] `features/education/media/mindmap/components/MindMapView.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
+- [ ] `features/education/media/mindmap/components/MindMapView.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
+- [ ] `features/education/media/mindmap/components/MindMapView.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
 
 ### route /education/mind-maps/[id]/edit
 
 - [ ] `features/education/media/mindmap/components/MindMapView.tsx:3` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
-- [ ] `features/education/media/mindmap/components/MindMapView.tsx:126` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
-- [ ] `features/education/media/mindmap/components/MindMapView.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
-
-### route /education/notes/[id]
-
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### route /education/notes/[id]/edit
-
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/education/media/mindmap/components/MindMapView.tsx:116` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
+- [ ] `features/education/media/mindmap/components/MindMapView.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
 
 ### route /education/overview
 
@@ -2672,13 +2083,11 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /education/practice-tests/[id]
 
-- [ ] `features/education/assessment/components/AssessmentDetail.tsx:296` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
-- [ ] `features/education/assessment/components/GradedAnswerBlock.tsx:79` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{graded.explanation}`
+- [ ] `features/education/assessment/components/AssessmentDetail.tsx:311` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
 
 ### route /education/practice-tests/[id]/results
 
-- [ ] `features/education/assessment/components/AssessmentDetail.tsx:296` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
-- [ ] `features/education/assessment/components/GradedAnswerBlock.tsx:79` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{graded.explanation}`
+- [ ] `features/education/assessment/components/AssessmentDetail.tsx:311` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
 - [ ] `features/education/assessment/components/results/AssessmentResults.tsx:304` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.prompt}`
 - [ ] `features/education/assessment/components/results/AssessmentResults.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.explanation}`
 - [ ] `features/education/assessment/components/results/AssessmentResults.tsx:332` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{d.explanation}`
@@ -2689,46 +2098,38 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /education/quizzes/[id]
 
-- [ ] `features/education/assessment/components/AssessmentDetail.tsx:296` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
-- [ ] `features/education/assessment/components/GradedAnswerBlock.tsx:79` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{graded.explanation}`
+- [ ] `features/education/assessment/components/AssessmentDetail.tsx:311` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
 
 ### route /education/quizzes/[id]/results
 
-- [ ] `features/education/assessment/components/AssessmentDetail.tsx:296` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
-- [ ] `features/education/assessment/components/GradedAnswerBlock.tsx:79` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{graded.explanation}`
+- [ ] `features/education/assessment/components/AssessmentDetail.tsx:311` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{assessment.description}`
 - [ ] `features/education/assessment/components/results/AssessmentResults.tsx:304` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.prompt}`
 - [ ] `features/education/assessment/components/results/AssessmentResults.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.explanation}`
 - [ ] `features/education/assessment/components/results/AssessmentResults.tsx:332` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{d.explanation}`
 
+### route /education/start
+
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
+
 ### route /education/study-aids/[slug]
 
-- [ ] `features/education/components/AxisDetail.tsx:128` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
+- [ ] `features/education/components/AxisDetail.tsx:121` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
 - [ ] `features/education/components/ExamHubActions.tsx:84` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.description}`
 - [ ] `features/education/library/components/DeckCard.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{deck.description}`
 
 ### route /education/study-guides
 
-- [ ] `features/education/study-guides/components/StudyGuideReader.tsx:43` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/education/study-guides/components/StudyGuideReader.tsx:44` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /education/study-guides/[id]
 
-- [ ] `features/education/study-guides/components/StudyGuideReader.tsx:43` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/notes/components/mobile/MobileNoteEditor.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/education/study-guides/components/StudyGuideReader.tsx:44` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /education/subjects/[slug]
 
-- [ ] `features/education/components/AxisDetail.tsx:128` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
+- [ ] `features/education/components/AxisDetail.tsx:121` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"), }}`
 - [ ] `features/education/components/ExamHubActions.tsx:84` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.description}`
 - [ ] `features/education/library/components/DeckCard.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{deck.description}`
-
-### route /education/summaries/[id]
-
-- [ ] `features/education/onboard/components/SummaryDetail.tsx:19` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### route /education/summaries/[id]/edit
-
-- [ ] `features/education/onboard/components/SummaryDetail.tsx:19` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /exports/[libraryId]
 
@@ -2740,7 +2141,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /files/webhooks
 
-- [ ] `features/files/webhooks/components/WebhooksManager.tsx:251` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{webhook.description}`
+- [ ] `features/files/webhooks/components/WebhooksManager.tsx:258` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{webhook.description}`
 
 ### route /free/zip-code-heatmap
 
@@ -2752,6 +2153,10 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `app/(public)/free/zip-code-heatmap/[id]/page.tsx:184` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{heatmap.description}`
 - [ ] `app/(public)/free/zip-code-heatmap/components/ColorScaleSelector.tsx:105` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{SCALING_METHODS[options.scalingMethod].description}`
+
+### route /google-other-contacts-review
+
+- [ ] `features/google-workspace/OtherContactsReview.tsx:306` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{field.explanation || "The server did not return an explanation for this field."}`
 
 ### route /hr
 
@@ -2777,21 +2182,17 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/hr/shared/EffectiveDatedForm.tsx:347` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{intent.prompt}`
 
-### route /hr/people/relations/[caseId]
-
-- [ ] `features/hr/people/relations/components/CaseSurface.tsx:221` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{incident?.summary ?? action?.summary}`
-
 ### route /hr/settings/pay-groups
 
 - [ ] `features/hr/shared/EffectiveDatedForm.tsx:347` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{intent.prompt}`
 
 ### route /hr/tasks
 
-- [ ] `features/hr/tasks/components/HrTaskInbox.tsx:526` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.summary}`
+- [ ] `features/hr/tasks/components/HrTaskInbox.tsx:533` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.summary}`
 
 ### route /hr/time/periods/[periodId]
 
-- [ ] `features/hr/exports/components/ExportRunPanel.tsx:133` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{format.notes}`
+- [ ] `features/hr/exports/components/ExportRunPanel.tsx:130` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{format.notes}`
 
 ### route /hr/time/punches
 
@@ -2846,39 +2247,21 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /invitations/organization/accept/[token]
 
-- [ ] `app/(core)/invitations/organization/accept/[token]/page.tsx:335` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{invitation.organization.description}`
+- [ ] `app/(core)/invitations/organization/accept/[token]/page.tsx:339` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{invitation.organization.description}`
 
 ### route /invitations/project/accept/[token]
 
 - [ ] `app/(core)/invitations/project/accept/[token]/page.tsx:246` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{invitation.project.description}`
 
-### route /kits/[key]
-
-- [ ] `features/kits/components/KitDetail.tsx:88` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.description}`
-- [ ] `features/kits/components/KitDetail.tsx:192` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{m.description}`
-- [ ] `features/kits/components/KitDetail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{w.description}`
-- [ ] `features/kits/components/KitDetail.tsx:275` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{g.body}`
-- [ ] `features/kits/components/TablePreview.tsx:73` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{table.description}`
-
 ### route /knowledge
 
-- [ ] `components/image/gallery/desktop/SimpleImageViewer.tsx:319` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description}`
-- [ ] `components/image/unsplash/desktop/EnhancedImageViewer.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description}`
-- [ ] `components/image/unsplash/mobile/MobileUnsplashViewer.tsx:216` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description || "No descrip…`
-- [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
-- [ ] `features/knowledge/ask/AskPanel.tsx:349` — **.split("\n").map(→ JSX) paragraph renderer** (review) — `answer.split("\n").map((raw, li) => { const heading = /^\s*#{1,6}\s+/.test(raw); const li…`
-- [ ] `features/page-extraction/components/ChunkCard.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/page-extraction/components/ResultsTable.tsx:785` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text}`
-- [ ] `features/pdf-extractor/components/PdfAiContent.tsx:3` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{doc.content ?? "(no extracted text)"}`
-- [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
-- [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
-- [ ] `features/scraper/parts/agent-analysis/FactChecker.tsx:37` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
+- [ ] `features/knowledge/components/KnowledgeShowcasePage.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.description}`
+- [ ] `features/knowledge/components/KnowledgeShowcasePage.tsx:447` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 
 ### route /knowledge/about
 
-- [ ] `features/knowledge/components/KnowledgeShowcasePage.tsx:317` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.description}`
-- [ ] `features/knowledge/components/KnowledgeShowcasePage.tsx:443` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
+- [ ] `features/knowledge/components/KnowledgeShowcasePage.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{c.description}`
+- [ ] `features/knowledge/components/KnowledgeShowcasePage.tsx:447` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 
 ### route /knowledge/data-stores
 
@@ -2886,14 +2269,23 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/rag/components/data-stores/DataStoresPage.tsx:927` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
 - [ ] `features/rag/components/data-stores/DataStoresPage.tsx:1140` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{m.notes ?? "—"}`
 
-### route /knowledge/extractions/[id]
+### route /knowledge/hub
 
-- [ ] `features/page-extraction/data-review/ExtractionCellDisplay.tsx:14` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `components/image/gallery/desktop/SimpleImageViewer.tsx:319` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description}`
+- [ ] `components/image/unsplash/desktop/EnhancedImageViewer.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description}`
+- [ ] `components/image/unsplash/mobile/MobileUnsplashViewer.tsx:216` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description || "No descrip…`
+- [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
+- [ ] `features/knowledge/ask/AskPanel.tsx:350` — **.split("\n").map(→ JSX) paragraph renderer** (review) — `answer.split("\n").map((raw, li) => { const heading = /^\s*#{1,6}\s+/.test(raw); const li…`
+- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{doc.content ?? "(no extracted text)"}`
+- [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
+- [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
+- [ ] `features/transcripts/browse/columns.tsx:334` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/transcripts/components/TranscriptViewer.tsx:612` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeTranscript.description}`
 
 ### route /knowledge/library-catalog
 
-- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:583` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.description}`
-- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:675` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:584` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.description}`
+- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/rag/components/library-catalog/PackDetailPanel.tsx:247` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/rag/components/library-catalog/RulebookDetailPanel.tsx:263` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
@@ -2901,10 +2293,17 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:290` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{b.description}`
 - [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:291` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{b.notes}`
-- [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:345` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.notes}`
+- [ ] `features/admin/shared-knowledge/packs/PackBandsSection.tsx:346` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{a.notes}`
 - [ ] `features/admin/shared-knowledge/packs/PackMeaningSection.tsx:471` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/admin/shared-knowledge/packs/PackMeaningSection.tsx:475` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.notes}`
-- [ ] `features/admin/shared-knowledge/packs/PackTopicsSection.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{t.notes}`
+- [ ] `features/admin/shared-knowledge/packs/PackTopicsSection.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{t.notes}`
+
+### route /knowledge/search
+
+- [ ] `features/rag/components/search/KnowledgeSearchResult.tsx:18` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/rag/components/search/RagPageReferences.tsx:17` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/rag/components/search/RagPageReferences.tsx:1067` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{group.description}`
+- [ ] `features/rag/components/search/RagReviewRepairWorkspace.tsx:25` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
 ### route /knowledge/sources/[id]
 
@@ -2912,13 +2311,20 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/image/unsplash/desktop/EnhancedImageViewer.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description}`
 - [ ] `components/image/unsplash/mobile/MobileUnsplashViewer.tsx:216` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description || "No descrip…`
 - [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
-- [ ] `features/page-extraction/components/ChunkCard.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/page-extraction/components/ResultsTable.tsx:785` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text}`
-- [ ] `features/pdf-extractor/components/PdfAiContent.tsx:3` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{doc.content ?? "(no extracted text)"}`
+- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{doc.content ?? "(no extracted text)"}`
 - [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
 - [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
-- [ ] `features/scraper/parts/agent-analysis/FactChecker.tsx:37` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
+
+### route /knowledge/transcripts/[id]
+
+- [ ] `components/image/gallery/desktop/SimpleImageViewer.tsx:319` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description}`
+- [ ] `components/image/unsplash/desktop/EnhancedImageViewer.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description}`
+- [ ] `components/image/unsplash/mobile/MobileUnsplashViewer.tsx:216` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photos[imageIndex]?.description || photos[imageIndex]?.alt_description || "No descrip…`
+- [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
+- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{doc.content ?? "(no extracted text)"}`
+- [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
+- [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
+- [ ] `features/transcripts/components/TranscriptViewer.tsx:612` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeTranscript.description}`
 
 ### route /launchpad
 
@@ -2943,38 +2349,28 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /lists
 
-- [ ] `features/structured-lists/StructuredListLanding.tsx:198` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{f.description}`
-- [ ] `features/structured-lists/StructuredListLanding.tsx:299` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
-
-### route /lists/v3
-
-- [ ] `features/user-lists/components/PicklistsIndex.tsx:254` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
+- [ ] `features/structured-lists/StructuredListLanding.tsx:112` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{f.description}`
+- [ ] `features/user-lists/components/PicklistsIndex.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
 
 ### route /mandates
 
-- [ ] `features/mandates/browse/MandateBrowseCards.tsx:86` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/mandates/browse/MandateBrowseCards.tsx:87` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 - [ ] `features/mandates/browse/useCoverageList.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 
 ### route /mandates/[mandateKey]
 
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### route /mandates/record-preview/[mandateKey]
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1683` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1690` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### route /maps
 
@@ -2982,7 +2378,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /markdown-studio
 
-- [ ] `components/admin/AudioTestModal.tsx:264` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{speechText || ( <span className="text-muted-foreground italic"> No content…`
 - [ ] `components/mardown-display/markdown-classification/custom-views/common/MarkdownTextDisplay.tsx:5` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 - [ ] `components/mardown-display/markdown-classification/custom-views/view-components/AstRendererView.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.content}`
 - [ ] `components/mardown-display/markdown-classification/custom-views/view-components/AstRendererView.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.content}`
@@ -2994,25 +2389,17 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/mardown-display/markdown-classification/markdown-processor-util.ts:21` — **remark-* plugins** (BANNED) — `remark-parse`
 - [ ] `components/mardown-display/markdown-classification/markdown-processor-util.ts:22` — **remark-* plugins** (BANNED) — `remark-gfm`
 - [ ] `components/mardown-display/markdown-classification/parts/CodeComponent.tsx:4` — **react-markdown** (BANNED) — `react-markdown` (type-only)
-- [ ] `components/markdown-studio/AnalysisView.tsx:611` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `components/markdown-studio/AnalysisView.tsx:743` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text || "(empty)"}`
+- [ ] `components/markdown-studio/AnalysisView.tsx:612` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
 - [ ] `components/markdown-studio/AnnotateView.tsx:16` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `components/markdown-studio/PreviewPanel.tsx:44` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `components/markdown-studio/SampleLibrarySheet.tsx:245` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{sample.description}`
 - [ ] `components/markdown-studio/SampleLibrarySheet.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{sample.description}`
 - [ ] `components/markdown-studio/lab/BlockProcessingPanel.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/markdown-studio/lab/ServerEventInspector.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `components/markdown-studio/lab/ServerEventInspector.tsx:600` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{rawOutputText}`
-- [ ] `components/markdown-studio/lab/SpeechTextPanel.tsx:46` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{speechText}`
-
-### route /marketing
-
-- [ ] `features/marketing/components/brands/BrandEditorDialog.tsx:429` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
+- [ ] `components/markdown-studio/lab/ServerEventInspector.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /marketing/[brandId]
 
-- [ ] `features/marketing/components/brands/BrandEditorDialog.tsx:429` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
-- [ ] `features/marketing/components/brands/BrandWorkspace.tsx:668` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.description}`
+- [ ] `features/marketing/components/brands/BrandWorkspace.tsx:669` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.description}`
 
 ### route /marketing/[brandId]/ads
 
@@ -3022,54 +2409,42 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /marketing/[brandId]/content/map/[mapId]/graph
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /marketing/[brandId]/content/map/[mapId]/history
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /marketing/[brandId]/content/map/[mapId]/pages
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /marketing/[brandId]/content/map/[mapId]/table
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /marketing/[brandId]/content/map/[mapId]/text
 
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]
@@ -3077,105 +2452,105 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]/ai-runs
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]/brief
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]/entities
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]/map
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]/setup
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/plan/[siteId]/table
 
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:172` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
-- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
+- [ ] `features/marketing/content-plan/setup/components/EntityAttachSection.tsx:189` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{plan.notes}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:199` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:240` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
 - [ ] `features/marketing/content-plan/setup/components/PlanReviewSection.tsx:259` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
-- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:124` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
+- [ ] `features/marketing/content-plan/setup/components/SetupShapeColumn.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{archetype.description}`
 
 ### route /marketing/[brandId]/content/studio
 
@@ -3187,7 +2562,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/identity
 
-- [ ] `app/(core)/marketing/[brandId]/identity/page.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{room.description}`
+- [ ] `app/(core)/marketing/[brandId]/identity/page.tsx:127` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{room.description}`
 
 ### route /marketing/[brandId]/identity/audience
 
@@ -3195,76 +2570,68 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/identity/guidelines
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 
 ### route /marketing/[brandId]/identity/knowledge
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 - [ ] `features/marketing/seo/value-system/discovery/DiscoveryLadder.tsx:415` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{door.body}`
 
 ### route /marketing/[brandId]/identity/media
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/GenerateMediaView.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/marketing/components/media/StockSourcesView.tsx:496` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photo.description || photo.alt_description || "Untitled photo"}`
 
 ### route /marketing/[brandId]/identity/media/generate
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/GenerateMediaView.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/marketing/components/media/StockSourcesView.tsx:496` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photo.description || photo.alt_description || "Untitled photo"}`
 
 ### route /marketing/[brandId]/identity/media/research
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/GenerateMediaView.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/marketing/components/media/StockSourcesView.tsx:496` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photo.description || photo.alt_description || "Untitled photo"}`
 
 ### route /marketing/[brandId]/identity/media/sources
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/GenerateMediaView.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `features/marketing/components/media/StockSourcesView.tsx:496` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{photo.description || photo.alt_description || "Untitled photo"}`
 
 ### route /marketing/[brandId]/identity/offerings
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 
 ### route /marketing/[brandId]/intelligence/competitors
 
 - [ ] `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx:1285` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{latestArtifact.summary}`
-- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 
 ### route /marketing/[brandId]/intelligence/competitors/competitors
 
 - [ ] `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx:1285` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{latestArtifact.summary}`
-- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 
 ### route /marketing/[brandId]/intelligence/competitors/evidence
 
 - [ ] `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx:1285` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{latestArtifact.summary}`
-- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 
 ### route /marketing/[brandId]/intelligence/competitors/history
 
 - [ ] `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx:1285` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{latestArtifact.summary}`
-- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 
 ### route /marketing/[brandId]/intelligence/competitors/opportunities
 
 - [ ] `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx:1285` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{latestArtifact.summary}`
-- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 
 ### route /marketing/[brandId]/intelligence/competitors/review
 
 - [ ] `features/marketing/competitors/CompetitorAutopsyWorkspace.tsx:1285` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{latestArtifact.summary}`
-- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:272` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
+- [ ] `features/marketing/competitors/CompetitorIdentification.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.description}`
 
 ### route /marketing/[brandId]/intelligence/monitoring
-
-- [ ] `features/marketing/front-doors/MarketingDoorBoard.tsx:75` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{door.description}`
-
-### route /marketing/[brandId]/intelligence/monitoring/setup
 
 - [ ] `features/marketing/front-doors/MarketingDoorBoard.tsx:75` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{door.description}`
 
@@ -3274,23 +2641,23 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/intelligence/reputation/[siteId]
 
-- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:372` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
+- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
 
 ### route /marketing/[brandId]/intelligence/reputation/[siteId]/cases
 
-- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:372` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
+- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
 
 ### route /marketing/[brandId]/intelligence/reputation/[siteId]/evidence
 
-- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:372` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
+- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
 
 ### route /marketing/[brandId]/intelligence/reputation/[siteId]/narratives
 
-- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:372` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
+- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
 
 ### route /marketing/[brandId]/intelligence/reputation/[siteId]/publications
 
-- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:372` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
+- [ ] `features/marketing/components/reputation/ReputationWorkspace.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.summary}`
 
 ### route /marketing/[brandId]/locations
 
@@ -3302,10 +2669,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/marketing/local/EndowmentPortfolioPanel.tsx:101` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{match.platform.notes}`
 - [ ] `features/marketing/local/EndowmentPortfolioPanel.tsx:453` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{artifact.description}`
 
-### route /marketing/[brandId]/planning/calendar
-
-- [ ] `features/marketing/components/MarketingComingSoon.tsx:167` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{sibling.description}`
-
 ### route /marketing/[brandId]/planning/initiatives
 
 - [ ] `features/marketing/initiatives/columns.tsx:38` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{r.description}`
@@ -3316,7 +2679,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/pr
 
-- [ ] `features/marketing/pr/components/StoryAngleQueue.tsx:293` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{angle.summary}`
+- [ ] `features/marketing/pr/components/StoryAngleQueue.tsx:303` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{angle.summary}`
 
 ### route /marketing/[brandId]/pr/outreach
 
@@ -3324,14 +2687,16 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/seo/[siteId]/ai-visibility
 
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityWorkspace.tsx:17` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/marketing/seo/ai-visibility/AiVisibilityWorkspace.tsx:18` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/marketing/seo/ai-visibility/canvas/AiAnswerCanvasView.tsx:10` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /marketing/[brandId]/seo/[siteId]/ai-visibility/[view]
 
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityWorkspace.tsx:17` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/marketing/seo/ai-visibility/panels/AiVisibilityPanelsView.tsx:173` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{status.explanation}`
+- [ ] `features/marketing/seo/ai-visibility/AiVisibilityWorkspace.tsx:18` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/marketing/seo/ai-visibility/canvas/AiAnswerCanvasView.tsx:10` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/marketing/seo/ai-visibility/panels/AiVisibilityPanelsView.tsx:177` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{status.explanation}`
 - [ ] `features/marketing/seo/ai-visibility/panels/GateReviewCard.tsx:622` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{card.summary}`
-- [ ] `features/marketing/seo/ai-visibility/panels/PanelDesignSection.tsx:123` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content.data.content}`
+- [ ] `features/marketing/seo/ai-visibility/panels/PanelDesignSection.tsx:117` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{content.data.content}`
 
 ### route /marketing/[brandId]/seo/[siteId]/automations
 
@@ -3425,15 +2790,15 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/seo/[siteId]/keywords/value
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
-- [ ] `features/marketing/seo/value-system/workbench/MeaningPanel.tsx:407` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description ?? "No description yet."}`
-- [ ] `features/marketing/seo/value-system/workbench/MeaningPanel.tsx:694` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.notes}`
-- [ ] `features/marketing/seo/value-system/workbench/session/TrialPanel.tsx:955` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{card.proposal.notes}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/marketing/seo/value-system/workbench/MeaningPanel.tsx:419` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description ?? "No description yet."}`
+- [ ] `features/marketing/seo/value-system/workbench/MeaningPanel.tsx:706` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.notes}`
+- [ ] `features/marketing/seo/value-system/workbench/session/TrialPanel.tsx:947` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{card.proposal.notes}`
 
 ### route /marketing/[brandId]/seo/[siteId]/keywords/value/dimensions
 
-- [ ] `features/marketing/seo/value-system/dimensions/DimensionCard.tsx:256` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/marketing/seo/value-system/dimensions/DimensionCard.tsx:614` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{dimension.description}`
+- [ ] `features/marketing/seo/value-system/dimensions/DimensionCard.tsx:253` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
+- [ ] `features/marketing/seo/value-system/dimensions/DimensionCard.tsx:608` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{dimension.description}`
 
 ### route /marketing/[brandId]/seo/[siteId]/keywords/value/packs
 
@@ -3456,27 +2821,27 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/seo/[siteId]/search-console
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/[brandId]/seo/[siteId]/search-console/digs
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/[brandId]/seo/[siteId]/search-console/insights
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/[brandId]/seo/[siteId]/search-console/new-pages
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/[brandId]/seo/[siteId]/search-console/watchlist
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/[brandId]/seo/[siteId]/valuation
@@ -3494,7 +2859,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/websites/[siteId]
 
-- [ ] `features/marketing/components/site/SiteOverview.tsx:761` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{site.description}`
+- [ ] `features/marketing/components/site/SiteOverview.tsx:859` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{site.description}`
 
 ### route /marketing/[brandId]/websites/[siteId]/crawls/[crawlId]/reports
 
@@ -3506,17 +2871,14 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/[brandId]/websites/[siteId]/media
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/SiteVideosView.tsx:454` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
 
 ### route /marketing/[brandId]/websites/[siteId]/media/standards
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/SiteVideosView.tsx:454` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
 
 ### route /marketing/[brandId]/websites/[siteId]/media/videos
 
-- [ ] `features/marketing/components/media/BrandAssetDetail.tsx:169` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{asset.notes}`
 - [ ] `features/marketing/components/media/SiteVideosView.tsx:454` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{meta.description}`
 
 ### route /marketing/[brandId]/websites/[siteId]/pages/[pageId]
@@ -3524,8 +2886,8 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/marketing/components/pages/PageContentCard.tsx:21` — **MarkdownPreview** (tracked) — `@/features/files/components/core/FilePreview/previewers/MarkdownPreview`
 - [ ] `features/marketing/components/pages/cards/PageBlockedChecksCard.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{check.reasoning || check.itemKey}`
 - [ ] `features/marketing/components/pages/cards/PageDraftContentCard.tsx:42` — **BasicContentEditor (split editor)** (BANNED) — `@/components/content-refine/BasicContentEditor`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:236` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
-- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:380` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{artifact.summary}`
+- [ ] `features/marketing/content-plan/components/NodeStepRail.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{current.summary}`
 - [ ] `features/marketing/content-plan/components/PageDraftEditor.tsx:629` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.summary}`
 
 ### route /marketing/[brandId]/websites/[siteId]/pages/[pageId]/snapshots/[snapshotId]
@@ -3548,22 +2910,13 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/marketing/search-console/intake/SiteIntakeWizard.tsx:524` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{group.reasoning}`
 
-### route /marketing/ai-visibility/runs/[runId]
-
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityReport.tsx:4` — **react-markdown** (BANNED) — `react-markdown`
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityReport.tsx:5` — **remark-* plugins** (BANNED) — `remark-gfm`
-
-### route /marketing/brands
-
-- [ ] `features/marketing/components/brands/BrandEditorDialog.tsx:429` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
-
 ### route /marketing/brands/new-website
 
 - [ ] `features/marketing/components/sites/NewSiteForm.tsx:231` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.body}`
 
 ### route /marketing/operations/approvals
 
-- [ ] `features/approvals/ApprovalQueue.tsx:936` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
+- [ ] `features/approvals/ApprovalQueue.tsx:937` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.body}`
 
 ### route /marketing/operations/automations
 
@@ -3588,86 +2941,78 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /marketing/reports/search-console
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/reports/search-console/digs
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/reports/search-console/insights
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/reports/search-console/new-pages
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
 
 ### route /marketing/reports/search-console/watchlist
 
-- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:268` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
+- [ ] `features/marketing/search-console/components/insights/InsightsTab.tsx:262` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeMeta.description}`
 - [ ] `features/marketing/search-console/components/new-pages/NewPagesTab.tsx:210` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.tracking.notes}`
-
-### route /marketing/tools
-
-- [ ] `features/marketing/components/brands/BrandEditorDialog.tsx:429` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
 
 ### route /marketing/tools/youtube
 
-- [ ] `features/marketing/discovery/youtube/YouTubeDiscovery.tsx:986` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
-- [ ] `features/marketing/discovery/youtube/YouTubeVideoPreview.tsx:59` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{video.description || "No description supplied."}`
+- [ ] `features/marketing/discovery/youtube/YouTubeDiscovery.tsx:987` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
+- [ ] `features/marketing/discovery/youtube/YouTubeVideoPreview.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
 
 ### route /marketing/tools/youtube/videos/[videoId]
 
-- [ ] `features/marketing/discovery/youtube/YouTubeVideoPreview.tsx:59` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{video.description || "No description supplied."}`
+- [ ] `features/marketing/discovery/youtube/YouTubeVideoPreview.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
 
 ### route /marketing/topical-maps/[mapId]
 
-- [ ] `app/(core)/marketing/topical-maps/[mapId]/page.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{map.description}`
+- [ ] `app/(core)/marketing/topical-maps/[mapId]/page.tsx:123` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{map.description}`
 - [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
 - [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
+- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 - [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
+
+### route /masterwork
+
+- [ ] `features/masterwork/home/MasterworkHomePage.tsx:394` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{rb.description}`
 
 ### route /masterwork/[id]
 
 - [ ] `components/ui/chart.tsx:88` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: Object.entries(THEMES) .map( ([theme, prefix]) => ' ${…`
 - [ ] `features/masterwork/components/detail/RuleMove.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{precondition.summary}`
-- [ ] `features/masterwork/components/detail/RulebookDetailPage.tsx:2471` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{rulebook.description}`
+- [ ] `features/masterwork/components/detail/RulebookDetailPage.tsx:2516` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{rulebook.description}`
 
 ### route /masterwork/[id]/masterworks
 
-- [ ] `features/masterwork/components/masterworks/AuditionDialog.tsx:584` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{verdict.summary}`
+- [ ] `features/masterwork/components/masterworks/AuditionDialog.tsx:601` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{verdict.summary}`
 - [ ] `features/masterwork/components/masterworks/CompareTwoDialog.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{verdict.summary}`
 - [ ] `features/masterwork/components/masterworks/CompareTwoDialog.tsx:414` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{arm.reasoning}`
-- [ ] `features/masterwork/components/masterworks/MasterworksPage.tsx:531` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{masterwork.description}`
+- [ ] `features/masterwork/components/masterworks/MasterworksPage.tsx:549` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{masterwork.description}`
 
 ### route /masterwork/[id]/plan
 
 - [ ] `components/ui/chart.tsx:88` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: Object.entries(THEMES) .map( ([theme, prefix]) => ' ${…`
-- [ ] `features/masterwork/capture-plan/CapturePlanPage.tsx:908` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{body}`
 
 ### route /masterwork/[id]/probe
 
 - [ ] `features/masterwork/probe/BadExampleProbe.tsx:40` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
-### route /masterwork/[id]/record
-
-- [ ] `features/masterwork/record/ExpertRecordPage.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
 ### route /masterwork/[id]/sort
 
-- [ ] `features/masterwork/sorting/SortingTablePage.tsx:1208` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
+- [ ] `features/masterwork/sorting/SortingTablePage.tsx:1213` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
 
 ### route /masterwork/[id]/teach-back
 
-- [ ] `features/masterwork/teach-back/TeachBack.tsx:821` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{round.explanation}`
-- [ ] `features/masterwork/teach-back/TeachBack.tsx:623` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{current.explanation}`
+- [ ] `features/masterwork/teach-back/TeachBack.tsx:820` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{round.explanation}`
 
 ### route /masterwork/[id]/triad
 
@@ -3676,33 +3021,53 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /masterwork/all
 
 - [ ] `features/masterwork/browse/columns.tsx:95` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{row.description}`
-- [ ] `features/masterwork/browse/components/MasterworkBrowseCards.tsx:24` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
 - [ ] `features/masterwork/browse/components/MasterworkBrowseRows.tsx:89` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
 
 ### route /masterwork/encore/[id]
 
-- [ ] `features/masterwork/components/masterworks/AuditionDialog.tsx:584` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{verdict.summary}`
+- [ ] `features/masterwork/components/masterworks/AuditionDialog.tsx:601` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{verdict.summary}`
 - [ ] `features/masterwork/components/masterworks/CompareTwoDialog.tsx:357` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{verdict.summary}`
 - [ ] `features/masterwork/components/masterworks/CompareTwoDialog.tsx:414` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{arm.reasoning}`
-- [ ] `features/masterwork/components/masterworks/MasterworksPage.tsx:531` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{masterwork.description}`
+- [ ] `features/masterwork/components/masterworks/MasterworksPage.tsx:549` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{masterwork.description}`
 
 ### route /masterwork/vision-interview/[sessionId]
 
 - [ ] `features/vision-interview/components/DeliverablePane.tsx:17` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 - [ ] `features/vision-interview/components/DocumentPane.tsx:25` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/vision-interview/components/ExpertFeedSection.tsx:137` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{turn.content}`
-- [ ] `features/vision-interview/components/FinishInterviewDialog.tsx:222` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{interrupt.prompt}`
 - [ ] `features/vision-interview/components/LiveTurnCard.tsx:20` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 - [ ] `features/vision-interview/components/TurnCard.tsx:17` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/vision-interview/group-chat/GroupChatInspector.tsx:28` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /matrx-extend-demo
 
 - [ ] `app/(public)/matrx-extend-demo/page.tsx:69` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}`
 
+### route /meet/[slug]
+
+- [ ] `features/education/kits/components/KitHub.tsx:806` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{stage.description}`
+- [ ] `features/flashcards/components/create/LiveGenerationPreview.tsx:15` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/flashcards/components/set-detail/DeckCardViews.tsx:44` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/IllustrateSetWindow.tsx:139` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{judgment.reasoning}`
+- [ ] `features/flashcards/components/set-detail/MergeCardsDialog.tsx:29` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:108` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1221` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.set.description}`
+- [ ] `features/flashcards/components/set-detail/SetDetailView.tsx:1865` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{mode.description}`
+- [ ] `features/meet/components/manage/MeetingDetail.tsx:86` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/meet/components/record/ActivityLogPanel.tsx:160` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.answer}`
+- [ ] `features/research/components/init/TemplatePicker.tsx:85` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
+- [ ] `features/resource-manager/source-input/components/SourceCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{DELIVERY_WORDS.context.summary}`
+- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scope-system/components/NewScopeInline.tsx:401` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:364` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
+- [ ] `features/scope-system/components/ScopeFieldInput.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/transcription-cleanup/components/CleanupOutput.tsx:5` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+- [ ] `features/workflow-runtime/components/ReadoutView.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+
 ### route /meetings/[id]
 
-- [ ] `features/meet/components/manage/MeetingDetail.tsx:81` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/meet/components/record/MeetingRecordWorkspace.tsx:378` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{record.answer}`
+- [ ] `features/meet/components/manage/MeetingDetail.tsx:86` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/meet/components/record/ActivityLogPanel.tsx:160` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.answer}`
 
 ### route /news
 
@@ -3710,7 +3075,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /oauth/consent
 
-- [ ] `app/oauth/consent/ConsentClient.tsx:702` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{info.description}`
+- [ ] `app/oauth/consent/ConsentClient.tsx:737` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{info.description}`
 
 ### route /organizations
 
@@ -3718,10 +3083,8 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /organizations/[orgId]
 
-- [ ] `features/organizations/components/OrgWorkspace.tsx:426` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
-- [ ] `features/scope-system/components/NewScopeInline.tsx:401` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:508` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:644` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
+- [ ] `features/organizations/components/OrgWorkspace.tsx:425` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
+- [ ] `features/scopes/components/management/NewScopeInline.tsx:356` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/context-items
 
@@ -3729,62 +3092,53 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /organizations/[orgId]/mandates/[mandateKey]
 
-- [ ] `components/official/structured-value/AnswerValueView.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1683` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
-- [ ] `features/mandates/admin/mandate-contract-cells.tsx:36` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<TooltipContent pre-wrap>{description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/mandates/admin/MandateDetailPanel.tsx:1690` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offer.description}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### route /organizations/[orgId]/org-2
 
-- [ ] `features/organizations/components/OrgWorkspace.tsx:426` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
-- [ ] `features/scope-system/components/NewScopeInline.tsx:401` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:508` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:644` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
+- [ ] `features/organizations/components/OrgWorkspace.tsx:425` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
+- [ ] `features/scopes/components/management/NewScopeInline.tsx:356` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/performance-reviews
 
 - [ ] `features/employee-performance-reviews/components/PerformanceReviewApp.tsx:604` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: reportHtml }}`
 - [ ] `features/employee-performance-reviews/components/PerformanceReviewApp.tsx:919` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: reportHtml }}`
 - [ ] `features/employee-performance-reviews/components/PerformanceReviewApp.tsx:875` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
-- [ ] `features/employee-performance-reviews/components/review-form-components.tsx:221` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{text}`
 
 ### route /organizations/[orgId]/resources/[kind]
 
-- [ ] `features/organizations/components/OrgResourceDetail.tsx:304` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/organizations/components/OrgResourceDetail.tsx:342` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 
 ### route /organizations/[orgId]/scopes
 
 - [ ] `features/scopes/components/management/NewScopeInline.tsx:356` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:508` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:644` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]
 
 - [ ] `features/scope-system/components/NewScopeInline.tsx:401` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scope-system/components/ScopesList.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
-- [ ] `features/scope-system/components/ScopesList.tsx:767` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scope-system/components/ScopesList.tsx:325` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
+- [ ] `features/scope-system/components/ScopesList.tsx:771` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/[scopeId]
 
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:235` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:356` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scope-system/components/ScopeDetailEditor.tsx:364` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{scope.description}`
+- [ ] `features/scope-system/components/ScopeFieldInput.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/[scopeId]/[itemId]
 
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:235` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
-- [ ] `features/scope-system/components/ScopeItemDetail.tsx:202` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scope-system/components/ScopeFieldInput.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scope-system/components/ScopeItemDetail.tsx:203` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/[scopeId]/context-items
 
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:235` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scope-system/components/ScopeFieldInput.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /organizations/[orgId]/scopes/[typeId]/context-items
 
@@ -3792,26 +3146,22 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /organizations/[orgId]/scopes/[typeId]/context-items/[itemId]
 
-- [ ] `features/scope-system/components/ContextItemHub.tsx:167` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:235` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
-- [ ] `features/scope-system/components/ScopeFieldInput.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/scope-system/components/ContextItemHub.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/scope-system/components/EditScopeValueSheet.tsx:237` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/scope-system/components/ScopeFieldInput.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 
 ### route /organizations/[orgId]/settings
 
-- [ ] `features/organizations/components/TeamManagement.tsx:289` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{team.description}`
+- [ ] `features/organizations/components/TeamManagement.tsx:323` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{team.description}`
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{loginUrlDef?.description ?? "Where this login is used. Stored as plain, unencrypted m…`
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1830` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{draft.def.description}`
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1981` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
 - [ ] `features/secrets/components/VaultHandlingControl.tsx:80` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{presentation.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2560` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:356` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:922` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<dd pre-wrap>{attachment.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:1333` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{field.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2563` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.notes}`
+- [ ] `features/secrets/components/VaultItemDetail.tsx:2559` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
 
 ### route /organizations/[orgId]/settings/change-policy
 
-- [ ] `features/change-policy/components/ChangePolicySurface.tsx:356` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/change-policy/components/ChangePolicySurface.tsx:373` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
 
 ### route /organizations/[orgId]/settings/keyword-value
 
@@ -3819,23 +3169,19 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /organizations/[orgId]/settings/mandates
 
-- [ ] `features/mandates/browse/MandateBrowseCards.tsx:86` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
+- [ ] `features/mandates/browse/MandateBrowseCards.tsx:87` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
 - [ ] `features/mandates/browse/useCoverageList.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{meta.description}`
 
 ### route /organizations/[orgId]/settings/mandates/[mandateKey]
 
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:71` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
-- [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:37` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx:685` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{mandate.summary}`
 - [ ] `features/agents/agent-creators/interactive-builder/AgentJsonDisplay.tsx:321` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.description}`
 - [ ] `features/bindings/OfferedInventoryColumn.tsx:183` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{value.description}`
-- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:411` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
+- [ ] `features/surfaces/components/bind/BindingSuggestionsTab.tsx:409` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{proposal.notes}`
 
 ### route /organizations/[orgId]/settings/scopes
 
 - [ ] `features/agent-context/components/scope-admin/ScopeInstancePanel.tsx:286` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{node.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:508` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
-- [ ] `features/scopes/components/management/TemplateGalleryDrawer.tsx:644` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.description}`
 
 ### route /organizations/[orgId]/shortcuts
 
@@ -3848,37 +3194,25 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /organizations/[orgId]/shortcuts/edit/[id]
 
 - [ ] `app/(core)/organizations/[orgId]/shortcuts/edit/[id]/page.tsx:188` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{resolved.description}`
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
 
 ### route /organizations/[orgId]/shortcuts/shortcuts
 
+- [ ] `features/agent-shortcuts/components/DefaultContextPolicyValuesEditor.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{slot.description}`
 - [ ] `features/agent-shortcuts/components/ShortcutList.tsx:665` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{shortcut.description}`
-
-### route /p/[slug]
-
-- [ ] `components/official/review-deck/ReviewDeck.tsx:222` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{current.body}`
-- [ ] `features/agent-apps/components/AgentAppPublicRendererImpl.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFormToResultShell.tsx:25` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx:43` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppMarkdownStreamBridge.tsx:4` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/components/shells/AgentAppWidgetShell.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/agents/components/debug/SandboxFileViewer.tsx:146` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content}`
-- [ ] `features/cloud-browser/components/Walkthrough.tsx:13` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/cloud-browser/components/WrittenProgressFace.tsx:15` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/marketing/seo/topical-map/proposals/ProposalReview.tsx:128` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/HistoryView.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-- [ ] `features/marketing/seo/topical-map/views/TextView.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/marketing/seo/topical-map/views/outline/TopicHoverCard.tsx:55` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{topic.description}`
-- [ ] `features/marketing/seo/topical-map/views/table/columns.tsx:348` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.topic.description}`
 
 ### route /p/e/[resourceType]/[id]
 
 - [ ] `components/rich-content/RichContentStaticProse.tsx:60` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }}`
+- [ ] `features/education/study/components/BatchReviewBlock.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
+- [ ] `features/education/tutor/components/LiveHelpAnswerBlock.tsx:63` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.answer}`
+- [ ] `features/flashcards/components/study/CardDetailLayers.tsx:36` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
+- [ ] `features/flashcards/components/study/study-deck-parts.tsx:20` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
 
 ### route /podcast/[slug]
 
 - [ ] `features/podcasts/components/player/EpisodeShowNotes.tsx:16` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
-- [ ] `features/podcasts/components/player/PodcastEpisodePage.tsx:142` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{episode.description}`
-- [ ] `features/podcasts/components/player/PodcastEpisodePage.tsx:258` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{episode.description}`
+- [ ] `features/podcasts/components/player/PodcastEpisodePage.tsx:143` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{episode.description}`
 - [ ] `features/podcasts/components/player/PodcastShowPage.tsx:127` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{show.description}`
 - [ ] `features/podcasts/components/player/PodcastShowPage.tsx:233` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ep.description}`
 
@@ -3913,7 +3247,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /podcast/studio/run-d
 
 - [ ] `app/(core)/podcast/studio/run-d/_components/AssetStage.tsx:43` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
-- [ ] `app/(core)/podcast/studio/run-d/_components/AssetStage.tsx:199` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{body}`
 - [ ] `app/(core)/podcast/studio/run-d/_components/FinishedEpisode.tsx:66` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
 
 ### route /podcast/studio/run-dense/[id]
@@ -3925,7 +3258,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `app/(core)/podcast/studio/run-e/_components/FinishedPlayer.tsx:90` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
 - [ ] `app/(core)/podcast/studio/run-e/_components/StageMonitor.tsx:179` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
-- [ ] `app/(core)/podcast/studio/run-e/_components/StageMonitor.tsx:146` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{text}`
 
 ### route /podcast/studio/run-f
 
@@ -3952,11 +3284,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/podcasts/generator/components/AssetCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{slot.prompt || "Preparing…"}`
 - [ ] `features/podcasts/generator/components/MetadataHero.tsx:40` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{state.description}`
-- [ ] `features/podcasts/studio/components/EpisodeContentStudio.tsx:26` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
-### route /portal/c/[slug]/r/[recordId]
-
-- [ ] `features/portals/PortalCommentThread.tsx:95` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{comment.body}`
 
 ### route /print
 
@@ -3983,19 +3310,31 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /projects
 
-- [ ] `features/projects/components/ProjectsHub.tsx:1880` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
+- [ ] `features/projects/components/ProjectsHub.tsx:1826` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
 
-### route /projects/[projectId]
+### route /rag
 
-- [ ] `features/projects/components/ProjectInlineEditors.tsx:342` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{project.description}`
+- [ ] `features/rag/components/data-stores/LibraryCatalogPane.tsx:93` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{it.description}`
 
-### route /projects/[projectId]/settings
+### route /rag/data-stores
 
-- [ ] `features/projects/components/ProjectInlineEditors.tsx:342` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{project.description}`
+- [ ] `features/rag/components/data-stores/DataStoresPage.tsx:381` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{store.description}`
+- [ ] `features/rag/components/data-stores/DataStoresPage.tsx:927` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{s.description}`
+- [ ] `features/rag/components/data-stores/DataStoresPage.tsx:1140` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<td>{m.notes ?? "—"}`
 
-### route /projects/new
+### route /rag/library-catalog
 
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
+- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:584` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.description}`
+- [ ] `features/rag/components/library-catalog/LibraryCatalogPage.tsx:676` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/rag/components/library-catalog/PackDetailPanel.tsx:247` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+- [ ] `features/rag/components/library-catalog/RulebookDetailPanel.tsx:263` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
+
+### route /rag/search
+
+- [ ] `features/rag/components/search/KnowledgeSearchResult.tsx:18` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/rag/components/search/RagPageReferences.tsx:17` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
+- [ ] `features/rag/components/search/RagPageReferences.tsx:1067` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{group.description}`
+- [ ] `features/rag/components/search/RagReviewRepairWorkspace.tsx:25` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
 ### route /reports
 
@@ -4021,9 +3360,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /research/topics/[topicId]
 
 - [ ] `app/(core)/research/topics/[topicId]/page.tsx:20` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}`
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/research/components/init/AutonomySelector.tsx:54` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{config.description}`
-- [ ] `features/research/components/overview/live-pipeline/ui/StreamingTextPanel.tsx:6` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/research/components/overview/pipeline-graph/AutonomyControl.tsx:145` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{opt.description}`
 - [ ] `features/research/components/overview/pipeline-graph/ProviderControl.tsx:140` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{opt.description}`
 
@@ -4031,36 +3368,21 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `features/research/components/agents/AgentRoleCard.tsx:204` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{role.description}`
 
-### route /research/topics/[topicId]/analysis
-
-- [ ] `components/markdown.tsx:6` — **MarkdownStream** (tracked) — `./MarkdownStream`
-- [ ] `features/research/components/analysis/AnalysisList.tsx:11` — **MarkdownStream** (tracked) — `@/components/markdown` via `components/markdown.tsx`
-
 ### route /research/topics/[topicId]/context
 
 - [ ] `features/research/components/resources/BundleBar.tsx:107` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{b.description}`
-
-### route /research/topics/[topicId]/document
-
-- [ ] `features/research/components/document/DocumentViewer.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /research/topics/[topicId]/keywords
 
 - [ ] `features/research/components/keywords/KeywordManager.tsx:610` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{source.description}`
 
-### route /research/topics/[topicId]/keywords/[keywordId]
-
-- [ ] `features/research/components/keywords/KeywordDetailView.tsx:20` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
 ### route /research/topics/[topicId]/outputs
 
 - [ ] `features/podcasts/generator/components/AssetCard.tsx:187` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{slot.prompt || "Preparing…"}`
-- [ ] `features/research/components/outputs/OutputsStudio.tsx:40` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/research/components/outputs/OutputsStudio.tsx:429` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{def.description}`
+- [ ] `features/research/components/outputs/OutputsStudio.tsx:430` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{def.description}`
 
 ### route /research/topics/[topicId]/settings
 
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/research/components/init/AutonomySelector.tsx:54` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{config.description}`
 
 ### route /research/topics/[topicId]/sources
@@ -4070,35 +3392,22 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /research/topics/[topicId]/sources/[sourceId]
 
-- [ ] `components/markdown.tsx:6` — **MarkdownStream** (tracked) — `./MarkdownStream`
-- [ ] `features/research/components/analysis/AnalysisCard.tsx:18` — **MarkdownStream** (tracked) — `@/components/markdown` via `components/markdown.tsx`
-- [ ] `features/research/components/sources/ContentViewer.tsx:135` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content.content}`
-- [ ] `features/research/components/sources/SourceDetail.tsx:98` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
+- [ ] `features/research/components/sources/ContentViewer.tsx:135` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{content.content}`
 - [ ] `features/research/components/sources/SourceDetail.tsx:1577` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{typedSource.description}`
-
-### route /research/topics/[topicId]/synthesis
-
-- [ ] `components/markdown.tsx:6` — **MarkdownStream** (tracked) — `./MarkdownStream`
-- [ ] `features/research/components/synthesis/SynthesisList.tsx:31` — **MarkdownStream** (tracked) — `@/components/markdown` via `components/markdown.tsx`
-- [ ] `features/research/components/synthesis/SynthesisVersionHistory.tsx:6` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 
 ### route /research/topics/[topicId]/tags
 
 - [ ] `features/research/components/tags/TagManager.tsx:298` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tag.description}`
 
-### route /research/topics/[topicId]/tags/[tagId]
-
-- [ ] `features/research/components/consolidation/ConsolidationView.tsx:11` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-
 ### route /research/topics/[topicId]/tasks
 
-- [ ] `features/research/components/tasks/TasksView.tsx:694` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{meta.description}`
+- [ ] `features/research/components/tasks/TasksView.tsx:698` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{meta.description}`
 
 ### route /research/topics/[topicId]/youtube
 
-- [ ] `features/marketing/discovery/youtube/YouTubeDiscovery.tsx:986` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
-- [ ] `features/marketing/discovery/youtube/YouTubeVideoPreview.tsx:59` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{video.description || "No description supplied."}`
-- [ ] `features/research/components/youtube/ResearchYouTubePage.tsx:334` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
+- [ ] `features/marketing/discovery/youtube/YouTubeDiscovery.tsx:987` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
+- [ ] `features/marketing/discovery/youtube/YouTubeVideoPreview.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
+- [ ] `features/research/components/youtube/ResearchYouTubePage.tsx:335` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{video.description || "No description supplied."}`
 
 ### route /research/topics/new
 
@@ -4107,13 +3416,11 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /s/[token]
 
 - [ ] `components/rich-content/RichContentStaticProse.tsx:60` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: PROSE_FRAME_CSS }}`
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityReport.tsx:4` — **react-markdown** (BANNED) — `react-markdown`
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityReport.tsx:5` — **remark-* plugins** (BANNED) — `remark-gfm`
+- [ ] `features/education/study/components/BatchReviewBlock.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{review.summary}`
+- [ ] `features/education/tutor/components/LiveHelpAnswerBlock.tsx:63` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{result.answer}`
+- [ ] `features/flashcards/components/study/CardDetailLayers.tsx:36` — **ConfigurableMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent`
+- [ ] `features/flashcards/components/study/study-deck-parts.tsx:20` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
 - [ ] `features/sharing/lenses/file-lens.tsx:254` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{card.body}`
-
-### route /sandbox/[id]
-
-- [ ] `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx:980` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fileContent || "(empty file)"}`
 
 ### route /schedules
 
@@ -4122,19 +3429,15 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /schedules/[id]
 
 - [ ] `features/scheduling/components/detail/ScheduleDetail.tsx:555` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{task.description}`
-- [ ] `features/scheduling/components/detail/SpecCard.tsx:131` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{task.prompt}`
+- [ ] `features/scheduling/components/detail/SpecCard.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{task.prompt}`
 
 ### route /schedules/[id]/edit
 
-- [ ] `features/scheduling/components/form/ScheduleForm.tsx:521` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{meta.description}`
+- [ ] `features/scheduling/components/form/ScheduleForm.tsx:522` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{meta.description}`
 
 ### route /schedules/new
 
-- [ ] `features/scheduling/components/form/ScheduleForm.tsx:521` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{meta.description}`
-
-### route /scopes/templates
-
-- [ ] `features/scopes/components/management/TemplatesGalleryPanel.tsx:163` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{t.description}`
+- [ ] `features/scheduling/components/form/ScheduleForm.tsx:522` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{meta.description}`
 
 ### route /scraper
 
@@ -4144,7 +3447,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
 - [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
-- [ ] `features/scraper/parts/agent-analysis/FactChecker.tsx:37` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
 
 ### route /scraper/quick
 
@@ -4154,7 +3456,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
 - [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
-- [ ] `features/scraper/parts/agent-analysis/FactChecker.tsx:37` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
 
 ### route /scraper/search-and-scrape
 
@@ -4164,7 +3465,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `components/official/PageTemplate.tsx:138` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
 - [ ] `features/scraper/parts/OrganizedContent.tsx:60` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
 - [ ] `features/scraper/parts/SimplifiedView.tsx:106` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.content}`
-- [ ] `features/scraper/parts/agent-analysis/FactChecker.tsx:37` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
 
 ### route /seo
 
@@ -4174,8 +3474,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /seo/ai-visibility
 
 - [ ] `components/seo/JsonLd.tsx:27` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c"), }}`
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityReport.tsx:4` — **react-markdown** (BANNED) — `react-markdown`
-- [ ] `features/marketing/seo/ai-visibility/AiVisibilityReport.tsx:5` — **remark-* plugins** (BANNED) — `remark-gfm`
 
 ### route /seo/metadata
 
@@ -4199,65 +3497,50 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `components/seo/JsonLd.tsx:27` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c"), }}`
 
-### route /settings/feedback
-
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:592` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:695` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:791` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{msg.content}`
-
-### route /settings/integrations
-
-- [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
-- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:948` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
-
-### route /settings/organizations
-
-- [ ] `features/organizations/components/OrganizationCard.tsx:178` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
-
 ### route /shapes/[kind]
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/examples
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/gate
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/inputs
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/instances
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/schema
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/stream
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/table
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/template
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/[kind]/test
 
-- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:315` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_VISIBILITIES.find( (option) => option.value === visibility, )?.description }`
+- [ ] `features/content-ir/studio/components/ShapeOwnerEditor.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{ SHAPE_WEB_CHOICES.find( (option) => option.value === publishedToWeb, )?.description }`
 
 ### route /shapes/new
 
-- [ ] `features/content-ir/studio/components/NewShapeClient.tsx:163` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
-- [ ] `features/content-ir/studio/components/NewShapeClient.tsx:494` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{asset.description}`
+- [ ] `features/content-ir/studio/components/NewShapeClient.tsx:164` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
+- [ ] `features/content-ir/studio/components/NewShapeClient.tsx:503` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{asset.description}`
 
 ### route /sign/[token]
 
@@ -4265,41 +3548,30 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /surfaces/[...name]
 
-- [ ] `features/surfaces/components/hub/SurfaceHubDetailPage.tsx:379` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{resolved.role.description}`
-
-### route /tasks/new
-
-- [ ] `features/agents/components/previews/ConversationHoverPreview.tsx:142` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{conv.description}`
-- [ ] `packages/chat/src/agents/components/smart/CreateWithAiTabs.tsx:278` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tab.content}`
+- [ ] `features/surfaces/components/hub/SurfaceHubDetailPage.tsx:378` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{resolved.role.description}`
 
 ### route /tools/pdf-extractor
 
-- [ ] `features/page-extraction/components/ChunkCard.tsx:32` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/page-extraction/components/ResultsTable.tsx:785` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text}`
 - [ ] `features/pdf-extractor/components/CopyPagesOverlay.tsx:777` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{copyAllTier.notes || "—"}`
 - [ ] `features/pdf-extractor/components/CopyPagesOverlay.tsx:865` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{tier.notes || "—"}`
-- [ ] `features/pdf-extractor/components/PdfAiContent.tsx:3` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/pdf-extractor/studio/PdfStudioMobile.tsx:717` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fallbackText || "(no extracted text)"}`
-- [ ] `features/pdf-extractor/studio/PdfStudioMobile.tsx:739` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{fallbackText || "(no extracted text)"}`
-- [ ] `features/pdf-extractor/studio/PdfStudioMobile.tsx:765` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{text || ( <span className="italic text-muted-foreground"> (no text on this…`
-- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{doc.content ?? "(no extracted text)"}`
+- [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{doc.content ?? "(no extracted text)"}`
 
 ### route /tools/product-capture
 
-- [ ] `features/product-capture/components/ItemSwipeRow.tsx:151` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
+- [ ] `features/product-capture/components/ItemSwipeRow.tsx:158` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
 
 ### route /tools/product-capture/all
 
-- [ ] `features/product-capture/components/AllItemsTable.tsx:273` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.notes}`
-- [ ] `features/product-capture/components/ItemSwipeRow.tsx:151` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
+- [ ] `features/product-capture/components/AllItemsTable.tsx:261` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.notes}`
+- [ ] `features/product-capture/components/ItemSwipeRow.tsx:158` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
 
 ### route /tools/product-capture/answer
 
-- [ ] `features/product-capture/components/pipeline/AnswerQueue.tsx:314` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
+- [ ] `features/product-capture/components/pipeline/AnswerQueue.tsx:288` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{question.prompt}`
 
 ### route /tools/product-capture/instant
 
-- [ ] `features/product-capture/components/ItemSwipeRow.tsx:151` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
+- [ ] `features/product-capture/components/ItemSwipeRow.tsx:158` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.notes}`
 
 ### route /tools/product-capture/manage
 
@@ -4308,7 +3580,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /transcripts
 
 - [ ] `features/transcripts/browse/TranscriptBrowseCards.tsx:88` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{row.description}`
-- [ ] `features/transcripts/browse/columns.tsx:332` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
+- [ ] `features/transcripts/browse/columns.tsx:334` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{row.description}`
 
 ### route /transcripts/cleanup
 
@@ -4316,46 +3588,26 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /transcripts/new
 
-- [ ] `app/(core)/transcripts/new/page.tsx:121` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{opt.description}`
+- [ ] `app/(core)/transcripts/new/page.tsx:119` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{opt.description}`
 
 ### route /transcripts/processor
 
-- [ ] `features/transcripts/components/TranscriptViewer.tsx:610` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeTranscript.description}`
-- [ ] `features/transcripts/components/TranscriptsSidebar.tsx:352` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{transcript.description}`
-
-### route /transcripts/scribe
-
-- [ ] `features/transcript-studio/components/scribe/ActionSheet.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-
-### route /transcripts/scribe/[sessionId]
-
-- [ ] `features/transcript-studio/components/scribe/ActionSheet.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/transcript-studio/components/scribe/FullTranscriptDrawer.tsx:113` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{rawText || ( <span className="italic text-muted-foreground"> No transcript w…`
-- [ ] `features/transcript-studio/components/scribe/FullTranscriptDrawer.tsx:176` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{cleanText || ( <span className="italic text-muted-foreground"> Not cleaned y…`
-- [ ] `features/transcript-studio/components/scribe/ScribeCaptureScreen.tsx:76` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{text || ( <span className="italic text-muted-foreground"> Speak — your wor…`
-- [ ] `features/transcript-studio/components/scribe/SessionTranscriptViewer.tsx:167` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{text || ( <span className="italic text-muted-foreground"> {isClean ? "Nothin…`
-
-### route /transcripts/scribe/unsorted
-
-- [ ] `features/transcript-studio/components/scribe/ActionSheet.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/transcript-studio/components/scribe/FullTranscriptDrawer.tsx:113` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{rawText || ( <span className="italic text-muted-foreground"> No transcript w…`
-- [ ] `features/transcript-studio/components/scribe/FullTranscriptDrawer.tsx:176` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{cleanText || ( <span className="italic text-muted-foreground"> Not cleaned y…`
+- [ ] `features/transcripts/components/TranscriptViewer.tsx:612` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{activeTranscript.description}`
+- [ ] `features/transcripts/components/TranscriptsSidebar.tsx:354` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{transcript.description}`
 
 ### route /transcripts/studio
 
 - [ ] `features/transcript-studio/components/columns/ConceptsColumn.tsx:301` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.description}`
-- [ ] `features/transcript-studio/components/columns/ModuleColumn.tsx:7` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `features/transcript-studio/components/settings/ModulePicker.tsx:56` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
 
 ### route /user-settings/[[...path]]
 
 - [ ] `components/official/settings/primitives/SettingsRadioGroup.tsx:78` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{opt.description}`
 - [ ] `features/connectors/ConnectorPromptCard.tsx:168` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{provider.prompt.body}`
+- [ ] `features/connectors/IntegrationDirectory.tsx:525` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 - [ ] `features/organizations/components/OrganizationCard.tsx:178` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{organization.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:592` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:695` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:791` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{msg.content}`
-- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:948` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
+- [ ] `features/settings/pages/FeedbackSettingsPage.tsx:593` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
+- [ ] `features/settings/pages/IntegrationsSettingsPage.tsx:1058` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{entry.description}`
 
 ### route /vault
 
@@ -4363,11 +3615,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1830` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{draft.def.description}`
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1981` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
 - [ ] `features/secrets/components/VaultHandlingControl.tsx:80` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{presentation.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2560` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:356` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:922` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<dd pre-wrap>{attachment.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:1333` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{field.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2563` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.notes}`
+- [ ] `features/secrets/components/VaultItemDetail.tsx:2559` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
 
 ### route /vault/[itemId]
 
@@ -4375,11 +3623,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1830` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{draft.def.description}`
 - [ ] `features/secrets/components/VaultCreateDialog.tsx:1981` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{def.description}`
 - [ ] `features/secrets/components/VaultHandlingControl.tsx:80` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{presentation.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2560` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:356` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:922` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<dd pre-wrap>{attachment.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:1333` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{field.description}`
-- [ ] `features/secrets/components/VaultItemDetail.tsx:2563` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{item.notes}`
+- [ ] `features/secrets/components/VaultItemDetail.tsx:2559` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{VAULT_LABELS.notes}`
 
 ### route /vault/authenticator
 
@@ -4395,8 +3639,6 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /war-room/[id]
 
-- [ ] `features/projects/components/ProjectInlineEditors.tsx:342` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{project.description}`
-- [ ] `features/transcript-studio/components/scribe/ActionSheet.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
 - [ ] `features/transcription-cleanup/components/CleanupOutput.tsx:5` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /war-room/all
@@ -4405,7 +3647,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /welcome
 
-- [ ] `app/(core)/welcome/WelcomeClient.tsx:167` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
+- [ ] `app/(core)/welcome/WelcomeClient.tsx:175` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{option.description}`
 
 ### route /why-ai-matrx
 
@@ -4414,8 +3656,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 ### route /work/conversations/[conversationId]
 
 - [ ] `features/ai-work/analysis/ConversationAnalyzePanel.tsx:143` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{kind.description}`
-- [ ] `features/ai-work/components/ProviderConversationTranscript.tsx:18` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/ai-work/components/ProviderConversationTranscript.tsx:398` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{conversation.description}`
+- [ ] `features/ai-work/components/ProviderConversationTranscript.tsx:405` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{conversation.description}`
 
 ### route /work/new
 
@@ -4423,21 +3664,15 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /workbooks
 
-- [ ] `app/(core)/workbooks/page.tsx:590` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{wb.description}`
+- [ ] `app/(core)/workbooks/page.tsx:601` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{wb.description}`
 
 ### route /workflows/[id]
 
-- [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/workflow-runtime/interrupt/RunDecisions.tsx:94` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{answer}`
+- [ ] `features/workflow-runtime/components/ReadoutView.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /workflows/[id]/design
 
-- [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-
-### route /workflows/all
-
-- [ ] `features/workflow-runtime/browse/columns.tsx:22` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
-- [ ] `features/workflow-runtime/browse/components/WorkflowBrowseCards.tsx:30` — **cleanMarkdownPreview (regex markdown stripping)** (BANNED) — `cleanMarkdownPreview ← @/utils/markdown-processors/clean-markdown-to-text`
+- [ ] `features/workflow-runtime/components/ReadoutView.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
 
 ### route /workflows/bakeoff
 
@@ -4449,8 +3684,11 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### route /workflows/runs/[runId]
 
-- [ ] `features/workflow-runtime/components/ReadoutView.tsx:41` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/workflow-runtime/interrupt/RunDecisions.tsx:94` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{answer}`
+- [ ] `features/workflow-runtime/components/ReadoutView.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
+
+### route /workflows/runs/analyze
+
+- [ ] `components/official/drill-explorer/DrillExplorerHeadline.tsx:36` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<li>{fact.content}`
 
 ## Reached by no surface
 
@@ -4460,41 +3698,30 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `app/(admin)/administration/ui/official-components/component-displays/image-asset-uploader.tsx:207` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{PRESETS.find((p) => p.preset === preset)?.description}`
 - [ ] `app/(admin)/administration/ui/official-components/parts/ComponentHeader.tsx:148` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{component.description}`
 - [ ] `app/(dev)/demos/agent-cards/page.dev.tsx:501` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{entry.summary}`
-- [ ] `app/(dev)/demos/api-tests/agent/AgentTestClient.tsx:767` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{liveText}`
-- [ ] `app/(dev)/demos/api-tests/matrx-ai/agent-demo/AgentDemoClient.tsx:968` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{requestBody}`
-- [ ] `app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx:153` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{turn.content}`
-- [ ] `app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx:180` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{turn.content}`
-- [ ] `app/(dev)/demos/api-tests/matrx-ai/dynamic-api/DynamicApiClient.tsx:1211` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{responseBody || (!isRunning ? "No response yet." : "")}`
-- [ ] `app/(dev)/demos/api-tests/matrx-ai/tools-demo/ToolsDemoClient.tsx:517` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedTool.description}`
-- [ ] `app/(dev)/demos/api-tests/matrx-ai/tools-demo/ToolsDemoClient.tsx:542` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{param.description}`
-- [ ] `app/(dev)/demos/api-tests/pdf-extract/PdfExtractClient.tsx:358` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{textContent}`
+- [ ] `app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx:155` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{turn.content}`
+- [ ] `app/(dev)/demos/api-tests/matrx-ai/conversation-demo/ConversationDemoClient.tsx:182` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{turn.content}`
+- [ ] `app/(dev)/demos/api-tests/matrx-ai/tools-demo/ToolsDemoClient.tsx:538` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedTool.description}`
+- [ ] `app/(dev)/demos/api-tests/matrx-ai/tools-demo/ToolsDemoClient.tsx:563` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{param.description}`
 - [ ] `app/(dev)/demos/api-tests/tool-testing/components/ArgumentForm.tsx:325` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{param.description}`
-- [ ] `app/(dev)/demos/api-tests/tool-testing/components/ResultsPanel.tsx:539` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{finalPayload.output.model_facing_result.content}`
+- [ ] `app/(dev)/demos/api-tests/tool-testing/components/ResultsPanel.tsx:539` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{finalPayload.output.model_facing_result.content}`
 - [ ] `app/(dev)/demos/api-tests/tool-testing/components/ToolListSidebar.tsx:154` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
-- [ ] `app/(dev)/demos/canonical-flashcards-refine/page.dev.tsx:324` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{faceText}`
 - [ ] `app/(dev)/demos/canonical-flashcards-reimagine/page.dev.tsx:598` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{presentationCopy[presentation].description}`
 - [ ] `app/(dev)/demos/canonical-flashcards/page.dev.tsx:246` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{variant.description}`
 - [ ] `app/(dev)/demos/context-menu/_components/ContextMenuHubClient.tsx:154` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{page.description}`
-- [ ] `app/(dev)/demos/context-menu/launch-inspector/page.dev.tsx:812` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{latestText}`
-- [ ] `app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx:415` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{group.description}`
+- [ ] `app/(dev)/demos/context-menu/surface-mappings/page.dev.tsx:418` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{group.description}`
 - [ ] `app/(dev)/demos/dashboard/components/QuickActions.tsx:54` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{action.description}`
 - [ ] `app/(dev)/demos/dashboard/components/RecentActivity.tsx:83` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `app/(dev)/demos/diff-gallery/page.dev.tsx:131` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{seg.content}`
-- [ ] `app/(dev)/demos/diff-gallery/page.dev.tsx:105` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<span pre-wrap>{l.content || " "}`
+- [ ] `app/(dev)/demos/diff-gallery/page.dev.tsx:101` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{seg.content}`
 - [ ] `app/(dev)/demos/general/fetch-react/HtmlDisplay.tsx:40` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: html }}`
-- [ ] `app/(dev)/demos/general/voice/debate-assistant/debate-page.tsx:135` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{message.content}`
+- [ ] `app/(dev)/demos/general/voice/debate-assistant/debate-page.tsx:136` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{message.content}`
 - [ ] `app/(dev)/demos/glass-lab/_components/VariantPicker.tsx:144` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{v.description}`
 - [ ] `app/(dev)/demos/header-demo/HeaderDemoClient.tsx:280` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{v.description}`
-- [ ] `app/(dev)/demos/kind-directives/page.dev.tsx:23` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `app/(dev)/demos/lists-explorer/page.dev.tsx:77` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{route.description}`
+- [ ] `app/(dev)/demos/lists-explorer/page.dev.tsx:67` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{route.description}`
 - [ ] `app/(dev)/demos/local-tools/page.dev.tsx:252` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{page.description}`
 - [ ] `app/(dev)/demos/local-tools/scraper/page.dev.tsx:448` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{r.description}`
-- [ ] `app/(dev)/demos/scraper/_components/ResponseViewer.tsx:402` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{diagnosticsText}`
 - [ ] `app/(dev)/demos/scraper/page.dev.tsx:63` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{demo.description}`
-- [ ] `app/(dev)/demos/scraper/quick-scrape/page.dev.tsx:52` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{content}`
 - [ ] `app/(dev)/demos/scraper/search/page.dev.tsx:71` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description || item.snippet}`
 - [ ] `app/(dev)/demos/settings-tree/page.dev.tsx:207` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{node.description}`
-- [ ] `app/(dev)/demos/tests/direct-chat-test/DirectChatClient.tsx:16` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
 - [ ] `app/(dev)/demos/tests/extension-bridge/ConnectionPanels.tsx:350` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{healthResult.body}`
 - [ ] `app/(dev)/demos/tests/google-apis/pagespeed/components/CategoryDetails.tsx:92` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{audit.description}`
 - [ ] `app/(dev)/demos/tests/google-apis/pagespeed/components/CategoryDetails.tsx:111` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{category.description}`
@@ -4503,13 +3730,19 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `app/(dev)/demos/tests/integrations/simple/IntegrationPortal.tsx:220` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{integration.description}`
 - [ ] `app/(dev)/demos/tests/matrx-local/DownloadEndpointCard.tsx:117` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{endpoint.description}`
 - [ ] `app/(dev)/demos/tests/matrx-local/EndpointCard.tsx:33` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{endpoint.description}`
-- [ ] `app/(dev)/demos/tests/sms/components/ConversationsList.tsx:256` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{msg.body}`
-- [ ] `app/(dev)/demos/tests/utility-function-tests/create-table-templates/page.dev.tsx:377` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selectedTemplate.description}`
+- [ ] `app/(dev)/demos/tests/sms/components/ConversationsList.tsx:258` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{msg.body}`
 - [ ] `app/(dev)/demos/tests/utility-function-tests/smart-executor-demo/page.dev.tsx:99` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{comp.description}`
-- [ ] `app/(dev)/demos/tool-viz/in-action/page.dev.tsx:57` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `app/(transitional)/_flash-cards/ai/AiMessaging.tsx:72` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{msg.content}`
+- [ ] `app/(dev)/demos/ui-unification/_components/toast-system.tsx:263` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{detail.body}`
+- [ ] `app/(dev)/demos/ui-unification/samples/agent-builder/_components/BuilderProposalFrame.tsx:112` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: PREVIEW_CSS }}`
+- [ ] `app/(dev)/demos/ui-unification/samples/education-flashcards/_components/FlashcardSetSample.tsx:123` — **CardFaceContent** (tracked) — `@/components/mardown-display/blocks/flashcards/CardFaceContent`
+- [ ] `app/(dev)/demos/ui-unification/samples/education-flashcards/_components/FlashcardSetSample.tsx:1141` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: FC_SAMPLE_CSS }}`
+- [ ] `app/(dev)/demos/ui-unification/samples/education-flashcards/_components/FlashcardSetSample.tsx:1816` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: FC_SAMPLE_CSS }}`
+- [ ] `app/(dev)/demos/ui-unification/samples/education-flashcards/_components/FlashcardSetSample.tsx:1226` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{m.description}`
+- [ ] `app/(dev)/demos/ui-unification/samples/education-flashcards/_components/FlashcardSetSample.tsx:1458` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{data.set.description}`
+- [ ] `app/(dev)/demos/ui-unification/samples/education-flashcards/_components/FlashcardSetSample.tsx:1797` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{mode.description}`
+- [ ] `app/(transitional)/_flash-cards/ai/AiMessaging.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{msg.content}`
 - [ ] `components/ai/AiChatModal.tsx:18` — **MarkdownRenderer** (tracked) — `@/components/mardown-display/MarkdownRenderer`
-- [ ] `components/ai/AiMessaging.tsx:72` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{msg.content}`
+- [ ] `components/ai/AiMessaging.tsx:76` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{msg.content}`
 - [ ] `components/animated/demos/feature-sections/simple-feature-with-gradient.tsx:18` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{feature.description}`
 - [ ] `components/brokers/output/AnimatedEventComponent.tsx:82` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
 - [ ] `components/brokers/output/EventComponent.tsx:50` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
@@ -4517,78 +3750,52 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/DynamicViewerTester.tsx:243` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{option.description}`
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/FlatSectionViewer.tsx:10` — **BasicMarkdownContent** (tracked) — `../../BasicMarkdownContent`
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/FlatSectionViewer.tsx:129` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{section.summary}`
-- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/FlatSectionViewer.tsx:224` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{selectedSection.content}`
+- [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/FlatSectionViewer.tsx:224` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{selectedSection.content}`
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/IntelligentViewer.tsx:18` — **BasicMarkdownContent** (tracked) — `../../BasicMarkdownContent`
 - [ ] `components/mardown-display/chat-markdown/analyzer/analyzer-options/IntelligentViewer.tsx:513` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{recommendation.reasoning}`
 - [ ] `components/mardown-display/markdown-classification/usePrepareMarkdownForRendering.ts:27` — **remark-* plugins** (BANNED) — `remark-parse`
 - [ ] `components/mardown-display/markdown-classification/usePrepareMarkdownForRendering.ts:28` — **remark-* plugins** (BANNED) — `remark-gfm`
 - [ ] `components/markdown-core/markdown-core-types.ts:1` — **react-markdown** (BANNED) — `react-markdown` (type-only)
+- [ ] `components/markdown.tsx:6` — **MarkdownStream** (tracked) — `./MarkdownStream`
 - [ ] `components/matrx/matrx-collapsible/collapsible-group.tsx:70` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.content}`
 - [ ] `components/matrx/matrx-record-list/basic-record-edit-list.tsx:126` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.content}`
 - [ ] `components/matrx/matrx-record-list/basic-record-list.tsx:145` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.content}`
 - [ ] `components/matrx/matrx-record-list/unified-record-list.tsx:170` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{item.content}`
-- [ ] `components/matrx/navigation/NextNavCardFull.tsx:145` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<CardDescription pre-wrap>{item.description}`
 - [ ] `components/message-display/MarkdownWithPlugins.tsx:5` — **react-markdown** (BANNED) — `react-markdown` (type-only)
 - [ ] `components/message-display/MessageContentDisplay.tsx:10` — **react-markdown** (BANNED) — `react-markdown` (type-only)
-- [ ] `components/modals/TextActionResultModal.tsx:127` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{originalText}`
-- [ ] `components/modals/TextActionResultModal.tsx:140` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{originalText}`
-- [ ] `components/official/HelpIcon.tsx:126` — **.split("\n").map(→ JSX) paragraph renderer** (review) — `processedText.split('\n').map((line, index) => ( <React.Fragment key={index}> {index > 0 …`
+- [ ] `components/official/HelpIcon.tsx:127` — **.split("\n").map(→ JSX) paragraph renderer** (review) — `processedText.split('\n').map((line, index) => ( <React.Fragment key={index}> {index > 0 …`
 - [ ] `components/official/content-editor/ContentEditorStack.tsx:5` — **components/official/content-editor/ContentEditor** (BANNED) — `./ContentEditor`
 - [ ] `components/official/mobile-action-bar/MobileFilterDrawer.tsx:153` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{field.description}`
 - [ ] `components/official/processor-extractor/path-management/BookmarkManager.tsx:167` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{bookmark.description}`
 - [ ] `components/rich-text-editor/MarkdownDualDisplay.tsx:155` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: html }}`
 - [ ] `components/rich-text-editor/MarkdownDualDisplay.tsx:8` — **@remirror/* (installed, unused)** (BANNED) — `@remirror/react`
 - [ ] `components/rich-text-editor/RemirrorEditor.tsx:8` — **@remirror/* (installed, unused)** (BANNED) — `@remirror/react`
-- [ ] `components/ts-function-registry/AppletBuilder.tsx:319` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{param.description}`
+- [ ] `components/ts-function-registry/AppletBuilder.tsx:320` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{param.description}`
 - [ ] `components/ts-function-registry/AppletFunctionPicker.tsx:153` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{param.description}`
 - [ ] `components/ts-function-registry/AppletFunctionPicker.tsx:254` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{selectedFunction.metadata.description}`
 - [ ] `components/ts-function-registry/AppletRunner.tsx:99` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 - [ ] `components/ts-function-registry/AppletRunner.tsx:139` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{applet.description}`
 - [ ] `components/ui/cards/apple-cards-carousel.tsx:241` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{card.content}`
-- [ ] `features/agent-apps/sample-code/apps/fact-checker-hooked.tsx:27` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/sample-code/apps/fact-checker.tsx:11` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-apps/sample-code/apps/flashcard-generator.tsx:7` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/agent-settings/components/ToolSelectorPanel.tsx:121` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
-- [ ] `packages/chat/src/agents/components/agent-widgets/chat-assistant/AssistantMessageCard.tsx:4` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `packages/chat/src/agents/components/agent-widgets/chat-assistant/UserMessageCard.tsx:13` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<p pre-wrap>{content}`
-- [ ] `features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx:130` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{mode.description}`
-- [ ] `packages/chat/src/agents/components/run-controls/SimpleRunSettings/CapabilityGrid.tsx:95` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{capability.description}`
+- [ ] `features/agent-settings/components/ToolSelectorPanel.tsx:123` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{tool.description}`
+- [ ] `features/agents/components/assignment-demo/AgentAssignmentsDemo.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{mode.description}`
 - [ ] `features/audio/voice/VoiceModal.tsx:112` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{voice.description}`
-- [ ] `features/canvas/core/CanvasRenderer.tsx:495` — **dangerouslySetInnerHTML** (review) — `dangerouslySetInnerHTML={{ __html: data.html || data }}`
-- [ ] `features/canvas/core/SavedCanvasItems.tsx:203` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/code-editor/agent-code-editor/components/parts/ProcessingOverlay.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/code-editor/components/AICodeEditor.tsx:30` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `features/code-editor/components/AICodeEditor.tsx:458` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{streamingText}`
 - [ ] `features/content-ir/sandbox/runtime/FrameMarkdown.tsx:27` — **react-markdown** (BANNED) — `react-markdown`
 - [ ] `features/content-ir/sandbox/runtime/FrameMarkdown.tsx:28` — **remark-* plugins** (BANNED) — `remark-gfm`
-- [ ] `packages/chat/src/cx-chat/components/messages/AssistantMessage.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/cx-chat/components/messages/AssistantMessage.tsx:193` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{message.content || "An error occurred"}`
-- [ ] `packages/chat/src/cx-chat/components/messages/UserMessage.tsx:333` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{textContent}`
-- [ ] `packages/chat/src/cx-conversation/AssistantMessage.tsx:13` — **MarkdownStream** (tracked) — `@/components/MarkdownStream`
-- [ ] `packages/chat/src/cx-conversation/AssistantMessage.tsx:193` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{message.content || "An error occurred"}`
-- [ ] `packages/chat/src/cx-conversation/MessageList.tsx:211` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{message.content}`
-- [ ] `packages/chat/src/cx-conversation/UserMessage.tsx:333` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{textContent}`
 - [ ] `features/cx-dashboard/components/CxDashboardRedirect.tsx:46` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{link.description}`
 - [ ] `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx:242` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{tool.description}`
 - [ ] `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx:269` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{step.description}`
 - [ ] `features/legal/wc/pd-ratings/components/landing/PdRatingsCalculatorLanding.tsx:300` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description}`
-- [ ] `features/masterwork/home/MasterworkHomePage.tsx:405` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{rb.description}`
-- [ ] `features/message-templates/components/TemplatePreviewDrawer.tsx:83` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<pre pre-wrap>{template.content || ""}`
+- [ ] `features/message-templates/components/SmartInputMessageTemplatePicker.tsx:125` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{template.content}`
 - [ ] `features/notes/components/NoteEditor.tsx:42` — **RichDocument** (tracked) — `@/features/rich-document/RichDocument`
-- [ ] `features/pricing/components/PricingGrid.tsx:95` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{PLAN_CATEGORIES[category].description}`
-- [ ] `features/pricing/components/industry/IndustryUpgrade.tsx:159` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{u.body}`
-- [ ] `features/pricing/components/industry/IndustryUpgrade.tsx:174` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{cfg.quote.body}`
+- [ ] `features/pricing/components/industry/IndustryUpgrade.tsx:165` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{u.body}`
+- [ ] `features/pricing/components/industry/IndustryUpgrade.tsx:180` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{cfg.quote.body}`
 - [ ] `features/projects/components/ProjectCard.tsx:143` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{project.description}`
 - [ ] `features/rag/components/library/ProcessingProgressDialog.tsx:376` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{s.description}`
 - [ ] `features/scope-system/components/ScopeTypeCard.tsx:65` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{scopeType.description}`
 - [ ] `features/scraper/parts/tabs/images/SEOImageViewer.tsx:276` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{currentMetadata.description}`
-- [ ] `features/surfaces/components/AgentSurfacesPanel.tsx:599` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
-- [ ] `features/surfaces/components/AgentSurfacesPanel.tsx:1201` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.description}`
-- [ ] `features/surfaces/components/ValueMappingEditor.tsx:522` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selected.description}`
-- [ ] `features/surfaces/components/ValueMappingEditor.tsx:651` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offered.description}`
-- [ ] `features/text-diff/components/DiffHistory.tsx:292` — **whitespace-pre-wrap / pre-line on a content field** (review) — `<div pre-wrap>{version.content}`
-- [ ] `features/user-lists/components/ListItemsTableView.tsx:101` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/user-lists/components/ListItemsTableView.tsx:195` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
-- [ ] `features/user-lists/components/ListMetaModal.tsx:66` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
-- [ ] `features/user-lists/components/ListsTableView.tsx:112` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{item.description}`
-- [ ] `features/user-lists/components/MobileListGrid.tsx:63` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
+- [ ] `features/surfaces/components/AgentSurfacesPanel.tsx:588` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{surface.description}`
+- [ ] `features/surfaces/components/AgentSurfacesPanel.tsx:1190` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{s.description}`
+- [ ] `features/surfaces/components/ValueMappingEditor.tsx:523` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selected.description}`
+- [ ] `features/surfaces/components/ValueMappingEditor.tsx:652` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offered.description}`
+- [ ] `features/text-diff/components/DiffHistory.tsx:292` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{version.content}`
+- [ ] `features/user-lists/components/ListItem.tsx:68` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description || item.help_text}`

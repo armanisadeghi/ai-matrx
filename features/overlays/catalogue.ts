@@ -992,8 +992,8 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  saveKitDialog: {
-    label: "Save as Kit",
+  saveTemplateDialog: {
+    label: "Save as Template",
     instanceMode: "singleton",
     isWindow: false,
   },

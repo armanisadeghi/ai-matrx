@@ -17,7 +17,7 @@
  * common-docs/policies/access-ladder.md). It used to list only the ACTIVE
  * organization's tables — a silent filter. The chosen
  * Table's details are read in the organization the Table lives in (`CustomDataRecordsScope`).
- * Contract: `features/kits/FEATURE.md` § Data model.
+ * Contract: `features/templates/FEATURE.md` § Bindings.
  */
 
 import {

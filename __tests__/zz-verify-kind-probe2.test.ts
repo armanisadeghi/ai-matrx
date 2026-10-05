@@ -40,7 +40,7 @@ function splitterRaw(stream: string, active: boolean) {
   }
   return `${n}/${stream.length}`;
 }
-const PREFIXES = ["~~", "~", "<!-- -->", "<!-- note -->", "<br>", "<b>", "<p>", "<hr/>", "-->", "\\", "*", "_", "==", "^", ":", "Answer:", "&nbsp;", "+", "|", "$", "\\(", "@", "`x` ", "[x] ", "- [ ] ", "* * *\n", "<summary>", "<?xml version=\"1.0\"?>", "<!DOCTYPE html>", "<a href='x'>", "<img src=x>", "</br>", "=>", "->", "1)", "a.", "#", "#tag ", " ", "\t"];
+const PREFIXES = ["**Result:** ", "Here is the `flashcard_set`: ", "Use `json`: ", "Done ✅ ", "Résumé: ", "<b>Cards</b>: ", "Cards<br>", "a | b ", "x ~ y ", "Price ~$5: ", "**Cards** — ", "_Cards_: ", "[link](http://a.b) ", "<kbd>x</kbd> "];
 describe("prefix probe", () => {
   it("runs", () => {
     const rows: string[] = [];

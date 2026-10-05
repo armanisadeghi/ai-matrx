@@ -1111,10 +1111,10 @@ const ShareLinkDialog = lazyOverlay(
     ),
   { ssr: false },
 );
-const SaveKitDialog = lazyOverlay(
+const SaveTemplateDialog = lazyOverlay(
   () =>
-    import("@/features/kits/components/SaveKitDialog").then((m) => ({
-      default: m.SaveKitDialog,
+    import("@/features/templates/components/SaveTemplateDialog").then((m) => ({
+      default: m.SaveTemplateDialog,
     })),
   { ssr: false },
 );
@@ -1653,8 +1653,8 @@ export default function OverlayController() {
     shareLinkDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareLinkDialog"),
     ),
-    saveKitDialog: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "saveKitDialog"),
+    saveTemplateDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "saveTemplateDialog"),
     ),
     shareModalWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "shareModalWindow"),
@@ -2093,8 +2093,8 @@ export default function OverlayController() {
     shareLinkDialog: useAppSelector((s) =>
       selectOverlayData(s, "shareLinkDialog"),
     ) as Record<string, unknown> | null,
-    saveKitDialog: useAppSelector((s) =>
-      selectOverlayData(s, "saveKitDialog"),
+    saveTemplateDialog: useAppSelector((s) =>
+      selectOverlayData(s, "saveTemplateDialog"),
     ) as Record<string, unknown> | null,
     shareModalWindow: useAppSelector((s) =>
       selectOverlayData(s, "shareModalWindow"),
@@ -7432,21 +7432,18 @@ export default function OverlayController() {
       })()}
 
       {/* TODO: review prop wiring for shareModalWindow */}
-      {/* saveKitDialog */}
+      {/* saveTemplateDialog */}
       {(() => {
-        const isOpen = isOpenById.saveKitDialog;
-        const data = dataById.saveKitDialog as
+        const isOpen = isOpenById.saveTemplateDialog;
+        const data = dataById.saveTemplateDialog as
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <SaveKitDialog
+          <SaveTemplateDialog
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "saveKitDialog" }))}
+            onClose={() => dispatch(closeOverlay({ overlayId: "saveTemplateDialog" }))}
             initialAgentId={
               typeof data?.initialAgentId === "string" ? data.initialAgentId : null
-            }
-            editKitKey={
-              typeof data?.editKitKey === "string" ? data.editKitKey : null
             }
           />
         );

@@ -771,7 +771,7 @@
   "features/image-studio/modes/edit/EditModeShell.tsx": 2,
   "features/kg-suggestions/components/HeavyHitterAcceptDialog.tsx": 1,
   "features/kg-suggestions/components/KgSuggestionRowItem.tsx": 1,
-  "features/kits/components/SaveKitDialog.tsx": 1,
+  "features/templates/components/SaveTemplateDialog.tsx": 1,
   "features/landing/components/InvitationCodeModal.tsx": 1,
   "features/landing/components/RequestAccessModal.tsx": 1,
   "features/legal/wc/pd-ratings/CasesListClient.tsx": 1,

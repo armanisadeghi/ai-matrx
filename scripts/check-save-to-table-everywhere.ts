@@ -108,7 +108,6 @@ export const OFFERED_BY: Record<string, { by: readonly string[]; why: string }> 
 export const BIRTH_HOMES: Record<string, string> = {
   "components/mardown-display/tables/SaveTableModal.tsx": "the older-store branch the saveToTable overlay opens, until the final switch",
   "components/user-generated-table-data/CreateTableModal.tsx": "the older /data home's table builder: columns typed by hand with no rows (no shape to save), retired with the older store",
-  "features/kits/installer.ts": "a kit installs the tables its manifest declares — a template, not content a person is saving",
   "features/make/MakeHome.tsx": "/make's New table: an empty table named before anything is typed — no rows, no shape to save",
 };
 

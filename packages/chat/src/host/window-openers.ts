@@ -95,9 +95,8 @@ export interface OpenRunControlsWindowOptions {
   includeAttach?: boolean;
   initialTab?: RunControlsTab;
 }
-export interface OpenSaveKitDialogOptions {
+export interface OpenSaveTemplateDialogOptions {
   initialAgentId?: string | null;
-  editKitKey?: string | null;
 }
 export interface OpenSurfaceContextInspectorOptions {
   surfaceName: string | null;
@@ -216,7 +215,7 @@ export interface ChatWindowOpeners {
   openPromptPreviewWindow: (opts: OpenPromptPreviewWindowOptions) => ChatWindowHandle;
   openQuickChatSheet: (opts?: OpenQuickChatSheetOptions) => ChatWindowHandle;
   openRunControlsWindow: (opts: OpenRunControlsWindowOptions) => ChatWindowHandle;
-  openSaveKitDialog: (opts?: OpenSaveKitDialogOptions) => void;
+  openSaveTemplateDialog: (opts?: OpenSaveTemplateDialogOptions) => void;
   openScraperWindow: (opts?: OpenScraperWindowOptions) => ChatWindowHandle;
   openScratchpadPanel: (opts?: OpenScratchpadPanelOptions) => ChatWindowHandle;
   openStructuredListManagerV2Window: (opts?: OpenStructuredListManagerV2WindowOptions) => ChatWindowHandle;
@@ -275,7 +274,7 @@ export const UNHOSTED_WINDOW_OPENERS: ChatWindowOpeners = {
   openPromptPreviewWindow: unhosted("openPromptPreviewWindow"),
   openQuickChatSheet: unhosted("openQuickChatSheet"),
   openRunControlsWindow: unhosted("openRunControlsWindow"),
-  openSaveKitDialog: unhosted("openSaveKitDialog"),
+  openSaveTemplateDialog: unhosted("openSaveTemplateDialog"),
   openScraperWindow: unhosted("openScraperWindow"),
   openScratchpadPanel: unhosted("openScratchpadPanel"),
   openStructuredListManagerV2Window: unhosted("openStructuredListManagerV2Window"),
@@ -366,8 +365,8 @@ export function useOpenQuickChatSheet() {
 export function useOpenRunControlsWindow() {
   return useOpener("openRunControlsWindow");
 }
-export function useOpenSaveKitDialog() {
-  return useOpener("openSaveKitDialog");
+export function useOpenSaveTemplateDialog() {
+  return useOpener("openSaveTemplateDialog");
 }
 export function useOpenScraperWindow() {
   return useOpener("openScraperWindow");

@@ -495,12 +495,6 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE TABLE'S OWN ORGANIZATION, read from the object. Every table lives in the record store; this asks custom.where_id_opens as the signed-in person, through the store's own client door, which reads the switch itself: with the campaign off that door refuses and this returns `unknown` with the door's own sentence, never `nowhere`.",
     },
     {
-        id: "kit-install",
-        file: "features/kits/hooks/useKitInstall.ts",
-        kind: "runtime",
-        why: "A kit (a starter set of tables a person installs from the kits page) lands its tables in the record store, so the install hook asks this organization's switch (`UNIFIED_DATA_CAMPAIGN.check`) before it offers Install and says 'could not check' rather than installing into a store that is off. Registered by lane data-tables-grid-overhaul, which found this test red on main for this one unregistered importer.",
-    },
-    {
         id: "entity-custom-fields",
         file: "features/unified-data/components/EntityCustomFields.tsx",
         kind: "runtime",

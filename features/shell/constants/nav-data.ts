@@ -21,7 +21,6 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
-import { KIT_ROUTES, KIT_WORD } from "@/features/kits/constants";
 import {
   EDU_TOOL_NAV,
   eduToolHref,
@@ -550,14 +549,6 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
     href: "/make",
     iconName: "LayoutGrid",
     description: "Make a table, form, booking page or dashboard",
-    color: "cyan",
-  },
-  {
-    // Installable bundles — tables + an agent bound to them + a workflow.
-    label: KIT_WORD.many,
-    href: KIT_ROUTES.gallery,
-    iconName: "PackagePlus",
-    description: "Install a working example: tables, an agent that reads them, and a workflow",
     color: "cyan",
   },
   {

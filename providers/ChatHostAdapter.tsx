@@ -126,7 +126,7 @@ import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow"
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
-import { useOpenSaveKitDialog } from "@/features/overlays/openers/saveKitDialog";
+import { useOpenSaveTemplateDialog } from "@/features/overlays/openers/saveTemplateDialog";
 import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
@@ -408,7 +408,7 @@ function useAppWindowOpeners(): ChatWindowOpeners {
     openPromptPreviewWindow: useOpenPromptPreviewWindow(),
     openQuickChatSheet: useOpenQuickChat(),
     openRunControlsWindow: useOpenRunControlsWindow(),
-    openSaveKitDialog: useOpenSaveKitDialog(),
+    openSaveTemplateDialog: useOpenSaveTemplateDialog(),
     openScraperWindow: useOpenScraperWindow(),
     openScratchpadPanel: useOpenScratchpadPanel(),
     openStructuredListManagerV2Window: useOpenStructuredListManagerV2Window(),

@@ -36,10 +36,6 @@ const NOT_THE_STORE = [/\bVersions\.restoreVersion\(/, /\bactions\.restoreVersio
  * count that goes UP is red.
  */
 const OPEN: Record<string, { count: number; owner: string }> = {
-  "features/kits/installer.ts": {
-    count: 5,
-    owner: "lane 8 TEMPLATES / kits — installer writes records it just placed or claimed; no person drew them",
-  },
   "features/data-tables/data-source/record-store.ts": {
     count: 4,
     owner:

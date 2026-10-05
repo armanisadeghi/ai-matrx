@@ -18,11 +18,10 @@ import { useOpenAgentShortcutQuickCreateWindow } from "../../../host/window-open
 import { useOpenAgentAdminFindUsagesWindow } from "../../../host/window-openers";
 import { useOpenAgentImportWindow } from "../../../host/window-openers";
 import { useOpenAgentInterfaceVariationsWindow } from "../../../host/window-openers";
-import { useOpenSaveKitDialog } from "../../../host/window-openers";
-import { KIT_WORD } from "@host/features/kits/constants";
+import { useOpenSaveTemplateDialog } from "../../../host/window-openers";
 
 /** The menu label is also this item's dispatch key. */
-const SAVE_AS_KIT_LABEL = `Save as ${KIT_WORD.oneLower}`;
+const SAVE_AS_TEMPLATE_LABEL = "Save as template";
 
 import { useCallback, useState } from "react";
 import { usePathname, Link } from "../../../host/navigation";
@@ -128,10 +127,10 @@ const AGENT_MANAGEMENT_ITEMS: MenuItem[] = [
   { label: "Convert to Template", icon: Shield },
   { label: "Create App", icon: AppWindow },
   { label: "Add Data Storage Support", icon: Database },
-  // Share this agent + the tables its variables read (+ the workflows that use
-  // them) as a one-click kit for the organization. The dialog says so plainly
+  // Share this agent + the tables its variables read (+ the agents that share
+  // them) as a template for the organization. The dialog says so plainly
   // when the agent reads no tables yet.
-  { label: SAVE_AS_KIT_LABEL, icon: PackagePlus },
+  { label: SAVE_AS_TEMPLATE_LABEL, icon: PackagePlus },
 ];
 
 // Global agent actions — not scoped to the current agent
@@ -251,7 +250,7 @@ export function AgentOptionsMenu({
   const openDataStorage = useOpenAgentDataStorageWindow();
   const openConvertSystem = useOpenAgentConvertSystemWindow();
   const openShortcut = useOpenAgentShortcutQuickCreateWindow();
-  const openSaveKit = useOpenSaveKitDialog();
+  const openSaveTemplate = useOpenSaveTemplateDialog();
   const openAdminFindUsages = useOpenAgentAdminFindUsagesWindow();
   const openImport = useOpenAgentImportWindow();
   const openInterfaceVariations = useOpenAgentInterfaceVariationsWindow();
@@ -450,8 +449,8 @@ export function AgentOptionsMenu({
       );
       openConvertSystem({ agentId: agentId ?? null });
       setOpen(false);
-    } else if (label === SAVE_AS_KIT_LABEL) {
-      openSaveKit({ initialAgentId: agentId ?? null });
+    } else if (label === SAVE_AS_TEMPLATE_LABEL) {
+      openSaveTemplate({ initialAgentId: agentId ?? null });
       setOpen(false);
     } else if (label === "Create Shortcut") {
       console.log("[AGENT OPTIONS MENU] Creating shortcut, Agent ID:", agentId);
@@ -798,7 +797,7 @@ function MobileMenuContent({
   const openDataStorage = useOpenAgentDataStorageWindow();
   const openConvertSystem = useOpenAgentConvertSystemWindow();
   const openShortcut = useOpenAgentShortcutQuickCreateWindow();
-  const openSaveKit = useOpenSaveKitDialog();
+  const openSaveTemplate = useOpenSaveTemplateDialog();
   const openAdminFindUsages = useOpenAgentAdminFindUsagesWindow();
   const openImport = useOpenAgentImportWindow();
   const openInterfaceVariations = useOpenAgentInterfaceVariationsWindow();
@@ -863,8 +862,8 @@ function MobileMenuContent({
     } else if (label === "Linked Agent Sync") {
       openConvertSystem({ agentId: agentId ?? null });
       onClose();
-    } else if (label === SAVE_AS_KIT_LABEL) {
-      openSaveKit({ initialAgentId: agentId ?? null });
+    } else if (label === SAVE_AS_TEMPLATE_LABEL) {
+      openSaveTemplate({ initialAgentId: agentId ?? null });
       onClose();
     } else if (label === "Create Shortcut") {
       openShortcut({ agentId: agentId ?? null });

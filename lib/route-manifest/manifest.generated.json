@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1338,
+  "routeCount": 1335,
   "routes": [
     {
       "pattern": "/",
@@ -3649,21 +3649,6 @@
       "pattern": "/kiosk/[deviceId]",
       "status": "live",
       "source": "app/(kiosk)/kiosk/[deviceId]/page.tsx"
-    },
-    {
-      "pattern": "/kits",
-      "status": "live",
-      "source": "app/(core)/kits/page.tsx"
-    },
-    {
-      "pattern": "/kits/[key]",
-      "status": "live",
-      "source": "app/(core)/kits/[key]/page.tsx"
-    },
-    {
-      "pattern": "/kits/[key]/installed",
-      "status": "live",
-      "source": "app/(core)/kits/[key]/installed/page.tsx"
     },
     {
       "pattern": "/knowledge",

@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Opener for the `saveKitDialog` overlay — "Save as kit": turn an agent whose
- * variables read the person's tables (plus those tables and workflows) into a kit
- * their organization can install. `editKitKey` reopens a saved kit's details.
+ * Opener for the `saveTemplateDialog` overlay — "Save as template": an agent whose variables read
+ * the person's tables, those tables and the agents that share them become a template their
+ * organization can install.
  *
  * Hand-maintained opener — see features/overlays/FEATURE.md.
  */
@@ -12,25 +12,22 @@ import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
-const OVERLAY_ID = "saveKitDialog" as const;
+const OVERLAY_ID = "saveTemplateDialog" as const;
 
-export interface OpenSaveKitDialogOptions {
+export interface OpenSaveTemplateDialogOptions {
   /** Start with this agent picked. */
   initialAgentId?: string | null;
-  /** Edit an existing saved kit (its details) instead of creating one. */
-  editKitKey?: string | null;
 }
 
-export function useOpenSaveKitDialog() {
+export function useOpenSaveTemplateDialog() {
   const dispatch = useAppDispatch();
   return useCallback(
-    (opts: OpenSaveKitDialogOptions = {}) => {
+    (opts: OpenSaveTemplateDialogOptions = {}) => {
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
           data: {
             initialAgentId: opts.initialAgentId ?? null,
-            editKitKey: opts.editKitKey ?? null,
           },
         }),
       );
