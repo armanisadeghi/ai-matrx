@@ -159,7 +159,9 @@ needed (*"you are focused on the wrong things"*), and otherwise did not interfer
    changed no behavior.
 6. **Rulings, not stalls — and route honestly.** A running lane never waits on a human. **Only
    four things stop a lane:** an irreversible or destructive act on real data; a security-sensitive
-   change (grants, secrets, tenant boundaries) outside its brief; a side effect the owner reserved
+   change (grants, secrets, tenant boundaries) outside its brief, and **any restriction of who may
+   do what, inside the brief or not** (a refusal, an admin- or staff-only gate, a narrower default,
+   a restrictive policy): never a ruling, only Arman's quoted approval ([law 12](/policies/the-nine-laws.md)); a side effect the owner reserved
    (money, external accounts, messaging real people, new schedules, a release); or a plan so broken
    that every path is a guess. Everything else is a ruling: decide it, ledger it with its cost if
    wrong, keep going — a wrong ruling costs visible rework; a parked lane costs the day. Agent-doable

@@ -116,23 +116,6 @@ export interface SaveKindComponentCodeArgs {
 
 /** Replace one DB-authored component body without silently overwriting drift. */
 /**
- * B-23 / DD-123 — the database refuses a component body written by anyone who
- * is not AI Matrx platform staff (`zzz_component_author_gate`, aidream
- * migration 0639), because the string gate above cannot close the
- * exfiltration class and the iframe origin boundary has not shipped yet. That
- * refusal is a SENTENCE written for the person, so it must reach them
- * verbatim instead of being wrapped in "We couldn't save ...".
- *
- * The trigger raises it with a HINT that carries the remedy ("Ask AI Matrx to
- * author or change this component for you..."). PostgREST returns that hint as
- * its own field, and dropping it leaves the reader told they may not do this
- * and not told what to do instead — a refusal without a remedy. Both halves
- * travel (V-23 finding 2).
- */
-const SHAPE_AUTHORING_REFUSAL_HEAD =
-  "Only AI Matrx staff can write shape component code right now";
-
-/**
  * 🚨 THE REQUEST NEVER REACHED THE DATABASE.
  *
  * `db.matrxserver.com` sits behind Cloudflare, and Cloudflare's managed WAF
@@ -165,15 +148,6 @@ export function edgeBlockedRefusal(error: unknown): string | null {
         (ray ? `Quote this reference when you report it: Cloudflare Ray ID ${ray.trim()}. ` : "") +
         "Ask AI Matrx to lift the filter for Shape component saves."
     );
-}
-
-function shapeAuthoringRefusal(error: unknown): string | null {
-  if (typeof error !== "object" || error === null) return null;
-  const fields = error as { message?: unknown; hint?: unknown };
-  const message = "message" in fields ? String(fields.message ?? "") : "";
-  if (!message.startsWith(SHAPE_AUTHORING_REFUSAL_HEAD)) return null;
-  const hint = "hint" in fields ? String(fields.hint ?? "").trim() : "";
-  return hint ? `${message} ${hint}` : message;
 }
 
 export async function saveKindComponentCode(
@@ -255,8 +229,6 @@ export async function saveKindComponentCode(
     if (error instanceof Error && error.message.startsWith("This component")) {
       throw error;
     }
-    const authoringRefusal = shapeAuthoringRefusal(error);
-    if (authoringRefusal) throw new Error(authoringRefusal);
     const edgeRefusal = edgeBlockedRefusal(error);
     if (edgeRefusal) throw new Error(edgeRefusal);
     throw operationFailed("save this Shape's component code", error);
