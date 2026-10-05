@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { GoogleConnectionInventory } from "@/features/marketing/google/types";
 import { createClient } from "@/utils/supabase/client";
 import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
@@ -240,6 +241,7 @@ export const propertiesSchema = z.object({
   observed_at: z.string(),
   properties: z.array(
     z.object({
+      id: z.string(),
       property: z.string(),
       permission_level: z.string().nullable(),
       matches_site: z.boolean(),
@@ -252,4 +254,52 @@ export function connectionErrorMessage(error: unknown): string {
     getUserMessage(error).trim() ||
     "Connection operation failed. Refresh to check its saved state."
   );
+}
+
+/** Keep authorized provider results in the canonical picker, including org connections. */
+export function mergeSearchConsoleProperties(
+  inventory: GoogleConnectionInventory | undefined,
+  result: z.infer<typeof propertiesSchema>,
+): GoogleConnectionInventory | undefined {
+  if (!inventory) return inventory;
+  const account = inventory.connections.find(
+    (row) => row.id === result.connection_id,
+  );
+  if (!account) return inventory;
+  const latest = account.metadata.search_console_properties_observed_at;
+  if (
+    typeof latest === "string" &&
+    Date.parse(latest) > Date.parse(result.observed_at)
+  )
+    return inventory;
+  return {
+    connections: inventory.connections.map((row) =>
+      row.id === result.connection_id
+        ? {
+            ...row,
+            metadata: {
+              ...row.metadata,
+              search_console_properties_observed_at: result.observed_at,
+            },
+          }
+        : row,
+    ),
+    resources: [
+      ...inventory.resources.filter(
+        (row) =>
+          row.connection_id !== result.connection_id ||
+          row.resource_type !== "search_console_property",
+      ),
+      ...result.properties.map((row) => ({
+        id: row.id,
+        connection_id: result.connection_id,
+        resource_type: "search_console_property" as const,
+        resource_ref: row.property,
+        display_name: row.property,
+        permission_level: row.permission_level,
+        discovered_at: result.observed_at,
+        metadata: {},
+      })),
+    ],
+  };
 }

@@ -4,6 +4,7 @@ import { DomainConnections } from "@/features/marketing/connections/DomainConnec
 import {
   connectionErrorMessage,
   propertiesSchema,
+  mergeSearchConsoleProperties,
   siteConnectionOperation,
 } from "@/features/marketing/connections/service";
 import { SitemapControls } from "@/features/marketing/connections/SitemapControls";
@@ -118,8 +119,10 @@ import { cn } from "@/lib/utils";
 import {
   useConnectGoogle,
   useGoogleConnectionInventory,
+  googleConnectionKeys,
 } from "@/features/marketing/google/hooks";
 import type {
+  GoogleConnectionInventory,
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
@@ -138,7 +141,10 @@ import {
   GOOGLE_SEARCH_CONSOLE_PROVIDER,
 } from "@/features/marketing/lib/provider-names";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsSuperAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { isJsonObject } from "@/types/json";
 import {
   listUrlChangeEvidence,
@@ -286,6 +292,8 @@ function SiteIntegrationsEditor({
   const apiBaseUrl = useAppSelector(selectResolvedBaseUrl);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const googleInventory = useGoogleConnectionInventory();
+  const userId = useAppSelector(selectUserId);
+  const [propertiesRefreshing, setPropertiesRefreshing] = useState(false);
   const connectGoogle = useConnectGoogle();
   const google = useGoogleAPI();
   // 🚨 ONE Google authorization window per PERSON — never a per-component
@@ -1248,8 +1256,13 @@ function SiteIntegrationsEditor({
             <>
               <Button
                 variant="outline"
-                disabled={!draft.googleSearchConsole.credentialRef}
+                disabled={
+                  !draft.googleSearchConsole.credentialRef ||
+                  propertiesRefreshing
+                }
+                aria-busy={propertiesRefreshing}
                 onClick={async () => {
+                  setPropertiesRefreshing(true);
                   try {
                     const result = await siteConnectionOperation(
                       site,
@@ -1260,14 +1273,24 @@ function SiteIntegrationsEditor({
                       propertiesSchema,
                     );
                     await googleInventory.refetch();
+                    queryClient.setQueryData<GoogleConnectionInventory>(
+                      [...googleConnectionKeys.inventory, userId],
+                      (current) =>
+                        mergeSearchConsoleProperties(current, result),
+                    );
                     toast.success(
                       `${result.properties.length} Search Console properties refreshed`,
                     );
                   } catch (error) {
                     toast.error(connectionErrorMessage(error));
+                  } finally {
+                    setPropertiesRefreshing(false);
                   }
                 }}
               >
+                {propertiesRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
                 Refresh Search Console properties
               </Button>
               <SitemapControls site={site} />
@@ -2213,7 +2236,9 @@ function ProviderReferenceFields({
                     ? "No properties discovered"
                     : resourcePlaceholder
                 }
-              />
+              >
+                {value.resourceRef || undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {availableResources.map((resource) => (
