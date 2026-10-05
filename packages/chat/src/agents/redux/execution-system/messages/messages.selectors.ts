@@ -367,8 +367,64 @@ export const selectConversationKeywords =
  */
 function contentForDisplay(record: MessageRecord): MessageRecord["content"] {
   return record.role === "user" && record.userContent != null
-    ? record.userContent
+    ? withServerStamps(record.userContent, record.content)
     : record.content;
+}
+
+/**
+ * THE SERVER STAMPS THE PROVIDER COPY, NOT THE PERSON'S COPY. A remark's handle
+ * (`c3`) is minted while the turn resolves and is written into `content`; the
+ * pristine `userContent` was frozen before that and never gets it. So the card
+ * showed `c1` right after send (live receipt) and lost it on reload. For every
+ * `input_remarks` item the two copies share (same `id`), keys the server added to
+ * `content` and `userContent` lacks are carried onto the displayed copy — the
+ * person's own words always win; only what the server added fills the gap.
+ * Memoized per (userContent, content) pair so renders keep reference identity.
+ */
+const stampedDisplayCache = new WeakMap<object, WeakMap<object, unknown>>();
+function isPlainRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+export function withServerStamps(
+  userContent: MessageRecord["content"] | unknown,
+  content: MessageRecord["content"] | unknown,
+): MessageRecord["content"] {
+  if (!Array.isArray(userContent) || !Array.isArray(content)) {
+    return userContent as MessageRecord["content"];
+  }
+  let byContent = stampedDisplayCache.get(userContent);
+  if (!byContent) {
+    byContent = new WeakMap();
+    stampedDisplayCache.set(userContent, byContent);
+  }
+  if (byContent.has(content)) return byContent.get(content) as MessageRecord["content"];
+  const stampedItems = new Map<string, Record<string, unknown>>();
+  for (const part of content) {
+    if (!isPlainRecord(part) || part.type !== "input_remarks" || !Array.isArray(part.items)) continue;
+    for (const item of part.items) {
+      if (isPlainRecord(item) && typeof item.id === "string") stampedItems.set(item.id, item);
+    }
+  }
+  let changed = false;
+  const merged = userContent.map((part) => {
+    if (!isPlainRecord(part) || part.type !== "input_remarks" || !Array.isArray(part.items)) return part;
+    let partChanged = false;
+    const items = part.items.map((item) => {
+      if (!isPlainRecord(item) || typeof item.id !== "string") return item;
+      const stamped = stampedItems.get(item.id);
+      if (!stamped) return item;
+      const gap = Object.keys(stamped).filter((k) => !(k in item) || item[k] == null);
+      if (gap.length === 0) return item;
+      partChanged = true;
+      return { ...item, ...Object.fromEntries(gap.map((k) => [k, stamped[k]])) };
+    });
+    if (!partChanged) return part;
+    changed = true;
+    return { ...part, items };
+  });
+  const result = (changed ? merged : userContent) as MessageRecord["content"];
+  byContent.set(content, result);
+  return result;
 }
 
 /**
