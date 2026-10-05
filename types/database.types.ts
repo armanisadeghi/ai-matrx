@@ -12916,6 +12916,18 @@ export type Database = {
           organization_id: string
         }[]
       }
+      artifact_templates: {
+        Args: { p_organization_id: string; p_purpose: string }
+        Returns: {
+          body: string
+          id: string
+          is_platform_default: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          template_version: number
+        }[]
+      }
       conversation_lane: {
         Args: {
           conversation_type: string
@@ -22870,6 +22882,10 @@ export type Database = {
         Args: { p_archive: string; p_organization_id: string; p_scope: string }
         Returns: boolean
       }
+      _space_projection: {
+        Args: { p_snapshot: Json; p_title: string }
+        Returns: string
+      }
       _write_came_through: { Args: { p_doors: string[] }; Returns: boolean }
       annotation_create: {
         Args: {
@@ -23093,6 +23109,30 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      space_snapshot_schema: { Args: never; Returns: Json }
+      space_upsert_external: {
+        Args: {
+          p_cover?: Json
+          p_external_key: string
+          p_icon?: Json
+          p_organization_id: string
+          p_origin?: string
+          p_parent_external_key?: string
+          p_parent_id?: string
+          p_position?: number
+          p_row_record_id?: string
+          p_snapshot?: Json
+          p_title: string
+        }
+        Returns: {
+          content_changed: boolean
+          content_version: number
+          created: boolean
+          placement: string
+          space_id: string
+          version: number
+        }[]
       }
       thin_autosave_versions: { Args: { p_dry_run?: boolean }; Returns: Json }
       type_settings: {
@@ -89413,6 +89453,18 @@ export type Database = {
         Args: { p_ref: string; p_type: string }
         Returns: string
       }
+      _drill_lookup_words: {
+        Args: {
+          p_column: string
+          p_ids?: string[]
+          p_limit?: number
+          p_sort?: string
+          p_token: string
+          p_where?: Json
+          p_word?: string
+        }
+        Returns: Json
+      }
       _drill_measure_filter: {
         Args: { p_base: number; p_cols: Json; p_def: Json; p_where: Json }
         Returns: Json
@@ -89442,6 +89494,11 @@ export type Database = {
         }
         Returns: Json
       }
+      _drill_present: { Args: { p_cols: Json; p_token: string }; Returns: Json }
+      _drill_present_rows: {
+        Args: { p_rows: Json; p_token: string }
+        Returns: Json
+      }
       _drill_protect: {
         Args: { p_def: Json; p_kind: string; p_question: Json }
         Returns: Json
@@ -89465,6 +89522,15 @@ export type Database = {
           p_organization_id: string
           p_question: Json
         }
+        Returns: Json
+      }
+      _drill_shown_real: { Args: { p_pres: Json }; Returns: Json }
+      _drill_word_ids: {
+        Args: { p_lookup: Json; p_word: string }
+        Returns: Json
+      }
+      _drill_words_in: {
+        Args: { p_map: Json; p_mode: string; p_token: string }
         Returns: Json
       }
       _drop_custom_field_index: {
@@ -89988,6 +90054,7 @@ export type Database = {
           search_columns: string[]
         }[]
       }
+      api_presentation: { Args: { p_token: string }; Returns: Json }
       api_reach_census: {
         Args: never
         Returns: {
