@@ -7,16 +7,22 @@
 /** Ids per request. */
 export const IN_CHUNK = 100;
 
+/** The ids de-duplicated and cut into url-sized chunks (none for an empty list). */
+export function idChunks(ids: readonly string[]): string[][] {
+  const unique = [...new Set(ids.filter(Boolean))];
+  const chunks: string[][] = [];
+  for (let i = 0; i < unique.length; i += IN_CHUNK) chunks.push(unique.slice(i, i + IN_CHUNK));
+  return chunks;
+}
+
 export type ChunkAnswer<Row, Err> = { data: Row[] | null; error: Err | null };
 
 export async function readInChunks<Row, Err = { message: string }>(
   ids: readonly string[],
   run: (chunk: string[]) => PromiseLike<ChunkAnswer<Row, Err>>,
 ): Promise<ChunkAnswer<Row, Err>> {
-  const unique = [...new Set(ids.filter(Boolean))];
-  if (unique.length === 0) return { data: [], error: null };
-  const chunks: string[][] = [];
-  for (let i = 0; i < unique.length; i += IN_CHUNK) chunks.push(unique.slice(i, i + IN_CHUNK));
+  const chunks = idChunks(ids);
+  if (chunks.length === 0) return { data: [], error: null };
   const answers = await Promise.all(chunks.map((c) => run(c)));
   const rows: Row[] = [];
   for (const a of answers) {

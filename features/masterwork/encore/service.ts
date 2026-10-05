@@ -15,6 +15,7 @@ import {
 import type { Masterwork, RulebookSource } from "../types";
 import { defaultListFilter, type ListScopeWord } from "@/lib/list-scope";
 import { MASTERWORK_RESULT_KIND } from "@/features/content-ir/kinds/masterwork-result";
+import { readInChunks } from "@/features/scopes/service/inChunks";
 
 /**
  * Encore — the Operator-facing invocation surface. Direct supabase-js per
@@ -172,9 +173,8 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
   const [mineRes, orgsRes, publicRes] = await Promise.all([
     // YOUR shelf shows everything you built, draft or released.
     builtBase().eq("created_by", userId),
-    orgIds.length > 0
-      ? releasedBase().in("organization_id", orgIds)
-      : Promise.resolve({ data: [], error: null }),
+    // ~100 ids per url, never every membership in one.
+    readInChunks(orgIds, (chunk) => releasedBase().in("organization_id", chunk)),
     releasedBase().eq("published_to_web", true),
   ]);
   for (const res of [mineRes, orgsRes, publicRes]) {

@@ -35,6 +35,18 @@ function leaves(value: unknown, out: string[], depth = 0): void {
  * `[]` when the key names nothing in this data — the caller then does nothing.
  */
 export function citedFieldProbes(data: unknown, field: string | null | undefined): string[] {
+  return [...new Set(citedFieldTexts(data, field))]
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 4)
+    .map((t) => t.slice(0, 80));
+}
+
+/**
+ * The cited place's own words, whole and in reading order — what the page
+ * shows (ringed) when the instance renders where the page cannot reach (a
+ * kind component in its sandbox frame). `[]` when the key names nothing.
+ */
+export function citedFieldTexts(data: unknown, field: string | null | undefined): string[] {
   if (!field || !data || typeof data !== "object" || Array.isArray(data)) return [];
   const record = data as Record<string, unknown>;
   const gathered: string[] = [];
@@ -52,8 +64,5 @@ export function citedFieldProbes(data: unknown, field: string | null | undefined
   } else if (field in record && !isSkipped(field)) {
     leaves(record[field], gathered);
   }
-  return [...new Set(gathered)]
-    .sort((a, b) => b.length - a.length)
-    .slice(0, 4)
-    .map((t) => t.slice(0, 80));
+  return [...new Set(gathered)];
 }

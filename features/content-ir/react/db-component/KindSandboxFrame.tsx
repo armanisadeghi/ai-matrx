@@ -67,6 +67,13 @@ export const KIND_SANDBOX_ROUTE = "/kind-sandbox";
 const INITIAL_HEIGHT = 320;
 
 /**
+ * A frame that has said nothing this long after mount never loaded (a blocked
+ * subframe, a failed bundle): the reader is told, with a retry — never a blank
+ * box that looks like an empty result.
+ */
+const SILENT_FRAME_MS = 8_000;
+
+/**
  * THE FRAME'S ACCESSIBLE NAME (S3). An iframe with no name is announced as
  * "frame" and a reader moving by landmarks has no idea what they have entered.
  * The row's own label is the honest name; failing that the kind key, spelled
@@ -257,6 +264,16 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     const answered = React.useRef<Set<string>>(new Set());
     const inFlight = React.useRef<Set<string>>(new Set());
     const [height, setHeight] = React.useState(INITIAL_HEIGHT);
+    // Did the frame ever speak? Until it does, after SILENT_FRAME_MS, say so.
+    const [heard, setHeard] = React.useState(false);
+    const [silent, setSilent] = React.useState(false);
+    const [frameAttempt, setFrameAttempt] = React.useState(0);
+    React.useEffect(() => {
+        if (heard) return;
+        setSilent(false);
+        const timer = window.setTimeout(() => setSilent(true), SILENT_FRAME_MS);
+        return () => window.clearTimeout(timer);
+    }, [heard, frameAttempt]);
     const [contentHeight, setContentHeight] = React.useState(INITIAL_HEIGHT);
     const [expanded, setExpanded] = React.useState(false);
     const [oversize, setOversize] = React.useState<string | null>(null);
@@ -333,6 +350,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
             return;
         }
         const message = checked.message;
+        setHeard(true);
         switch (message.type) {
             case "matrx:sandbox:ready":
                 break;
@@ -597,6 +615,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                 style={{ overflow: "hidden", minWidth: 0, height: decision.height }}
             >
                 <iframe
+                    key={frameAttempt}
                     ref={frameRef}
                     src={KIND_SANDBOX_ROUTE}
                     // NEVER allow-same-origin: with it the frame could script this
@@ -636,6 +655,22 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                     </button>
                     <span>{decision.sentence}</span>
                 </div>
+            ) : null}
+            {silent && !heard ? (
+                <ErrorNotice
+                    size="inline"
+                    className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-muted-foreground"
+                    message="This view did not load."
+                    actions={
+                        <button
+                            type="button"
+                            onClick={() => setFrameAttempt((n) => n + 1)}
+                            className="rounded-md border border-border px-2 py-1 font-medium text-foreground hover:bg-accent"
+                        >
+                            Try again
+                        </button>
+                    }
+                />
             ) : null}
             {oversize ? (
                 <ErrorNotice size="inline" className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-muted-foreground" message={oversize} />

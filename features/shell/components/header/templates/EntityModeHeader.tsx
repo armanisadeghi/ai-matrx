@@ -457,7 +457,14 @@ export function EntityModeHeader({
           <>
             {/* Desktop: extras + declarative actions as tap targets */}
             <div className="hidden sm:flex items-center">
-              {right}
+              {/* `right` extras sit beside tap targets: one that is not itself
+                  a tap control adds its own 3px half-gap (styles/shell.css,
+                  [data-header-extra]). */}
+              {right != null && right !== false ? (
+                <span data-header-extra className="flex min-w-0 items-center">
+                  {right}
+                </span>
+              ) : null}
               {actions
                 ?.filter((a) => !a.phoneOnly)
                 .map((a) => (

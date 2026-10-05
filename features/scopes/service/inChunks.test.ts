@@ -52,3 +52,19 @@ describe("scopesService.getScopeTree", () => {
     expect(src).not.toMatch(/\.in\(\s*"organization_id",\s*orgIds\s*\)/);
   });
 });
+
+describe("every read over ALL of a person's memberships goes in chunks", () => {
+  // The same class as the scopes boot read: a membership list put whole into one GET url.
+  const root = join(__dirname, "..", "..", "..");
+  const sites = [
+    "features/organizations/service.ts",
+    "features/knowledge/hub/tags/tagApi.ts",
+    "features/agents/decision-review/service.ts",
+    "features/masterwork/encore/service.ts",
+  ];
+  it.each(sites)("%s never sends the whole org id list in one .in()", (rel) => {
+    const src = readFileSync(join(root, rel), "utf8");
+    expect(src).toMatch(/readInChunks\(|idChunks\(/);
+    expect(src).not.toMatch(/\.in\(\s*"(id|organization_id)",\s*(orgIds|organizationIds)(\s*\?\?\s*\[\])?\s*\)/);
+  });
+});

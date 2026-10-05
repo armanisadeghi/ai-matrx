@@ -1,4 +1,4 @@
-import { citedFieldProbes } from "../citedField";
+import { citedFieldProbes, citedFieldTexts } from "../citedField";
 
 const data = {
   __kind: "flashcard_set",
@@ -24,5 +24,17 @@ describe("citedFieldProbes", () => {
   });
   it("never offers the trust envelope", () => {
     expect(citedFieldProbes(data, "trust")).toEqual([]);
+  });
+});
+
+describe("citedFieldTexts (shown ringed when the instance renders in its sandbox frame)", () => {
+  it("is the cited place's words, whole and in reading order", () => {
+    expect(citedFieldTexts(data, "cards-1")).toEqual(["What is the powerhouse of the cell?", "Mitochondria"]);
+    expect(citedFieldTexts(data, "summary")).toEqual(["Cell biology"]);
+  });
+  it("never truncates a long field (the probes do)", () => {
+    const long = "x".repeat(200);
+    expect(citedFieldTexts({ summary_text: long }, "summary")).toEqual([long]);
+    expect(citedFieldProbes({ summary_text: long }, "summary")[0]).toHaveLength(80);
   });
 });

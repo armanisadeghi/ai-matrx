@@ -19,6 +19,7 @@ import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import { getUserOrganizations } from "@/features/organizations/service";
 import { refusalMessage } from "@/features/knowledge/hub/triage/triageApi";
+import { idChunks, readInChunks } from "@/features/scopes/service/inChunks";
 
 export interface HubTag {
   /** The tag's id (what `within` filters by). */
@@ -67,18 +68,24 @@ interface TagRow {
 async function myTags(): Promise<TagRow[]> {
   const orgIds = (await getUserOrganizations()).map((o) => o.id);
   if (!orgIds.length) return [];
-  return (await readAllRows(
-    ({ from, to }) =>
-      supabase
-        .schema("platform")
-        .from("tag")
-        .select("id, name, slug, organization_id", { count: "exact" })
-        .in("organization_id", orgIds)
-        .is("deleted_at", null)
-        .order("id", { ascending: true })
-        .range(from, to),
-    { label: "platform.tag (my tags)" },
-  )) as TagRow[];
+  // A person in hundreds of organizations: ~100 ids per url, never every id in one.
+  const perChunk = await Promise.all(
+    idChunks(orgIds).map((chunk) =>
+      readAllRows(
+        ({ from, to }) =>
+          supabase
+            .schema("platform")
+            .from("tag")
+            .select("id, name, slug, organization_id", { count: "exact" })
+            .in("organization_id", chunk)
+            .is("deleted_at", null)
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "platform.tag (my tags)" },
+      ),
+    ),
+  );
+  return perChunk.flat() as TagRow[];
 }
 
 const toTag = (r: TagRow, count = 0): HubTag => ({

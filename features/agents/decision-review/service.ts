@@ -28,6 +28,7 @@ import {
   type JudgeVerdictRow,
   type ReviewItem,
 } from "./queue";
+import { idChunks } from "@/features/scopes/service/inChunks";
 
 export type DecisionCalibrationReport =
   components["schemas"]["DecisionCalibrationReport"];
@@ -114,34 +115,45 @@ export async function loadQueue(
   filters: QueueFilters,
 ): Promise<ReviewItem[]> {
   const organizationIds = scope.agentId ? null : await myOrganizationIds();
-  const base = createClient()
-    .schema("platform")
-    .from("judge_verdict")
-    .select(ITEM_COLUMNS)
-    .eq("subject_kind", DECISION_SUBJECT_KIND)
-    .is("deleted_at", null);
-  let query = scope.agentId
-    ? base.eq("judge_key", decisionJudgeKey(scope.agentId))
-    : base.in("organization_id", organizationIds ?? []);
-  if (filters.source === "model") query = query.like("judge_key", "model:%");
-  if (filters.source === "workflow") {
-    query = query.or("judge_key.like.workflow_node:*,metadata->>workflow_run_id.not.is.null");
-  }
-  if (filters.source === "agent") {
-    query = query.like("judge_key", "agent:%").is("metadata->>workflow_run_id", null);
-  }
-  if (filters.status === "unlabeled") query = query.is("authority_verdict", null);
-  if (filters.status === "labeled") query = query.not("authority_verdict", "is", null);
-  if (filters.question) query = query.eq("question", filters.question);
-  if (filters.model) query = query.eq("model", filters.model);
-  if (filters.version != null) query = query.eq("judge_version", filters.version);
-  if (filters.method) query = query.eq("metadata->>method", filters.method);
-  const { data, error } = await query
-    .order("confidence", { ascending: true, nullsFirst: true })
-    .order("created_at", { ascending: false })
-    .limit(QUEUE_PAGE_SIZE);
-  if (error) throw error;
-  return orderQueue(((data ?? []) as JudgeVerdictRow[]).map(readReviewItem));
+  const client = createClient();
+  // "My organizations" can be hundreds: ~100 ids per url, never every id in one. Each chunk
+  // is its own page; the merged rows are ordered and cut to one page below.
+  const scopes: Array<string[] | null> = scope.agentId ? [null] : idChunks(organizationIds ?? []);
+  const answers = await Promise.all(
+    scopes.map((chunk) => {
+      const base = client
+        .schema("platform")
+        .from("judge_verdict")
+        .select(ITEM_COLUMNS)
+        .eq("subject_kind", DECISION_SUBJECT_KIND)
+        .is("deleted_at", null);
+      let query = chunk === null
+        ? base.eq("judge_key", decisionJudgeKey(scope.agentId as string))
+        : base.in("organization_id", chunk);
+      if (filters.source === "model") query = query.like("judge_key", "model:%");
+      if (filters.source === "workflow") {
+        query = query.or("judge_key.like.workflow_node:*,metadata->>workflow_run_id.not.is.null");
+      }
+      if (filters.source === "agent") {
+        query = query.like("judge_key", "agent:%").is("metadata->>workflow_run_id", null);
+      }
+      if (filters.status === "unlabeled") query = query.is("authority_verdict", null);
+      if (filters.status === "labeled") query = query.not("authority_verdict", "is", null);
+      if (filters.question) query = query.eq("question", filters.question);
+      if (filters.model) query = query.eq("model", filters.model);
+      if (filters.version != null) query = query.eq("judge_version", filters.version);
+      if (filters.method) query = query.eq("metadata->>method", filters.method);
+      return query
+        .order("confidence", { ascending: true, nullsFirst: true })
+        .order("created_at", { ascending: false })
+        .limit(QUEUE_PAGE_SIZE);
+    }),
+  );
+  const failed = answers.find((a) => a.error);
+  if (failed?.error) throw failed.error;
+  const data = answers.flatMap((a) => a.data ?? []);
+  const ordered = orderQueue((data as JudgeVerdictRow[]).map(readReviewItem));
+  return scopes.length > 1 ? ordered.slice(0, QUEUE_PAGE_SIZE) : ordered;
 }
 
 export interface QueueFacets {
@@ -157,25 +169,33 @@ export interface QueueFacets {
 export async function loadFacets(scope: QueueScope): Promise<QueueFacets> {
   const client = createClient();
   const organizationIds = scope.agentId ? null : await myOrganizationIds();
-  const rows = await readAllRows(
-    ({ from, to }) => {
-      const base = client
-        .schema("platform")
-        .from("judge_verdict")
-        .select("id, question, model, judge_version, authority_verdict, metadata", {
-          count: "exact",
-        });
-      const scoped = scope.agentId
-        ? base.eq("judge_key", decisionJudgeKey(scope.agentId))
-        : base.in("organization_id", organizationIds ?? []);
-      return scoped
-        .eq("subject_kind", DECISION_SUBJECT_KIND)
-        .is("deleted_at", null)
-        .order("id", { ascending: true })
-        .range(from, to);
-    },
-    { label: "platform.judge_verdict (decision answers)" },
-  );
+  // "My organizations" can be hundreds: ~100 ids per url, never every id in one.
+  const scopes: Array<string[] | null> = scope.agentId ? [null] : idChunks(organizationIds ?? []);
+  const rows = (
+    await Promise.all(
+      scopes.map((chunk) =>
+        readAllRows(
+          ({ from, to }) => {
+            const base = client
+              .schema("platform")
+              .from("judge_verdict")
+              .select("id, question, model, judge_version, authority_verdict, metadata", {
+                count: "exact",
+              });
+            const scoped = chunk === null
+              ? base.eq("judge_key", decisionJudgeKey(scope.agentId as string))
+              : base.in("organization_id", chunk);
+            return scoped
+              .eq("subject_kind", DECISION_SUBJECT_KIND)
+              .is("deleted_at", null)
+              .order("id", { ascending: true })
+              .range(from, to);
+          },
+          { label: "platform.judge_verdict (decision answers)" },
+        ),
+      ),
+    )
+  ).flat();
   const questions = new Set<string>();
   const models = new Set<string>();
   const methods = new Set<string>();

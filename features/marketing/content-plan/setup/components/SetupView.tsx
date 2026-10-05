@@ -2080,7 +2080,7 @@ export function SetupView() {
 
         {(() => {
           const shapeColumn = (
-            <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
+            <div className="bg-card md:row-span-2 md:min-h-0 @5xl:row-span-1">
               {loading ? (
                 <ColumnSkeleton rows={4} />
               ) : (
@@ -2275,7 +2275,7 @@ export function SetupView() {
           );
 
           const previewColumn = (
-            <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
+            <div className="bg-card md:col-start-2 md:min-h-0 @5xl:col-start-3 @5xl:row-start-1">
               {loading ? (
                 <ColumnSkeleton rows={8} />
               ) : expanded && preview ? (
@@ -2308,16 +2308,22 @@ export function SetupView() {
               menuLabel="Setup sections"
               // Desktop is the EXISTING grid, verbatim — each column owns its
               // own scroll. Zero change above md.
+              // The three-column step is a CONTAINER query, never a viewport
+              // one: with the chat panel open a 1440px window leaves this
+              // workspace ~716px, and the viewport `xl:` grid squeezed the
+              // work order to ~40px between two fixed columns (2026-10-05).
               desktop={
-                <div
-                  className={
-                    "grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)] grid-rows-[minmax(0,auto)_minmax(0,1fr)] gap-px overflow-hidden bg-border " +
-                    "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
-                  }
-                >
-                  {shapeColumn}
-                  {workOrderColumn}
-                  {previewColumn}
+                <div className="@container flex min-h-0 flex-1 flex-col">
+                  <div
+                    className={
+                      "grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)] grid-rows-[minmax(0,auto)_minmax(0,1fr)] gap-px overflow-hidden bg-border " +
+                      "@5xl:grid-cols-[17rem_minmax(0,1fr)_25rem] @5xl:grid-rows-1"
+                    }
+                  >
+                    {shapeColumn}
+                    {workOrderColumn}
+                    {previewColumn}
+                  </div>
                 </div>
               }
               // Phone: the work order IS the workhorse, so it is the main

@@ -53,6 +53,7 @@ import {
 import { emailErrorMessage } from "@/lib/email/error-message";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { makeCreatedOrganizationActive } from "./madeOrganizationIsActive";
+import { readInChunks } from "@/features/scopes/service/inChunks";
 
 // ============================================================================
 // Organization CRUD Operations
@@ -412,15 +413,21 @@ export async function getUserOrganizations(
   // Resolve the org rows (public table — direct read, RLS-scoped).
   // THE ARCHIVED-ITEMS LAW: the default HIDES archived organizations, and the
   // reveal is this one parameter — never a literal predicate nothing can flip.
-  let orgQuery = supabase
-    .schema("iam")
-    .from("organizations")
-    .select("*")
-    .in("id", orgIds);
-  if (archiveFilter === "active") orgQuery = orgQuery.is("archived_at", null);
-  else if (archiveFilter === "archived")
-    orgQuery = orgQuery.not("archived_at", "is", null);
-  const { data: orgRows, error: orgsError } = await orgQuery;
+  // ONE GET url can carry ~100 ids, not a person's 970 memberships: read in chunks.
+  const { data: orgRows, error: orgsError } = await readInChunks(
+    orgIds,
+    (chunk) => {
+      let orgQuery = supabase
+        .schema("iam")
+        .from("organizations")
+        .select("*")
+        .in("id", chunk);
+      if (archiveFilter === "active") orgQuery = orgQuery.is("archived_at", null);
+      else if (archiveFilter === "archived")
+        orgQuery = orgQuery.not("archived_at", "is", null);
+      return orgQuery;
+    },
+  );
   if (orgsError) throw pgErrorToError(orgsError);
 
   // Batch member counts — one round-trip instead of N.
