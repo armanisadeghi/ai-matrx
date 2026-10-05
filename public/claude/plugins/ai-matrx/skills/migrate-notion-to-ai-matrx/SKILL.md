@@ -85,13 +85,27 @@ Each lands on its row's discussion with the original author and date leading it;
 a comment already there is left alone. If the Notion MCP is not connected, tell them comments
 stay in Notion and offer to bring them once it is.
 
+## 2c. Bring the page templates
+
+Notion's export leaves out database templates ("New post" with preset properties and a body
+outline). If the Notion MCP is connected, read each database's templates with it and declare each
+one on its table, values by column name, the body as the page-content column's value:
+
+```
+tables action:"create_row_template" table:<table id> name:"New Instagram post"
+       values:{"Status": "Idea", "Platform": ["Instagram"], "Page content": "## Hook\n\n## Script\n\n## Hashtags"}
+```
+
+The same name again changes it. In AI Matrx they appear as "From template" beside "New record";
+`create_row` with `template:"<name>"` makes a row from one.
+
 ## 3. Show them
 
 Give them, in plain words:
 1. The count table (every database ✓ or the difference and why).
 2. The notes, grouped, each with what to do (usually nothing).
-3. What did not come over and why: page templates (AI Matrx is adding row templates), comments
-   when the Notion MCP was not connected, and linked database copies (they became views of the
+3. What did not come over and why: page templates and comments when the Notion MCP was not
+   connected, and linked database copies (they became views of the
    one table).
 4. Where to look: AI Matrx → Data (their tables are there, each with its views).
 
