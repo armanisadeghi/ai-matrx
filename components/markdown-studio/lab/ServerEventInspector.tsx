@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { RichContent } from "@/components/rich-content/RichContent";
 import MarkdownStream from "@/components/MarkdownStream";
 import type {
   TypedStreamEvent,
@@ -608,9 +609,9 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                       <code className="font-mono">MarkdownStream</code>{" "}
                       (client-side parser, no API).
                     </p>
-                    <MarkdownStream imagePolicy="self"
-                      content={content}
-                      isStreamActive={false}
+                    <RichContent level="full" imagePolicy="self"
+                      source={content}
+                      isStreaming={false}
                       hideCopyButton={false}
                       allowFullScreenEditor={false}
                     />
