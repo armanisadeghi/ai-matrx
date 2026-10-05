@@ -52,12 +52,7 @@ describe("org chart health", () => {
       stalled: ["loose"],
       spread: ["w1"],
       open_position: ["seat"],
-      not_on_team: ["loose"],
     });
-  });
-
-  it("a conductor at the top, or a box with reports, is not 'not on a team'", () => {
-    expect(run(3).find((h) => h.id === "not_on_team")?.keys).toEqual(["loose"]);
   });
 
   it("without the spread knob the spread check is skipped, not guessed", () => {

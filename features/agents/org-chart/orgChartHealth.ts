@@ -14,8 +14,7 @@ export type HealthIssueId =
   | "stalled"
   | "loop"
   | "spread"
-  | "open_position"
-  | "not_on_team";
+  | "open_position";
 
 export interface HealthIssue {
   id: HealthIssueId;
@@ -34,7 +33,6 @@ const META: Record<HealthIssueId, { label: string; hint: string; serious: boolea
   loop: { label: "Loop", hint: "Sits above itself, so the chart stops there", serious: true },
   spread: { label: "Spread thin", hint: "On many teams at once", serious: true },
   open_position: { label: "Open position", hint: "A seat nobody fills yet", serious: false },
-  not_on_team: { label: "Not on a team", hint: "An agent with no manager and no reports", serious: false },
 };
 
 export function orgChartHealth(
@@ -49,7 +47,7 @@ export function orgChartHealth(
   const keys = new Map<HealthIssueId, string[]>();
   const add = (id: HealthIssueId, key: string) => keys.set(id, [...(keys.get(id) ?? []), key]);
 
-  const walk = (n: OrgChartTreeNode<AgentOrgNodeData>, depth: number) => {
+  const walk = (n: OrgChartTreeNode<AgentOrgNodeData>) => {
     const d = n.data;
     if (d.unavailable) add("couldnt_load", n.key);
     if (d.loop) add("loop", n.key);
@@ -58,12 +56,11 @@ export function orgChartHealth(
       if (a?.state === "failed") add("failing", n.key);
       if (a?.state === "stalled") add("stalled", n.key);
       if (opts.spreadWarnAt !== null && d.otherPlacements + 1 >= opts.spreadWarnAt) add("spread", n.key);
-      if (depth === 0 && !d.isConductor && n.children.length === 0) add("not_on_team", n.key);
     }
     if (d.boxType === "position" && opts.isOpenPosition(d.entityId)) add("open_position", n.key);
-    n.children.forEach((c) => walk(c, depth + 1));
+    n.children.forEach(walk);
   };
-  forest.forEach((r) => walk(r, 0));
+  forest.forEach(walk);
 
   return (Object.keys(META) as HealthIssueId[])
     .filter((id) => keys.has(id))
