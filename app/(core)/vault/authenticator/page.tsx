@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AuthenticatorRouteHeader } from "@/features/secrets/components/authenticator/AuthenticatorRouteHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { AuthenticatorWorkspace } from "@/features/secrets/components/authenticator/AuthenticatorWorkspace";
 
 /**
@@ -18,9 +17,11 @@ export default async function AuthenticatorRoute() {
 
   return (
     <>
-      <PageHeader>
-        <AuthenticatorRouteHeader />
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/vault"
+        parents={[{ label: "Vault", href: "/vault" }]}
+        record={{ name: "Authenticator" }}
+      />
       <AuthenticatorWorkspace />
     </>
   );
