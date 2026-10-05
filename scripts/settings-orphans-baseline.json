@@ -41,7 +41,7 @@
       ]
     },
     "esign.campaign": {
-      "owner": "platform/esign",
+      "owner": "content/esign",
       "program": "HR program (spec-first seed; consumers unbuilt)",
       "keys": [
         "auto_close_days",
@@ -49,14 +49,14 @@
       ]
     },
     "esign.decline": {
-      "owner": "platform/esign",
+      "owner": "content/esign",
       "program": "HR program (spec-first seed; consumers unbuilt)",
       "keys": [
         "require_reason"
       ]
     },
     "esign.outsider": {
-      "owner": "platform/esign",
+      "owner": "content/esign",
       "program": "HR program (spec-first seed; consumers unbuilt)",
       "keys": [
         "code.length",
@@ -90,14 +90,14 @@
       ]
     },
     "esign.provider": {
-      "owner": "platform/esign",
+      "owner": "content/esign",
       "program": "HR program (spec-first seed; consumers unbuilt)",
       "keys": [
         "binding"
       ]
     },
     "esign.void": {
-      "owner": "platform/esign",
+      "owner": "content/esign",
       "program": "HR program (spec-first seed; consumers unbuilt)",
       "keys": [
         "require_reason"
