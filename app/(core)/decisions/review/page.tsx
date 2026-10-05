@@ -1,4 +1,4 @@
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { ReviewQueue } from "@/features/agents/decision-review/components/ReviewQueue";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -26,9 +26,13 @@ export default async function DecisionsReviewRoute({
   const initialSource = SOURCES.find((s) => s === source) ?? null;
   return (
     <>
-      <PageHeader>
-        <span className="text-sm font-medium text-foreground">Review answers</span>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/decisions"
+        parents={[
+          { label: "Decisions", href: "/decisions" },
+        ]}
+        record={{ name: "Review answers" }}
+      />
       <div className="h-full overflow-hidden">
         <ReviewQueue initialSource={initialSource} />
       </div>

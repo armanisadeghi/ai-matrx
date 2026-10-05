@@ -406,18 +406,16 @@ function SectionHeader({
     <div className="flex items-baseline gap-2 px-1">
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-foreground/60" />
-        <h3 className="type-meta font-semibold uppercase tracking-wider text-foreground/70">
+        <h3
+          className="type-meta font-semibold uppercase tracking-wider text-foreground/70"
+          title={description}
+        >
           {title}
         </h3>
       </div>
       <span className="type-meta tabular-nums text-muted-foreground">
         {count}
       </span>
-      {description && (
-        <span className="type-meta text-muted-foreground/70 hidden sm:inline">
-          · {description}
-        </span>
-      )}
     </div>
   );
 }

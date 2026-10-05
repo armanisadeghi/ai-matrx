@@ -8,11 +8,9 @@
 // routes here.
 
 import { Suspense } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
@@ -28,18 +26,13 @@ export default async function NewRulebookRoute() {
   if (!isAuthenticated) redirect("/masterwork");
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <Link
-            href="/masterwork"
-            className="-ml-2 inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            aria-label="Back to Masterwork"
-          >
-            <ChevronLeft className="h-4 w-4 shrink-0" />
-            <span className="font-medium">Masterwork</span>
-          </Link>
-        </div>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/masterwork"
+        parents={[
+          { label: "Masterwork", href: "/masterwork" },
+        ]}
+        record={{ name: "New rulebook" }}
+      />
       <div className="h-full w-full overflow-y-auto bg-textured pt-[var(--shell-header-h,2.75rem)]">
         <Suspense fallback={null}>
           <NewRulebookFlow />

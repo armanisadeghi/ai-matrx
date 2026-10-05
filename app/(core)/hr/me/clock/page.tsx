@@ -5,7 +5,7 @@
 // The body owns its own scroll chain — `flex flex-col` all the way down to the `min-h-0 flex-1`
 // scroller, which is the only shape `pnpm check:scroll-chain` accepts.
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyClockSurface } from "@/features/hr/time/clock/MyClockSurface";
 import {
   mockCaseFromParam,
@@ -21,9 +21,14 @@ export default async function MyClockPage({
 
   return (
     <>
-      <PageHeader>
-        <span className="text-sm font-medium text-foreground">My time clock</span>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/hr/me"
+        parents={[
+          { label: "HR", href: "/hr" },
+          { label: "My info", href: "/hr/me" },
+        ]}
+        record={{ name: "My time clock" }}
+      />
       <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <MyClockSurface

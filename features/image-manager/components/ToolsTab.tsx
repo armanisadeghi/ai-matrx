@@ -383,13 +383,13 @@ function ToolGroupHeader({
     <div className="border-t border-border pt-4 space-y-1">
       <div className="flex items-center gap-2">
         <FlaskConical className="h-3.5 w-3.5 text-amber-500" />
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3
+          className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          title={description}
+        >
           {label}
         </h3>
       </div>
-      <p className="text-[11px] text-muted-foreground/80 leading-snug">
-        {description}
-      </p>
     </div>
   );
 }

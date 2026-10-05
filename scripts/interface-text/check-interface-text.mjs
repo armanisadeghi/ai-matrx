@@ -305,7 +305,7 @@ export function scanSource(file, source) {
         for (const t of attrTexts(a)) {
           where = `${tag}.${name}`;
           checkText(a, t, kind);
-          if (name === "description" && HEADER_COMPONENT.test(tag) && collapse(t).length >= 12)
+          if (name === "description" && HEADER_COMPONENT.test(tag) && !TOOLTIP_HOSTS.has(`${tag}.${name}`) && collapse(t).length >= 12)
             push("page-description", a, t, `<${tag} description=…> renders a sentence under a title`);
         }
       }

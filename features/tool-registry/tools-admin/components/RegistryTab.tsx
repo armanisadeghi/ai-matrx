@@ -87,14 +87,13 @@ function SectionHeader({
         <span className="mt-0.5 text-muted-foreground">{icon}</span>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium">{title}</h3>
+            <h3 className="text-sm font-medium" title={description}>{title}</h3>
             {typeof count === "number" && (
               <Badge variant="outline" className="text-[10px]">
                 {count}
               </Badge>
             )}
           </div>
-          <p className="text-[11px] text-muted-foreground">{description}</p>
         </div>
       </div>
       {action}
