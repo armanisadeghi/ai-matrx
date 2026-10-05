@@ -324,7 +324,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
   }, [entries]);
 
   return (
-    <ToolConversationProvider>
+    <ToolConversationProvider conversationId={conversationId}>
       <FullScreenOverlay
         isOpen={isOpen}
         onClose={onClose}
