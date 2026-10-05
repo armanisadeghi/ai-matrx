@@ -354,7 +354,8 @@ function variableHighlighter(getVariables: () => readonly DeclaredVariable[] | n
 
 export const setFindHighlights = StateEffect.define<Array<{ from: number; to: number; current: boolean }>>();
 
-const findField = StateField.define<DecorationSet>({
+/** Find highlights only decorate matches, so the RAW source view keeps them too. */
+export const findField = StateField.define<DecorationSet>({
   create: () => Decoration.none,
   update: (value, tr) => {
     let next = value.map(tr.changes);

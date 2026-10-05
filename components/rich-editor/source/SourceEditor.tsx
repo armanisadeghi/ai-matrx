@@ -50,6 +50,7 @@ import { richEditorTheme, richHighlight } from "./cm-theme";
 import {
   IslandPortalRegistry,
   livePreviewExtensions,
+  findField,
   setFindHighlights,
   setIslandRendering,
 } from "./live-preview";
@@ -255,7 +256,7 @@ export function SourceEditor({
           EditorView.editable.of(!context.readOnly),
           EditorView.contentAttributes.of({ "aria-label": "Document source", spellcheck: "true" }),
           autocompletion({ override: [variableCompletion], activateOnTyping: true }),
-          ...(raw ? [] : [livePreviewExtensions({ registry, getVariables: () => getVariables() })]),
+          ...(raw ? [findField] : [livePreviewExtensions({ registry, getVariables: () => getVariables() })]),
           EditorView.domEventHandlers({
             paste: (event, v) => {
               const html = event.clipboardData?.getData("text/html");

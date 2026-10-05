@@ -592,6 +592,10 @@ export default function RichEditorImpl({
         focusMode={focusMode}
         renderIslands={renderIslands}
         handleRef={handle}
+        // Source is the model's exact bytes, nothing hidden or styled (Arman,
+        // 2026-10-05: prompt engineers must see the raw output). Visual is the
+        // formatted view; the Studio keeps its own Raw | Formatted switch.
+        raw
       />
     );
 
