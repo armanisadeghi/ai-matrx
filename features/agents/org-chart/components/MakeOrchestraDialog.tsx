@@ -70,6 +70,8 @@ function Body({
   const [name, setName] = useState(request.suggestedName);
   const [step, setStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Made, with problems: they stay on screen until read (never a toast that vanishes). */
+  const [made, setMade] = useState<{ conductorId: string; warnings: string[] } | null>(null);
   const n = request.memberIds.length;
 
   const make = async () => {
@@ -104,8 +106,30 @@ function Body({
       if (!sync.ok) warnings.push(`Its prompt still needs its team: ${sync.error ?? "sync failed"}. Use Sync agent listings in the Orchestra.`);
     }
     setStep(null);
-    onMade(conductorId, warnings);
+    if (warnings.length) setMade({ conductorId, warnings });
+    else onMade(conductorId, []);
   };
+
+  if (made) {
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Made, with {made.warnings.length === 1 ? "a problem" : "problems"}</DialogTitle>
+          <DialogDescription>The leader exists. These steps did not finish:</DialogDescription>
+        </DialogHeader>
+        <ul className="flex list-disc flex-col gap-1 pl-5 text-xs text-destructive">
+          {made.warnings.map((w, i) => (
+            <li key={i}>{w}</li>
+          ))}
+        </ul>
+        <div className="flex justify-end">
+          <Button variant="primary" onClick={() => onMade(made.conductorId, made.warnings)}>
+            Show it on the chart
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

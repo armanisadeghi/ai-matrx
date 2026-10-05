@@ -985,8 +985,7 @@ export function AgentOrgChartView({
         onClose={() => setMaking(null)}
         onMade={(conductorId, warnings) => {
           setMaking(null);
-          if (warnings.length) toast.warning(warnings.join(" "));
-          else toast.success("Orchestra made.");
+          if (!warnings.length) toast.success("Orchestra made.");
           setSelection([]);
           const params = new URLSearchParams(searchParams.toString());
           params.set("focus", boxId("agent", conductorId));
