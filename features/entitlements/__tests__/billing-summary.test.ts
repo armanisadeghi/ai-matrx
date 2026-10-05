@@ -1,5 +1,8 @@
-import { billingStatusLabel, periodEndLabel, priceLabel } from "../billing-summary";
+import { billingStatusLabel, periodEndLabel, priceLabel, readBillingSummary } from "../billing-summary";
 import { selectPreferredBillingSubscription } from "../billing-subscription-selection";
+
+const mockCreateClient = jest.fn();
+jest.mock("@/utils/supabase/client", () => ({ createClient: () => mockCreateClient() }));
 
 describe("billing summary presentation contract", () => {
   it("names payment-recovery states without calling them active", () => {
@@ -31,6 +34,28 @@ describe("billing summary presentation contract", () => {
       { id: "sub-canceled", status: "canceled", current_period_end: "2026-08-01T00:00:00.000Z", updated_at: "2026-08-02T00:00:00.000Z" },
     ]);
     expect(selected?.id).toBe("sub-canceled");
+  });
+
+  it("reads terminal-only history with a fresh query instead of retaining nonterminal filters", async () => {
+    const terminalRow = { id: "sub-canceled", plan_key: "personal-entry", price_id: null, status: "canceled", current_period_end: "2026-08-01T00:00:00.000Z", cancel_at_period_end: false, beneficiary_user_id: "member-harbor" };
+    const seenFilters: string[][] = [];
+    const createBuilder = () => {
+      const filters: string[] = [];
+      const builder: Record<string, unknown> = {};
+      for (const method of ["select", "eq", "is", "in", "neq", "order", "limit"]) builder[method] = (...args: unknown[]) => { filters.push(`${method}:${args.join(",")}`); return builder; };
+      builder.maybeSingle = async () => {
+        seenFilters.push([...filters]);
+        const terminalPass = filters.some((filter) => filter.startsWith("in:status,canceled,incomplete_expired"));
+        const excludesTerminal = filters.some((filter) => filter === "neq:status,canceled") || filters.some((filter) => filter === "neq:status,incomplete_expired");
+        return { data: terminalPass && !excludesTerminal ? terminalRow : null, error: null };
+      };
+      return builder;
+    };
+    mockCreateClient.mockReturnValue({ schema: () => ({ from: () => createBuilder() }) });
+
+    await expect(readBillingSummary({ kind: "personal", userId: "member-harbor" }, true)).resolves.toMatchObject({ ok: true, subscription: { id: "sub-canceled" } });
+    expect(seenFilters).toHaveLength(2);
+    expect(seenFilters[1]).not.toContain("neq:status,canceled");
   });
 
   it("prints the Stripe-mirrored billed interval rather than a catalog guess", () => {

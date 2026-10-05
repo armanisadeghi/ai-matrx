@@ -98,4 +98,18 @@ describe("BillingSummary account switching", () => {
     await act(async () => {});
     expect(host.textContent).toContain("Organization billing read failed");
   });
+
+  it("hides a completed recovery invoice when the same account becomes active", async () => {
+    mockRead.mockResolvedValueOnce(paymentDueRead).mockResolvedValueOnce(activeRead);
+    mockFetch.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "POST") return Promise.resolve({ ok: true, json: async () => ({ invoice: { url: "https://stripe.test/invoices/harbor", status: "open", requiresAction: false } }) });
+      return Promise.resolve({ ok: true, json: async () => ({ livemode: true }) });
+    });
+    await act(async () => { root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />); });
+    await act(async () => {});
+    expect(host.textContent).toContain("Pay invoice");
+    await act(async () => { root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />); });
+    await act(async () => {});
+    expect(host.textContent).not.toContain("Pay invoice");
+  });
 });

@@ -40,20 +40,21 @@ export async function readBillingSummary(
 ): Promise<BillingSummaryRead> {
   try {
     const billing = createClient().schema("billing");
-    let query = billing
-      .from("subscription")
-      .select("id,plan_key,price_id,status,current_period_end,cancel_at_period_end,beneficiary_user_id")
-      .eq("livemode", livemode);
-
-    query = scope.kind === "personal"
-      ? query.eq("beneficiary_user_id", scope.userId)
-      : query.eq("organization_id", scope.organizationId).is("beneficiary_user_id", null);
+    const subscriptionQuery = () => {
+      let query = billing
+        .from("subscription")
+        .select("id,plan_key,price_id,status,current_period_end,cancel_at_period_end,beneficiary_user_id")
+        .eq("livemode", livemode);
+      return scope.kind === "personal"
+        ? query.eq("beneficiary_user_id", scope.userId)
+        : query.eq("organization_id", scope.organizationId).is("beneficiary_user_id", null);
+    };
 
     let subscription: BillingSubscription | null = null;
     for (const pass of billingSubscriptionSelectionPasses) {
       const candidateQuery = pass.terminal
-        ? query.in("status", [...terminalBillingSubscriptionStatuses])
-        : query.neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
+        ? subscriptionQuery().in("status", [...terminalBillingSubscriptionStatuses])
+        : subscriptionQuery().neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
       const { data, error } = await candidateQuery
         .order("current_period_end", { ascending: false, nullsFirst: false })
         .order("updated_at", { ascending: false })

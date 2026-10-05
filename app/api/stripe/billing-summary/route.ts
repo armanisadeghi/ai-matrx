@@ -35,10 +35,12 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     const admin = createAdminClient();
     const livemode = requiredStripeMode() === "live";
-    let subscriptionQuery = admin.schema("billing").from("subscription").select("stripe_subscription_id").eq("livemode", livemode);
+    let subscriptionQuery = () => {
+      let query = admin.schema("billing").from("subscription").select("stripe_subscription_id").eq("livemode", livemode);
+      return scope === "personal" ? query.eq("beneficiary_user_id", user.id) : query;
+    };
 
     if (scope === "personal") {
-      subscriptionQuery = subscriptionQuery.eq("beneficiary_user_id", user.id);
     } else {
       let owner;
       try {
@@ -50,13 +52,14 @@ export async function POST(request: NextRequest) {
       const { data: membership, error: membershipError } = await client.schema("iam").from("organization_member").select("role").eq("organization_id", owner.value).eq("user_id", user.id).maybeSingle();
       if (membershipError) throw membershipError;
       if (!membership || !["owner", "admin"].includes(membership.role ?? "")) return NextResponse.json({ error: "An organization owner or admin must manage its subscription." }, { status: 403 });
-      subscriptionQuery = ownerEq(subscriptionQuery, owner).is("beneficiary_user_id", null);
+      const query = subscriptionQuery;
+      subscriptionQuery = () => ownerEq(query(), owner).is("beneficiary_user_id", null);
     }
     let subscription: { stripe_subscription_id: string | null } | null = null;
     for (const pass of billingSubscriptionSelectionPasses) {
       const candidateQuery = pass.terminal
-        ? subscriptionQuery.in("status", [...terminalBillingSubscriptionStatuses])
-        : subscriptionQuery.neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
+        ? subscriptionQuery().in("status", [...terminalBillingSubscriptionStatuses])
+        : subscriptionQuery().neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
       const { data, error } = await candidateQuery
         .order("current_period_end", { ascending: false, nullsFirst: false })
         .order("updated_at", { ascending: false })
