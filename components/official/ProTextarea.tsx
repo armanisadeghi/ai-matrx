@@ -530,17 +530,24 @@ export const ProTextarea = React.forwardRef<
     const setTextareaRef = (node: HTMLTextAreaElement | null) => {
       internalRef.current = node;
       if (typeof ref === "function") ref(node);
-      else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
+      else if (ref)
+        (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current =
+          node;
     };
 
     // Markdown formatting (chords + the selection toolbar's buttons) for a
     // long-form box. The element is mirrored into state once per mount so the
     // selection zone registers on the real node.
     const formattingOn =
-      markdownFormatting ?? (!editor && !submitOnEnter && (props.rows === undefined || Number(props.rows) >= 2));
-    const [formatElement, setFormatElement] = useState<HTMLTextAreaElement | null>(null);
+      markdownFormatting ??
+      (!editor &&
+        !submitOnEnter &&
+        (props.rows === undefined || Number(props.rows) >= 2));
+    const [formatElement, setFormatElement] =
+      useState<HTMLTextAreaElement | null>(null);
     useLayoutEffect(() => {
-      if (internalRef.current !== formatElement) setFormatElement(internalRef.current);
+      if (internalRef.current !== formatElement)
+        setFormatElement(internalRef.current);
     });
     useTextareaFormatting(formatElement, formattingOn);
 
@@ -686,19 +693,22 @@ export const ProTextarea = React.forwardRef<
      * person typed). Returns whether the field now holds `newValue` — callers
      * announce success only on true.
      */
-    const pushToTextarea = useCallback((newValue: string): boolean => {
-      if (editor) return editor.handle.current?.write(newValue) ?? false;
-      const el = textareaRef.current;
-      if (!el) return false;
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLTextAreaElement.prototype,
-        "value",
-      )?.set;
-      if (!nativeInputValueSetter) return false;
-      nativeInputValueSetter.call(el, newValue);
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      return el.value === newValue;
-    }, [editor]);
+    const pushToTextarea = useCallback(
+      (newValue: string): boolean => {
+        if (editor) return editor.handle.current?.write(newValue) ?? false;
+        const el = textareaRef.current;
+        if (!el) return false;
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          "value",
+        )?.set;
+        if (!nativeInputValueSetter) return false;
+        nativeInputValueSetter.call(el, newValue);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        return el.value === newValue;
+      },
+      [editor],
+    );
 
     // Voice-to-text now rides the ONE shared recorder (start-always-wins,
     // one-at-a-time, survives navigation) via the reusable `useMicField`
@@ -759,49 +769,50 @@ export const ProTextarea = React.forwardRef<
      * calls the SAME `useMicField.startDictation` the button's click handler
      * calls — so a keyed dictation and a clicked one are one code path.
      */
-    const startDictation = useCallback(async (): Promise<DictationStartResult> => {
-      if (!enableVoice) {
-        return refuseDictation(
-          "voice-disabled",
-          "Voice input is turned off for this field, so it cannot start dictating.",
-        );
-      }
-      if (disabled) {
-        return refuseDictation(
-          "field-disabled",
-          "This field is disabled, so it cannot start dictating.",
-        );
-      }
-      if (!isAudioAvailable) {
-        return refuseDictation(
-          "no-microphone",
-          "No microphone is available in this browser, so dictation cannot start.",
-        );
-      }
-      if (!isRecorderAvailable) {
-        return refuseDictation(
-          "recorder-unavailable",
-          "Voice recording is unavailable on this screen, so dictation cannot start.",
-        );
-      }
-      if (isTranscribing && !isRecording) {
-        return refuseDictation(
-          "finalizing",
-          "The last recording is still being transcribed. Wait for it to finish, then start again.",
-        );
-      }
-      await micStartDictation();
-      return { started: true };
-    }, [
-      enableVoice,
-      disabled,
-      isAudioAvailable,
-      isRecorderAvailable,
-      isTranscribing,
-      isRecording,
-      micStartDictation,
-      refuseDictation,
-    ]);
+    const startDictation =
+      useCallback(async (): Promise<DictationStartResult> => {
+        if (!enableVoice) {
+          return refuseDictation(
+            "voice-disabled",
+            "Voice input is turned off for this field, so it cannot start dictating.",
+          );
+        }
+        if (disabled) {
+          return refuseDictation(
+            "field-disabled",
+            "This field is disabled, so it cannot start dictating.",
+          );
+        }
+        if (!isAudioAvailable) {
+          return refuseDictation(
+            "no-microphone",
+            "No microphone is available in this browser, so dictation cannot start.",
+          );
+        }
+        if (!isRecorderAvailable) {
+          return refuseDictation(
+            "recorder-unavailable",
+            "Voice recording is unavailable on this screen, so dictation cannot start.",
+          );
+        }
+        if (isTranscribing && !isRecording) {
+          return refuseDictation(
+            "finalizing",
+            "The last recording is still being transcribed. Wait for it to finish, then start again.",
+          );
+        }
+        await micStartDictation();
+        return { started: true };
+      }, [
+        enableVoice,
+        disabled,
+        isAudioAvailable,
+        isRecorderAvailable,
+        isTranscribing,
+        isRecording,
+        micStartDictation,
+        refuseDictation,
+      ]);
 
     // Attach custom methods as expando properties on the real DOM element so
     // consumers get a genuine HTMLTextAreaElement (focus/blur/select all work)
@@ -826,7 +837,11 @@ export const ProTextarea = React.forwardRef<
     const valueAsString = String(value ?? "");
     const hasContent = valueAsString.trim().length > 0;
     const canSubmit =
-      !!onSubmit && (hasContent || allowEmptySubmit) && !submitDisabled && !isSubmitting && !disabled;
+      !!onSubmit &&
+      (hasContent || allowEmptySubmit) &&
+      !submitDisabled &&
+      !isSubmitting &&
+      !disabled;
     const cmdEnterEnabled = submitOnCmdEnter ?? !!onSubmit;
 
     const triggerSubmit = useCallback(() => {
@@ -914,7 +929,10 @@ export const ProTextarea = React.forwardRef<
 
     const openBoundAgentView = useCallback(
       (entry: SurfaceBoundAgentEntry) => {
-        const text = (editor ? editor.handle.current?.getValue() : textareaRef.current?.value) ?? valueAsString;
+        const text =
+          (editor
+            ? editor.handle.current?.getValue()
+            : textareaRef.current?.value) ?? valueAsString;
         if (!text.trim()) {
           toast.info("Add some text before running an agent");
           return;
@@ -930,7 +948,10 @@ export const ProTextarea = React.forwardRef<
     const openAgentActionView = useCallback(
       (actionId: ProTextareaAgentActionId) => {
         const definition = PRO_TEXTAREA_AGENT_ACTIONS[actionId];
-        const text = (editor ? editor.handle.current?.getValue() : textareaRef.current?.value) ?? valueAsString;
+        const text =
+          (editor
+            ? editor.handle.current?.getValue()
+            : textareaRef.current?.value) ?? valueAsString;
         if (definition.requiresSourceText && !text.trim()) {
           toast.info(definition.emptyTextToast);
           return;
@@ -989,7 +1010,10 @@ export const ProTextarea = React.forwardRef<
       ) {
         return;
       }
-      const text = (editor ? editor.handle.current?.getValue() : textareaRef.current?.value) ?? valueAsString;
+      const text =
+        (editor
+          ? editor.handle.current?.getValue()
+          : textareaRef.current?.value) ?? valueAsString;
       if (!text.trim()) {
         toast.info(
           menuMode === "boundAgent"
@@ -1201,9 +1225,7 @@ export const ProTextarea = React.forwardRef<
         : "rounded-md",
       "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
       "disabled:cursor-not-allowed disabled:opacity-50",
-      fillHeight
-        ? "min-h-0 flex-1 resize-none overflow-y-auto"
-        : "resize-y",
+      fillHeight ? "min-h-0 flex-1 resize-none overflow-y-auto" : "resize-y",
       // Auto-grow disables the manual resize handle. Use overflow-y-auto
       // (not overflow-hidden) so that once content hits `maxHeight` the
       // textarea becomes internally scrollable instead of clipping text
@@ -1211,10 +1233,8 @@ export const ProTextarea = React.forwardRef<
       // no scrollbar shows; it only appears once capped at maxHeight.
       autoGrow && "resize-none overflow-y-auto",
       // The controls sit in a RESERVED bottom row on every pointer,
-      // never over text (proTextareaControlPlacement.ts). Without a
-      // submit button the field reserves that row here; with one, the
-      // cluster shares the submit button's 44px row (pb-14 below), to
-      // its left — the top reserve it used to take is gone.
+      // never over text (proTextareaControlPlacement.ts): one 38px tap
+      // row inset 6px from the corner, so 48px (pb-12) clears it.
       "pr-3",
       className,
       // AFTER the consumer's className: a caller's own padding (`py-2`) used
@@ -1222,14 +1242,10 @@ export const ProTextarea = React.forwardRef<
       // (page-pass 2026-09-27, Feedback window). The reserve always wins.
       // A one-line hosted editor keeps its single line: the cluster takes a
       // right gutter beside it instead of a reserved row below.
-      hasCoarseControls &&
-        !onSubmit &&
-        (editor?.singleLine
+      (hasCoarseControls || onSubmit) &&
+        (editor?.singleLine && !onSubmit
           ? "pr-24 pointer-coarse:pr-32"
-          : "pb-10 pointer-coarse:pb-12"),
-      // Bottom padding for the submit button — TapTargetButtonSolid is
-      // 44px tall (h-11), so reserve enough vertical clearance.
-      onSubmit && "pb-14",
+          : "pb-12"),
     );
     const fieldStyle: React.CSSProperties = {
       ...style,
@@ -1317,218 +1333,227 @@ export const ProTextarea = React.forwardRef<
               </Label>
             )}
 
-            {/* Control cluster (mic + "…" menu) — floats OVER the text
-            and fades in on pointer hover or keyboard focus-within. It also
-            stays visible while the menu popover is open so it can't vanish
-            mid-interaction. A GLASS PLANE (tap-target placement rule 1):
-            it rides over the field's own scrolling text, so its glass
-            buttons legitimately float — the guard reads the marker. */}
+            {/* ONE control row, bottom-right, in the RESERVED row
+            (proTextareaControlPlacement.ts): the hover part (mic + "…")
+            then the submit button, as adjacent tap boxes — never a
+            hand-typed offset between them (a 48px offset beside a 38px
+            box left a 10px hole, 2026-10-05). A press here never takes
+            focus from the field, so a focus-revealed row cannot hide
+            itself mid-click. */}
             <div
-              data-matrx-glass-plane
+              onMouseDown={(e) => e.preventDefault()}
               className={cn(
-                "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
-                // Always in a RESERVED row, never over text: the bottom row
-                // (beside the submit button when there is one) —
-                // proTextareaControlPlacement.ts.
+                "absolute z-10 flex items-center",
                 proTextareaClusterPlacement(!!onSubmit).className,
                 editor?.singleLine && "top-1/2 bottom-auto -translate-y-1/2",
-                "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
-                showControls || menuOpen
-                  ? "opacity-100"
-                  : "opacity-0 pointer-events-none",
               )}
             >
-              {enableVoice && isAudioAvailable && (
-                <MicWithDeviceMenu
-                  tabIndex={auxiliaryControlsTabIndex}
-                  deviceMenuAriaLabel={
-                    auxiliaryControlsLabel
-                      ? `Choose microphone for ${auxiliaryControlsLabel}`
-                      : undefined
-                  }
-                  onMicClick={handleVoiceClick}
-                  disabled={isVoiceDisabled}
-                  isRecording={isRecording}
-                  isTranscribing={isTranscribing}
-                  audioLevel={audioLevel}
-                  micAriaLabel={
-                    isRecording
-                      ? auxiliaryControlsLabel
-                        ? `Stop recording for ${auxiliaryControlsLabel}`
-                        : "Stop recording"
-                      : auxiliaryControlsLabel
-                        ? `Start voice input for ${auxiliaryControlsLabel}`
-                        : "Start voice input"
-                  }
-                />
-              )}
+              {/* Mic + "…" fade in on pointer hover or keyboard focus-within,
+            and stay while the menu popover is open. A GLASS PLANE
+            (tap-target placement rule 1): it rides over the field's own
+            scrolling text — the guard reads the marker. */}
+              <div
+                data-matrx-glass-plane
+                className={cn(
+                  "flex items-center transition-opacity duration-200 focus-within:opacity-100 focus-within:pointer-events-auto",
+                  "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
+                  showControls || menuOpen
+                    ? "opacity-100"
+                    : "opacity-0 pointer-events-none",
+                )}
+              >
+                {enableVoice && isAudioAvailable && (
+                  <MicWithDeviceMenu
+                    tabIndex={auxiliaryControlsTabIndex}
+                    deviceMenuAriaLabel={
+                      auxiliaryControlsLabel
+                        ? `Choose microphone for ${auxiliaryControlsLabel}`
+                        : undefined
+                    }
+                    onMicClick={handleVoiceClick}
+                    disabled={isVoiceDisabled}
+                    isRecording={isRecording}
+                    isTranscribing={isTranscribing}
+                    audioLevel={audioLevel}
+                    micAriaLabel={
+                      isRecording
+                        ? auxiliaryControlsLabel
+                          ? `Stop recording for ${auxiliaryControlsLabel}`
+                          : "Stop recording"
+                        : auxiliaryControlsLabel
+                          ? `Start voice input for ${auxiliaryControlsLabel}`
+                          : "Start voice input"
+                    }
+                  />
+                )}
 
-              {showMenu && (
-                <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
-                  <PopoverTrigger asChild>
-                    <MoreHorizontalTapButton
-                      tabIndex={auxiliaryControlsTabIndex}
-                      variant="transparent"
-                      ariaLabel={
-                        auxiliaryControlsLabel
-                          ? `More options for ${auxiliaryControlsLabel}`
-                          : "More options"
-                      }
-                      tooltip="More"
-                      className="text-muted-foreground"
-                    />
-                  </PopoverTrigger>
-                  <PopoverContent
-                    /* sizing: fixed — fixed multi-mode menu (menu/stats/agent-action panels), not a single content-sized value */
-                    onInteractOutside={(event) => {
-                      if (isOrganizationGateInteraction(event)) event.preventDefault();
-                    }}
-                    onFocusOutside={(event) => {
-                      if (isOrganizationGateInteraction(event)) event.preventDefault();
-                    }}
-                    align="end"
-                    side="bottom"
-                    sideOffset={6}
-                    className={cn(
-                      "p-0",
-                      menuMode === "menu"
-                        ? showBoundAgentsMenu
-                          ? "w-56 max-h-[var(--radix-popover-content-available-height)] overflow-y-auto"
-                          : "w-48"
-                        : menuMode === "stats"
-                          ? "w-56"
-                          : isProTextareaAgentActionId(menuMode) &&
-                              isEmbeddedProTextareaAgentAction(menuMode)
-                            ? "w-auto max-w-none"
-                            : // An agent panel (Clean up, a bound agent) is bounded
-                              // by the room the viewport has: its header, Run and
-                              // Apply rows stay on screen, the result scrolls
-                              // (RC-B6 round 2: Apply fell below 1400×900).
-                              "flex w-80 max-h-[var(--radix-popover-content-available-height)] flex-col overflow-hidden",
-                    )}
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                  >
-                    {menuMode === "menu" ? (
-                      <div className="flex flex-col p-1">
-                        {/* The ONE action registry — the same actions a
+                {showMenu && (
+                  <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
+                    <PopoverTrigger asChild>
+                      <MoreHorizontalTapButton
+                        tabIndex={auxiliaryControlsTabIndex}
+                        variant="transparent"
+                        ariaLabel={
+                          auxiliaryControlsLabel
+                            ? `More options for ${auxiliaryControlsLabel}`
+                            : "More options"
+                        }
+                        tooltip="More"
+                        className="text-muted-foreground"
+                      />
+                    </PopoverTrigger>
+                    <PopoverContent
+                      /* sizing: fixed — fixed multi-mode menu (menu/stats/agent-action panels), not a single content-sized value */
+                      onInteractOutside={(event) => {
+                        if (isOrganizationGateInteraction(event))
+                          event.preventDefault();
+                      }}
+                      onFocusOutside={(event) => {
+                        if (isOrganizationGateInteraction(event))
+                          event.preventDefault();
+                      }}
+                      align="end"
+                      side="bottom"
+                      sideOffset={6}
+                      className={cn(
+                        "p-0",
+                        menuMode === "menu"
+                          ? showBoundAgentsMenu
+                            ? "w-56 max-h-[var(--radix-popover-content-available-height)] overflow-y-auto"
+                            : "w-48"
+                          : menuMode === "stats"
+                            ? "w-56"
+                            : isProTextareaAgentActionId(menuMode) &&
+                                isEmbeddedProTextareaAgentAction(menuMode)
+                              ? "w-auto max-w-none"
+                              : // An agent panel (Clean up, a bound agent) is bounded
+                                // by the room the viewport has: its header, Run and
+                                // Apply rows stay on screen, the result scrolls
+                                // (RC-B6 round 2: Apply fell below 1400×900).
+                                "flex w-80 max-h-[var(--radix-popover-content-available-height)] flex-col overflow-hidden",
+                      )}
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                    >
+                      {menuMode === "menu" ? (
+                        <div className="flex flex-col p-1">
+                          {/* The ONE action registry — the same actions a
                             rendered document offers (copy every way, save,
                             listen, share, rulebook…), plus this field's own
                             AI powers (Clean up / Help / Custom agent), which
                             the registry reaches through the callback below. */}
-                        <Suspense fallback={null}>
-                          <RegistryActionList
-                            content={valueAsString}
-                            source={TEXT_FIELD_SOURCE}
-                            onClose={() => setMenuOpen(false)}
-                            actions={{
-                              exclude: [
-                                ...(showCopyButton ? [] : TEXT_FIELD_COPY_IDS),
-                                // Never an action that reopens the place this
-                                // field already sits in (Submit feedback in
-                                // the Feedback window).
-                                ...actionsAlreadyHere({
-                                  sourceType: TEXT_FIELD_SOURCE.type,
-                                  surfaceName,
-                                  isEditable: false,
-                                }),
-                                ...TEXT_AGENT_ACTION_IDS.filter(
-                                  ([, localId]) =>
-                                    !enabledAgentActionIds.includes(localId),
-                                ).map(([registryId]) => registryId),
-                              ],
-                              callbacks: {
-                                onRequestTextAgentAction: openAgentActionView,
-                              },
-                            }}
-                            aiSlot={
-                              showBoundAgentsMenu ? (
-                                <ProTextareaBoundAgentsMenuItems
-                                  loading={boundAgentsLoading}
-                                  sections={boundAgentSections}
-                                  onSelect={openBoundAgentView}
-                                />
-                              ) : undefined
-                            }
-                          />
-                        </Suspense>
-                        {showTextStats && (
-                          <>
-                            <div
-                              className="my-1 h-px bg-border"
-                              role="separator"
-                            />
-                            <ProTextFieldStatsMenuItems
-                              showStatsBar={showTextStatsBar}
-                              onToggleStatsBar={() =>
-                                setShowTextStatsBar((prev) => !prev)
+                          <Suspense fallback={null}>
+                            <RegistryActionList
+                              content={valueAsString}
+                              source={TEXT_FIELD_SOURCE}
+                              onClose={() => setMenuOpen(false)}
+                              actions={{
+                                exclude: [
+                                  ...(showCopyButton
+                                    ? []
+                                    : TEXT_FIELD_COPY_IDS),
+                                  // Never an action that reopens the place this
+                                  // field already sits in (Submit feedback in
+                                  // the Feedback window).
+                                  ...actionsAlreadyHere({
+                                    sourceType: TEXT_FIELD_SOURCE.type,
+                                    surfaceName,
+                                    isEditable: false,
+                                  }),
+                                  ...TEXT_AGENT_ACTION_IDS.filter(
+                                    ([, localId]) =>
+                                      !enabledAgentActionIds.includes(localId),
+                                  ).map(([registryId]) => registryId),
+                                ],
+                                callbacks: {
+                                  onRequestTextAgentAction: openAgentActionView,
+                                },
+                              }}
+                              aiSlot={
+                                showBoundAgentsMenu ? (
+                                  <ProTextareaBoundAgentsMenuItems
+                                    loading={boundAgentsLoading}
+                                    sections={boundAgentSections}
+                                    onSelect={openBoundAgentView}
+                                  />
+                                ) : undefined
                               }
-                              onOpenStatsPanel={() => setMenuMode("stats")}
                             />
-                          </>
-                        )}
-                      </div>
-                    ) : menuMode === "stats" ? (
-                      <ProTextFieldStatsPanel
-                        text={valueAsString}
-                        onBack={() => setMenuMode("menu")}
-                        onClose={() => setMenuOpen(false)}
-                      />
-                    ) : isProTextareaAgentActionId(menuMode) &&
-                      isEmbeddedProTextareaAgentAction(menuMode) ? (
-                      <ProTextareaAgentPanel
-                        actionId={menuMode}
-                        agentId={selectedAgent}
-                        mandateKey={selectedMandateKey}
-                        contextItems={
-                          menuMode === "help"
-                            ? (helpContextItems ?? cleanupContextItems)
-                            : (customAgentContextItems ?? cleanupContextItems)
-                        }
-                        agentLabel={selectedAgentName}
-                        onAgentIdChange={handleEmbeddedAgentChange}
-                        onAgentClear={clearEmbeddedAgent}
-                        sourceText={valueAsString}
-                        onApplySourceText={applyEmbeddedSourceText}
-                        onBack={exitEmbeddedAgentView}
-                        onCancel={() => setMenuOpen(false)}
-                        sourceFeature={resolvedSourceFeature}
-                      />
-                    ) : activeAgentAction || menuMode === "boundAgent" ? (
-                      <ProTextAgentActionPopoverBody
-                        title={
-                          menuMode === "boundAgent"
-                            ? (selectedAgentName ?? "Bound agent")
-                            : (activeAgentAction?.popoverTitle ??
-                              "Agent action")
-                        }
-                        phase={agentAction.phase}
-                        isBusy={agentAction.isBusy}
-                        isThinking={agentAction.isThinking}
-                        result={agentAction.result}
-                        error={agentAction.error}
-                        agentName={selectedAgentName}
-                        onSelectAgent={setSelectedAgent}
-                        onRun={runActiveAgentAction}
-                        canRun={Boolean(selectedAgent) && !agentAction.isBusy}
-                        onApply={applyActiveAgentAction}
-                        onCompare={compareActiveAgentAction}
-                        onBack={() => {
-                          setMenuMode("menu");
-                          setSelectedAgent(null);
-                          setSelectedAgentName(null);
-                          agentAction.reset();
-                        }}
-                        onCancel={() => setMenuOpen(false)}
-                      />
-                    ) : null}
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-
-            {/* Submit Button (bottom-right) — solid TapTarget with primary color. */}
-            {onSubmit && (
-              <div className="absolute right-0 bottom-0 z-10">
+                          </Suspense>
+                          {showTextStats && (
+                            <>
+                              <div
+                                className="my-1 h-px bg-border"
+                                role="separator"
+                              />
+                              <ProTextFieldStatsMenuItems
+                                showStatsBar={showTextStatsBar}
+                                onToggleStatsBar={() =>
+                                  setShowTextStatsBar((prev) => !prev)
+                                }
+                                onOpenStatsPanel={() => setMenuMode("stats")}
+                              />
+                            </>
+                          )}
+                        </div>
+                      ) : menuMode === "stats" ? (
+                        <ProTextFieldStatsPanel
+                          text={valueAsString}
+                          onBack={() => setMenuMode("menu")}
+                          onClose={() => setMenuOpen(false)}
+                        />
+                      ) : isProTextareaAgentActionId(menuMode) &&
+                        isEmbeddedProTextareaAgentAction(menuMode) ? (
+                        <ProTextareaAgentPanel
+                          actionId={menuMode}
+                          agentId={selectedAgent}
+                          mandateKey={selectedMandateKey}
+                          contextItems={
+                            menuMode === "help"
+                              ? (helpContextItems ?? cleanupContextItems)
+                              : (customAgentContextItems ?? cleanupContextItems)
+                          }
+                          agentLabel={selectedAgentName}
+                          onAgentIdChange={handleEmbeddedAgentChange}
+                          onAgentClear={clearEmbeddedAgent}
+                          sourceText={valueAsString}
+                          onApplySourceText={applyEmbeddedSourceText}
+                          onBack={exitEmbeddedAgentView}
+                          onCancel={() => setMenuOpen(false)}
+                          sourceFeature={resolvedSourceFeature}
+                        />
+                      ) : activeAgentAction || menuMode === "boundAgent" ? (
+                        <ProTextAgentActionPopoverBody
+                          title={
+                            menuMode === "boundAgent"
+                              ? (selectedAgentName ?? "Bound agent")
+                              : (activeAgentAction?.popoverTitle ??
+                                "Agent action")
+                          }
+                          phase={agentAction.phase}
+                          isBusy={agentAction.isBusy}
+                          isThinking={agentAction.isThinking}
+                          result={agentAction.result}
+                          error={agentAction.error}
+                          agentName={selectedAgentName}
+                          onSelectAgent={setSelectedAgent}
+                          onRun={runActiveAgentAction}
+                          canRun={Boolean(selectedAgent) && !agentAction.isBusy}
+                          onApply={applyActiveAgentAction}
+                          onCompare={compareActiveAgentAction}
+                          onBack={() => {
+                            setMenuMode("menu");
+                            setSelectedAgent(null);
+                            setSelectedAgentName(null);
+                            agentAction.reset();
+                          }}
+                          onCancel={() => setMenuOpen(false)}
+                        />
+                      ) : null}
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+              {onSubmit && (
                 <TapTargetButtonSolid
                   onClick={triggerSubmit}
                   disabled={!canSubmit}
@@ -1542,16 +1567,15 @@ export const ProTextarea = React.forwardRef<
                     )
                   }
                 />
-              </div>
-            )}
+              )}
+            </div>
 
             {enableVoice && isRecording && (
               <div
                 className={cn(
                   "absolute left-2 bottom-2 flex items-center gap-1.5 px-2 py-1 bg-primary/10 dark:bg-primary/15 rounded-md",
-                  // Clear the submit button when present (TapTargetButtonSolid is
-                  // 44px wide). When there is no submit, just keep a small inset.
-                  onSubmit ? "right-14" : "right-2",
+                  // Clear the control row (mic + "…", plus submit when present).
+                  onSubmit ? "right-32" : "right-24",
                 )}
               >
                 <motion.div

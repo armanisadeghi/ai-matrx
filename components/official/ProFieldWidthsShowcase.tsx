@@ -43,7 +43,7 @@ export function ProFieldWidthsShowcase() {
       <Section title="ProInput — plain">
         {INPUT_WIDTHS.map((w) => (
           <Row key={w} label={`${w}px`}>
-            <div style={{ width: w }}>
+            <div style={{ width: w, maxWidth: "100%" }}>
               <ProInput {...bind(`in-${w}`)} placeholder="Type a title…" />
             </div>
           </Row>
@@ -53,7 +53,7 @@ export function ProFieldWidthsShowcase() {
       <Section title="ProInput — submit + clear">
         {INPUT_WIDTHS.map((w) => (
           <Row key={w} label={`${w}px`}>
-            <div style={{ width: w }}>
+            <div style={{ width: w, maxWidth: "100%" }}>
               <ProInput
                 {...bind(`sub-${w}`)}
                 placeholder="Ask something…"
@@ -68,7 +68,7 @@ export function ProFieldWidthsShowcase() {
       <Section title="ProTextarea">
         {TEXTAREA_WIDTHS.map((w) => (
           <Row key={w} label={`${w}px`}>
-            <div style={{ width: w }}>
+            <div style={{ width: w, maxWidth: "100%" }}>
               <ProTextarea
                 {...bind(`ta-${w}`)}
                 placeholder="Type your transcript…"
@@ -81,7 +81,7 @@ export function ProFieldWidthsShowcase() {
       <Section title="ProTextarea — submit">
         {TEXTAREA_WIDTHS.map((w) => (
           <Row key={w} label={`${w}px`}>
-            <div style={{ width: w }}>
+            <div style={{ width: w, maxWidth: "100%" }}>
               <ProTextarea
                 {...bind(`tas-${w}`)}
                 placeholder="Message…"

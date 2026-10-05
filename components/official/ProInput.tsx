@@ -627,8 +627,12 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
         {/* A GLASS PLANE (tap-target placement rule 1): the cluster rides
             over the field's own scrolling text, so its glass buttons
             legitimately float — the guard reads the marker. */}
+        {/* A press here never takes focus from the field: a narrow field
+            reveals this cluster on FOCUS, and the blur used to hide it
+            before the click landed (2026-10-05). */}
         <div
           ref={clusterRef}
+          onMouseDown={(e) => e.preventDefault()}
           data-matrx-glass-plane
           className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center z-10"
         >
