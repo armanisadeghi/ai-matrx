@@ -13,7 +13,11 @@
 
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 
-import type { TemplatePreviewProps } from "@ai-matrx/records-ui";
+import type { TemplateSpec } from "@ai-matrx/records/templates";
+
+// Typed here, not imported: TemplatePreview arrives with @ai-matrx/records-ui > 0.101.2, and until that
+// version is installed the server skeleton simply stays (the import finds no component).
+type TemplatePreviewProps = { spec: TemplateSpec; today?: string };
 
 export function TemplateLivePreview({
   spec,
@@ -28,7 +32,8 @@ export function TemplateLivePreview({
   useEffect(() => {
     let gone = false;
     void import("@ai-matrx/records-ui").then((m) => {
-      if (!gone) setLive(() => m.TemplatePreview);
+      const found = (m as unknown as Record<string, unknown>)["TemplatePreview"];
+      if (!gone && typeof found === "function") setLive(() => found as ComponentType<TemplatePreviewProps>);
     });
     return () => {
       gone = true;
