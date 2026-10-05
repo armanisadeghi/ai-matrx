@@ -20,7 +20,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ExternalLink, Link2, Link2Off } from "lucide-react";
 
-import { pressRoomHref } from "@/features/marketing/pr/routes";
+import { usePressRoomLink } from "@/features/marketing/pr/routes";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,7 @@ export function CoverageWon({
   /** A host action per piece (the media desk's Make clip). */
   renderMentionAction?: (mention: CoverageMention) => ReactNode;
 }) {
+  const pressRoomLink = usePressRoomLink();
   const angleById = new Map(angles.map((angle) => [angle.id, angle]));
 
   return (
@@ -128,7 +129,7 @@ export function CoverageWon({
                       // lie about a twin we know exists — so name the id and
                       // offer the door.
                       <Link
-                        href={pressRoomHref({ focus: { kind: "angle", id: angleId } })}
+                        href={pressRoomLink({ view: "all", focus: { kind: "angle", id: angleId } })}
                         className="inline-flex min-w-0 shrink items-center gap-1 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
                         title={`This piece records story angle ${angleId}, which is not in the angles loaded for this scope. Open it directly.`}
                       >

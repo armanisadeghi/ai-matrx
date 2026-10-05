@@ -26,7 +26,7 @@
  * load state, so every screen here is shareable and reload-safe.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlarmClock,
@@ -169,6 +169,7 @@ export default function PressRoomWorkspace({
     focus,
     scenario,
     set,
+    fill,
     href,
   } = usePressRoomUrl();
   const brands = useVisibleBrandOptions();
@@ -180,21 +181,23 @@ export default function PressRoomWorkspace({
   // route the ROUTE wins over any platform-wide first row.
   useEffect(() => {
     if (brandId) return;
+    // `fill`, never `set`: a default keeps a deep-linked record open (`set` treats a
+    // brand change as the person switching business and closes it).
     if (scopedBrandId) {
-      set({ brand: scopedBrandId });
+      fill({ brand: scopedBrandId });
       return;
     }
     // Only a genuinely unscoped mount (the flat route) may fall back to the
     // first visible brand.
     if (brands.data && brands.data.length > 0) {
-      set({ brand: brands.data[0].id });
+      fill({ brand: brands.data[0].id });
     }
-  }, [brandId, scopedBrandId, brands.data, set]);
+  }, [brandId, scopedBrandId, brands.data, fill]);
   useEffect(() => {
     if (brandId && !siteId && sites.data && sites.data.length > 0) {
-      set({ site: sites.data[0].id });
+      fill({ site: sites.data[0].id });
     }
-  }, [brandId, siteId, sites.data, set]);
+  }, [brandId, siteId, sites.data, fill]);
 
   const press = usePressRoom(siteId, scenario);
 
@@ -229,16 +232,33 @@ export default function PressRoomWorkspace({
   const selectedRequestId = focus?.kind === "request" ? focus.id : null;
   const focusedCoverageId = focus?.kind === "coverage" ? focus.id : null;
 
-  // A deep link to a request or a piece of coverage has to LAND somewhere the
-  // user can see, not just set a highlight below the fold.
+  // A deep link has to LAND on what it names, on load AND on reload: an angle the
+  // current view filters out widens the view (once, as a default — `fill`), and every
+  // kind of record scrolls into sight once its row has rendered.
+  const focusedAngle =
+    focus?.kind === "angle" ? angles.find((angle) => angle.id === focus.id) : undefined;
+  const currentView = ANGLE_VIEWS.find((entry) => entry.id === viewId);
+  const focusedAngleHidden =
+    focusedAngle !== undefined && !(currentView?.matches(focusedAngle) ?? false);
   useEffect(() => {
-    if (!focus || focus.kind === "angle") return;
+    if (focusedAngleHidden) fill({ view: "all" });
+  }, [focusedAngleHidden, fill]);
+  const landedOn = useRef<string | null>(null);
+  const focusKey = focus ? `${focus.kind}:${focus.id}` : null;
+  const rowsReady = angles.length + requests.length + coverage.length;
+  useEffect(() => {
+    if (!focus || landedOn.current === focusKey) return;
     const anchor =
-      focus.kind === "request"
-        ? document.getElementById("press-requests")
-        : document.querySelector(`[data-coverage-id="${focus.id}"]`);
-    anchor?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [focus]);
+      focus.kind === "angle"
+        ? document.querySelector(`[data-angle-id="${focus.id}"]`)
+        : focus.kind === "request"
+          ? (document.querySelector(`[data-request-id="${focus.id}"]`) ??
+            document.getElementById("press-requests"))
+          : document.querySelector(`[data-coverage-id="${focus.id}"]`);
+    if (!anchor) return; // not rendered yet; the next render tries again
+    landedOn.current = focusKey;
+    anchor.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [focus, focusKey, rowsReady, viewId]);
 
   /**
    * The door every other panel uses to reach an angle. Widening the filter is

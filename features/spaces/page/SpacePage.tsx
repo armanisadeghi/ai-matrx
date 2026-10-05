@@ -108,6 +108,13 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     docRef.current = null;
     pending.current = false;
     setSaveState("saved");
+    const made = spaces.takeFresh(spaceId);
+    if (made) {
+      adopt(made);
+      setFocusTitle(spaces.takeFocusTitle(spaceId));
+      markVisited(spaceId);
+      return;
+    }
     void store.get(spaceId).then(
       (d) => {
         if (!live) return;

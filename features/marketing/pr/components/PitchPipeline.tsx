@@ -21,7 +21,7 @@ import {
   ANGLE_STATUS_LABELS,
   type StoryAngle,
 } from "@/features/marketing/pr/types";
-import { pressRoomHref } from "@/features/marketing/pr/routes";
+import { usePressRoomLink } from "@/features/marketing/pr/routes";
 
 const STAGES = [
   {
@@ -49,6 +49,7 @@ export function PitchPipeline({
   angles: readonly StoryAngle[];
   onOpenAngle: (angleId: string) => void;
 }) {
+  const pressRoomLink = usePressRoomLink();
   const dismissed = angles.filter((angle) => angle.status === "dismissed");
 
   return (
@@ -60,7 +61,7 @@ export function PitchPipeline({
         {dismissed.length > 0 ? (
           // A count is a door: the view that contains them is one click away.
           <Link
-            href={pressRoomHref({ view: "all" })}
+            href={pressRoomLink({ view: "all" })}
             className="text-[11px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
             title="Open the All angles view, which includes dismissed angles."
           >

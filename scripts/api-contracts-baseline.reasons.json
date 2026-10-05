@@ -1,0 +1,8 @@
+{
+  "_readme": "Why each entry of scripts/api-contracts-baseline.json was accepted (written by `pnpm findings accept`). scripts/api-contracts-baseline.json is a plain array the check reads as-is, so the reasons live here.",
+  "app/(admin)/administration/compute/resilience-lab/page.tsx": {
+    "reason": "findings.test.mjs proof — restored after",
+    "accepted_by": "findings-test",
+    "date": "2026-10-05"
+  }
+}

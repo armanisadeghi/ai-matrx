@@ -23,14 +23,15 @@
  * an explicit `href` (its documented escape hatch). When those tables get
  * registry tokens, these helpers are the only place that changes.
  *
- * The path always comes from `marketingRoutes.press()` — never a hand-built
- * "/marketing/pr" string.
+ * The path is ALWAYS the Press Room the person is standing in (`usePathname()`, i.e.
+ * `/marketing/<brand>/pr`). The flat `/marketing/pr` is retired: it redirects to the
+ * client roster and drops the query, so a link built on it opened nothing (2026-10-05).
+ * Guard: `__tests__/deep-links-land.test.tsx`.
  */
 
 import { useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
   QUEUE_SORTS,
   defaultSortForView,
@@ -121,6 +122,8 @@ export function parseSort(
 }
 
 export interface PressRoomHrefOptions {
+  /** The Press Room this link opens — the brand's `/marketing/<brand>/pr`. */
+  base: string;
   brand?: string | null;
   site?: string | null;
   view?: string | null;
@@ -141,8 +144,7 @@ export function pressRoomHref(options: PressRoomHrefOptions): string {
     params.set("data", options.scenario);
   }
   const query = params.toString();
-  const base = marketingRoutes.press();
-  return query ? `${base}?${query}` : base;
+  return query ? `${options.base}?${query}` : options.base;
 }
 
 // ─── The hook ───────────────────────────────────────────────────────────────
@@ -166,6 +168,12 @@ export interface PressRoomUrlState {
     focus?: FocusRef | null;
     scenario?: PressRoomScenario;
   }) => void;
+  /**
+   * Fill a DEFAULT (the route's brand, the brand's first site, the view that contains a
+   * deep-linked angle). Unlike `set`, it keeps the open record and replaces the history
+   * entry: a default is not the person's choice, and Back must not land half-filled.
+   */
+  fill: (next: { brand?: string; site?: string; view?: string }) => void;
   /** A shareable link to whatever is on screen right now. */
   href: (overrides?: Partial<PressRoomHrefOptions>) => string;
 }
@@ -173,6 +181,7 @@ export interface PressRoomUrlState {
 export function usePressRoomUrl(): PressRoomUrlState {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const brandId = searchParams.get("brand") ?? "";
   const siteId = searchParams.get("site") ?? "";
@@ -228,16 +237,33 @@ export function usePressRoomUrl(): PressRoomUrlState {
       const query = params.toString();
       // Every field here is a discrete choice (brand, site, view, sort,
       // focus) — one change, one history entry, Back undoes exactly it.
-      router.push(query ? `?${query}` : marketingRoutes.press(), {
+      router.push(query ? `${pathname}?${query}` : pathname, {
         scroll: false,
       });
     },
-    [router, searchParams],
+    [router, searchParams, pathname],
+  );
+
+  const fill = useCallback<PressRoomUrlState["fill"]>(
+    (next) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next.brand) params.set("brand", next.brand);
+      if (next.site) params.set("site", next.site);
+      if (next.view) {
+        if (next.view !== "live") params.set("view", next.view);
+        else params.delete("view");
+        params.delete("sort");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [router, searchParams, pathname],
   );
 
   const href = useCallback<PressRoomUrlState["href"]>(
     (overrides) =>
       pressRoomHref({
+        base: pathname,
         brand: brandId,
         site: siteId,
         view: viewId,
@@ -246,7 +272,7 @@ export function usePressRoomUrl(): PressRoomUrlState {
         scenario,
         ...overrides,
       }),
-    [brandId, siteId, viewId, sort, sortIsDefault, focus, scenario],
+    [pathname, brandId, siteId, viewId, sort, sortIsDefault, focus, scenario],
   );
 
   return useMemo(
@@ -259,8 +285,21 @@ export function usePressRoomUrl(): PressRoomUrlState {
       focus,
       scenario,
       set,
+      fill,
       href,
     }),
-    [brandId, siteId, viewId, sort, sortIsDefault, focus, scenario, set, href],
+    [brandId, siteId, viewId, sort, sortIsDefault, focus, scenario, set, fill, href],
+  );
+}
+
+/**
+ * A link onto this Press Room from any panel inside it, keeping the brand and site.
+ * Panels never call `pressRoomHref` directly: they do not know which Press Room they are in.
+ */
+export function usePressRoomLink(): (options: Omit<PressRoomHrefOptions, "base">) => string {
+  const { href } = usePressRoomUrl();
+  return useCallback(
+    (options) => href({ view: null, sort: null, focus: null, scenario: null, ...options }),
+    [href],
   );
 }

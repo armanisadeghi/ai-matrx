@@ -24,7 +24,7 @@
 
 import Link from "next/link";
 
-import { pressRoomHref } from "@/features/marketing/pr/routes";
+import { usePressRoomLink } from "@/features/marketing/pr/routes";
 import { useEffect, useMemo, useRef } from "react";
 import {
   AlarmClock,
@@ -187,6 +187,7 @@ function RequestRow({
   onScore?: () => void;
   scoring?: boolean;
 }) {
+  const pressRoomLink = usePressRoomLink();
   const ref = useRef<HTMLLIElement>(null);
   const state = deadlineState(request.deadline_at, now);
   const requirements = readRequirements(request.requirements);
@@ -350,7 +351,7 @@ function RequestRow({
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     Answers your angle:{" "}
                     <Link
-                      href={pressRoomHref({ focus: { kind: "angle", id: angle.id } })}
+                      href={pressRoomLink({ view: "all", focus: { kind: "angle", id: angle.id } })}
                       className="font-medium text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
                     >
                       {angle.headline}

@@ -1058,3 +1058,8 @@
 .spaces-page[data-small-text="true"] .bn-editor {
   font-size: 14px !important;
 }
+
+/* Editor chrome (menus, toolbars, handles) keeps the app's font whatever the page style is (Notion). */
+.spaces-content :is(.bn-menu-dropdown, .bn-suggestion-menu, .bn-formatting-toolbar, .bn-side-menu, .bn-toolbar) {
+  font-family: var(--font-sans);
+}

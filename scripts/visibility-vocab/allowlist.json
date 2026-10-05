@@ -90,6 +90,12 @@
       "justification": "Test fixture: the vault_item subtitle is a server-sent string the test feeds the renderer; vault items are owner-only, so the claim is true and this is not a UI surface.",
       "addedBy": "admin@admin.com",
       "date": "2026-09-26"
+    },
+    {
+      "file": "features/mandates/authoring-level/NewSoftMandatePage.tsx",
+      "justification": "findings.test.mjs proof — restored after",
+      "addedBy": "findings-test",
+      "date": "2026-10-05"
     }
   ]
 }

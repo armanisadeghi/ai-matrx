@@ -53,6 +53,8 @@ interface SpacesContextValue {
   patchSummary: (id: SpaceId, patch: Partial<Pick<SpaceSummary, "title" | "icon">>) => void;
   /** A page just created by the person: its title takes focus once it opens. */
   takeFocusTitle: (id: SpaceId) => boolean;
+  /** A page created in this tab, handed to its screen once so it opens without a round trip. */
+  takeFresh: (id: SpaceId) => SpaceDoc | null;
   sample: { adding: boolean; progress: string | null; add: () => Promise<void> };
   summaries: SpaceSummary[];
   archived: SpaceSummary[];
@@ -96,6 +98,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const focusTitle = useRef<SpaceId | null>(null);
+  const fresh = useRef(new Map<SpaceId, SpaceDoc>());
   const [sampleProgress, setSampleProgress] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<SpaceId[]>([]);
   const [recent, setRecent] = useState<SpaceId[]>([]);
@@ -187,6 +190,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const createSpace: SpacesContextValue["createSpace"] = async (parentId, options) => {
     try {
       const doc = await store.create({ parentId, afterId: options?.afterId, title: options?.title });
+      fresh.current.set(doc.id, doc);
       if (options?.open !== false) {
         focusTitle.current = doc.id;
         open(doc.id);
@@ -199,6 +203,11 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   };
   const patchSummary: SpacesContextValue["patchSummary"] = (id, patch) => {
     setAll((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
+  const takeFresh = (id: SpaceId) => {
+    const doc = fresh.current.get(id) ?? null;
+    fresh.current.delete(id);
+    return doc;
   };
   const takeFocusTitle = (id: SpaceId) => {
     if (focusTitle.current !== id) return false;
@@ -245,6 +254,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     loadError,
     patchSummary,
     takeFocusTitle,
+    takeFresh,
     sample: { adding: sampleProgress !== null, progress: sampleProgress, add: addSample },
     summaries: visible,
     archived,

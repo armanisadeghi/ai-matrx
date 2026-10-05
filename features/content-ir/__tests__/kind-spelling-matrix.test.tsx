@@ -50,7 +50,7 @@ import {
   textCarriesKind,
   valueCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
-import { catalogProseText, inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
+import { catalogProseText, inlineKindText, nonJsonKindsAsCode } from "@/features/content-ir/surfaces/kind-one-line";
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { conversationTitleText, kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
 import { kindTextPreview, kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
@@ -469,8 +469,9 @@ describe("spelling matrix — detection only: rendered live (char by char) and r
     }
     const reload = squash(await reloadText(answer));
     expect(squash(live.join(""))).toBe(reload);
-    // Byte for byte as written, and still visible to the sentinel.
-    expect(reload).toContain(squash(answer));
-    expect(screenTextHoldsKind(reload)).toBe(true);
+    // Byte for byte as written — as an inline code span, a source view the
+    // judge does not read — and still visible to the sentinel in the source.
+    expect(nonJsonKindsAsCode(answer)).toContain(spelled);
+    expect(screenTextHoldsKind(answer)).toBe(true);
   });
 });

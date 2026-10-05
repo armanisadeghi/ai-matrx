@@ -50,7 +50,12 @@ export const TURN_INTO: Array<{ label: string; icon: React.ReactNode; type: stri
 
 /** Radix sub-menus stay open after an item that re-renders the block; Escape closes the whole stack. */
 function closeMenus() {
-  document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  // Escape on each open dropdown, innermost first (the focused element may sit outside the menu).
+  window.setTimeout(() => {
+    for (const el of [...document.querySelectorAll(".bn-menu-dropdown")].reverse()) {
+      el.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    }
+  }, 0);
 }
 
 export interface BlockMenuActions {
@@ -113,14 +118,20 @@ export function makeBlockMenu(actions: BlockMenuActions) {
           onClick={() => {
             const url = `${window.location.origin}/spaces/${actions.spaceId}#block-${block.id}`;
             void navigator.clipboard.writeText(url).then(
-              () => toast.success("Copied link to block"),
+              () => {
+                closeMenus();
+                toast.success("Copied link to block");
+              },
               () => toast.error("Could not copy the link"),
             );
           }}
         >
           Copy link to block
         </C.Generic.Menu.Item>
-        <C.Generic.Menu.Item className="bn-menu-item" icon={<CornerUpRight size={I} />} onClick={() => actions.moveBlocksTo(targets())}>
+        <C.Generic.Menu.Item className="bn-menu-item" icon={<CornerUpRight size={I} />} onClick={() => {
+            closeMenus();
+            actions.moveBlocksTo(targets());
+          }}>
           Move to
         </C.Generic.Menu.Item>
         <BlockColorsItem>

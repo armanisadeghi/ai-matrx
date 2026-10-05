@@ -11,6 +11,8 @@ import {
   monthGrid,
   momentsByDay,
   readCalendarPlan,
+  momentHref,
+  openingMonth,
   type PrMomentRow,
 } from "../calendar-model";
 
@@ -127,4 +129,18 @@ test("an event spans its days; an awareness month sits on its first day only", (
   expect([...momentsByDay([{ ...m, startsOn: "2026-10-01" }], new Map([["m1", month]])).keys()]).toEqual([
     "2026-10-01",
   ]);
+});
+
+/**
+ * A moment is a Press Room deep link too (census 2026-10-05): the selected moment rides
+ * `?moment=<id>`, so a shared link or a reload opens that moment, in its own month.
+ */
+test("a moment link opens that moment, in its own month, and keeps the other params", () => {
+  expect(momentHref("/marketing/b/planning/calendar", "x=1", "m1")).toBe(
+    "/marketing/b/planning/calendar?x=1&moment=m1",
+  );
+  const plan = readCalendarPlan(metadata)!;
+  expect(openingMonth(plan, "m1", new Date(2026, 8, 29))).toEqual(new Date(2026, 9, 1));
+  expect(openingMonth(plan, "unknown", new Date(2026, 8, 29))).toEqual(new Date(2026, 8, 1));
+  expect(openingMonth(plan, null, new Date(2026, 8, 29))).toEqual(new Date(2026, 8, 1));
 });
