@@ -24,6 +24,11 @@ import { remedyForKey } from "../visibility-vocab/remedies.mjs";
 
 const ROWS = manifestRows();
 
+// Every test that runs a REAL check over the repo is bounded: a test that cannot finish in this
+// time FAILS by name ("test timed out after …") instead of hanging the suite. A real-repo run is
+// ~12 s idle and ~100 s on a loaded machine, so 10 minutes is a hang, never contention.
+const REAL_CHECK = { timeout: 600_000 };
+
 async function states(id) {
   const findings = await runRows(ROWS.filter((r) => r.id === id), { workers: 1 });
   return new Map(findings.filter((f) => f.item_key).map((f) => [f.item_key, f.ratchet]));
@@ -137,7 +142,7 @@ test("shell quoting survives the keys checks really emit", () => {
   assert.deepEqual(parseArgs(["accept", "c", "k", "--reason", "why", "--no-commit"]).positional, ["c", "k"]);
 });
 
-test("findings <paths>: exit 1 on a new item in the paths, 0 on a clean or unwatched path", async () => {
+test("findings <paths>: exit 1 on a new item in the paths, 0 on a clean or unwatched path", REAL_CHECK, async () => {
   const all = await collect({ checkIds: ["visibility-vocabulary"], rows: ROWS });
   const fresh = all.items.find((i) => i.ratchet === "new");
   assert.ok(fresh?.file, "visibility-vocabulary has no new item to test with (accept or fix changed the fixture?)");
@@ -158,7 +163,7 @@ test("findings <paths>: exit 1 on a new item in the paths, 0 on a clean or unwat
   assert.match(cleanFile.stdout, /findings: 0 new in 1 path/);
 });
 
-test("refusals: empty reason, no adapter, a key not emitted, a key already known", async () => {
+test("refusals: empty reason, no adapter, a key not emitted, a key already known", REAL_CHECK, async () => {
   await assert.rejects(accept({ checkId: "visibility-vocabulary", key: "k", reason: " ", commit: false, rows: ROWS }), /reason .* required/);
   await assert.rejects(accept({ checkId: "url-state-written-outside-the-canonical-primitive", key: "k", reason: "r", commit: false, rows: ROWS }), /no accept adapter.*scripts\/findings\/registry\.mjs/s);
   await assert.rejects(accept({ checkId: "no-such-check", key: "k", reason: "r", commit: false, rows: ROWS }), /not a converted check/);
@@ -189,11 +194,11 @@ async function provesAccept(checkId) {
   });
 }
 
-test("accept (visibility-vocabulary, detector allowlist): the item becomes known, every other item unchanged", () => provesAccept("visibility-vocabulary"));
-test("accept (record-toasts, ids baseline + reasons map): the item becomes known, every other item unchanged", () => provesAccept("record-naming-toasts-carry-their-record"));
-test("accept (api-contract-ratchet, array baseline + sibling reasons): the item becomes known, every other item unchanged", () => provesAccept("api-contract-ratchet"));
+test("accept (visibility-vocabulary, detector allowlist): the item becomes known, every other item unchanged", REAL_CHECK, () => provesAccept("visibility-vocabulary"));
+test("accept (record-toasts, ids baseline + reasons map): the item becomes known, every other item unchanged", REAL_CHECK, () => provesAccept("record-naming-toasts-carry-their-record"));
+test("accept (api-contract-ratchet, array baseline + sibling reasons): the item becomes known, every other item unchanged", REAL_CHECK, () => provesAccept("api-contract-ratchet"));
 
-test("accept refuses an allowlist somebody else has uncommitted edits in", async () => {
+test("accept refuses an allowlist somebody else has uncommitted edits in", REAL_CHECK, async () => {
   const rel = "scripts/visibility-vocab/allowlist.json";
   await withRestored([rel], async () => {
     writeFileSync(join(REPO_ROOT, rel), `${readFileSync(join(REPO_ROOT, rel), "utf8")}\n`);

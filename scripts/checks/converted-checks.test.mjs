@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { parseItems } from "./items.mjs";
+import { RULES as UI_DRIFT_RULES } from "../ui-drift/check-ui-drift.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const json = (rel) => JSON.parse(readFileSync(join(ROOT, rel), "utf8"));
@@ -31,6 +32,8 @@ function run(cmd, items) {
   if (items) env.MATRX_ITEMS = "1";
   else delete env.MATRX_ITEMS;
   const r = spawnSync("bash", ["-c", cmd], { cwd: ROOT, env, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 600_000 });
+  // A check that outlives its bound is a failure by name, never a null exit code compared to another.
+  if (r.error) throw new Error(`"${cmd}" did not finish: ${r.error.message}`);
   return { code: r.status, out: `${r.stdout ?? ""}\n${r.stderr ?? ""}`.replace(ANSI, "") };
 }
 
@@ -50,7 +53,8 @@ function tsExport(rel, name) {
  *   staleKeys  — (output) → keys the check reports as stale this run (they cannot be emitted).
  *                A check that reports no staleness omits it: then an allowlist key the run did not
  *                match is listed as a diagnostic (a stale entry to prune), not a failure.
- *   countRatchet — the baseline holds per-key COUNTS: a grown key is `new` AND a baseline key.
+ *   countRatchet — the baseline holds per-key COUNTS: a grown key is `new` AND a baseline key; a row with
+ *                  `baselineCounts` also admits a brand-new file (allowed 0) and checks the stated baseline.
  *   mayBeClean   — the check is clean on today's tree, so zero items is the honest answer.
  *   reasonedKeys — the allowlist/baseline keys whose entry carries a reason (basis `accepted`);
  *                  omitted = the check's data holds no reasons, so every known item is `debt`.
@@ -244,8 +248,11 @@ export const CONVERTED = [
       const b = json("scripts/ui-drift/baseline.json");
       return [...new Set([...Object.keys(b.counts ?? {}), ...(b.ids ?? [])])];
     },
-    keyShape: /^(primitive-visual-class|arbitrary-text-size|raw-color|spinner-outside-spinner|styled-raw-button|hand-rolled-overlay|glass-tap-on-solid)\|[^|]+\.tsx$/,
+    // The rule set is the check's own RULES table (it grew hand-built-chip, canonical-override,
+    // unclamped-text-pill after this row was written); a key under any other rule is still refused.
+    keyShape: new RegExp(`^(${Object.keys(UI_DRIFT_RULES).join("|")})\\|[^|]+\\.tsx$`),
     countRatchet: true,
+    baselineCounts: () => json("scripts/ui-drift/baseline.json").counts ?? {},
     reasonedKeys: () => Object.entries(json("scripts/ui-drift/baseline.json").reasons ?? {}).filter(([, v]) => withReason(v)).map(([k]) => k),
   },
   {
@@ -321,8 +328,20 @@ for (const check of CONVERTED) {
       if (unmatched.length) console.log(`# ${check.id}: ${unmatched.length} allowlist key(s) matched nothing this run (stale?): ${unmatched.slice(0, 5).join(", ")}`);
     }
     if (check.countRatchet) {
-      // A count ratchet: every key — grown (new) or not (known) — IS a baseline key.
-      assert.deepEqual(fresh.filter((k) => !allow.has(k)), [], "grown keys that are not baseline keys");
+      // A count ratchet: a `new` key is either GROWN (a baseline key) or a BRAND-NEW file (no
+      // baseline entry, allowed 0). Either way the item must state the baseline it was judged
+      // against, and that number must be the baseline's own count for the key (0 when absent).
+      const counts = check.baselineCounts?.();
+      if (!counts) {
+        assert.deepEqual(fresh.filter((k) => !allow.has(k)), [], "grown keys that are not baseline keys");
+      } else {
+        // The runner cuts a title at 200 characters; a cut title no longer carries the suffix.
+        const misjudged = items
+          .filter((i) => i.status === "new" && i.title.length < 200)
+          .filter((i) => Number(/\(now \d+, baseline (\d+)\)$/.exec(i.title)?.[1]) !== (counts[i.key] ?? 0))
+          .map((i) => `${i.key} → ${i.title}`);
+        assert.deepEqual(misjudged, [], "new items whose stated baseline is not the baseline's count");
+      }
     } else {
       const newButAllowed = fresh.filter((k) => allow.has(k));
       assert.deepEqual(newButAllowed, [], "new keys that ARE allowlist keys");
