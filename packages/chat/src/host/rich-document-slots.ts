@@ -64,7 +64,6 @@ export interface AnnotationRecord {
   title?: string;
   href?: string;
   conversationId?: string;
-  [prop: string]: unknown;
 }
 
 declare module "./ui-slots" {
@@ -80,20 +79,20 @@ declare module "./ui-slots" {
     /** Draws a registered surface's actions as a bar or a menu (the host's `RichDocumentActionSurface`). */
     RichDocumentActionSurface: ComponentType<any>;
     /** The highlight / comment / suggest layer around a saved record (the host's `RecordAnnotations`). */
-    RecordAnnotations: ComponentType<{ record: any; children?: ReactNode; [prop: string]: any }>;
+    RecordAnnotations: ComponentType<any>;
     /** The ONE builder from a chat message to its rich-document action configuration. */
-    buildChatMessageActions: (facts: ChatMessageActionFacts) => ChatMessageActionConfig;
+    buildChatMessageActions: (facts: any) => ChatMessageActionConfig;
     /** The lineage origin a converted message points back at, or null when it has none. */
-    convertOriginForSource: (source: RichDocumentSource, title: string) => unknown;
+    convertOriginForSource: (source: any, title: string) => unknown;
     /** The host's dialogs for a document's actions (hook). */
     useDocumentDialogsHost: (args: {
-      convertOrigin: unknown;
+      convertOrigin: any;
       text: string;
       writable?: boolean;
       chatMessage?: { conversationId: string; messageId: string; surfaceKey: string | null } | null;
     }) => DocumentDialogsHost;
     /** The annotation identity of a source (a saved chat answer, a note), or null when it has none. */
-    annotationRecordOf: (source: RichDocumentSource) => AnnotationRecord | null;
+    annotationRecordOf: (source: any) => AnnotationRecord | null;
     /** Binds a conversation to the apply target a review-and-apply session will write back into. */
     bindConversationToApplyTarget: (conversationId: string, applyTargetId: string) => void;
   }

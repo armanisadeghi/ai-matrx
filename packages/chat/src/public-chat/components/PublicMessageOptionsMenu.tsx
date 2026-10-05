@@ -209,7 +209,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
   const handleCopyPlain = async () => {
     await copyToClipboard(content, {
       onSuccess: () => {},
-      onError: (error) => {
+      onError: (error: unknown) => {
         throw new Error(getErrorMessage(error, "Failed to copy text"));
       },
     });
@@ -220,7 +220,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       isMarkdown: true,
       formatForGoogleDocs: true,
       onSuccess: () => {},
-      onError: (error) => {
+      onError: (error: unknown) => {
         throw new Error(
           getErrorMessage(error, "Failed to copy for Google Docs"),
         );
@@ -233,7 +233,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       isMarkdown: true,
       includeThinking: true,
       onSuccess: () => {},
-      onError: (error) => {
+      onError: (error: unknown) => {
         throw new Error(getErrorMessage(error, "Failed to copy with thinking"));
       },
     });
@@ -256,12 +256,12 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       isMarkdown: true,
       formatForWordPress: true,
       showHtmlPreview: true,
-      onShowHtmlPreview: (html) => {
+      onShowHtmlPreview: (html: string) => {
         onShowHtmlPreview(html, "WordPress HTML Preview");
         onClose();
       },
       onSuccess: () => {},
-      onError: (error) => {
+      onError: (error: unknown) => {
         throw new Error(
           getErrorMessage(error, "Failed to generate HTML preview"),
         );
@@ -301,7 +301,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       isMarkdown: true,
       formatForWordPress: true,
       showHtmlPreview: true,
-      onShowHtmlPreview: async (filteredHtml) => {
+      onShowHtmlPreview: async (filteredHtml: string) => {
         try {
           const cssContent = getMarkdownStylesheet();
           const completeHTML = `<!DOCTYPE html>
@@ -318,7 +318,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
 </html>`;
           await copyToClipboard(completeHTML, {
             onSuccess: () => {},
-            onError: (error) => {
+            onError: (error: unknown) => {
               throw new Error(getErrorMessage(error, "Failed to copy HTML"));
             },
           });
@@ -327,7 +327,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
         }
       },
       onSuccess: () => {},
-      onError: (error) => {
+      onError: (error: unknown) => {
         throw new Error(getErrorMessage(error, "Failed to generate HTML"));
       },
     });

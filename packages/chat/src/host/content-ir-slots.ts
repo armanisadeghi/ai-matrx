@@ -18,6 +18,7 @@ import type { CanonicalBlockIR, KindSchema } from "@ai-matrx/content-ir";
 import { sanitizeInboundEnvelopeMetadata as sanitizeInboundEnvelopeMetadataPure } from "@ai-matrx/content-ir";
 import type { KindValidator } from "@ai-matrx/content-ir/registry";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
+import type { EntityListPage, EntityListQuery, EntityListSort } from "@ai-matrx/records/list";
 import { captureError } from "./diagnostics";
 import { createElement, type ComponentType } from "react";
 import { hostFn, hostSlot } from "./ui-slots";
@@ -25,7 +26,7 @@ import { hostFn, hostSlot } from "./ui-slots";
 /** The registry a streaming parse resolves kind schemas through (the host's `kindRegistry`). */
 export interface ContentIrKindRegistryPort {
   /** The parser-facing resolver: a sync fast path plus a cold request. */
-  resolver(): { get(kind: string): KindSchema | undefined; request(kind: string): void };
+  resolver(): { get(kind: string): KindSchema | undefined; request?(kind: string): void };
   onSchemaArrived(listener: (kind: string, schema: KindSchema | null) => void): () => void;
   ensureWarm(): Promise<void>;
   requestSchema(kind: string): void;
@@ -50,7 +51,7 @@ export interface ContentSplitterPrimitives {
   detectMatrxFileMarkdown(line: string): { isMatrxFile: boolean; url?: string; label?: string; pre?: string; post?: string };
   isCompleteUnrecognizedXmlContainer(source: string): boolean;
   isUnclosedGenericXmlOpening(source: string): boolean;
-  startUnrecognizedXmlContainer(line: string): { tracker: UnrecognizedXmlContainerTracker; [prop: string]: unknown } | null;
+  startUnrecognizedXmlContainer(line: string): { tracker: UnrecognizedXmlContainerTracker; rootStart: number } | null;
   normalizeCodeLanguage(language: string | undefined): string | undefined;
 }
 
@@ -59,6 +60,7 @@ export interface UnrecognizedXmlContainerTracker {
   consumeLine(line: string, startOffset?: number): number | null;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module "./ui-slots" {
   interface ChatUiSlots {
     /** Seeds the region-envelope memo with one already-validated envelope. */
@@ -88,17 +90,19 @@ declare module "./ui-slots" {
     /** The block classifier's text primitives. */
     contentSplitterPrimitives: () => ContentSplitterPrimitives;
     /** Draws a kind instance through the host's one value door (`KindInstanceRender`), same props. */
-    KindInstanceRender: ComponentType<{ kind: string; value: unknown; variant?: string; [prop: string]: unknown }>;
+    KindInstanceRender: ComponentType<any>;
     /** The list of records anchored to one thing (the host's `AnchorRecordsList`), same props. */
-    AnchorRecordsList: ComponentType<{ state: AnchorRecordsState; loadingText: string; emptyText: string; label?: string; className?: string }>;
+    AnchorRecordsList: ComponentType<any>;
     /** Reads the records anchored to one thing; `enabled` false reads nothing (zero-prefetch). */
     useAnchorRecords: (anchor: { type: string; id: string } | null, enabled?: boolean) => AnchorRecordsState;
     /** One page of the host's shape (kind) catalog. */
-    fetchShapePage: (query: unknown, sort: unknown) => Promise<{ rows: ShapeBrowseRow[]; total: number }>;
+    fetchShapePage: (query: EntityListQuery, sort: EntityListSort) => Promise<EntityListPage<ShapeBrowseRow>>;
     /** One shape row by kind slug, or null. */
     fetchShapeByKind: (kind: string) => Promise<ShapeBrowseRow | null>;
   }
 }
+
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /** What an anchor's record read reports (the host's `AnchorRecordsState`). */
 export interface AnchorRecordsState {
