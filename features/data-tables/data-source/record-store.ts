@@ -442,7 +442,7 @@ function manualViewId(views: readonly ViewRow[]): string | null {
 function sheetOrderViewId(views: readonly ViewRow[]): string | null {
   return (
     views.find((v) => v.definition?.order === "sorted")?.view_id ??
-    views.find((v) => v.definition?.is_default === true && v.definition?.layout === "sheet")?.view_id ??
+    views.find((v) => v.definition?.is_default === true && (v.definition?.layout === "grid" || v.definition?.layout === "sheet"))?.view_id ??
     null
   );
 }
@@ -492,7 +492,7 @@ export async function setRowOrdering(
   if (!viewId) {
     const made = await client.viewDeclare({
       table_id: args.tableId,
-      spec: { name: HAND_ORDER_VIEW, definition: { layout: "sheet" } },
+      spec: { name: HAND_ORDER_VIEW, definition: { layout: "grid" } },
     });
     if (!made.ok) return refused(made.error);
     viewId = made.data;

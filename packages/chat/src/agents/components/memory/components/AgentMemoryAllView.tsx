@@ -8,7 +8,7 @@
  */
 
 import { Loader2 } from "lucide-react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import {

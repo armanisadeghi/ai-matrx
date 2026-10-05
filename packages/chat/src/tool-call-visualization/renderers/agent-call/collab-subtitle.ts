@@ -4,9 +4,9 @@
  * structured value) reads as its one-line label — never its JSON
  * (KIND_NEVER_RAW_CHECKLIST S1, round 4).
  */
-import { kindTextLabel } from "@host/features/content-ir/surfaces/kind-text-label";
-import { deriveInstanceTitle } from "@host/features/content-ir/studio/instance-title";
-import { humanizeKind } from "@host/features/content-ir/kinds/kind-markdown-utils";
+import { kindTextLabel } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-label";
+import { deriveInstanceTitle } from "@ai-matrx/chat/utils/content-ir/instance-title";
+import { humanizeKind } from "@ai-matrx/chat/utils/content-ir/kinds/kind-markdown-utils";
 
 import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 import { getCollabCallInfo } from "./collab";

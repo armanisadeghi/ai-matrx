@@ -20,7 +20,7 @@
  */
 
 // G2: the DOM judge first — its mocks must register before BlockRenderer loads.
-import { domFrameVerdict, everyKindFrame } from "../render-paths/__tests__/dom-frame-judge";
+import { domFrameVerdict, everyKindFrame, transitionKindFrames } from "../render-paths/__tests__/dom-frame-judge";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
@@ -785,11 +785,58 @@ describe("never raw: every frame judged with the MESSAGE's stream state (V5a)", 
  * G2 — THE DOM JUDGE. Every stream this file drove above, replayed one
  * character at a time through the real accumulator (then finalized), and its
  * frames DRAWN through the real BlockRenderer in jsdom: a `__kind` key in the
- * rendered text outside a `data-kind-source` container fails. Sampled — every
- * frame where a block's `__kind` first appears, every block's last frame, and
- * every 8th kind frame between. Runs last: it reads the streams the tests
- * above registered.
+ * rendered text outside a `data-kind-source` container fails, and so does an
+ * EMPTY frame (H3a). Every frame of every stream is ~31k jsdom renders, so the
+ * transition sampler picks them (H3c): every frame where the renderer's
+ * branch changes and the frame after, every block's first and last kind
+ * frame, and every 4th kind frame between. Runs last: it reads the streams
+ * the tests above registered.
  */
+/**
+ * H3c (round 5) — EVERY kind frame drawn, nothing sampled away, for the
+ * variants that broke historically: the one-line ```json fence (2026-09-30,
+ * raw for the whole stream), a kind on the same line as prose (A5), the
+ * markdown-escaped key (P8) and a one-line array of kinds (A6). Every frame of
+ * every stream above is too many for jsdom (~31k); those get the transition
+ * sampler in G2 below.
+ */
+describe("never raw ON SCREEN: every frame of the historically broken variants (H3c)", () => {
+  const ESCAPED = '{"\\_\\_kind":"flashcard\\_set","title":"Cells","cards":[{"\\_\\_kind":"flashcard","front":"Q","back":"A"}]}';
+  const VARIANTS: Array<[string, string]> = [
+    ["one-line ```json fence", `Here are your cards:\n\n\`\`\`json\n${KIND_PAYLOAD_ONE_LINE}\n\`\`\`\n\nAfter.`],
+    ["same line as prose (A5)", `Here you go: ${KIND_PAYLOAD_ONE_LINE}\nAfter.`],
+    ["markdown-escaped key (P8)", `Here are your cards:\n\n${ESCAPED}\n\nAfter.`],
+    ["one-line array of kinds (A6)", `[${KIND_PAYLOAD_ONE_LINE},${KIND_PAYLOAD_ONE_LINE}]`],
+  ];
+
+  it.each(VARIANTS)("%s: no frame is raw or empty", async (_label, stream) => {
+    const frames: Array<{ block: RenderBlockPayload; live: boolean }> = [];
+    const accumulator = new StreamBlockAccumulator("h3c-every-frame", (payload) => {
+      frames.push({ block: (payload as Upsert).block, live: true });
+      return { type: "test/upsert", payload };
+    });
+    const dispatch = (action: unknown) => action;
+    for (const ch of stream) accumulator.ingest(ch, dispatch);
+    const liveCount = frames.length;
+    accumulator.finalize(dispatch);
+    frames.forEach((frame, i) => {
+      frame.live = i < liveCount;
+    });
+    const judged = everyKindFrame(frames);
+    expect(judged.length).toBeGreaterThan(20);
+    const leaks: string[] = [];
+    for (const frame of judged) {
+      const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.live });
+      if (verdict.failed) {
+        leaks.push(
+          `${frame.live ? "live" : "final"} ${frame.block.type}${verdict.empty ? " (EMPTY)" : ""}: ${JSON.stringify(verdict.text.replace(/\s+/g, " ").slice(0, 100))}`,
+        );
+      }
+    }
+    expect(leaks).toEqual([]);
+  }, 600_000);
+});
+
 describe("never raw ON SCREEN: every stream above, drawn through BlockRenderer (G2)", () => {
   it("no sampled frame of any stream puts a __kind key on screen", async () => {
     expect(STREAMS_SEEN.size).toBeGreaterThan(10);

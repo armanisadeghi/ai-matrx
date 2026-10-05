@@ -23,7 +23,7 @@
  */
 
 // G2: the DOM judge first — its mocks must register before BlockRenderer loads.
-import { domFrameVerdict, sampleKindFrames } from "./dom-frame-judge";
+import { domFrameVerdict, everyKindFrame } from "./dom-frame-judge";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { kindSchemaFromJsonSchema } from "@ai-matrx/content-ir";
@@ -314,9 +314,11 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
           const run = runRenderPath(pathId, kind, archetype.value);
           if (!run?.frames) throw new Error(`${pathId} produced no frames`);
           const leaks: string[] = [];
-          for (const frame of sampleKindFrames(run.frames)) {
+          // H3c: EVERY kind frame is drawn — a sampled stride could step over
+          // a short mid-block raw state (the matrix's frames are few enough).
+          for (const frame of everyKindFrame(run.frames)) {
             const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.isStreamActive });
-            if (verdict.failed) leaks.push(`${frame.block.type}${verdict.empty ? " (EMPTY)" : ""}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}${verdict.empty ? ` ${verdict.html} <<${(frame.block.content ?? "").slice(0, 120)}>> ${frame.isStreamActive}` : ""}`);
+            if (verdict.failed) leaks.push(`${frame.block.type}${verdict.empty ? ` (EMPTY ${verdict.html.slice(0, 120)})` : ""}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}`);
           }
           expect(leaks).toEqual([]);
         }, 120_000);

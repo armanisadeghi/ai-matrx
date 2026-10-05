@@ -45,7 +45,7 @@ import { Button } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
-import { RichContent } from "@host/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { SystemItemsLine } from "./SystemItemsLine";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectAllAgents } from "../../redux/agent-definition/selectors";

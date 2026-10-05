@@ -17,7 +17,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";

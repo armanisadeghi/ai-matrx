@@ -92,9 +92,17 @@ import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-
 // eslint-disable-next-line import/first
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 // eslint-disable-next-line import/first
+import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+// eslint-disable-next-line import/first
 import { TooltipProvider } from "@/components/ui/tooltip";
 // eslint-disable-next-line import/first
-import { hasKindKey, isJson5Language } from "@/features/content-ir/surfaces/json-kind-signal";
+import {
+  endsInPartialKindKey,
+  hasKindKey,
+  isJson5Language,
+  jsonKindSignal,
+  markdownCarriesKind,
+} from "@/features/content-ir/surfaces/json-kind-signal";
 // eslint-disable-next-line import/first
 import { textLeaksKind, visibleKindText } from "@/features/content-ir/surfaces/kind-leak-scan";
 
@@ -148,9 +156,9 @@ export async function domFrameVerdict(
  * empty when nothing at all was drawn.
  */
 export async function domElementVerdict(element: React.ReactElement): Promise<DomFrameVerdict> {
-  const container = document.createElement("div");
-  document.body.appendChild(container);
+  const container = judgeContainer();
   const root = createRoot(container);
+  let drawn: Node[] = [];
   try {
     await act(async () => {
       // The app's providers a leaf needs to draw at all (CodeBlock's tooltips).
@@ -167,8 +175,40 @@ export async function domElementVerdict(element: React.ReactElement): Promise<Do
       html: container.innerHTML.slice(0, 600),
     };
   } finally {
+    drawn = Array.from(container.childNodes);
     act(() => root.unmount());
-    container.remove();
+    container.replaceChildren();
+    // jsdom's selector engine (nwsapi) caches element references across
+    // queries; a cached node kept its whole detached frame alive (~1 MB per
+    // frame — every-frame judging ran out of heap). Unlink every frame's tree
+    // so a cached node retains only itself.
+    for (const node of drawn) unlinkTree(node);
+  }
+}
+
+/**
+ * ONE container for every frame: React hangs ~100 root listeners on a root's
+ * container, and nwsapi's cache kept every per-frame container (and its
+ * listeners) alive. A fresh root each frame, the same element.
+ */
+let sharedContainer: HTMLDivElement | null = null;
+function judgeContainer(): HTMLDivElement {
+  if (!sharedContainer || !sharedContainer.isConnected) {
+    sharedContainer = document.createElement("div");
+    document.body.appendChild(sharedContainer);
+  }
+  return sharedContainer;
+}
+
+function unlinkTree(node: Node): void {
+  const stack: Node[] = [node];
+  while (stack.length) {
+    const current = stack.pop()!;
+    while (current.firstChild) {
+      const child = current.firstChild;
+      current.removeChild(child);
+      stack.push(child);
+    }
   }
 }
 
@@ -214,32 +254,84 @@ export function frameHoldsKind(block: RenderBlockPayload): boolean {
   });
 }
 
-/**
- * The frames worth drawing: every frame where a block's `__kind` key first
- * appears, every block's last frame, plus every `stride`-th kind frame between.
- */
-export function sampleKindFrames<T extends { block: RenderBlockPayload }>(frames: T[], stride = 8): T[] {
-  const picked = new Set<number>();
-  const seenKind = new Set<string>();
-  const lastIndex = new Map<string, number>();
-  let kindCount = 0;
-  frames.forEach((frame, i) => {
-    const id = frame.block.blockId;
-    lastIndex.set(id, i);
-    if (!frameHoldsKind(frame.block)) return;
-    kindCount += 1;
-    if (!seenKind.has(id)) {
-      seenKind.add(id);
-      picked.add(i);
-    } else if (kindCount % stride === 0) {
-      picked.add(i);
-    }
-  });
-  for (const i of lastIndex.values()) if (frameHoldsKind(frames[i].block)) picked.add(i);
-  return [...picked].sort((a, b) => a - b).map((i) => frames[i]);
-}
-
 /** Every frame whose source holds a `__kind` key, in order (H3c: nothing sampled away). */
 export function everyKindFrame<T extends { block: RenderBlockPayload }>(frames: T[]): T[] {
   return frames.filter((frame) => frameHoldsKind(frame.block));
+}
+
+/**
+ * Everything that picks the renderer's BRANCH for a frame: block type, stream
+ * state, the renderer's own routing decision and gate, the routed language,
+ * the envelope's kind and state, and the content's kind signals. Two frames
+ * with the same signature are drawn by the same branch.
+ */
+function branchSignature(block: RenderBlockPayload, live: boolean): string {
+  let routedType = "";
+  let routedLanguage = "";
+  let gate = "";
+  try {
+    const decision = decideBlockRender(renderBlockToContentBlock(block) as never, { isStreamActive: live });
+    const routed = decision.block as { type?: string; language?: string };
+    routedType = routed.type ?? "";
+    routedLanguage = routed.language ?? "";
+    gate = decision.gate ? String((decision.gate as { kind?: unknown }).kind ?? "gate") : "";
+  } catch {
+    routedType = "threw";
+  }
+  const metadata = (block.metadata ?? {}) as Record<string, unknown>;
+  const envelope = readEnvelope(metadata) as { root?: { kind?: unknown } } | null;
+  const content = block.content ?? "";
+  return JSON.stringify([
+    block.type,
+    block.status,
+    live,
+    routedType,
+    routedLanguage,
+    gate,
+    Object.keys(metadata).sort().join(","),
+    envelope?.root?.kind ?? null,
+    metadata.kindState ?? null,
+    jsonKindSignal(content),
+    markdownCarriesKind(content),
+    endsInPartialKindKey(content),
+  ]);
+}
+
+/**
+ * The frames worth drawing without drawing all of them (H3c, round 5): every
+ * kind frame where the renderer's BRANCH changes (and the frame after it), the
+ * first and last kind frame of every block, and every `stride`-th kind frame
+ * between. A raw state, however short, is a branch of its own — so its first
+ * frame is always judged; the old fixed stride of 8 could step over it.
+ */
+export function transitionKindFrames<T extends { block: RenderBlockPayload }>(
+  frames: T[],
+  live: (frame: T) => boolean,
+  stride = 4,
+): T[] {
+  const picked = new Set<number>();
+  const lastSignature = new Map<string, string>();
+  const lastKindIndex = new Map<string, number>();
+  let kindCount = 0;
+  frames.forEach((frame, i) => {
+    if (!frameHoldsKind(frame.block)) return;
+    const id = frame.block.blockId;
+    const signature = branchSignature(frame.block, live(frame));
+    const previous = lastSignature.get(id);
+    if (previous !== signature) {
+      picked.add(i);
+      // The frame after a transition too: a branch that settles one frame late.
+      const next = frames.findIndex((f, j) => j > i && f.block.blockId === id);
+      if (next > 0) picked.add(next);
+    }
+    lastSignature.set(id, signature);
+    lastKindIndex.set(id, i);
+    kindCount += 1;
+    if (kindCount % stride === 0) picked.add(i);
+  });
+  for (const i of lastKindIndex.values()) picked.add(i);
+  return [...picked]
+    .sort((a, b) => a - b)
+    .map((i) => frames[i])
+    .filter((frame) => frameHoldsKind(frame.block));
 }

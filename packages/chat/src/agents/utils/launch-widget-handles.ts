@@ -16,7 +16,7 @@ import {
   type SelectionWriteBack,
   type WidgetHandle,
 } from "../types/widget-handle.types";
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 
 const launchHandleIds = new Set<string>();
 

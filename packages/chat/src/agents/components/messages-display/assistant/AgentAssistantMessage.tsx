@@ -101,8 +101,8 @@ import { commitInlineContentEdit } from "../../../redux/execution-system/message
 import type { AnswerEditRemarkMeta } from "../../../redux/execution-system/instance-resources/remarks";
 import { InPlaceAnswerEditor } from "./InPlaceAnswerEditor";
 import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
-import { useInPlaceTrigger } from "@host/components/rich-editor/in-place/EditInPlace";
-import { handInPlaceCaret } from "@host/components/rich-editor/in-place/caret-handoff";
+import { useInPlaceTrigger } from "@ai-matrx/chat/host/ui-slots";
+import { handInPlaceCaret } from "@ai-matrx/chat/utils/rich-editor/in-place/caret-handoff";
 import { toast } from "../../../../host/notify";
 import { useDomCapturePrint } from "../../../../conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@host/features/code/views/history/MessageFilesStrip";

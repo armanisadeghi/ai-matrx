@@ -20,7 +20,7 @@ import {
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
-import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
+import { EditableContextMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface WorkingDocumentEditorProps {
   conversationId: string;

@@ -32,8 +32,8 @@ import {
   DrawerTitle,
 } from "@ai-matrx/design-system";
 import { useMediaQueryState } from "@ai-matrx/kit/media-query";
-import { SHELL_DOMAIN_PANEL_COOKIE } from "@host/features/shell/constants/sidebar-cookie";
-import { DockedSidePanel } from "@host/components/official/side-panel/DockedSidePanel";
+import { SHELL_DOMAIN_PANEL_COOKIE } from "@ai-matrx/chat/utils/shell/sidebar-cookie";
+import { DockedSidePanel } from "@ai-matrx/chat/host/ui-slots";
 import { ComposerModeSwitch } from "../../agents/components/inputs/smart-input/composer/ComposerModeSwitch";
 import type { ComposerMode } from "../../agents/components/inputs/smart-input/composer/composer-types";
 import { registerInPlaceChatHost } from "../../agents/components/chat/in-place-chat-host";

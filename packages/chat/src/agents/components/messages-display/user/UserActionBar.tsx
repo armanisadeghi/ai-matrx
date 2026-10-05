@@ -39,7 +39,7 @@ import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@ai-matrx/tap-target";
-import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
 import { SpeakerButton } from "@host/features/tts/components/SpeakerButton";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "@host/features/overlays/openers/fullScreenEditor";

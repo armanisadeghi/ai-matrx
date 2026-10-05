@@ -4,8 +4,6 @@
     "components/mardown-display/blocks/table/StreamingTableRenderer.tsx": 1,
     "components/mardown-display/tables/MarkdownTable.tsx": 1,
     "components/rich-editor/visual/nodes/IslandBlockView.tsx": 1,
-    "components/user-generated-table-data/DeleteRowModal.tsx": 1,
-    "components/user-generated-table-data/UserTableViewer.tsx": 3,
     "features/assists/components/AssistsDock.tsx": 1,
     "features/education/onboard/components/DataOwnershipPage.tsx": 1,
     "features/files/devices/console/FilesPanel.tsx": 1,

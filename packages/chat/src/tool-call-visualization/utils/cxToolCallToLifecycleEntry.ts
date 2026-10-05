@@ -16,11 +16,11 @@ import type {
   ToolLifecycleEntry,
 } from "../../agents/types/request.types";
 import type { ToolEventPayload } from "@ai-matrx/agents/generated/stream-events";
-import { humanizeKind } from "@host/features/content-ir/kinds/kind-markdown-utils";
+import { humanizeKind } from "@ai-matrx/chat/utils/content-ir/kinds/kind-markdown-utils";
 import {
   firstKindSlug,
   jsonKindSignal,
-} from "@host/features/content-ir/surfaces/json-kind-signal";
+} from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import { displayNameFromToolEvents } from "./toolDisplayName";
 
 function parseOutput(raw: string | null): unknown {

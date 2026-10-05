@@ -7,9 +7,9 @@
  * the same button keeps the data untouched: `__kind` is data.
  */
 
-import { kindValueToMarkdown } from "@host/features/canvas/export/exportArtifactMarkdown";
-import { valueCarriesKind } from "@host/features/content-ir/surfaces/json-kind-signal";
-import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindValueToMarkdown } from "@ai-matrx/chat/utils/content-ir/kinds/kind-value-markdown";
+import { valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
+import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 
 function prettyJson(value: unknown): string {
   try {

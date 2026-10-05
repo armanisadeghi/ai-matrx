@@ -15,7 +15,7 @@
  * capability (aidream/api/client_capabilities.py).
  */
 
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import {
   deriveClientToolsFromHandle,
   type WidgetHandle,

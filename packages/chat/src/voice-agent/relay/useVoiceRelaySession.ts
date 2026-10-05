@@ -52,7 +52,7 @@ import {
 } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import type { QuestionPacing } from "./types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 
 /** The Communicator's Mandate — resolve it (and refuse loudly) in the surface. */
 export const VOICE_COMMUNICATOR_MANDATE_KEY = MANDATE_KEYS.voice__communicator;

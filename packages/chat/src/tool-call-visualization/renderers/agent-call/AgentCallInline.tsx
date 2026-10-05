@@ -9,7 +9,7 @@ import { selectAgentCallChildStream } from "../../../agents/redux/execution-syst
 import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { isImageGenerationAgentCall } from "./agentCallKind";
-import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 import { isCollaborationAgentCall, readAgentCallAnswer } from "./collab";
 import { CollabCallCard } from "./CollabCallCard";
 import { ImageGenerationResult } from "./ImageGenerationResult";

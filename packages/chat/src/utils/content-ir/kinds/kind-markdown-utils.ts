@@ -20,7 +20,7 @@ import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   deriveInstanceTitle,
   INSTANCE_TITLE_KEYS,
-} from "@/features/content-ir/studio/instance-title";
+} from "@ai-matrx/chat/utils/content-ir/instance-title";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export function isRecordValue(

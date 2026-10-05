@@ -42,7 +42,7 @@
 
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
-import { InfoHint } from "@host/components/official/InfoHint";
+import { InfoHint } from "@ai-matrx/chat/host/ui-slots";
 import { supabase } from "../../../host/db";
 import { captureError } from "../../../host/diagnostics";
 

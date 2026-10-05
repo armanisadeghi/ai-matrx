@@ -26,7 +26,7 @@ import {
 } from "../../../redux/execution-system/instance-context/instance-context.slice";
 import { ContextPolicyChipStrip } from "../../context-policies-display/ContextPolicyChipStrip";
 import { ContextPolicyChip } from "../../context-policies-display/ContextPolicyChip";
-import { FileResourceChip } from "@host/features/files/components/preview/FileResourceChip";
+import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";

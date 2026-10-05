@@ -29,7 +29,7 @@ import {
     markdownCarriesKind,
     rootKindSlug,
     valueCarriesKind,
-} from "@host/features/content-ir/surfaces/json-kind-signal";
+} from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 const hasMarkdownTable = (value: string): boolean => findTableStart(value.split("\n")) !== -1;

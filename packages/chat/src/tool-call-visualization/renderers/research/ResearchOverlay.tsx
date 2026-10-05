@@ -27,8 +27,8 @@ import {
     Link2,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import { RichContent } from "@host/components/rich-content/RichContent";
-import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
+import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
 import { RichDocument } from "@host/features/rich-document/RichDocument";
 import type { ContentSource } from "@host/features/rich-document/types";
 import { BasicMarkdownContent } from "@host/components/mardown-display/chat-markdown/BasicMarkdownContent";

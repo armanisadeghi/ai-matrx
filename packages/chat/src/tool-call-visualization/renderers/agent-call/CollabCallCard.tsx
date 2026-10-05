@@ -27,7 +27,7 @@ import { selectAgentCallChildStream } from "../../../agents/redux/execution-syst
 import { useConversationTitle } from "../../../agents/hooks/useConversationTitle";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import MarkdownStream from "@host/components/MarkdownStream";
-import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { cn } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "../../types";

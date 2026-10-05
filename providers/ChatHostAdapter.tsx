@@ -184,6 +184,7 @@ import {
 } from "@/features/canvas/host/conversation/contextPreviewKind";
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
+import "@/providers/chatUiRegistration";
 
 const DEFAULT_SERVER_URL = "https://server.app.matrxserver.com";
 

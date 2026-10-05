@@ -6,7 +6,7 @@
  *      so the judge's jsdom can actually draw a CodeBlock;
  *  and a kindless JSON card draws its text and passes.
  */
-import { domElementVerdict, frameHoldsKind } from "./dom-frame-judge";
+import { domElementVerdict, frameHoldsKind, transitionKindFrames } from "./dom-frame-judge";
 import React from "react";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
@@ -47,5 +47,27 @@ describe("the DOM frame judge fails on what it exists to catch", () => {
       data: null,
     } as unknown as RenderBlockPayload;
     expect(frameHoldsKind(block)).toBe(true);
+  });
+
+  it("(c) the transition sampler never steps over a short mid-block raw state", () => {
+    const frame = (i: number, type: string, language?: string) => ({
+      block: {
+        blockId: "b0",
+        blockIndex: 0,
+        type,
+        status: "streaming",
+        content: type === "code" ? KIND : `Here are your cards: ${KIND}`.slice(0, 40 + i),
+        data: language ? { language } : null,
+      } as unknown as RenderBlockPayload,
+      live: true,
+      i,
+    });
+    // 40 prose frames, with a 2-frame raw ```json card in the middle (frames 21–22).
+    const frames = Array.from({ length: 40 }, (_, i) =>
+      i === 21 || i === 22 ? frame(i, "code", "json") : frame(i, "text"),
+    );
+    const picked = transitionKindFrames(frames, (f) => f.live, 8).map((f) => f.i);
+    expect(picked).toContain(21);
+    expect(picked).toContain(22);
   });
 });

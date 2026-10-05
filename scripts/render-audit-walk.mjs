@@ -39,7 +39,6 @@ const REGIONS = [
   "EditableTableCell",
   "MatrxDataTableCore",
   "Grid",
-  "SheetLayout",
   "TablePage",
   "RecordsMount",
   "UnifiedDataTableRoute",

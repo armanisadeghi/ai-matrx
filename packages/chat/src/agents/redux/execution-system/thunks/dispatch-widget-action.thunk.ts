@@ -18,7 +18,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../../store/root-state";
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import {
   WIDGET_TOOL_NAME_TO_HANDLE_METHOD,

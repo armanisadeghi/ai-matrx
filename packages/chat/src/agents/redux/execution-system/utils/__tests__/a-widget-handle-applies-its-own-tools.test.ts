@@ -44,7 +44,7 @@ jest.mock("../../../../api/submit-tool-results", () => ({
   },
 }));
 
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import { buildToolInjection } from "../build-tool-injection";
 import { dispatchWidgetAction } from "../../thunks/dispatch-widget-action.thunk";
 import type { ChatRootState } from "../../../../../store/root-state";

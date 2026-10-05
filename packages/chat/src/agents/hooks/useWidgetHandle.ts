@@ -24,7 +24,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import {
   WIDGET_TOOL_NAME_TO_HANDLE_METHOD,
   type WidgetHandle,

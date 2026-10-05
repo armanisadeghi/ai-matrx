@@ -19,7 +19,7 @@
 
 import { useRef, useSyncExternalStore } from "react";
 import { ChevronDown } from "lucide-react";
-import { useCenterControlFit } from "@host/features/shell/components/header/useCenterControlFit";
+import { useCenterControlFit } from "@ai-matrx/chat/host/ui-slots";
 import {
   DropdownMenu,
   DropdownMenuContent,

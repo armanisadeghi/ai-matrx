@@ -65,7 +65,6 @@ jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [{ id: ITS_ORG, name: "Cedar Ridge Physical Therapy" }], loading: false }),
 }));
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
-jest.mock("@/features/data-tables/components/SheetLayout", () => ({ SheetLayout: () => null }));
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   recordsUiHostFor: () => ({}),
   useRecordsUiPorts: () => ({}),

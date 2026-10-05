@@ -51,7 +51,7 @@
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import {
   Info,
   AlertTriangle,

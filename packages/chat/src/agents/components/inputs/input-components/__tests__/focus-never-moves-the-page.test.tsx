@@ -185,7 +185,7 @@ it("the composer textarea focuses without scrolling the page", () => {
   for (const call of guarded) expect(call).not.toContain(",");
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { focusUnlessTypingElsewhere } = require("@/lib/dom/focus-guard") as typeof import("@/lib/dom/focus-guard");
+  const { focusUnlessTypingElsewhere } = require("@ai-matrx/chat/utils/dom/focus-guard") as typeof import("@ai-matrx/chat/utils/dom/focus-guard");
   const field = document.createElement("textarea");
   document.body.appendChild(field);
   const spy = jest.spyOn(field, "focus");

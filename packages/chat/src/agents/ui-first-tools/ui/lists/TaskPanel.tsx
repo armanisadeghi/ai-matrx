@@ -14,7 +14,7 @@
  */
 
 import { readOf } from "@host/components/read-state/ReadGate";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useState } from "react";
 import {

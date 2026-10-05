@@ -39,7 +39,7 @@ import {
   selectIsExecuting,
 } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
-import { focusUnlessTypingElsewhere } from "@host/lib/dom/focus-guard";
+import { focusUnlessTypingElsewhere } from "@ai-matrx/chat/utils/dom/focus-guard";
 import {
   composerKeyIntent,
   intentTakesTheKey,
@@ -51,7 +51,7 @@ import { ComposerDraftNotice } from "./ComposerDraftNotice";
 import { ComposerToolsNotice } from "./ComposerToolsNotice";
 // Lightweight shell (static); the menu body lazy-loads on first open.
 import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
-import { useTextareaFormatting } from "@host/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerTextMenu } from "./composer/composer-types";
 import {
   smartExecute,

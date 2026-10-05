@@ -884,12 +884,6 @@
       "reason": "Debounce before a keystroke triggers a live provider search request; a standard input debounce."
     },
     {
-      "file": "matrx-frontend/features/data-tables/hooks/useGridSelection.ts",
-      "name": "NATIVE_CLIPBOARD_GRACE_MS",
-      "kind": "ui-timing",
-      "reason": "Grace window to let a native clipboard event claim a copy gesture before falling back to the async Clipboard API; browser-compat plumbing."
-    },
-    {
       "file": "matrx-frontend/features/data-tables/table-view-url.ts",
       "name": "MAX_COLUMN_WIDTH_PX",
       "kind": "algorithmic",

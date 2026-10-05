@@ -3,7 +3,7 @@
 import type { ContextItemBodyProps } from "../types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { valueCarriesKind } from "@host/features/content-ir/surfaces/json-kind-signal";
+import { valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 function displayValue(value: unknown): string {
   if (typeof value === "string") return value;

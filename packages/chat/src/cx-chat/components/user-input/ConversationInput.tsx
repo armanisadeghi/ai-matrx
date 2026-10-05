@@ -45,7 +45,7 @@ import { ModelListDropdown } from "@host/features/ai-models/components/lab/Model
 import { selectIsDebugMode } from "../../../host/prefs";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { ResourceChips } from "../../../agents/resources/ResourceChips";
-import { useClipboardPaste } from "@host/components/ui/file-upload/useClipboardPaste";
+import { useClipboardPaste } from "@ai-matrx/chat/host/ui-slots";
 import { useFileUpload } from "@host/features/files/handler/hooks/useFileUpload";
 import { composeUploadFolderPath } from "@host/features/files/handler/utils/upload-folder-path";
 import { RunControlsMenu } from "../../../agents/components/inputs/smart-input/RunControlsMenu";

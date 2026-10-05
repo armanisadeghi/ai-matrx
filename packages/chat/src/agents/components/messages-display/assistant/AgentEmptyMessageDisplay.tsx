@@ -7,7 +7,7 @@ import type { ChatRootState } from "../../../../store/root-state";
 // The MarkdownStream FRONT DOOR (already a dynamic ssr:false shell) — never
 // re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
 // duplicated the whole rich-document engine into a second chunk group.
-import { RichContent } from "@host/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { selectIsVariableFormShown } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { emptyStateInstruction } from "./empty-state-instruction";

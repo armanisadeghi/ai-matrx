@@ -16,7 +16,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
-import { EditInPlace } from "@host/components/rich-editor/in-place/EditInPlace";
+import { EditInPlace } from "@ai-matrx/chat/host/ui-slots";
 import { USER_EDIT_ACTIONS, routeUserEditAction } from "../message-options/userEditActions";
 import {
   selectMessageById,

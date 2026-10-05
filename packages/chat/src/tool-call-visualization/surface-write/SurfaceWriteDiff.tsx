@@ -35,7 +35,7 @@ import {
   TextDiff,
   type TextDiffView,
 } from "@ai-matrx/diff/react";
-import { RichContent } from "@host/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSessionKnob } from "../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";

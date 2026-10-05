@@ -8,8 +8,8 @@
  */
 
 import { X } from "lucide-react";
-import { TableChooser } from "@host/features/unified-data/hub/TableChooser";
-import { useTablesEverywhere } from "@host/features/unified-data/hub/useTablesEverywhere";
+import { TableChooser } from "@ai-matrx/chat/host/ui-slots";
+import { useTablesEverywhere } from "@ai-matrx/chat/host/ui-slots";
 import {
   readTableReference,
   tableReferenceValue,

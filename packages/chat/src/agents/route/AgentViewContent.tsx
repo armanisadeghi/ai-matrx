@@ -23,7 +23,7 @@ import {
   fetchFullAgent,
   resetAgentToSource,
 } from "../redux/agent-definition/thunks";
-import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
+import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import { ReadFailure } from "@host/components/read-state/ReadFailure";
 import { selectCategoryById } from "../redux/agent-shortcut-categories/selectors";
 import { fetchModelOptions } from "@host/features/ai-models/redux/modelRegistrySlice";
@@ -74,7 +74,7 @@ import {
   AiToolRef,
 } from "@host/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import { RichContent } from "@host/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { AccessSummaryPanel } from "@host/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 import { agentDefinitionSummary } from "../format";

@@ -13,7 +13,7 @@
 // never add one back.
 
 import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
-import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 
 /** A `__kind` region prints as its kind's markdown, never its JSON. */
 export function documentMarkdown(markdown: string): string {

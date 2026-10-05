@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import { RichContent } from "@host/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { Button } from "@ai-matrx/design-system";
 import {
   Select,

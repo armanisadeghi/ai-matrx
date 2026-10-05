@@ -4,6 +4,7 @@
  * the kind's markdown, never the raw `{"__kind":…}` answer text.
  */
 import * as React from "react";
+import { registerChatUi } from "../../../host/ui-slots";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -14,9 +15,9 @@ jest.mock("@host/components/matrx/buttons/markdown-copy-utils", () => ({
   copyToClipboard: (...a: unknown[]) => copyToClipboard(...a),
 }));
 jest.mock("@ai-matrx/print/markdown", () => ({ getMarkdownStylesheet: () => "" }));
-jest.mock("@host/components/official/AdvancedMenu", () => ({
-  __esModule: true,
-  default: ({ items }: { items: { key: string; label: string; action: () => void }[] }) => (
+const notesCreate = jest.fn(async (..._a: unknown[]) => {});
+registerChatUi({
+  AdvancedMenu: ({ items }: { items: { key: string; label: string; action: () => void }[] }) => (
     <div>
       {items.map((i) => (
         <button key={i.key} onClick={() => void i.action()}>
@@ -25,18 +26,15 @@ jest.mock("@host/components/official/AdvancedMenu", () => ({
       ))}
     </div>
   ),
-}));
-jest.mock("@host/components/dialogs/EmailInputDialog", () => ({ EmailInputDialog: () => null }));
-jest.mock("@host/components/dialogs/AuthGateDialog", () => ({ AuthGateDialog: () => null }));
-const notesCreate = jest.fn(async (..._a: unknown[]) => {});
-jest.mock("@host/features/notes/service/notesApi", () => ({
-  NotesAPI: { create: (...a: unknown[]) => notesCreate(...a) },
-}));
+  EmailInputDialog: () => null,
+  AuthGateDialog: () => null,
+  notesCreate: (...a: unknown[]) => notesCreate(...a),
+});
 jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
 }));
 jest.mock("react-redux", () => ({ useSelector: (sel: (s: unknown) => unknown) => sel({}) }));
-jest.mock("@host/lib/redux/slices/userSlice", () => ({ selectUser: () => ({ email: "a@b.c" }) }));
+jest.mock("../../../host/identity", () => ({ selectIsAuthenticated: () => true }));
 const dispatch = jest.fn();
 jest.mock("../../../store/hooks", () => ({ useAppDispatch: () => dispatch }));
 jest.mock("../../../host/windows", () => ({

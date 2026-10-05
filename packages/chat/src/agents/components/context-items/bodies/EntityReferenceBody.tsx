@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
+import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
 import type { ContextItemBodyProps } from "../types";
 
 /** Canonical Open + new-tab + peek treatment for attached platform records. */

@@ -4,7 +4,7 @@
  * dock both import it.
  */
 
-import { isCanvasChromeRoute } from "@host/features/shell/constants/canvas-chrome-routes";
+import { isCanvasChromeRoute } from "@ai-matrx/chat/utils/shell/canvas-chrome-routes";
 
 /** Fired on window to open or close the shell's chat (the header's chat button). */
 export const SHELL_CHAT_TOGGLE_EVENT = "matrx:shell-chat-toggle";

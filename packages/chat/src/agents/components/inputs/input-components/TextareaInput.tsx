@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { toast } from "../../../../host/notify";
 import { variableInputPlaceholder } from "./variablePlaceholder";
-import { useAutoFocus } from "@host/lib/dom/useAutoFocus";
+import { useAutoFocus } from "@ai-matrx/chat/utils/dom/useAutoFocus";
 
 interface TextareaInputProps {
   value: string;

@@ -22,7 +22,7 @@ import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ResultMedia } from "../../result-fields/ResultMedia";
 import { findResultMedia } from "./findResultMedia";
 import { resultToHuman } from "../../utils/human-copy";
-import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
+import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
 
 export const ImageGenerationResult: React.FC<ToolRendererProps> = (props) => {
   const { entry, onOpenOverlay, toolGroupId } = props;

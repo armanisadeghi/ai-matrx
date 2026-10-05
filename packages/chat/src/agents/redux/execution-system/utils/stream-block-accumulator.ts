@@ -14,10 +14,10 @@
  * accumulator never re-reads completed blocks.
  */
 
-import { parseDecisionOptionsFromBody } from "@host/components/mardown-display/blocks/inline-decision/decision-options";
+import { parseDecisionOptionsFromBody } from "@ai-matrx/chat/utils/inline-decision/decision-options";
 import { QuotedKindLift } from "@host/features/content-ir/surfaces/quoted-kind-lift";
-import { MarkdownEscapedKindJson } from "@host/features/content-ir/surfaces/markdown-escaped-kind";
-import { KindImageAltUnwrap } from "@host/features/content-ir/surfaces/kind-image-alt";
+import { MarkdownEscapedKindJson } from "@ai-matrx/chat/utils/content-ir/surfaces/markdown-escaped-kind";
+import { KindImageAltUnwrap } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-image-alt";
 import { FENCE_META_KEY, splitFenceInfo } from "@host/components/markdown-core/fence-meta";
 import {
   hasUnclosedBacktickRun,
@@ -27,7 +27,7 @@ import {
   hasKindKey,
   isJsonFenceLanguage,
   jsonKindSignal,
-} from "@host/features/content-ir/surfaces/json-kind-signal";
+} from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import {
   findBalancedXmlClose,
   initialXmlBalance,
@@ -87,7 +87,7 @@ import {
 import {
   normalizeRecoveredContainerPiece,
   splitAroundEmbeddedKindJson,
-} from "@host/features/content-ir/surfaces/embedded-kind-json";
+} from "@ai-matrx/chat/utils/content-ir/surfaces/embedded-kind-json";
 import { withIrEnvelope } from "@host/features/content-ir/registry/region-envelope-memo";
 import { sessionEnvelope } from "@host/features/content-ir/registry/kind-correctors";
 import { canonicalizeCompletedLegacyQuizEnvelope } from "@host/features/content-ir/registry/legacy-quiz-envelope";

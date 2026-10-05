@@ -24,20 +24,27 @@ import {
 } from "lucide-react";
 import { copyToClipboard } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
-import AdvancedMenu, { MenuItem } from "@host/components/official/AdvancedMenu";
-import { EmailInputDialog } from "@host/components/dialogs/EmailInputDialog";
-import { AuthGateDialog } from "@host/components/dialogs/AuthGateDialog";
-import { NotesAPI } from "@host/features/notes/service/notesApi";
+import { AdvancedMenu } from "@ai-matrx/chat/host/ui-slots";
+import { EmailInputDialog } from "@ai-matrx/chat/host/ui-slots";
+import { AuthGateDialog } from "@ai-matrx/chat/host/ui-slots";
+import { notesCreate } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../host/notify";
 import { useSelector } from "react-redux";
-import { selectUser } from "@host/lib/redux/slices/userSlice";
+import { selectIsAuthenticated } from "../../host/identity";
 import { useAppDispatch } from "../../store/hooks";
 import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
-import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { removeCodeSpans, replaceFences } from "@host/lib/markdown/code-ranges";
 import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
 
 // Key used to store pending actions across the auth redirect
+/** The rows the host menu draws — its own MenuItem is richer; these are the fields this file sets. */
+interface MenuItem {
+  key: string;
+  label: string;
+  [field: string]: unknown;
+}
+
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
 interface PublicMessageOptionsMenuProps {
@@ -88,9 +95,8 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
     description?: string;
   }>({ name: "this feature" });
 
-  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const organizationId = useSelector(selectOrganizationId);
-  const isAuthenticated = !!user?.email;
 
   // ── Resume pending post-auth actions ──────────────────────────────────────
   // After the user returns from login, execute any action that was pending.
@@ -387,7 +393,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
     if (isAuthenticated) {
       try {
         const capturedOrganizationId = await ensureOrganizationContext({ organizationId });
-        await NotesAPI.create({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: capturedOrganizationId });
+        await notesCreate({ label: "New Note", content, folder_name: "Scratch", tags: [], organization_id: capturedOrganizationId });
       } catch (error) {
         if (isOrganizationSelectionCancelled(error)) throw error;
         throw error;

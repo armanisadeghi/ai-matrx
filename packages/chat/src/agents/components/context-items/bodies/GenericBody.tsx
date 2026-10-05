@@ -12,7 +12,7 @@
 
 import type { ContextItemBodyProps } from "../types";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@host/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKey } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 function carriesKind(value: unknown): boolean {
   try {

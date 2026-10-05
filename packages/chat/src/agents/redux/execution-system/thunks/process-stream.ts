@@ -258,7 +258,7 @@ import { recordContextReceipt } from "../context-rules/receipt-check";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@host/features/canvas/materialization/materializeMessageArtifacts";
 import type { CxContentBlock } from "../../../../public-chat/types/cx-tables";
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import { type WidgetHandle } from "../../../types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { surfaceDelegatedToolCall } from "./surface-delegated-tool-call.thunk";

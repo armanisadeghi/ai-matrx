@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 import { toast } from "../../../host/notify";
 
-import { RichContent } from "@host/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { NOTE_ACCENT, type NoteToolMode } from "./useNoteToolData";
 

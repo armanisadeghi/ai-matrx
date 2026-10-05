@@ -35,7 +35,7 @@ import {
   selectWidgetHandleIdFor,
   selectBuilderAdvancedSettings,
 } from "../instance-ui-state/instance-ui-state.selectors";
-import { callbackManager } from "@host/utils/callbackManager";
+import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
 import { getRegisteredCapabilities } from "../client-capabilities/registry";
 import { selectDesktopTargetInstanceId } from "../../../../host/prefs";
 // CRITICAL: register the capability providers in the SAME (client) module graph

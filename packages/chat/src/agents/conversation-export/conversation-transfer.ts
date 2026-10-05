@@ -22,7 +22,7 @@ import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
 import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import { toast } from "../../host/notify";
 import { unwrapKindEnvelopes } from "@host/lib/markdown/plain-text";
-import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
+import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { extractFlatText } from "../redux/execution-system/messages/messages.selectors";
 import { selectConversationTitle } from "../redux/execution-system/conversations/conversations.selectors";
 import { isMessagePinned } from "../message-pins/pinned-messages-store";

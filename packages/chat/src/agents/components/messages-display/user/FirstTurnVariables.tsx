@@ -34,7 +34,7 @@ import { buildVariableDisplayLines } from "../../../utils/variable-display-lines
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useEntityTitles } from "@host/features/scopes/hooks/useEntityTitles";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@host/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKey } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 /**
  * The structured value of a variable that carries a `__kind` (at any depth),

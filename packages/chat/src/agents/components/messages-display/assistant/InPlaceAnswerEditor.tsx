@@ -23,9 +23,9 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { InPlaceEditor } from "@host/components/rich-editor/in-place/InPlaceEditor";
-import { takeInPlaceCaret } from "@host/components/rich-editor/in-place/caret-handoff";
-import type { CaretContext } from "@host/components/rich-editor/core/caret-context";
+import { InPlaceEditor } from "@ai-matrx/chat/host/ui-slots";
+import { takeInPlaceCaret } from "@ai-matrx/chat/utils/rich-editor/in-place/caret-handoff";
+import type { CaretContext } from "@ai-matrx/chat/utils/rich-editor/core/caret-context";
 import { useAppDispatch } from "../../../../store/hooks";
 import { updateMessageRecord } from "../../../redux/execution-system/messages/messages.slice";
 import {
@@ -34,7 +34,7 @@ import {
 } from "../../../redux/execution-system/message-crud/save-answer-edit.thunk";
 import { toast } from "../../../../host/notify";
 import { rebaseEdit } from "../../../redux/execution-system/message-crud/answer-text-splice";
-import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
+import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
 
 interface InPlaceAnswerEditorProps {
   conversationId: string;

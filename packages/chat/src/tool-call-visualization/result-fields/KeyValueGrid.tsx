@@ -50,7 +50,7 @@ import {
 } from "./document-presentation";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { KindValueNode } from "./KindValueNode";
-import { rootKindSlug } from "@host/features/content-ir/surfaces/json-kind-signal";
+import { rootKindSlug } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 import { useReportKindAtRawRenderer } from "@host/features/content-ir/surfaces/report-kind-at-raw-renderer";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
