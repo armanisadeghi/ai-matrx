@@ -44,7 +44,6 @@ import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/c
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
 import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createFolder } from "@/features/files/redux/thunks";
 import { setFocusedId } from "@/features/files/redux/slice";
@@ -54,6 +53,7 @@ import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIco
 import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { Button } from "@ai-matrx/design-system/controls";
 export interface NewMenuProps {
   parentFolderId: string | null;
   className?: string;
@@ -192,17 +192,9 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <TooltipIcon label="Upload files or create a folder">
           <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm",
-                "hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                className,
-              )}
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
+            <Button variant="primary" icon={<Plus aria-hidden="true" />} className={className}>
               New
-            </button>
+            </Button>
           </DropdownMenuTrigger>
         </TooltipIcon>
         <DropdownMenuContent align="start" className="w-56">
