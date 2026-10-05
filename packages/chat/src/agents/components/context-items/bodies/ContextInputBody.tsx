@@ -2,6 +2,8 @@
 
 import type { ContextItemBodyProps } from "../types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
+import { valueCarriesKind } from "@host/features/content-ir/surfaces/json-kind-signal";
 
 function displayValue(value: unknown): string {
   if (typeof value === "string") return value;
@@ -44,7 +46,12 @@ export function ContextInputBody({ item }: ContextItemBodyProps) {
                 {humanizeIdentifier(key) || key}
               </dt>
               <dd className="min-w-0 whitespace-pre-wrap break-words text-sm text-foreground">
-                {displayValue(value)}
+                {valueCarriesKind(value) ? (
+                  // A value carrying a `__kind` is drawn as the kind, never as JSON.
+                  <AnswerValueView value={value} />
+                ) : (
+                  displayValue(value)
+                )}
               </dd>
             </div>
           ))}
