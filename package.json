@@ -23,6 +23,8 @@
     "type-check:queue:test": "python3 scripts/test_tsc_queue.py -v",
     "tsc": "bash scripts/tsc-capped.sh tsc",
     "tsc6": "bash scripts/tsc-capped.sh tsc6",
+    "check:spaces-snapshot-schema": "tsx --env-file=.env --env-file=.env.local scripts/check-spaces-snapshot-schema.ts",
+    "check:spaces-snapshot-schema:self-test": "tsx scripts/check-spaces-snapshot-schema.ts --self-test",
     "check:parse": "node scripts/check-parse.mjs",
     "check:parse:changed": "node scripts/check-parse.mjs --changed",
     "check:parse:fix": "node scripts/check-parse.mjs --fix",
