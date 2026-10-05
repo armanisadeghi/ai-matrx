@@ -48,7 +48,7 @@ import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -300,20 +300,14 @@ export function MatcherReviewBody({
                 : counts[entry.key as keyof typeof counts];
             if (entry.key !== "all" && n === 0) return null;
             return (
-              <button
+              <Chip
                 key={entry.key}
-                type="button"
-                onClick={() => setFilter(entry.key)}
-                className={cn(
-                  "rounded-md border px-2 py-0.5 text-[11px] transition-colors",
-                  filter === entry.key
-                    ? "border-primary/50 bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
+                pressed={filter === entry.key}
+                label={`${entry.label} ${formatCount(n)}`}
+                asChild
               >
-                {entry.label}{" "}
-                <span className="tabular-nums opacity-70">{formatCount(n)}</span>
-              </button>
+                <button type="button" onClick={() => setFilter(entry.key)} />
+              </Chip>
             );
           })}
           <div className="relative ml-auto min-w-0 flex-1 sm:max-w-[220px]">

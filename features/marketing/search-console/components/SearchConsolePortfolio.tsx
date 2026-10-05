@@ -73,6 +73,7 @@ import {
 } from "@/features/marketing/search-console/types";
 import { KeywordTrendSparkline } from "@/features/marketing/seo/keyword-research/components/KeywordMetrics";
 import type { MonthlySearchPoint } from "@/features/marketing/seo/keyword-research/types";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 /** Cards that can plausibly show a live trend line without firing an unbounded burst of RPCs. */
 const MAX_SPARKLINE_CARDS = 24;
@@ -118,19 +119,11 @@ function TrendPill({
   const rising = percent >= 0;
   const Icon = rising ? TrendingUp : TrendingDown;
   return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center gap-0.5 rounded-full border font-medium tabular-nums",
-        compact ? "px-1 py-0 text-[10px]" : "px-1.5 py-0.5 text-[11px]",
-        rising
-          ? "border-success/30 bg-success/10 text-success"
-          : "border-destructive/30 bg-destructive/10 text-destructive",
-      )}
-    >
-      <Icon className={compact ? "h-2.5 w-2.5" : "h-3 w-3"} />
-      {rising ? "+" : ""}
-      {percent.toFixed(0)}%
-    </span>
+    <Chip
+      tone={rising ? "success" : "destructive"}
+      icon={<Icon />}
+      label={`${rising ? "+" : ""}${percent.toFixed(0)}%`}
+    />
   );
 }
 

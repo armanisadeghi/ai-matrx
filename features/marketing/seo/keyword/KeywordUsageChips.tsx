@@ -11,6 +11,7 @@ import { Check, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { normalizeKeywordPhrase } from "./data";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export interface KeywordUsageField {
   label: string;
@@ -47,8 +48,11 @@ export function KeywordUsageChips({
         const present = keywordUsedIn(phrase, field.text);
         const missing = field.text === null || field.text === undefined || !field.text.trim();
         return (
-          <span
+          <Chip
             key={field.label}
+            tone={missing ? "neutral" : present ? "success" : "warning"}
+            icon={missing ? undefined : present ? <Check /> : <X />}
+            label={field.label}
             title={
               missing
                 ? `${field.label}: no observed content to check`
@@ -57,22 +61,7 @@ export function KeywordUsageChips({
                   // access-errors: ok — the keyword is absent from page text we already have in hand; a string search, not a record read.
                   : `Keyword NOT found in ${field.label.toLowerCase()}`
             }
-            className={cn(
-              "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]",
-              missing
-                ? "border-border text-muted-foreground opacity-60"
-                : present
-                  ? "border-success/40 bg-success/10 text-success"
-                  : "border-warning/40 bg-warning/10 text-warning",
-            )}
-          >
-            {missing ? null : present ? (
-              <Check className="h-2.5 w-2.5" />
-            ) : (
-              <X className="h-2.5 w-2.5" />
-            )}
-            {field.label}
-          </span>
+          />
         );
       })}
     </div>

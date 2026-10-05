@@ -23,7 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/styles/themes/utils";
 import { toast } from "@/lib/toast";
@@ -50,16 +50,10 @@ const SCOPE_WORD: Record<SettingsScope, string> = {
 
 function SourceBadge({ own, from }: { own: boolean; from: string }) {
   return (
-    <span
-      className={cn(
-        "rounded border px-1.5 py-0.5 text-[10px] font-medium",
-        own
-          ? "border-primary/40 bg-primary/10 text-primary"
-          : "border-border bg-muted/50 text-muted-foreground",
-      )}
-    >
-      {own ? "Set here" : `Inherited from ${from}`}
-    </span>
+    <Chip
+      tone={own ? "primary" : "neutral"}
+      label={own ? "Set here" : `Inherited from ${from}`}
+    />
   );
 }
 

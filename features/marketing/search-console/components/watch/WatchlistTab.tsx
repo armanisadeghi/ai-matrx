@@ -56,6 +56,7 @@ import type {
 } from "@/features/marketing/search-console/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 export function WatchlistTab({
   siteId,
@@ -241,16 +242,10 @@ export function WatchlistTab({
       // independent column filter could contradict it.
       filter: false,
       cell: (row) => (
-        <span
-          className={cn(
-            "rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-            row.kind === "query"
-              ? "bg-primary/10 text-primary"
-              : "bg-muted text-muted-foreground",
-          )}
-        >
-          {humanizeIdentifier(row.kind)}
-        </span>
+        <Chip
+          tone={row.kind === "query" ? "primary" : "neutral"}
+          label={humanizeIdentifier(row.kind)}
+        />
       ),
     },
     {

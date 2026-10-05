@@ -27,7 +27,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, Info, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -455,16 +455,10 @@ export function ScheduleCascadePanel({
                   >
                     <td className="px-2.5 py-1 text-foreground">{site.name}</td>
                     <td className="px-2.5 py-1">
-                      <span
-                        className={cn(
-                          "rounded border px-1 py-px text-[10px]",
-                          governing
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : "border-border text-muted-foreground",
-                        )}
-                      >
-                        {governing ? tierLabel(governing.scope_tier) : "Nothing"}
-                      </span>
+                      <Chip
+                        tone={governing ? "primary" : "neutral"}
+                        label={governing ? tierLabel(governing.scope_tier) : "Nothing"}
+                      />
                     </td>
                     <td className="px-2.5 py-1 text-[11px] text-muted-foreground">
                       {governing ? (

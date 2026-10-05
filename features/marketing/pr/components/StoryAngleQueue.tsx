@@ -78,6 +78,7 @@ import {
   type SourceRequest,
   type StoryAngle,
 } from "@/features/marketing/pr/types";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 
 // ─── Views ──────────────────────────────────────────────────────────────────
 
@@ -767,27 +768,19 @@ export function StoryAngleQueue({
         <h2 className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Story angles
         </h2>
-        <div className="flex min-w-0 flex-wrap items-center gap-1">
+        <ChipSet className="min-w-0">
           {ANGLE_VIEWS.map((entry) => (
-            <button
+            <Chip
               key={entry.id}
-              type="button"
+              pressed={entry.id === viewId}
+              label={`${entry.label} ${counts[entry.id] ?? 0}`}
               title={entry.hint}
-              onClick={() => onViewChange(entry.id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
-                entry.id === viewId
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
+              asChild
             >
-              {entry.label}
-              <span className="tabular-nums opacity-70">
-                {counts[entry.id] ?? 0}
-              </span>
-            </button>
+              <button type="button" onClick={() => onViewChange(entry.id)} />
+            </Chip>
           ))}
-        </div>
+        </ChipSet>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
             Order

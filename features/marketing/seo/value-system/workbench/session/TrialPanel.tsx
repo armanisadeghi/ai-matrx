@@ -94,6 +94,7 @@ import {
 } from "./trial";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 type Phase = "gathering" | "review" | "teaching" | "rules";
 
@@ -806,21 +807,15 @@ function VerdictCard({
             {formatCount(proposal.impressions)} appearances
           </p>
         </div>
-        <span
-          className={cn(
-            "shrink-0 rounded border px-1.5 py-px text-[10px] font-medium",
-            proposal.source === "rule"
-              ? "border-border bg-muted/60 text-muted-foreground"
-              : "border-primary/40 bg-primary/10 text-primary",
-          )}
+        <Chip
+          tone={proposal.source === "rule" ? "neutral" : "primary"}
+          label={proposal.source === "rule" ? "your rule" : "assistant"}
           title={
             proposal.source === "rule"
               ? "Decided by your own rule, not by a model"
               : "Your rules said nothing, so the assistant answered"
           }
-        >
-          {proposal.source === "rule" ? "your rule" : "assistant"}
-        </span>
+        />
       </div>
 
       <p className="mt-1.5 text-xs text-foreground">

@@ -78,6 +78,7 @@ import type {
 import { areaNeedsPlaces, rowOrigin, type BandMeta } from "../lib";
 import { SourceChip } from "../SourceChip";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function SectionHeader({
   icon: Icon,
@@ -152,13 +153,12 @@ function guardChips(value: SiteTopicValue) {
     .filter((g): g is string => Boolean(g))
     .filter((g) => g in GUARD_LABELS);
   return guards.map((guard) => (
-    <span
+    <Chip
       key={guard}
-      className="rounded border border-destructive/40 bg-destructive/10 px-1 py-px text-[10px] text-destructive"
+      tone="destructive"
+      label={GUARD_LABELS[guard]}
       title="A guard: keywords under this offering resolve Negative regardless of arithmetic."
-    >
-      {GUARD_LABELS[guard]}
-    </span>
+    />
   ));
 }
 

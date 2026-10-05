@@ -31,6 +31,7 @@ import { getValueVocabulary } from "../data";
 import { buildBandMeta, describeWorth, shortWorth, worthIsDemotion, reviewWindow } from "../lib";
 import { listSiteWorth, type SiteWorthRow } from "./data";
 import { WorthConvertDialog } from "./WorthConvertDialog";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 const WINDOW_LABEL = "the last 28 days";
 
@@ -49,21 +50,19 @@ function WorthChip({ row }: { row: SiteWorthRow }) {
   const effect = worthEffectOf(row);
   const points = effect === "add";
   return (
-    <span
-      className={cn(
-        "shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium tabular-nums",
+    <Chip
+      tone={
         effect === "never"
-          ? "border-destructive/40 bg-destructive/10 text-destructive"
+          ? "destructive"
           : points
             ? worthIsDemotion(effect, row.amount)
-              ? "border-border bg-muted/40 text-muted-foreground"
-              : "border-success/40 bg-success/10 text-success"
-            : "border-warning/40 bg-warning/10 text-warning",
-      )}
+              ? "neutral"
+              : "success"
+            : "warning"
+      }
+      label={shortWorth(effect, row.amount)}
       title={describeWorth(effect, row.amount)}
-    >
-      {shortWorth(effect, row.amount)}
-    </span>
+    />
   );
 }
 

@@ -36,6 +36,7 @@ import { WhyScoreBody } from "@/features/marketing/seo/value-system/workbench/Wh
 import { useKeywordMeaning } from "./keyword-meaning";
 import type { KeywordAssignSurfaces, KeywordMenuRow } from "./keyword-actions";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Chip } from "@ai-matrx/design-system/controls";
 
 function Field({
   label,
@@ -231,20 +232,16 @@ export function KeywordMeaningPanel({
                 ? "no score"
                 : `score ${Math.round(Number(value.value_score)).toLocaleString()}`}
             </span>
-            <span
-              className={cn(
-                "rounded border px-1.5 py-px text-[10px]",
+            <Chip
+              tone={value?.value_source === "override" ? "primary" : "neutral"}
+              label={
                 value?.value_source === "override"
-                  ? "border-primary/40 bg-primary/10 text-primary"
-                  : "border-border bg-muted/40 text-muted-foreground",
-              )}
-            >
-              {value?.value_source === "override"
-                ? "Your ruling"
-                : value?.value_source === "computed"
-                  ? "Computed"
-                  : "Unvalued"}
-            </span>
+                  ? "Your ruling"
+                  : value?.value_source === "computed"
+                    ? "Computed"
+                    : "Unvalued"
+              }
+            />
           </span>
         </Field>
       </div>
@@ -292,21 +289,15 @@ export function KeywordMeaningPanel({
                 <span className="font-medium text-foreground">
                   {stamp.valueLabel}
                 </span>
-                <span
-                  className={cn(
-                    "rounded border px-1 py-px text-[10px]",
-                    stamp.pinned
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border bg-muted/40 text-muted-foreground",
-                  )}
+                <Chip
+                  tone={stamp.pinned ? "primary" : "neutral"}
+                  label={stamp.pinned ? "yours" : humanizeIdentifier(stamp.source)}
                   title={
                     stamp.pinned
                       ? "A person decided this. It beats every machine signal."
                       : "Recorded by a rule or an agent — yours would beat it."
                   }
-                >
-                  {stamp.pinned ? "yours" : humanizeIdentifier(stamp.source)}
-                </span>
+                />
                 {stamp.notes ? (
                   <span className="text-[10px] text-muted-foreground">
                     — {stamp.notes}
