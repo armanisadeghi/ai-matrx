@@ -72,6 +72,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { RichContent } from "@/components/rich-content/RichContent";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 export interface ListChangeProposalViewProps {
   proposal: ListChangeProposalValue;
@@ -111,13 +113,23 @@ interface ChangedField {
   name: string;
   label: string;
   /** What the store holds now; null when the store could not be read. */
-  before: string | null;
-  after: string;
+  before: unknown;
+  after: unknown;
 }
 
 function asText(value: unknown): string {
   if (value == null) return "";
   return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+/**
+ * One side of the diff. A value carrying a kind is drawn as its kind through
+ * the one value door (compact) — never JSON text (H5, round 5); anything else
+ * is inline markdown, as before.
+ */
+function DiffValue({ value }: { value: unknown }) {
+  if (valueCarriesKind(value)) return <KindValueFrontDoor value={value} density="inline" />;
+  return <RichContent level="inline" source={asText(value)} />;
 }
 
 /** current → proposed for every column an update touches. */
@@ -133,8 +145,8 @@ function changedFields(
     .map(([name, value]) => ({
       name,
       label: snapshot?.fields.find((f) => f.name === name)?.label ?? name,
-      before: row ? asText(row.values[name]) : null,
-      after: asText(value),
+      before: row ? row.values[name] : null,
+      after: value,
     }));
 }
 
@@ -501,13 +513,13 @@ function ProposalRow({
               <div key={c.name} className="flex min-w-0 gap-2 text-xs">
                 <dt className="w-10 shrink-0 text-muted-foreground">{c.label}</dt>
                 <dd className="min-w-0 flex-1 space-y-0.5">
-                  {c.before ? (
+                  {asText(c.before) ? (
                     <span className="block text-muted-foreground line-through decoration-muted-foreground/60">
-                      <RichContent level="inline" source={c.before} />
+                      <DiffValue value={c.before} />
                     </span>
                   ) : null}
                   <span className="block text-foreground">
-                    <RichContent level="inline" source={c.after} />
+                    <DiffValue value={c.after} />
                   </span>
                 </dd>
               </div>
