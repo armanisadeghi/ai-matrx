@@ -27,7 +27,7 @@ import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
 import { formatJson } from "@ai-matrx/kit/json-format";
 import { fetchFullAgent } from "../../../agents/redux/agent-definition/thunks";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 
 // ─── Agent definition selectors ───────────────────────────────────────────────

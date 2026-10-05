@@ -46,7 +46,7 @@ import { selectInstance } from "../../../agents/redux/execution-system/conversat
 import { selectAgentById } from "../../../agents/redux/agent-definition/selectors";
 import type { ChatRootState } from "../../../store/root-state";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { useCostDisplay } from "../../../agents/cost";
 import {
   OBSERVATIONAL_MEMORY_SURFACE_NAME,

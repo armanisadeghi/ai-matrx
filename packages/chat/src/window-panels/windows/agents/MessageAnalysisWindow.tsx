@@ -19,7 +19,7 @@ import { RequestStatsPanel } from "../../../agents/components/run-controls/panel
 import { SessionStatsPanel } from "../../../agents/components/run-controls/panels/SessionStatsPanel";
 import { ClientMetricsPanel } from "../../../agents/components/run-controls/panels/ClientMetricsPanel";
 import { cn } from "@ai-matrx/design-system";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
 
 type TabId = "request" | "client" | "session";

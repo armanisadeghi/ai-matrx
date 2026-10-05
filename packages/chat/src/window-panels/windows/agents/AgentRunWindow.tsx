@@ -74,7 +74,7 @@ import { selectUserInputEntryExists } from "../../../agents/redux/execution-syst
 import { setUserVariableValues } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectInstanceVariableDefinitions } from "../../../agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import type { SourceFeature } from "../../../agents/types/instance.types";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 import { fetchAgentRunTier } from "../../../agents/redux/agent-definition/thunks";
 import { useOpenRunControlsWindow } from "../../../host/window-openers";

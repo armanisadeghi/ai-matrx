@@ -20,11 +20,10 @@ jest.mock("@host/components/ui/file-upload/useClipboardPaste", () => ({ useClipb
 jest.mock("../../resources/usePasteImageResource", () => ({ usePasteImageResource: () => ({ handlePaste: () => false }) }));
 jest.mock("../../../../hooks/useInstanceInputUndoRedo", () => ({ useInstanceInputUndoRedo: () => undefined }));
 jest.mock("../ComposerDraftNotice", () => ({ ComposerDraftNotice: () => null }));
-jest.mock("@host/features/context-menu-v3/EditableContextMenu", () => ({
-  EditableContextMenu: ({ children }: { children: React.ReactNode }) => children,
-}));
-
 import { AgentTextarea } from "../AgentTextarea";
+import { registerChatUi } from "../../../../../host/ui-slots";
+
+registerChatUi({ EditableContextMenu: ({ children }: { children: React.ReactNode }) => children });
 
 const tick = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

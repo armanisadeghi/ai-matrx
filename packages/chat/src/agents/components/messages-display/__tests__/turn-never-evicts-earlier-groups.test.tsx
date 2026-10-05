@@ -47,16 +47,12 @@ jest.mock("../assistant/AssistantTurnGroup", () => ({
 jest.mock("../assistant/AgentEmptyMessageDisplay", () => ({
   AgentEmptyMessageDisplay: () => null,
 }));
-jest.mock("@host/features/context-menu-v3/NonEditableContextMenu", () => ({
-  NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
 jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
   resolveMarkdownContext: jest.fn(),
 }));
 registerChatUi({
   isWarRoomThreadAgentSurface: () => false,
+  NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   traceWarRoomRenderPath: jest.fn(),
 });
 jest.mock(

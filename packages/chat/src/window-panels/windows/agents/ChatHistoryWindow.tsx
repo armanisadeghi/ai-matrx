@@ -44,7 +44,7 @@ import {
   AI_RESULTS_SURFACE_NAME,
   createAiResultsScope,
 } from "../../../surfaces/manifests/ai-results.manifest";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { useComposerMode } from "../../../agents/components/inputs/smart-input/composer/useComposerMode";
 import { useCompactInputMaxHeight } from "../../../agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { CHAT_WINDOWS } from "../../../host/windows";

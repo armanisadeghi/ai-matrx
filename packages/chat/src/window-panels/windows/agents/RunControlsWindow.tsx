@@ -37,7 +37,7 @@ import type { Resource } from "../../../agents/resources/types";
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceAgentId } from "../../../agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectAgentName } from "../../../agents/redux/agent-definition/selectors";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
 
 const OVERLAY_ID = CHAT_WINDOWS.runControlsWindow;

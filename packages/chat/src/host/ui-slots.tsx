@@ -14,10 +14,14 @@
  * exactly what they passed when they imported the component directly.
  */
 
-import { createElement, useRef, type ComponentType, type ReactNode } from "react";
+import { createElement, Fragment, useRef, type ComponentType, type ReactNode } from "react";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
 import { DefaultFullScreenOverlay, DefaultWindowPanel } from "./defaults/window-panel";
+import type { EditableContextMenuProps, NonEditableContextMenuProps } from "@host/features/context-menu-v3/types";
+
+/** The host context menu's props (its registration is typed against them). */
+export type { EditableContextMenuProps, NonEditableContextMenuProps };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyComponent = ComponentType<any>;
@@ -35,7 +39,8 @@ export interface ChatUiSlots {
   AuthGateDialog: AnyComponent;
   EmailInputDialog: AnyComponent;
   DockedSidePanel: AnyComponent;
-  EditableContextMenu: AnyComponent;
+  EditableContextMenu: ComponentType<EditableContextMenuProps>;
+  NonEditableContextMenu: ComponentType<NonEditableContextMenuProps>;
   TableChooser: AnyComponent;
   FileResourceChip: AnyComponent;
   ConnectorMark: AnyComponent;
@@ -219,7 +224,17 @@ export const AdvancedMenu = slotComponent("AdvancedMenu");
 export const AuthGateDialog = slotComponent("AuthGateDialog");
 export const EmailInputDialog = slotComponent("EmailInputDialog");
 export const DockedSidePanel = slotComponent("DockedSidePanel");
-export const EditableContextMenu = slotComponent("EditableContextMenu");
+/**
+ * A host with no context menu draws the wrapped content as it is (no right-click menu); the
+ * missing menu is reported once. The content is never dropped.
+ */
+function contentWithoutMenu(name: string): AnyComponent {
+  const ContentWithoutMenu = ({ children }: { children?: ReactNode }) => createElement(Fragment, null, children ?? null);
+  ContentWithoutMenu.displayName = `ContentWithoutMenu(${name})`;
+  return ContentWithoutMenu;
+}
+export const EditableContextMenu = slotComponent("EditableContextMenu", contentWithoutMenu("EditableContextMenu"));
+export const NonEditableContextMenu = slotComponent("NonEditableContextMenu", contentWithoutMenu("NonEditableContextMenu"));
 export const TableChooser = slotComponent("TableChooser");
 export const FileResourceChip = slotComponent("FileResourceChip");
 export const ConnectorMark = slotComponent("ConnectorMark");

@@ -32,7 +32,7 @@ import {
 import { useAppSelector, useAppDispatch, useAppStore } from "../../../../store/hooks";
 import { cn } from "@ai-matrx/design-system";
 
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../../host/ui-slots";
 import { CHAT_CONTEXT_MENU_PROPS } from "../../chat/agent-context/buildChatContextData";
 import { buildRunControlsApplicationScope } from "../../chat/agent-context/buildChatRunConfiguration";
 

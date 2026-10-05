@@ -18,6 +18,7 @@ import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
 import { EmailInputDialog } from "@/components/dialogs/EmailInputDialog";
 import { DockedSidePanel } from "@/components/official/side-panel/DockedSidePanel";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { TableChooser } from "@/features/unified-data/hub/TableChooser";
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
@@ -149,6 +150,7 @@ registerChatUi({
   EmailInputDialog,
   DockedSidePanel,
   EditableContextMenu,
+  NonEditableContextMenu,
   TableChooser,
   FileResourceChip,
   ConnectorMark,

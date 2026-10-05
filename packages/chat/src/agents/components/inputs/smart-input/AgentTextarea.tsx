@@ -50,7 +50,7 @@ import { useInstanceInputUndoRedo } from "../../../hooks/useInstanceInputUndoRed
 import { ComposerDraftNotice } from "./ComposerDraftNotice";
 import { ComposerToolsNotice } from "./ComposerToolsNotice";
 // Lightweight shell (static); the menu body lazy-loads on first open.
-import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
+import { EditableContextMenu } from "../../../../host/ui-slots";
 import { useTextareaFormatting } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerTextMenu } from "./composer/composer-types";
 import {

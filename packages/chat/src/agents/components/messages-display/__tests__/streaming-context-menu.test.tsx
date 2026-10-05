@@ -72,8 +72,7 @@ jest.mock("../assistant/AgentEmptyMessageDisplay", () => ({
   AgentEmptyMessageDisplay: () => null,
 }));
 
-jest.mock("@host/features/context-menu-v3/NonEditableContextMenu", () => ({
-  NonEditableContextMenu: ({
+const TranscriptMenu = ({
     suppressed,
     children,
   }: {
@@ -83,8 +82,7 @@ jest.mock("@host/features/context-menu-v3/NonEditableContextMenu", () => ({
     <div data-testid="transcript-menu" data-suppressed={String(suppressed)}>
       {children}
     </div>
-  ),
-}));
+  );
 
 jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
   resolveMarkdownContext: jest.fn(),
@@ -92,6 +90,7 @@ jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => (
 
 registerChatUi({
   isWarRoomThreadAgentSurface: () => false,
+  NonEditableContextMenu: TranscriptMenu,
   traceWarRoomRenderPath: jest.fn(),
 });
 

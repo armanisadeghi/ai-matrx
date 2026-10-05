@@ -36,7 +36,7 @@ import {
 } from "../../../agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "../../../host/ui-slots";
 import { useAppSelector } from "../../../store/hooks";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
 
 /**

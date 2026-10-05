@@ -17,7 +17,7 @@ import {
   selectAgentAssistantMarkdownDraftState,
   type AgentAssistantMarkdownDraftEntry,
 } from "../../../agents/redux/agent-assistant-markdown-draft.slice";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
 
 interface AgentAssistantMarkdownDebugWindowProps {

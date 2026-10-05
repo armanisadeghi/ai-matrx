@@ -26,7 +26,7 @@ import {
   Unlink,
   X,
 } from "lucide-react";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../../host/ui-slots";
 import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,

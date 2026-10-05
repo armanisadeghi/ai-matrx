@@ -36,7 +36,7 @@ import { buildConversationMenu } from "../../../agents/components/conversation-a
 import { renameConversation } from "../../../agents/redux/conversation-list/conversation-row-actions.thunks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_RUN_HISTORY_SURFACE_NAME } from "../../../surfaces/manifests/agent-run-history.manifest";
-import { NonEditableContextMenu } from "@host/features/context-menu-v3/NonEditableContextMenu";
+import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { selectConversationTitle } from "../../../agents/redux/execution-system/messages/messages.selectors";
 import {
   buildAgentRunHistoryScope,
