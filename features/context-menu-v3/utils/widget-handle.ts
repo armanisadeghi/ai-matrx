@@ -102,8 +102,11 @@ export function buildEditableWidgetHandle(
   const canRead = Boolean(getTextarea) || Boolean(getApplicationScope);
   if (!canWrite) return null;
 
+  // No `applyPolicy`: an agent's write into the person's own text is `ask` —
+  // the approval card shows `readText()` as the "before".
   const handle: WidgetHandle = {
     onTextReplace: ({ text }) => writeFull(text),
+    ...(canRead ? { readText: readCurrent } : {}),
   };
 
   // Insert relative to the cursor/selection. Surface callbacks carry their

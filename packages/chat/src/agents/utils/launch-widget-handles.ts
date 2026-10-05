@@ -36,6 +36,7 @@ export function registerLaunchWidgetHandle(
     "onComplete",
     "onCancel",
     "onError",
+    "readText",
   ] as const;
   for (const key of keys) {
     Object.defineProperty(handle, key, {
@@ -52,6 +53,16 @@ export function registerLaunchWidgetHandle(
       },
     });
   }
+  // The surface's write policy travels with its methods (absent = ask).
+  Object.defineProperty(handle, "applyPolicy", {
+    enumerable: true,
+    configurable: true,
+    get() {
+      return surfaceHandleId
+        ? callbackManager.get<WidgetHandle>(surfaceHandleId)?.applyPolicy
+        : undefined;
+    },
+  });
   const id = callbackManager.registerWidgetHandle(handle);
   launchHandleIds.add(id);
   return id;

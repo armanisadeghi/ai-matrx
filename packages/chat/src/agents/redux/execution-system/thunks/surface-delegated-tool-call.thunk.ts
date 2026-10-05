@@ -12,8 +12,8 @@
  *
  * It adds the pending-call + lifecycle bookkeeping, then routes to the right
  * executor:
- *   - widget_* tools  → `dispatchWidgetAction` (fire-and-forget; the widget
- *     handle resolves or posts not_found).
+ *   - widget_* tools  → `dispatchWidgetAction` (asks the person first unless
+ *     the handle is `applyPolicy: "auto"`; resolves or posts not_found).
  *   - ui-first tools  → `dispatchUiFirstTool` (validates, runs the handler —
  *     which may await the user — then POSTs the result).
  *   - surface client tools (`SurfaceManifest.clientTools`) →
@@ -230,8 +230,9 @@ export const surfaceDelegatedToolCall = (
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
     if (isWidgetActionName(toolName)) {
-      // Widget actions resolve fast and fire-and-forget — the microtask
-      // batcher posts results back so the server can resume.
+      // Widget actions write into what the person is looking at: unless the
+      // handle declares `applyPolicy: "auto"`, the dispatcher waits on the
+      // inline approval card first, then POSTs the result.
       dispatch(
         dispatchWidgetAction({
           conversationId,

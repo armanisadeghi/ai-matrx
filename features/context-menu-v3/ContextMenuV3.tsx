@@ -63,6 +63,11 @@ import { recordMenusRevision, resolveRecordMenu, subscribeRecordMenus } from "./
 import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
 import { tableTextAtTarget } from "./utils/table-at-target";
+import { findComboMatch } from "./utils/key-combo";
+import { ReactReduxContext } from "react-redux";
+import type { AppStore } from "@/lib/redux/store";
+import { selectAllShortcutsArray } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
+import { fetchUnifiedMenu } from "@ai-matrx/chat/agents/redux/agent-shortcuts/thunks";
 
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
@@ -145,6 +150,14 @@ function isInsideOpenMenu(target: EventTarget | null): boolean {
 const AlchemyMenuContent = dynamic(() => import("./components/AlchemyMenuContent"), {
   ssr: false,
 });
+
+// One advertised key combo pressed → that shortcut runs through the SAME
+// engine and launch handler as its menu item; mounted for one press only.
+const ShortcutKeyRunner = dynamic(() => import("./components/ShortcutKeyRunner"), {
+  ssr: false,
+});
+/** A key press an inner menu already answered (nested surfaces). */
+const KEY_RUN_CLAIMED = "__alchemyShortcutKeyClaimed";
 
 // The review-and-apply dialog behind "Clean up" / "Help with this…" when the
 // menu sits over a record that can be saved (a note's Write / Plain / Split
@@ -288,6 +301,10 @@ export function ContextMenuV3({
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [keyRun, setKeyRun] = useState<{ id: string; label: string } | null>(null);
+  // Read without subscribing, and without requiring a Provider (the shell also
+  // renders in isolated hosts and tests).
+  const store = React.useContext(ReactReduxContext)?.store as AppStore | undefined;
   // Where the desktop menu anchors (pointer, ⋯ button, floating icon) and a
   // counter so every open mounts a fresh engine over a fresh click target.
   const [menuPoint, setMenuPoint] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -907,6 +924,45 @@ export function ContextMenuV3({
     }
   };
 
+  // ── Advertised key combos run their shortcut ─────────────────────────────
+  // The menu prints a shortcut's `keyboard_shortcut` ("Alt+Shift+S"); a press
+  // with focus inside this surface runs it. Matched on `code` (key-combo.ts):
+  // macOS Option turns Alt+Shift+S into "Í". The rows are read from the store
+  // at press time (no subscription — the shell stays inert); an editable
+  // surface loads them on first focus so the first press already works.
+  const handleShortcutKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    const native = e.nativeEvent as Event & { [KEY_RUN_CLAIMED]?: boolean };
+    if (native[KEY_RUN_CLAIMED] || e.defaultPrevented || suppressed || e.repeat) return;
+    if (reachedThroughPortal(e)) return;
+    if (!store || (!e.altKey && !e.ctrlKey && !e.metaKey)) return;
+    const match = findComboMatch(
+      e.nativeEvent,
+      selectAllShortcutsArray(store.getState()).filter((s) => s.isActive !== false),
+      (s) => s.keyboardShortcut,
+    );
+    if (!match) return;
+    native[KEY_RUN_CLAIMED] = true;
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.target as HTMLElement;
+    captureContext(target, selectionOwnerRef.current ?? e.currentTarget);
+    setOpenSeq((n) => n + 1);
+    setKeyRun({ id: match.id, label: match.label });
+  };
+  const shortcutsRequested = useRef(false);
+  const loadShortcutsOnFocus = () => {
+    if (!store || !isEditable || shortcutsRequested.current) return;
+    shortcutsRequested.current = true;
+    // Deduped + condition-gated in the thunk: one request page-wide.
+    void store.dispatch(fetchUnifiedMenu({ scope, scopeId })).catch(() => undefined);
+  };
+  const finishKeyRun = () => {
+    setKeyRun(null);
+    // The launched run owns focus now (its panel); only release the capture.
+    selectionLocked.current = false;
+    capturedSelection.current = null;
+  };
+
   // The trigger props — merged ONTO the single child via Radix `Slot` (no
   // wrapper element: a `<div>` between `<tbody>` and a wrapped `<tr>` is
   // illegal), falling back to a `display:contents` wrapper for a Fragment or
@@ -954,7 +1010,11 @@ export function ContextMenuV3({
     // a click that focused an OUTER surface cannot steal it from the inner one.
     onPointerOver: claim("pointer"),
     onPointerDown: claim("pointer"),
-    onFocus: claim("focus"),
+    onFocus: (e: React.FocusEvent<HTMLElement>) => {
+      claim("focus")(e);
+      loadShortcutsOnFocus();
+    },
+    onKeyDown: handleShortcutKeyDown,
     ...(isMobile
       ? {
           onTouchStart: handleTouchStart,
@@ -989,6 +1049,15 @@ export function ContextMenuV3({
             onOpenChange={(open) => {
               if (!open) closeActive();
             }}
+          />
+        ) : null}
+        {keyRun && !mode ? (
+          <ShortcutKeyRunner
+            key={`key-run-${openSeq}`}
+            {...menuContentProps}
+            shortcutId={keyRun.id}
+            shortcutLabel={keyRun.label}
+            onDone={finishKeyRun}
           />
         ) : null}
         {textAgentReview ? (

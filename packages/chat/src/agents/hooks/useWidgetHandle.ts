@@ -30,7 +30,7 @@ import {
   type WidgetHandle,
 } from "../types/widget-handle.types";
 
-const LIFECYCLE_KEYS = ["onComplete", "onCancel", "onError"] as const;
+const LIFECYCLE_KEYS = ["onComplete", "onCancel", "onError", "readText"] as const;
 
 /**
  * Build the stable forwarding wrapper: a handle whose every known method key
@@ -59,6 +59,14 @@ function makeStableHandle(
       },
     });
   }
+  // The write policy is a value, not a method — read live too.
+  Object.defineProperty(stableHandle, "applyPolicy", {
+    enumerable: true,
+    configurable: true,
+    get() {
+      return handleRef.current?.applyPolicy;
+    },
+  });
   return stableHandle;
 }
 

@@ -107,7 +107,7 @@ export type WidgetActionResult =
   | { ok: true; applied: WidgetActionName }
   | {
       ok: false;
-      reason: "unsupported" | "failed" | "not_found";
+      reason: "unsupported" | "failed" | "not_found" | "declined";
       message?: string;
       cause?: unknown;
     };
@@ -153,6 +153,26 @@ export interface WidgetHandle {
   onComplete?: (result: WidgetCompletionResult) => void;
   onCancel?: () => void;
   onError?: (error: WidgetErrorPayload) => void;
+
+  // ── Write policy (non-tool) ────────────────────────────────────────────
+  /**
+   * Whether a model's widget_* write lands without the person (the surface
+   * write vocabulary: `SurfaceWriteTarget.applyPolicy`). Absent = `"ask"`:
+   * every agent write shows the conversation's inline approval card first and
+   * applies only on Approve (dispatch-widget-action.thunk.ts). `"auto"` is for
+   * a handle that already stages writes for the person's own review (the code
+   * editor buffers edits into its Review step) or a test harness.
+   *
+   * The break this closes (2026-10-05, /notes → Summarize Content): the
+   * summary run called widget_text_patch and the note body was rewritten in
+   * place, never asked.
+   */
+  applyPolicy?: "auto" | "ask";
+  /**
+   * The surface's current text, read at call time — the approval card's
+   * "before". Never advertised as a tool.
+   */
+  readText?: () => string | null;
 
   // ── Human write-back (non-tool) ────────────────────────────────────────
   /**

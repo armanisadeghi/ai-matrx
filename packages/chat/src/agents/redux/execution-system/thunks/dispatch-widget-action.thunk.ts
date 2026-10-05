@@ -12,6 +12,14 @@
  *   - Handle missing method  → { ok:false, reason:"unsupported", ... } + onError
  *   - Method throws          → { ok:false, reason:"failed", ... } + onError
  *   - Method resolves         → { ok:true, applied:toolName }
+ *   - Person declined         → is_error false, `personDeclinedToolOutput`
+ *
+ * WRITE POLICY: every widget_* tool writes into what the person is looking
+ * at. Unless the handle declares `applyPolicy: "auto"` (it stages writes for
+ * its own review), the write waits on the conversation's inline approval card
+ * — the SAME card `apply_surface_write` shows on an `ask` target — and lands
+ * only on Approve. 2026-10-05: a "Summarize Content" run on /notes called
+ * widget_text_patch and rewrote the note body, never asked.
  *
  * Every outcome POSTs to /tool_results so the server can resume the loop.
  */
@@ -29,6 +37,12 @@ import {
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
 import { submitToolResult } from "../../../api/submit-tool-results";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
+import { setInstanceStatus } from "../conversations/conversations.slice";
+import { requestInlineApproval } from "../../../ui-first-tools/redux/request-approval";
+import { personDeclinedToolOutput } from "../../../api/person-declined-tool-output";
+import { resolveAgentName } from "../../../../surfaces/hooks/useAgentNames";
+import { selectAgentById } from "../../agent-definition/selectors";
+import { buildWidgetActionApprovalChange } from "./widget-action-approval-change";
 
 export interface DispatchWidgetActionPayload {
   conversationId: string;
@@ -88,6 +102,48 @@ export const dispatchWidgetAction = createAsyncThunk<
           message: `Widget handle does not implement ${methodKey}`,
         });
       } else {
+        const decision = await askPerson({
+          handle,
+          conversationId,
+          callId,
+          toolName,
+          args,
+          dispatch,
+          getState,
+        });
+        if (decision.kind !== "approved") {
+          const output = personDeclinedToolOutput({
+            reason: decision.kind === "cancelled" ? "skipped" : "kept_as_is",
+            message:
+              decision.kind === "cancelled"
+                ? "The person closed the approval without deciding. Nothing was changed."
+                : "The person kept the text as is. Nothing was changed — do not retry this edit.",
+            ...(decision.kind === "instructions"
+              ? { instructions: decision.text }
+              : {}),
+          });
+          dispatch(
+            upsertToolLifecycle({
+              requestId,
+              callId,
+              toolName,
+              status: "completed",
+              isDelegated: true,
+              result: output,
+            }),
+          );
+          dispatch(
+            submitToolResult({
+              conversationId,
+              call_id: callId,
+              tool_name: toolName,
+              is_error: false,
+              output,
+              duration_ms: Math.round(performance.now() - startedAt),
+            }),
+          );
+          return { ok: false, reason: "declined", message: output.message };
+        }
         try {
           await method(args);
           result = { ok: true, applied: toolName };
@@ -170,3 +226,61 @@ export const dispatchWidgetAction = createAsyncThunk<
     return result;
   },
 );
+
+type WidgetApprovalDecision =
+  | { kind: "approved" }
+  | { kind: "rejected" }
+  | { kind: "instructions"; text: string }
+  | { kind: "cancelled" };
+
+/**
+ * The handle's write policy, applied: `auto` → approved without a card;
+ * otherwise the inline approval card, and the instance sits `paused` while
+ * the person decides (the honest state — same as `dispatchSurfaceWrite`).
+ */
+async function askPerson({
+  handle,
+  conversationId,
+  callId,
+  toolName,
+  args,
+  dispatch,
+  getState,
+}: {
+  handle: WidgetHandle;
+  conversationId: string;
+  callId: string;
+  toolName: WidgetActionName;
+  args: Record<string, unknown>;
+  dispatch: Parameters<typeof requestInlineApproval>[0]["dispatch"];
+  getState: () => ChatRootState;
+}): Promise<WidgetApprovalDecision> {
+  if (handle.applyPolicy === "auto") return { kind: "approved" };
+  const state = getState();
+  const agentId = state.conversations.byConversationId[conversationId]?.agentId;
+  const actorLabel = agentId
+    ? ((await resolveAgentName(agentId)) ?? selectAgentById(state, agentId)?.name)
+    : undefined;
+  let currentText: string | null = null;
+  try {
+    currentText = handle.readText?.() ?? null;
+  } catch {
+    currentText = null;
+  }
+  const change = buildWidgetActionApprovalChange({
+    toolName,
+    args,
+    ...(actorLabel ? { actorLabel } : {}),
+    currentText,
+  });
+  // The tool-result POST resumes the loop (and flips the status back).
+  dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+  const decision = await requestInlineApproval({
+    conversationId,
+    callId,
+    toolName,
+    change,
+    dispatch,
+  });
+  return decision.kind === "approved" ? { kind: "approved" } : decision;
+}

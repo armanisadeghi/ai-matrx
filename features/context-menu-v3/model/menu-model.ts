@@ -16,6 +16,7 @@
 // actionable wherever a layout puts it (top level, inside a fold, in a
 // filtered flat list).
 
+import { parseKeyCombo } from "../utils/key-combo";
 import type React from "react";
 import {
   StickyNote,
@@ -422,7 +423,10 @@ function categoryGroupNode(
   const children_: MenuNode[] = items.map((entry) => {
     const isDisabled = entry.entryType === "agent_shortcut" && !entry.agentId;
     const hint =
-      entry.entryType === "agent_shortcut" && entry.keyboardShortcut
+      // Advertised only when the shell's key listener can run it (key-combo.ts).
+      entry.entryType === "agent_shortcut" &&
+      entry.keyboardShortcut &&
+      parseKeyCombo(entry.keyboardShortcut)
         ? entry.keyboardShortcut
         : isDisabled
           ? "Not configured"

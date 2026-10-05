@@ -147,6 +147,9 @@ export function useCodeEditorWidgetHandle({
 
   const handle = useMemo<WidgetHandle>(
     () => ({
+      // Edits are BUFFERED into the editor's own Review step, never applied
+      // live — the person approves there, so no per-call approval card.
+      applyPolicy: "auto",
       onTextReplace: ({ text }) => {
         stageEdit({
           id: nextId(),

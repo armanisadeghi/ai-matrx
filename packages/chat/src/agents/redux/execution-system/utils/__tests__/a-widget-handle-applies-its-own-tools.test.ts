@@ -88,6 +88,9 @@ describe("a widget handle applies its own tools", () => {
     mockSubmitted.length = 0;
     note = "Meeting notes: draft";
     handleId = callbackManager.registerWidgetHandle({
+      // The delegation round-trip is under test here; the ask-first policy
+      // is guarded in a-widget-write-asks-the-person-first.test.ts.
+      applyPolicy: "auto",
       onTextReplace: ({ text }) => {
         note = text;
       },
