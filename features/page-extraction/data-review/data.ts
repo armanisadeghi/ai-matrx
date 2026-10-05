@@ -9,13 +9,15 @@
  * source document name, accurate accumulated row count, and latest-run status
  * — in a fixed, bounded number of round-trips (never N-per-row).
  *
- * RLS scopes every query to the owner + their org, so no explicit owner
- * filter is needed (and adding one would silently hide org-shared datasets).
+ * The catalog reads through the standard lane reader (All | Mine | My team | My Orgs | Shared |
+ * Public, plus the organization filter); row security stays the ceiling.
  */
 
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { readListRpc, type ListRpcClient } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 import { getJob } from "@/features/page-extraction/api/jobs";
 import { listResults } from "@/features/page-extraction/api/runs";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -57,7 +59,26 @@ export interface ExtractionCatalogEntry {
 }
 
 /**
- * The full catalog of the user's saved, non-archived extraction datasets.
+ * Which lanes each readable saved dataset sits in (docproc.page_extraction_job_list_lanes) — the
+ * catalog header's counts, under the catalog's own narrowing (saved; archived only when shown).
+ */
+export async function listExtractionCatalogLanes(opts?: {
+  includeArchived?: boolean;
+}): Promise<LaneRow[]> {
+  const { data, error } = await readListRpc<LaneRow>(
+    "page_extraction_job_list_lanes",
+    { p_org_id: null, p_saved_only: true, p_include_archived: opts?.includeArchived ?? false },
+    {
+      order: ["lane", "id"],
+      client: supabase.schema("docproc") as unknown as ListRpcClient,
+    },
+  );
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * The full catalog of saved, non-archived extraction datasets in one lane.
  *
  * Round-trips (bounded, independent of dataset count):
  *   1. jobs            — every saved non-archived template
@@ -67,10 +88,15 @@ export interface ExtractionCatalogEntry {
  */
 export async function listExtractionCatalog(opts?: {
   includeArchived?: boolean;
+  /** The list's lane + organization filter (its canonical list header). Absent = All. */
+  lane?: { scope: string; orgId: string | null };
 }): Promise<ExtractionCatalogEntry[]> {
   let jobsQuery = docproc
     .schema("docproc")
-    .from("page_extraction_jobs")
+    .rpc("page_extraction_job_lane_rows", {
+      p_scope: opts?.lane?.scope ?? "all",
+      p_org_id: opts?.lane?.orgId ?? null,
+    })
     .select(
       "id, name, kind, file_id, processed_document_id, latest_run_id, organization_id, created_at, updated_at",
     )

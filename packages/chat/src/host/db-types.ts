@@ -7803,8 +7803,8 @@ export type ChatDatabase = {
           user_id: string
         }[]
       }
-      agent_run_list_lane: {
-        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+      agent_run_lane_rows: {
+        Args: { p_org_id?: string; p_scope?: string }
         Returns: {
           created_at: string
           created_by: string | null
@@ -7838,6 +7838,14 @@ export type ChatDatabase = {
           isSetofReturn: true
         }
       }
+      agent_run_list_lanes: {
+        Args: { p_kind?: string; p_org_id?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
+      }
       conversation_lane: {
         Args: {
           conversation_type: string
@@ -7855,6 +7863,7 @@ export type ChatDatabase = {
         Args: { p_end?: string; p_start?: string }
         Returns: Json
       }
+      kind_readable_text: { Args: { p: string }; Returns: string }
       lane: {
         Args: { c: Database["chat"]["Tables"]["conversation"]["Row"] }
         Returns: string
@@ -11743,8 +11752,8 @@ export type ChatDatabase = {
         }
         Returns: string
       }
-      study_session_list_lane: {
-        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+      study_session_lane_rows: {
+        Args: { p_org_id?: string; p_scope?: string }
         Returns: {
           aggregate_score: Json | null
           created_at: string
@@ -11777,6 +11786,14 @@ export type ChatDatabase = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      study_session_list_lanes: {
+        Args: { p_mode?: string; p_org_id?: string; p_set_id?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
       }
     }
     Enums: {
@@ -29171,6 +29188,7 @@ export type ChatDatabase = {
           offering_id: string
           orchestra: Json
           organization_id: string
+          organization_name: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -29197,6 +29215,7 @@ export type ChatDatabase = {
           offering_id: string
           orchestra: Json
           organization_id: string
+          organization_name: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -29731,6 +29750,7 @@ export type ChatDatabase = {
           offering_id: string
           orchestra: Json
           organization_id: string
+          organization_name: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -31698,28 +31718,6 @@ export type ChatDatabase = {
         Returns: {
           n: number
           token: string
-        }[]
-      }
-      entity_lane_counts: {
-        Args: { p_eq?: Json; p_org_id?: string; p_token: string }
-        Returns: {
-          label: string
-          narrow_id: string
-          scope: string
-          total: number
-        }[]
-      }
-      entity_lane_rows: {
-        Args: {
-          p_eq?: Json
-          p_org_id?: string
-          p_scope?: string
-          p_token: string
-        }
-        Returns: {
-          id: string
-          lanes: string[]
-          organization_id: string
         }[]
       }
       entity_row_create: {

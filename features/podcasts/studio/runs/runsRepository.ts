@@ -14,6 +14,8 @@
 // the caller's runs.
 
 import { supabase } from "@/utils/supabase/client";
+import { readListRpc, type ListRpcClient } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 import { operationFailed } from "@/utils/errors";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import {
@@ -332,17 +334,40 @@ export interface ListRunsParams {
   status?: string;
   includeDrafts?: boolean;
   limit?: number;
+  /** The list's lane + organization filter (its canonical list header). Absent = All. */
+  lane?: { scope: string; orgId: string | null };
+}
+
+/**
+ * Which lanes each readable podcast run sits in (chat.agent_run_list_lanes, kind 'podcast') — the
+ * runs list header's counts, read once for every lane.
+ */
+export async function fetchPodcastRunLanes(): Promise<LaneRow[]> {
+  const { data, error } = await readListRpc<LaneRow>(
+    "agent_run_list_lanes",
+    { p_org_id: null, p_kind: "podcast" },
+    {
+      order: ["lane", "id"],
+      client: supabase.schema("chat") as unknown as ListRpcClient,
+    },
+  );
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function fetchPodcastRuns({
   status,
   includeDrafts = true,
   limit = 100,
+  lane,
 }: ListRunsParams = {}): Promise<RunSummary[]> {
   const now = Date.now();
   let query = supabase
     .schema("chat")
-    .from("agent_run")
+    .rpc("agent_run_lane_rows", {
+      p_scope: lane?.scope ?? "all",
+      p_org_id: lane?.orgId ?? undefined,
+    })
     .select(RUN_SELECT)
     .is("deleted_at", null)
     .eq("kind", "podcast")

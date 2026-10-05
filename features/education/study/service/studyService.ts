@@ -58,6 +58,8 @@ import type {
   SessionReviewRun,
 } from "../types";
 import { writeOneRow } from "@/utils/supabase/writeOne";
+import { readListRpc, type ListRpcClient } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 
 const EDU = () => supabase.schema("education");
 
@@ -237,11 +239,19 @@ export const studyService = {
   ): Promise<StudyResult<StudySessionRow[]>> {
     try {
       const userId = requireUserId();
-      let q = EDU()
-        .from("study_session")
-        .select("*")
-        .eq("created_by", userId)
-        .is("deleted_at", null);
+      let q = filter.lane
+        ? EDU()
+            .rpc("study_session_lane_rows", {
+              p_scope: filter.lane.scope,
+              p_org_id: filter.lane.orgId ?? undefined,
+            })
+            .select("*")
+            .is("deleted_at", null)
+        : EDU()
+            .from("study_session")
+            .select("*")
+            .eq("created_by", userId)
+            .is("deleted_at", null);
       if (filter.setId) q = q.eq("source_set_id", filter.setId);
       if (filter.mode) q = q.eq("mode", filter.mode);
       if (filter.status) q = q.eq("status", filter.status);
@@ -257,6 +267,22 @@ export const studyService = {
     } catch (e) {
       return fail("listSessions", e);
     }
+  },
+
+  /**
+   * Which lanes each readable session sits in (education.study_session_list_lanes) — the
+   * sessions page header's counts, under the same set / mode narrowing as the list.
+   */
+  async listSessionLanes(
+    filter: Pick<ListSessionsFilter, "setId" | "mode"> = {},
+  ): Promise<LaneRow[]> {
+    const { data, error } = await readListRpc<LaneRow>(
+      "study_session_list_lanes",
+      { p_org_id: null, p_set_id: filter.setId ?? null, p_mode: filter.mode ?? null },
+      { order: ["lane", "id"], client: EDU() as unknown as ListRpcClient },
+    );
+    if (error) throw new Error(`[study] session lanes failed: ${error.message}`);
+    return data ?? [];
   },
 
   /** Attempt rollups for many sessions — powers the history list stats line. */

@@ -23,16 +23,32 @@ import {
   decodeStudioSidebarCookie,
 } from "@/features/transcript-studio/components/resize/studioSidebarCookie";
 import { StudioRoute } from "./_components/StudioRoute";
+import { LIST_SCOPE_KINDS } from "@/lib/list-scope/types";
 
 interface PageProps {
-  searchParams: Promise<{ session?: string; import?: string }>;
+  searchParams: Promise<{
+    session?: string;
+    import?: string;
+    scope?: string;
+    org_filter?: string;
+  }>;
 }
 
 export default async function TranscriptStudioPage({
   searchParams,
 }: PageProps) {
-  const { session: initialSessionId, import: importTranscriptId } =
-    await searchParams;
+  const {
+    session: initialSessionId,
+    import: importTranscriptId,
+    scope,
+    org_filter: orgFilter,
+  } = await searchParams;
+  // The sidebar's lane + organization filter, as the address names them (absent = All, every
+  // organization). A landing tab other than All re-reads on the client.
+  const lane = {
+    scope: LIST_SCOPE_KINDS.find((k) => k === scope) ?? "all",
+    orgId: orgFilter || null,
+  };
 
   // Guests bounce to the public `/transcripts` landing (same convention as
   // the processor page) — the studio workspace has nothing to show them.
@@ -48,7 +64,7 @@ export default async function TranscriptStudioPage({
   // client-side fetch in StudioView (showing the loading state briefly).
   let seeds: Awaited<ReturnType<typeof listSessionsServer>> = [];
   try {
-    seeds = await listSessionsServer(supabase);
+    seeds = await listSessionsServer(supabase, { lane });
   } catch {
     seeds = [];
   }
@@ -92,6 +108,7 @@ export default async function TranscriptStudioPage({
     <div className="h-full overflow-hidden bg-textured">
       <StudioHydrator
         seeds={seeds}
+        lane={lane}
         initialSessionId={initialSessionId ?? null}
         sessionSeed={sessionSeed}
       />

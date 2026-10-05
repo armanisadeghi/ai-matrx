@@ -12865,8 +12865,8 @@ export type Database = {
           user_id: string
         }[]
       }
-      agent_run_list_lane: {
-        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+      agent_run_lane_rows: {
+        Args: { p_org_id?: string; p_scope?: string }
         Returns: {
           created_at: string
           created_by: string | null
@@ -12900,6 +12900,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      agent_run_list_lanes: {
+        Args: { p_kind?: string; p_org_id?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
+      }
       conversation_lane: {
         Args: {
           conversation_type: string
@@ -12917,6 +12925,7 @@ export type Database = {
         Args: { p_end?: string; p_start?: string }
         Returns: Json
       }
+      kind_readable_text: { Args: { p: string }; Returns: string }
       lane: {
         Args: { c: Database["chat"]["Tables"]["conversation"]["Row"] }
         Returns: string
@@ -41291,8 +41300,8 @@ export type Database = {
         Args: { p_id: string; p_type: string }
         Returns: boolean
       }
-      page_extraction_job_list_lane: {
-        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+      page_extraction_job_lane_rows: {
+        Args: { p_org_id?: string; p_scope?: string }
         Returns: {
           agent_id: string | null
           archived_at: string | null
@@ -41341,6 +41350,18 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      page_extraction_job_list_lanes: {
+        Args: {
+          p_include_archived?: boolean
+          p_org_id?: string
+          p_saved_only?: boolean
+        }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
       }
       recompute_canonical_for_file: {
         Args: { p_file_id: string }
@@ -43990,8 +44011,8 @@ export type Database = {
         }
         Returns: string
       }
-      study_session_list_lane: {
-        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+      study_session_lane_rows: {
+        Args: { p_org_id?: string; p_scope?: string }
         Returns: {
           aggregate_score: Json | null
           created_at: string
@@ -44024,6 +44045,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      study_session_list_lanes: {
+        Args: { p_mode?: string; p_org_id?: string; p_set_id?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
       }
     }
     Enums: {
@@ -96398,6 +96427,7 @@ export type Database = {
           offering_id: string
           orchestra: Json
           organization_id: string
+          organization_name: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -96424,6 +96454,7 @@ export type Database = {
           offering_id: string
           orchestra: Json
           organization_id: string
+          organization_name: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -96958,6 +96989,7 @@ export type Database = {
           offering_id: string
           orchestra: Json
           organization_id: string
+          organization_name: string
           shared_by_email: string
           source_agent_id: string
           tags: string[]
@@ -98925,28 +98957,6 @@ export type Database = {
         Returns: {
           n: number
           token: string
-        }[]
-      }
-      entity_lane_counts: {
-        Args: { p_eq?: Json; p_org_id?: string; p_token: string }
-        Returns: {
-          label: string
-          narrow_id: string
-          scope: string
-          total: number
-        }[]
-      }
-      entity_lane_rows: {
-        Args: {
-          p_eq?: Json
-          p_org_id?: string
-          p_scope?: string
-          p_token: string
-        }
-        Returns: {
-          id: string
-          lanes: string[]
-          organization_id: string
         }[]
       }
       entity_row_create: {
@@ -125074,8 +125084,8 @@ export type Database = {
         Args: { p_metadata: Json; p_segments: Json }
         Returns: number
       }
-      studio_session_list_lane: {
-        Args: { p_eq?: Json; p_org_id?: string; p_scope?: string }
+      studio_session_lane_rows: {
+        Args: { p_org_id?: string; p_scope?: string }
         Returns: {
           assistant_conversation_id: string | null
           assistant_conversations: Json
@@ -125108,6 +125118,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      studio_session_list_lanes: {
+        Args: { p_org_id?: string; p_source?: string }
+        Returns: {
+          id: string
+          lane: string
+          organization_id: string
+        }[]
       }
     }
     Enums: {

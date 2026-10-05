@@ -46,6 +46,20 @@ import {
   collectionWriteHandlers,
 } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
 import { parseSessionDeletes } from "./sessionAgentWrites";
+import { EntityLaneHeader } from "@/lib/entity-list/components/EntityLaneHeader";
+import { useLaneParam } from "@/lib/entity-list/useLaneParam";
+import { useLaneRows } from "@/lib/entity-list/useLaneRows";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import {
+  withStandardLanes,
+  type LaneSupport,
+  type ListScopeKind,
+} from "@/lib/list-scope/types";
+
+/** A study session has no publish path, so Public is absent. */
+const SESSION_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared"];
+const SESSION_LANE_SUPPORT: LaneSupport = { public: false };
+const SESSION_LANES = withStandardLanes(SESSION_SCOPES, { lanes: SESSION_LANE_SUPPORT });
 import {
   createEducationSessionsScope,
   EDUCATION_SESSIONS_SURFACE_NAME,
@@ -121,11 +135,27 @@ export function SessionsBrowser({
   const [isPending, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
 
+  // THE LIST HEADER (page mode): All | Mine | My team | My Orgs | Shared + the organization
+  // filter. The embedded copy (a deck's Progress screen) is the learner's own history and reads
+  // Mine with no header.
+  const [lane, setLane] = useLaneParam("study_session", SESSION_LANES);
+  const [orgFilter, setOrgFilter] = useOrgFilterParam([]);
+  const laneRows = useLaneRows(
+    () => (embedded ? Promise.resolve([]) : studyService.listSessionLanes({ setId, mode })),
+    `${embedded}:${setId ?? ""}:${mode ?? ""}:${reloadKey}`,
+  );
+  const laneScope = embedded ? null : lane;
+  const laneOrgId = embedded ? null : orgFilter;
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       setLoading(true);
-      const res = await studyService.listSessions({ setId, mode });
+      const res = await studyService.listSessions({
+        setId,
+        mode,
+        lane: laneScope ? { scope: laneScope, orgId: laneOrgId } : undefined,
+      });
       if (cancelled) return;
       if (res.error) {
         setError(res.error);
@@ -158,7 +188,7 @@ export function SessionsBrowser({
     return () => {
       cancelled = true;
     };
-  }, [setId, mode, reloadKey]);
+  }, [setId, mode, reloadKey, laneScope, laneOrgId]);
 
   const shown = hideEmpty
     ? sessions.filter(
@@ -277,12 +307,22 @@ export function SessionsBrowser({
                 Back
               </Button>
 
-              <div className="mb-5 flex items-center gap-2">
+              <div className="mb-3 flex items-center gap-2">
                 <History className="h-5 w-5 text-primary" />
                 <h1 className="text-lg font-semibold text-foreground">
                   {title}
                 </h1>
               </div>
+              <EntityLaneHeader
+                scopes={SESSION_SCOPES}
+                laneSupport={SESSION_LANE_SUPPORT}
+                lane={lane}
+                onLaneChange={setLane}
+                orgId={orgFilter}
+                onOrgChange={setOrgFilter}
+                laneRows={laneRows}
+                className="mb-4"
+              />
             </>
           )}
 
@@ -312,7 +352,9 @@ export function SessionsBrowser({
             >
               <History className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">
-                No sessions yet
+                {laneScope === null || laneScope === "all" || laneScope === "mine"
+                  ? "No sessions yet"
+                  : "No sessions in this view"}
               </p>
               <p className="max-w-sm text-xs text-muted-foreground">
                 Every study session shows up here with its score.

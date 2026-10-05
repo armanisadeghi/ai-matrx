@@ -43,6 +43,7 @@ import {
   upsertStudioDocument,
   type ConceptItemPatch,
   type SessionListFilter,
+  type SessionsLane,
   type UpsertSessionSettingsInput,
 } from "../service/studioService";
 import type {
@@ -122,12 +123,17 @@ export const fetchSessionsThunk = createAsyncThunk<
   // Prefix lives in ./actionTypes so realtimeMiddleware can match this action
   // without importing this module. Do not inline the string back here.
   TRANSCRIPT_STUDIO_FETCH_SESSIONS,
-  async (filter, { dispatch, rejectWithValue }) => {
+  async (filter, { dispatch, getState, rejectWithValue }) => {
     dispatch(sessionsListLoading());
     try {
-      const sessions = await listSessions(
-        typeof filter === "object" && filter !== null ? filter : undefined,
-      );
+      const given = typeof filter === "object" && filter !== null ? filter : {};
+      // The list's lane (set by the sidebar's header) unless the caller names one.
+      const lane =
+        given.lane !== undefined
+          ? given.lane
+          : ((getState() as { transcriptStudio?: { sessionsLane?: SessionsLane | null } })
+              .transcriptStudio?.sessionsLane ?? null);
+      const sessions = await listSessions({ ...given, lane });
       dispatch(sessionsListLoaded(sessions));
       return sessions;
     } catch (err) {

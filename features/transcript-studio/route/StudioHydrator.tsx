@@ -9,8 +9,10 @@ import {
   moduleSegmentsLoaded,
   rawSegmentsLoaded,
   recordingSegmentsLoaded,
+  sessionsLaneSet,
   sessionsListLoaded,
 } from "../redux/slice";
+import type { SessionsLane } from "../service/studioService";
 import type {
   CleanedSegment,
   ConceptItem,
@@ -43,6 +45,8 @@ interface StudioHydratorProps {
   seeds?: StudioSession[];
   initialSessionId?: string | null;
   sessionSeed?: StudioSessionSeed | null;
+  /** The lane `seeds` were read in, so the sidebar's header and the seeded list agree. */
+  lane?: SessionsLane | null;
 }
 
 /**
@@ -68,6 +72,7 @@ export function StudioHydrator({
   seeds,
   initialSessionId,
   sessionSeed,
+  lane,
 }: StudioHydratorProps) {
   const store = useStore();
   const hydratedRef = useRef(false);
@@ -76,6 +81,7 @@ export function StudioHydrator({
     if (hydratedRef.current) return;
     hydratedRef.current = true;
     if (seeds) {
+      if (lane !== undefined) store.dispatch(sessionsLaneSet(lane));
       store.dispatch(sessionsListLoaded(seeds));
       if (initialSessionId && seeds.some((s) => s.id === initialSessionId)) {
         store.dispatch(activeSessionIdSet(initialSessionId));

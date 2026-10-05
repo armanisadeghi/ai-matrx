@@ -14,16 +14,23 @@ import { useRunListRealtime } from "@/hooks/useRunListRealtime";
 import { fetchPodcastRuns } from "./runsRepository";
 import type { RunSummary } from "./run-types";
 
-export function useStudioRuns() {
+export function useStudioRuns(
+  /** The list's lane + organization filter; null while the landing lane is still being read. */
+  lane: { scope: string; orgId: string | null } | null,
+) {
   const { isAuthenticated } = useApiAuth();
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const laneScope = lane?.scope ?? null;
+  const laneOrgId = lane?.orgId ?? null;
+
   const load = useCallback(async (signal?: AbortSignal) => {
+    if (laneScope === null) return;
     try {
-      // Direct Supabase read (RLS-scoped to the user) — no backend hop.
-      const next = await fetchPodcastRuns();
+      // Direct Supabase read in the list's lane (row security stays the ceiling) — no backend hop.
+      const next = await fetchPodcastRuns({ lane: { scope: laneScope, orgId: laneOrgId } });
       if (signal?.aborted) return;
       setRuns(next);
       setError(null);
@@ -33,7 +40,7 @@ export function useStudioRuns() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, []);
+  }, [laneScope, laneOrgId]);
 
   // Initial load (once auth is ready).
   useEffect(() => {

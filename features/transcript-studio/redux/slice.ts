@@ -25,6 +25,7 @@ import type {
   StudioDocument,
   StudioSession,
 } from "../types";
+import type { SessionsLane } from "../service/studioService";
 import type { ColumnId } from "../constants";
 import {
   compareByCreatedAt,
@@ -53,6 +54,11 @@ export interface TranscriptStudioState {
   /** "loading" while the initial list fetch is in flight; "ready" once done. */
   fetchStatus: "idle" | "loading" | "ready" | "error";
   fetchError: string | null;
+  /**
+   * The session list's lane + organization filter (the studio sidebar's list header). Null = the
+   * caller's own sessions, for surfaces without a lane header.
+   */
+  sessionsLane: SessionsLane | null;
   /** Per-session ephemeral UI state — never round-trips to Supabase. */
   ui: Record<string, StudioUiState>;
   /**
@@ -156,6 +162,7 @@ const initialState: TranscriptStudioState = {
   activeSessionId: null,
   fetchStatus: "idle",
   fetchError: null,
+  sessionsLane: null,
   ui: {},
   rawById: {},
   rawIdsBySession: {},
@@ -187,6 +194,9 @@ const slice = createSlice({
   name: "transcriptStudio",
   initialState,
   reducers: {
+    sessionsLaneSet(state, action: PayloadAction<SessionsLane | null>) {
+      state.sessionsLane = action.payload;
+    },
     sessionsListLoading(state) {
       state.fetchStatus = "loading";
       state.fetchError = null;
@@ -756,6 +766,7 @@ const slice = createSlice({
 });
 
 export const {
+  sessionsLaneSet,
   sessionsListLoading,
   sessionsListLoaded,
   sessionsListFailed,

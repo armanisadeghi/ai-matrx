@@ -23,8 +23,24 @@ import {
   selectActiveSessionId,
   selectAllSessions,
   selectFetchStatus,
+  selectSessionsLane,
 } from "../redux/selectors";
-import { activeSessionIdSet } from "../redux/slice";
+import { activeSessionIdSet, sessionsLaneSet } from "../redux/slice";
+import { EntityLaneHeader } from "@/lib/entity-list/components/EntityLaneHeader";
+import { useLaneParam } from "@/lib/entity-list/useLaneParam";
+import { useLaneRows } from "@/lib/entity-list/useLaneRows";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import {
+  withStandardLanes,
+  type LaneSupport,
+  type ListScopeKind,
+} from "@/lib/list-scope/types";
+import { listSessionLanes } from "../service/studioService";
+
+/** A session has no publish path (no web-published column), so Public is absent. */
+const SESSION_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared"];
+const SESSION_LANE_SUPPORT: LaneSupport = { public: false };
+const SESSION_LANES = withStandardLanes(SESSION_SCOPES, { lanes: SESSION_LANE_SUPPORT });
 import {
   createSessionThunk,
   deleteSessionThunk,
@@ -58,6 +74,18 @@ export function StudioSidebar({
   const activeSessionId = useAppSelector(selectActiveSessionId);
   const fetchStatus = useAppSelector(selectFetchStatus);
   const userId = useAppSelector(selectUserId);
+  const storedLane = useAppSelector(selectSessionsLane);
+
+  // THE LIST HEADER: All | Mine | My team | My Orgs | Shared + the organization filter
+  // (`?scope=` opens on All via lists.landing_tab/studio_session; `?org_filter=`).
+  const [laneScope, setLane] = useLaneParam("studio_session", SESSION_LANES);
+  const [laneOrgId, setLaneOrgId] = useOrgFilterParam([]);
+  const laneRows = useLaneRows(() => listSessionLanes("studio"), `studio:${sessions.length}`);
+  useEffect(() => {
+    if (storedLane?.scope === laneScope && storedLane.orgId === laneOrgId) return;
+    dispatch(sessionsLaneSet({ scope: laneScope, orgId: laneOrgId }));
+    void dispatch(fetchSessionsThunk());
+  }, [laneScope, laneOrgId, storedLane, dispatch]);
 
   // Hydration gate. Server-rendered output uses the EMPTY initial Redux
   // store (StudioHydrator's seeds are dispatched in a useEffect, after
@@ -184,6 +212,18 @@ export function StudioSidebar({
         </div>
       </div>
 
+      <EntityLaneHeader
+        scopes={SESSION_SCOPES}
+        laneSupport={SESSION_LANE_SUPPORT}
+        lane={laneScope}
+        onLaneChange={setLane}
+        orgId={laneOrgId}
+        onOrgChange={setLaneOrgId}
+        laneRows={laneRows}
+        compact
+        className="shrink-0 border-b border-border px-2 py-1.5"
+      />
+
       <div className="flex-1 min-h-0 overflow-y-auto">
         {!isHydrated ? (
           <div className="flex items-center justify-center p-6">
@@ -206,8 +246,14 @@ export function StudioSidebar({
           </div>
         ) : sessions.length === 0 ? (
           <div className="px-3 py-4 text-xs text-muted-foreground">
-            No sessions yet. Press <span className="font-medium">New</span> to
-            start your first one.
+            {laneScope === "all" || laneScope === "mine" ? (
+              <>
+                No sessions yet. Press <span className="font-medium">New</span> to
+                start your first one.
+              </>
+            ) : (
+              "No sessions in this view."
+            )}
           </div>
         ) : (
           <ul className="flex flex-col py-1">

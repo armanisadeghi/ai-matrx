@@ -41,7 +41,19 @@ import {
   setRowScopes,
 } from "@/features/scopes/components/context-assignment/data";
 
-import { listExtractionCatalog, type ExtractionCatalogEntry } from "./data";
+import {
+  listExtractionCatalog,
+  listExtractionCatalogLanes,
+  type ExtractionCatalogEntry,
+} from "./data";
+import { EntityLaneHeader } from "@/lib/entity-list/components/EntityLaneHeader";
+import { useLaneParam } from "@/lib/entity-list/useLaneParam";
+import { useLaneRows } from "@/lib/entity-list/useLaneRows";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import { withStandardLanes, type ListScopeKind } from "@/lib/list-scope/types";
+
+const DATASET_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared", "public"];
+const DATASET_LANES = withStandardLanes(DATASET_SCOPES);
 import { CatalogRowActions } from "./CatalogRowActions";
 import { EXTRACTION_ENTITY_TYPE } from "./constants";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -74,11 +86,20 @@ export function ExtractionCatalogClient() {
   const [scopesByJob, setScopesByJob] = useState<Record<string, string[]>>({});
   const hasLoadedRef = useRef(false);
 
+  // THE LIST HEADER: All | Mine | My team | My Orgs | Shared | Public + the organization filter.
+  const [laneScope, setLane] = useLaneParam("page_extraction_job", DATASET_LANES);
+  const [laneOrgId, setLaneOrgId] = useOrgFilterParam([]);
+  const [lanesKey, setLanesKey] = useState(0);
+  const laneRows = useLaneRows(() => listExtractionCatalogLanes(), `catalog:${lanesKey}`);
+
   const load = useCallback(async () => {
+    setLanesKey((n) => n + 1);
     if (hasLoadedRef.current) setIsFetching(true);
     else setLoading(true);
     try {
-      const data = await listExtractionCatalog();
+      const data = await listExtractionCatalog({
+        lane: { scope: laneScope, orgId: laneOrgId },
+      });
       setEntries(data);
       hasLoadedRef.current = true;
       setError(null);
@@ -92,7 +113,7 @@ export function ExtractionCatalogClient() {
       setLoading(false);
       setIsFetching(false);
     }
-  }, []);
+  }, [laneScope, laneOrgId]);
 
   useEffect(() => {
     // Start after the initial render commits so the loading transition does
@@ -259,6 +280,15 @@ export function ExtractionCatalogClient() {
             sticky-frozen first column out of view along with everything
             else — see MatrxDataTable.tsx for the same one-scroller rule. */}
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
+          <EntityLaneHeader
+            scopes={DATASET_SCOPES}
+            lane={laneScope}
+            onLaneChange={setLane}
+            orgId={laneOrgId}
+            onOrgChange={setLaneOrgId}
+            laneRows={laneRows}
+            className="mb-2"
+          />
           {error ? (
             <div className="m-4 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
               {error}
@@ -372,11 +402,15 @@ export function ExtractionCatalogClient() {
                   title:
                     entries.length > 0
                       ? "No datasets match your filters"
-                      : "No extraction data yet",
+                      : laneScope !== "all" && laneScope !== "mine"
+                        ? "No datasets in this view"
+                        : "No extraction data yet",
                   description:
                     entries.length > 0
                       ? "Try clearing the search or context filter."
-                      : "Run an extraction from the PDF Extractor and your structured results will collect here, ready to review, export, and organize.",
+                      : laneScope !== "all" && laneScope !== "mine"
+                        ? "Pick All to see every dataset you can open."
+                        : "Run an extraction from the PDF Extractor and your structured results will collect here, ready to review, export, and organize.",
                 }}
               />
             </NonEditableContextMenu>

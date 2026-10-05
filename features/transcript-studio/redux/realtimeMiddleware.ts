@@ -177,7 +177,13 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
         // device while this tab slept would never reach the sidebar.
         onBackfill: async () => {
           try {
-            storeApi.dispatch(sessionsListLoaded(await listSessions()));
+            storeApi.dispatch(
+              sessionsListLoaded(
+                await listSessions({
+                  lane: (storeApi.getState() as RootState).transcriptStudio?.sessionsLane ?? null,
+                }),
+              ),
+            );
           } catch (error) {
             console.warn(
               "[studio RT] sessions catch-up failed — the sidebar may be " +

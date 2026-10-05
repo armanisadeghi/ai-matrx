@@ -15,6 +15,8 @@ import { supabase } from "@/utils/supabase/client";
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { readListRpc, type ListRpcClient } from "@/lib/entity-list/readListRpc";
+import type { LaneRow } from "@/lib/entity-list/laneRows";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
   AssistantConversationRef,
@@ -35,7 +37,12 @@ type LooseSupabase = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   from: (table: string) => any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  schema: (schema: string) => { from: (table: string) => any };
+  schema: (schema: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    from: (table: string) => any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rpc: (fn: string, args?: object) => any;
+  };
 };
 const db = supabase as unknown as LooseSupabase;
 
@@ -154,6 +161,35 @@ export function rowToSession(row: SessionRow): StudioSession {
  */
 export interface SessionListFilter {
   source?: SessionSource | "all";
+  /**
+   * The list's lane and organization filter (the sidebar's canonical header). Absent = the
+   * caller's own sessions only — the shape non-list readers (war room, scribe seeds) rely on.
+   */
+  lane?: SessionsLane | null;
+}
+
+/** The lane (`all` | `mine` | `team` | `orgs` | `shared`) and organization filter of a session list. */
+export interface SessionsLane {
+  scope: string;
+  orgId: string | null;
+}
+
+/** Studio sessions in one lane (transcripts.studio_session_list_lane), else the caller's own. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sessionsBase(client: LooseSupabase, userId: string, lane?: SessionsLane | null): any {
+  if (!lane) {
+    return client
+      .schema("transcripts")
+      .from("studio_sessions")
+      .select("*")
+      .is("deleted_at", null)
+      .eq("created_by", userId); // VIEW LAW: mine-scoped
+  }
+  return client
+    .schema("transcripts")
+    .rpc("studio_session_lane_rows", { p_scope: lane.scope, p_org_id: lane.orgId })
+    .select("*")
+    .is("deleted_at", null);
 }
 
 // Sources for sessions "embedded" in another surface — they must NOT appear in
@@ -171,17 +207,31 @@ function applySourceFilter(query: any, filter?: SessionListFilter) {
   return query.eq("source", source);
 }
 
+/**
+ * Which lanes each readable session sits in (transcripts.studio_session_list_lanes), under the same
+ * source rule as `applySourceFilter` — the sidebar header's counts, read once for every lane.
+ */
+export async function listSessionLanes(
+  source: SessionSource | "all" = "studio",
+): Promise<LaneRow[]> {
+  const { data, error } = await readListRpc<LaneRow>(
+    "studio_session_list_lanes",
+    { p_org_id: null, p_source: source },
+    {
+      order: ["lane", "id"],
+      client: supabase.schema("transcripts") as unknown as ListRpcClient,
+    },
+  );
+  if (error) throw new Error(`[studio] session lanes failed: ${error.message}`);
+  return data ?? [];
+}
+
 export async function listSessions(
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const userId = requireUserId();
   const { data, error } = await applySourceFilter(
-    db
-      .schema("transcripts")
-      .from("studio_sessions")
-      .select("*")
-      .is("deleted_at", null)
-      .eq("created_by", userId), // VIEW LAW: mine-scoped
+    sessionsBase(db, userId, filter?.lane),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -310,12 +360,7 @@ export async function listSessionsServer(
     throw new Error("[studio] listSessionsServer: no authenticated user");
   }
   const { data, error } = await applySourceFilter(
-    looseClient
-      .schema("transcripts")
-      .from("studio_sessions")
-      .select("*")
-      .is("deleted_at", null)
-      .eq("created_by", user.id), // VIEW LAW: mine-scoped
+    sessionsBase(looseClient, user.id, filter?.lane),
     filter,
   )
     .order("updated_at", { ascending: false })

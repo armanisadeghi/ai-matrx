@@ -144,6 +144,11 @@ export interface ListSessionsFilter {
   since?: string;
   limit?: number;
   offset?: number;
+  /**
+   * The list's lane + organization filter (its canonical list header). Absent = the caller's own
+   * sessions — what progress, analytics and tutor memory read.
+   */
+  lane?: { scope: string; orgId: string | null };
 }
 
 /** Phase 6 (analytics) — filters for the broad, cross-set `listAttempts`. */

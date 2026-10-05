@@ -20,6 +20,8 @@ import type { StudioReadPart } from "./slice";
 
 const selectScope = (state: RootState) => state.transcriptStudio;
 
+export const selectSessionsLane = (state: RootState) =>
+  state.transcriptStudio?.sessionsLane ?? null;
 export const selectFetchStatus = (state: RootState) =>
   state.transcriptStudio.fetchStatus;
 

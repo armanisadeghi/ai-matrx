@@ -36,7 +36,24 @@ import {
   type RunSummary,
 } from "@/features/podcasts/studio/runs/run-types";
 import { trueSummaryLiveness } from "@/features/podcasts/studio/runs/run-truth";
-import { deletePodcastRun } from "@/features/podcasts/studio/runs/runsRepository";
+import {
+  deletePodcastRun,
+  fetchPodcastRunLanes,
+} from "@/features/podcasts/studio/runs/runsRepository";
+import { EntityLaneHeader } from "@/lib/entity-list/components/EntityLaneHeader";
+import { useLaneParam } from "@/lib/entity-list/useLaneParam";
+import { useLaneRows } from "@/lib/entity-list/useLaneRows";
+import { useOrgFilterParam } from "@/lib/entity-list/orgFilterUrl";
+import {
+  withStandardLanes,
+  type LaneSupport,
+  type ListScopeKind,
+} from "@/lib/list-scope/types";
+
+/** A run has no publish path, so Public is absent. */
+const RUN_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared"];
+const RUN_LANE_SUPPORT: LaneSupport = { public: false };
+const RUN_LANES = withStandardLanes(RUN_SCOPES, { lanes: RUN_LANE_SUPPORT });
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { RunHistoryCard, runEditHref, runHistoryHref } from "./RunHistoryCard";
@@ -94,7 +111,13 @@ export function RunsManageView({
 }: {
   getSurfaceScope: () => ApplicationScope;
 }) {
-  const { runs, loading, error, refresh } = useStudioRuns();
+  // THE LIST HEADER: All | Mine | My team | My Orgs | Shared + the organization filter.
+  const [lane, setLane] = useLaneParam("agent_run", RUN_LANES);
+  const [orgFilter, setOrgFilter] = useOrgFilterParam([]);
+  const [lanesKey, setLanesKey] = useState(0);
+  const laneRows = useLaneRows(() => fetchPodcastRunLanes(), `podcast:${lanesKey}`);
+  const { runs, loading, error, refresh } = useStudioRuns({ scope: lane, orgId: orgFilter });
+
   const [filter, setFilter] = useState<FilterKey>("all");
   const [deletingRunId, setDeletingRunId] = useState<string | null>(null);
   const [deleteRequest, setDeleteRequest] = useState<DeleteRequest | null>(
@@ -151,6 +174,7 @@ export function RunsManageView({
       await deletePodcastRun(run.run_id);
       setDeleteRequest(null);
       await refresh();
+      setLanesKey((n) => n + 1);
       toast.success("Run removed from Studio");
     } catch (deleteError) {
       const message =
@@ -244,7 +268,7 @@ export function RunsManageView({
     <section className="mt-10">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Your runs
+          Runs
         </h2>
         <button
           onClick={() => void refresh()}
@@ -255,6 +279,17 @@ export function RunsManageView({
           Refresh
         </button>
       </div>
+
+      <EntityLaneHeader
+        scopes={RUN_SCOPES}
+        laneSupport={RUN_LANE_SUPPORT}
+        lane={lane}
+        onLaneChange={setLane}
+        orgId={orgFilter}
+        onOrgChange={setOrgFilter}
+        laneRows={laneRows}
+        className="mb-3"
+      />
 
       {/* Filters */}
       {!loading && runs.length > 0 && (
@@ -283,7 +318,7 @@ export function RunsManageView({
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600 dark:text-red-400">
-          Couldn&apos;t load your runs: {error}
+          Couldn&apos;t load runs: {error}
           <ErrorAlchemyMenu error={error} />
         </div>
       )}
@@ -336,7 +371,13 @@ export function RunsManageView({
             </div>
           ) : error ? (
 <ReadFailure error={error} what="this list" />
-) : runs.length === 0 ? (
+) : runs.length === 0 &&
+            lane !== "all" &&
+            lane !== "mine" ? (
+            <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center text-sm text-muted-foreground">
+              No runs in this view.
+            </div>
+          ) : runs.length === 0 ? (
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Mic className="h-7 w-7" />
