@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, Loader2, Save } from "lucide-react";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +95,7 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
         reachTapBadge
       ) : (
         <div className="relative shrink-0">
-          <TapTargetButton
+          <TapTargetButtonTransparent
             icon={icon}
             ariaLabel={ariaLabel}
             tooltip={false}

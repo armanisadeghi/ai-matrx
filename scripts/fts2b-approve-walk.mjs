@@ -63,6 +63,11 @@ try {
       await cardEl.scrollIntoViewIfNeeded();
       await shot("2-card");
       await cardEl.getByRole("button", { name: /^Approve$/ }).click();
+      const dlg = page.getByRole("dialog");
+      await dlg.waitFor({ timeout: 20000 });
+      console.log("dialog:", JSON.stringify((await dlg.innerText()).replace(/\s+/g, " ")));
+      await shot("2b-confirm");
+      await dlg.getByRole("button", { name: /^Approve 1$/ }).click();
       const done = await until("approved", async () => (await page.getByText("Change Jordan Pike").count()) === 0 || /Approved 1/.test(await page.locator("body").innerText()), 30000);
       await shot("3-approved");
       console.log("approved toast:", !!done.v);

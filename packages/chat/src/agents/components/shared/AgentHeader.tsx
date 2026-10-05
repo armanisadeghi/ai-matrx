@@ -53,16 +53,13 @@ export function AgentHeader({
 
       {/* ── Full layout (header row >= 44rem) ──────────────────────────── */}
       <div className="@container/agent-header hidden @min-[44rem]/shell-header:flex items-center justify-between w-full gap-0 px-0">
-        {/* ALL GLASS OR NONE (tap-target placement rule 2): back and the
-            agent selector share ONE glass capsule, not a glass circle beside
-            a bare name. Back is the group variant; the selector keeps the
-            half-gap on the side facing it. */}
-        <div
-          data-matrx-glass
-          className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] min-w-0 items-center rounded-full"
-        >
-          <ChevronLeftTapButton variant="group" href={backHref} ariaLabel="Back to Agents" />
-          <div data-matrx-glass className="flex min-w-0 items-center ps-1 pe-1.5">
+        {/* GLASS ONLY FLOATS (tap placement rule 1): the shell paints the
+            header band solid, so nothing moves behind these controls — every
+            header tap button is transparent and nothing here is glass. The
+            selector adds the half-gap on the side facing Back (rule 3). */}
+        <div className="flex min-w-0 items-center">
+          <ChevronLeftTapButton variant="transparent" href={backHref} ariaLabel="Back to Agents" />
+          <div className="flex min-w-0 items-center ps-[calc(var(--matrx-tap-gap)/2)]">
             <AgentSelectorIsland
               agentId={agentId}
               initialName={agentName}
@@ -82,14 +79,11 @@ export function AgentHeader({
             button fold away — both stay one click away, in the Versions mode
             and in Menu. Without this, Menu slid under the page's own toggles
             (shell/components/header/header-crowding.ts names the class). */}
-        {/* ALL GLASS OR NONE: the status group is its own glass capsule
-            beside Menu's glass circle (the divider was bare chrome between
-            them). */}
+        {/* Solid header band: the status group is plain chrome beside a
+            transparent Menu (no glass capsule). It keeps the half-gap on the
+            side facing Menu (rule 3). */}
         <div className="flex items-center shrink-0">
-          <div
-            data-matrx-glass
-            className="matrx-glass-thin-border flex h-[var(--matrx-tap-wide-size)] items-center gap-1.5 rounded-full ps-2.5 pe-1"
-          >
+          <div className="flex h-[var(--matrx-tap-wide-size)] items-center gap-1.5 pe-[calc(var(--matrx-tap-gap)/2)]">
             <AgentSaveStatus
               agentId={agentId}
               versionClassName="hidden @min-[40rem]/agent-header:inline"

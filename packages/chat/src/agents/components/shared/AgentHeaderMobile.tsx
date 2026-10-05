@@ -208,7 +208,7 @@ export function AgentHeaderMobile({
 
         {/* Center: Build + Run + More */}
         <div className="flex-1 flex justify-center min-w-0">
-          <TapTargetButtonGroup>
+          <TapTargetButtonGroup surface="solid">
             {prominentModes.map(({ id, label, icon: Icon }) => {
               const isActive = id === mode;
               return (

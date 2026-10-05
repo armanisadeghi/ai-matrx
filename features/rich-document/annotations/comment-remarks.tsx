@@ -96,6 +96,7 @@ export function RecordCommentThread({
   token,
   id,
   title,
+  part,
   showHeader,
   className,
 }: {
@@ -103,24 +104,28 @@ export function RecordCommentThread({
   id: string;
   /** The record's name as the person sees it — what a staged remark names. */
   title: string | null;
+  /** One part of the record (a board tile): that part's comments only, stored with a `part_anchor`. */
+  part?: { key: string; label: string };
   showHeader?: boolean;
   className?: string;
 }) {
   const hasSink = useHasRemarkSink();
-  if (!hasSink) return <CommentThread token={token} id={id} showHeader={showHeader} className={className} />;
-  return <ThreadToPageChat token={token} id={id} title={title} showHeader={showHeader} className={className} />;
+  if (!hasSink) return <CommentThread token={token} id={id} part={part} showHeader={showHeader} className={className} />;
+  return <ThreadToPageChat token={token} id={id} title={title} part={part} showHeader={showHeader} className={className} />;
 }
 
 function ThreadToPageChat({
   token,
   id,
   title,
+  part,
   showHeader,
   className,
 }: {
   token: EntityTypeToken;
   id: string;
   title: string | null;
+  part?: { key: string; label: string };
   showHeader?: boolean;
   className?: string;
 }) {
@@ -131,6 +136,7 @@ function ThreadToPageChat({
       <CommentThread
         token={token}
         id={id}
+        part={part}
         showHeader={showHeader}
         className={className}
         onPosted={(posted) => {

@@ -27,6 +27,7 @@ export function EntityCommentPopover({
   id,
   title,
   note,
+  part,
   showCount = true,
   className,
 }: {
@@ -36,6 +37,8 @@ export function EntityCommentPopover({
   title?: string | null;
   /** One short line above the thread (e.g. where these comments are kept). */
   note?: ReactNode;
+  /** The thread is about ONE PART of the record (a board tile): only its comments, stored with a `part_anchor`. */
+  part?: { key: string; label: string };
   /** Show the thread's count on the trigger (off when the thread is shared, e.g. the board's). */
   showCount?: boolean;
   className?: string;
@@ -56,7 +59,7 @@ export function EntityCommentPopover({
             className,
           )}
           title="Comments"
-          data-comment-door={`${token}:${id}`}
+          data-comment-door={part ? `${token}:${id}:${part.key}` : `${token}:${id}`}
         >
           <MessageSquare className="size-3.5" />
           {showCount && thread.status === "ready" && thread.comments.length > 0 ? thread.comments.length : <span className="max-sm:sr-only">Comment</span>}
@@ -69,7 +72,7 @@ export function EntityCommentPopover({
         onClick={(e) => e.stopPropagation()}
       >
         {note ? <p className="mb-2 truncate text-xs text-muted-foreground">{note}</p> : null}
-        <RecordCommentThread token={token} id={id} title={title ?? null} showHeader={false} />
+        <RecordCommentThread token={token} id={id} title={title ?? null} part={part} showHeader={false} />
       </PopoverContent>
     </Popover>
   );

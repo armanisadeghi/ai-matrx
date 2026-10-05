@@ -274,6 +274,8 @@ export function hrefForMade(m: MadeObject): string | null {
       return m.table_id ? `/data/${m.table_id}` : null;
     case "portal":
       return m.table_id ? `/data/${m.table_id}?rail=portals&item=${m.id}` : null;
+    case "agent":
+      return `/agents/${m.id}`;
     default:
       return null;
   }

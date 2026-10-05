@@ -40,7 +40,7 @@ export function AgentRunHeader({
     </div>
     <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-2 shrink-0">
       <div className="flex items-center">
-        <ChevronLeftTapButton href={backHref} aria-label="Back to Agents" />
+        <ChevronLeftTapButton variant="transparent" href={backHref} aria-label="Back to Agents" />
         <AgentSelectorIsland
           agentId={agentId}
           initialName={agentName}

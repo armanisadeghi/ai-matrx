@@ -407,7 +407,7 @@ export function AgentWidgetsPage({
       <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-2 shrink-0 pr-12">
         <div className="flex items-center">
           <Link href={basePath} aria-label="Back to Agents">
-            <ChevronLeftTapButton />
+            <ChevronLeftTapButton variant="transparent" />
           </Link>
           <AgentSelectorIsland
             agentId={agentId}

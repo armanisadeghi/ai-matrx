@@ -35,7 +35,9 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@ai-matrx/design-system";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { templateAgentArchiver, templateAgentCopier } from "@/features/kits/templateAgentCopyHost";
+import { addInstalledAgent, agentStillToCopy, agentsLeftBy } from "./installAgent";
 import { selectActiveOrganizationName } from "@/features/scopes/redux/selectors/active-context";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -240,6 +242,34 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
   const [run, setRun] = useState<Run>({ phase: "idle" });
   const [askOrganization, setAskOrganization] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const dispatch = useAppDispatch();
+  // The agent is the host's step of an install; `copying` while it runs, `failed` says why.
+  const [agent, setAgent] = useState<{ phase: "idle" | "copying" } | { phase: "failed"; why: string }>({ phase: "idle" });
+  const [agentNote, setAgentNote] = useState<string | null>(null);
+
+  const addAgent = async (answer: TemplateDoorAnswer, orgId: string) => {
+    if (!agentStillToCopy(answer)) return;
+    setAgent({ phase: "copying" });
+    const supabase = createClient();
+    const result = await addInstalledAgent(answer, orgId, {
+      copier: templateAgentCopier(dispatch),
+      note: async (installId, agentId, label) => {
+        const { data, error } = await supabase
+          .schema("custom")
+          .rpc("template_install_note", {
+            p_organization_id: orgId,
+            p_install_id: installId,
+            p_kind: "agent",
+            p_id: agentId,
+            p_label: label,
+          });
+        if (error) throw new Error(error.message);
+        return data as TemplateDoorAnswer;
+      },
+    });
+    setRun({ phase: "installed", answer: result.answer });
+    setAgent(result.ok ? { phase: "idle" } : { phase: "failed", why: result.why });
+  };
 
   const go = async (door: "template_install" | "template_uninstall", id: string) => {
     if (!organizationId) {
@@ -255,7 +285,24 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
       setRun({ phase: "refused", door, why: refusalLine(done), answer: done.answer });
       return;
     }
+    setAgent({ phase: "idle" });
+    setAgentNote(null);
     setRun(door === "template_install" ? { phase: "installed", answer: done.answer } : { phase: "removed", answer: done.answer });
+    if (door === "template_install") {
+      await addAgent(done.answer, organizationId);
+    } else {
+      // The door leaves a copied agent for the host: archive it here.
+      const archive = templateAgentArchiver(dispatch);
+      const lines: string[] = [];
+      for (const agentId of agentsLeftBy(done.answer)) {
+        try {
+          await archive(agentId);
+        } catch (err) {
+          lines.push(`The assistant was not archived — ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+      setAgentNote(lines.length ? lines.join(" ") : null);
+    }
     read.reload();
   };
   const install = () => void go("template_install", templateId);
@@ -326,7 +373,14 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
           </div>
         ) : null}
         {run.phase === "removed" ? <p className="text-sm text-muted-foreground" data-make-template-removed="">Removed — everything it made is in Trash</p> : null}
-        {run.phase === "installed" ? <Landing made={made} /> : null}
+        {run.phase === "removed" && agentNote ? <p className="text-sm text-destructive" role="alert" data-make-template-agent-archive-failed="">{agentNote}</p> : null}
+        {run.phase === "installed" ? (
+          <Landing
+            made={made}
+            agent={agent}
+            retryAgent={() => organizationId && void addAgent(run.answer, organizationId)}
+          />
+        ) : null}
       </section>
 
       <ConfirmDialog
@@ -379,13 +433,36 @@ function Progress({ run }: { run: Extract<Run, { phase: "running" }> }) {
 }
 
 /** The landing: every object the install made that a person opens, each one a link. */
-function Landing({ made }: { made: MadeObject[] }) {
+export function Landing({
+  made,
+  agent = { phase: "idle" },
+  retryAgent,
+}: {
+  made: MadeObject[];
+  agent?: { phase: "idle" | "copying" } | { phase: "failed"; why: string };
+  retryAgent?: () => void;
+}) {
   const rows = openableMade(made);
   return (
     <div className="flex flex-col gap-2" data-make-template-landing={rows.length}>
       <p className="flex items-center gap-2 text-sm text-foreground">
         <Check className="h-4 w-4 text-primary" /> Installed
       </p>
+      {agent.phase === "copying" ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground" data-make-template-agent="copying">
+          <Loader2 className="h-4 w-4 animate-spin" /> Adding the assistant
+        </p>
+      ) : null}
+      {agent.phase === "failed" ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm" role="alert" data-make-template-agent="failed">
+          <span className="text-destructive">{`The assistant was not added — ${agent.why}`}</span>
+          {retryAgent ? (
+            <Button size="sm" variant="outline" onClick={retryAgent}>
+              Retry
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {rows.map((m) => (
           <li key={`${m.kind}:${m.ref}`}>

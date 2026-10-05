@@ -56,7 +56,7 @@ import {
 import { toast } from "../../../host/notify";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { TapTargetButton } from "@ai-matrx/tap-target";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -522,7 +522,7 @@ export function AgentOptionsMenu({
     setOpen(false);
   };
 
-  const trigger = <MenuTapButton />;
+  const trigger = <MenuTapButton variant="transparent" />;
 
   // Single dialog instance shared by both desktop and mobile flows. Lives at
   // the parent level so the dropdown / drawer that triggered the duplicate
@@ -544,7 +544,7 @@ export function AgentOptionsMenu({
       <>
         <Drawer open={open} onOpenChange={setOpen}>
           {asTapTarget ? (
-            <TapTargetButton
+            <TapTargetButtonTransparent
               icon={<MoreHorizontal className="w-4 h-4" />}
               ariaLabel="Agent options"
               onClick={() => setOpen(true)}
