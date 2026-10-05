@@ -684,6 +684,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
   if (typeof document === "undefined") return null;
 
   // ── Mobile: iOS-style bottom sheet ────────────────────────────────────────
+  // ssr-viewport-ok: an opened menu — null on the server (no document), so no first paint to flash.
   if (isMobile) {
     return (
       <Drawer
