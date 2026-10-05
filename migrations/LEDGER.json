@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T06:42:08.784Z",
+  "generated_at": "2026-10-05T06:55:26.706Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3721,6 +3721,12 @@
       "filename": "kindsglue_w4s1_relation_and_pick_list_have_their_compiled_component.sql",
       "checksum": "a4f3ee450c68e60ab2c3325aa654866bddbafdc07832fa6bd9f42b2eb85d9bb9",
       "applied_at": "2026-10-03 23:10:47.483638+00"
+    },
+    "migrations/campaign/kits_template_merge_s1_host_steps.sql": {
+      "source": "matrx-frontend",
+      "filename": "kits_template_merge_s1_host_steps.sql",
+      "checksum": "0aca853afa5b7519c2e706c327404ac536fcd7bec95888e6863f30dba7561165",
+      "applied_at": "2026-10-05 06:55:25.184567+00"
     },
     "migrations/campaign/knobguard2_the_archive_door_asks_the_same_predicate.sql": {
       "source": "matrx-frontend",
