@@ -187,7 +187,7 @@ export const WRITERS: Row[] = [
       "public.create_scope", "public.update_scope", "public.delete_scope", "public.restore_scope",
       "public.create_context_item", "public.update_context_item", "public.delete_context_item", "public.restore_context_item",
       "public.set_context_value", "public.set_scope_context_value", "context.write_context_value",
-      "public.apply_template", "public.apply_template_by_key", "public.ctx_seed_template",
+      "public.ctx_seed_template",
       "public.ctx_version_context_item_value",
     ],
     clientClosed: [
@@ -195,7 +195,7 @@ export const WRITERS: Row[] = [
       "public.create_scope", "public.update_scope", "public.delete_scope", "public.restore_scope",
       "public.create_context_item", "public.update_context_item", "public.delete_context_item", "public.restore_context_item",
       "public.set_context_value", "public.set_scope_context_value", "context.write_context_value",
-      "public.apply_template", "public.apply_template_by_key", "public.ctx_seed_template",
+      "public.ctx_seed_template",
     ],
   },
   {
