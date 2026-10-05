@@ -49,6 +49,7 @@ import {
 import { ComposerOutputPanel } from "./ComposerOutput";
 import { ComposerEffortRows, useComposerEffort } from "./ComposerEffortPill";
 import { composerShows } from "./composer-mode-visibility";
+import { composerPillClass } from "./composer-chip";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, useEffectiveModelId, type ComposerAgentInfo } from "./useComposerAgent";
 import { useComposerAgentFilter } from "./useComposerAgentFilter";
@@ -66,14 +67,6 @@ interface ComposerAgentPillProps {
    * and ride THIS menu, under the agent choice (Arman, 2026-10-04).
    */
   folded?: boolean;
-}
-
-export function composerPillClass(size: ComposerSize, open: boolean): string {
-  return cn(
-    "inline-flex h-6 min-w-0 shrink items-center gap-1 rounded-md text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-    size === "compact" ? "px-1.5" : "px-2",
-    open && "bg-accent text-foreground",
-  );
 }
 
 function pillLabel(info: ComposerAgentInfo, mode: ComposerMode): string {

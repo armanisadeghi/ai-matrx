@@ -33,7 +33,7 @@
  * `features/scraper/parts/agent-analysis/AnalysisMandateGate.tsx` and it
  * reports all three; on the working tree it reports none.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 
@@ -146,7 +146,10 @@ function sourceFiles(): string[] {
     .split("\n")
     .filter((p) => /\.tsx?$/.test(p))
     .filter((p) => !/\.(test|spec)\.tsx?$/.test(p))
-    .filter((p) => !p.includes("/__tests__/"));
+    .filter((p) => !p.includes("/__tests__/"))
+    // `git ls-files` lists a tracked file a peer has deleted in the shared working
+    // tree; a file that is not on disk discloses nothing.
+    .filter((p) => existsSync(join(ROOT, p)));
 }
 
 function exemptReason(path: string): string | null {

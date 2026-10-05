@@ -49,7 +49,12 @@ type Stage =
   | { kind: "booked"; slot: BookingSlot; ref: string | null }
   | { kind: "sent"; message: string };
 
-export function BookingPicker({ page }: { page: PublicBooking }) {
+/**
+ * `preview` — a template preview (lane CHAIR-GALLERY-3): the page is the real one, its times are the
+ * template's declared hours, a time can be picked and answered, and nothing is held or booked. The
+ * sentence is what the Book button answers, in the place a refusal sits.
+ */
+export function BookingPicker({ page, preview }: { page: PublicBooking; preview?: string | null }) {
   const [slots, setSlots] = useState<BookingSlot[]>(page.slots);
   const [stage, setStage] = useState<Stage>({ kind: "picking" });
   const [refused, setRefused] = useState<string | null>(null);
@@ -114,6 +119,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
   const days = useMemo(() => groupByDay(slots, zone), [slots, zone]);
 
   async function refresh() {
+    if (preview) return;
     const answer = await fetch(`/api/bookings/${page.form_id}/hold`, { method: "GET" })
       .then((r) => r.json() as Promise<{ slots?: BookingSlot[] }>)
       .catch(() => ({}) as { slots?: BookingSlot[] });
@@ -121,6 +127,11 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
   }
 
   async function hold(slot: BookingSlot) {
+    if (preview) {
+      setRefused(null);
+      setStage({ kind: "details", slot, holdId: "preview", expiresAt: null });
+      return;
+    }
     setStage({ kind: "holding", slotKey: slot.key });
     setRefused(null);
     const answer = await fetch(`/api/bookings/${page.form_id}/hold`, {
@@ -184,6 +195,10 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
       return;
     }
     setWrongShape({});
+    if (preview) {
+      setRefused(preview);
+      return;
+    }
 
     setStage({ kind: "sending", slot: stage.slot, holdId: stage.holdId, expiresAt: stage.expiresAt });
     const values: Record<string, unknown> = { ...coerced };
@@ -256,7 +271,7 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
         <header className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
           <span className="font-medium">{whenText(stage.slot.at, zone)}</span>
           <span className="text-muted-foreground">
-            held for you{stage.expiresAt ? ` until ${clockText(stage.expiresAt, zone)}` : ""}
+            {preview ? "" : "held for you"}{stage.expiresAt ? ` until ${clockText(stage.expiresAt, zone)}` : ""}
           </span>
           <button
             type="button"
@@ -342,6 +357,11 @@ export function BookingPicker({ page }: { page: PublicBooking }) {
           />
         ) : null}
 
+        {preview && refused ? (
+          <p className="rounded border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground" role="status">
+            {refused}
+          </p>
+        ) : null}
         <button
           type="button"
           className="h-11 rounded bg-primary px-4 text-base font-medium text-primary-foreground disabled:opacity-60"

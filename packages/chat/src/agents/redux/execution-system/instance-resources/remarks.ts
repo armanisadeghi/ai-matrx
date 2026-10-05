@@ -284,13 +284,33 @@ export interface RemarkDurability {
   save(conversationId: string, resourceId: string, coalesceKey: string | null, item: RemarkItem): void;
   /** A chip left the composer without being sent (X, or an edit that became empty): retire it for good. */
   retire(conversationId: string, resourceId: string, coalesceKey: string | null, item: RemarkItem): void;
-  /** The composer mounted: put this conversation's unsent chips back from the server. */
-  restore(conversationId: string): void;
+  /**
+   * The composer mounted: put this conversation's unsent chips back from the server.
+   * `surfaceAlias` finds chips staged into an unstarted conversation (a fresh id
+   * is minted on every mount of /chat/new) by the person + surface instead.
+   */
+  restore(conversationId: string, surfaceAlias?: string | null): void;
+  /** The surface key an unstarted conversation's chips are written under (null once it is real). */
+  surfaceAliasOf?(conversationId: string): string | null;
+  /** True while a chip's write is queued or in flight (its row/ref has not come back yet). */
+  hasPending(conversationId: string): boolean;
+  /** Write everything queued NOW and wait until every chip holds its saved row/ref. */
+  flush(conversationId: string): Promise<void>;
+}
+
+/** True while some chip of this conversation has not yet been saved server-side. */
+export function hasPendingRemarkWrites(conversationId: string): boolean {
+  return durability?.hasPending(conversationId) ?? false;
+}
+
+/** Save every pending chip write and wait for its row/ref (called before a send). */
+export async function flushRemarkWrites(conversationId: string): Promise<void> {
+  await durability?.flush(conversationId);
 }
 
 /** Put a conversation's unsent chips back (any device) — the composer calls this once on mount. */
-export function restoreComposerRemarks(conversationId: string): void {
-  durability?.restore(conversationId);
+export function restoreComposerRemarks(conversationId: string, surfaceAlias?: string | null): void {
+  durability?.restore(conversationId, surfaceAlias);
 }
 
 let durability: RemarkDurability | null = null;

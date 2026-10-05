@@ -58,9 +58,7 @@ jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/
 jest.mock("../../../../../store/store-singleton", () => ({
   getStoreSingleton: () => ({ dispatch: () => {} }),
 }));
-jest.mock("@host/lib/redux/thunks/activeOrgBootstrap", () => ({
-  retryActiveOrgBootstrap: () => ({ type: "test/retry-organization-read" }),
-}));
+
 
 /** No context snapshot exists — the state every branch under test starts from. */
 jest.mock(

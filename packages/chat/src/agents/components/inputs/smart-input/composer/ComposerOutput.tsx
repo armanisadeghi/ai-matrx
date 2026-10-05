@@ -58,7 +58,7 @@ import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "../../../../types/instance.ty
 import { useSkills } from "@host/features/skills/hooks/useSkills";
 import { useClippedContentGuard } from "@host/lib/layout/useClippedContentGuard";
 import { ComposerMenuDivider, ComposerMenuHelp, ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
-import { composerPillClass } from "./ComposerAgentPill";
+import { composerPillClass } from "./composer-chip";
 import type { ComposerSize } from "./composer-types";
 import {
   OUTPUT_TYPES,

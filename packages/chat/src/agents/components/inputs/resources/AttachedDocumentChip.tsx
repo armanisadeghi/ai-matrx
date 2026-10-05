@@ -1,7 +1,7 @@
 "use client";
 
 import { createElement, useState } from "react";
-import { ChevronDown, FileText, Loader2, X, ArrowUpRight } from "lucide-react";
+import { ChevronDown, FileText, Loader2, ArrowUpRight } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import {
   Popover,
@@ -17,6 +17,7 @@ import { resolveResourceAttachmentTileTheme } from "../../messages-display/user/
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";
 import type { DocumentRepresentation } from "../../../types/instance.types";
 import { ResourceFamilyPolicyEditor } from "./ResourceFamilyPolicyEditor";
+import { ComposerChip, ComposerChipPart } from "../smart-input/ComposerChip";
 import { compactChipLabel } from "../../messages-display/user/compact-chip-label";
 import { primaryFormShortLabel } from "./resource-family-words";
 
@@ -118,128 +119,91 @@ export function AttachedDocumentChip({
   };
 
   return (
-    <span className="group relative inline-flex shrink-0">
-      <Popover
-        open={open}
-        onOpenChange={(next) => void handleOpenChange(next)}
-        modal
-      >
-        <div
-          className={cn(
-            "inline-flex h-6 min-w-0 items-stretch overflow-hidden rounded-full border border-border",
-            "bg-card text-[11px] font-medium text-muted-foreground",
-          )}
-        >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={onOpen}
-                aria-label={`Document: ${title}`}
-                aria-pressed={pressed}
-                className={cn(
-                  "inline-flex min-w-0 max-w-[13rem] items-center gap-1 px-2",
-                  "transition-colors hover:bg-muted/60 hover:text-foreground",
-                  pressed && "bg-primary/10 text-foreground",
-                )}
-              >
-                {pending ? (
-                  <Loader2
-                    className={cn("h-3 w-3 shrink-0 animate-spin", theme.icon)}
-                    aria-label="Attaching"
-                  />
-                ) : (
-                  createElement(FileText, {
-                    className: cn("h-3 w-3 shrink-0", theme.icon),
-                  })
-                )}
-                <span className="truncate">{compactChipLabel(title)}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-[16rem]">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Attached file
-              </div>
-              <div className="font-medium text-popover-foreground">{title}</div>
-              <div className="mt-0.5 text-[10px] text-muted-foreground/80">
-                The AI reads: {primaryFormShortLabel(representation)}
-                {fileId ? " · change it on the right" : ""}
-              </div>
-            </TooltipContent>
-          </Tooltip>
-
-          <span className="w-px shrink-0 self-stretch bg-border" aria-hidden />
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              onClick={stopBubble}
-              onPointerDown={stopBubble}
-              disabled={!fileId}
-              aria-label={`What the AI reads from ${title}: ${primaryFormShortLabel(representation)}, ${policyLabel(resourcePolicy)}`}
-              className={cn(
-                "inline-flex shrink-0 items-center gap-0.5 px-1.5",
-                "transition-colors hover:bg-muted/60 hover:text-foreground",
-              )}
-            >
-              <span>
-                {representationLabel(representation)} ·{" "}
-                {policyLabel(resourcePolicy)}
-              </span>
-              <ChevronDown className="h-2.5 w-2.5 shrink-0" />
-            </button>
-          </PopoverTrigger>
-        </div>
-
-        <PopoverContent
-          sizing="content"
-          side="top"
-          align="start"
-          sideOffset={6}
-          className="max-h-[min(32rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3"
-          onClick={stopBubble}
-        >
-          <ResourceFamilyPolicyEditor
-            fileId={fileId}
-            value={draftPolicy}
-            onChange={setDraftPolicy}
-            primaryRepresentation={draftRepresentation}
-            onPrimaryRepresentationChange={setDraftRepresentation}
-            disabled={saving}
-            compact
+    <Popover
+      open={open}
+      onOpenChange={(next) => void handleOpenChange(next)}
+      modal
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <ComposerChip
+            tone="quiet"
+            onClick={onOpen}
+            aria-label={`Document: ${title}`}
+            pressed={pressed}
+            busy={pending}
+            busyLabel="Attaching"
+            icon={createElement(FileText, { className: theme.icon })}
+            label={compactChipLabel(title)}
+            remove={{
+              label: `Remove ${title}`,
+              onRemove,
+              disabled: saving,
+            }}
+            parts={
+              <PopoverTrigger asChild>
+                <ComposerChipPart
+                  tone="quiet"
+                  onClick={stopBubble}
+                  onPointerDown={stopBubble}
+                  disabled={!fileId}
+                  aria-label={`What the AI reads from ${title}: ${primaryFormShortLabel(representation)}, ${policyLabel(resourcePolicy)}`}
+                >
+                  <span>
+                    {representationLabel(representation)} ·{" "}
+                    {policyLabel(resourcePolicy)}
+                  </span>
+                  <ChevronDown className="!size-3" />
+                </ComposerChipPart>
+              </PopoverTrigger>
+            }
           />
-          <div className="my-2 border-t border-border" />
-          {saving ? (
-            <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving your choice…
-            </div>
-          ) : null}
-          <button
-            type="button"
-            onClick={(event) => void openDetails(event)}
-            disabled={saving}
-            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
-          >
-            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span>See file details</span>
-          </button>
-        </PopoverContent>
-      </Popover>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[16rem]">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Attached file
+          </div>
+          <div className="font-medium text-popover-foreground">{title}</div>
+          <div className="mt-0.5 text-[10px] text-muted-foreground/80">
+            The AI reads: {primaryFormShortLabel(representation)}
+            {fileId ? " · change it on the right" : ""}
+          </div>
+        </TooltipContent>
+      </Tooltip>
 
-      <button
-        type="button"
-        onClick={stopRemove}
-        disabled={saving}
-        aria-label={`Remove ${title}`}
-        className={cn(
-          "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",
-          "border border-border bg-background text-muted-foreground shadow-sm",
-          "transition-opacity hover:bg-destructive hover:text-destructive-foreground",
-          "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
-          "pointer-coarse:opacity-100",
-        )}
+      <PopoverContent
+        sizing="content"
+        side="top"
+        align="start"
+        sideOffset={6}
+        className="max-h-[min(32rem,var(--radix-popover-content-available-height))] overflow-y-auto p-3"
+        onClick={stopBubble}
       >
-        <X className="h-2.5 w-2.5" />
-      </button>
-    </span>
+        <ResourceFamilyPolicyEditor
+          fileId={fileId}
+          value={draftPolicy}
+          onChange={setDraftPolicy}
+          primaryRepresentation={draftRepresentation}
+          onPrimaryRepresentationChange={setDraftRepresentation}
+          disabled={saving}
+          compact
+        />
+        <div className="my-2 border-t border-border" />
+        {saving ? (
+          <div className="flex items-center gap-1.5 px-2 py-1 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving your choice…
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={(event) => void openDetails(event)}
+          disabled={saving}
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
+        >
+          <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span>See file details</span>
+        </button>
+      </PopoverContent>
+    </Popover>
   );
 }

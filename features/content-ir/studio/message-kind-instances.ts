@@ -20,6 +20,7 @@
  */
 
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 import { readEnvelope } from "@ai-matrx/content-ir";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import { readObjectKind } from "@ai-matrx/content-ir";
@@ -51,7 +52,9 @@ export async function extractRegisteredKindBlocks(
 ): Promise<ExtractedKindBlock[]> {
   await kindRegistry.ensureWarm();
   const out: ExtractedKindBlock[] = [];
-  for (const sb of splitContentIntoBlocksV2(text)) {
+  // Every realistic spelling of the key is the same kind (round 9) — the
+  // menu gate reads them, so extraction reads them too.
+  for (const sb of splitContentIntoBlocksV2(normalizeKindSpellings(text))) {
     // Envelope route (the splitter ran the kind parser).
     // kindState gate: refuse "raw" and ONLY "raw" — "unverified" (no schema
     // ever available, never checked) is GOOD data per the 2026-08-28 outage

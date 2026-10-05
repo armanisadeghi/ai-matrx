@@ -42,6 +42,10 @@ import {
   resourceAttachmentTileAdaptiveSurface,
   RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE,
 } from "./resourceAttachmentTile.theme";
+import {
+  ComposerChip,
+  ComposerChipPart,
+} from "../../inputs/smart-input/ComposerChip";
 
 /** Tri-state editability. `null` = the type doesn't support the toggle. */
 export type ResourceEditableState = "readonly" | "editable" | null;
@@ -168,7 +172,7 @@ export function ResourceAttachmentTile({
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
         <PopoverAnchor asChild>
           <span
-            className={cn("group relative inline-flex shrink-0", className)}
+            className={cn("inline-flex shrink-0", className)}
             onPointerDown={handlePointerDown}
             onPointerUp={clearLongPress}
             onPointerMove={clearLongPress}
@@ -178,34 +182,44 @@ export function ResourceAttachmentTile({
           >
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
+                <ComposerChip
+                  tone="quiet"
                   onClick={handleChipClick}
                   aria-label={`${typeLabel}: ${title}`}
                   aria-haspopup={hasControls ? "menu" : undefined}
-                  aria-pressed={pressed}
-                  className={cn(
-                    "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border border-border px-2",
-                    showToggle && "pr-6 max-lg:pr-2 pointer-coarse:pr-2",
-                    "text-[11px] font-medium transition-colors",
-                    "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    pressed && "border-primary/60 bg-primary/10 text-foreground",
-                    error && "ring-1 ring-destructive/50",
-                  )}
-                >
-                  {pending ? (
-                    <Loader2
-                      className={cn("h-3 w-3 shrink-0 animate-spin", theme.icon)}
-                    />
-                  ) : error ? (
-                    <AlertCircle className="h-3 w-3 shrink-0 text-destructive" />
-                  ) : (
-                    createElement(Icon, {
-                      className: cn("h-3 w-3 shrink-0", theme.icon),
-                    })
-                  )}
-                  <span className="max-w-[13rem] truncate">{word}</span>
-                </button>
+                  pressed={pressed}
+                  busy={pending}
+                  error={error}
+                  icon={
+                    error ? (
+                      <AlertCircle className="text-destructive" />
+                    ) : (
+                      createElement(Icon, { className: theme.icon })
+                    )
+                  }
+                  label={word}
+                  remove={
+                    onRemove
+                      ? { label: `Remove ${title}`, onRemove, touch: "hide" }
+                      : undefined
+                  }
+                  parts={
+                    showToggle ? (
+                      <ComposerChipPart
+                        tone="quiet"
+                        aria-pressed={editable}
+                        aria-label={editableTooltip}
+                        onClick={(e) => {
+                          stop(e);
+                          toggleEditable();
+                        }}
+                        className={HIDE_ON_TOUCH}
+                      >
+                        {editable ? <Pencil /> : <Lock />}
+                      </ComposerChipPart>
+                    ) : undefined
+                  }
+                />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[16rem]">
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -221,46 +235,6 @@ export function ResourceAttachmentTile({
                 )}
               </TooltipContent>
             </Tooltip>
-            {showToggle && (
-              <button
-                type="button"
-                aria-pressed={editable}
-                aria-label={editableTooltip}
-                onClick={(e) => {
-                  stop(e);
-                  toggleEditable();
-                }}
-                className={cn(
-                  "absolute right-1 top-1/2 z-10 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center rounded-full text-foreground/70 hover:bg-accent hover:text-foreground",
-                  HIDE_ON_TOUCH,
-                )}
-              >
-                {editable ? (
-                  <Pencil className="h-2.5 w-2.5" />
-                ) : (
-                  <Lock className="h-2.5 w-2.5" />
-                )}
-              </button>
-            )}
-            {onRemove && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  stop(e);
-                  onRemove();
-                }}
-                aria-label={`Remove ${title}`}
-                className={cn(
-                  "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",
-                  "border border-border bg-background text-muted-foreground shadow-sm",
-                  "transition-opacity hover:bg-destructive hover:text-destructive-foreground",
-                  "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
-                  HIDE_ON_TOUCH,
-                )}
-              >
-                <X className="h-2.5 w-2.5" />
-              </button>
-            )}
           </span>
         </PopoverAnchor>
         {hasControls ? (

@@ -5,7 +5,9 @@
  * lazy-imported on click).
  */
 
-/** Does this text even carry a `__kind` marker? (Registry resolution is lazy.) */
+import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-signal";
+
+/** Does this text even carry a `__kind` marker, in any realistic spelling? (Registry resolution is lazy.) */
 export function messageMayContainKindBlock(text: string): boolean {
-  return text.includes('"__kind"');
+  return text.includes("kind") && hasKindKeyAnySpelling(text);
 }

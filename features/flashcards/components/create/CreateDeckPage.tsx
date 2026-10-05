@@ -96,6 +96,7 @@ import {
   backfillFileIds,
   FLASHCARD_SOURCE_DELIVERIES,
   generateDeckFromSources,
+  plannedCardCount,
 } from "../../data/generateDeckFromSources";
 import { saveDeckSourceSet, sourceNamesOf } from "../../data/deckSourceSet";
 import { useSuppressAmbientAssistant } from "@ai-matrx/chat/agents/components/ambient-assistant/ambientAssistantSuppression";
@@ -287,6 +288,11 @@ export function CreateDeckPage({
       ? Math.max(MIN_CARDS_PER_RUN, count || 10)
       : clampCardCount(count, countMax);
 
+  // The plan makes at least one card per Source, so the count shown (field
+  // hint, summary, progress, stopped notice) is the plan's, never the typed one.
+  const plannedCount = plannedCardCount(safeCount, ready.length);
+  const plannedShown = shownCount === null ? null : plannedCardCount(shownCount, ready.length);
+
   // Stays on the progress view through the hand-off to the new deck, so the
   // cleared picks never flash "pick a source" while the deck opens.
   const running = phase !== "idle" || topicRun.isGenerating || isNavigating;
@@ -434,7 +440,7 @@ export function CreateDeckPage({
     continuesRef.current = [];
     try {
       await tabRun.track(
-        cardRunRequest(safeCount, set.toSourceSet(), sourceNamesOf(set.sources), topic),
+        cardRunRequest(plannedCount, set.toSourceSet(), sourceNamesOf(set.sources), topic),
         async (_settle, saving, attach) => {
           if (hasSources) await runFromSources(saving, attach, continues);
           else await runFromTopic(saving, attach, continues);
@@ -597,6 +603,10 @@ export function CreateDeckPage({
                         </p>
                       ) : countMax === null ? (
                         <p className="text-[11px] text-muted-foreground">Reading the most cards one run may make…</p>
+                      ) : plannedShown !== null && shownCount !== null && plannedShown > shownCount ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          {`One card per source: ${cardCount(plannedShown)}`}
+                        </p>
                       ) : null}
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -715,8 +725,8 @@ export function CreateDeckPage({
                               ? isNavigating
                                 ? "Opening your deck…"
                                 : "Saving your deck…"
-                              : (cardProgressLine(progress, safeCount) ??
-                                `Making ${cardCount(safeCount)}${hasSources ? "" : ` about “${topic}”`}`)}
+                              : (cardProgressLine(progress, plannedCount) ??
+                                `Making ${cardCount(plannedCount)}${hasSources ? "" : ` about “${topic}”`}`)}
                         </p>
                       </div>
                     </div>
@@ -790,7 +800,7 @@ export function CreateDeckPage({
                       {/* read-gate-exempt: counts of the sources the person added to this form and the card count they chose, not a read's rows */}
                       {blockedReason ??
                         (hasSources
-                          ? `${shownCount === null ? "Cards" : cardCount(shownCount)} from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}`
+                          ? `${plannedShown === null ? "Cards" : cardCount(plannedShown)} from ${ready.length} ${ready.length === 1 ? "source" : "sources"}${topic ? `, focused on “${topic}”` : ""}`
                           : `${shownCount === null ? "Cards" : cardCount(shownCount)} about “${topic}”.`)}
                     </p>
                     <div className="flex flex-wrap items-center justify-end gap-2">

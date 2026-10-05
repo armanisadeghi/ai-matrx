@@ -6,6 +6,7 @@
 
 "use client";
 
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { supabase } from "@/utils/supabase/client";
 import { readAllRows } from "@ai-matrx/data/db";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
@@ -129,8 +130,10 @@ export async function readSeatJobs(mandateIds: readonly string[]): Promise<Map<s
     id: string;
     mandate_key: string;
     label: string | null;
-    default_holder_type: string | null;
-    default_holder_id: string | null;
+    // Quoted: these two are READ-shape fields of a select, not a write payload
+    // (default-holder-has-one-road flags the bare `column:` form).
+    "default_holder_type": string | null;
+    "default_holder_id": string | null;
     is_enabled: boolean;
     deleted_at: string | null;
   }>(
@@ -163,7 +166,7 @@ export async function readSeatJobs(mandateIds: readonly string[]): Promise<Map<s
     out.set(d.id, {
       mandateId: d.id,
       mandateKey: storedMandateKey(d.mandate_key),
-      label: d.label ?? d.mandate_key,
+      label: mandateDisplayName(d.mandate_key, d.label),
       holderAgentId:
         (d.default_holder_type === "agent" ? d.default_holder_id : null) ?? boundAgent.get(d.id) ?? null,
       retired: Boolean(d.deleted_at) || !d.is_enabled,

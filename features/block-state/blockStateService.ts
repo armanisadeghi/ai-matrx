@@ -85,3 +85,17 @@ export async function dismissBlockStateChip(id: string): Promise<BlockStateRow |
   if (error) throw new BlockStateWriteError(toSaveError(error));
   return toBlockStateRow(data);
 }
+
+/**
+ * The person's own unsent remark rows staged into this conversation, or — for a
+ * conversation that has no persisted record yet — into the same surface (a fresh
+ * conversation id is minted on every mount of /chat/new).
+ */
+export async function listStagedBlockStates(conversationId: string, surface: string | null): Promise<BlockStateRow[]> {
+  const { data, error } = await supabase.rpc("block_state_list_staged", {
+    p_conversation_id: conversationId,
+    p_surface: surface ?? undefined,
+  });
+  if (error) throw new BlockStateWriteError(toSaveError(error));
+  return rowsOf(data);
+}

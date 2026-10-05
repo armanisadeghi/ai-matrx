@@ -12,7 +12,7 @@
 import { detectKindInJsonText } from "@/features/canvas/artifact-types/storedKindValue";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { findEmbeddedKindJsonRegions } from "@/features/content-ir/surfaces/embedded-kind-json";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKey, normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { deriveInstanceTitle } from "@/features/content-ir/studio/instance-title";
 
@@ -32,10 +32,13 @@ export function responseCanvasTarget(
   response: string,
   fallbackTitle: string,
 ): ResponseCanvasTarget {
-  if (!hasKindKey(response)) return { mode: "html", html: response };
+  // Every realistic spelling of the key (escaped, repr, smart quotes, a JS
+  // literal …) reads as its kind (L-3, round 9): canonical JSON first.
+  const text = normalizeKindSpellings(response);
+  if (!hasKindKey(text)) return { mode: "html", html: response };
   const candidates = [
-    response.trim(),
-    ...findEmbeddedKindJsonRegions(response).map((region) => region.content),
+    text.trim(),
+    ...findEmbeddedKindJsonRegions(text).map((region) => region.content),
   ];
   for (const candidate of candidates) {
     const hit = detectKindInJsonText(candidate);

@@ -63,6 +63,7 @@ export const EDUCATION_PLACES: FeaturePlaces = {
       sources: [
         "features/education/assessment/components/create/AssessmentCreate.tsx",
         "features/education/assessment/data/quizGenerator.ts",
+        "features/education/assessment/data/useAssessmentGeneration.tsx",
       ],
     },
     {

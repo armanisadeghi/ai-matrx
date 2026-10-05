@@ -32,7 +32,7 @@ import {
   ComposerMenuLabel,
   ComposerMenuRow,
 } from "./ComposerMenu";
-import { composerPillClass } from "./ComposerAgentPill";
+import { composerPillClass } from "./composer-chip";
 import type { ComposerSize } from "./composer-types";
 import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 

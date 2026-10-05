@@ -215,7 +215,7 @@ describe("RunFailureCard — the refusal STAYS on the screen", () => {
     // The raw cause stays — as evidence, beneath the words.
     expect(text).toContain("Failed to fetch");
     // …and the person is told what to do about it.
-    expect(text).toContain("run it again");
+    expect(text).toMatch(/retry/);
   });
 
   it("offers no retry remedy when the SERVER refused — that is not transient", () => {
@@ -230,6 +230,6 @@ describe("RunFailureCard — the refusal STAYS on the screen", () => {
     });
     const text = container.textContent ?? "";
     expect(text).toContain(UNFULFILLED);
-    expect(text).not.toContain("run it again");
+    expect(text).not.toMatch(/retry/);
   });
 });

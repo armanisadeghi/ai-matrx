@@ -15,9 +15,9 @@ import {
   MicrosoftMark,
 } from "@ai-matrx/chat/utils/connectors/marks";
 import { useState } from "react";
-import { cn, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { ComposerConnectorsPanel } from "./ComposerConnectorsPanel";
-import { COMPOSER_CHIP_CLASS } from "./composer-chip";
+import { ComposerChip } from "../ComposerChip";
 
 const POPULAR = [
   { name: "Gmail", Mark: GmailMark },
@@ -41,19 +41,21 @@ export function ComposerConnectPromo({
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(COMPOSER_CHIP_CLASS, "gap-1.5", open && "bg-accent", className)}
+        <ComposerChip
+          open={open}
+          tone="quiet"
+          wrapperClassName={className}
           title={`Connect ${names} and more`}
           aria-label={`Connections: ${names} and more`}
-        >
-          <span className="flex items-center gap-1">
-            {POPULAR.map(({ name, Mark }) => (
-              <Mark key={name} colored className="h-3.5 w-3.5" />
-            ))}
-          </span>
-          <span className="text-muted-foreground">Connect</span>
-        </button>
+          icon={
+            <span className="flex items-center gap-1">
+              {POPULAR.map(({ name, Mark }) => (
+                <Mark key={name} colored className="h-3.5 w-3.5" />
+              ))}
+            </span>
+          }
+          label="Connect"
+        />
       </PopoverTrigger>
       <PopoverContent
         /* sizing: fixed — the same 360px Connections panel as + › Connections */

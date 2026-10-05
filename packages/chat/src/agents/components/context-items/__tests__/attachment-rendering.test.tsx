@@ -34,17 +34,11 @@ jest.mock("@ai-matrx/design-system", () => ({
 }),
 }));
 
-jest.mock("@host/features/agents/components/previews/NoteHoverPreview", () => ({
-  NotePreviewContent: ({ noteId }: { noteId: string }) => <span>{noteId}</span>,
-}));
 
-jest.mock("@host/features/agents/components/previews/TaskHoverPreview", () => ({
-  TaskPreviewContent: ({ taskId }: { taskId: string }) => <span>{taskId}</span>,
-}));
 
-jest.mock("@host/features/agents/components/previews/DataRefHoverPreview", () => ({
-  DataRefPreviewContent: () => <span>data preview</span>,
-}));
+
+
+
 
 jest.mock("@host/features/agents/components/previews/WebpageHoverPreview", () => ({
   WebpagePreviewContent: ({

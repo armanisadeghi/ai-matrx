@@ -40,6 +40,7 @@ import {
 } from "../types";
 import { buildRows, StatusIcon, type RowStatus } from "./FactoryBuildPage";
 import { formatDuration } from "./factory-shared";
+import { catalogProseText } from "@/features/content-ir/surfaces/kind-one-line";
 
 const POLL_MS = 3000;
 /** A proof case's result, from the new agent's side. */
@@ -161,7 +162,8 @@ function OutcomePanel({
         <details className="rounded-md border border-border">
           <summary className="px-2.5 py-1.5 text-xs font-medium">Why</summary>
           <p className="whitespace-pre-wrap break-words border-t border-border p-2.5 text-xs text-muted-foreground">
-            {reason ?? state.error}
+            {/* A kind carried in the reason reads as its one-line label (L-5, round 9). */}
+            {catalogProseText(reason ?? state.error)}
           </p>
         </details>
       ) : null}

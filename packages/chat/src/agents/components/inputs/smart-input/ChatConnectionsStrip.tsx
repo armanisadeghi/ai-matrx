@@ -67,7 +67,7 @@ import { attachActionLabel, type DisplayedAttachment } from "../../../connectors
 import { useAttachResourcePicker } from "../../../../host/ui-slots";
 import { useConversationAttachments } from "../../../../host/ui-slots";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
-import { COMPOSER_CHIP_CLASS } from "./composer/composer-chip";
+import { ComposerChip, ComposerChipPart } from "./ComposerChip";
 
 export interface ChatConnectionsStripProps {
   conversationId: string | null | undefined;
@@ -211,72 +211,57 @@ export function ChatConnectionsStrip({
             });
           return (
             <Fragment key={connection.slug}>
-              <span
-                className={cn(
-                  COMPOSER_CHIP_CLASS,
-                  "overflow-hidden p-0",
-                  isBroken &&
-                    "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={openPicker}
-                  aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open Connections.`}
-                  title={
-                    presentation.reason ??
-                    (presentation.toolCount != null
-                      ? `${connection.name} — ${presentation.toolCount} tools reached this run`
-                      : `${connection.name} — connected`)
-                  }
-                  className={cn(
-                    "inline-flex h-full min-w-0 items-center gap-1.5 px-2.5",
-                    isBroken ? "hover:bg-amber-500/20" : "hover:bg-accent",
-                  )}
-                >
-                  {isBroken ? (
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <ComposerChip
+                tone={isBroken ? "warning" : "neutral"}
+                onClick={openPicker}
+                aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open Connections.`}
+                title={
+                  presentation.reason ??
+                  (presentation.toolCount != null
+                    ? `${connection.name} — ${presentation.toolCount} tools reached this run`
+                    : `${connection.name} — connected`)
+                }
+                icon={
+                  isBroken ? (
+                    <AlertTriangle aria-hidden />
                   ) : (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
-                  )}
-                  <span className="max-w-[140px] truncate">{connection.name}</span>
-                  {isBroken && presentation.status ? (
-                    <span className="shrink-0 text-xs">{presentation.status}</span>
-                  ) : null}
-                  {!isBroken && presentation.toolCount != null ? (
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    <Check className="text-success" aria-hidden />
+                  )
+                }
+                label={connection.name}
+                trailing={
+                  isBroken && presentation.status ? (
+                    <span>{presentation.status}</span>
+                  ) : !isBroken && presentation.toolCount != null ? (
+                    <span className="tabular-nums text-muted-foreground">
                       {presentation.toolCount} tools
                     </span>
-                  ) : null}
-                </button>
-                {/* Work: the chooser rides the connection chip as a count.
-                    Advanced lists what was chosen as chips of their own. */}
-                {chooserLabel && attachmentsRead === "succeeded" && !showResources && chosen.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={openChooser}
-                    aria-label={`${chosen.length} attached to this chat from ${connection.name} — ${chooserLabel}`}
-                    title={`${chosen.length} attached to this chat — ${chooserLabel}`}
-                    className="inline-flex h-full shrink-0 items-center gap-1 border-l border-border px-2 text-primary hover:bg-accent"
-                  >
-                    <Paperclip className="h-3 w-3" aria-hidden />
-                    <span className="tabular-nums">{chosen.length}</span>
-                  </button>
-                ) : null}
-              </span>
+                  ) : undefined
+                }
+                parts={
+                  /* Work: the chooser rides the connection chip as a count.
+                     Advanced lists what was chosen as chips of their own. */
+                  chooserLabel && attachmentsRead === "succeeded" && !showResources && chosen.length > 0 ? (
+                    <ComposerChipPart
+                      lit
+                      onClick={openChooser}
+                      aria-label={`${chosen.length} attached to this chat from ${connection.name} — ${chooserLabel}`}
+                      title={`${chosen.length} attached to this chat — ${chooserLabel}`}
+                    >
+                      <Paperclip aria-hidden />
+                      <span className="tabular-nums">{chosen.length}</span>
+                    </ComposerChipPart>
+                  ) : undefined
+                }
+              />
               {chooserLabel && attachmentsRead === "failed" ? (
-                <button
-                  type="button"
+                <ComposerChip
+                  tone="warning"
                   onClick={attachments.reload}
                   title={attachments.error ?? undefined}
-                  className={cn(
-                    COMPOSER_CHIP_CLASS,
-                    "border-amber-500/50 text-amber-700 dark:text-amber-300",
-                  )}
-                >
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <span className="truncate">What is attached did not load · Retry</span>
-                </button>
+                  icon={<AlertTriangle aria-hidden />}
+                  label="What is attached did not load · Retry"
+                />
               ) : null}
               {chooserLabel && attachmentsRead === "succeeded" && showResources
                 ? chosen.map((item: DisplayedAttachment) => {
@@ -285,35 +270,31 @@ export function ChatConnectionsStrip({
                     const declaredBranch = item.metadata?.default_branch;
                     const branch = typeof declaredBranch === "string" ? declaredBranch : null;
                     return (
-                      <button
+                      <ComposerChip
                         key={`${item.provider}:${item.resource_ref}`}
-                        type="button"
                         onClick={openChooser}
+                        busy={item.pending}
                         title={
                           item.pending
                             ? `${item.display_name} — saving to this chat`
                             : `${item.display_name}${branch ? ` · ${branch}` : ""} — ${chooserLabel}`
                         }
-                        className={cn(COMPOSER_CHIP_CLASS, item.pending && "opacity-60")}
-                      >
-                        <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                        <span className="max-w-[160px] truncate">{item.display_name}</span>
-                        {branch ? (
-                          <span className="shrink-0 text-muted-foreground">· {branch}</span>
-                        ) : null}
-                      </button>
+                        icon={<Paperclip className="text-muted-foreground" aria-hidden />}
+                        label={item.display_name}
+                        trailing={
+                          branch ? <span className="text-muted-foreground">· {branch}</span> : undefined
+                        }
+                      />
                     );
                   })
                 : null}
               {chooserLabel && attachmentsRead === "succeeded" && showResources && chosen.length === 0 ? (
-                <button
-                  type="button"
+                <ComposerChip
+                  tone="quiet"
                   onClick={openChooser}
-                  className={cn(COMPOSER_CHIP_CLASS, "text-muted-foreground hover:text-foreground")}
-                >
-                  <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <span className="max-w-[180px] truncate">{chooserLabel}</span>
-                </button>
+                  icon={<Plus aria-hidden />}
+                  label={chooserLabel}
+                />
               ) : null}
             </Fragment>
           );
@@ -333,7 +314,7 @@ export function ChatConnectionsStrip({
       <>
         <div
           className={cn(
-            "flex h-4 w-full items-center gap-1 overflow-x-auto scrollbar-hide",
+            "flex h-6 w-full items-center gap-1.5 overflow-x-auto scrollbar-hide",
             className,
           )}
         >
@@ -360,7 +341,7 @@ export function ChatConnectionsStrip({
     <>
       <div
         className={cn(
-          "flex h-4 w-full items-center gap-1 overflow-x-auto scrollbar-hide",
+          "flex h-6 w-full items-center gap-1.5 overflow-x-auto scrollbar-hide",
           className,
         )}
       >
@@ -395,92 +376,66 @@ export function ChatConnectionsStrip({
             (item: DisplayedAttachment) => item.provider === connection.slug,
           ).length;
           return (
-            <span
+            <ComposerChip
               key={connection.slug}
-              className={cn(
-                // `before:` expands the touch target on mobile without adding
-                // a pixel of height (same trick as ConnectorStrip).
-                "group relative inline-flex h-4 shrink-0 items-center rounded-full border text-[10px] font-medium leading-none",
-                "before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] sm:before:hidden",
-                isBroken
-                  ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                  : "border-border/50 bg-card/50 text-foreground/80",
-              )}
-            >
-              <button
-                type="button"
-                onClick={openPicker}
-                aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open Connections.`}
-                title={
-                  presentation.reason ??
-                  (presentation.toolCount != null
-                    ? `${connection.name} — ${presentation.toolCount} tools reached this run`
-                    : `${connection.name} — connected`)
-                }
-                className={cn(
-                  "inline-flex h-4 items-center gap-1 rounded-l-full pl-1 pr-1.5 transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  isBroken
-                    ? "hover:bg-amber-500/20"
-                    : "hover:bg-accent",
-                  !chooserLabel && "rounded-r-full",
-                )}
-              >
-                {isBroken ? (
-                  <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
+              tone={isBroken ? "warning" : "neutral"}
+              onClick={openPicker}
+              aria-label={`${connection.name} — ${presentation.reason ?? (isBroken ? "needs attention" : "connected")}. Open Connections.`}
+              title={
+                presentation.reason ??
+                (presentation.toolCount != null
+                  ? `${connection.name} — ${presentation.toolCount} tools reached this run`
+                  : `${connection.name} — connected`)
+              }
+              icon={
+                isBroken ? (
+                  <AlertTriangle aria-hidden />
                 ) : (
-                  <Check className="h-2.5 w-2.5 text-success/80" aria-hidden />
-                )}
-                <span className="max-w-[6rem] truncate sm:max-w-[10rem]">
-                  {connection.name}
-                </span>
-                {isBroken && presentation.status && (
+                  <Check className="text-success/80" aria-hidden />
+                )
+              }
+              label={connection.name}
+              trailing={
+                isBroken && presentation.status ? (
                   <span className="font-normal">{presentation.status}</span>
-                )}
-                {/* A count only when the run actually reported one. */}
-                {!isBroken && presentation.toolCount != null && (
+                ) : !isBroken && presentation.toolCount != null ? (
+                  /* A count only when the run actually reported one. */
                   <span className="font-normal tabular-nums text-muted-foreground">
                     {presentation.toolCount} tools
                   </span>
-                )}
-              </button>
-
-              {chooserLabel && conversationId && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    openAttachPicker({
-                      conversationId,
-                      provider: connection.slug,
-                      providerName: connection.name,
-                      attachable: connection.attachable,
-                    })
-                  }
-                  aria-label={`${chooserLabel} from ${connection.name}${attachedCount > 0 ? ` — ${attachedCount} attached to this chat` : ""}`}
-                  title={
-                    attachments.error
-                      ? `What is attached did not load (${attachments.error}) — ${chooserLabel}`
-                      : attachedCount > 0
-                        ? `${attachedCount} attached to this chat — ${chooserLabel}`
-                        : chooserLabel
-                  }
-                  className={cn(
-                    "inline-flex h-4 items-center gap-0.5 rounded-r-full border-l border-border/50 pl-1 pr-1.5 transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    attachedCount > 0
-                      ? "bg-primary/10 text-primary hover:bg-primary/20"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  <Paperclip className="h-2.5 w-2.5" aria-hidden />
-                  {attachments.status === "succeeded" && attachedCount > 0 ? (
-                    <span className="tabular-nums">{attachedCount}</span>
-                  ) : (
-                    <span className="font-normal">{chooserLabel}</span>
-                  )}
-                </button>
-              )}
-            </span>
+                ) : undefined
+              }
+              parts={
+                chooserLabel && conversationId ? (
+                  <ComposerChipPart
+                    lit={attachedCount > 0}
+                    onClick={() =>
+                      openAttachPicker({
+                        conversationId,
+                        provider: connection.slug,
+                        providerName: connection.name,
+                        attachable: connection.attachable,
+                      })
+                    }
+                    aria-label={`${chooserLabel} from ${connection.name}${attachedCount > 0 ? ` — ${attachedCount} attached to this chat` : ""}`}
+                    title={
+                      attachments.error
+                        ? `What is attached did not load (${attachments.error}) — ${chooserLabel}`
+                        : attachedCount > 0
+                          ? `${attachedCount} attached to this chat — ${chooserLabel}`
+                          : chooserLabel
+                    }
+                  >
+                    <Paperclip aria-hidden />
+                    {attachments.status === "succeeded" && attachedCount > 0 ? (
+                      <span className="tabular-nums">{attachedCount}</span>
+                    ) : (
+                      <span className="font-normal">{chooserLabel}</span>
+                    )}
+                  </ComposerChipPart>
+                ) : undefined
+              }
+            />
           );
         })}
       </div>

@@ -301,6 +301,15 @@ function namesOf(sources: ResolvedSource[]): string {
 }
 
 /**
+ * THE EVERY-SOURCE RULE's count: the plan makes at least one card per Source
+ * (see `planByGroup`), so 4 cards over 5 Sources is 5. Every count shown
+ * before and during a run comes from here so it matches the plan.
+ */
+export function plannedCardCount(asked: number, sourceCount: number): number {
+  return sourceCount > 1 ? Math.max(asked, sourceCount) : asked;
+}
+
+/**
  * The one honest note on what the deck covers: sections missed, Sources no
  * card came from, and a count raised to one card per Source.
  */

@@ -61,6 +61,8 @@ import {
   removeInboxItem,
 } from "../inbox/inbox.slice";
 import { markResourcesSubmitted } from "../instance-resources/instance-resources.slice";
+import { flushRemarkWrites, hasPendingRemarkWrites } from "../instance-resources/remarks";
+import { withFreshRemarkRefs } from "../instance-resources/remarks-wire";
 import { isOrganizationSelectionCancelled } from "../../../../host/org";
 
 interface SmartExecuteArgs {
@@ -304,7 +306,7 @@ export const smartExecute = createAsyncThunk<
         return;
       }
     }
-    const submission = handed ?? captureSubmission(entryState, conversationId);
+    let submission = handed ?? captureSubmission(entryState, conversationId);
 
     // ── A SEND IS ALREADY IN FLIGHT: hold this one behind it ───────────────
     // Another submit is between the keypress and `running` (its gates, the
@@ -353,6 +355,20 @@ export const smartExecute = createAsyncThunk<
         }),
       );
       dispatch(markResourcesSubmitted(conversationId));
+    }
+    // A chip whose first save has not returned its row/ref yet would be sent
+    // without `block_state_ref` and reappear after reload. Save now, wait for
+    // every ref, then carry them on the frozen submission (text stays as typed).
+    if (!handed && hasPendingRemarkWrites(conversationId)) {
+      try {
+        await flushRemarkWrites(conversationId);
+      } catch (error) {
+        console.error("[smart-execute] pending chip writes failed before send:", error);
+      }
+      submission = withFreshRemarkRefs(
+        submission,
+        getState().instanceResources.byConversationId[conversationId],
+      );
     }
     // True once the message has gone somewhere (the door, the queue, a
     // pending ask). Any exit before that returns it to the composer.

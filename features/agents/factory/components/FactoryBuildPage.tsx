@@ -20,6 +20,7 @@
  *    per-step cost is recorded on the spine.
  */
 
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -385,7 +386,7 @@ function StepRow({
                         href={`/administration/intelligence/mandates/${encodeURIComponent(rec.mandate_key)}`}
                         className="font-mono text-primary hover:underline"
                       >
-                        {rec.mandate_key}
+                        {mandateDisplayName(rec.mandate_key)}
                       </Link>
                     ) : (
                       "—"

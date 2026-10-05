@@ -10,6 +10,7 @@
  * on screen is still running.
  */
 
+import { mandateDisplayName } from "@/features/mandates/mandate-words";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -76,7 +77,7 @@ export function FactoryBuildsPage() {
       cell: (r) =>
         r.mandateKey ? (
           <span className="truncate font-mono text-xs font-medium" title={r.name ?? undefined}>
-            {r.mandateKey}
+            {mandateDisplayName(r.mandateKey)}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">New agent</span>

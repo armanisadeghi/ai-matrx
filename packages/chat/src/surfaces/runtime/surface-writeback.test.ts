@@ -33,10 +33,7 @@ jest.mock("./registry", () => ({
 // over the app's `SchemaSourcePort`), `validateStructuralLeg`
 // and ajv all run for real — see the value-contract describe block below.
 const mockGetKindInputContract = jest.fn();
-jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
-  getKindInputContractBySlug: (kind: string) =>
-    mockGetKindInputContract(kind),
-}));
+
 
 import {
   applySurfaceWrite,

@@ -628,3 +628,53 @@ all a kind.
       `kind-leak-sentinel-guard-gaps.test.ts` (13 of 21 red before).
 - [x] R8-open. DONE 2026-10-05 (cells AND chips → `cellText`: kind object → `kindOneLine`, kind text in any spelling → `kindTextLabel`; guard `StructuredAgentAnswerBlock.kind-cells.test.tsx`, red then green). `StructuredAgentAnswerBlock` small-object table cells print `JSON.stringify(cell)` (a cell holding a kind
       object prints it raw) — not in this round's brief.
+
+## R9. Round 9 — do no harm: bounded regions, keys-only zero-width, linear time (2026-10-05)
+
+Owner rulings: (1) never hide or drop text, never alter characters outside the matched key/region, linear time with
+a hard per-call budget on the hot path; (2) convert only REALISTIC spellings and their combinations — literal, `\u005f`,
+markdown `\_\_kind`, backslash-escaped (one or more levels), Python repr, JavaScript object literal / Node console
+form, zero-width inside the key, smart quotes (single HTML entities keep their round-8 conversion); (3) EXOTIC forms —
+double entities `&amp;quot;`, `&#95;`, upper-case / padded entities, fullwidth quotes, bidi marks, invisible operators,
+combining joiners in the key — are DETECTION ONLY: the sentinel and the judge report them (`hasExoticKindKey`), no
+renderer converts them.
+
+- [x] R9-1 (H-1). An unclosed region ends where its grammar breaks (`kindGrammar`: a word, or a newline inside a
+      string, after a complete token; malformed JSON punctuation keeps its balanced reading): label, then every
+      character after it. Prose leaf (`spelledKindsAsOneLine`), normalizer, `inlineKindText`, `findBrokenKindJsonRegions`
+      (`kindTextToMarkdown`), `snippetKindText` (also: prose that only MENTIONS the key is never cut) and
+      `PlainTextFallback`. Escaped 2–3 levels decode to a fixed point within the region. Guard
+      `kind-never-hides-text.test.tsx` (10 spellings × 5 converters + reload + live): 48 red before.
+- [x] R9-2 (H-2). Zero-width characters change only INSIDE a matched key (`withoutZeroWidthInKeys`); ZWJ emoji, soft
+      hyphens and code-span content are untouched everywhere. Matrix case "a zero-width character OUTSIDE the key is
+      never touched" (red before).
+- [x] R9-3 (H-3). One linear scan (`scanKindSpellingRegions`): candidates from `kind` occurrences, forward-only brace
+      cursor, quoted ranges once (binary search), windowed decode proportional to the region, `MAX_REGIONS_PER_CALL`
+      budget, `mayHoldKindKey` pre-check, 16-entry per-text memo in `spelledKindsAsOneLine`. Measured (jest, M-series):
+      600 escaped regions 5,285 ms → ~6 ms; 1 MB + one escaped region 108 ms → ~4 ms; plain 1 MB ~0.2 ms; repeated frame
+      18.9 ms → memo hit. Guard `kind-spelling-performance.test.ts` (budgets 30 / 40 / 10 / 5 ms; 3 red before).
+- [x] R9-4 (L-1). Realistic COMBINATIONS (escaped / repr / smart / markdown + zero-width, half-escaped `"\__kind"`,
+      `{\"\\_\\_kind\"…}`, escaped ×2/×3, spaced colon, repr key + JSON values, entity-encoded repr) are one key regex;
+      the key decides the region's decoders. The stream ingress reads markdown + zero-width as the lifted key.
+      13 combinations × every matrix table.
+- [x] R9-5 (L-2). JavaScript object literal (`{ __kind: 'x', … }`, key position, quoted value): `js` option in
+      `ALL_KIND_SPELLINGS` — detector, slug, sentinel, judge, markdown gate; the prose leaf reads it as its label.
+      JSON contexts keep the literal rule. Guard `kind-literal-only-callers.test.ts`.
+- [x] R9-6 (L-3). Literal-only text callers moved to the normalizing detector: `response-canvas-target`,
+      `message-kind-gate` (+ `message-kind-instances` extraction normalizes), `island-meta` `kindOf`, `ErrorPanel`,
+      `AICodeEditor` (its labelled "Raw AI Response" `<pre>` is `data-kind-source`), `PlainTextFallback`. Grep census of
+      the rest: accumulator / splitter lifts (JSON by definition), `conversationProposals` (machine envelopes),
+      `shape-doctor` (canonical skill bodies), `stream-simulator` (studio tool), `rich-document` code-fence save (a ```ts
+      fence may legitimately hold a JS literal) — literal by design. Guard: 16 red before.
+- [x] R9-7 (L-4). A literal key in a cut-off prose object: reload converts it (label + text after), and the live
+      accumulator demotes a bare-JSON region opened on a line that breaks into prose back to prose
+      (`kindLineIsProse`), with `withTerminalEnvelope` leaving such a text block alone — live reads like reload (two
+      blocks live, one on reload: same words). Guard rows "literal (L-4)" in `kind-never-hides-text`.
+- [x] R9-8 (L-5). `BuildProgress` "Why" panel reads `reason` / `state.error` through `catalogProseText`.
+- [x] R9-9. Matrix extended: COMBINATIONS through every table; FALSE_POSITIVES (prose mention, bare word, code spans,
+      ZWJ / soft hyphen, prose braces, math) come out of the prose reader, normalizer, `inlineKindText` and
+      `snippetKindText` exactly as written and render every word; every prose converter and render cell keeps the text
+      around the kind; EXOTIC table asserts detection only. Before round 9: 146 of 630 red across the three guards.
+- [ ] R9-open. A multi-line literal region that breaks into prose on a LATER line is still lifted live (the demotion
+      covers a region opened on the breaking line only).
+

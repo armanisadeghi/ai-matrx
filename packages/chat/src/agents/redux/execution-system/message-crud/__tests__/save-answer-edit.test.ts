@@ -85,9 +85,7 @@ jest.mock("../../../../../host/notify", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), success: jest.fn(), info: jest.fn(), warning: jest.fn() },
 }));
 
-jest.mock("@host/lib/output-feedback/service", () => ({
-  saveOutputFeedback: jest.fn(async () => undefined),
-}));
+
 
 const CONVERSATION_ID = "c-rc-b5";
 const MESSAGE_ID = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";

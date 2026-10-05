@@ -5,6 +5,9 @@ import { findEmbeddedKindJsonRegions } from "@/features/content-ir/surfaces/embe
 import {
   firstKindSlug,
   hasKindKey,
+  hasKindKeyAnySpelling,
+  kindObjectProseBreak,
+  normalizeKindSpellings,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
@@ -49,6 +52,9 @@ function textPieces(text: string): Piece[] {
   const out: Piece[] = [];
   if (before.trim()) out.push({ type: "text", text: before });
   out.push({ type: "broken", kind: firstKindSlug(cleaned) });
+  // Never past where the object broke into prose: the text after it stays (round 9).
+  const proseBreak = objectAt < 0 ? null : kindObjectProseBreak(cleaned.slice(objectAt));
+  if (proseBreak !== null) out.push(...textPieces(cleaned.slice(objectAt + proseBreak)));
   return out;
 }
 
@@ -94,7 +100,8 @@ export const PlainTextFallback: React.FC<PlainTextFallbackProps> = ({
     className,
   );
 
-  if (!content || !hasKindKey(content)) {
+  // Every realistic spelling of the key reads as the kind (round 9).
+  if (!content || !hasKindKeyAnySpelling(content)) {
     return (
       <div className="mb-3 w-full min-w-0 text-left overflow-x-hidden">
         <div className={containerStyles}>{content || "No content available"}</div>
@@ -105,7 +112,7 @@ export const PlainTextFallback: React.FC<PlainTextFallbackProps> = ({
   return (
     <div className="mb-3 w-full min-w-0 text-left overflow-x-hidden">
       <div className={cn(containerStyles, "whitespace-normal")}>
-        {piecesOf(content).map((piece, i) => {
+        {piecesOf(normalizeKindSpellings(content)).map((piece, i) => {
           if (piece.type === "text") return <ReadableText key={i} text={piece.text} />;
           if (piece.type === "broken") {
             return (

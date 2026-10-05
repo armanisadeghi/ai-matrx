@@ -9,7 +9,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { durableRecordId } from "@ai-matrx/kit/ids";
 import { blockKeyFor, fingerprintOf } from "./blockKey";
-import { blockRowKey, type BlockStateScope, type BlockStateTarget } from "./types";
+import { blockNoticeKey, blockRowKey, type BlockStateScope, type BlockStateTarget } from "./types";
 import { BlockStateNotice } from "./BlockStateNotice";
 
 export const BlockStateContext = createContext<BlockStateTarget | null>(null);
@@ -93,7 +93,7 @@ export function BlockStateHost({
   return (
     <BlockStateContext.Provider value={target}>
       {children}
-      <BlockStateNotice rowKey={rowKey} />
+      <BlockStateNotice rowKey={blockNoticeKey(rowKey, target)} />
     </BlockStateContext.Provider>
   );
 }

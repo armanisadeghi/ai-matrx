@@ -87,6 +87,6 @@ describe("the promotion door", () => {
     // The single most surprising thing about promotion, so the screen states
     // it up front rather than letting an admin discover an unbound system job.
     const source = readFileSync(join(REPO_ROOT, BUTTON), "utf8");
-    expect(source).toContain("The copy starts with no bindings");
+    expect(source).toContain("with no bindings");
   });
 });

@@ -883,8 +883,10 @@ describe("the red coverage state has exactly one human word", () => {
     const offences: string[] = [];
     for (const file of SWEPT_TREES.flatMap(sourceFilesUnder)) {
       const src = stripComments(readFileSync(file, "utf8"));
+      // Word-bounded: component/function identifiers such as
+      // `UnassignedMandateCard` are code, not a rendered second spelling.
       for (const banned of ["Unassigned", "Nothing assigned"]) {
-        if (src.includes(banned)) {
+        if (new RegExp(`\\b${banned}\\b`).test(src)) {
           offences.push(`${relative(REPO_ROOT, file)}: ${banned}`);
         }
       }

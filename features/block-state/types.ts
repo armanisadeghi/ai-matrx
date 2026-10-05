@@ -107,3 +107,16 @@ export function toBlockStateRow(value: unknown): BlockStateRow | null {
     version: typeof r.version === "number" ? r.version : 0,
   };
 }
+
+/**
+ * Where a block's save notice is kept: its row key once the block has a record to
+ * belong to; before that (a shared view with no durable answer, a signed-out
+ * person) a key made from what identifies the block on screen — so a refused save
+ * is always said under the block, never dropped.
+ */
+export function blockNoticeKey(
+  rowKey: string | null,
+  target: { kind: string; messageId: string | null; blockIndex: number | null; entityId: string | null },
+): string {
+  return rowKey ?? `unsaved:${target.kind}:${target.messageId ?? target.entityId ?? ""}:${target.blockIndex ?? ""}`;
+}

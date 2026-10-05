@@ -28,10 +28,7 @@ jest.mock("next/dynamic", () => ({
   default: () =>
     jest.requireActual("@host/components/markdown-core/MarkdownCoreImpl").default,
 }));
-jest.mock("@host/features/content-ir/studio/components/KindInstanceRender", () => ({
-  __esModule: true,
-  default: ({ kind }: { kind: string }) => <div data-kind-route={kind} />,
-}));
+
 jest.mock("@host/components/MarkdownStream", () => ({
   __esModule: true,
   default: () => <div data-markdown-stream="1" />,

@@ -13,8 +13,8 @@
  * This counts calls to the two definition fetches in `packages/chat/src`
  * (tests excluded) outside the builder-tier files. The count is SHRINK-ONLY:
  * a file above its baseline fails; a file below it must lower its baseline in
- * the same commit. Target: 0 at P25, except the 3 voice files, which reach 0
- * at P24v (server-minted realtime session). The legacy RPCs
+ * the same commit. Reached 0 at P24v (voice reads a server-read realtime
+ * session config). The legacy RPCs
  * `agx_get_execution_minimal|full` may be called ONLY by thunks.ts.
  *
  *   pnpm check:agent-run-tier              # fail on any regression
@@ -38,7 +38,7 @@ const LEGACY_RPC = /\.rpc\(\s*["'`]agx_get_execution_(?:minimal|full)["'`]/g;
  * Builder tier (§3). Since P25 the builder surfaces (debug window, agent view
  * page, compare/version diff, builder scope hook, definition-sync saga,
  * `fetchAgentExecutionFull`) live in the app, not the package. Only the file
- * that DEFINES `fetchFullAgent` stays exempt — voice still calls it until P24v.
+ * that DEFINES `fetchFullAgent` stays exempt.
  */
 const BUILDER_TIER = new Set<string>([
   `${PKG}agents/redux/agent-definition/thunks.ts`,
@@ -52,11 +52,9 @@ const BASELINE: Record<string, number> = {
   // (P25, 2026-10-05: the Quickset / Tools / Skills / Connections pickers
   // moved to `fetchAgentRunControls` → `agx_get_run_controls`; their 6 fetches
   // are gone.)
-  // Voice: a client-held realtime session needs the instructions. Reaches 0 at
-  // P24v when aidream mints the session server-side.
-  [`${PKG}voice-agent/realtimeModel.ts`]: 1,
-  [`${PKG}voice-agent/agentInstructions.ts`]: 1,
-  [`${PKG}voice-agent/hooks/useVoiceAgentInstance.ts`]: 1,
+  // (P24v, 2026-10-05: voice reads its session config from aidream —
+  // `POST /ai/agents/{id}/realtime-session` — so the 3 voice fetches are gone.
+  // Zero run-side definition fetches remain.)
 };
 
 const LEGACY_RPC_ALLOWED = new Set<string>([

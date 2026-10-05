@@ -28,27 +28,19 @@ jest.mock("../../../../store/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
 
-jest.mock("@host/features/files/components/preview/FileResourceChip", () => ({
-  FileResourceChip: () => null,
-}));
+
+
 
 jest.mock("@host/features/agents/components/previews/WebpageHoverPreview", () => ({
   WebpagePreviewContent: () => <div>Saved webpage preview</div>,
 }));
 
-jest.mock("@host/features/agents/components/previews/NoteHoverPreview", () => ({
-  NotePreviewContent: () => null,
-}));
 
-jest.mock("@host/features/agents/components/previews/TaskHoverPreview", () => ({
-  TaskPreviewContent: () => null,
-}));
 
-jest.mock("@host/features/agents/components/previews/DataRefHoverPreview", () => ({
-  DataRefPreviewContent: () => null,
-}));
+
+
+
 
 import { MessageAttachmentStrip } from "../../messages-display/MessageAttachmentStrip";
 import { ContextItemViewer } from "../ContextItemViewer";

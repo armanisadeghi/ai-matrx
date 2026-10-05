@@ -7,9 +7,9 @@
 // Two configuration sources:
 //
 //   1. `agentId` (intro path) — Step 4 of the agent-system unification.
-//      Loads the `agx_agent` row, then extracts voice_id / instructions /
-//      realtime_tools from `settings` + `messages[0]` and reapplies them
-//      to the slice. The voice agent is now a normal agent row;
+//      aidream reads the agent row (`POST /ai/agents/{id}/realtime-session`,
+//      P24v — the browser never fetches the definition) and answers with its
+//      voice_id + system message, which this hook applies to the slice. The voice agent is now a normal agent row;
 //      duplicating it in the Agent Builder produces a custom voice
 //      agent at zero infra cost.
 //
@@ -38,7 +38,7 @@
 //   session running someone else's prompt.
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppDispatch, useAppSelector, useAppStore } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { DEFAULT_INTRO_TOOLS, DEFAULT_INTRO_VOICE } from "../constants";
 import {
   applyAgentConfig,
@@ -51,11 +51,10 @@ import type {
   VoiceAgentPreset,
   VoiceId,
 } from "../types";
-import { fetchFullAgent } from "../../agents/redux/agent-definition/thunks";
-import type { ChatRootState } from "../../store/root-state";
-import { readInstructionsFromAgent } from "../agentInstructions";
-import { selectAgentReadyForBuilder } from "../../agents/redux/agent-definition/selectors";
-import { recordUnavailableMessage } from "../../host/diagnostics";
+import {
+  fetchRealtimeSessionConfig,
+  useRealtimeSessionConfig,
+} from "../realtimeSession";
 import { useSessionKnob } from "../../host/prefs-react";
 import { LIVE_CONVERSATION_VOICES } from "@host/lib/voices/voiceSets";
 
@@ -109,12 +108,8 @@ function isVoiceId(v: string): v is VoiceId {
   return LIVE_CONVERSATION_VOICES.some((voice) => voice.id === v);
 }
 
-function readVoiceIdFromAgent(settings: unknown): VoiceId {
-  if (settings && typeof settings === "object") {
-    const v = (settings as Record<string, unknown>).voice_id;
-    if (typeof v === "string" && isVoiceId(v)) return v;
-  }
-  return DEFAULT_INTRO_VOICE;
+function agentVoiceId(v: string | null | undefined): VoiceId {
+  return typeof v === "string" && isVoiceId(v) ? v : DEFAULT_INTRO_VOICE;
 }
 
 // NOTE: the agent's tool set is resolved authoritatively by
@@ -126,7 +121,6 @@ function readVoiceIdFromAgent(settings: unknown): VoiceId {
 
 export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
 
   // One stable instanceId per mount. Intro is keyed on agentId so multiple
   // intro mounts (one per agent) don't collide, and additionally on
@@ -170,67 +164,35 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     let cancelled = false;
     if (o.agentId) {
       void (async () => {
-        let fetchFailed = false;
-        // Gate on FETCH STATUS, not field presence: a list fetch merges a
-        // partial record with no `messages`, and treating that as loaded
-        // reports a healthy agent as having no system message. (Pre-existing
-        // here; it only stayed invisible because nothing lists agents on the
-        // intro route before this runs.)
-        if (
-          !selectAgentReadyForBuilder(store.getState() as ChatRootState, o.agentId!)
-        ) {
-          await dispatch(fetchFullAgent(o.agentId!))
-            .unwrap()
-            .catch(() => {
-              fetchFailed = true;
-            });
-        }
+        // The definition is read on the SERVER (P24v): the session config
+        // carries the persona, the voice and the wire model — never the row.
+        const { config, error } = await fetchRealtimeSessionConfig(o.agentId!);
         if (cancelled) return;
-        const state1 = store.getState() as ChatRootState;
-        const agent = state1.agentDefinition.agents?.[o.agentId!];
-        const instructions = agent
-          ? readInstructionsFromAgent(agent.messages)
-          : "";
+        const instructions = config?.instructions ?? "";
         if (!instructions) {
-          // Loud recovery: there is nothing to recover TO. Say which agent and
-          // why rather than opening a session on an empty or borrowed persona.
-          // A zero-row agent read is the four-cause ambiguity — never assert
-          // absence; recordUnavailableMessage says both possibilities.
-          const why = fetchFailed
-            ? "could not be loaded"
-            : agent
-              ? "has no system message"
-              : recordUnavailableMessage("voice agent", "unknown");
+          // Loud recovery: there is nothing to recover TO. The server's own
+          // sentence names the agent and why.
+          const why = error ?? "has no system message";
           console.error(
             `[voice-agent] agent ${o.agentId}: ${why} — the voice session has no instructions and will refuse to start.`,
           );
           dispatch(
             setError({
               instanceId,
-              error: {
-                code: "agent-instructions-missing",
-                message:
-                  fetchFailed || agent
-                    ? `This voice agent ${why}. Its instructions live in the agent record, so the session cannot start until that resolves.`
-                    : why,
-              },
+              error: { code: "agent-instructions-missing", message: why },
             }),
           );
           return;
         }
         // Write ONLY voice + instructions here. `tools` is owned by
         // useRealtimeAgentConfig (the authoritative backend resolve); writing
-        // tools from this late agent-fetch would clobber the resolved set in a
-        // resolve/seed race (M1). The synchronous builtin seed lives in
-        // initInstance only — useRealtimeAgentConfig overwrites it once.
-        // The agent's own voice here; a person's "Live conversation voice" is
-        // layered on by the effect below (it resolves after the organization
-        // does, which can be later than this load).
-        const voiceId = readVoiceIdFromAgent(agent!.settings);
+        // tools from this late load would clobber the resolved set (M1).
+        // A person's "Live conversation voice" is layered on by the effect
+        // below (it resolves after the organization does).
         dispatch(
           applyAgentConfig({
             instanceId,
-            voiceId,
+            voiceId: agentVoiceId(config!.voice_id),
             instructions,
           }),
         );
@@ -244,7 +206,7 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     // Mount-once init. Config knobs are mutated via updateConfig /
     // applyAgentConfig actions, not by re-running this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, instanceId, store]);
+  }, [dispatch, instanceId]);
 
   useLiveConversationVoice({ instanceId, agentId: opts.agentId });
 
@@ -272,19 +234,18 @@ export function useLiveConversationVoice({
 }): void {
   const dispatch = useAppDispatch();
   const personalVoice = useSessionKnob(LIVE_CONVERSATION_VOICE_KNOB);
-  const agentType = useAppSelector((s) =>
-    agentId ? (s.agentDefinition.agents?.[agentId]?.agentType ?? null) : null,
-  );
-  const agentSettings = useAppSelector((s) =>
-    agentId ? (s.agentDefinition.agents?.[agentId]?.settings ?? null) : null,
-  );
+  // Agent type + own voice come from the server-read session config (P24v),
+  // never the definition.
+  const { config } = useRealtimeSessionConfig(agentId);
+  const agentType = config?.agent_type ?? null;
+  const ownVoice = config?.voice_id ?? null;
   const sessionIdle = useAppSelector((s) => {
     const status = s.voiceAgent?.instances?.[instanceId]?.status;
     return status === undefined || status === "idle" || status === "error";
   });
   useEffect(() => {
-    if (!agentId || !agentSettings || !sessionIdle) return;
-    const own = readVoiceIdFromAgent(agentSettings);
+    if (!agentId || !config || !sessionIdle) return;
+    const own = agentVoiceId(ownVoice);
     const voiceId =
       agentType === "builtin" &&
       typeof personalVoice === "string" &&
@@ -292,5 +253,5 @@ export function useLiveConversationVoice({
         ? personalVoice
         : own;
     dispatch(applyAgentConfig({ instanceId, voiceId }));
-  }, [agentId, agentType, agentSettings, personalVoice, sessionIdle, dispatch, instanceId]);
+  }, [agentId, agentType, config, ownVoice, personalVoice, sessionIdle, dispatch, instanceId]);
 }

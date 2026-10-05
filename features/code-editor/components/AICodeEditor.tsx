@@ -42,7 +42,8 @@ import { CODE_EDITOR_AGENTS } from "@/features/code-editor/agent-code-editor/age
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AnswerTextPreview } from "@/components/official/structured-value/AnswerTextPreview";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
-import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
+import { hasKindKeyAnySpelling } from "@/features/content-ir/surfaces/json-kind-signal";
+import { KIND_SOURCE_PROPS } from "@/features/content-ir/surfaces/kind-leak-scan";
 
 export type AICodeEditorProps = UseAICodeEditorProps & {
   title?: string;
@@ -410,10 +411,11 @@ export function AICodeEditor({
                   </div>
                   <div className="flex-1 overflow-auto p-2 bg-background">
                     {/* A kind answer is drawn as its kind (kind-never-raw R1). */}
-                    {hasKindKey(rawAIResponse) ? (
+                    {hasKindKeyAnySpelling(rawAIResponse) ? (
                       <AnswerValueView text={rawAIResponse} />
                     ) : (
-                      <pre className="text-[10px] whitespace-pre-wrap font-mono">
+                      // The labelled "Raw AI Response" view: deliberate source.
+                      <pre {...KIND_SOURCE_PROPS} className="text-[10px] whitespace-pre-wrap font-mono">
                         {rawAIResponse}
                       </pre>
                     )}

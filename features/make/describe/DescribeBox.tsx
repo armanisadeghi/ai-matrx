@@ -113,6 +113,7 @@ export function DescribeBox() {
       const spec = describeSpec(answer.template);
       const checked = checkDescribeSpec(spec);
       if (!checked.ok) {
+        console.warn("[make:describe] the store's check refused the spec", checked.problems);
         setRun({ phase: "failed", why: checked.line, templateId: null, answer: null });
         return;
       }

@@ -8,29 +8,14 @@
 // instructions?" (which is exactly how a hardcoded copy became the silent
 // authority before 2026-08-16).
 //
-// It returns "" when the row carries no system message. Callers report that
-// loudly and refuse to run; none of them substitutes a prompt of its own.
+// Since P24v the row is read on the SERVER (`realtimeSession.ts`); the browser
+// never fetches the definition. A row with no system message is refused there
+// loudly; no caller substitutes a prompt of its own.
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
-import { useAppDispatch, useAppStore } from "../store/hooks";
-import { fetchFullAgent } from "../agents/redux/agent-definition/thunks";
-import { selectAgentReadyForBuilder } from "../agents/redux/agent-definition/selectors";
 import { useMandate } from "../mandates/useMandate";
-import type { ChatRootState } from "../store/root-state";
-
-/** The agent row's system message, or "" when it has none. */
-export function readInstructionsFromAgent(messages: unknown): string {
-  if (!Array.isArray(messages) || messages.length === 0) return "";
-  const sys = (messages as Array<{ role?: string; content?: unknown }>).find(
-    (m) => m?.role === "system",
-  );
-  if (!sys || !Array.isArray(sys.content)) return "";
-  const text = (sys.content as Array<{ type?: string; text?: unknown }>).find(
-    (b) => b?.type === "text",
-  )?.text;
-  return typeof text === "string" ? text : "";
-}
+import { useRealtimeSessionConfig } from "./realtimeSession";
 
 export interface MandateAgentInstructions {
   /** The resolved agent id, or null while resolving / on failure. */
@@ -43,72 +28,31 @@ export interface MandateAgentInstructions {
 }
 
 /**
- * Resolve a mandate and read its agent's instructions from the DB — the canonical
- * way a voice surface learns what its agent says. Never returns a fallback: an
- * unresolved mandate or an instruction-less agent surfaces as `error`.
+ * Resolve a mandate and read its agent's instructions — the canonical way a
+ * voice surface learns what its agent says. The definition is read on the
+ * server (`POST /ai/agents/{id}/realtime-session`, P24v); the browser never
+ * fetches it. Never returns a fallback: an unresolved mandate or an
+ * instruction-less agent surfaces as `error` (the server's own sentence).
  */
 export function useMandateAgentInstructions(
   mandateKey: AnyMandateKey | "",
 ): MandateAgentInstructions {
-  const dispatch = useAppDispatch();
-  const store = useAppStore();
   const { mandate, loading: mandateLoading, error: mandateError } = useMandate(mandateKey);
   const agentId = mandate?.agentId ?? null;
-
-  const [state, setState] = useState<{
-    agentId: string | null;
-    instructions: string | null;
-    error: string | null;
-  }>({ agentId: null, instructions: null, error: null });
-
+  const session = useRealtimeSessionConfig(agentId);
+  const instructions = session.config?.instructions || null;
+  const sessionError =
+    session.error ?? (session.config && !instructions ? "This agent has no system message." : null);
   useEffect(() => {
-    if (!agentId) return;
-    let cancelled = false;
-    void (async () => {
-      // Gate on the record's FETCH STATUS, never on field presence. A cheap
-      // list fetch (`fetchAgentsListFull`, which any agent picker on the page
-      // triggers) merges a PARTIAL record carrying no `messages` — treating
-      // that as loaded reads the instructions as empty and reports a perfectly
-      // healthy agent as broken. The slice states this rule in
-      // agent-definition/selectors.ts; `selectAgentReadyForBuilder` is the
-      // authoritative "this record has messages" signal.
-      if (!selectAgentReadyForBuilder(store.getState() as ChatRootState, agentId)) {
-        await dispatch(fetchFullAgent(agentId))
-          .unwrap()
-          .catch(() => {
-            /* handled below by the missing-instructions branch */
-          });
-      }
-      if (cancelled) return;
-      const agent = (store.getState() as ChatRootState).agentDefinition.agents?.[
-        agentId
-      ];
-      const instructions = agent
-        ? readInstructionsFromAgent(agent.messages)
-        : "";
-      if (!instructions) {
-        const why = agent ? "has no system message" : "could not be loaded";
-        console.error(
-          `[voice-agent] mandate "${mandateKey}" resolved to agent ${agentId}, which ${why}.`,
-        );
-        setState({
-          agentId,
-          instructions: null,
-          error: `This agent ${why}.`,
-        });
-        return;
-      }
-      setState({ agentId, instructions, error: null });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [agentId, dispatch, store, mandateKey]);
-
+    if (!sessionError || !agentId) return;
+    console.error(
+      `[voice-agent] mandate "${mandateKey}" resolved to agent ${agentId}: ${sessionError}`,
+    );
+  }, [sessionError, agentId, mandateKey]);
   return {
     agentId,
-    instructions: state.agentId === agentId ? state.instructions : null,
-    loading: mandateLoading || (!!agentId && state.agentId !== agentId),
-    error: mandateError ?? (state.agentId === agentId ? state.error : null),
+    instructions,
+    loading: mandateLoading || session.loading,
+    error: mandateError ?? sessionError,
   };
 }

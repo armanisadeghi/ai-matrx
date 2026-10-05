@@ -19,11 +19,8 @@ function nonEmpty(text: string | null | undefined): string | undefined {
 
 
 /** One staged remark in wire shape, or null when it carries nothing the server can read. */
-/** `block_state_ref` is declared by the server (aidream remarks.py); the published types catch up on the next agents release. */
-type WireWithRef = WireRemark & { block_state_ref?: { id: string; state_version: number } };
-
 export function remarkToWire(item: RemarkItem): WireRemark | null {
-  const wire = remarkToWireBody(item) as WireWithRef | null;
+  const wire = remarkToWireBody(item);
   if (wire && item.blockStateRef) {
     wire.block_state_ref = { id: item.blockStateRef.id, state_version: item.blockStateRef.stateVersion };
   }
@@ -101,6 +98,29 @@ function remarkToWireBody(item: RemarkItem): WireRemark | null {
       };
     }
   }
+}
+
+/**
+ * A frozen submission's remark items, re-read from the live resources: after the
+ * pending chip writes were flushed, every sent remark carries the row/ref the
+ * save returned (so the server's send trigger marks it sent).
+ */
+export function withFreshRemarkRefs<T extends { resources: UserInputPart[] }>(
+  submission: T,
+  resources: Record<string, ManagedResource> | undefined,
+): T {
+  if (!resources) return submission;
+  const next = submission.resources.map((part) => {
+    if (part.type !== REMARKS_BLOCK_TYPE) return part;
+    const items = (part as RemarksInputPart).items.map((entry) => {
+      const id = (entry as { id?: string }).id;
+      const resource = id ? resources[id] : undefined;
+      const ref = resource ? remarkSourceOf(resource)?.remark.blockStateRef : null;
+      return ref ? { ...entry, block_state_ref: { id: ref.id, state_version: ref.stateVersion } } : entry;
+    });
+    return { ...part, items } as UserInputPart;
+  });
+  return { ...submission, resources: next };
 }
 
 /** Every ready remark resource, in order, as ONE part — or null when there are none. */

@@ -27,6 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { fenceOpenerOf } from "@ai-matrx/content-ir/source";
+import { ALL_KIND_SPELLINGS, firstKindSlug } from "@/features/content-ir/surfaces/json-kind-signal";
 
 export type IslandEditorLanguage = "markdown" | "json" | "xml" | "code" | "math";
 
@@ -40,10 +41,9 @@ export interface IslandMeta {
   generic?: boolean;
 }
 
-const KIND_RE = /"__kind"\s*:\s*"([^"]+)"/;
-
+/** The kind an island's source names, in any realistic spelling of the key (L-3, round 9). */
 export function kindOf(raw: string): string | null {
-  return KIND_RE.exec(raw)?.[1] ?? null;
+  return firstKindSlug(raw, ALL_KIND_SPELLINGS);
 }
 
 /** The info string of a fence that carries one Matrx Envelope (a directive). */

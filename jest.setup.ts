@@ -376,6 +376,25 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     await dispatch(mod.syncConversationScopes(conversationId));
   };
   /* eslint-enable @typescript-eslint/no-require-imports */
+  // THE APP'S ERROR UI SLOTS, registered as `providers/chatUiRegistration.ts` does at runtime.
+  // Wrapped (never read at registration — Object.assign would load the real component now),
+  // so a package component that draws ErrorAlchemyMenu/ErrorNotice shows the app's, not the
+  // "is not set up here" stand-in.
+  {
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const uiSeam = require("@ai-matrx/chat/host/ui-slots") as typeof import("@ai-matrx/chat/host/ui-slots");
+    const reactForUi = require("react") as typeof import("react");
+    const slot = (modulePath: string, exportName: string) => (props: object) =>
+      reactForUi.createElement(
+        (require(modulePath) as Record<string, React.ComponentType<object>>)[exportName],
+        props,
+      );
+    /* eslint-enable @typescript-eslint/no-require-imports */
+    uiSeam.registerChatUi({
+      ErrorAlchemyMenu: slot("@/components/errors/ErrorAlchemyMenu", "ErrorAlchemyMenu"),
+      ErrorNotice: slot("@/components/errors/ErrorNotice", "ErrorNotice"),
+    });
+  }
   const scopes = lazy({
       "@/features/scopes/redux/selectors/active-context": [
         "selectActiveOrganizationId", "selectActiveOrganizationName", "selectActiveProjectId",

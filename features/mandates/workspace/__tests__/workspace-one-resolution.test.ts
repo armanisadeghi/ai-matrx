@@ -71,7 +71,7 @@ describe("the mandate workspace never walks its own ladder", () => {
   it("asks the one resolver for the personal answer", () => {
     // Holder-neutral since workflow parity (2026-09-25): the same one door
     // (`GET /mandates/{key}/resolution`), painted for an agent OR a workflow.
-    expect(source).toContain('from "../useMandateHolder"');
+    expect(source).toContain('from "@ai-matrx/chat/mandates/useMandateHolder"');
     expect(source).toContain("useMandateHolder(personalKey)");
   });
 

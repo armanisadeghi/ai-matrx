@@ -25,7 +25,8 @@ import { ChatConnectionsStrip } from "../ChatConnectionsStrip";
 import { ComposerConnectPromo } from "./ComposerConnectPromo";
 import { useComputeTargetActions } from "../use-compute-target-actions";
 import { ComposerEnvironmentPanel } from "./ComposerPlusMenu";
-import { COMPOSER_CHIP_CLASS, COMPOSER_ROW_CLASS } from "./composer-chip";
+import { COMPOSER_ROW_CLASS } from "./composer-chip";
+import { ComposerChip } from "../ComposerChip";
 import { composerShows } from "./composer-mode-visibility";
 import type { ComposerMode } from "./composer-types";
 
@@ -54,22 +55,20 @@ export function ComposerChipsRow({
     <div
       className={cn(
         COMPOSER_ROW_CLASS,
-        "gap-1 px-1",
+        "gap-1.5 px-1",
         chipShape === "soft" && "[&>*]:!rounded-lg",
         className,
       )}
     >
       <Popover open={envOpen} onOpenChange={setEnvOpen} modal={false}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(COMPOSER_CHIP_CLASS, envOpen && "bg-accent")}
+          <ComposerChip
+            open={envOpen}
             aria-label={`Runs on: ${boundName ?? "Cloud"}`}
-          >
-            <EnvIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="max-w-[160px] truncate">{boundName ?? "Cloud"}</span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-          </button>
+            icon={<EnvIcon className="text-muted-foreground" />}
+            label={boundName ?? "Cloud"}
+            trailing={<ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />}
+          />
         </PopoverTrigger>
         <PopoverContent
           /* sizing: fixed — the Environment menu is 320px by the brief (§6) */

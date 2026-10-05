@@ -33,8 +33,9 @@ export function onCandidatesChanged(
   listener: () => void,
 ): () => void {
   const handler = (event: Event) => {
-    const detail = (event as CustomEvent<{ mandateKey?: AnyMandateKey }>).detail;
-    if (!detail?.mandateKey || detail.mandateKey === mandateKey) listener();
+    const changed = (event as CustomEvent<{ mandateKey?: AnyMandateKey }>).detail
+      ?.mandateKey;
+    if (!changed || changed === mandateKey) listener();
   };
   window.addEventListener(CHANGED, handler);
   return () => window.removeEventListener(CHANGED, handler);

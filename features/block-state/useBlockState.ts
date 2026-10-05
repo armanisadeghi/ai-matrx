@@ -26,6 +26,7 @@ import {
 import type { RemarkItem } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import { BlockStateContext } from "./BlockStateContext";
 import { BlockStateWriteError, setBlockState } from "./blockStateService";
+import { registerPendingWriter } from "./pendingWrites";
 import {
   selectBlockStateError,
   selectBlockStateHydration,
@@ -35,7 +36,7 @@ import {
 } from "./redux/blockStatesSlice";
 import { ensureBlockStatesLoaded, unitRefOf, watchBlockStates } from "./redux/blockStateThunks";
 import { syncBlockChip } from "./redux/blockChipThunk";
-import { blockRowKey, hydrationKeyOf, type BlockStateSaveError } from "./types";
+import { blockNoticeKey, blockRowKey, hydrationKeyOf, type BlockStateRow, type BlockStateSaveError } from "./types";
 
 /** Writes are never sent more often than this (binding ruling B8). */
 export const BLOCK_STATE_DEBOUNCE_MS = 800;
@@ -85,7 +86,10 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
 
   const row = useAppSelector((state) => (rowKey ? selectBlockStateRow(state, rowKey) : undefined));
   const hydration = useAppSelector((state) => selectBlockStateHydration(state, unit));
-  const saveError = useAppSelector((state) => selectBlockStateError(state, rowKey)) ?? null;
+  const noticeKey = target
+    ? blockNoticeKey(rowKey, { kind: target.kind, messageId: target.messageId, blockIndex: target.blockIndex, entityId })
+    : null;
+  const saveError = useAppSelector((state) => selectBlockStateError(state, noticeKey)) ?? null;
 
   // The person's edits not yet acknowledged by the server, and the local-only view keys.
   const overlayRef = useRef<State>({});
@@ -107,17 +111,41 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
 
   // ── Write path ──
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flushingRef = useRef(false);
+  const chainRef = useRef<Promise<void>>(Promise.resolve());
+  const inFlightRef = useRef(0);
+  const flushRef = useRef<() => Promise<void>>(async () => {});
   const targetRef = useRef({ target, entityId, blockKey, rowKey });
   targetRef.current = { target, entityId, blockKey, rowKey };
 
-  const flush = useCallback(async (): Promise<void> => {
+  /** Stage / refresh this block's chip from a saved row (the chip is derived, never stored). */
+  const syncChip = useCallback(
+    async (saved: BlockStateRow): Promise<void> => {
+      const t = targetRef.current.target;
+      if (!t || !t.conversationId) return;
+      const { title, data, remark } = optionsRef.current;
+      const build =
+        remark ??
+        ((state: State) =>
+          interactionRemarkOf({
+            kind: t.kind,
+            title,
+            conversationId: t.conversationId,
+            messageId: t.messageId,
+            blockIndex: t.blockIndex,
+            state,
+            data,
+          }));
+      await dispatch(syncBlockChip({ conversationId: t.conversationId, row: saved, build }));
+    },
+    [dispatch],
+  );
+
+  const doFlush = useCallback(async (): Promise<void> => {
     const { target: t, entityId: id, blockKey: key, rowKey: rk } = targetRef.current;
     if (!t || !id || !key || !rk) return; // buffered until the answer is durable
-    if (flushingRef.current) return;
     const sending = overlayRef.current;
     if (Object.keys(sending).length === 0) return;
-    flushingRef.current = true;
+    inFlightRef.current += 1;
     try {
       const saved = await setBlockState({
         entityType: t.entityType,
@@ -135,6 +163,8 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
       for (const [k, v] of Object.entries(overlayRef.current)) if (sending[k] !== v) remaining[k] = v;
       overlayRef.current = remaining;
       setOverlay(remaining);
+      // The chip holds its ref before anything that waits on this write goes on (a send).
+      await syncChip(saved);
     } catch (error) {
       const detail: BlockStateSaveError =
         error instanceof BlockStateWriteError
@@ -142,15 +172,38 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
           : { code: null, message: error instanceof Error ? error.message : "Save failed", signedOut: false };
       dispatch(setBlockStateSaveError({ rowKey: rk, error: detail }));
     } finally {
-      flushingRef.current = false;
+      inFlightRef.current -= 1;
     }
     if (Object.keys(overlayRef.current).length > 0 && !timerRef.current) {
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        void flush();
+        void flushRef.current();
       }, BLOCK_STATE_DEBOUNCE_MS);
     }
-  }, [dispatch]);
+  }, [dispatch, syncChip]);
+
+  /** Writes run one after another; the returned promise settles when THIS flush's write has returned. */
+  const flush = useCallback((): Promise<void> => {
+    chainRef.current = chainRef.current.then(doFlush, doFlush);
+    return chainRef.current;
+  }, [doFlush]);
+  flushRef.current = flush;
+
+  // A send flushes every block of its conversation and waits for the saved refs.
+  useEffect(() => {
+    return registerPendingWriter({
+      conversationId: () => targetRef.current.target?.conversationId ?? null,
+      hasPending: () =>
+        timerRef.current !== null || inFlightRef.current > 0 || Object.keys(overlayRef.current).length > 0,
+      flush: async () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+        }
+        await flushRef.current();
+      },
+    });
+  }, []);
 
   const schedule = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -175,6 +228,10 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
   }, [flush]);
 
   const kind = target?.kind ?? "";
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+  const noticeKeyRef = useRef(noticeKey);
+  noticeKeyRef.current = noticeKey;
   const patch = useCallback(
     (next: Partial<T>) => {
       const { durable, view: viewPart } = splitKindState(kind, next as State);
@@ -187,30 +244,30 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
       if (Object.keys(durable).length === 0) return;
       overlayRef.current = { ...overlayRef.current, ...durable };
       setOverlay(overlayRef.current);
+      if (!userIdRef.current) {
+        // Signed out (a shared view): nothing can be saved — say so under the block, never drop it silently.
+        const key = noticeKeyRef.current;
+        if (key) {
+          dispatch(
+            setBlockStateSaveError({
+              rowKey: key,
+              error: { code: "42501", message: "Sign in to keep your answers.", signedOut: true },
+            }),
+          );
+        }
+        return;
+      }
       schedule();
     },
-    [kind, schedule],
+    [kind, schedule, dispatch],
   );
 
   // ── The chip: derived from the saved row ──
   useEffect(() => {
     const t = targetRef.current.target;
     if (!t || !row || !t.conversationId || !hydration) return;
-    const { title, data, remark } = optionsRef.current;
-    const build =
-      remark ??
-      ((state: State) =>
-        interactionRemarkOf({
-          kind: t.kind,
-          title,
-          conversationId: t.conversationId,
-          messageId: t.messageId,
-          blockIndex: t.blockIndex,
-          state,
-          data,
-        }));
-    void dispatch(syncBlockChip({ conversationId: t.conversationId, row, build }));
-  }, [dispatch, row, hydration]);
+    void syncChip(row);
+  }, [row, hydration, syncChip]);
 
   const merged = useMemo<T | null>(() => {
     const hasAny = row || Object.keys(overlay).length > 0 || Object.keys(view).length > 0;

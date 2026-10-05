@@ -44,9 +44,7 @@ function table() {
 jest.mock("../../../../../host/db", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
-jest.mock("@host/features/organizations/service", () => ({
-  getUserOrganizations: () => new Promise(() => {}),
-}));
+
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
 jest.mock("../../../../../host/identity", () => {
   const standIns: Record<string, unknown> = {
