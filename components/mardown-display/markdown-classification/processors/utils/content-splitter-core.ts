@@ -2719,6 +2719,28 @@ export const splitContentIntoBlocksWith = (
           i = j;
           continue;
         }
+        // An unfinished object that COULD be a kind — its first key is
+        // `__kind`, a `__kind` key is already visible, or the first key has
+        // not arrived yet (`{` / `{"__ki`) — is a JSON region, never prose
+        // (P3, round 4: content-fed streams re-split the growing text here,
+        // so `Here are your cards:\n\n{"__kind":…` printed raw until the last
+        // brace). BlockRenderer draws it as the kind's loader while the
+        // stream is live and as its broken state once settled (P9).
+        const signal = jsonKindSignal(partialJson);
+        if (signal === "kind" || (signal === "undecided" && /^\{\s*(?:"[^"]*)?$/.test(partialJson))) {
+          if (currentText.trim()) {
+            blocks.push({ type: "text", content: currentText.trimEnd() });
+            currentText = "";
+          }
+          blocks.push({
+            type: "code",
+            content: partialJson,
+            language: "json",
+            metadata: { isComplete: false },
+          });
+          i = j;
+          continue;
+        }
       }
     }
 
