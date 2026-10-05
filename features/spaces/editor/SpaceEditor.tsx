@@ -46,16 +46,8 @@ const PLACEHOLDERS = {
   checkListItem: "To-do",
 };
 
-/** Notion keys BlockNote does not ship: Cmd+D duplicate, Cmd+Opt+4…8 turn into, `>` toggle, `"` quote. */
+/** Notion keys BlockNote does not ship: Cmd+D duplicate, `>` toggle, `"` quote (Cmd+Opt+4…8: see NOTION_TURN_INTO). */
 const notionKeys = createExtension(({ editor }: { editor: SpacesEditor }) => {
-  const turnInto = (type: string, props?: Record<string, unknown>) => () => {
-    const id = currentBlockId(editor);
-    if (!id || !editor.isEditable) return false;
-    editor.transact(() => {
-      for (const b of selectedOrCurrent(editor, id)) editor.updateBlock(b, { type, props } as never);
-    });
-    return true;
-  };
   return {
     key: "spacesNotionKeys",
     keyboardShortcuts: {
@@ -65,11 +57,6 @@ const notionKeys = createExtension(({ editor }: { editor: SpacesEditor }) => {
         duplicateBlocks(editor, selectedOrCurrent(editor, id));
         return true;
       },
-      "Mod-Alt-4": turnInto("checkListItem"),
-      "Mod-Alt-5": turnInto("bulletListItem"),
-      "Mod-Alt-6": turnInto("numberedListItem"),
-      "Mod-Alt-7": turnInto("toggleListItem"),
-      "Mod-Alt-8": turnInto("codeBlock"),
     },
     inputRules: [
       { find: /^>\s$/, replace: () => ({ type: "toggleListItem", props: {} }) },
@@ -77,6 +64,41 @@ const notionKeys = createExtension(({ editor }: { editor: SpacesEditor }) => {
     ],
   };
 });
+
+/** Cmd+Opt+4…8 in Notion; BlockNote binds 4–6 to headings 4–6, so these run before its keymap. */
+const NOTION_TURN_INTO: Record<string, { type: string; props?: Record<string, unknown> }> = {
+  Digit4: { type: "checkListItem" },
+  Digit5: { type: "bulletListItem" },
+  Digit6: { type: "numberedListItem" },
+  Digit7: { type: "toggleListItem" },
+  Digit8: { type: "codeBlock" },
+};
+
+function turnIntoKey(editor: SpacesEditor, e: React.KeyboardEvent) {
+  if (!(e.metaKey || e.ctrlKey) || !e.altKey || e.shiftKey) return;
+  const code = e.code || `Digit${e.key}`;
+  const target = NOTION_TURN_INTO[code];
+  const id = currentBlockId(editor);
+  if (!target || !id || !editor.isEditable) return;
+  e.preventDefault();
+  e.stopPropagation();
+  editor.transact(() => {
+    for (const b of selectedOrCurrent(editor, id)) editor.updateBlock(b, { type: target.type, props: target.props } as never);
+  });
+}
+
+function flashBlock(id: string) {
+  let el = document.getElementById("spaces-block-flash") as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "spaces-block-flash";
+    document.head.appendChild(el);
+  }
+  el.textContent = `.spaces-editor .bn-block-outer[data-id="${CSS.escape(id)}"] > .bn-block{animation:spaces-flash 1.6s ease-out;border-radius:4px}`;
+  window.setTimeout(() => {
+    if (el) el.textContent = "";
+  }, 1700);
+}
 
 function useDarkMode(): boolean {
   const [dark, setDark] = useState(false);
@@ -143,23 +165,34 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
     onReady?.(editor);
   }, [editor, onReady]);
 
-  // Deep link to a block (#block-<id>): scroll to it and flash it (E2).
+  // Deep link to a block (#block-<id>): scroll to it and flash it (E2). Polls until the block renders.
   useEffect(() => {
-    const hash = window.location.hash;
-    if (!hash.startsWith("#block-")) return;
-    const id = hash.slice("#block-".length);
-    const timer = window.setTimeout(() => {
-      const el = document.querySelector<HTMLElement>(`.bn-block-outer[data-id="${CSS.escape(id)}"]`);
-      if (!el) return;
+    let timer = 0;
+    const go = (tries: number) => {
+      const hash = window.location.hash;
+      if (!hash.startsWith("#block-")) return;
+      const el = document.querySelector<HTMLElement>(`.bn-block-outer[data-id="${CSS.escape(hash.slice("#block-".length))}"]`);
+      if (!el) {
+        if (tries > 0) timer = window.setTimeout(() => go(tries - 1), 100);
+        return;
+      }
+      // Twice: the router's own hash scroll finds no element by that id and scrolls to the top.
       el.scrollIntoView({ block: "center" });
-      el.classList.add("spaces-flash");
-      window.setTimeout(() => el.classList.remove("spaces-flash"), 1600);
-    }, 150);
-    return () => window.clearTimeout(timer);
+      window.setTimeout(() => el.scrollIntoView({ block: "center" }), 400);
+      // The flash is a <style> rule, never a class on ProseMirror's DOM (its observer strips it).
+      flashBlock(hash.slice("#block-".length));
+    };
+    go(40);
+    const onHash = () => go(10);
+    window.addEventListener("hashchange", onHash);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("hashchange", onHash);
+    };
   }, [editor]);
 
   return (
-    <>
+    <div className="contents" onKeyDownCapture={(e) => turnIntoKey(editor, e)}>
     <style>{widths}</style>
     <BlockNoteView
       editor={editor}
@@ -200,6 +233,6 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         )}
       />
     </BlockNoteView>
-    </>
+    </div>
   );
 }

@@ -1040,3 +1040,7 @@
     display: none;
   }
 }
+
+.spaces-page[data-small-text="true"] .bn-editor {
+  font-size: 14px !important;
+}
