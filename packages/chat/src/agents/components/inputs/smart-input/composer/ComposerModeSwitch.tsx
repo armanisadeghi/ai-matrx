@@ -75,7 +75,7 @@ export function ComposerModeSwitch({
       {COMPOSER_MODES.map((value) => {
         const on = value === mode;
         return (
-          <Button variant="quiet" pressed={!!(on)} key={value} role={interactive ? "tab" : undefined} aria-selected={interactive ? on : undefined} tabIndex={interactive ? undefined : -1} onClick={interactive ? () => setMode(value) : undefined}>{COMPOSER_MODE_LABELS[value]}</Button>
+          <Button variant="quiet" pressed={!!(on)} key={value} role={interactive ? "tab" : undefined} aria-selected={interactive ? on : undefined} aria-pressed={interactive ? undefined : on} tabIndex={interactive ? undefined : -1} onClick={interactive ? () => setMode(value) : undefined}>{COMPOSER_MODE_LABELS[value]}</Button>
         );
       })}
     </div>

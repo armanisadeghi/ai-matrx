@@ -331,7 +331,7 @@ export function RunControlsMenu({
             const Icon = t.icon;
             const on = activeTab === t.id;
             return (
-              <Button variant="quiet" pressed={!!(on)} icon={<Icon />} key={t.id} role="tab" id={`runctl-tab-${t.id}-${conversationId}`} aria-selected={on} aria-controls={`runctl-panel-${conversationId}`} onClick={() => setTab(t.id)} className="-mb-px shrink-0">{t.label} {rc.tabTrailing(t.id)}</Button>
+              <Button variant="quiet" pressed={!!(on)} icon={<Icon />} key={t.id} role="tab" aria-pressed={undefined} id={`runctl-tab-${t.id}-${conversationId}`} aria-selected={on} aria-controls={`runctl-panel-${conversationId}`} onClick={() => setTab(t.id)} className="-mb-px shrink-0">{t.label} {rc.tabTrailing(t.id)}</Button>
             );
           })}
           <Button variant="outline" icon={fullscreen ? <Minimize2 /> : <Maximize2 />} onClick={() => setFullscreen((v) => !v)} aria-label={

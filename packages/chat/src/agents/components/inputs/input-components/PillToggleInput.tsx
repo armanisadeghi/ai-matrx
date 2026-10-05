@@ -38,7 +38,7 @@ export function PillToggleInput({
       {options.map((option) => {
         const isSelected = value === option;
         return (
-          <Button variant="quiet" pressed={!!(isSelected)} key={option} role="radio" aria-checked={isSelected} onClick={() => onChange(option)} className="min-w-0 flex-1">{option}</Button>
+          <Button variant="quiet" pressed={!!(isSelected)} key={option} role="radio" aria-checked={isSelected} aria-pressed={undefined} onClick={() => onChange(option)} className="min-w-0 flex-1">{option}</Button>
         );
       })}
     </div>
