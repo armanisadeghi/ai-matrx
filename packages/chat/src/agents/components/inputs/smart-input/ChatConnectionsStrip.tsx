@@ -334,7 +334,7 @@ export function ChatConnectionsStrip({
           className,
         )}
       >
-        <Button variant="quiet" icon={<Server />} onClick={openPicker} title="Connections for this chat — open Connections" aria-label={`Connections for this chat: ${connections.length} service${connections.length === 1 ? "" : "s"}${broken > 0 ? `, ${broken} need attention` : ""}. Open Connections.`} className="shrink-0">Connections</Button>
+        <Button variant="quiet" icon={<Server />} glyphTone="primary" onClick={openPicker} title="Connections for this chat — open Connections" aria-label={`Connections for this chat: ${connections.length} service${connections.length === 1 ? "" : "s"}${broken > 0 ? `, ${broken} need attention` : ""}. Open Connections.`} className="shrink-0">Connections</Button>
 
         {connections.map((connection) => {
           const presentation = mcpChipPresentation(

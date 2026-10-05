@@ -39,7 +39,7 @@ export function InputActionButtons({
   return (
     <div className="flex items-center">
       {onDebugClick && (
-        <Button variant="quiet" icon={<Bug />} onClick={onDebugClick} title="Debug instance state" aria-label="Debug instance state" />
+        <Button variant="quiet" icon={<Bug />} glyphTone="warning" onClick={onDebugClick} title="Debug instance state" aria-label="Debug instance state" />
       )}
 
       {showVoice && (

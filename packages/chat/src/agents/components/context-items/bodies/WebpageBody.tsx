@@ -81,7 +81,7 @@ export function WebpageFooter({ item }: ContextItemBodyProps) {
       </span>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} aria-label="Copy webpage URL" className="ml-auto" />
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={copy} aria-label="Copy webpage URL" className="ml-auto" />
         </TooltipTrigger>
         <TooltipContent>Copy URL</TooltipContent>
       </Tooltip>

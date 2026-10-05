@@ -97,7 +97,7 @@ function RemoveX({
   onRemove: () => void;
 }) {
   return (
-    <Button variant="quiet" icon={<X />} onClick={onRemove} aria-label={`Remove ${label} from what is sent`} className="shrink-0" />
+    <Button variant="quiet" removes icon={<X />} onClick={onRemove} aria-label={`Remove ${label} from what is sent`} className="shrink-0" />
   );
 }
 

@@ -96,7 +96,7 @@ export const ShortId: React.FC<ShortIdProps> = ({
       title={variant === "compact" ? value : undefined}
     >
       {display}
-      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={onCopy} aria-label={copied ? "Copied" : "Copy ID"} />
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={onCopy} aria-label={copied ? "Copied" : "Copy ID"} />
     </span>
   );
 };
@@ -141,7 +141,7 @@ export const IdListChip: React.FC<{ ids: string[]; className?: string }> = ({
       )}
     >
       {ids.length} {ids.length === 1 ? "id" : "ids"}
-      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={onCopy} aria-label={copied ? "Copied" : "Copy ids"} title="Copy all ids" />
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={onCopy} aria-label={copied ? "Copied" : "Copy ids"} title="Copy all ids" />
     </span>
   );
 };

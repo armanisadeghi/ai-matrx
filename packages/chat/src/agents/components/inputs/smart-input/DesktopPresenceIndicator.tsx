@@ -110,7 +110,7 @@ export function DesktopPresenceIndicator({
               />
               <span className="truncate">{boundView.name}</span>
             </span>
-            <Button variant="quiet" icon={<Unplug />} onClick={() => applyBinding(null)} title="Disconnect" aria-label={`Disconnect ${boundView.name}`} />
+            <Button variant="quiet" removes icon={<Unplug />} onClick={() => applyBinding(null)} title="Disconnect" aria-label={`Disconnect ${boundView.name}`} />
           </div>
         </div>
         {remedy ? (

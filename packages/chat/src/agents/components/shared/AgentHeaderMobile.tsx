@@ -149,7 +149,7 @@ export function AgentHeaderMobile({
             activeAgentId={agentId}
             label={agentName?.trim() || "Select agent"}
             triggerSlot={
-              <Button variant="quiet" icon={<Webhook />} aria-label="Switch agent" className="min-w-0">{agentName?.trim() || "Select agent"}</Button>
+              <Button variant="quiet" icon={<Webhook />} glyphTone="primary" aria-label="Switch agent" className="min-w-0">{agentName?.trim() || "Select agent"}</Button>
             }
           />
           <div className="flex-1" />

@@ -133,7 +133,7 @@ const ReadCard: React.FC<{ read: SearchRead; index: number; copied: number | nul
                 >
                     {getDomain(read.url)}
                 </a>
-                <Button variant="quiet" icon={copied === index ? <Check /> : <Copy />} onClick={() => onCopy(read, index)} title="Copy this source" aria-label="Copy this source" className="ml-auto" />
+                <Button variant="quiet" icon={copied === index ? <Check /> : <Copy />} glyphTone={copied === index ? "success" : undefined} onClick={() => onCopy(read, index)} title="Copy this source" aria-label="Copy this source" className="ml-auto" />
             </div>
             <div className="space-y-3 p-5">
                 <a
@@ -283,7 +283,7 @@ export const ResearchFullTextTab: React.FC<ToolRendererProps> = ({ entry }) => {
 
     return (
         <div className="relative overflow-hidden rounded-lg border border-border bg-card">
-            <Button variant="outline" icon={copied ? <Check /> : <Copy />} onClick={handleCopyAll} aria-label={copied ? "Copied" : "Copy all"} title={copied ? "Copied" : "Copy all"} className="absolute right-2 top-2 z-10" />
+            <Button variant="outline" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={handleCopyAll} aria-label={copied ? "Copied" : "Copy all"} title={copied ? "Copied" : "Copy all"} className="absolute right-2 top-2 z-10" />
             <div className="p-5">
                 <RichContent level="full" imagePolicy="ai" source={fullText} hideCopyButton className="text-sm" />
             </div>

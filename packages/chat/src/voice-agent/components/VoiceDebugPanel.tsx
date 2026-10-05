@@ -126,7 +126,7 @@ export function VoiceDebugPanel({
   return (
     <div className="pointer-events-auto w-full overflow-hidden rounded-lg border border-border bg-zinc-950/95 text-zinc-100 shadow-lg backdrop-blur">
       <div className="flex w-full items-center justify-between gap-2 px-3 py-1.5">
-        <Tile variant="quiet" icon={<Bug />} title="Live voice debug" onClick={() => setOpen((o) => !o)} className="flex-1" />
+        <Tile variant="quiet" icon={<Bug />} glyphTone="success" title="Live voice debug" onClick={() => setOpen((o) => !o)} className="flex-1" />
         <span className="flex items-center gap-2">
           <Badge
             tone={
@@ -145,7 +145,7 @@ export function VoiceDebugPanel({
             onClick={handleCopy}
             title="Copy debug data"
             aria-label="Copy debug data"
-            icon={copied ? <Check /> : <Copy />}
+            icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined}
           />
           <Button variant="quiet" icon={open ? <ChevronDown /> : <ChevronUp />} aria-label={open ? "Collapse" : "Expand"} onClick={() => setOpen((o) => !o)} />
         </span>

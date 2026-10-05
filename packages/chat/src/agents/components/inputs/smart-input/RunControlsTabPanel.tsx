@@ -451,10 +451,10 @@ export function RunControlsTabPanel({
               )}
 
               {showDebugAction && (
-                <Tile variant="quiet" icon={<Bug />} title="Debug instance state" onClick={onOpenDebug} />
+                <Tile variant="quiet" icon={<Bug />} glyphTone="warning" title="Debug instance state" onClick={onOpenDebug} />
               )}
 
-              <Tile variant="quiet" icon={<ScrollText />} title="Preview full prompt" onClick={() => {
+              <Tile variant="quiet" icon={<ScrollText />} glyphTone="info" title="Preview full prompt" onClick={() => {
                   openPromptPreview({ conversationId });
                 }} />
             </div>

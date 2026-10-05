@@ -353,7 +353,7 @@ function TaskRow({ task }: { task: CxAgentTaskRow }) {
           </button>
         )}
       </div>
-      <Button variant="quiet" icon={<Trash2 />} onClick={remove} title="Remove" aria-label={`Remove "${task.title}"`} className="opacity-0 group-hover:opacity-100 shrink-0" />
+      <Button variant="quiet" removes icon={<Trash2 />} onClick={remove} title="Remove" aria-label={`Remove "${task.title}"`} className="opacity-0 group-hover:opacity-100 shrink-0" />
     </div>
   );
 }

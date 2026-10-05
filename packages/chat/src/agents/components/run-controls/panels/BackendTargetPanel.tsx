@@ -71,7 +71,7 @@ function CopyableValue({
       >
         {value}
       </span>
-      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title="Copy" aria-label="Copy" className="shrink-0" />
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy" aria-label="Copy" className="shrink-0" />
     </span>
   );
 }

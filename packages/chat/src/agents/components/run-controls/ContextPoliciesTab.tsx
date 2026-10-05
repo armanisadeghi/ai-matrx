@@ -277,7 +277,7 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
             count={adHocEntries.length}
             rightPolicy={
               hasAnyValues ? (
-                <Button variant="quiet" icon={<RefreshCw />} onClick={handleClearAll} title="Remove every value for this agent">Clear all</Button>
+                <Button variant="quiet" removes icon={<RefreshCw />} onClick={handleClearAll} title="Remove every value for this agent">Clear all</Button>
               ) : null
             }
           />
@@ -402,7 +402,7 @@ function DeclaredPolicyRow({
       }}
       rightAction={
         entry !== undefined ? (
-          <Button variant="quiet" icon={<X />} onClick={onClear} title="Clear value" aria-label="Clear value" />
+          <Button variant="quiet" removes icon={<X />} onClick={onClear} title="Clear value" aria-label="Clear value" />
         ) : null
       }
       isEmpty={entry === undefined}
@@ -455,7 +455,7 @@ function AdHocEntryRow({
         onWrite(entry.key, value, type, entry.label, false);
       }}
       rightAction={
-        <Button variant="quiet" icon={<Trash2 />} onClick={onDelete} title="Remove key" aria-label="Remove key" />
+        <Button variant="quiet" removes icon={<Trash2 />} onClick={onDelete} title="Remove key" aria-label="Remove key" />
       }
       isEmpty={false}
     />
@@ -625,7 +625,7 @@ function ValueEditorCard({
           </div>
           {dirty && (
             <div className="flex items-center gap-1 shrink-0">
-              <Button variant="quiet" icon={<Pencil />} onClick={revert} title="Discard changes" aria-label="Discard changes" />
+              <Button variant="quiet" icon={<Pencil />} glyphTone="primary" onClick={revert} title="Discard changes" aria-label="Discard changes" />
               <Button variant="quiet" tone="primary" icon={<Check />} onClick={commit} title="Commit now" aria-label="Commit now" />
             </div>
           )}

@@ -58,7 +58,7 @@ function UuidField({ value, label }: { value: string; label: string }) {
         <span className="text-[11px] font-mono text-foreground break-all">
           {value}
         </span>
-        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy UUID" aria-label="Copy UUID" className="shrink-0" />
+        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={copy} title="Copy UUID" aria-label="Copy UUID" className="shrink-0" />
       </span>
     </div>
   );
@@ -166,7 +166,7 @@ function SectionHeader({
         </span>
       )}
       {copyValue && (
-        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
+        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={(e) => {
             e.stopPropagation();
             copy();
           }} title="Copy section as JSON" aria-label="Copy section as JSON" className="opacity-0 group-hover:opacity-100 shrink-0" />
@@ -238,7 +238,7 @@ function RawJsonSection({ data }: { data: InstanceUIState }) {
     <div className="border border-border rounded-sm overflow-hidden">
       <div className="flex items-center gap-1.5 px-2 py-1.5">
         <Tile variant="quiet" icon={open ? <ChevronDown /> : <ChevronRight />} title="Raw JSON" onClick={() => setOpen((v) => !v)} className="flex-1" />
-        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy full JSON" aria-label="Copy full JSON" className="shrink-0" />
+        <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={copy} title="Copy full JSON" aria-label="Copy full JSON" className="shrink-0" />
         {open ? (
           <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         ) : (
@@ -571,6 +571,6 @@ export function InstanceUIStateCore({
 function CopyEntireButton({ json }: { json: string }) {
   const { copied, copy } = useCopyText(json);
   return (
-    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={copy} title="Copy full state as JSON" aria-label="Copy full state as JSON" />
+    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={copy} title="Copy full state as JSON" aria-label="Copy full state as JSON" />
   );
 }

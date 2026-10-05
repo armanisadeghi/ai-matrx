@@ -84,7 +84,7 @@ function InstanceRow({
           {shortId}
         </span>
       )}
-      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
+      <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={(e) => {
           e.stopPropagation();
           copy();
         }} title="Copy conversation ID" aria-label="Copy conversation ID" className="opacity-0 group-hover:opacity-100 shrink-0" />
@@ -157,7 +157,7 @@ function AgentGroup({
           {group.conversationIds.length}
         </span>
         {group.agentId && (
-          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={(e) => {
               e.stopPropagation();
               copy();
             }} title="Copy agent ID" aria-label="Copy agent ID" className="opacity-0 group-hover:opacity-100 shrink-0 ml-0.5" />

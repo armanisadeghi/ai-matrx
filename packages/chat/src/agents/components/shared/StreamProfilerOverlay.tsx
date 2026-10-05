@@ -50,7 +50,7 @@ export function StreamProfilerOverlay() {
 
   if (!isOpen) {
     return (
-      <Button variant="outline" icon={<Activity />} onClick={() => setIsOpen(true)} title="View Stream Performance Metrics" aria-label="View Stream Performance Metrics" className="fixed top-4 right-4 z-50" />
+      <Button variant="outline" icon={<Activity />} glyphTone="success" onClick={() => setIsOpen(true)} title="View Stream Performance Metrics" aria-label="View Stream Performance Metrics" className="fixed top-4 right-4 z-50" />
     );
   }
 
@@ -124,7 +124,7 @@ export function StreamProfilerOverlay() {
       {reports.length > 0 && (
          <div className="p-3 border-t border-slate-800 bg-slate-900 border-b flex justify-between items-center text-xs">
            <span className="text-slate-500">Records: {reports.length}</span>
-           <Button variant="quiet" onClick={() => { (window as WindowWithStreamReports).__STREAM_REPORTS__ = []; setReports([]); }}>Clear History</Button>
+           <Button variant="quiet" tone="destructive" onClick={() => { (window as WindowWithStreamReports).__STREAM_REPORTS__ = []; setReports([]); }}>Clear History</Button>
          </div>
       )}
     </div>

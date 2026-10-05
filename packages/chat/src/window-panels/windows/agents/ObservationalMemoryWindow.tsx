@@ -137,7 +137,7 @@ function SidebarRow({
           >
             {row.label}
           </span>
-          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={(e) => {
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={(e) => {
               e.stopPropagation();
               copy();
             }} title="Copy conversation id" aria-label="Copy conversation id" className="opacity-0 group-hover:opacity-100 shrink-0" />

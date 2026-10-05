@@ -87,7 +87,7 @@ export const CopyButton: React.FC<{ text: string; className?: string }> = ({
   };
 
   return (
-    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title={copied ? "Copied!" : "Copy to clipboard"} className={className}>{copied ? "Copied" : "Copy"}</Button>
+    <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title={copied ? "Copied!" : "Copy to clipboard"} className={className}>{copied ? "Copied" : "Copy"}</Button>
   );
 };
 

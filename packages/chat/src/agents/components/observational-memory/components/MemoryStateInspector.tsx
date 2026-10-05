@@ -442,7 +442,7 @@ function BufferedObservationCard({
           </div>
         </button>
         {hasText && (
-          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title="Copy observations" aria-label="Copy observations" className="mt-0.5 shrink-0" />
+          <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy observations" aria-label="Copy observations" className="mt-0.5 shrink-0" />
         )}
       </div>
 
@@ -708,7 +708,7 @@ function TextPayload({
             <span className="text-[10px] font-mono text-muted-foreground shrink-0">
               {text.length.toLocaleString()} chars
             </span>
-            <Button variant="quiet" icon={copied ? <Check /> : <Copy />} onClick={handleCopy} title="Copy" aria-label="Copy" className="shrink-0" />
+            <Button variant="quiet" icon={copied ? <Check /> : <Copy />} glyphTone={copied ? "success" : undefined} onClick={handleCopy} title="Copy" aria-label="Copy" className="shrink-0" />
           </>
         )}
       </div>

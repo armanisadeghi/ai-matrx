@@ -247,7 +247,7 @@ export function SurfaceSimulatorSelect({
         <div className="flex min-w-0 items-center gap-1">
           <div className="min-w-0 flex-1">{picker}</div>
           {override && (
-            <Button variant="quiet" onClick={() => setOverride(null)} className="shrink-0">Clear</Button>
+            <Button variant="quiet" removes onClick={() => setOverride(null)} className="shrink-0">Clear</Button>
           )}
         </div>
       </div>
@@ -261,7 +261,7 @@ export function SurfaceSimulatorSelect({
           Surface Simulator
         </Label>
         {override && (
-          <Button variant="quiet" icon={<X />} onClick={() => setOverride(null)}>clear</Button>
+          <Button variant="quiet" removes icon={<X />} onClick={() => setOverride(null)}>clear</Button>
         )}
       </div>
       {picker}

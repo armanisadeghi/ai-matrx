@@ -378,7 +378,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
             </span>
             <div className="flex shrink-0 items-center gap-2">
               <Button variant="quiet" icon={<GitBranch />} onClick={() => setCloneOpen(true)} title="Clone a git repo into this box">Clone</Button>
-              <Button variant="quiet" icon={<X />} onClick={() => applyRef(null)} title="Detach">Detach</Button>
+              <Button variant="quiet" removes icon={<X />} onClick={() => applyRef(null)} title="Detach">Detach</Button>
             </div>
           </div>
         ) : null}
