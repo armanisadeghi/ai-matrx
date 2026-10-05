@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:54:04.726Z",
+  "generated_at": "2026-10-05T03:59:44.994Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5342,6 +5342,12 @@
       "checksum": "bc321cbecf43676d7fa3008f242c0da9e090712f9e6641364f9a7d027fde449f",
       "applied_at": "2026-10-05 03:53:32.955462+00"
     },
+    "migrations/campaign/scopesrefusals_the_scope_doors_refuse_in_plain_words.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesrefusals_the_scope_doors_refuse_in_plain_words.sql",
+      "checksum": "e447e8392c62877abaec7d865f8ac0e5b24ef6d7be8bbe7759ac6e9e3bc63b88",
+      "applied_at": "2026-10-05 03:57:02.911564+00"
+    },
     "migrations/campaign/scopesrowscopied_the_scopes_switch_counts_every_row_by_id.sql": {
       "source": "matrx-frontend",
       "filename": "scopesrowscopied_the_scopes_switch_counts_every_row_by_id.sql",
@@ -6931,6 +6937,12 @@
       "filename": "tabledelete_what_is_going_with_it_is_not_an_obstacle.sql",
       "checksum": "5bb1db8a8069326ac0bbe10f2ec9a17f6d3f0cc58b1811628f0916f3190d157a",
       "applied_at": "2026-09-19 17:23:40.126998+00"
+    },
+    "migrations/campaign/tableexperience_a_a_view_can_be_a_list_and_any_card_hides_fields.sql": {
+      "source": "matrx-frontend",
+      "filename": "tableexperience_a_a_view_can_be_a_list_and_any_card_hides_fields.sql",
+      "checksum": "9c7c9f7b43cc6bf625b56e84d3b618c0d7ef7a6c0cfce55b192f2bef2aae35e5",
+      "applied_at": "2026-10-05 03:59:43.189182+00"
     },
     "migrations/campaign/tableowner_a_door_row_renders_like_the_catalog.sql": {
       "source": "matrx-frontend",
