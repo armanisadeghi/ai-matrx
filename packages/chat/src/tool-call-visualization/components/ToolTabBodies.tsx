@@ -125,7 +125,7 @@ export const InputView: React.FC<{ entry: ToolLifecycleEntry }> = ({
         <CopyButtons
           label="Input"
           size="sm"
-          human={() => JSON.stringify(args, null, 2)}
+          human={() => resultToHuman(args)}
           agent={() =>
             buildAgentInput(
               entry,

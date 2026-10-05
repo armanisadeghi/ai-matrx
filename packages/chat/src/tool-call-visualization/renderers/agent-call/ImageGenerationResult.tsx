@@ -21,6 +21,7 @@ import type { ToolRendererProps } from "../../types";
 import { GenericRenderer } from "../../registry/GenericRenderer";
 import { ResultMedia } from "../../result-fields/ResultMedia";
 import { findResultMedia } from "./findResultMedia";
+import { resultToHuman } from "../../utils/human-copy";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 
 export const ImageGenerationResult: React.FC<ToolRendererProps> = (props) => {
@@ -41,7 +42,7 @@ export const ImageGenerationResult: React.FC<ToolRendererProps> = (props) => {
           <CopyButtons
             label="Image"
             size="icon"
-            human={() => JSON.stringify(entry.result, null, 2)}
+            human={() => resultToHuman(entry.result)}
             agent={() => ({
               kind: "tool-result",
               location: "AI Matrx — Generated image",
