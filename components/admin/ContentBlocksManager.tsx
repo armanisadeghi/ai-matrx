@@ -96,6 +96,7 @@ import { CONTENT_BLOCK_PARAM } from "@/components/admin/content-blocks-route";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { RichContent } from "@/components/rich-content/RichContent";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -1668,7 +1669,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         </div>
                         <div className="flex-1 min-w-0 min-h-[300px] border border-border rounded-lg px-3 py-1 bg-textured overflow-auto">
                           <div>
-                            <MarkdownStream imagePolicy="self" content={editData.template || ""} />
+                            <RichContent level="full" imagePolicy="self" source={editData.template || ""} />
                           </div>
                         </div>
                       </div>
