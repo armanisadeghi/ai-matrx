@@ -538,16 +538,8 @@ function InterviewColumn({
           // rule lives in `features/agents/utils/variable-display-lines.ts` and
           // applies to every surface at once.
           variablesPanelStyle: "hidden",
-          // The Smart Agent Input, Full style, with no pill row: the Expert is
-          // interviewed by a fixed agent, so scope / agent / output pills would
-          // only mislead her (Arman, 2026-10-04). Chat mode: no chips row.
-          composer: {
-            size: "page",
-            mode: "chat",
-            meta: "none",
-            placeholder:
-              "Answer in your own words — typing or rambling both work…",
-          },
+          placeholder:
+            "Answer in your own words — typing or rambling both work…",
           // Voice is a composer action, not a second section above a column that
           // already owns the full available height. Keeping it in the pinned
           // toolbar leaves the textarea reachable at every panel size.

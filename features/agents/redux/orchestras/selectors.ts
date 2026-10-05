@@ -99,3 +99,6 @@ export const selectOrchestraEntries = createSelector(
 export const selectOrgPositions = createSelector(selectOrchestras, (s) => s.manualOrgChart.positions);
 
 export const selectOrgPositionsStatus = createSelector(selectOrchestras, (s) => s.manualOrgChart.positionsStatus);
+
+export const selectSeatJobs = createSelector(selectOrchestras, (s) => s.manualOrgChart.seatJobs);
+export const selectSeatJobsError = createSelector(selectOrchestras, (s) => s.manualOrgChart.seatJobsError);

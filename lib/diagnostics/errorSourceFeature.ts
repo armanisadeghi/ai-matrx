@@ -49,7 +49,6 @@ const BY_FIRST_SEGMENT: Readonly<Record<string, SourceFeature>> = {
   dashboard: "system",
   data: "udt",
   "data-tables": "udt",
-  "data-v2": "udt",
   dictionary: "dictionary",
   documents: "documents",
   drive: "files",

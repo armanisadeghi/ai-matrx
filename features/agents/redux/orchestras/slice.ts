@@ -14,7 +14,7 @@ import type {
   OrchestraSummary,
 } from "@/features/agents/orchestras/types";
 import type { ManualOrgEdge } from "@/features/agents/org-chart/buildAgentOrgForest";
-import type { OrgPosition } from "@/features/agents/org-chart/positionsService";
+import type { OrgPosition, SeatJob } from "@/features/agents/org-chart/positionsService";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -43,6 +43,9 @@ export interface ManualOrgChartState {
   /** Positions (iam.position), the seats on the chart. */
   positions: OrgPosition[];
   positionsStatus: LoadStatus;
+  /** The job behind each defined seat, by mandate id (`positionsService.readSeatJobs`). */
+  seatJobs: Record<string, SeatJob>;
+  seatJobsError: string | null;
   /** Counts local link writes, so a read can tell which writes it predates. */
   writeSeq: number;
   /** `manager|report` → the writeSeq of this screen's last write (add or remove) to that pair. */
@@ -62,7 +65,7 @@ const initialState: OrchestrasState = {
   listStatus: "idle",
   listError: null,
   byId: {},
-  manualOrgChart: { edges: [], queried: [], status: "idle", error: null, positions: [], positionsStatus: "idle", writeSeq: 0, writtenAt: {} },
+  manualOrgChart: { edges: [], queried: [], status: "idle", error: null, positions: [], positionsStatus: "idle", writeSeq: 0, writtenAt: {}, seatJobs: {}, seatJobsError: null },
 };
 
 function ensureEntry(state: OrchestrasState, orchId: string): OrchestraDetailEntry {
@@ -250,6 +253,13 @@ const slice = createSlice({
       const i = list.findIndex((p) => p.id === action.payload.id);
       if (i === -1) list.push(action.payload);
       else list[i] = action.payload;
+    },
+    seatJobsFulfilled(state, action: PayloadAction<SeatJob[]>) {
+      for (const j of action.payload) state.manualOrgChart.seatJobs[j.mandateId] = j;
+      state.manualOrgChart.seatJobsError = null;
+    },
+    seatJobsRejected(state, action: PayloadAction<string>) {
+      state.manualOrgChart.seatJobsError = action.payload;
     },
     positionRemoved(state, action: PayloadAction<string>) {
       state.manualOrgChart.positions = state.manualOrgChart.positions.filter((p) => p.id !== action.payload);

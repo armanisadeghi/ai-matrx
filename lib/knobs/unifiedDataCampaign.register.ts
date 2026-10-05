@@ -480,13 +480,13 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "PRODUCTS row 15. The link a crew opens on their phones. It is SIGNED-IN — unlike the public form at /f/<id> — so the browser calls the five custom.capture_* doors as the person themselves and those doors decide; the link is an address, not a secret. It is in the (link) group because it is the whole screen on a phone held in one hand: no shell, no sidebar. The switch is read by every door it touches (custom.assert_store_door / custom.store_is_open) and custom.capture_open answers with an honest may_capture and a sentence, which is what the screen shows rather than a dead camera button.",
     },
     {
-        id: "data-v2-tables",
+        id: "data-home",
         file: "app/(core)/data/page.tsx",
         kind: "runtime",
         why: "THE unified data page: a person's tables from the new record store, in four lanes, with create and import. Served to users, so it reads the switch and shows the off sentence when it is off.",
     },
     {
-        id: "data-v2-try-everything",
+        id: "data-try-everything",
         file: "features/unified-data/test-bench/TryEverythingScreen.tsx",
         kind: "runtime",
         why: "THE TEST BENCH at /data/try-everything: one page that mounts the real screens of every part of the store — tables and grid, sharing and the Access tab, relations and rollups, custom fields on a CRM contact, forms, the approval inbox, the agent's door, history, dashboards, documents and notify rules — against this organization's live data, with an honest note on each unfinished part. It is served to users and it reads the switch itself; its frames and labels live in TestBenchChrome.tsx, which reaches nothing and is deliberately not registered.",
@@ -498,7 +498,7 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "PRODUCTS row 5. ONE rendered document at its own address — where the link document_propose hands a person actually lands. It reads custom.doc_render_read, which decides whether this person may see the record the document is about, and shows that door's own refusal sentence verbatim; the bytes are the frozen ones a signature seals, so there is no refresh-from-the-record control and must never be one. It opens in RichDocument, the platform's one rich document, so print and save-as-PDF come with it. Served to users, so it reads the switch and shows the off sentence when it is off.",
     },
     {
-        id: "data-v2-table",
+        id: "data-table",
         file: "app/(core)/data/[tableId]/page.tsx",
         kind: "runtime",
         why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",

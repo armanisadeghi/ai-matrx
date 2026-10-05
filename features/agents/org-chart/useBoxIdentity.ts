@@ -14,7 +14,12 @@
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById, selectAgentsSliceStatus } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { selectOrgPositions, selectOrgPositionsStatus } from "@/features/agents/redux/orchestras/selectors";
+import {
+  selectOrgPositions,
+  selectOrgPositionsStatus,
+  selectSeatJobs,
+} from "@/features/agents/redux/orchestras/selectors";
+import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { listTeams, type Team } from "@/features/organizations/service/teamsService";
 import { getOrganizationMembers, getUserOrganizations } from "@/features/organizations/service";
 import type { OrgBoxType } from "./constants";
@@ -120,13 +125,22 @@ export interface BoxIdentity {
   missing: boolean;
   /** For a person: the account, so Quick look can open it. */
   userId: string | null;
+  /**
+   * For a position: where it stands on the ladder (VISION.md) — noted, its job
+   * defined, an agent doing the job, or a job that no longer runs. Null otherwise.
+   */
+  seat: SeatStage | null;
 }
+
+export type SeatStage = "noted" | "defined" | "staffed" | "retired";
 
 export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
   const agent = useAppSelector((s) => (type === "agent" ? selectAgentById(s, id) : undefined));
   const agentsStatus = useAppSelector(selectAgentsSliceStatus);
   const positions = useAppSelector(selectOrgPositions);
   const positionsStatus = useAppSelector(selectOrgPositionsStatus);
+  const seatJobs = useAppSelector(selectSeatJobs);
+  const allAgents = useAppSelector(selectAllAgents);
   const position = type === "position" ? positions.find((p) => p.id === id) : undefined;
   const [dir, setDir] = useState<Directory | null>(null);
 
@@ -144,7 +158,7 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
 
   switch (type) {
     case "agent":
-      return { name: agent?.name ?? null, avatarUrl: null, detail: agent?.description ?? null, missing: !agent && agentsStatus === "succeeded", userId: null };
+      return { name: agent?.name ?? null, avatarUrl: null, detail: agent?.description ?? null, missing: !agent && agentsStatus === "succeeded", userId: null, seat: null };
     case "membership": {
       const m = dir?.members.get(id);
       return {
@@ -153,6 +167,7 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
         detail: m?.organizationName ?? null,
         missing: Boolean(dir && !dir.failed.length) && !m,
         userId: m?.userId ?? null,
+        seat: null,
       };
     }
     case "team": {
@@ -163,16 +178,43 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
         detail: t ? `${t.memberCount} ${t.memberCount === 1 ? "member" : "members"}` : null,
         missing: Boolean(dir && !dir.failed.length) && !t,
         userId: null,
+        seat: null,
       };
     }
     case "position": {
       const filler = position?.filledByUserId && dir ? memberForUser(dir, position.filledByUserId, position.organizationId) : null;
+      const job = position?.mandateId ? seatJobs[position.mandateId] : undefined;
+      const seat: SeatStage | null = !position
+        ? null
+        : !position.mandateId
+          ? "noted"
+          : !job
+            ? "defined" // linked; the job's state is still loading
+            : job.retired
+              ? "retired"
+              : job.holderAgentId
+                ? "staffed"
+                : "defined";
+      const holderName = job?.holderAgentId ? (allAgents[job.holderAgentId]?.name ?? "an agent") : null;
       return {
         name: position?.name ?? null,
         avatarUrl: filler?.avatarUrl ?? null,
-        detail: position ? (filler ? `Filled by ${filler.name}` : position.filledByUserId ? "Filled" : "Open position") : null,
+        detail: position
+          ? filler
+            ? `Filled by ${filler.name}`
+            : position.filledByUserId
+              ? "Filled"
+              : seat === "staffed"
+                ? `Agent: ${holderName}`
+                : seat === "defined"
+                  ? "Job defined"
+                  : seat === "retired"
+                    ? "Its job is off"
+                    : "Open position"
+          : null,
         missing: !position && positionsStatus === "ready",
         userId: null,
+        seat,
       };
     }
   }

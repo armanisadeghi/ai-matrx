@@ -269,7 +269,7 @@ export function useRecordsUiPorts({
   const onAskForOne = useCallback(
     (ask: AgentBuildAsk) => {
       void launchMandate(MANDATE_KEYS.data__page_guidance, {
-        surfaceKey: `data-v2:${ask.tableId}`,
+        surfaceKey: `data:${ask.tableId}`,
         organizationId,
         sourceFeature: "udt",
         config: { displayMode: "floating-chat", autoRun: false, allowChat: true },

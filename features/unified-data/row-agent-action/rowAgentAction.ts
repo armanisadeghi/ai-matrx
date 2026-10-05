@@ -147,7 +147,7 @@ export function rowAgentLaunch(
 ): ManagedAgentOptions {
   const variables = mapped && Object.keys(mapped).length > 0 ? { ...offer, ...mapped } : offer;
   return {
-    surfaceKey: `data-v2-row-action:${target.tableId}:${target.recordId}`,
+    surfaceKey: `data-row-action:${target.tableId}:${target.recordId}`,
     // The run is filed in the organization the row lives in; unnamed, the launcher took the
     // active organization and, with none picked, asked "Which workspace is this for?".
     organizationId,

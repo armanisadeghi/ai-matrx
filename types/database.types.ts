@@ -1326,6 +1326,7 @@ export type Database = {
           filled_by_user_id: string | null
           hr_job_title_id: string | null
           id: string
+          mandate_id: string | null
           metadata: Json
           name: string
           organization_id: string
@@ -1342,6 +1343,7 @@ export type Database = {
           filled_by_user_id?: string | null
           hr_job_title_id?: string | null
           id?: string
+          mandate_id?: string | null
           metadata?: Json
           name: string
           organization_id: string
@@ -1358,6 +1360,7 @@ export type Database = {
           filled_by_user_id?: string | null
           hr_job_title_id?: string | null
           id?: string
+          mandate_id?: string | null
           metadata?: Json
           name?: string
           organization_id?: string

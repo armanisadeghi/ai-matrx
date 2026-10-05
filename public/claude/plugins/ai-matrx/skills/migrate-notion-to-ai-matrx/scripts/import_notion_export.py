@@ -221,7 +221,7 @@ def _file_under(root: Path, value: str) -> bool:
 
 def _views(cols: list[dict]) -> list[dict]:
     views = [{"name": "All", "layout": "grid", "is_default": True}]
-    status = next((c for c in cols if c["type"] in ("status", "choice")), None)
+    status = next((c for c in cols if c["type"] == "status"), None) or next((c for c in cols if c["type"] == "choice"), None)
     if status:
         views.append({"name": f"By {status['name'].lower()}", "layout": "board", "group_by": status["name"]})
     date = next((c for c in cols if c["type"] == "date"), None)
@@ -359,6 +359,7 @@ def run(root: Path, plan: dict, organization: str, progress_path: Path) -> None:
     for p in plan["databases"]:
         got = call("tables", action="aggregate", table=tables[p["notion_id"]], measure="count")
         n = got.get("value", (got.get("groups") or [{}])[0].get("value"))
+        n = int(n) if isinstance(n, (int, float)) else n
         print(f"  {p['table']:<22} {p['rows']:>6}  {n!s:>8}  {'✓' if n == p['rows'] else '✗'}")
     progress["finished"] = datetime.now().isoformat(timespec="seconds")
     save()

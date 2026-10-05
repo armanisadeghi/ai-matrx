@@ -11,7 +11,7 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import { orgChartService } from "@/features/agents/org-chart/orgChartService";
 import { orchestrasActions } from "./slice";
 import type { ManualOrgEdge } from "@/features/agents/org-chart/buildAgentOrgForest";
-import { positionsService, type OrgPosition } from "@/features/agents/org-chart/positionsService";
+import { positionsService, readSeatJobs, type OrgPosition } from "@/features/agents/org-chart/positionsService";
 import type { RecordedLinkKind } from "@/features/agents/org-chart/constants";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -238,7 +238,7 @@ export function createOrgPosition(input: {
 
 export function updateOrgPosition(
   id: string,
-  patch: { name?: string; description?: string | null; filledByUserId?: string | null },
+  patch: { name?: string; description?: string | null; filledByUserId?: string | null; mandateId?: string | null },
 ): AppThunk<Promise<OrgChartWriteResult>> {
   return async (dispatch) => {
     try {
@@ -272,6 +272,19 @@ export function restoreOrgPosition(position: OrgPosition): AppThunk<Promise<OrgC
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "The position could not be restored." };
+    }
+  };
+}
+
+/** Read the jobs behind these seats (where each stands on the ladder). Always fresh: a job changes in its own window. */
+export function loadSeatJobs(mandateIds: readonly string[]): AppThunk<Promise<void>> {
+  return async (dispatch) => {
+    if (mandateIds.length === 0) return;
+    try {
+      const jobs = await readSeatJobs(mandateIds);
+      dispatch(orchestrasActions.seatJobsFulfilled([...jobs.values()]));
+    } catch (e) {
+      dispatch(orchestrasActions.seatJobsRejected(e instanceof Error ? e.message : "The jobs behind positions could not load."));
     }
   };
 }
