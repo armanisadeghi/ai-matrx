@@ -208,13 +208,18 @@ export function OrgChart<T>({
   const loadedPersist = useRef<string | null>(null);
   const skipNextWrite = useRef(false);
   useEffect(() => {
-    if (!storageKey || loadedPersist.current === storageKey) return;
+    if (!storageKey) {
+      loadedPersist.current = null; // coming back to a key reads it again
+      return;
+    }
+    if (loadedPersist.current === storageKey) return;
     loadedPersist.current = storageKey;
     skipNextWrite.current = true; // this pass still holds the previous view
     try {
       const raw = window.localStorage.getItem(storageKey);
       if (!raw) {
         setCollapsed(new Set());
+        setShowMinimap(true);
         return;
       }
       const saved = JSON.parse(raw) as { collapsed?: unknown; minimap?: unknown };
@@ -385,6 +390,15 @@ export function OrgChart<T>({
   const swallowClick = useRef(false);
   /** Set while we cancel the card's own long-press; that synthetic cancel is not ours to act on. */
   const ignoreCancel = useRef(false);
+  /** Detaches a press's window listeners; run on unmount so a mid-drag unmount leaves none behind. */
+  const stopDrag = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      stopDrag.current?.();
+      liveDrag.current = null;
+    },
+    [],
+  );
   /** The drag as the pointer handlers see it (state is for rendering only). */
   const liveDrag = useRef<typeof drag>(null);
 
@@ -524,7 +538,9 @@ export function OrgChart<T>({
       window.removeEventListener("keydown", key_);
       window.removeEventListener("blur", cancelOnBlur);
       window.removeEventListener("contextmenu", noMenu, true);
+      stopDrag.current = null;
     };
+    stopDrag.current = cleanup;
     window.addEventListener("pointermove", move, { passive: false });
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);

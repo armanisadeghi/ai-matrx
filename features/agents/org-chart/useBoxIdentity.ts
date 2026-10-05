@@ -42,6 +42,8 @@ interface Directory {
 }
 
 let directory: Promise<Directory> | null = null;
+/** Mounted cards, told when a newer directory is read (a Retry), so none stays stale. */
+const listeners = new Set<(d: Directory) => void>();
 
 /**
  * Every member and team in every organization the viewer is in. `refresh` re-reads.
@@ -92,6 +94,7 @@ export function loadOrgDirectory(refresh = false): Promise<Directory> {
     directory = loading;
     void loading.then((d) => {
       if (d.failed.length && directory === loading) directory = null;
+      listeners.forEach((l) => l(d));
     });
   }
   return directory;
@@ -131,8 +134,11 @@ export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
     if (type === "agent") return;
     let live = true;
     void loadOrgDirectory().then((d) => live && setDir(d));
+    const hear = (d: Directory) => live && setDir(d);
+    listeners.add(hear);
     return () => {
       live = false;
+      listeners.delete(hear);
     };
   }, [type]);
 

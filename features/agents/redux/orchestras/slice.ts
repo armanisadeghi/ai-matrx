@@ -45,8 +45,8 @@ export interface ManualOrgChartState {
   positionsStatus: LoadStatus;
   /** Counts local link writes, so a read can tell which writes it predates. */
   writeSeq: number;
-  /** `manager|report` → the writeSeq at which this screen removed that link. */
-  removedAt: Record<string, number>;
+  /** `manager|report` → the writeSeq of this screen's last write (add or remove) to that pair. */
+  writtenAt: Record<string, number>;
 }
 
 export interface OrchestrasState {
@@ -62,7 +62,7 @@ const initialState: OrchestrasState = {
   listStatus: "idle",
   listError: null,
   byId: {},
-  manualOrgChart: { edges: [], queried: [], status: "idle", error: null, positions: [], positionsStatus: "idle", writeSeq: 0, removedAt: {} },
+  manualOrgChart: { edges: [], queried: [], status: "idle", error: null, positions: [], positionsStatus: "idle", writeSeq: 0, writtenAt: {} },
 };
 
 function ensureEntry(state: OrchestrasState, orchId: string): OrchestraDetailEntry {
@@ -207,10 +207,10 @@ const slice = createSlice({
       // comes back without that link, and replacing would silently erase a link
       // the person just made (seen live 2026-10-04). Links leave the store only
       // through the remove thunks; a reload re-reads everything.
-      // A link this screen removed AFTER the read started is gone, whatever the
-      // read says — merging it back would resurrect it until the next reload.
+      // A pair this screen wrote AFTER the read started keeps the local answer:
+      // a removed link is not resurrected, a re-typed one is not reverted.
       for (const e of action.payload.edges) {
-        if ((m.removedAt[`${e.managerId}|${e.reportId}`] ?? -1) > action.payload.startedAtSeq) continue;
+        if ((m.writtenAt[`${e.managerId}|${e.reportId}`] ?? -1) > action.payload.startedAtSeq) continue;
         const i = m.edges.findIndex(
           (x) => x.edgeId === e.edgeId || (x.managerId === e.managerId && x.reportId === e.reportId),
         );
@@ -229,7 +229,7 @@ const slice = createSlice({
       const m = state.manualOrgChart;
       const e = action.payload;
       m.writeSeq += 1;
-      delete m.removedAt[`${e.managerId}|${e.reportId}`];
+      m.writtenAt[`${e.managerId}|${e.reportId}`] = m.writeSeq;
       if (!m.edges.some((x) => x.managerId === e.managerId && x.reportId === e.reportId)) {
         m.edges.push(e);
       }
@@ -257,7 +257,7 @@ const slice = createSlice({
     manualOrgEdgeRemoved(state, action: PayloadAction<{ managerId: string; reportId: string }>) {
       const { managerId, reportId } = action.payload;
       state.manualOrgChart.writeSeq += 1;
-      state.manualOrgChart.removedAt[`${managerId}|${reportId}`] = state.manualOrgChart.writeSeq;
+      state.manualOrgChart.writtenAt[`${managerId}|${reportId}`] = state.manualOrgChart.writeSeq;
       state.manualOrgChart.edges = state.manualOrgChart.edges.filter(
         (x) => !(x.managerId === managerId && x.reportId === reportId),
       );
