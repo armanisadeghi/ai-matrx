@@ -114,10 +114,8 @@ import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
 import { AgentCallInline } from "../renderers/agent-call/AgentCallInline";
 import { isImageGenerationAgentCall } from "../renderers/agent-call/agentCallKind";
-import {
-  getCollabCallInfo,
-  isCollaborationAgentCall,
-} from "../renderers/agent-call/collab";
+import { isCollaborationAgentCall } from "../renderers/agent-call/collab";
+import { collabHeaderSubtitle } from "../renderers/agent-call/collab-subtitle";
 
 import {
   resultAsObject,
@@ -460,18 +458,7 @@ export const toolRendererRegistry: ToolRegistry = {
     },
     // Collapsed-line summary for collaboration calls: the specialist + a
     // snippet of its answer, so the folded card still says what came back.
-    getHeaderSubtitle: (entry) => {
-      const collab = getCollabCallInfo(entry);
-      if (!collab) return null;
-      const agent = collab.agentName;
-      if (entry.status === "completed" && collab.resultText) {
-        const snippet = collab.resultText.replace(/\s+/g, " ").trim();
-        const short =
-          snippet.length > 90 ? `${snippet.slice(0, 90)}…` : snippet;
-        return agent ? `${agent} — ${short}` : short;
-      }
-      return agent ?? "reviewing a conversation";
-    },
+    getHeaderSubtitle: collabHeaderSubtitle,
     // An image call's result IS the picture, so its card must not mount folded
     // on a reloaded conversation — that reads as "where is my image?", which is
     // the exact complaint this whole path exists to answer. A collaboration or
