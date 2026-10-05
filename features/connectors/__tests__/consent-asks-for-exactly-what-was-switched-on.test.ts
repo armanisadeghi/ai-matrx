@@ -34,6 +34,7 @@ const CALENDAR_LIST =
 const CALENDAR_EVENTS =
   "https://www.googleapis.com/auth/calendar.events.readonly";
 const GSC = "https://www.googleapis.com/auth/webmasters.readonly";
+const GSC_WRITE = "https://www.googleapis.com/auth/webmasters";
 const YOUTUBE = "https://www.googleapis.com/auth/youtube.readonly";
 const YOUTUBE_ANALYTICS =
   "https://www.googleapis.com/auth/yt-analytics.readonly";
@@ -76,6 +77,29 @@ function account(scopes: string[]): ConnectorAccount {
 }
 
 describe("buildConsentPlan", () => {
+  it("keeps Search Console management separate from reading and preserves held grants", () => {
+    const reading = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["search_console"],
+      account: null,
+      rollout: rollout(),
+    });
+    expect(reading.request?.scopes).toContain(GSC);
+    expect(reading.request?.scopes).not.toContain(GSC_WRITE);
+
+    const management = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["search_console_write"],
+      account: account([OPENID, GSC]),
+      rollout: rollout({ search_console_write: { phase: "pending", eligible: true } }),
+    });
+    expect(management.request?.capabilityKeys).toEqual(["search_console_write"]);
+    expect(management.request?.addedScopes).toEqual([GSC_WRITE]);
+    expect(management.request?.scopes).toEqual(
+      expect.arrayContaining([OPENID, GSC, GSC_WRITE]),
+    );
+  });
+
   it("requests Drive browsing only for the chosen internal product", () => {
     const plan = buildConsentPlan({
       provider,

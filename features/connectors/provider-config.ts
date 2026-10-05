@@ -226,6 +226,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
     "Google permits reading, composing, sending, and changing Gmail. AI Matrx uses this grant only for changes you choose on an opened message",
   [GOOGLE_SCOPE.webmastersReadonly]:
     "Read Search Console performance for sites you own",
+  [GOOGLE_SCOPE.webmasters]:
+    "Manage Search Console properties you authorize",
   [GOOGLE_SCOPE.analyticsReadonly]: "Read your Google Analytics reports",
   [GOOGLE_SCOPE.youtubeReadonly]:
     "Read your channel's videos and details. No uploads, no edits",
@@ -646,6 +648,23 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.webmastersReadonly],
       attachableResourceTypes: ["search_console_property"],
       stopsOnRevoke: "Search Console data from refreshing on your sites",
+      firstAction: {
+        kind: "route",
+        label: "Bind a site",
+        href: marketingRoutes.connectionsGoogle(),
+      },
+    },
+    {
+      key: "search_console_write",
+      name: "Search Console management",
+      promise: "Authorize management of your Search Console sites.",
+      group: MARKETING_GROUP,
+      icon: Search,
+      mark: SearchConsoleMark,
+      capabilityKeys: ["search_console_write"],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.webmasters],
+      attachableResourceTypes: [],
+      stopsOnRevoke: "Search Console management access",
       firstAction: {
         kind: "route",
         label: "Bind a site",
