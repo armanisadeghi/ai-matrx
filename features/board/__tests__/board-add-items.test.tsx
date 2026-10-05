@@ -174,6 +174,12 @@ describe("board_find_records — a topic across the person's records", () => {
     const out = await findBoardRecords({ query: "Harborview move-out" }, BOARD_ITEM_TYPES, searchItems);
     if (!out.ok) throw new Error(out.error);
     expect(out.records.map((r) => `${r.type}:${r.id}`).sort()).toEqual([`chat:c1`, `data-table:${TABLE}`, `note:${NOTE}`].sort());
+    // The conversation asking is never offered (live run 2026-10-04 put the asking chat on the board).
+    const asking = await findBoardRecords({ query: "Harborview move-out" }, BOARD_ITEM_TYPES, searchItems, {
+      exclude: [{ type: "chat", id: "c1" }],
+    });
+    if (!asking.ok) throw new Error(asking.error);
+    expect(asking.records.map((r) => r.type)).not.toContain("chat");
     // The projection is asked only for the tokens the catalog declares.
     const tokens = (searchItems.mock.calls[0] as unknown as [{ tokens: string[] }])[0].tokens;
     expect(tokens).toEqual(expect.arrayContaining(["note", "conversation", "file", "task", "udt_document"]));

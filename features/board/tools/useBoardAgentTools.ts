@@ -401,9 +401,12 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   };
 
   /** board_find_records — candidates for board_add_items across the person's records. */
-  const findRecords = async (input: unknown) => {
+  const findRecords = async (input: unknown, call?: SurfaceToolCall) => {
     if (!host.itemTypes) return fail("This board cannot take records, so there is nothing to find for it.");
-    return findBoardRecords(record(input), host.itemTypes, searchItemsAsPerson);
+    // The conversation asking is never a candidate: it is already open beside the board.
+    return findBoardRecords(record(input), host.itemTypes, searchItemsAsPerson, {
+      exclude: call?.conversationId ? [{ type: "chat", id: call.conversationId }] : [],
+    });
   };
 
   const update = (input: unknown) => {

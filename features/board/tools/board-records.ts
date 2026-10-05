@@ -89,6 +89,7 @@ export async function findBoardRecords(
   input: { query?: unknown; types?: unknown; limit?: unknown },
   types: readonly BoardItemType[],
   searchItems: SearchItems,
+  opts: { exclude?: { type: string; id: string }[] } = {},
 ): Promise<FindRecordsResult | { ok: false; error: string }> {
   const query = text(input.query);
   if (!query) return { ok: false, error: "Pass `query`: words in the records' names." };
@@ -144,7 +145,7 @@ export async function findBoardRecords(
   for (let i = 0; answered.some((lane) => i < lane.length); i++) {
     for (const lane of answered) if (i < lane.length) all.push(lane[i]);
   }
-  const seen = new Set<string>();
+  const seen = new Set<string>((opts.exclude ?? []).map((r) => `${r.type}:${r.id}`));
   const records = all.filter((r) => {
     const k = `${r.type}:${r.id}`;
     if (seen.has(k)) return false;

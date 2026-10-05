@@ -1,5 +1,12 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — The Board's agent puts the person's real records on the board, and gathers a topic
+
+- Owner: "I should be able to tell the agent that I'm working on a topic and then tell it to get all of my notes, files, chat … about that topic on the board." New tools `board_add_items` (existing records by `{type, id}` or new ones by `{type, new: true}`, batch, one undo step, per-entry `added` / `already_on_board` / `duplicate` / `needs_person` / `refused`) and `board_find_records` (topic → `{type, id, title, updated_at, snippet}` across every organization). Manifest intro teaches find → add → group.
+- Catalog: `BoardItemType.record` (`place`, `searchToken`, `find`) on chat, note, file, document, table, picklist, task, War Room, meeting, workflow run, research, project, flashcard deck, scope. `place()` in UserBoard returns per-item results; its dedup moved to `board/plan-placement.ts`. `BoardStore.batch` folds several changes into one undo step (and one agent step).
+- Coverage finding: `knowledge_search` / `platform.search_items` already holds conversations, notes, files, documents, tasks, projects, War Rooms, research topics, scopes and flashcard decks with ids and tokens that map to catalog keys — those are read straight from the projection; tables and picklists are not projected, so their picker list services fill the gap. No server change.
+- Guard: `__tests__/board-add-items.test.tsx` (tool enums vs catalog, canonical sources for note/table/task, new note, batch dedup, one undo step, token mapping, archived picklist left out, failed lane named). Planted breaks (catalog door removed, dedup off, batch a pass-through) each turn it red.
+
 ## 2026-10-04 — Boards are a list like every saved record; "My board" is gone
 
 - Owner: "I have 'My board' and then other boards. That's strange." `/board` is now the boards list (the canonical list shell, recents first by last opened, "New board"); a board opens at `/board/<id>`; `/board/all` redirects to `/board`. The Workspace menu's Board area is Boards + the "Add to your board" rows; profile menu and dashboard point at Boards.
