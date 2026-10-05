@@ -10,7 +10,7 @@
  *
  * Shared by the admin `DiscussPanel` and the product `ReviewerChat`.
  */
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -73,9 +73,9 @@ export function ThreadMessageRow({
             </span>
           </div>
           <div className="text-sm">
-            <MarkdownStream imagePolicy={isHuman ? "self" : "ai"}
-              content={message.text ?? ""}
-              isStreamActive={false}
+            <RichContent level="full" imagePolicy={isHuman ? "self" : "ai"}
+              source={message.text ?? ""}
+              isStreaming={false}
               hideCopyButton
             />
           </div>
@@ -101,9 +101,9 @@ export function ThreadMessageRow({
         </span>
       </div>
       <div className="text-sm">
-        <MarkdownStream imagePolicy={isHuman ? "self" : "ai"}
-          content={message.text ?? ""}
-          isStreamActive={false}
+        <RichContent level="full" imagePolicy={isHuman ? "self" : "ai"}
+          source={message.text ?? ""}
+          isStreaming={false}
           hideCopyButton
         />
       </div>

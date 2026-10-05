@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/lib/utils";
 import { useOpenHindsightFindingWindow } from "@/features/overlays/openers/hindsightFindingWindow";
 
@@ -208,7 +208,7 @@ export function FindingCard({
             <div
               className={cn(variant === "card" && "max-h-24 overflow-hidden")}
             >
-              <MarkdownStream imagePolicy="ai" content={finding.reasoning} hideCopyButton />
+              <RichContent level="full" imagePolicy="ai" source={finding.reasoning} hideCopyButton />
             </div>
           )}
           {(finding.evidence ?? []).length > 0 && (
@@ -262,7 +262,7 @@ export function FindingCard({
                     : "overflow-visible",
                 )}
               >
-                <MarkdownStream imagePolicy="ai" content={body} hideCopyButton />
+                <RichContent level="full" imagePolicy="ai" source={body} hideCopyButton />
               </div>
               {variant === "card" && showWindowDoor && (
                 <Button
