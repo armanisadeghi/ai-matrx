@@ -290,8 +290,9 @@ a machine; explicit raw controls ("Copy JSON", the extraction "JSON" download, t
       (`StructuredAgentAnswerBlock`), "Copy JSON" (`StructuredValueTabs`, `UnknownDataEventBlock`), "Raw AI Response" copies
       (`CodeEditErrorCanvas`, `AICodeEditor`, `SmartCodeEditor`), "Copy raw response" (`AgentGenerator`, `FullPromptOptimizer`,
       `SystemPromptOptimizer`), request payload copy (`PayloadTab`), JSON editors/viewers.
-      OPEN (display, not copy): `CleanupPad` shows `cleanAi.answerText` raw in its response field (the official-candidate twin uses
-      `answerFieldText`); left because that text is also persisted via `persistCleanRun`.
+- [x] Y9. `CleanupPad` cleaned-transcript field: the DISPLAY (field value, output content) uses `cleanedResponseShown` (a kind answer as markdown,
+      an edit wins); `responseValue` — what `persistCleanRun`, apply and compare use — stays the raw answer text. Typing in the field is a
+      person's explicit edit of what they see. Guard `cleaned-response-display-never-raw-kind.test.ts`.
 
 ## Out of scope (deliberate raw views — keep)
 
