@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import { AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
+import { ToggledDataBody } from "./ToggledDataBody";
 
 export interface SearchErrorBlockProps {
   error: string;
@@ -28,11 +30,18 @@ const SearchErrorBlock: React.FC<SearchErrorBlockProps> = ({ error, metadata }) 
               </button>
             )}
           </div>
-          <p className="text-xs text-destructive/80 mt-0.5 leading-relaxed">{error} <ErrorAlchemyMenu error={error} /></p>
+          <p className="text-xs text-destructive/80 mt-0.5 leading-relaxed">
+            {/* A kind in the message (a dict a server error printed) reads as its one-line form (K7). */}
+            {inlineKindText(error, { plain: true })} <ErrorAlchemyMenu error={error} />
+          </p>
+          {/* The same "show data" toggle as the sibling search / fetch cards — not a
+              debug source view — so the same door: kindless stays JSON, a kind
+              renders as its kind (K7). */}
           {showDetail && metadata && (
-            <pre className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-40 text-muted-foreground">
-              {JSON.stringify(metadata, null, 2)}
-            </pre>
+            <ToggledDataBody
+              value={metadata}
+              className="mt-2 text-xs bg-muted/50 rounded p-2 overflow-auto max-h-40 text-muted-foreground"
+            />
           )}
         </div>
       </div>

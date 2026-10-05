@@ -27,6 +27,7 @@ import WorkflowStepBlock from "../WorkflowStepBlock";
 import FetchResultsBlock from "../FetchResultsBlock";
 import SearchResultsBlock from "../SearchResultsBlock";
 import CategorizationResultBlock from "../CategorizationResultBlock";
+import SearchErrorBlock from "../SearchErrorBlock";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -138,6 +139,38 @@ describe("K1: every card behind the toggle, every shape", () => {
     );
     clickAll();
     expectNoRaw();
+  });
+});
+
+// K7: the search-error card's detail toggle printed metadata as unmarked raw
+// JSON, and its message line printed the error as written. The detail is the
+// same "show data" toggle as its sibling cards, not a debug source view, so it
+// takes the same door; the message reads a kind (a Python-repr dict a server
+// error printed, too) as its one-line form.
+describe("K7: the search-error card", () => {
+  it.each(SHAPES)("metadata detail: %s", (_name, value) => {
+    act(() =>
+      root.render(
+        <SearchErrorBlock error="Search failed" metadata={{ request: value } as Record<string, unknown>} />,
+      ),
+    );
+    clickAll();
+    expectNoRaw();
+  });
+
+  it("kindless metadata stays the raw JSON view", () => {
+    act(() => root.render(<SearchErrorBlock error="Search failed" metadata={{ query: "cells", status: 429 }} />));
+    clickAll();
+    expect(door()).toBeNull();
+    expect(container.querySelector("pre")?.textContent).toContain("429");
+  });
+
+  it("an error message holding a kind reads as its one-line form", () => {
+    const pyRepr = "{'__kind': 'flashcard_set', 'title': 'Cell biology'}";
+    act(() => root.render(<SearchErrorBlock error={`Could not index ${pyRepr}: ${KIND_TEXT}`} />));
+    expect(container.textContent).not.toMatch(/__kind/);
+    expect(container.textContent).toContain("Could not index");
+    expect(container.textContent).toContain("Flashcard Set");
   });
 });
 
