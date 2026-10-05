@@ -388,6 +388,9 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
   const installId =
     run.phase === "removed" ? null : ((run.phase !== "idle" ? run.answer?.install_id : null) ?? card.installed?.install_id ?? null);
   const isInstalled = run.phase === "installed" || (run.phase !== "removed" && card.installed?.state === "installed");
+  // A STUCK INSTALL SAYS SO (CHAIR-DESCRIBE-4): left part-way (the page closed, a step never came back) it
+  // offers Finish install (the door resumes at its next step) and Remove (archives what it made so far).
+  const stuck = run.phase === "idle" && (card.installed?.state === "installing" || card.installed?.state === "refused");
   const answerNow = run.phase !== "idle" ? run.answer : null;
   // Parts the card counts that leave no `made` entry (a stage rule set lives on its table) join the
   // landing as rows that open, so every count on the card has a row.
@@ -412,14 +415,19 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
               </Button>
             </>
           ) : (
-            <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install="">
-              Install
+            <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install={stuck ? "finish" : ""}>
+              {stuck ? "Finish install" : "Install"}
             </Button>
           )}
           {installId ? (
             <Button variant="outline" onClick={() => setConfirmRemove(true)} disabled={run.phase === "running"} data-make-template-remove="">
               Remove
             </Button>
+          ) : null}
+          {stuck ? (
+            <span className="text-sm text-muted-foreground" data-make-template-stuck="">
+              Stopped part-way
+            </span>
           ) : null}
           <SavesTo />
           {card.scope === "org" && card.ephemeral ? <KeepOneOff templateId={card.id} kept={read.reload} /> : null}
