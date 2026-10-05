@@ -30,6 +30,7 @@ import type {
   ComposerSize,
 } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/composer-types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@/lib/utils";
 
 const MIN_W = 340;
@@ -138,7 +139,14 @@ function StyleSection({ spec, mode }: { spec: StyleSpec; mode: ComposerMode }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-base font-semibold text-foreground">{spec.title}</h2>
+      <div className="flex items-center gap-3">
+        <h2 className="text-base font-semibold text-foreground">{spec.title}</h2>
+        {/* Form has no pill row, so the agent is chosen here: pick any agent
+            to see its variables as a form with Run. */}
+        {spec.form ? (
+          <AgentListDropdown onSelect={(agentId: string) => chat.startWith(agentId)} />
+        ) : null}
+      </div>
       <ResizableFrame>{body}</ResizableFrame>
     </section>
   );

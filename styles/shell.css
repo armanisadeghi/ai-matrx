@@ -1932,6 +1932,29 @@ body[style*="pointer-events: none"] {
   content: none;
 }
 
+/* …AND A FULL-HEIGHT SCROLLER WHOSE CONTENT IS ITSELF FULL-HEIGHT IS A
+   VIEWPORT, NOT A PAGE (owner, 2026-10-04 — the notes editor). The notes root
+   is `h-full overflow-y-auto` around an `h-full` workspace: a runway AFTER it
+   only added scroll slack, so scrolling to where the page assistant appears
+   lifted the editor under the header and left an empty band under the box.
+   Such a surface clears what floats the only way that does not cover or slide
+   it: the floating chrome's height is PADDING at its foot, so the workspace
+   ends exactly above the box and nothing scrolls. Measured only — no box, no
+   padding. */
+.shell-main
+  > .h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full):not(
+    [data-floating-clearance="off"]
+  ) {
+  box-sizing: border-box;
+  padding-block-end: max(
+    var(--matrx-floating-measured, 0px),
+    var(--shell-fixed-alert-clearance, 0px)
+  );
+}
+.shell-main > .h-full:is(.overflow-y-auto, .overflow-auto):has(> .h-full)::after {
+  content: none;
+}
+
 /* Natural-height reading/list surfaces keep a generous final runway so fixed
    page affordances never cover the last content. The pseudo-element adds
    scroll range without shrinking full-height children. When an overlay-style
