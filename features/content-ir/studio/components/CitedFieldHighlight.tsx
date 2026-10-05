@@ -43,22 +43,31 @@ export default function CitedFieldHighlight({
     let marked: HTMLElement | null = null;
     let tries = 0;
     const find = () => {
-      for (const probe of probes) {
-        const hit = deepestContaining(root, probe);
-        if (hit) {
-          // Lift to the nearest block-level container so the ring frames the item, not one word.
-          let el: HTMLElement = hit;
-          while (el.parentElement && el.parentElement !== root && getComputedStyle(el).display.startsWith("inline")) {
-            el = el.parentElement;
-          }
-          marked = el;
-          el.setAttribute("data-cited-field", field);
-          el.classList.add(...RING);
-          el.scrollIntoView({ block: "center", behavior: "smooth" });
-          return true;
-        }
+      // Every probe's deepest element, then the smallest element holding them
+      // all: the item's own tile (a flip card shows its front and back as two
+      // faces — the tile frames both, never a hidden face).
+      const hits = probes
+        .map((probe) => deepestContaining(root, probe))
+        .filter((el): el is HTMLElement => el !== null);
+      if (!hits.length) return false;
+      let el: HTMLElement = hits[0]!;
+      for (const other of hits.slice(1)) {
+        while (el !== root && !el.contains(other)) el = el.parentElement ?? root;
       }
-      return false;
+      if (el === root) el = hits[0]!;
+      // Lift to a block-level container so the ring frames the item, not one word.
+      while (
+        el.parentElement &&
+        el.parentElement !== root &&
+        getComputedStyle(el).display.startsWith("inline")
+      ) {
+        el = el.parentElement;
+      }
+      marked = el;
+      el.setAttribute("data-cited-field", field);
+      el.classList.add(...RING);
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      return true;
     };
     // The kind component may paint after mount (lazy chunks) — retry briefly.
     const timer = window.setInterval(() => {
