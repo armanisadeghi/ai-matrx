@@ -138,6 +138,18 @@ function metadataLink(resource: GoogleConnectionResource): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
+function isPresentationResource(
+  resource:
+    | (GoogleConnectionResource & {
+        resource_type: GoogleWorkspaceResourceType;
+      })
+    | null,
+): resource is GoogleConnectionResource & {
+  resource_type: "google_presentation";
+} {
+  return resource?.resource_type === "google_presentation";
+}
+
 function connectionName(connection: GoogleConnectionSummary): string {
   return (
     connection.account_email ?? connection.account_name ?? "Google account"
@@ -186,6 +198,7 @@ export function GoogleWorkspaceReviewWorkspace({
   >(null);
   const [slideReadDialog, setSlideReadDialog] = useState<{
     key: string;
+    request: number;
     state: ConnectedReadDialogState;
   } | null>(null);
   const slideReadRequest = useRef(0);
@@ -263,10 +276,12 @@ export function GoogleWorkspaceReviewWorkspace({
       null,
     [selectedResourceId, selectedResources],
   );
+  const selectedPresentation = isPresentationResource(selectedResource)
+    ? selectedResource
+    : null;
   const selectedPresentationKey =
-    activeConnection &&
-    selectedResource?.resource_type === "google_presentation"
-      ? `${activeConnection.id}:${selectedResource.id}:${selectedResource.resource_ref}`
+    activeConnection && selectedPresentation
+      ? `${activeConnection.id}:${selectedPresentation.id}:${selectedPresentation.resource_ref}`
       : null;
 
   // Changing the effective account/file or unmounting invalidates the request.
@@ -445,6 +460,7 @@ export function GoogleWorkspaceReviewWorkspace({
     setError(null);
     setSlideReadDialog({
       key,
+      request,
       state: { kind: "slides", pending: true, titles: [title] },
     });
 
@@ -453,6 +469,7 @@ export function GoogleWorkspaceReviewWorkspace({
         if (slideReadRequest.current !== request) return;
         setSlideReadDialog({
           key,
+          request,
           state: {
             kind: "slides",
             files: [{ title, url: resourceDoor(selectedResource), deck }],
@@ -1049,12 +1066,12 @@ export function GoogleWorkspaceReviewWorkspace({
                       </div>
                     )}
 
-                    {selectedResource?.resource_type ===
-                      "google_presentation" && (
+                    {selectedPresentation && (
                       <PresentationFileDetail
-                        resource={selectedResource}
+                        resource={selectedPresentation}
                         pending={
                           slideReadDialog?.key === selectedPresentationKey &&
+                          slideReadDialog.request === slideReadRequest.current &&
                           "pending" in slideReadDialog.state
                         }
                         onRead={readSelectedPresentation}
@@ -1200,7 +1217,8 @@ export function GoogleWorkspaceReviewWorkspace({
       )}
       <ReadResultsDialog
         result={
-          slideReadDialog?.key === selectedPresentationKey
+          slideReadDialog?.key === selectedPresentationKey &&
+          slideReadDialog.request === slideReadRequest.current
             ? slideReadDialog.state
             : null
         }

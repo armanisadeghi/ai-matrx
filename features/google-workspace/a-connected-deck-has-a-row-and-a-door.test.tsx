@@ -361,6 +361,14 @@ it("discards a late success after the selected deck changes", async () => {
   expect(container.textContent).toContain("Annual plan");
   expect(document.body.textContent).not.toContain("Stale first-deck body");
   expect(mockToastError).not.toHaveBeenCalled();
+
+  // Returning to the old selection must not resurrect its now-invalidated
+  // pending/result state.
+  act(() => buttonNamed("Q4 board narrative").click());
+  expect(document.body.textContent).not.toContain("Stale first-deck body");
+  expect(document.body.textContent).not.toContain(
+    "Reading Q4 board narrative from Google",
+  );
 });
 
 it("discards a late error after the active account changes", async () => {

@@ -370,6 +370,10 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Invariants
 
+- Standalone OAuth-review routes use `app/Providers.tsx` with the authenticated
+  initial Redux state, without the app shell. File-detail controls require its
+  canonical record-detail and overlay hosts; do not reconstruct a smaller
+  parallel provider tree. `app/(oauth-review)/layout.test.tsx` guards this binding.
 - 🚨 **THE FILE TYPES ARE DECLARED ONCE — `resource-types.ts`.**
   `GOOGLE_WORKSPACE_FILE_TYPES` is the ONE record of every file type a person can
   pick through Google Picker, and it carries everything a surface needs to draw
@@ -387,13 +391,10 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   censuses the record against the server's own `eligible_resource_types` and
   `ResourceType` union in the sibling aidream checkout (UNMEASURED, out loud, when
   that checkout is absent), and `a-connected-deck-has-a-row-and-a-door.test.tsx`
-  proves a `google_presentation` row is listed by name, opens, and gets an honest
-  read-only detail. Why: `slides` has been an `available` capability with
-  `eligible_resource_types = ("google_presentation",)` and a live successful
-  `slides.read` call, while six hand-typed pairs in this repo had never heard of
-  it — so a picked deck was accepted by the attach call and then had no row, no
-  name and no door, and `connectionResource` THREW on the row, emptying every
-  Google surface in the app (V13-3).
+  proves a `google_presentation` row is listed by name and explicitly reads
+  its exact selected connection and file through the canonical presentation
+  reader. The shared `ReadResultsDialog` renders slide text and speaker notes;
+  account/file changes, closing, and unmounting invalidate pending responses.
 - 🚨 **A WRITE MAY COME BACK AS A PROPOSAL, AND EVERY CALLER SAYS SO.** The four
   direct write calls in `service.ts` — `documents/create`, `sheets/create`,
   `documents/append`, `sheets/write` — return `GoogleWriteOutcome<T>`: either the
