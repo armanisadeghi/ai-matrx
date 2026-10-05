@@ -71,8 +71,9 @@ export async function writeAgent(
 }
 
 /**
- * `base`, or `base 2`, `base 3`, … — the first name no other live agent in the
- * organization uses (case-insensitive, as `agent._refuse_duplicate_agent_name` compares).
+ * `base`, or `base 2`, `base 3`, … — the first name no other LIVE agent in the
+ * organization uses (case-insensitive, as `agent._refuse_duplicate_agent_name` compares). An
+ * archived agent frees its name (migrations/campaign/agent_names_count_live_copies.sql).
  */
 export async function nextFreeAgentName(organizationId: string, base: string, selfId: string): Promise<string> {
   const rows = await readAllRows<{ id: string; name: string }>(
@@ -83,6 +84,7 @@ export async function nextFreeAgentName(organizationId: string, base: string, se
         .select("id, name", { count: "exact" })
         .eq("organization_id", organizationId)
         .is("deleted_at", null)
+        .eq("is_archived", false)
         .ilike("name", `${base.replace(/[%_\\]/g, (c) => `\\${c}`)}%`)
         .order("id", { ascending: true })
         .range(from, to),
