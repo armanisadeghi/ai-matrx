@@ -1,268 +1,34 @@
-# FEATURE.md — `user-profile`
-
-**Status:** `active`
-**Tier:** `2`
-**Last updated:** `2026-08-21`
-
+---
+type: Reference
+title: User profile implementation rules
+description: Code-path invariants for profile, account access, bounded account export and reversible closure.
+timestamp: 2026-10-05
 ---
 
-## Purpose
+# User profile
 
-Lets a signed-in user view and edit every field that identifies them across the
-app: display name, avatar, legal name, pronouns, addresses, phones, emails,
-social handles, work info, and emergency contacts. Powers the "Profile" tab of the
-one settings surface (`/user-settings/account`, the window and the phone drawer);
-the old `/settings/profile` route redirects there (2026-10-01). The
-rich form-profile data is what agents acting on behalf of the user read when
-they need to fill out forms, ship something, or address a message.
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/account/billing/PLAN.md — read it before touching this feature in ANY repo.
 
----
+## File map
 
-## Entry points
+- `components/UserProfilePage.tsx` is shared by the account settings page, window and phone drawer. The five lazy settings children supply stable `PROFILE_SECTION_IDS` anchors, not parallel forms. Writing voice has its own tab.
+- `hooks/useUserProfile.ts` edits Auth metadata and the chat-visible profile; `hooks/useUserFormProfile.ts` edits the section-saved contact/identity form. Form-profile state stays local rather than in Redux.
+- `app/api/user/profile/route.ts` and `app/api/user/form-profile/route.ts` are the existing profile read/patch paths. `types.ts` owns the form and JSONB normalization shapes.
+- `features/account-access` owns verified Auth email changes and other-session revocation; password recovery reuses `/forgot-password`.
+- `account-export/service.ts` reads the authenticated person's explicitly whitelisted account datasets directly through the client. `AccountExportSection.tsx` downloads that bounded JSON export.
+- `features/account-lifecycle` and `/api/account/closure`, `/api/account/restore` own the restartable Auth-admin/Stripe closure workflow. The public restore page never restores on GET.
+- `users.user_email_preferences` belongs to `features/settings/tabs/EmailTab.tsx`, not this feature. Avatar upload reuses `features/image-manager/components/ProfilePhotoTab`.
 
-**Routes**
+## Invariants
 
-- `/user-settings/account` — the settings tab `account` (`ProfileTab`) renders
-  `<UserProfilePage embedded />`. The standalone `app/(transitional)/settings/profile`
-  route was retired 2026-10-01 (config redirect). Writing voice is its own tab,
-  `/user-settings/account/writing-voice`.
+1. Update Auth metadata through `supabase.auth.updateUser({ data })`, never a direct Auth-table write. Profile save dispatches `setUserMetadata(...)` so global name/avatar consumers refresh. Any new save path must preserve that dispatch.
+2. `users.profiles.display_name` cannot be null: preserve the Auth full-name → `User` fallback. Profile writes require the caller's `X-Organization-Id`; refuse before any metadata mutation when the organization cannot be named.
+3. Existing `users.user_form_profile` rows retain their filed `organization_id`. A first save requires the caller's organization header; never silently move a contact profile or let a database default choose its organization. Upsert by `user_id`, not insert-then-update; no row and an empty row have the same form defaults.
+4. Chat-visible display names, avatars and status are separate from private legal/contact/address/DOB/emergency fields. Never place sensitive contact data in `users.profiles`. Extend each defensive `normalize*` reader when extending a JSONB entry; malformed entries are dropped on profile reads.
+5. Both hooks' `idle` state is loading during SSR/first render. Wait for both sources before rendering hydrated identity or locale timestamps. Failed saves preserve unsaved local edits and permit retry.
+6. Empty editable lists render one welcoming first-item action without repeated heading/icon. It creates and focuses the first field; ordinary add controls appear after a row exists.
+7. Auth email changes go through the account-access reverification flow, never a profile PATCH. Global refresh-token revocation does not instantly invalidate already-issued access tokens; keep the UI honest about expiry.
+8. Account export must use a freshly verified identity, explicit personal filters and field lists, complete pagination, and all-or-nothing dataset reads. It is not a backup of projects, conversations, notes or files. Never include Vault/Auth/payment credentials, shared/company records or operational logs.
+9. Closure must hold its fenced journal lease, verify each subscription's personal beneficiary/purpose, stop personal recurring billing before disabling access, retain shared data/memberships and refuse a shared organization's sole-owner closure. Recovery email precedes cancellation. Failures retain retryable checkpoints; restoration invalidates its token only after access/link recovery succeeds. Reclosure starts a fresh journal without stealing an existing lease.
 
-**Settings registry tabs** (`features/settings/registry.ts`)
-
-- `account` — parent "Profile" tab. Opens the form scrolled to the top.
-- `account.identity` — deep-links to the Identity section.
-- `account.contact` — deep-links to Contact.
-- `account.addresses` — deep-links to Shipping (Billing is right below).
-- `account.work` — deep-links to Work.
-- `account.emergency` — deep-links to Emergency contacts.
-
-All five children render the same `UserProfilePage` with a different
-`defaultSection` prop. There is no parallel implementation per sub-tab.
-
-**Hooks**
-
-- `useUserProfile()` (`features/user-profile/hooks/useUserProfile.ts`) — fetch,
-  edit, save the account-level identity (auth metadata + `users.profiles`).
-  Dispatches `setUserMetadata(...)` after save so the global header avatar/name
-  refresh immediately.
-- `useUserFormProfile()` (`features/user-profile/hooks/useUserFormProfile.ts`)
-  — fetch, edit, section-save the rich form profile. Exposes `saveSection(keys)`
-  for per-section save buttons.
-
-**API endpoints**
-
-- `GET /api/user/profile` — returns `UserAccountData` (auth metadata fields +
-  the `profiles` row, with sensible defaults if the row doesn't exist yet).
-- `PATCH /api/user/profile` — accepts a partial `UserAccountData`. Writes
-  auth-metadata fields via `supabase.auth.updateUser({ data })` and upserts
-  `users.profiles`. Echoes the canonical state back.
-- `GET /api/user/form-profile` — returns `UserFormProfileData`. Empty defaults
-  when the row doesn't exist yet.
-- `PATCH /api/user/form-profile` — partial upsert into `users.user_form_profile`
-  by `user_id`. Only fields present in the body are written.
-
-**Redux slice(s)**
-
-- No dedicated slice. Account fields write back into the existing
-  `state.userProfile.userMetadata` via `setUserMetadata(...)` so the global
-  header stays in sync. Form-profile data is intentionally **not** in Redux —
-  large shape, only needed on this surface.
-
----
-
-## Data model
-
-**Database tables** (Supabase, project `brsgrqvjdzwihsvnfqkf`)
-
-- `auth.users.user_metadata` — owner: Supabase Auth. Fields edited here:
-  `full_name`, `name`, `preferred_username`, `avatar_url`, `picture`. Updated
-  via `supabase.auth.updateUser({ data })`; do NOT write to this table directly.
-- `users.profiles` — chat-visible profile, RLS: owner can update, all
-  authenticated users can SELECT (chat needs to see other users' display names
-  and avatars). Fields: `display_name` (NOT NULL, default `'User'`),
-  `avatar_url`, `status_text`, `is_online`, `last_seen_at`.
-- `users.user_form_profile` — RLS: owner-only on all four CRUD operations.
-  PK is `user_id`. JSONB columns: `phones`, `emails`, `social_handles`,
-  `emergency_contacts`, `images`, `custom_fields`. Scalar text + DOB columns
-  for legal name, addresses, work info.
-- `users.user_email_preferences` — NOT owned by this feature; lives in
-  `EmailTab` (`features/settings/tabs/EmailTab.tsx`) via
-  `/api/user/email-preferences`. Mentioned only so contributors know not to
-  re-implement it here.
-
-**Key types** (`features/user-profile/types.ts`)
-
-- `UserAccountData` / `UserAccountPatch` — auth metadata + chat profile slice.
-- `UserFormProfileData` / `UserFormProfilePatch` — full form profile shape.
-- `PhoneEntry`, `EmailEntry`, `SocialHandle`, `EmergencyContact`,
-  `ProfileImage`, `CustomFields` — JSONB row shapes.
-- `PROFILE_SECTION_IDS` / `ProfileSectionId` — stable DOM anchors on the
-  page; the settings sub-tab wrappers depend on these values.
-
-**JSONB normalization**
-
-- `normalizePhones`, `normalizeEmails`, `normalizeSocialHandles`,
-  `normalizeEmergencyContacts`, `normalizeImages`, `normalizeCustomFields` —
-  defensive read helpers. The DB has no CHECK constraints on these JSONB
-  arrays, so external writers (RPCs, agents) could in theory write malformed
-  entries. These helpers drop garbage instead of throwing.
-
----
-
-## Key flows
-
-### 1. User changes their display name from the Profile page
-
-1. User edits "Display name (chat)" field in the Display section.
-2. `setField("display_name", value)` (from `useUserProfile`) updates local
-   state and flips `dirty=true`.
-3. User clicks "Save changes" in the section footer.
-4. `save()` diffs local state vs. the last server snapshot and PATCHes only
-   the changed keys to `/api/user/profile`.
-5. Route updates `auth.users.user_metadata` via
-   `supabase.auth.updateUser({ data: {...} })` AND upserts `users.profiles`.
-6. Route echoes the canonical state back; hook calls
-   `dispatch(setUserMetadata({ fullName, name, preferredUsername, avatarUrl, picture }))`.
-7. Every component subscribing to `selectActiveUserName` / `selectUserAvatarUrl`
-   re-renders immediately. No page reload needed.
-
-### 2. Agent reads a user's shipping address before placing an order
-
-1. Agent server (Python) calls the user's MCP/internal API to fetch their
-   profile, OR an in-app agent component calls `useUserFormProfile()` and
-   reads `data.shipping_*`.
-2. If the user has never saved their form profile, `useUserFormProfile`
-   resolves to `EMPTY_FORM_PROFILE` — every field is `null` and every JSONB
-   array is `[]`. Agents must handle the empty case.
-
-### 3. User deep-links to the Identity sub-tab from the settings drawer
-
-1. User clicks "Identity" under "Profile" in the settings tree.
-2. `SettingsShell` activates the `account.identity` tab id and renders
-   `ProfileIdentityTab` (lazy).
-3. `ProfileIdentityTab` mounts `<UserProfilePage embedded
-   defaultSection={PROFILE_SECTION_IDS.identity} />`.
-4. The `useEffect` in `UserProfilePage` waits for both API loads to resolve
-   then calls `el.scrollIntoView({ behavior: "smooth", block: "start" })` on
-   `#profile-identity`.
-5. The user lands inside the Identity section ready to edit.
-
-### 4. Save fails because the database is unreachable
-
-1. PATCH returns non-2xx or throws.
-2. Hook's `sendPatch` catches the error, calls `toast.error(msg)`, and returns
-   `false` from `save()`.
-3. Local state is NOT touched — the user's edits remain in the form, dirty
-   flag still true, they can retry.
-
----
-
-## Invariants & gotchas
-
-- **Do NOT write to `auth.users.user_metadata` directly.** Always go through
-  `supabase.auth.updateUser({ data })`. Direct table writes won't update the
-  JWT and the `USER_UPDATED` auth event won't fire.
-- **After saving account fields, you MUST `dispatch(setUserMetadata(...))`.**
-  Without it the global header avatar/name won't refresh until the page is
-  reloaded. The hook handles this — if you write a new save path, replicate
-  it.
-- **`display_name` in `users.profiles` is `NOT NULL` with a default `'User'`.**
-  If the client clears it, the API route substitutes a fallback (auth
-  `full_name` → literal `'User'`) so the upsert never fails on the constraint.
-- **`organization_id` in `users.profiles` is required.** The profile API takes the
-  organization from `X-Organization-Id` (`ensureOrgIdServer`, which refuses
-  with the `organization_required` envelope when none is sent); it never writes a null organization or relies on an implicit database fill.
-- **`users.profiles` is publicly readable** (RLS qual = `true` on SELECT).
-  Don't put anything sensitive in `status_text` — every authenticated user can
-  read it. Address, phone, DOB, legal name, etc. all live on
-  `users.user_form_profile`, which has strict owner-only SELECT.
-- **`user_form_profile` rows are upserted, not inserted-then-updated.** The
-  table's PK is `user_id`. First save creates the row; subsequent saves
-  update it. Client code should treat "no row" and "row of nulls" identically.
-- **JSONB array normalization is defensive on read.** Malformed entries are
-  silently dropped. If you add a new field to `PhoneEntry`/`EmailEntry`/etc.,
-  extend the matching `normalize*` helper or it will not appear after a
-  round-trip.
-- **Section sub-tabs are five files, not a generic factory.** Each tab is a
-  lazy default export because the settings registry types require
-  `ComponentType<Record<string, never>>` (no props). We deliberately accepted
-  the duplication over a more clever abstraction.
-- **`idle` is a loading state.** Both profile hooks start at `idle` during SSR
-  and the browser's first render, then begin fetching in an effect. The page
-  renders only its stable loading shell until both sources settle, so hydrated
-  Redux identity and locale-formatted timestamps never enter pre-hydration
-  markup.
-- **Avatar upload is delegated to `features/image-manager/components/ProfilePhotoTab`.**
-  When that component runs, it calls `supabase.auth.updateUser({ data: {
-  avatar_url, picture } })` directly. After a successful upload the user's
-  Redux `userMetadata.picture` is updated by the matching `setUserMetadata`
-  dispatch only when triggered from this feature's save path; the
-  `ProfilePhotoTab` callsite still requires page reload to refresh other
-  surfaces. Future work: make `ProfilePhotoTab` dispatch `setUserMetadata`
-  too.
-- **Email is NOT editable here.** Changing the auth email requires Supabase
-  Auth's email change flow with reverification, which is out of scope.
-- **Editable lists never narrate their own absence.** Phones, additional
-  emails, social handles, and emergency contacts render one welcoming
-  “Add your first…” action when empty. Their section heading owns the name and
-  icon; the empty state must not repeat either. Activating that action creates
-  the first row and focuses its first field so keyboard users continue in
-  document order. The ordinary “Add…” control appears only after a row exists.
-
----
-
-## Related features
-
-- Depends on: `lib/redux/slices/userProfileSlice` (the `setUserMetadata`
-  action), `utils/supabase/server` (server client for the API routes),
-  `components/official/settings/*` (section + primitive UI),
-  `features/image-manager/components/ProfilePhotoTab` (avatar uploader).
-- Depended on by: agent flows that read a user's shipping/billing address,
-  agent-on-behalf-of-user forms that need legal name, the chat presence
-  feature (which reads `users.profiles`).
-- Cross-links: `features/settings/FEATURE.md`, `features/image-manager/FEATURE.md`.
-
----
-
-## Current work / migration state
-
-None — feature shipped in one PR (the same commit as this doc). No migration
-docs; no parallel implementation to retire. If a future change adds a
-`pronoun_set` enum column or pulls form-profile data into Redux, this section
-should describe the migration path.
-
----
-
-## Change log
-
-Newest first. Each entry: date, author/agent, one-line summary.
-
-- `2026-09-17` — claude: `/api/user/form-profile` PATCH names the organization
-  explicitly instead of casting past it. It reads the existing row's
-  `organization_id` and keeps it (a save never MOVES the profile to whichever
-  organization the caller is looking at); a first save with no row reads
-  `X-Organization-Id` off the request; with neither it refuses 400 with the
-  remedy rather than letting a database default choose. The
-  `patch as FormProfileInsert` cast is gone, so the table's required
-  `organization_id` is type-enforced again. NOTE: `useUserFormProfile` does not
-  send that header yet, so a brand-new profile's first save refuses until it
-  does.
-- `2026-08-21` — Codex: Stamped profile upserts with the session's canonical
-  personal organization after the live no-null organization ratchet.
-- `2026-08-17` — agent: Treat both hooks' initial `idle` state as loading so
-  `/settings/profile` server output stays stable through hydration; added the
-  SSR regression test and corrected current route/schema pointers.
-- `2026-08-17` — Codex: Replaced the four icon-plus-“No … yet” list states
-  with one welcoming first-item action, removed repeated Contact subsection
-  icons, and focused each newly created row for continuous keyboard entry.
-- `2026-05-13` — agent: Initial implementation. Two API routes
-  (`/api/user/profile`, `/api/user/form-profile`), two hooks, six form
-  sections, five settings registry sub-tabs. Replaces the broken read-only
-  `app/(transitional)/settings/profile/page.tsx`.
-
----
-
-> **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this
-> feature, update this file's status, add flows you introduced/removed, and
-> append to the Change log. Stale FEATURE.md cascades across parallel agents.
-> Treat doc updates with the same weight as code changes in the same PR.
+The canonical database is `https://db.matrxserver.com`; no project-reference URL belongs in this feature. Storing a shipping address does not establish an ordering/shipping integration.

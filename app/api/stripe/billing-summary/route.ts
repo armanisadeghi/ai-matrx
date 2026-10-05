@@ -137,14 +137,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ invoice: null });
     const stripeSubscription = await getStripe().subscriptions.retrieve(
       subscription.stripe_subscription_id,
-      {
-        expand: ["latest_invoice.payments.data.payment.payment_intent"],
-      },
     );
-    const latestInvoice =
-      typeof stripeSubscription.latest_invoice === "string"
-        ? null
-        : stripeSubscription.latest_invoice;
+    const latestInvoiceId = typeof stripeSubscription.latest_invoice === "string"
+      ? stripeSubscription.latest_invoice
+      : stripeSubscription.latest_invoice?.id;
+    // Retrieve at the invoice root: subscription-root expansion exceeds Stripe's four-level limit.
+    const latestInvoice = latestInvoiceId
+      ? await getStripe().invoices.retrieve(latestInvoiceId, {
+          expand: ["payments.data.payment.payment_intent"],
+        })
+      : null;
     const invoices = await getStripe().invoices.list({
       subscription: stripeSubscription.id,
       limit: 20,

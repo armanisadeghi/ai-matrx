@@ -4,16 +4,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { MarketingSite } from "@/features/marketing/types";
 import { sitemapSchema, siteConnectionOperation } from "./service";
 
@@ -28,7 +19,7 @@ export function SitemapControls({
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [removing, setRemoving] = useState<string | null>(null);
+  const [uncertain, setUncertain] = useState(false);
   async function operate(
     action: "list" | "submit" | "delete",
     sitemapUrl = "",
@@ -39,16 +30,18 @@ export function SitemapControls({
       const result = await siteConnectionOperation(
         site,
         "search-console/sitemaps",
-        { action, sitemap_url: sitemapUrl },
+        { action, sitemap_url: sitemapUrl, operation_id: crypto.randomUUID() },
         sitemapSchema,
         setMessage,
       );
       setReceipt(result);
+      setUncertain(result.state === "unknown");
       setMessage(
         result.message ??
           (result.state === "listed" ? "Sitemaps refreshed" : result.state),
       );
     } catch (error) {
+      if (action !== "list") setUncertain(true);
       setMessage(
         error instanceof Error ? error.message : "Search Console unavailable",
       );
@@ -71,7 +64,8 @@ export function SitemapControls({
         </Button>
         {receipt ? (
           <p className="text-sm break-all">
-            {receipt.property} · Connection {receipt.connection_id}
+            {receipt.property} ·{" "}
+            {receipt.account_name ?? "Connected Google account"}
           </p>
         ) : null}
         {message ? (
@@ -92,7 +86,9 @@ export function SitemapControls({
             onChange={(event) => setUrl(event.target.value)}
           />
           <Button
-            disabled={busy || !receipt?.write_available || !url.trim()}
+            disabled={
+              busy || uncertain || !receipt?.write_available || !url.trim()
+            }
             onClick={() => void operate("submit", url.trim())}
           >
             Submit
@@ -111,49 +107,33 @@ export function SitemapControls({
               <p className="text-muted-foreground">
                 {sitemap.isPending
                   ? "Pending processing"
-                  : "Processing complete"}{" "}
+                  : sitemap.isPending === false
+                    ? "Processing complete"
+                    : "Processing status unavailable"}{" "}
                 · Errors {sitemap.errors ?? "unknown"} · Last fetched{" "}
                 {sitemap.lastDownloaded ?? "not fetched"}
               </p>
             </div>
             <Button
               variant="outline"
-              disabled={busy || !receipt.write_available}
-              onClick={() => setRemoving(sitemap.path)}
+              disabled={busy || uncertain || !receipt.write_available}
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: "Remove sitemap?",
+                    description: `${sitemap.path} will be removed from Search Console.`,
+                    variant: "destructive",
+                    confirmLabel: "Remove",
+                    cancelLabel: "Cancel",
+                  })
+                )
+                  void operate("delete", sitemap.path);
+              }}
             >
               Remove
             </Button>
           </div>
         ))}
-        <AlertDialog
-          open={removing !== null}
-          onOpenChange={(open) => {
-            if (!open) setRemoving(null);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Remove sitemap from Search Console?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {removing} will be removed from the selected property. The
-                sitemap file and indexed pages remain unchanged.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  if (removing) void operate("delete", removing);
-                  setRemoving(null);
-                }}
-              >
-                Remove sitemap
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </CardContent>
     </Card>
   );

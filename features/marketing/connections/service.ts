@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
-import { postGoogleBackend } from "@/features/marketing/google/service";
+import { resolveServiceBaseUrl } from "@/lib/api/resolve-service-url";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { ensureOrganizationForRequest } from "@/lib/organization/organization-gate";
+import { parseHttpError } from "@/lib/api/errors";
+import { buildMatrxRequestUrl, sendMatrxRequest } from "@ai-matrx/agents/matrx";
 import { consumeStream } from "@/lib/api/stream-parser";
 import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
 import type { MarketingSite } from "@/features/marketing/types";
@@ -31,7 +35,13 @@ export const sourceSchema = z.object({
   connection_id: z.string().nullable(),
   resource_ref: z.string(),
   observed_at: z.string(),
-  basis: z.string(),
+  basis: z.enum([
+    "dns_zone",
+    "host_account",
+    "registrar",
+    "manual",
+    "brand_search",
+  ]),
   state: z.enum(["current", "stale"]),
   nameservers: z.array(z.string()),
   dns_records: z.array(
@@ -58,11 +68,11 @@ export const connectedSchema = z.object({
 export const reportSchema = z.object({
   canonical: z.string(),
   observed_at: z.string(),
-  status: z.string(),
+  status: z.enum(["pass", "fail", "error", "n_a"]),
   variants: z.array(
     z.object({
       url: z.string(),
-      outcome: z.string(),
+      outcome: z.enum(["pass", "fail", "error"]),
       reason: z.string(),
       duplicate: z.boolean().nullable(),
       similarity: z.number().nullable(),
@@ -80,9 +90,17 @@ export const sitemapSchema = z.object({
   request_id: z.string(),
   connection_id: z.string(),
   property: z.string(),
-  action: z.string(),
+  action: z.enum(["list", "submit", "delete"]),
+  account_name: z.string().nullable().optional(),
   observed_at: z.string(),
-  state: z.string(),
+  state: z.enum([
+    "listed",
+    "accepted",
+    "verified",
+    "rejected",
+    "unknown",
+    "unavailable",
+  ]),
   message: z.string().nullable(),
   write_available: z.boolean(),
   write_reason: z.string().nullable(),
@@ -137,7 +155,9 @@ export async function listDomainConnections() {
   const result = await createClient()
     .schema("users")
     .from("integration_connections")
-    .select("id,provider,account_name,status,metadata,last_verified_at")
+    .select(
+      "id,owner_type,owner_user_id,organization_id,provider,account_name,status,metadata,last_verified_at",
+    )
     .in("provider", [...domainProviders])
     .is("deleted_at", null);
   if (result.error) throw result.error;
@@ -150,12 +170,34 @@ export async function siteConnectionOperation<T>(
   schema: z.ZodType<T>,
   progress?: (message: string) => void,
 ): Promise<T> {
-  const response = await postGoogleBackend(
-    `/seo/sites/${site.id}/${path}`,
-    body,
-    "Site connection operation failed.",
-    site.organization_id,
+  const {
+    data: { session },
+  } = await createClient().auth.getSession();
+  if (!session?.access_token)
+    throw new Error("Sign in to manage site connections.");
+  const organizationId = await ensureOrganizationForRequest({
+    method: "POST",
+    organizationId: site.organization_id,
+  });
+  const response = await sendMatrxRequest(
+    buildMatrxRequestUrl(
+      resolveServiceBaseUrl("aidream"),
+      `/seo/sites/${site.id}/${path}`,
+    ),
+    {
+      method: "POST",
+      headers: applyOrganizationContextHeader(
+        {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+          Accept: "application/x-ndjson",
+        },
+        organizationId,
+      ),
+      body: JSON.stringify(body),
+    },
   );
+  if (!response.ok) throw await parseHttpError(response);
   let output: unknown;
   let error: string | null = null;
   await consumeStream(response, {
@@ -184,3 +226,16 @@ export async function siteConnectionOperation<T>(
     );
   return schema.parse(output);
 }
+
+export const propertiesSchema = z.object({
+  connection_id: z.string(),
+  account_name: z.string().nullable(),
+  observed_at: z.string(),
+  properties: z.array(
+    z.object({
+      property: z.string(),
+      permission_level: z.string().nullable(),
+      matches_site: z.boolean(),
+    }),
+  ),
+});

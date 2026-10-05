@@ -1,6 +1,10 @@
 "use client";
 
 import { DomainConnections } from "@/features/marketing/connections/DomainConnections";
+import {
+  propertiesSchema,
+  siteConnectionOperation,
+} from "@/features/marketing/connections/service";
 import { SitemapControls } from "@/features/marketing/connections/SitemapControls";
 
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
@@ -769,7 +773,9 @@ function SiteIntegrationsEditor({
       domain: site.domain,
     });
     if (refusal) {
-      toast.error("These integrations were not saved", { description: refusal });
+      toast.error("These integrations were not saved", {
+        description: refusal,
+      });
       return;
     }
     try {
@@ -813,65 +819,65 @@ function SiteIntegrationsEditor({
     /** The enabled state the click INTENDS, which is not always the draft's. */
     intendedEnabled: boolean = draft.googleSearchConsole.enabled,
   ): Promise<SiteIntegrationsDraft> => {
-      const gsc = draft.googleSearchConsole;
-      const unchanged =
-        JSON.stringify(gsc) === JSON.stringify(initial.googleSearchConsole);
-      // `intendedEnabled`, not `gsc.enabled`: pressing Enable is exactly when
-      // these three warnings are worth showing, and that is the click on which
-      // the draft still reads `enabled: false`.
-      if (
-        unchanged ||
-        !intendedEnabled ||
-        !gsc.credentialRef ||
-        !gsc.resourceRef
-      ) {
-        return draft;
-      }
-      if (isSiteDomainProperty(gsc.resourceRef, site.domain)) return draft;
-      const domainProperty = discoveredDomainProperty(
-        googleInventory.data?.resources ?? [],
-        gsc.credentialRef,
-        site.domain,
-      );
-      if (!domainProperty) return draft;
-      const swap = (): SiteIntegrationsDraft => {
-        const next = {
-          ...draft,
-          googleSearchConsole: {
-            ...gsc,
-            resourceRef: domainProperty.resource_ref,
-          },
-        };
-        setDraft(next);
-        return next;
-      };
-      const warnings: Array<{ title: string; description: string }> = [
-        {
-          title: "Use the domain property instead",
-          description: `Your Google account has the domain property ${domainProperty.resource_ref}, which covers every version of ${site.domain} (http, https, www and non-www). ${gsc.resourceRef} is only one version — binding it can silently miss traffic Google files under the others.`,
-        },
-        {
-          title: "Are you sure? The domain property is almost always right",
-          description: `Choosing ${gsc.resourceRef} means Search Console data for other versions of ${site.domain} will never reach this site. The domain property ${domainProperty.resource_ref} has no such blind spot.`,
-        },
-        {
-          title: "Final warning — this choice loses data",
-          description: `This is the last confirmation. Connecting ${gsc.resourceRef} instead of ${domainProperty.resource_ref} is almost never correct. Continue only if you have a specific reason this site must read a single URL version.`,
-        },
-      ];
-      for (const warning of warnings) {
-        const useDomain = await confirm({
-          title: warning.title,
-          description: warning.description,
-          variant: "destructive",
-          confirmLabel: "Use the domain property",
-          cancelLabel: "Keep my choice",
-        });
-        if (useDomain) return swap();
-      }
-      // Three separate refusals — the user is let through, as ruled.
+    const gsc = draft.googleSearchConsole;
+    const unchanged =
+      JSON.stringify(gsc) === JSON.stringify(initial.googleSearchConsole);
+    // `intendedEnabled`, not `gsc.enabled`: pressing Enable is exactly when
+    // these three warnings are worth showing, and that is the click on which
+    // the draft still reads `enabled: false`.
+    if (
+      unchanged ||
+      !intendedEnabled ||
+      !gsc.credentialRef ||
+      !gsc.resourceRef
+    ) {
       return draft;
+    }
+    if (isSiteDomainProperty(gsc.resourceRef, site.domain)) return draft;
+    const domainProperty = discoveredDomainProperty(
+      googleInventory.data?.resources ?? [],
+      gsc.credentialRef,
+      site.domain,
+    );
+    if (!domainProperty) return draft;
+    const swap = (): SiteIntegrationsDraft => {
+      const next = {
+        ...draft,
+        googleSearchConsole: {
+          ...gsc,
+          resourceRef: domainProperty.resource_ref,
+        },
+      };
+      setDraft(next);
+      return next;
     };
+    const warnings: Array<{ title: string; description: string }> = [
+      {
+        title: "Use the domain property instead",
+        description: `Your Google account has the domain property ${domainProperty.resource_ref}, which covers every version of ${site.domain} (http, https, www and non-www). ${gsc.resourceRef} is only one version — binding it can silently miss traffic Google files under the others.`,
+      },
+      {
+        title: "Are you sure? The domain property is almost always right",
+        description: `Choosing ${gsc.resourceRef} means Search Console data for other versions of ${site.domain} will never reach this site. The domain property ${domainProperty.resource_ref} has no such blind spot.`,
+      },
+      {
+        title: "Final warning — this choice loses data",
+        description: `This is the last confirmation. Connecting ${gsc.resourceRef} instead of ${domainProperty.resource_ref} is almost never correct. Continue only if you have a specific reason this site must read a single URL version.`,
+      },
+    ];
+    for (const warning of warnings) {
+      const useDomain = await confirm({
+        title: warning.title,
+        description: warning.description,
+        variant: "destructive",
+        confirmLabel: "Use the domain property",
+        cancelLabel: "Keep my choice",
+      });
+      if (useDomain) return swap();
+    }
+    // Three separate refusals — the user is let through, as ruled.
+    return draft;
+  };
 
   const saveWithGscPropertyGuard = async () => {
     if (visibleIssues.length) {
@@ -1112,11 +1118,13 @@ function SiteIntegrationsEditor({
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
               <Button
-                icon={googleConnectionOwner === "organization" ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <KeyRound />
-                )}
+                icon={
+                  googleConnectionOwner === "organization" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <KeyRound />
+                  )
+                }
                 variant="primary"
                 disabled={
                   googleConnectionOwner !== null ||
@@ -1128,9 +1136,11 @@ function SiteIntegrationsEditor({
                 Connect Search Console
               </Button>
               <Button
-                icon={googleConnectionOwner === "user" ? (
-                  <Loader2 className="animate-spin" />
-                ) : null}
+                icon={
+                  googleConnectionOwner === "user" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : null
+                }
                 variant="outline"
                 disabled={
                   googleConnectionOwner !== null ||
@@ -1233,8 +1243,40 @@ function SiteIntegrationsEditor({
             ))}
           </div>
 
-          <SitemapControls site={site} />
-          <DomainConnections />
+          {!reviewMode ? (
+            <>
+              <Button
+                variant="outline"
+                disabled={!draft.googleSearchConsole.credentialRef}
+                onClick={async () => {
+                  try {
+                    const result = await siteConnectionOperation(
+                      site,
+                      "search-console/properties",
+                      {
+                        connection_id: draft.googleSearchConsole.credentialRef,
+                      },
+                      propertiesSchema,
+                    );
+                    await googleInventory.refetch();
+                    toast.success(
+                      `${result.properties.length} Search Console properties refreshed`,
+                    );
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Property refresh unavailable",
+                    );
+                  }
+                }}
+              >
+                Refresh Search Console properties
+              </Button>
+              <SitemapControls site={site} />
+              <DomainConnections />
+            </>
+          ) : null}
 
           {reviewMode ? <SiteAnalyticsCard site={site} /> : null}
 
@@ -1268,7 +1310,9 @@ function SiteIntegrationsEditor({
                 icon={<Plus />}
                 variant="outline"
                 onClick={addCustomProvider}
-              > Add provider
+              >
+                {" "}
+                Add provider
               </Button>
             </div>
             {draft.customProviders.length ? (
@@ -1340,11 +1384,13 @@ function SiteIntegrationsEditor({
               {dirty ? "Unsaved changes" : "All integration changes saved"}
             </p>
             <Button
-              icon={update.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Save />
-              )}
+              icon={
+                update.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Save />
+                )
+              }
               variant="primary"
               disabled={!dirty || visibleIssues.length > 0 || update.isPending}
               onClick={() => void saveWithGscPropertyGuard()}
@@ -1427,9 +1473,11 @@ function Ga4CampaignPanel({
               </span>
             </label>
             <Button
-              icon={authorizingOwner === "user" ? (
-                <Loader2 className="animate-spin" />
-              ) : null}
+              icon={
+                authorizingOwner === "user" ? (
+                  <Loader2 className="animate-spin" />
+                ) : null
+              }
               variant="outline"
               className="w-full"
               disabled={!disclosureAccepted || authorizingOwner !== null}
@@ -1470,11 +1518,9 @@ function Ga4CampaignPanel({
       ) : null}
       {diagnosis?.blocking ? (
         <Button
-          icon={recovering ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <RefreshCw />
-          )}
+          icon={
+            recovering ? <Loader2 className="animate-spin" /> : <RefreshCw />
+          }
           variant="outline"
           className="w-full"
           disabled={recovering || (needsAuthorization && !disclosureAccepted)}
@@ -1485,9 +1531,11 @@ function Ga4CampaignPanel({
       ) : (
         <div className="grid gap-1.5">
           <Button
-            icon={authorizingOwner === "organization" ? (
-              <Loader2 className="animate-spin" />
-            ) : null}
+            icon={
+              authorizingOwner === "organization" ? (
+                <Loader2 className="animate-spin" />
+              ) : null
+            }
             variant="primary"
             className="w-full"
             disabled={!disclosureAccepted || authorizingOwner !== null}
@@ -1496,9 +1544,11 @@ function Ga4CampaignPanel({
             Authorize for this organization
           </Button>
           <Button
-            icon={authorizingOwner === "user" ? (
-              <Loader2 className="animate-spin" />
-            ) : null}
+            icon={
+              authorizingOwner === "user" ? (
+                <Loader2 className="animate-spin" />
+              ) : null
+            }
             variant="outline"
             className="w-full"
             disabled={!disclosureAccepted || authorizingOwner !== null}
@@ -1594,11 +1644,7 @@ function GscSyncRow({
               : "Connect a property to enable sync"}
         </p>
         <Button
-          icon={syncing ? (
-            <Radio className="text-primary" />
-          ) : (
-            <RefreshCw />
-          )}
+          icon={syncing ? <Radio className="text-primary" /> : <RefreshCw />}
           variant="outline"
           className="shrink-0"
           disabled={!syncing && (!connected || blocked)}
@@ -1750,18 +1796,25 @@ function BuiltInProviderCard({
             {issues.length ? (
               <ul className="space-y-0.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-[10px] leading-4 text-foreground">
                 {issues.map((issue, rowIndex, allRows) => (
-                  <li key={issue}>{issue}{rowIndex === allRows.length - 1 && <ErrorAlchemyMenu error={allRows} />}</li>
+                  <li key={issue}>
+                    {issue}
+                    {rowIndex === allRows.length - 1 && (
+                      <ErrorAlchemyMenu error={allRows} />
+                    )}
+                  </li>
                 ))}
               </ul>
             ) : null}
             <Button
-              icon={saving ? (
-                <Loader2 className="animate-spin" />
-              ) : dirty ? (
-                <Save />
-              ) : (
-                <CheckCircle2 />
-              )}
+              icon={
+                saving ? (
+                  <Loader2 className="animate-spin" />
+                ) : dirty ? (
+                  <Save />
+                ) : (
+                  <CheckCircle2 />
+                )
+              }
               variant="primary"
               className="w-full"
               disabled={providerActionDisabled({
@@ -1911,21 +1964,16 @@ function UrlChangeIntakeCard({
           </p>
           {setup ? (
             <>
-              <Input
-                readOnly
-                value={setup.webhookUrl}
-              />
+              <Input readOnly value={setup.webhookUrl} />
               <pre className="max-h-40 overflow-auto rounded bg-background p-2 text-[9px]">
                 {exampleBody}
               </pre>
             </>
           ) : null}
           <Button
-            icon={configuring ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <KeyRound />
-            )}
+            icon={
+              configuring ? <Loader2 className="animate-spin" /> : <KeyRound />
+            }
             variant={configured ? "outline" : "primary"}
             disabled={configuring}
             onClick={onConfigure}
@@ -1948,11 +1996,13 @@ function UrlChangeIntakeCard({
             </p>
           </div>
           <Button
-            icon={evidenceQuery.isFetching ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <RefreshCw />
-            )}
+            icon={
+              evidenceQuery.isFetching ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )
+            }
             variant="quiet"
             disabled={evidenceQuery.isFetching}
             onClick={() => void evidenceQuery.refetch()}
@@ -2074,8 +2124,8 @@ function ProviderReferenceFields({
     : unorderedResources;
   const nonDomainChosen = Boolean(
     domainProperty &&
-      value.resourceRef &&
-      value.resourceRef !== domainProperty.resource_ref,
+    value.resourceRef &&
+    value.resourceRef !== domainProperty.resource_ref,
   );
   // THE PRE-FLIGHT. Search Console only: GA4 properties are numeric ids with
   // no URL shape to compare against a site.
@@ -2201,7 +2251,10 @@ function ProviderReferenceFields({
                 <Button
                   variant="outline"
                   onClick={() =>
-                    onChange({ ...value, resourceRef: preflightFix.resource_ref })
+                    onChange({
+                      ...value,
+                      resourceRef: preflightFix.resource_ref,
+                    })
                   }
                 >
                   Use {preflightFix.resource_ref}
@@ -2284,7 +2337,8 @@ function CustomProviderRow({
           <Label htmlFor={`${prefix}-key`} className="text-[11px]">
             Provider key
           </Label>
-          <Input mono
+          <Input
+            mono
             id={`${prefix}-key`}
             value={value.key}
             data-identifier
@@ -2322,7 +2376,8 @@ function CustomProviderRow({
           <Label htmlFor={`${prefix}-credential`} className="text-[11px]">
             Credential reference UUID
           </Label>
-          <Input mono
+          <Input
+            mono
             id={`${prefix}-credential`}
             value={value.credentialRef}
             placeholder="00000000-0000-4000-8000-000000000000"
@@ -2337,7 +2392,8 @@ function CustomProviderRow({
           <Label htmlFor={`${prefix}-resource`} className="text-[11px]">
             Resource reference
           </Label>
-          <Input mono
+          <Input
+            mono
             id={`${prefix}-resource`}
             value={value.resourceRef}
             placeholder="resource:site-id"

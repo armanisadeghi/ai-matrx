@@ -166,10 +166,12 @@ export class MemorySpacesStore implements SpacesStore {
   }
 }
 
-let shared: MemorySpacesStore | null = null;
+const KEY = "__matrxSpacesMemoryStore";
 
-/** One store per tab, so the tree and every open Space agree across client navigations. */
+/** One store per tab, so the tree and every open Space agree across client navigations. Kept on
+ *  globalThis so a Fast Refresh that re-evaluates this module does not wipe the tab's edits. */
 export function getMemorySpacesStore(): MemorySpacesStore {
-  shared ??= new MemorySpacesStore(seedSpaces());
-  return shared;
+  const g = globalThis as typeof globalThis & { [KEY]?: MemorySpacesStore };
+  g[KEY] ??= new MemorySpacesStore(seedSpaces());
+  return g[KEY];
 }

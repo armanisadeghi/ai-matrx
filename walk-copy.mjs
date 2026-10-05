@@ -15,7 +15,7 @@ await p.waitForTimeout(7000);
 if (phone) log("phone initial buttons", JSON.stringify((await labels()).slice(0, 60)));
 await shot("00-start");
 const create = p.getByRole("button", { name: /^New note in Scratch$/i }).first();
-await create.click({ timeout: 90000 });
+try { await create.click({ timeout: 45000 }); } catch (e) { log("scratch tile missing; buttons:", JSON.stringify((await labels()).filter(l => /new/i.test(l)))); await shot("00-fail"); await p.getByRole("button", { name: /^New note$/i }).first().click({ timeout: 45000 }); }
 await p.waitForTimeout(3000);
 if (await p.getByText("Which organization is this for?").count()) { await p.getByRole("dialog").getByText(/admin.s Workspace/).first().click(); await p.getByRole("button", { name: "Continue" }).click(); await p.waitForTimeout(5000); }
 const stamp = `Copy walk ${tag}`;
@@ -28,20 +28,23 @@ await shot("01-note");
 // 1. the bar's one-click Copy
 const trig = p.locator('button[aria-label^="Copy, transform or export Note \\""]').last();
 await trig.scrollIntoViewIfNeeded().catch(() => {});
-await trig.click(); await p.waitForTimeout(600); await shot("01b-after-click"); await p.waitForTimeout(1900);
-const c1 = await clip().catch(e => ({ error: String(e) }));
-log("BAR COPY clipboard types", JSON.stringify(Object.keys(c1)));
-log("BAR COPY text/plain", JSON.stringify(c1["text/plain"]));
-log("BAR COPY text/html", JSON.stringify((c1["text/html"] || "").slice(0, 400)));
-// 2. panel order
+const hoverPanel = async () => { const bb = await p.locator(".matrx-alchemy-palette").last().boundingBox(); if (bb) await p.mouse.move(bb.x + bb.width / 2, bb.y + 40); };
+await trig.click(); await p.waitForTimeout(700); await hoverPanel();
 const tiles = await p.evaluate(() => [...document.querySelectorAll(".matrx-alchemy-palette-grid .matrx-alchemy-palette-tile")].map(t => t.getAttribute("aria-label")));
 log("PANEL tiles", JSON.stringify(tiles));
 await shot("02-copy-as-panel");
-// Copy markdown / Copy text from panel
+const c1 = await clip().catch(e => ({ error: String(e) }));
+log("BAR COPY clipboard types", JSON.stringify(Object.keys(c1)));
+log("BAR COPY text/plain", JSON.stringify(c1["text/plain"]));
+log("BAR COPY text/html", JSON.stringify((c1["text/html"] || "").slice(0, 500)));
+log("BAR COPY html has strong/li/a", /<strong/.test(c1["text/html"]||"") , /<li/.test(c1["text/html"]||""), /<a /.test(c1["text/html"]||""));
 await p.getByRole("button", { name: "Copy markdown", exact: true }).click(); await p.waitForTimeout(1500);
 const c2 = await clip().catch(e => ({ error: String(e) }));
 log("PANEL Copy markdown", JSON.stringify(c2));
-await trig.click(); await p.waitForTimeout(1500);
+await p.waitForTimeout(3500);
+await trig.click({ force: true }); await p.waitForTimeout(900);
+if (!(await p.locator(".matrx-alchemy-palette").count())) { log("panel did not reopen; clicking again"); await trig.click({ force: true }); await p.waitForTimeout(900); }
+await hoverPanel();
 await p.getByRole("button", { name: "Copy text", exact: true }).click(); await p.waitForTimeout(1500);
 const c3 = await clip().catch(e => ({ error: String(e) }));
 log("PANEL Copy text", JSON.stringify(c3));

@@ -247,9 +247,9 @@ export async function restoreAccount(input: { userId: string; requestId: string;
     throw new AccountClosureError("Recovery link is invalid or has already been used.", 400);
   }
   const claimed = await claimJournal(input.userId, journal);
-  const claimedRecoverable = claimed.journal.state === "closed" || (claimed.journal.state === "failed" && !!claimed.journal.checkpoints.access_disable_started);
-  if (claimed.journal.requestId !== input.requestId || !claimedRecoverable) throw new AccountClosureError("Recovery link is invalid or has already been used.", 400);
   try {
+    const claimedRecoverable = claimed.journal.state === "closed" || (claimed.journal.state === "failed" && !!claimed.journal.checkpoints.access_disable_started);
+    if (claimed.journal.requestId !== input.requestId || !claimedRecoverable) throw new AccountClosureError("Recovery link is invalid or has already been used.", 400);
     const working = claimed.journal;
     if (!recoveryTokenMatches(input.token, working.recoveryTokenHash)) throw new AccountClosureError("Recovery link is invalid or has already been used.", 400);
     if (!working.checkpoints.recovery_unbanned) {

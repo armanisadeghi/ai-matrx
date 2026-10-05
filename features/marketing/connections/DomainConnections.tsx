@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import Link from "next/link";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,6 +36,8 @@ import {
 export function DomainConnections() {
   const { site } = useMarketingSite();
   const queryClient = useQueryClient();
+  const userId = useAppSelector(selectUserId);
+  const organizationIds = useAppSelector(selectOrganizationIds);
   const config = domainConfig(site);
   const [provider, setProvider] =
     useState<(typeof domainProviders)[number]>("cloudflare");
@@ -50,8 +55,17 @@ export function DomainConnections() {
     },
   );
   const accounts = useQuery({
-    queryKey: ["domainConnections"],
+    queryKey: ["domainConnections", userId],
     queryFn: listDomainConnections,
+    enabled: Boolean(userId),
+    select: (rows) =>
+      rows.filter((row) =>
+        row.owner_user_id !== null
+          ? row.owner_user_id === userId
+          : row.owner_type === "organization" &&
+            row.organization_id !== null &&
+            organizationIds.includes(row.organization_id),
+      ),
   });
   const vault = useQuery({
     queryKey: ["domainVaultCredentials"],
@@ -74,6 +88,13 @@ export function DomainConnections() {
       (item) =>
         item.capabilities.can_use &&
         item.status === "active" &&
+        ![
+          "website_login",
+          "credential_login",
+          "oauth_token_set",
+          "remote_mcp_oauth",
+          "native_passkey",
+        ].includes(item.definition_key) &&
         (!item.provider_key || item.provider_key === provider) &&
         requiredFields[provider].every((key) =>
           item.fields.some(
@@ -95,6 +116,10 @@ export function DomainConnections() {
         error instanceof Error ? error.message : "Domain operation failed",
       );
     } finally {
+      await accounts.refetch();
+      await queryClient.invalidateQueries({
+        queryKey: marketingKeys.site(site.id),
+      });
       setBusy(false);
     }
   }
@@ -151,12 +176,19 @@ export function DomainConnections() {
                   connectedSchema,
                   setMessage,
                 );
-                await saveDomainConfig(site, {
-                  ...config,
-                  connection_ids: [
-                    ...new Set([...config.connection_ids, result.id]),
-                  ],
-                });
+                try {
+                  await saveDomainConfig(site, {
+                    ...config,
+                    connection_ids: [
+                      ...new Set([...config.connection_ids, result.id]),
+                    ],
+                  });
+                } catch {
+                  setMessage(
+                    "Account connected. Attach it below after refreshing this site.",
+                  );
+                  return;
+                }
                 setMessage(
                   `${providerLabels[provider]} connected · ${result.inventory.domains.length} domains found`,
                 );
@@ -166,7 +198,7 @@ export function DomainConnections() {
             Connect
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/settings/vault">Open Vault</Link>
+            <Link href="/vault">Open Vault</Link>
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">

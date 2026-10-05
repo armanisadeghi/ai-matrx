@@ -359,6 +359,7 @@ export function BillingSummary({ scope }: { scope: BillingScope }) {
           </Button>
         ) : null}
         <SubscriptionControls
+          hasPurchasedSubscription
           livemode={livemode}
           scope={
             scope.kind === "personal"

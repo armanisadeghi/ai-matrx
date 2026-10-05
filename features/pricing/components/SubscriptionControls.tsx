@@ -18,21 +18,27 @@ export function SubscriptionControls({
   livemode,
   scope = { kind: "personal" },
   label = "Manage subscription",
+  hasPurchasedSubscription = false,
 }: {
   livemode: boolean;
   scope?: SubscriptionScope;
   label?: string;
+  hasPurchasedSubscription?: boolean;
 }) {
   const userId = useAppSelector(selectUserId);
   if (!userId) return null;
-  return <AccountSubscriptionControls key={`${userId}:${livemode}:${scope.kind}:${scope.kind === "organization" ? scope.organizationId : ""}`} userId={userId} livemode={livemode} scope={scope} label={label} />;
+  return <AccountSubscriptionControls key={`${userId}:${livemode}:${scope.kind}:${scope.kind === "organization" ? scope.organizationId : ""}:${hasPurchasedSubscription}`} userId={userId} livemode={livemode} scope={scope} label={label} hasPurchasedSubscription={hasPurchasedSubscription} />;
 }
 
-function AccountSubscriptionControls({ userId, livemode, scope, label }: { userId: string; livemode: boolean; scope: SubscriptionScope; label: string }) {
-  const [hasCustomer, setHasCustomer] = useState(false);
+function AccountSubscriptionControls({ userId, livemode, scope, label, hasPurchasedSubscription }: { userId: string; livemode: boolean; scope: SubscriptionScope; label: string; hasPurchasedSubscription: boolean }) {
+  const [hasCustomer, setHasCustomer] = useState(hasPurchasedSubscription);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   useEffect(() => {
+    // A verified purchased row already establishes the management affordance.
+    // The portal validates its own fresh payer; a second client presence read
+    // must not hide management while slow, filtered or unavailable.
+    if (hasPurchasedSubscription) return;
     let active = true;
     const customers = createClient().schema("billing").from("customer").select("id").eq("livemode", livemode);
     const ownedCustomer = scope.kind === "personal"
@@ -49,7 +55,7 @@ function AccountSubscriptionControls({ userId, livemode, scope, label }: { userI
     return () => {
       active = false;
     };
-  }, [userId, livemode, scope]);
+  }, [userId, livemode, scope, hasPurchasedSubscription]);
 
   async function manage() {
     setBusy(true);

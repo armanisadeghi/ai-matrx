@@ -8,7 +8,6 @@ import { SideMenuExtension } from "@blocknote/core/extensions";
 import { BlockColorsItem, useBlockNoteEditor, useComponentsContext, useExtensionState, usePortalElement } from "@blocknote/react";
 import {
   ArrowRightLeft,
-  ChevronRight,
   Code,
   Copy,
   CornerUpRight,
@@ -48,6 +47,11 @@ export const TURN_INTO: Array<{ label: string; icon: React.ReactNode; type: stri
   { label: "Quote", icon: <Quote size={I} />, type: "quote" },
   { label: "Callout", icon: <Lightbulb size={I} />, type: "callout" },
 ];
+
+/** Radix sub-menus stay open after an item that re-renders the block; Escape closes the whole stack. */
+function closeMenus() {
+  document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+}
 
 export interface BlockMenuActions {
   spaceId: string;
@@ -94,6 +98,7 @@ export function makeBlockMenu(actions: BlockMenuActions) {
                     editor.transact(() => {
                       for (const id of targets()) editor.updateBlock(id, { type: item.type, props: item.props } as never);
                     });
+                    closeMenus();
                   }}
                 >
                   {item.label}
@@ -122,7 +127,6 @@ export function makeBlockMenu(actions: BlockMenuActions) {
           <span className="spaces-menu-label">
             <Palette size={I} />
             Color
-            <ChevronRight size={14} className="ml-auto opacity-60" />
           </span>
         </BlockColorsItem>
       </C.Generic.Menu.Dropdown>

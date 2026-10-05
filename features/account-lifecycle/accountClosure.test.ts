@@ -101,7 +101,7 @@ describe("account lifecycle orchestration", () => {
     sendEmail.mockResolvedValue({ success: false });
     await expect(closeAccount({ ...input, metadata: { account_closure: previous } })).rejects.toMatchObject({ status: 502 });
     expect(journal!.requestId).not.toBe("old"); expect(journal!.checkpoints).not.toHaveProperty("restored");
-    journal = null; leaseConflict = true;
+    journal = null; leaseConflict = true; sendEmail.mockClear();
     await expect(closeAccount(input)).rejects.toMatchObject({ status: 409 }); expect(sendEmail).not.toHaveBeenCalled();
   });
 });

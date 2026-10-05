@@ -31,6 +31,7 @@ export function QuickFind() {
   const [active, setActive] = useState(0);
   const [docs, setDocs] = useState<SpaceDoc[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Cmd+K / Cmd+P anywhere in Spaces.
   useEffect(() => {
@@ -39,12 +40,14 @@ export function QuickFind() {
         // Inside the editor Cmd+K is "add link" when text is selected (Notion does the same).
         const sel = window.getSelection();
         if (e.key === "k" && sel && !sel.isCollapsed && (e.target as HTMLElement | null)?.closest?.(".bn-editor")) return;
+        // Inside Spaces, Cmd+K is Spaces' own quick find (Notion), not the app-wide search.
         e.preventDefault();
+        e.stopImmediatePropagation();
         openQuickFind("jump");
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
   }, [openQuickFind]);
 
   useEffect(() => {
@@ -85,12 +88,18 @@ export function QuickFind() {
 
   return (
     <Dialog open={quickFind.open} onOpenChange={(o) => (o ? null : closeQuickFind())}>
-      <DialogContent className="spaces-quickfind top-[12vh] max-w-[620px] translate-y-0 gap-0 overflow-hidden p-0" showCloseButton={false}>
+      <DialogContent className="spaces-quickfind top-[12vh] max-w-[620px] translate-y-0 gap-0 overflow-hidden p-0" showCloseButton={false}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          inputRef.current?.focus();
+        }}
+      >
         <DialogTitle className="sr-only">{quickFind.mode === "pick" ? "Choose a page" : "Search"}</DialogTitle>
         <div className="flex items-center gap-2 border-b border-border px-4">
           <Search size={18} className="shrink-0 text-muted-foreground" />
           <Input
             variant="bare"
+            ref={inputRef}
             autoFocus
             value={query}
             onChange={(e) => {

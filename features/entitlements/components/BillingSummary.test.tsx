@@ -250,6 +250,23 @@ describe("BillingSummary account switching", () => {
     });
   });
 
+  it.each([
+    {},
+    { invoice: { id: 4, url: null, status: "open", requiresAction: false } },
+    { invoice: null, supportInvoices: "invalid" },
+    { invoice: null, supportInvoices: [{ id: "in_bad", status: "paid", number: null, created: "yesterday" }] },
+  ])("shows a recoverable error for malformed invoice data: %j", async (payload) => {
+    mockRead.mockResolvedValue(activeRead);
+    mockFetch.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => Promise.resolve({
+      ok: true, json: async () => init?.method === "POST" ? payload : { livemode: true },
+    }));
+    await act(async () => root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />));
+    await act(async () => {});
+    expect(host.textContent).toContain("Billing invoice data could not be read. Refresh billing.");
+    expect(host.textContent).not.toContain("Pay invoice");
+    expect(host.textContent).toContain("Billing support");
+  });
+
   it("keeps support reachable after a failed billing read without inventing subscription context", async () => {
     mockRead.mockResolvedValue({
       ok: false,

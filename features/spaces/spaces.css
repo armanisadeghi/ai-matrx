@@ -1021,3 +1021,22 @@
   letter-spacing: normal;
   line-height: 1.3;
 }
+
+.spaces-block-menu,
+.spaces-block-menu ~ .bn-menu-dropdown {
+  min-width: 265px;
+}
+.spaces-block-menu .bn-menu-item {
+  white-space: nowrap;
+}
+.bn-menu-dropdown:has(> .bn-menu-item) {
+  min-width: 200px;
+}
+
+/* Before the phone check resolves, never paint the desktop sidebar on a phone. */
+@media (max-width: 767px) {
+  .spaces-sidebar,
+  .spaces-peek-zone {
+    display: none;
+  }
+}

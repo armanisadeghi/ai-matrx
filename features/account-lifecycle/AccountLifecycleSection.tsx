@@ -65,7 +65,7 @@ export function AccountLifecycleSection() {
   };
 
   return <SettingsSection title="Account closure" icon={AlertTriangle} description="Close access; retained data remains recoverable.">
-    <div className="space-y-3">
+    <div className="space-y-3 p-4">
       {state?.state === "closed" ? <p className="text-sm text-muted-foreground">Closed accounts restore from their recovery email.</p> : <p className="text-sm text-muted-foreground">Personal subscriptions end before access closes.</p>}
       <p className="text-sm text-muted-foreground"><Link href="/organizations" className="underline">Manage shared ownership before closing.</Link></p>
       <p className="text-sm text-muted-foreground">No refunds are promised.</p>
