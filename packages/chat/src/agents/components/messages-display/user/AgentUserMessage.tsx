@@ -13,7 +13,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { EditInPlace } from "@ai-matrx/chat/host/ui-slots";
@@ -63,7 +62,7 @@ import {
   shortId,
 } from "../../../redux/execution-system/messages/transcript-journal";
 import { selectIsSuperAdmin } from "../../../../host/identity";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export function AgentUserMessageContent({
   conversationId,
@@ -452,7 +451,7 @@ export function AgentUserMessage({
             isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
         >
-          <ControlButton variant="outline" icon={<ChevronUp />} onClick={(e) => {
+          <Button variant="outline" icon={<ChevronUp />} onClick={(e) => {
               e.stopPropagation();
               setIsCollapsed(true);
             }} title="Collapse" aria-label="Collapse" />
@@ -579,13 +578,11 @@ export function AgentUserMessage({
               <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-muted via-muted/80 to-transparent pointer-events-none" />
               <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsCollapsed(false);
                   }}
-                  className="h-6 w-6 p-0 rounded-full bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   title="Expand message"
                 >
                   <ChevronDown className="w-4 h-4" />

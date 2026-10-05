@@ -18,7 +18,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@ai-matrx/chat/host/ui-slots";
 import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 import {
@@ -40,7 +39,7 @@ import {
   SORT_MODE_OPTIONS,
   type UseAgentMemoriesReturn,
 } from "../hooks/useAgentMemories";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const TIER_CHIP_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
   high: "bg-primary/15 text-primary",
@@ -103,7 +102,7 @@ function MemoryRow({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <ControlButton variant="quiet" icon={<MoreHorizontal />} aria-label="Memory options" className="absolute right-1 top-1/2 shrink-0 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100" />
+          <Button variant="quiet" icon={<MoreHorizontal />} aria-label="Memory options" className="absolute right-1 top-1/2 shrink-0 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="right">
           <DropdownMenuItem
@@ -147,9 +146,7 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
       <div className="shrink-0 p-2">
         <Button
           type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 w-full justify-start gap-2 text-xs"
+          variant="outline" className="w-full"
           onClick={() => setSelectedId(NEW_MEMORY_ID)}
         >
           <Plus className="h-3.5 w-3.5" />
@@ -182,7 +179,7 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <ControlButton variant="quiet" icon={<ArrowUpDown />}>{sortLabel}</ControlButton>
+            <Button variant="quiet" icon={<ArrowUpDown />}>{sortLabel}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {SORT_MODE_OPTIONS.map((option) => (

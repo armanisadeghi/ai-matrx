@@ -6,7 +6,6 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
 import { Minus, Plus } from "lucide-react";
 import { variableRunLabel } from "@ai-matrx/agents";
 import { cn } from "@ai-matrx/design-system";
@@ -28,7 +27,7 @@ import { setUserVariableValue } from "../../../redux/execution-system/instance-v
 import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ============================================================================
 // TYPES
@@ -410,15 +409,12 @@ function GuidedNumber({
     <div>
       <div className="flex items-center justify-center gap-3">
         <Button
-          type="button"
           variant="outline"
-          size="lg"
+          icon={<Minus />}
+          aria-label="Decrease"
           onClick={() => canDec && onChange((num - step).toString())}
           disabled={!canDec}
-          className="h-12 w-12 p-0 rounded-full"
-        >
-          <Minus className="w-5 h-5" />
-        </Button>
+        />
         <div className="flex items-center justify-center min-w-[120px]">
           <Input
             type="text"
@@ -432,15 +428,12 @@ function GuidedNumber({
           />
         </div>
         <Button
-          type="button"
           variant="outline"
-          size="lg"
+          icon={<Plus />}
+          aria-label="Increase"
           onClick={() => canInc && onChange((num + step).toString())}
           disabled={!canInc}
-          className="h-12 w-12 p-0 rounded-full"
-        >
-          <Plus className="w-5 h-5" />
-        </Button>
+        />
       </div>
       <InlineCustomInput
         value=""
@@ -823,7 +816,7 @@ export function AgentVariablesGuided({
           {/* Row 1: progress dots + title + skip */}
           <div className="flex items-center gap-2">
             {progressDots}
-            <ControlButton variant="quiet" onClick={handleSkipAll}>Skip questions</ControlButton>
+            <Button variant="quiet" onClick={handleSkipAll}>Skip questions</Button>
           </div>
           {/* Row 2: description (only when present) */}
           <p className="mt-1.5 text-xs text-muted-foreground leading-snug break-words min-w-0 w-full">
@@ -855,16 +848,16 @@ export function AgentVariablesGuided({
 
         {/* Navigation — always visible, never scrolls */}
         <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 shrink-0">
-          <ControlButton variant="quiet" icon={<ChevronLeft />} onClick={goPrev} disabled={activeIndex === 0}>Prev</ControlButton>
+          <Button variant="quiet" icon={<ChevronLeft />} onClick={goPrev} disabled={activeIndex === 0}>Prev</Button>
 
           <span className="text-xs text-muted-foreground">
             {activeIndex + 1} of {total}
           </span>
 
           {activeIndex < total - 1 ? (
-            <ControlButton variant="quiet" tone="primary" iconEnd={<ChevronRight />} onClick={goNext}>Next</ControlButton>
+            <Button variant="quiet" tone="primary" iconEnd={<ChevronRight />} onClick={goNext}>Next</Button>
           ) : (
-            <ControlButton variant="quiet" tone="primary" icon={<Check />} iconEnd={<ChevronRight />} onClick={handleSkipAll}>Done</ControlButton>
+            <Button variant="quiet" tone="primary" icon={<Check />} iconEnd={<ChevronRight />} onClick={handleSkipAll}>Done</Button>
           )}
         </div>
       </div>

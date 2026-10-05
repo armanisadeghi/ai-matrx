@@ -20,9 +20,7 @@ import {
   Loader2,
   Square,
 } from "lucide-react";
-import {
-  Button,
-  Tooltip,
+import { Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@ai-matrx/design-system";
@@ -52,7 +50,7 @@ import {
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { MicDeviceMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -400,7 +398,7 @@ function ComposerSendButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <ControlButton variant="quiet" icon={<CornerDownLeft />} onClick={onSend} disabled={disabled} aria-label={name} className="shrink-0" />
+        <Button variant="quiet" icon={<CornerDownLeft />} onClick={onSend} disabled={disabled} aria-label={name} className="shrink-0" />
       </TooltipTrigger>
       <TooltipContent side="top" align="end" className="flex flex-col gap-1 py-1.5">
         {voiceBusy ? (

@@ -30,8 +30,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
-import { Chip, Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Chip, Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
@@ -302,7 +301,7 @@ function BoundChip({
           </button>
         </PopoverTrigger>
         {activeScopeId && (
-          <ControlButton variant="quiet" icon={<X />} onClick={handleRemoveScope} aria-label={`Stop using ${scopeLabel}`} title={`Stop using ${scopeLabel} — ${humanizeIdentifier(info.name)} goes back to a normal input`} className="shrink-0" />
+          <Button variant="quiet" icon={<X />} onClick={handleRemoveScope} aria-label={`Stop using ${scopeLabel}`} title={`Stop using ${scopeLabel} — ${humanizeIdentifier(info.name)} goes back to a normal input`} className="shrink-0" />
         )}
       </span>
       <PopoverContent
@@ -339,9 +338,7 @@ function BoundChip({
           {hasUserOverride && (
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
-              className="w-full"
+              variant="quiet" className="w-full"
               onClick={handleRevert}
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
@@ -352,9 +349,7 @@ function BoundChip({
           {canWriteBack && (
             <Button
               type="button"
-              size="sm"
-              variant="outline"
-              className="w-full"
+              variant="outline" className="w-full"
               onClick={handleWriteBack}
               disabled={saving}
             >
@@ -366,9 +361,7 @@ function BoundChip({
           {activeScopeId && (
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
-              className="w-full text-muted-foreground"
+              variant="quiet" className="w-full"
               onClick={handleRemoveScope}
             >
               <X className="h-3.5 w-3.5 mr-1.5" />
