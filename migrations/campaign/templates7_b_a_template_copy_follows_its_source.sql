@@ -129,7 +129,6 @@ revoke all on function public.agx_reset_agent_to_source(uuid) from public, anon;
 grant execute on function public.agx_reset_agent_to_source(uuid) to authenticated, service_role;
 
 -- 4. The duplicate door takes p_follows_source (same body otherwise).
-drop function if exists public.agx_duplicate_agent(uuid, boolean, uuid);
 
 CREATE FUNCTION public.agx_duplicate_agent(p_agent_id uuid, p_as_system boolean DEFAULT false, p_organization_id uuid DEFAULT NULL::uuid, p_follows_source boolean DEFAULT false)
  RETURNS uuid
@@ -236,7 +235,10 @@ BEGIN
 END;
 $function$;
 
--- Its door row follows the signature (written before the GRANT, so the door guard keeps the client EXECUTE).
+-- The old signature goes only after the new one exists (a door row may only name a live function).
+drop function if exists public.agx_duplicate_agent(uuid, boolean, uuid);
+
+-- Its door row follows the signature (before the GRANT, so the door guard keeps the signed-in EXECUTE).
 update platform.client_callable_door
    set identity_args     = 'p_agent_id uuid, p_as_system boolean, p_organization_id uuid, p_follows_source boolean',
        identity_argtypes = array[2950, 16, 2950, 16]::oid[],
@@ -245,5 +247,5 @@ update platform.client_callable_door
        reason            = reason || ' 2026-10-04 (templates7_b): gained p_follows_source — a template install marks its copy as following the source agent.'
  where schema_name = 'public' and function_name = 'agx_duplicate_agent';
 
-revoke all on function public.agx_duplicate_agent(uuid, boolean, uuid, boolean) from public, anon;
+
 grant execute on function public.agx_duplicate_agent(uuid, boolean, uuid, boolean) to authenticated, service_role;

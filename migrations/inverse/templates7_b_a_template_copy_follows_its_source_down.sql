@@ -5,7 +5,6 @@ drop trigger if exists zz_follows_source_stops_on_edit on agent.definition;
 drop function if exists agent._follows_source_stops_on_edit();
 drop function if exists public.agx_reset_agent_to_source(uuid);
 
-drop function if exists public.agx_duplicate_agent(uuid, boolean, uuid, boolean);
 
 CREATE FUNCTION public.agx_duplicate_agent(p_agent_id uuid, p_as_system boolean DEFAULT false, p_organization_id uuid DEFAULT NULL::uuid)
  RETURNS uuid
@@ -107,6 +106,9 @@ BEGIN
 END;
 $function$;
 
+-- The old signature goes only after the new one exists (a door row may only name a live function).
+drop function if exists public.agx_duplicate_agent(uuid, boolean, uuid, boolean);
+
 update platform.client_callable_door
    set identity_args     = 'p_agent_id uuid, p_as_system boolean, p_organization_id uuid',
        identity_argtypes = array[2950, 16, 2950]::oid[],
@@ -114,7 +116,7 @@ update platform.client_callable_door
        reason            = replace(reason, ' 2026-10-04 (templates7_b): gained p_follows_source — a template install marks its copy as following the source agent.', '')
  where schema_name = 'public' and function_name = 'agx_duplicate_agent';
 
-revoke all on function public.agx_duplicate_agent(uuid, boolean, uuid) from public, anon;
+
 grant execute on function public.agx_duplicate_agent(uuid, boolean, uuid) to authenticated, service_role;
 
 alter table agent.definition
