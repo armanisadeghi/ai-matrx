@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T05:43:33.538Z",
+  "generated_at": "2026-10-05T05:50:43.554Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3026,6 +3026,12 @@
       "checksum": "24d778f974c9766c10fc0b5325668ce31b31519b4dd230ac3eecf501324e9a66",
       "applied_at": "2026-09-25 00:24:59.043482+00"
     },
+    "migrations/campaign/fts2c_a_a_contact_names_the_columns_the_crm_form_edits.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts2c_a_a_contact_names_the_columns_the_crm_form_edits.sql",
+      "checksum": "ed093cd46b4351842407447cb0218ee7945cea928253d7cdaa2ca0b407dc8fb3",
+      "applied_at": "2026-10-05 05:50:32.448356+00"
+    },
     "migrations/campaign/fts4_a_tags_are_a_platform_table.sql": {
       "source": "matrx-frontend",
       "filename": "fts4_a_tags_are_a_platform_table.sql",
@@ -5323,6 +5329,12 @@
       "filename": "scopesfts1d_the_store_halves_refuse_what_the_old_rows_refused.sql",
       "checksum": "129eb1a4f5a26249622dc780ab060ec47b53206d52f019c75c035e9bab7ee54d",
       "applied_at": "2026-10-05 05:43:31.128133+00"
+    },
+    "migrations/campaign/scopesfts1d_value_writes_and_provisioning_read_only_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesfts1d_value_writes_and_provisioning_read_only_the_store.sql",
+      "checksum": "e22ae0fd99d7f6cf582819b10fadc19ee65d27c12724a79feca329130af0620a",
+      "applied_at": "2026-10-05 05:50:37.487052+00"
     },
     "migrations/campaign/scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql": {
       "source": "matrx-frontend",
