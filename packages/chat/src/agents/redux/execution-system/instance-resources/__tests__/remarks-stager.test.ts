@@ -37,6 +37,7 @@ import {
   dismissRemarkChip,
   registerRemarkDurability,
   remarkSourceOf,
+  restageRemarks,
   stageRemark,
   unstageRemark,
   type RemarkItem,
@@ -179,6 +180,24 @@ describe("durability port (unsent chips live server-side, never in the browser)"
     store.dispatch(stageRemark(CID, edit("Pilot: 12 clinics"), { coalesceKey: `edit:${ANSWER}` }));
     expect([...server.rows.keys()].sort()).toEqual([`comment:c5`, `edit:${ANSWER}`].sort());
     expect(server.rows.get(`edit:${ANSWER}`)?.item).toMatchObject({ after: "Pilot: 12 clinics" });
+    server.release();
+  });
+
+  it("a passage handed over by New chat about this is WRITTEN (it is new to the server); a restore of server rows is not re-written", () => {
+    const server = fakeServer();
+    const store = reload();
+    const passage = {
+      resourceId: "res_passage1",
+      coalesceKey: `passage:${ANSWER}:Ship the pilot`,
+      item: { ...comment, commentId: null, body: "", quote: "Ship the pilot" },
+    };
+    store.dispatch(restageRemarks(CID, [passage], { persist: true }));
+    expect([...server.rows.keys()]).toEqual([passage.coalesceKey]);
+    server.rows.clear();
+    store.dispatch(
+      restageRemarks(CID, [{ ...passage, resourceId: "res_passage2", coalesceKey: "passage:other" }]),
+    );
+    expect(server.rows.size).toBe(0);
     server.release();
   });
 
