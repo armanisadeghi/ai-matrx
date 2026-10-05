@@ -72,8 +72,11 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
   fullscreen on mobile). "Use"
   prefills the live instance through the SAME slices typing uses
   (`setUserVariableValues` + `setUserInputText`; the sample's `user_input` is
-  human-typed text, so this is not a USER-INPUT-LAW violation). Context values
-  are untouched. The runner has NO sample affordance.
+  human-typed text, so this is not a USER-INPUT-LAW violation), via
+  `apply-sample.ts`. Its attachment parts come back as resource CHIPS
+  (`messagePartsToResources` → `replaceInstanceResources`), sending the
+  identical parts; a part with no chip form stays a message part and is named
+  in a toast. Context values are untouched. The runner has NO sample affordance.
 - **Manager** — `components/samples/AgentSamplesManager.tsx` (opened from the
   launcher's window; also the admin page at
   `/administration/agents/system-agents/agents/[id]/samples`): approved +
@@ -153,6 +156,9 @@ nothing, because a blank line is the silent failure this guards.
 
 ## Change Log
 
+- 2026-10-04 — "Use" restores a test case's attachments as visible chips
+  (they were written to hidden `messageParts`, so the files looked unloaded).
+  Guard: `__tests__/a-test-case-loads-its-attachments-as-chips.test.ts`.
 - 2026-09-30 — Structured test values display as readable JSON and load intact
   into every text input layout. Inline editors serialize arrays as JSON rather
   than comma-joined display labels; reducer/request regression checks preserve

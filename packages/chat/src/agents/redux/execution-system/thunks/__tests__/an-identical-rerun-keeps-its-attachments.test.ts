@@ -15,7 +15,7 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import { chatReducers } from "../../../../../store/slices";
-import type { ChatRootState } from "../../../../../store/root-state";
+import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { createInstanceFull } from "../../create-instance-full";
 import {
   markInputSubmitted,
@@ -71,6 +71,8 @@ function makeStore() {
 
 type Store = ReturnType<typeof makeStore>;
 const state = (store: Store) => store.getState() as unknown as ChatRootState;
+/** The store IS the chat store's reducers; its thunks run on it. */
+const chatDispatch = (store: Store) => store.dispatch as unknown as ChatDispatch;
 
 /** The engineer's first test: a question, a variable, an image chip, a note part. */
 function composeFirstRun(store: Store) {
@@ -121,14 +123,12 @@ function pressSend(store: Store, conversationId: string) {
 }
 
 async function split(store: Store, from: string): Promise<string> {
-  const { newConversationId } = await store
-    .dispatch(
+  const { newConversationId } = await chatDispatch(store)(
       splitInputIntoNewConversation({
         currentConversationId: from,
         surfaceKey: SURFACE,
       }),
-    )
-    .unwrap();
+  ).unwrap();
   return newConversationId;
 }
 
@@ -196,7 +196,7 @@ describe("an auto-clear re-run sends the identical request", () => {
     store.dispatch(setUserInputMessageParts({ conversationId: run2, parts: null }));
     store.dispatch(setUserInputText({ conversationId: run2, text: "something else" }));
 
-    await store.dispatch(setAutoClearMode({ conversationId: run2, value: true })).unwrap();
+    await chatDispatch(store)(setAutoClearMode({ conversationId: run2, value: true })).unwrap();
 
     expect(composerOf(store, run2)).toEqual({
       text: "Describe {{topic}} in the picture",
@@ -221,9 +221,9 @@ describe("an auto-clear re-run sends the identical request", () => {
     store.dispatch(removeResource({ conversationId: RUN_1, resourceId: "res_image" }));
     store.dispatch(setUserInputMessageParts({ conversationId: RUN_1, parts: null }));
 
-    await store
-      .dispatch(setAutoClearMode({ conversationId: RUN_1, value: true, surfaceKey: SURFACE }))
-      .unwrap();
+    await chatDispatch(store)(
+      setAutoClearMode({ conversationId: RUN_1, value: true, surfaceKey: SURFACE }),
+    ).unwrap();
 
     const fresh = state(store).conversationFocus.bySurface[SURFACE]?.input;
     expect(fresh).toBeDefined();
