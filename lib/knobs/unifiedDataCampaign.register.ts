@@ -264,17 +264,6 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
       "user, so it must not call the gate.",
   },
   {
-    id: "gridprim-g5-examples",
-    file: "scripts/campaign-tests/gridprim_g5_examples.ts",
-    kind: "tooling",
-    why:
-      "Lane GRID-PRIMITIVES G5 — the example-table proof: every registered use case of " +
-      "@ai-matrx/records/use-cases built whole through custom.table_from_example, in one " +
-      "rolled-back transaction on the clone or the branch. It imports scripts/lib/migration-target " +
-      "only for the runner-target verdict. A script a developer runs, never served to a user, so " +
-      "it must not call the gate.",
-  },
-  {
     id: "link-organization-admission",
     file: "lib/organizations/linkOrganizationAdmission.ts",
     kind: "runtime",

@@ -43,7 +43,7 @@ export const RICH_EDITOR_SHORTCUTS: readonly ShortcutSpec[] = [
   { id: "redo", label: "Redo", keys: ["Mod-Shift-z", "Mod-y"], group: "Document", reference: "Docs · Notion" },
   { id: "find", label: "Find", keys: ["Mod-f"], group: "Document", reference: "Docs" },
   { id: "replace", label: "Find and replace", keys: ["Mod-h", "Mod-Shift-h"], group: "Document", reference: "Docs" },
-  { id: "save", label: "Save", keys: ["Mod-s"], group: "Document", reference: "Docs · Notion" },
+  { id: "save", label: "Save", keys: ["Mod-s", "Mod-Enter"], group: "Document", reference: "Docs · Notion · Slack" },
   { id: "wordCount", label: "Word count", keys: ["Mod-Shift-c"], group: "Document", reference: "Docs" },
   { id: "outline", label: "Show outline", keys: ["Mod-Alt-h"], group: "Views", reference: "Docs" },
   { id: "focus", label: "Focus mode", keys: ["Mod-Shift-f"], group: "Views", reference: "iA Writer · Docs" },

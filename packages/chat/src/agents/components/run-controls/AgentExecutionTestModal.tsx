@@ -17,6 +17,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { kindTextToMarkdown } from "@host/features/content-ir/surfaces/kind-text-to-markdown";
 import { useAppSelector } from "../../../store/hooks";
 import { selectAgentName } from "../../redux/agent-definition/selectors";
 import { EntityDoorControls } from "@host/components/official/entity-ref/EntityDoorControls";
@@ -149,7 +150,9 @@ export function DirectTestMode({
 
   const handleCopy = useCallback(() => {
     if (responseText) {
-      navigator.clipboard.writeText(responseText);
+      // The button is a plain "Copy" beside a drawn answer: a person gets what
+      // they see (a kind as its markdown), never raw `{"__kind":…}` JSON.
+      navigator.clipboard.writeText(kindTextToMarkdown(responseText));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -186,7 +189,7 @@ export function DirectTestMode({
       <ScrollArea className="h-64 rounded-md border border-border bg-muted/20 p-3">
         {responseText ? (
           // The harness shows the answer as a person sees it — a kind as its
-          // kind, never JSON (kind-never-raw R1). Copy keeps the raw text.
+          // kind, never JSON (kind-never-raw R1). Copy hands over its markdown.
           <div className="text-xs text-foreground">
             <AnswerValueView text={responseText} />
           </div>

@@ -154,7 +154,7 @@ export const WRITERS: Row[] = [
     id: "S2",
     what: "The legacy scopes service's write methods (kept until the final switch, called by nothing)",
     status: "flip_time",
-    plain: "features/scopes/service/scopesService.ts still defines createScopeType … applyTemplate over the old RPCs; scopeStore.test.ts proves no app file calls them; the final switch deletes them.",
+    plain: "features/scopes/service/scopesService.ts still defines createScopeType … setContextValue over the old RPCs; scopeStore.test.ts proves no app file calls them; the final switch deletes them.",
     claims: { "matrx-frontend": ["features/scopes/service/scopesService.ts"] },
   },
   {
@@ -173,7 +173,7 @@ export const WRITERS: Row[] = [
       "custom.context_type_write", "custom.context_type_archive", "custom.context_type_restore",
       "custom.context_scope_write", "custom.context_scope_archive", "custom.context_scope_restore",
       "custom.context_item_write", "custom.context_item_archive", "custom.context_item_restore",
-      "custom.context_value_write", "custom._ctx_value_write_store", "custom.context_template_apply", "custom.context_template_define", "custom.context_tags_set",
+      "custom.context_value_write", "custom._ctx_value_write_store", "custom.context_template_define", "custom.context_tags_set",
       "custom._ctx_bridge", "custom._ctx_store_type", "custom._ctx_store_item", "custom._ctx_store_scope", "custom._ctx_store_value",
     ],
   },
@@ -267,9 +267,9 @@ export const WRITERS: Row[] = [
     id: "S10",
     what: "A template applied from a definition (and every catalogue template)",
     status: "proven",
-    plain: "custom.context_template_define applies a template's scope types and fields through custom.context_type_write / custom.context_item_write (the store's doors, store first where the store writes); custom.context_template_apply hands the catalogue template's definition to it, and public.apply_template_definition is a SECURITY INVOKER wrapper over it that writes nothing itself (no caller, no client grant). Suite scopestails_templates_through_the_doors A1–A6 (red before scopestails_a_template_is_applied_through_the_store_doors.sql).",
+    plain: "custom.context_template_define applies a template's scope types and fields through custom.context_type_write / custom.context_item_write (the store's doors, store first where the store writes); the catalogue's scope templates are installed through the template family (custom.template_install; custom.context_template_apply was retired, lane TEMPLATES RETIRE-1), and public.apply_template_definition is a SECURITY INVOKER wrapper over it that writes nothing itself (no caller, no client grant). Suite scopestails_templates_through_the_doors A1–A6 (red before scopestails_a_template_is_applied_through_the_store_doors.sql).",
     functions: ["custom.context_template_define", "public.apply_template_definition"],
-    writesNothingItself: ["custom.context_template_define", "custom.context_template_apply", "public.apply_template_definition"],
+    writesNothingItself: ["custom.context_template_define", "public.apply_template_definition"],
   },
 ];
 

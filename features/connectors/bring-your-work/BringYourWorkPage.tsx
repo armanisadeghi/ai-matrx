@@ -222,7 +222,7 @@ export function BringYourWorkPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 py-6">
-      <Step index={1} done={picked} title="Pick your AI" data-tour="byw-pick-ai">
+      <Step index={1} done={picked} title="Pick your AI" hint="Choose the app you already use" data-tour="byw-pick-ai">
         <div role="radiogroup" aria-label="Your AI" className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {CLIENTS.map((c) => {
             const selected = c.value === client;
@@ -272,7 +272,7 @@ export function BringYourWorkPage() {
         </div>
       </Step>
 
-      <Step index={4} done={false} title="What do you want to do?" data-tour="byw-move-work">
+      <Step index={4} done={false} title="What do you want to do?" hint="Copy one and paste it into your AI" data-tour="byw-move-work">
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {MOVES.map((move) => {
             const open = openPrompt === move.id;

@@ -62,7 +62,8 @@ function candidates(): string[] {
   return out
     .split("\n")
     .filter(Boolean)
-    .filter((f) => !f.includes("node_modules/") && !f.endsWith("retired-template-doors-stay-retired.test.ts"))
+    // a guard that NAMES a retired door to forbid it is not a caller: test files are not surfaces
+    .filter((f) => !f.includes("node_modules/") && !f.includes("__tests__/") && !/\.test\.(ts|tsx|mjs)$/.test(f))
     .map((f) => join(ROOT, f));
 }
 

@@ -35,13 +35,12 @@
  * Do not re-assign this surface for `surface-write-targets` — the judgment
  * below is the result, not an omission.
  *
- * THE SURFACE HAS NO EDITABLE STATE. Swept in full, all three mounts:
+ * THE SURFACE HAS NO EDITABLE STATE. Swept in full, both mounts:
  *   - `ScopesHub.tsx` — cells are truncated read-only `summarizeContextCell`
  *     text with a `title` tooltip; rows `router.push` to the org-scoped detail
  *     route. The ONLY stateful control on the page is the `query` filter input.
- *   - `TemplatesGalleryPanel.tsx` (185 lines) and `ScopesSettingsPanel.tsx`
- *     (164 lines) — one `refresh()` button each. Zero `<input>`, `<textarea>`,
- *     `<select>`, Save, `useState` or `dispatch` between them.
+ *   - `ScopesSettingsPanel.tsx` (164 lines) — one `refresh()` button. Zero `<input>`, `<textarea>`,
+ *     `<select>`, Save, `useState` or `dispatch`.
  *
  * The 2026-08-12 scouting brief was factually wrong on its two central claims,
  * and both corrections point the same way:
@@ -102,7 +101,7 @@ import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 export const SCOPES_SURFACE_NAME = "matrx-user/scopes";
 
 /** Which hub route is rendering. */
-export type ScopesSurfaceView = "hub" | "templates" | "settings";
+export type ScopesSurfaceView = "hub" | "settings";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -222,7 +221,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "context_item_count",
     label: "Context item count",
     description:
-      "How many active context items (fields defined on scope types) were loaded for the scope types on screen. Emitted on the hub view once the column/cell fetch is ready; absent on the templates and settings views.",
+      "How many active context items (fields defined on scope types) were loaded for the scope types on screen. Emitted on the hub view once the column/cell fetch is ready; absent on the settings view.",
     valueType: "number",
     alwaysAvailable: false,
     typicalCharCount: 3,
@@ -415,7 +414,7 @@ export const scopesManifest: SurfaceManifest = {
     "",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitters wired on /scopes, /scopes/templates and /scopes/settings; not yet live-verified with a bound agent, and the embedded knowledge-graph suggestions inbox (HeavyHitterSuggestionsInbox on the hub) loads data that is not declared here. Read-only by decision, not by omission: write targets were evaluated 2026-08-11 and again 2026-08-12 and DELIBERATELY NOT DECLARED — all three mounts are read-only (one filter input and two refresh buttons between them) and the route that edits scope cells mounts no surface. See the WRITE TARGETS block in this file's docblock before re-assigning.",
+    "Manifest + emitters wired on /scopes and /scopes/settings; not yet live-verified with a bound agent, and the embedded knowledge-graph suggestions inbox (HeavyHitterSuggestionsInbox on the hub) loads data that is not declared here. Read-only by decision, not by omission: write targets were evaluated 2026-08-11 and again 2026-08-12 and DELIBERATELY NOT DECLARED — both mounts are read-only (one filter input and one refresh button between them) and the route that edits scope cells mounts no surface. See the WRITE TARGETS block in this file's docblock before re-assigning.",
   label: "Scopes",
   urlPattern: "/scopes",
   intro: `<surface_intro>
@@ -424,7 +423,7 @@ Vocabulary, and keep it straight: a SCOPE TYPE is a dimension (Client, Departmen
 Scopes are the highest-signal part of an agent's context because they are the only part the user authors by hand. Changing which scope is active changes what a good answer even looks like, without changing the question.
 Do NOT read this surface's values as the context bundle an agent receives at invocation. That bundle is assembled by the system from scopes plus organization, project, task, user and ambient signals. What you get here is the authoring material.
 The Active context group is a READ-ONLY reflection of the user's current global working selection so you know what they are scoped to right now. This surface never changes it — only the dedicated active-context picker does. If the user asks to switch what they are working on, tell them to use that picker; do not treat these values as controls.
-Read current_view first: "hub" (the scope tables), "templates" (the read-only quick-start catalog of scope types + context items — starter bundles, never active context), or "settings" (scope-tree diagnostics and per-org jump-off).
+Read current_view first: "hub" (the scope tables) or "settings" (scope-tree diagnostics and per-org jump-off).
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(
@@ -489,17 +488,6 @@ export interface ScopesActiveScopeEntry {
   organization_id: string;
 }
 
-/** One template entry as emitted in `templates_summary`. */
-export interface ScopesTemplateEntry {
-  id: string;
-  key: string;
-  name: string;
-  description: string;
-  category: string;
-  scope_type_count: number;
-  context_item_count: number;
-}
-
 /**
  * Every value this surface can emit, as a typed bag. Split out from
  * `createScopesScope` so the child surface (`matrx-user/context-items`) can
@@ -533,10 +521,6 @@ export interface ScopesScopeValues {
     project_id: string | null;
     task_id: string | null;
   };
-  template_count?: number;
-  templates_summary?: ScopesTemplateEntry[];
-  template_categories?: string[];
-  template_target_organization_id?: string;
   search_query?: string;
   tree_status?: string;
   tree_fetched_at?: string;

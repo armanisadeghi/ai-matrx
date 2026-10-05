@@ -79,20 +79,18 @@ is limited to immediately usable providers.
 ---
 
 **Connect your AI** (`/bring-your-work` — path kept for now; `features/connectors/bring-your-work/BringYourWorkPage.tsx`;
-Integrations menu) — the other direction: a person's OWN AI (Claude Code, Claude app, ChatGPT,
-Cursor) connecting TO the AI Matrx MCP (aidream `api/mcp/people/`). A guided flow: pick your AI
-(four cards) → numbered steps for that AI only, each one line + one action, checked once done
-(Claude Code: key → connect command → plugin block; Claude app: connector URL → skill zips;
-ChatGPT: connector URL; Cursor: key → `mcp.json`) → "What do you want to do?" cards whose prompt
-text stays collapsed behind "Show prompt". The key step creates a personal key inline through
-`personalApiKeysService` (org Select only with several memberships), reveals it once, and fills it
-into every `YOUR_KEY` on the page; "Manage keys" links to `/user-settings/integrations/api-keys`.
-The public Claude plugin and skill zips are served from `public/claude/` (catalog
-`https://aimatrx.com/claude/marketplace.json`, plugin source an `archive` URL — a web-hosted catalog
-refuses relative paths; rebuild with `bash scripts/build-claude-plugin.sh` after editing
-`public/claude/plugins/ai-matrx/`). Prompts: Notion via the skill; Airtable, Sheets, ClickUp via
-the MCP tools directly; split-into-agents. `proxy.ts` excludes `.zip` so a signed-out install is
-never bounced to /login.
+Integrations menu) — the other direction: a person's OWN AI (Claude, ChatGPT, Claude Code, Cursor)
+connecting TO the AI Matrx MCP (aidream `api/mcp/people/`, `https://server.app.matrxserver.com/api/matrx-mcp`).
+Four numbered steps (Arman, 2026-10-04 round 2): 1 pick your AI (Claude default) → 2 connect by
+click + AI Matrx sign-in (OAuth) — Claude/ChatGPT open their connectors settings in a new tab with
+a Copy address; Cursor uses its `cursor://…/mcp/install` deep link (base64 config built at render);
+Claude Code gets a plain sentence to paste into Claude → 3 try it (a "Copy for <AI>" hello
+prompt) → 4 what do you want to do (plain-language prompts, text behind "Show prompt"). No API
+keys, no terminal commands, no organization question, no skill downloads — the server carries the
+know-how. Sections carry the `connect-your-ai` tutorial targets (`byw-get-key` now marks step 3).
+The public Claude plugin under `public/claude/` still exists (rebuild with
+`bash scripts/build-claude-plugin.sh`) but the page no longer links it; `proxy.ts` excludes `.zip` so a signed-out install is never bounced
+to /login.
 
 ## Data model
 
@@ -314,6 +312,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- 2026-10-04 — Connect your AI round 2: four steps, click-to-connect (OAuth) only — API keys, terminal commands, org picker and skill downloads removed; plain-language prompts.
 - 2026-10-04 — Connect your AI: `/bring-your-work` rebuilt as a guided flow (AI cards → numbered steps with inline key → collapsed prompt cards); title and nav label renamed from "Bring your work"; the embedded API keys list removed.
 - 2026-10-04 — NOTION-MIGRATE: `/bring-your-work` page, public Claude plugin + skills under `public/claude/`, Integrations menu entry.
 

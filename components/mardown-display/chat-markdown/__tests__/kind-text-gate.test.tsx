@@ -123,6 +123,32 @@ describe("markdown leaves hand kind text to the canonical pipeline", () => {
     expect(mockCaptureError).not.toHaveBeenCalled();
   });
 
+  // S8 / S11: the research review/repair page (RagReviewRepairWorkspace) and the
+  // vision-interview live turn card (LiveTurnCard) render answer text through
+  // this leaf with THESE exact props.
+  it("S8: the review/repair page's call (imagePolicy ai, copy button on) draws a kind as its kind", () => {
+    act(() => root.render(<BasicMarkdownContent imagePolicy="ai" content={FENCED_KIND} />));
+    expect(container.querySelector('[data-kind-route="1"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('"__kind"');
+  });
+
+  it("S11: the live turn card's call (streaming, no copy button) draws a kind as its kind, also while it is still arriving", () => {
+    act(() =>
+      root.render(
+        <BasicMarkdownContent imagePolicy="ai" content={FENCED_KIND} isStreamActive showCopyButton={false} />,
+      ),
+    );
+    expect(container.querySelector('[data-kind-route="1"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('"__kind"');
+    const partial = '{"__kind":"flashcard_set","title":"Cells","cards":[{"front":"Mit';
+    act(() =>
+      root.render(
+        <BasicMarkdownContent imagePolicy="ai" content={partial} isStreamActive showCopyButton={false} />,
+      ),
+    );
+    expect(container.textContent).not.toContain('"__kind"');
+  });
+
   it("a kind fence the pipeline hands back renders once (no loop)", () => {
     // An unlabelled fence: the stand-in only lifts ```json, so it hands this
     // text straight back to the leaf — the guard must stop at one hop.
