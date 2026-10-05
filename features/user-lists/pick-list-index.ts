@@ -8,6 +8,8 @@
 // each with its item count.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { describeFailure } from "@/lib/failure/transport";
+import { postgrestError, type PostgrestishError } from "@/lib/failure/postgrestError";
 
 export interface PickListEntry {
   id: string;
@@ -22,7 +24,15 @@ export interface PickListEntry {
 
 export type PickListIndex =
   | { ok: true; lists: PickListEntry[]; archivedIds: string[] }
-  | { ok: false; why: string };
+  | {
+      ok: false;
+      /** The screen's sentence: the engine's own words ("canceling statement…") are translated. */
+      why: string;
+      /** The store's error, kept for the error display and the Error Inspector. */
+      error: PostgrestishError;
+    };
+
+const LISTING = "listing your picklists";
 
 export type PickListScope = { organizationId: string } | { everywhere: true };
 
@@ -50,7 +60,10 @@ export async function readPickListIndex(client: SupabaseClient, scope: PickListS
       : await client
           .schema("custom" as never)
           .rpc("pick_list_index" as never, { p_organization_id: scope.organizationId } as never);
-  if (answered.error) return { ok: false, why: answered.error.message };
+  if (answered.error) {
+    const error: PostgrestishError = answered.error;
+    return { ok: false, why: describeFailure(error, { action: LISTING, read: true }).sentence, error };
+  }
   const doc = (answered.data ?? {}) as { lists?: unknown; archived_ids?: unknown };
   const lists = (Array.isArray(doc.lists) ? doc.lists : [])
     .map((raw) => entryOf((raw ?? {}) as Record<string, unknown>))
@@ -67,6 +80,8 @@ export async function readPickListIndexOrThrow(
   scope: PickListScope,
 ): Promise<{ lists: PickListEntry[]; archivedIds: string[] }> {
   const answered = await readPickListIndex(client, scope);
-  if (!answered.ok) throw new Error(`Your picklists could not be listed: ${answered.why}`);
+  if (!answered.ok) {
+    throw postgrestError(answered.error, { action: LISTING, fallback: "Your picklists could not be listed." });
+  }
   return { lists: answered.lists, archivedIds: answered.archivedIds };
 }

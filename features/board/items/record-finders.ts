@@ -45,7 +45,7 @@ export async function findPickLists(
   read: () => ReturnType<typeof readPickListIndex>,
 ): Promise<FoundRecord[]> {
   const answered = await read();
-  if (!answered.ok) throw new Error(`Your picklists could not be listed: ${answered.why}`);
+  if (!answered.ok) throw new Error(answered.why, { cause: answered.error });
   const archived = new Set(answered.archivedIds);
   return answered.lists
     .filter((l) => !archived.has(l.id) && nameMatches(query, l.listName))

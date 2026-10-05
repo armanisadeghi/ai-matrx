@@ -19,7 +19,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
-import { dataHomeTables, doorFailureLine } from "@/features/unified-data/hub/doors";
+import { dataHomeTables } from "@/features/unified-data/hub/doors";
+import { postgrestError } from "@/lib/failure/postgrestError";
 import { readPickListIndexOrThrow } from "@/features/user-lists/pick-list-index";
 import { RECORD_STORE_NOUNS } from "@ai-matrx/associations";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
@@ -95,11 +96,37 @@ function organizationOf(scope: KindScope): string | null {
   return null;
 }
 
-async function readAll(kind: RecordStoreKind, scope: KindScope, userId: string): Promise<StoreRow[]> {
+/**
+ * One read per (kind, scope, person) at a time: Use existing asks for the Tables count and the
+ * Tables page in the same breath, and each used to walk both store doors again. A settled read is
+ * kept a few seconds so the pair shares it; a failed one is dropped at once, so "Try again" reads.
+ */
+const READ_SHARE_MS = 5_000;
+const sharedReads = new Map<string, { at: number; read: Promise<StoreRow[]> }>();
+
+function readAll(kind: RecordStoreKind, scope: KindScope, userId: string): Promise<StoreRow[]> {
+  const key = `${kind}|${JSON.stringify(scope)}|${userId}`;
+  const held = sharedReads.get(key);
+  if (held && Date.now() - held.at < READ_SHARE_MS) return held.read;
+  const read = readAllFresh(kind, scope, userId);
+  sharedReads.set(key, { at: Date.now(), read });
+  read.catch(() => {
+    if (sharedReads.get(key)?.read === read) sharedReads.delete(key);
+  });
+  return read;
+}
+
+async function readAllFresh(kind: RecordStoreKind, scope: KindScope, userId: string): Promise<StoreRow[]> {
   const organizationId = organizationOf(scope);
   if (kind === "table") {
     const answered = await dataHomeTables(recordsDataSource(supabase as unknown as SupabaseClient), organizationId);
-    if (!answered.ok) throw new Error(`Your tables could not be listed: ${doorFailureLine(answered.error)}`);
+    if (!answered.ok) {
+      // Through the one translator, with the store's code kept on the error (a timeout reads as one).
+      throw postgrestError(
+        { message: answered.error.message, code: answered.error.sqlstate, hint: answered.error.hint },
+        { action: "listing your tables", fallback: "Your tables could not be listed." },
+      );
+    }
     // The store's word "table" is a person's own table; lists, forms, scopes… are other kinds.
     return answered.data
       .filter((t) => t.kind === "table" && !t.kept_by_the_app)
