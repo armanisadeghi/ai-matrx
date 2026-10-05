@@ -14,6 +14,7 @@ import type {
   OrchestraSummary,
 } from "@/features/agents/orchestras/types";
 import type { ManualOrgEdge } from "@/features/agents/org-chart/buildAgentOrgForest";
+import type { OrgPosition } from "@/features/agents/org-chart/positionsService";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -33,11 +34,15 @@ export interface OrchestraDetailEntry {
  * (features/agents/org-chart).
  */
 export interface ManualOrgChartState {
+  /** Box ids (`type:entityId`) at both ends. */
   edges: ManualOrgEdge[];
-  /** Manager ids whose links have been read — never read twice unless forced. */
+  /** Box ids whose links have been read — never read twice unless forced. */
   queried: string[];
   status: LoadStatus;
   error: string | null;
+  /** Positions (iam.position), the seats on the chart. */
+  positions: OrgPosition[];
+  positionsStatus: LoadStatus;
 }
 
 export interface OrchestrasState {
@@ -53,7 +58,7 @@ const initialState: OrchestrasState = {
   listStatus: "idle",
   listError: null,
   byId: {},
-  manualOrgChart: { edges: [], queried: [], status: "idle", error: null },
+  manualOrgChart: { edges: [], queried: [], status: "idle", error: null, positions: [], positionsStatus: "idle" },
 };
 
 function ensureEntry(state: OrchestrasState, orchId: string): OrchestraDetailEntry {
@@ -195,8 +200,13 @@ const slice = createSlice({
     ) {
       const m = state.manualOrgChart;
       const read = new Set(action.payload.managerIds);
-      // Replace exactly the managers just read; keep everyone else's links.
-      m.edges = [...m.edges.filter((e) => !read.has(e.managerId)), ...action.payload.edges];
+      // Replace exactly the boxes just read; keep everyone else's links. A link
+      // read from both ends is kept once.
+      const fresh = new Set(action.payload.edges.map((e) => e.edgeId));
+      m.edges = [
+        ...m.edges.filter((e) => !read.has(e.managerId) && !fresh.has(e.edgeId)),
+        ...action.payload.edges,
+      ];
       m.queried = [...new Set([...m.queried, ...action.payload.managerIds])];
       m.status = "ready";
       m.error = null;
@@ -211,6 +221,26 @@ const slice = createSlice({
       if (!m.edges.some((x) => x.managerId === e.managerId && x.reportId === e.reportId)) {
         m.edges.push(e);
       }
+    },
+    positionsPending(state) {
+      state.manualOrgChart.positionsStatus = "loading";
+    },
+    positionsFulfilled(state, action: PayloadAction<OrgPosition[]>) {
+      state.manualOrgChart.positions = action.payload;
+      state.manualOrgChart.positionsStatus = "ready";
+    },
+    positionsRejected(state, action: PayloadAction<string>) {
+      state.manualOrgChart.positionsStatus = "error";
+      state.manualOrgChart.error = action.payload;
+    },
+    positionUpserted(state, action: PayloadAction<OrgPosition>) {
+      const list = state.manualOrgChart.positions;
+      const i = list.findIndex((p) => p.id === action.payload.id);
+      if (i === -1) list.push(action.payload);
+      else list[i] = action.payload;
+    },
+    positionRemoved(state, action: PayloadAction<string>) {
+      state.manualOrgChart.positions = state.manualOrgChart.positions.filter((p) => p.id !== action.payload);
     },
     manualOrgEdgeRemoved(state, action: PayloadAction<{ managerId: string; reportId: string }>) {
       const { managerId, reportId } = action.payload;

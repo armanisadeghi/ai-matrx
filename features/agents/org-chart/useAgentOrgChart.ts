@@ -1,12 +1,14 @@
 // features/agents/org-chart/useAgentOrgChart.ts
 //
-// Loads and assembles an agent org chart from Redux: Orchestras (automatic
-// links, `orchestras.byId`) + manual links (`orchestras.manualOrgChart`).
+// Loads and assembles the org chart from Redux: Orchestras (directs links,
+// `orchestras.byId`), recorded links between any boxes and the positions
+// (`orchestras.manualOrgChart`).
 //
-// With `rootIds` it builds only what hangs under those agents — the Orchestra
-// builder passes its Conductor and gets every nested Orchestra and manual
-// report beneath it, loaded level by level as they are discovered. Without
-// `rootIds` it builds the whole chart the viewer can see.
+// With `rootIds` (BOX ids) it builds only what hangs under those boxes — the
+// Orchestra builder passes its Conductor and gets every nested Orchestra and
+// recorded report beneath it, loaded level by level as they are discovered.
+// Without `rootIds` it builds the whole chart the viewer can see, every
+// position included (an open seat is still part of the chart).
 
 "use client";
 
@@ -14,7 +16,7 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { fetchOrchestras, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
-import { loadManualOrgEdges } from "@/features/agents/redux/orchestras/orgChartThunks";
+import { loadManualOrgEdges, loadOrgPositions } from "@/features/agents/redux/orchestras/orgChartThunks";
 import {
   selectManualOrgEdges,
   selectManualOrgError,
@@ -22,9 +24,11 @@ import {
   selectOrchestrasList,
   selectOrchestrasListError,
   selectOrchestrasListStatus,
+  selectOrgPositions,
 } from "@/features/agents/redux/orchestras/selectors";
 import { useEnsureAgentsLoaded } from "@/features/agents/orchestras/hooks/useEnsureAgentsLoaded";
 import { buildAgentOrgForest, type OrchestraShape } from "./buildAgentOrgForest";
+import { boxId, parseBoxId } from "./constants";
 
 export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const dispatch = useAppDispatch();
@@ -35,12 +39,15 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
   const entries = useAppSelector(selectOrchestraEntries);
   const manualEdges = useAppSelector(selectManualOrgEdges);
   const manualError = useAppSelector(selectManualOrgError);
+  const positions = useAppSelector(selectOrgPositions);
   const agents = useAppSelector(selectAllAgents);
 
   useEffect(() => {
     dispatch(fetchOrchestras());
+    dispatch(loadOrgPositions());
   }, [dispatch]);
 
+  // Plain agent ids (the Orchestra store's keys).
   const conductorIds = new Set(list.map((o) => o.conductorId));
   for (const [id, e] of Object.entries(entries)) if (e.exists) conductorIds.add(id);
 
@@ -57,11 +64,16 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
     }
   }
 
-  // Everything reachable from the roots (both kinds of link), or everyone.
+  // Everything reachable from the roots (every kind of link), or everyone. Box ids.
   const reachable = new Set<string>();
   if (!opts.rootIds) {
-    for (const id of [...conductorIds, ...Object.keys(agents)]) reachable.add(id);
-    for (const o of orchestras.values()) o.members.forEach((m) => reachable.add(m.agentId));
+    for (const id of [...conductorIds, ...Object.keys(agents)]) reachable.add(boxId("agent", id));
+    for (const o of orchestras.values()) o.members.forEach((m) => reachable.add(boxId("agent", m.agentId)));
+    for (const p of positions) reachable.add(boxId("position", p.id));
+    for (const e of manualEdges) {
+      reachable.add(e.managerId);
+      reachable.add(e.reportId);
+    }
   } else {
     const manualKids = new Map<string, string[]>();
     for (const e of manualEdges) manualKids.set(e.managerId, [...(manualKids.get(e.managerId) ?? []), e.reportId]);
@@ -70,16 +82,19 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
       const id = stack.pop() as string;
       if (reachable.has(id)) continue;
       reachable.add(id);
-      orchestras.get(id)?.members.forEach((m) => stack.push(m.agentId));
+      const { type, id: entity } = parseBoxId(id);
+      if (type === "agent") orchestras.get(entity)?.members.forEach((m) => stack.push(boxId("agent", m.agentId)));
       stack.push(...(manualKids.get(id) ?? []));
     }
   }
 
-  // Load every reachable Orchestra not yet loaded, and every reachable agent's
-  // manual reports. Each pass can reveal a deeper level; this re-runs until
-  // nothing new appears.
+  // Load every reachable Orchestra not yet loaded, and every reachable box's
+  // recorded links (both directions, so a person above an agent is found).
+  // Each pass can reveal a deeper level; this re-runs until nothing new appears.
   const toLoad = [...reachable]
-    .filter((id) => conductorIds.has(id) && !entries[id])
+    .map((b) => parseBoxId(b))
+    .filter((b) => b.type === "agent" && conductorIds.has(b.id) && !entries[b.id])
+    .map((b) => b.id)
     .sort()
     .join(",");
   useEffect(() => {
@@ -87,13 +102,19 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
     for (const id of toLoad.split(",")) dispatch(loadOrchestra(id));
   }, [dispatch, toLoad]);
 
-  const managerKey = [...reachable].sort().join(",");
+  const boxKey = [...reachable].sort().join(",");
   useEffect(() => {
-    if (!managerKey) return;
-    dispatch(loadManualOrgEdges(managerKey.split(",")));
-  }, [dispatch, managerKey]);
+    if (!boxKey) return;
+    dispatch(loadManualOrgEdges(boxKey.split(","), { direction: "both" }));
+  }, [dispatch, boxKey]);
 
-  const nameOf = (id: string) => agents[id]?.name ?? "";
+  const positionById = new Map(positions.map((p) => [p.id, p]));
+  const nameOf = (id: string) => {
+    const { type, id: entity } = parseBoxId(id);
+    if (type === "agent") return agents[entity]?.name ?? "";
+    if (type === "position") return positionById.get(entity)?.name ?? "";
+    return "";
+  };
 
   const forest = buildAgentOrgForest({
     orchestras,
@@ -102,18 +123,23 @@ export function useAgentOrgChart(opts: { rootIds?: string[] } = {}) {
     manualEdges,
     rootIds: opts.rootIds,
     nameOf,
+    standalone: opts.rootIds ? undefined : positions.map((p) => boxId("position", p.id)),
   });
 
   const loading =
     listStatus === "loading" ||
     listStatus === "idle" ||
-    [...reachable].some((id) => conductorIds.has(id) && entries[id]?.status !== "ready" && entries[id]?.status !== "error");
+    [...reachable].some((b) => {
+      const { type, id } = parseBoxId(b);
+      return type === "agent" && conductorIds.has(id) && entries[id]?.status !== "ready" && entries[id]?.status !== "error";
+    });
 
   return {
     forest,
     orchestras,
     conductorIds,
     manualEdges,
+    positions,
     loading,
     error:
       listError ??

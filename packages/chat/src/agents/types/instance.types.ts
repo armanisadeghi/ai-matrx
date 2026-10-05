@@ -669,9 +669,22 @@ export interface InstanceUserInputState {
    */
   originalSubmittedText?: string;
   originalSubmittedUserValues?: Record<string, unknown>;
+  /**
+   * The ATTACHMENTS of that same first submit — its structured message parts
+   * and its resource chips, exactly as they were — so the auto-clear restore
+   * brings back the identical request, files included. Captured and carried
+   * with `originalSubmittedText`; `undefined` until the first submit.
+   */
+  originalSubmittedAttachments?: SubmittedAttachments;
 
   /** The visible pre-send window — see `PreSendState`. Null/absent when idle. */
   preSend?: PreSendState | null;
+}
+
+/** The attachments of one submitted message, as the composer held them. */
+export interface SubmittedAttachments {
+  messageParts: MessagePart[] | null;
+  resources: ManagedResource[];
 }
 
 /**

@@ -48,6 +48,7 @@ import {
   warnRequestContextDrift,
 } from "../utils/warn-request-context-drift";
 import {
+  selectInstanceResources,
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
 import {
@@ -683,6 +684,7 @@ export const executeInstance = createAsyncThunk<
           markInputSubmitted({
             conversationId,
             userValues: submittedUserValues,
+            resources: selectInstanceResources(conversationId)(state),
           }),
         );
       }

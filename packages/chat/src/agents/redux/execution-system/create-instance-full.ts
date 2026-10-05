@@ -32,6 +32,7 @@ import type {
   ContextAnchor,
   InstanceOrigin,
   SourceFeature,
+  SubmittedAttachments,
 } from "../../types/instance.types";
 import type { InitInstanceUIStatePayload } from "./instance-ui-state/instance-ui-state.slice";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
@@ -94,6 +95,7 @@ export interface CreateInstanceFullPayload {
     lastSubmittedUserValues?: Record<string, unknown>;
     originalSubmittedText?: string;
     originalSubmittedUserValues?: Record<string, unknown>;
+    originalSubmittedAttachments?: SubmittedAttachments;
   };
   clientTools?: { tools?: string[] };
   /** The full instance-ui-state init payload, minus the conversationId. */

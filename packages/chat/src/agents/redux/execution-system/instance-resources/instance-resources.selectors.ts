@@ -375,7 +375,10 @@ export function userInputPartToMessagePart(part: UserInputPart): MessagePart {
   }
 }
 
-function buildResourcePayload(resource: ManagedResource): UserInputPart | null {
+/** One resource → the request part it sends (the per-resource half of `selectResourcePayloads`). */
+export function buildResourcePayload(
+  resource: ManagedResource,
+): UserInputPart | null {
   if (resource.finalPayload) return resource.finalPayload;
 
   const content = resource.userEdited

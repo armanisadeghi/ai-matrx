@@ -95,3 +95,7 @@ export const selectOrchestraEntries = createSelector(
   selectOrchestras,
   (s) => s.byId,
 );
+
+export const selectOrgPositions = createSelector(selectOrchestras, (s) => s.manualOrgChart.positions);
+
+export const selectOrgPositionsStatus = createSelector(selectOrchestras, (s) => s.manualOrgChart.positionsStatus);

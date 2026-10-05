@@ -10,6 +10,7 @@
  */
 
 import type { ChatThunk } from "../../../../store/root-state";
+import type { ManagedResource } from "../../../types/instance.types";
 import {
   setUserInputMessageParts,
   setUserInputText,
@@ -174,6 +175,76 @@ export function syncInstanceRequestDraftResources({
   };
 }
 
+/**
+ * Replace a composer's attachments with exact copies of `resources` (in the
+ * order given): source, options, preview, edits, assembled payload and
+ * lifecycle status. The one replay used by every full-draft copy — a draft
+ * copy, the auto-clear split and the auto-clear restore of the first submit.
+ */
+export function replaceInstanceResources({
+  conversationId,
+  resources,
+}: {
+  conversationId: string;
+  resources: readonly ManagedResource[];
+}): ChatThunk {
+  return (dispatch) => {
+    dispatch(clearAllResources(conversationId));
+    for (const resource of resources) {
+      dispatch(
+        addResource({
+          conversationId,
+          blockType: resource.blockType,
+          source: resource.source,
+          options: resource.options,
+          resourceId: resource.resourceId,
+        }),
+      );
+      if (resource.preview !== null) {
+        dispatch(
+          setResourcePreview({
+            conversationId,
+            resourceId: resource.resourceId,
+            preview: resource.preview,
+          }),
+        );
+      }
+      if (resource.userEdited) {
+        dispatch(
+          setResourceEditedContent({
+            conversationId,
+            resourceId: resource.resourceId,
+            content: resource.editedContent,
+          }),
+        );
+      }
+      if (resource.finalPayload !== null) {
+        dispatch(
+          setResourcePayload({
+            conversationId,
+            resourceId: resource.resourceId,
+            payload: resource.finalPayload,
+          }),
+        );
+      }
+      dispatch(
+        setResourceStatus({
+          conversationId,
+          resourceId: resource.resourceId,
+          status: resource.status,
+          errorMessage: resource.errorMessage ?? undefined,
+        }),
+      );
+    }
+    dispatch(
+      reorderResources({
+        conversationId,
+        orderedIds: resources.map((resource) => resource.resourceId),
+      }),
+    );
+  };
+}
+
 export function copyInstanceRequestDraft({
   sourceConversationId,
   targetConversationId,
@@ -247,62 +318,15 @@ export function copyInstanceRequestDraft({
       }
     }
 
-    dispatch(clearAllResources(targetConversationId));
     const orderedResources = Object.values(sourceResources).sort(
       (a, b) => a.sortOrder - b.sortOrder,
     );
-    for (const resource of orderedResources) {
-      dispatch(
-        addResource({
-          conversationId: targetConversationId,
-          blockType: resource.blockType,
-          source: resource.source,
-          options: resource.options,
-          resourceId: resource.resourceId,
-        }),
-      );
-      if (resource.preview !== null) {
-        dispatch(
-          setResourcePreview({
-            conversationId: targetConversationId,
-            resourceId: resource.resourceId,
-            preview: resource.preview,
-          }),
-        );
-      }
-      if (resource.userEdited) {
-        dispatch(
-          setResourceEditedContent({
-            conversationId: targetConversationId,
-            resourceId: resource.resourceId,
-            content: resource.editedContent,
-          }),
-        );
-      }
-      if (resource.finalPayload !== null) {
-        dispatch(
-          setResourcePayload({
-            conversationId: targetConversationId,
-            resourceId: resource.resourceId,
-            payload: resource.finalPayload,
-          }),
-        );
-      }
-      dispatch(
-        setResourceStatus({
-          conversationId: targetConversationId,
-          resourceId: resource.resourceId,
-          status: resource.status,
-          errorMessage: resource.errorMessage ?? undefined,
-        }),
-      );
-    }
-    dispatch(
-      reorderResources({
-        conversationId: targetConversationId,
-        orderedIds: orderedResources.map((resource) => resource.resourceId),
-      }),
-    );
+    // Run in this thunk's own dispatch, so the copy stays a flat sequence of
+    // plain actions (callers that record or forward them see every one).
+    replaceInstanceResources({
+      conversationId: targetConversationId,
+      resources: orderedResources,
+    })(dispatch, getState, undefined);
     if (chatSemantics) {
       dispatch(
         setHandoffInheritedResourceIds({

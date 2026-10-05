@@ -23,6 +23,7 @@ import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
 import { ensureConversationScopesOrAsk } from "@host/features/scopes/redux/thunks/conversationScopeGate";
 import {
   selectAllResourcesResolved,
+  selectInstanceResources,
 } from "../instance-resources/instance-resources.selectors";
 import {
   selectIsAwaitingTools,
@@ -346,6 +347,9 @@ export const smartExecute = createAsyncThunk<
         markInputSubmitted({
           conversationId,
           userValues: submission.userValues,
+          // The chips read at the keypress — the same moment `submission` was
+          // frozen — so a first submit's snapshot holds its attachments too.
+          resources: selectInstanceResources(conversationId)(entryState),
         }),
       );
       dispatch(markResourcesSubmitted(conversationId));

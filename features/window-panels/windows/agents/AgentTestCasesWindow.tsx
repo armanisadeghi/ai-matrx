@@ -2,17 +2,8 @@
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { isJsonObject } from "@/types/json";
-import { setUserVariableValues } from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import {
-  setUserInputMessageParts,
-  setUserInputText,
-} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import {
-  sampleAttachmentParts,
-  sampleInputText,
-  type AgentSampleRow,
-} from "@/features/agents/samples/service";
+import { applySampleToComposer } from "@/features/agents/samples/apply-sample";
+import type { AgentSampleRow } from "@/features/agents/samples/service";
 import { AgentSamplesManager } from "@/features/agents/components/samples/AgentSamplesManager";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -52,23 +43,13 @@ export default function AgentTestCasesWindow({
   if (!isOpen || !agentId || !conversationId) return null;
 
   function applySample(sample: AgentSampleRow) {
-    const values = isJsonObject(sample.variables) ? sample.variables : {};
-    dispatch(setUserVariableValues({ conversationId, values }));
-    dispatch(
-      setUserInputText({
-        conversationId,
-        text: sampleInputText(sample),
-        userValues: values,
-      }),
-    );
-    const attachmentParts = sampleAttachmentParts(sample);
-    dispatch(
-      setUserInputMessageParts({
-        conversationId,
-        parts: attachmentParts.length > 0 ? attachmentParts : null,
-      }),
-    );
+    const unattached = dispatch(applySampleToComposer({ conversationId, sample }));
     toast.success(`Loaded “${sample.label}”`);
+    if (unattached.length > 0) {
+      toast.warning("Some test inputs have no chip", {
+        description: `Still sent, not shown: ${unattached.map((part) => part.type).join(", ")}`,
+      });
+    }
     onClose();
   }
 

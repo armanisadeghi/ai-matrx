@@ -55,7 +55,7 @@ import { AGENT_DND_MIME } from "./AgentLibraryRail";
 import type { OrchestraBuilderCanvasProps } from "./OrchestraBuilderCanvas";
 import type { OrchestraAccent } from "../constants";
 import { useAgentOrgChart } from "@/features/agents/org-chart/useAgentOrgChart";
-import { ORG_LINK_KIND_META } from "@/features/agents/org-chart/constants";
+import { ORG_LINK_KIND_META, boxId } from "@/features/agents/org-chart/constants";
 import type { AgentOrgNodeData } from "@/features/agents/org-chart/buildAgentOrgForest";
 import { AgentOrgCard } from "@/features/agents/org-chart/components/AgentOrgCard";
 import {
@@ -292,7 +292,9 @@ function buildNestedGraph(
   const sig: string[] = [];
   const accentOf = new Map<string, OrchestraAccent>();
   for (const member of root.children) {
-    const memberId = member.data.agentId;
+    // Only agents are Orchestra members; the member node is keyed by the plain agent id.
+    if (member.data.boxType !== "agent") continue;
+    const memberId = member.data.entityId;
     if (!memberIds.has(memberId) || member.children.length === 0) continue;
     out.teamSize[memberId] = countDescendants(member);
     sig.push(`${memberId}:${out.teamSize[memberId]}:${collapsed.has(memberId) ? 1 : 0}`);
@@ -323,11 +325,11 @@ function buildNestedGraph(
         position: { x: n.x + offsetX, y: n.y + offsetY },
         draggable: false,
         selectable: false,
-        data: { placed: n, memberCount: memberCounts.get(n.node.data.agentId) } as unknown as Record<string, unknown>,
+        data: { placed: n, memberCount: memberCounts.get(n.node.data.entityId) } as unknown as Record<string, unknown>,
       });
       const nd = n.node.data;
       sig.push(
-        [n.key, nd.pending, nd.unavailable, nd.accent, nd.mode, nd.edgeKind, nd.otherPlacements, nd.loop, nd.roleTitle, memberCounts.get(nd.agentId)].join(":"),
+        [n.key, nd.pending, nd.unavailable, nd.accent, nd.mode, nd.edgeKind, nd.otherPlacements, nd.loop, nd.roleTitle, memberCounts.get(nd.entityId)].join(":"),
       );
     }
     const placedByKey = new Map(layout.nodes.map((n) => [n.key, n]));
@@ -461,7 +463,7 @@ function CanvasInner({ conductorId, accent, members, config, onEditMember, onOpe
 
   // Nested teams: a member that leads its own Orchestra (or has agents placed
   // under it by hand) shows that whole tree beneath it, read-only.
-  const { forest, orchestras } = useAgentOrgChart({ rootIds: [conductorId] });
+  const { forest, orchestras } = useAgentOrgChart({ rootIds: [boxId("agent", conductorId)] });
   const [collapsedTeams, setCollapsedTeams] = useState<Set<string>>(() => new Set());
   const toggleTeam = (agentId: string) =>
     setCollapsedTeams((prev) => {

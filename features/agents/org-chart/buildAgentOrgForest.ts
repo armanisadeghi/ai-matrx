@@ -14,7 +14,7 @@
 import type { OrgChartTreeNode } from "@/components/official/org-chart/layout";
 import type { OrchestraAccent, OrchestraMode } from "@/features/agents/orchestras/constants";
 import type { OrgLinkKind, RecordedLinkKind } from "./constants";
-import { ORG_LINK_KIND_META } from "./constants";
+import { ORG_LINK_KIND_META, boxId, parseBoxId, type OrgBoxType } from "./constants";
 
 export interface OrchestraShape {
   members: Array<{ agentId: string; roleTitle: string | null }>;
@@ -49,10 +49,14 @@ export function crossLinksOf(manualEdges: readonly ManualOrgEdge[]): AgentCrossL
 }
 
 export interface AgentOrgNodeData {
-  agentId: string;
+  /** `type:entityId` — unique per box on the chart. */
+  boxId: string;
+  boxType: OrgBoxType;
+  /** The agent / user / team / position id. */
+  entityId: string;
   /** Kind of the link from its parent; null at a root. */
   edgeKind: OrgLinkKind | null;
-  /** The parent this appearance hangs under. */
+  /** The box id this appearance hangs under. */
   parentId: string | null;
   /** Role title inside the parent Orchestra (automatic links only). */
   roleTitle: string | null;
@@ -71,28 +75,35 @@ export interface AgentOrgNodeData {
 }
 
 export interface BuildAgentOrgForestInput {
-  /** Loaded Orchestras by Conductor id. */
+  /** Loaded Orchestras by Conductor AGENT id (plain ids; boxes are derived). */
   orchestras: ReadonlyMap<string, OrchestraShape>;
   /** Every agent known to lead an Orchestra (loaded or not). */
   conductorIds: ReadonlySet<string>;
   /** Conductors whose Orchestra failed to load. */
   failedIds?: ReadonlySet<string>;
   manualEdges: readonly ManualOrgEdge[];
-  /** Build only from these roots (e.g. one Orchestra). Omit for the whole chart. */
+  /** Build only from these BOX ids (e.g. one Orchestra). Omit for the whole chart. */
   rootIds?: readonly string[];
-  /** Used to order roots and manual reports; defaults to the id. */
-  nameOf?: (agentId: string) => string;
+  /** Used to order roots and manual reports (takes a box id); defaults to the id. */
+  nameOf?: (boxId: string) => string;
+  /** Extra boxes that belong on the chart even with no links (e.g. every position). */
+  standalone?: readonly string[];
 }
 
 interface ChildLink {
-  agentId: string;
+  /** Box id of the child. */
+  bid: string;
   kind: OrgLinkKind;
   roleTitle: string | null;
 }
 
 export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTreeNode<AgentOrgNodeData>[] {
-  const { orchestras, conductorIds, manualEdges, rootIds } = input;
-  const failedIds = input.failedIds ?? new Set<string>();
+  const { manualEdges, rootIds } = input;
+  // Orchestra inputs are keyed by plain agent ids; everything inside is box ids.
+  const orchestras = new Map<string, OrchestraShape>();
+  for (const [id, o] of input.orchestras) orchestras.set(boxId("agent", id), o);
+  const conductorIds = new Set([...input.conductorIds].map((id) => boxId("agent", id)));
+  const failedIds = new Set([...(input.failedIds ?? [])].map((id) => boxId("agent", id)));
   const nameOf = input.nameOf ?? ((id: string) => id);
 
   // children + parent counts over BOTH kinds
@@ -102,21 +113,21 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
 
   const link = (parent: string, child: ChildLink) => {
     all.add(parent);
-    all.add(child.agentId);
+    all.add(child.bid);
     const list = childrenOf.get(parent) ?? [];
     // One link per (parent, child): an automatic link wins over a manual copy of it.
-    if (list.some((c) => c.agentId === child.agentId)) return;
+    if (list.some((c) => c.bid === child.bid)) return;
     list.push(child);
     childrenOf.set(parent, list);
-    const ps = parentsOf.get(child.agentId) ?? new Set<string>();
+    const ps = parentsOf.get(child.bid) ?? new Set<string>();
     ps.add(parent);
-    parentsOf.set(child.agentId, ps);
+    parentsOf.set(child.bid, ps);
   };
 
   for (const [conductorId, o] of orchestras) {
     all.add(conductorId);
     for (const m of o.members) {
-      link(conductorId, { agentId: m.agentId, kind: "directs", roleTitle: m.roleTitle });
+      link(conductorId, { bid: boxId("agent", m.agentId), kind: "directs", roleTitle: m.roleTitle });
     }
   }
   const manualSorted = [...manualEdges].sort((a, b) =>
@@ -124,7 +135,7 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
   );
   for (const e of manualSorted) {
     if (ORG_LINK_KIND_META[e.kind].tree) {
-      link(e.managerId, { agentId: e.reportId, kind: e.kind, roleTitle: null });
+      link(e.managerId, { bid: e.reportId, kind: e.kind, roleTitle: null });
     } else {
       // Cross links don't place a box, but both ends belong on the chart.
       all.add(e.managerId);
@@ -132,37 +143,41 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
     }
   }
   for (const id of conductorIds) all.add(id);
+  for (const id of input.standalone ?? []) all.add(id);
 
   const visited = new Set<string>();
 
   const build = (
-    agentId: string,
+    bid: string,
     key: string,
     parent: { id: string; link: ChildLink } | null,
     path: ReadonlySet<string>,
   ): OrgChartTreeNode<AgentOrgNodeData> => {
-    visited.add(agentId);
-    const o = orchestras.get(agentId);
-    const isConductor = conductorIds.has(agentId) || orchestras.has(agentId);
-    const loop = path.has(agentId);
-    const parentCount = parentsOf.get(agentId)?.size ?? 0;
+    visited.add(bid);
+    const o = orchestras.get(bid);
+    const isConductor = conductorIds.has(bid) || orchestras.has(bid);
+    const loop = path.has(bid);
+    const parentCount = parentsOf.get(bid)?.size ?? 0;
+    const { type: boxType, id: entityId } = parseBoxId(bid);
     const data: AgentOrgNodeData = {
-      agentId,
+      boxId: bid,
+      boxType,
+      entityId,
       edgeKind: parent?.link.kind ?? null,
       parentId: parent?.id ?? null,
       roleTitle: parent?.link.roleTitle ?? null,
       isConductor,
       accent: o?.accent,
       mode: o?.mode,
-      pending: isConductor && !o && !failedIds.has(agentId),
-      unavailable: !o && failedIds.has(agentId),
+      pending: isConductor && !o && !failedIds.has(bid),
+      unavailable: !o && failedIds.has(bid),
       otherPlacements: Math.max(0, parentCount - (parent ? 1 : 0)),
       loop,
     };
     if (loop) return { key, edgeKind: data.edgeKind, data, children: [] };
-    const nextPath = new Set(path).add(agentId);
-    const children = (childrenOf.get(agentId) ?? []).map((c) =>
-      build(c.agentId, `${key}/${c.agentId}`, { id: agentId, link: c }, nextPath),
+    const nextPath = new Set(path).add(bid);
+    const children = (childrenOf.get(bid) ?? []).map((c) =>
+      build(c.bid, `${key}/${c.bid}`, { id: bid, link: c }, nextPath),
     );
     return { key, edgeKind: data.edgeKind, data, children };
   };
@@ -180,9 +195,9 @@ export function buildAgentOrgForest(input: BuildAgentOrgForestInput): OrgChartTr
     while (stack.length) {
       const cur = stack.pop() as string;
       for (const c of childrenOf.get(cur) ?? []) {
-        if (!seen.has(c.agentId) && c.agentId !== id) {
-          seen.add(c.agentId);
-          stack.push(c.agentId);
+        if (!seen.has(c.bid) && c.bid !== id) {
+          seen.add(c.bid);
+          stack.push(c.bid);
         }
       }
     }

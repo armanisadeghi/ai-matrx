@@ -17,23 +17,23 @@ describe("buildAgentOrgForest", () => {
     });
     expect(forest).toHaveLength(1);
     const [seo] = forest;
-    expect(seo.data.agentId).toBe("seo");
-    expect(seo.children.map((c) => c.data.agentId)).toEqual(["content", "links"]);
+    expect(seo.data.entityId).toBe("seo");
+    expect(seo.children.map((c) => c.data.entityId)).toEqual(["content", "links"]);
     const content = seo.children[0];
     expect(content.data.isConductor).toBe(true);
     expect(content.edgeKind).toBe("directs");
     expect(content.data.roleTitle).toBe("content-role");
-    expect(content.children.map((c) => c.data.agentId)).toEqual(["writer", "editor"]);
-    expect(content.children[0].key).toBe("seo/content/writer");
+    expect(content.children.map((c) => c.data.entityId)).toEqual(["writer", "editor"]);
+    expect(content.children[0].key).toBe("agent:seo/agent:content/agent:writer");
   });
 
   it("puts a manual box above an automatic subtree and colours each link by kind", () => {
     const forest = buildAgentOrgForest({
       orchestras: new Map([["content", orch("writer")]]),
       conductorIds: new Set(["content"]),
-      manualEdges: [{ edgeId: "m1", managerId: "cmo", reportId: "content", kind: "reports_to" }],
+      manualEdges: [{ edgeId: "m1", managerId: "agent:cmo", reportId: "agent:content", kind: "reports_to" }],
     });
-    expect(forest.map((r) => r.data.agentId)).toEqual(["cmo"]);
+    expect(forest.map((r) => r.data.entityId)).toEqual(["cmo"]);
     const content = forest[0].children[0];
     expect(content.edgeKind).toBe("reports_to");
     expect(content.children[0].edgeKind).toBe("directs");
@@ -48,7 +48,7 @@ describe("buildAgentOrgForest", () => {
       conductorIds: new Set(["a", "b"]),
       manualEdges: [],
     });
-    const appearances = forest.flatMap((r) => r.children).filter((c) => c.data.agentId === "shared");
+    const appearances = forest.flatMap((r) => r.children).filter((c) => c.data.entityId === "shared");
     expect(appearances).toHaveLength(2);
     expect(appearances.every((c) => c.data.otherPlacements === 1)).toBe(true);
   });
@@ -57,7 +57,7 @@ describe("buildAgentOrgForest", () => {
     const forest = buildAgentOrgForest({
       orchestras: new Map([["a", orch("x")]]),
       conductorIds: new Set(["a"]),
-      manualEdges: [{ edgeId: "m", managerId: "a", reportId: "x", kind: "reports_to" }],
+      manualEdges: [{ edgeId: "m", managerId: "agent:a", reportId: "agent:x", kind: "reports_to" }],
     });
     expect(forest[0].children).toHaveLength(1);
     expect(forest[0].children[0].edgeKind).toBe("directs");
@@ -76,7 +76,7 @@ describe("buildAgentOrgForest", () => {
     expect(forest).toHaveLength(1);
     const top = forest[0];
     const loopBox = top.children[0].children[0];
-    expect(loopBox.data.agentId).toBe(top.data.agentId);
+    expect(loopBox.data.boxId).toBe(top.data.boxId);
     expect(loopBox.data.loop).toBe(true);
     expect(loopBox.children).toHaveLength(0);
   });
@@ -108,12 +108,31 @@ describe("buildAgentOrgForest", () => {
       { edgeId: "d", managerId: "lead", reportId: "advisor", kind: "dotted_line" as const },
     ];
     const forest = buildAgentOrgForest({ orchestras: new Map(), conductorIds: new Set(), manualEdges });
-    expect(forest.map((r) => r.data.agentId).sort()).toEqual(["advisor", "expert", "intake", "lead"]);
+    expect(forest.map((r) => r.data.entityId).sort()).toEqual(["advisor", "expert", "intake", "lead"]);
     expect(forest.every((r) => r.children.length === 0)).toBe(true);
     expect(crossLinksOf(manualEdges).map((l) => `${l.fromId}>${l.toId}:${l.kind}`)).toEqual([
       "intake>expert:hands_off_to",
       "lead>advisor:dotted_line",
     ]);
+  });
+
+  it("puts people, teams and positions on the chart with agents under them", () => {
+    const forest = buildAgentOrgForest({
+      orchestras: new Map([["seo", orch("writer")]]),
+      conductorIds: new Set(["seo"]),
+      manualEdges: [
+        { edgeId: "1", managerId: "user:arman", reportId: "position:seo-lead", kind: "reports_to" },
+        { edgeId: "2", managerId: "position:seo-lead", reportId: "agent:seo", kind: "reports_to" },
+      ],
+      standalone: ["position:open-seat"],
+    });
+    const top = forest.find((r) => r.data.boxId === "user:arman")!;
+    expect(top.data.boxType).toBe("user");
+    const seat = top.children[0];
+    expect(seat.data.boxType).toBe("position");
+    expect(seat.children[0].data.entityId).toBe("seo");
+    expect(seat.children[0].children[0].edgeKind).toBe("directs");
+    expect(forest.some((r) => r.data.boxId === "position:open-seat")).toBe(true);
   });
 
   it("builds only under the given roots", () => {
@@ -124,8 +143,8 @@ describe("buildAgentOrgForest", () => {
       ]),
       conductorIds: new Set(["a", "b"]),
       manualEdges: [],
-      rootIds: ["b"],
+      rootIds: ["agent:b"],
     });
-    expect(forest.map((r) => r.data.agentId)).toEqual(["b"]);
+    expect(forest.map((r) => r.data.entityId)).toEqual(["b"]);
   });
 });

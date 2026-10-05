@@ -96,3 +96,38 @@ export function recordedLinkKindOf(metadata: unknown): RecordedLinkKind {
 
 /** How many agent ids go into one association read. */
 export const ORG_CHART_READ_CHUNK = 150;
+
+// ── Boxes ────────────────────────────────────────────────────────────────────
+// A box on the chart is one of four things (Arman, 2026-10-04). Each is an
+// existing entity token, so links between any two are ordinary association
+// edges. "Position" (not "Role" — that word is owner/admin/member) is a named
+// seat in iam.position that a person may fill and agents may sit under.
+
+export const ORG_BOX_TYPES = ["agent", "user", "team", "position"] as const;
+export type OrgBoxType = (typeof ORG_BOX_TYPES)[number];
+
+export const ORG_BOX_LABEL: Record<OrgBoxType, string> = {
+  agent: "Agent",
+  user: "Person",
+  team: "Team",
+  position: "Position",
+};
+
+/** A box's id on the chart: `type:entityId` (an agent and a person never collide). */
+export function boxId(type: OrgBoxType, entityId: string): string {
+  return `${type}:${entityId}`;
+}
+
+export function isOrgBoxType(value: unknown): value is OrgBoxType {
+  return typeof value === "string" && (ORG_BOX_TYPES as readonly string[]).includes(value);
+}
+
+/** `agent:123` → { type: "agent", id: "123" }. A bare id reads as an agent. */
+export function parseBoxId(id: string): { type: OrgBoxType; id: string } {
+  const i = id.indexOf(":");
+  if (i > 0) {
+    const type = id.slice(0, i);
+    if (isOrgBoxType(type)) return { type, id: id.slice(i + 1) };
+  }
+  return { type: "agent", id };
+}

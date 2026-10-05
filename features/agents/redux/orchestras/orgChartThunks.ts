@@ -10,6 +10,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { orgChartService } from "@/features/agents/org-chart/orgChartService";
 import { orchestrasActions } from "./slice";
+import { positionsService, type OrgPosition } from "@/features/agents/org-chart/positionsService";
 import type { RecordedLinkKind } from "@/features/agents/org-chart/constants";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -26,7 +27,7 @@ const inFlight = new Set<string>();
 /** Read the manual links under these managers. Already-read managers are skipped unless `force`. */
 export function loadManualOrgEdges(
   managerIds: readonly string[],
-  opts?: { force?: boolean },
+  opts?: { force?: boolean; direction?: "out" | "both" },
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const queried = new Set(getState().orchestras.manualOrgChart.queried);
@@ -37,7 +38,7 @@ export function loadManualOrgEdges(
     ids.forEach((id) => inFlight.add(id));
     dispatch(orchestrasActions.manualOrgPending());
     try {
-      const res = await orgChartService.listManualEdges(ids);
+      const res = await orgChartService.listManualEdges(ids, opts?.direction ?? "out");
       if (isScopesRpcErr(res)) dispatch(orchestrasActions.manualOrgRejected(res.error.message));
       else dispatch(orchestrasActions.manualOrgFulfilled({ managerIds: ids, edges: res.data }));
     } finally {
@@ -173,5 +174,88 @@ export function removeManualManager(managerId: string, reportId: string): AppThu
       return { ok: false, error: res.error.message };
     }
     return { ok: true };
+  };
+}
+
+// ── positions ──────────────────────────────────────────────────────────────
+
+let positionsInFlight: Promise<void> | null = null;
+
+/** Load every position the viewer can see. Deduped; `ready` short-circuits unless forced. */
+export function loadOrgPositions(opts?: { force?: boolean }): AppThunk<Promise<void>> {
+  return async (dispatch, getState) => {
+    const status = getState().orchestras.manualOrgChart.positionsStatus;
+    if (!opts?.force && status === "ready") return;
+    if (positionsInFlight) return positionsInFlight;
+    dispatch(orchestrasActions.positionsPending());
+    positionsInFlight = positionsService
+      .list()
+      .then((rows) => {
+        dispatch(orchestrasActions.positionsFulfilled(rows));
+      })
+      .catch((e: unknown) => {
+        dispatch(orchestrasActions.positionsRejected(e instanceof Error ? e.message : "Positions could not be loaded."));
+      })
+      .finally(() => {
+        positionsInFlight = null;
+      });
+    return positionsInFlight;
+  };
+}
+
+export function createOrgPosition(input: {
+  organizationId: string;
+  name: string;
+  description?: string | null;
+  filledByUserId?: string | null;
+}): AppThunk<Promise<OrgPosition | { error: string }>> {
+  return async (dispatch) => {
+    try {
+      const created = await positionsService.create(input);
+      dispatch(orchestrasActions.positionUpserted(created));
+      return created;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "The position could not be created." };
+    }
+  };
+}
+
+export function updateOrgPosition(
+  id: string,
+  patch: { name?: string; description?: string | null; filledByUserId?: string | null },
+): AppThunk<Promise<OrgChartWriteResult>> {
+  return async (dispatch) => {
+    try {
+      dispatch(orchestrasActions.positionUpserted(await positionsService.update(id, patch)));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "The position could not be saved." };
+    }
+  };
+}
+
+/** Move a position to Trash. Its links stay, so a restore brings it back in place. */
+export function removeOrgPosition(position: OrgPosition): AppThunk<Promise<OrgChartWriteResult>> {
+  return async (dispatch) => {
+    dispatch(orchestrasActions.positionRemoved(position.id));
+    try {
+      await positionsService.remove(position.id);
+      return { ok: true };
+    } catch (e) {
+      dispatch(orchestrasActions.positionUpserted(position));
+      return { ok: false, error: e instanceof Error ? e.message : "The position could not be removed." };
+    }
+  };
+}
+
+export function restoreOrgPosition(position: OrgPosition): AppThunk<Promise<OrgChartWriteResult>> {
+  return async (dispatch) => {
+    try {
+      await positionsService.restore(position.id);
+      dispatch(orchestrasActions.positionUpserted(position));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "The position could not be restored." };
+    }
   };
 }

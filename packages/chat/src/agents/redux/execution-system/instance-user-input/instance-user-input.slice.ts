@@ -15,10 +15,12 @@
  *     undo back to what they were typing before they sent
  */
 
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, current, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   InstanceUserInputState,
+  ManagedResource,
   PreSendState,
+  SubmittedAttachments,
 } from "../../../types/instance.types";
 import type { MessagePart } from "@ai-matrx/agents/generated/stream-events";
 import { destroyInstance } from "../conversations/conversations.slice";
@@ -95,6 +97,19 @@ function pushSnapshot(
   }
 }
 
+/** A detached copy, so a carried snapshot never aliases another entry. */
+function copyAttachments(
+  attachments: SubmittedAttachments | undefined,
+): SubmittedAttachments | undefined {
+  if (!attachments) return undefined;
+  return {
+    messageParts: attachments.messageParts
+      ? [...attachments.messageParts]
+      : null,
+    resources: attachments.resources.map((resource) => ({ ...resource })),
+  };
+}
+
 // =============================================================================
 // Slice
 // =============================================================================
@@ -112,6 +127,7 @@ const instanceUserInputSlice = createSlice({
         lastSubmittedUserValues?: Record<string, unknown>;
         originalSubmittedText?: string;
         originalSubmittedUserValues?: Record<string, unknown>;
+        originalSubmittedAttachments?: SubmittedAttachments;
       }>,
     ) {
       const {
@@ -121,6 +137,7 @@ const instanceUserInputSlice = createSlice({
         lastSubmittedUserValues = {},
         originalSubmittedText,
         originalSubmittedUserValues,
+        originalSubmittedAttachments,
       } = action.payload;
       // A pre-init entry may already exist: `setUserInputText` creates one for
       // keystrokes typed before instance init lands (never-drop doctrine).
@@ -137,6 +154,9 @@ const instanceUserInputSlice = createSlice({
         originalSubmittedUserValues: originalSubmittedUserValues
           ? { ...originalSubmittedUserValues }
           : undefined,
+        originalSubmittedAttachments: copyAttachments(
+          originalSubmittedAttachments,
+        ),
         _undoPast: [],
         _undoFuture: [],
       };
@@ -310,9 +330,14 @@ const instanceUserInputSlice = createSlice({
       action: PayloadAction<{
         conversationId: string;
         userValues: Record<string, unknown>;
+        /**
+         * The resource chips being sent, in order — the attachment half of the
+         * first-submit snapshot. Omitted only by a send that carries none.
+         */
+        resources?: readonly ManagedResource[];
       }>,
     ) {
-      const { conversationId, userValues } = action.payload;
+      const { conversationId, userValues, resources = [] } = action.payload;
       const entry = state.byConversationId[conversationId];
       if (!entry) return;
       entry.submissionPhase = "pending";
@@ -326,6 +351,10 @@ const instanceUserInputSlice = createSlice({
       if (entry.originalSubmittedText === undefined) {
         entry.originalSubmittedText = entry.text;
         entry.originalSubmittedUserValues = { ...userValues };
+        entry.originalSubmittedAttachments = {
+          messageParts: entry.messageParts ? [...current(entry.messageParts)] : null,
+          resources: resources.map((resource) => ({ ...resource })),
+        };
       }
     },
 
@@ -410,6 +439,9 @@ const instanceUserInputSlice = createSlice({
         to.originalSubmittedUserValues = from.originalSubmittedUserValues
           ? { ...from.originalSubmittedUserValues }
           : undefined;
+        to.originalSubmittedAttachments = copyAttachments(
+          current(from).originalSubmittedAttachments,
+        );
       } else {
         state.byConversationId[toConversationId] = {
           conversationId: toConversationId,
@@ -422,6 +454,9 @@ const instanceUserInputSlice = createSlice({
           originalSubmittedUserValues: from.originalSubmittedUserValues
             ? { ...from.originalSubmittedUserValues }
             : undefined,
+          originalSubmittedAttachments: copyAttachments(
+            current(from).originalSubmittedAttachments,
+          ),
           _undoPast: [],
           _undoFuture: [],
         };
@@ -454,6 +489,9 @@ const instanceUserInputSlice = createSlice({
         originalSubmittedUserValues: userInput?.originalSubmittedUserValues
           ? { ...userInput.originalSubmittedUserValues }
           : undefined,
+        originalSubmittedAttachments: copyAttachments(
+          userInput?.originalSubmittedAttachments,
+        ),
         _undoPast: [],
         _undoFuture: [],
       };

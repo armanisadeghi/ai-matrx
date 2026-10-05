@@ -1,8 +1,8 @@
 // features/agents/org-chart/components/AgentOrgChartView.tsx
 //
-// THE agent org chart surface: every link type (constants.ts ORG_LINK_KIND_META)
-// in one chart. Used full-page at /agents/org-chart and, rooted at one
-// Conductor, inside the Orchestra builder.
+// THE org chart surface: agents, people, teams and positions in one chart, with
+// every link type (constants.ts ORG_LINK_KIND_META). Used full-page at
+// /agents/org-chart and, rooted at one Conductor, inside the Orchestra builder.
 //
 // Editing happens on the chart itself:
 //   • drag a card (or a selection) onto another card — what that means is
@@ -12,10 +12,11 @@
 //   • arrows walk the tree, Enter opens, Delete removes the selected placements.
 // Orchestra links belong to their Orchestra: moving into / out of one changes
 // who the Conductor directs, and the menu says so before it happens.
+// Every id here is a BOX id (`type:entityId`).
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -26,18 +27,23 @@ import {
   LinkIcon,
   MoreHorizontal,
   Network,
+  PencilLine,
   Plus,
   Share2,
+  Trash2,
   Unlink,
+  UserRoundPlus,
   X,
 } from "lucide-react";
-import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   addCrossLink,
   removeManualManager,
+  removeOrgPosition,
+  restoreOrgPosition,
   setManualManager,
+  updateOrgPosition,
 } from "@/features/agents/redux/orchestras/orgChartThunks";
 import { addAgentToOrchestra, removeAgentFromOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import { OrgChart, type OrgChartCrossLink } from "@/components/official/org-chart/OrgChart";
@@ -60,21 +66,36 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu/context-menu";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { toast } from "@/lib/toast";
 import { announceReversible } from "@/lib/reversible/announceReversible";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { ORG_LINK_KIND_META, type RecordedLinkKind } from "../constants";
+import { resolveVisiblePerson } from "@/features/organizations/people/visiblePeople";
+import {
+  ORG_BOX_LABEL,
+  ORG_LINK_KIND_META,
+  boxId,
+  parseBoxId,
+  type OrgBoxType,
+  type RecordedLinkKind,
+} from "../constants";
 import { crossLinksOf, type AgentOrgNodeData } from "../buildAgentOrgForest";
 import { useAgentOrgChart } from "../useAgentOrgChart";
-import { AgentOrgCard } from "./AgentOrgCard";
+import { loadTeamsDirectory } from "../useBoxIdentity";
+import type { OrgPosition } from "../positionsService";
+import { AgentOrgCard, boxHref } from "./AgentOrgCard";
+import { OrgBoxPicker } from "./OrgBoxPicker";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+type CrossKind = Exclude<RecordedLinkKind, "reports_to">;
 
 type PickMode =
   | { kind: "manager-for"; reportIds: string[] } // choose who these sit under
-  | { kind: "report-of"; managerId: string } // choose an agent to put under this one
-  | { kind: "cross-link"; fromId: string; link: Exclude<RecordedLinkKind, "reports_to"> } // choose where this hands off / has a dotted line
-  | { kind: "new-root" }; // choose an agent, then who it sits under
+  | { kind: "report-of"; managerId: string } // choose a box to put under this one
+  | { kind: "cross-link"; fromId: string; link: CrossKind } // where this hands off / has a dotted line
+  | { kind: "fill"; positionId: string } // who fills this position
+  | { kind: "new-root" }; // choose a box, then who it sits under
 
 /** One thing a drop (or a menu item) can do. */
 interface ChartAction {
@@ -93,7 +114,7 @@ function indexForest(forest: Node[]) {
   while (stack.length) {
     const n = stack.pop() as Node;
     byKey.set(n.key, n);
-    if (!firstKeyOf.has(n.data.agentId)) firstKeyOf.set(n.data.agentId, n.key);
+    if (!firstKeyOf.has(n.data.boxId)) firstKeyOf.set(n.data.boxId, n.key);
     for (let i = n.children.length - 1; i >= 0; i--) stack.push(n.children[i]);
   }
   return { byKey, firstKeyOf };
@@ -102,9 +123,9 @@ function indexForest(forest: Node[]) {
 export function AgentOrgChartView({
   rootIds,
   emptyTitle = "No org chart yet",
-  emptyBody = "Orchestras appear here on their own. You can also place any agent under another by hand.",
+  emptyBody = "Orchestras appear here on their own. Add people, teams, positions and agents to record the rest.",
 }: {
-  /** Chart only what hangs under these agents. Omit for the whole chart. */
+  /** Chart only what hangs under these AGENTS (plain agent ids). Omit for the whole chart. */
   rootIds?: string[];
   emptyTitle?: string;
   emptyBody?: string;
@@ -115,18 +136,60 @@ export function AgentOrgChartView({
   const agents = useAppSelector(selectAllAgents);
   // "Show only this branch" narrows the chart to one box and what hangs under it.
   const [branchRoot, setBranchRoot] = useState<string | null>(null);
-  const effectiveRoots = branchRoot ? [branchRoot] : rootIds;
-  const { forest, orchestras, manualEdges, loading, error } = useAgentOrgChart({ rootIds: effectiveRoots });
+  const effectiveRoots = branchRoot ? [branchRoot] : rootIds?.map((id) => boxId("agent", id));
+  const { forest, orchestras, manualEdges, positions, loading, error } = useAgentOrgChart({
+    rootIds: effectiveRoots,
+  });
   const [selection, setSelection] = useState<string[]>([]);
   const [pick, setPick] = useState<PickMode | null>(null);
+  const [renaming, setRenaming] = useState<OrgPosition | null>(null);
   const [dropMenu, setDropMenu] = useState<{ x: number; y: number; title: string; actions: ChartAction[] } | null>(
     null,
   );
 
   const { byKey, firstKeyOf } = indexForest(forest);
-  const nameOf = (id: string) => agents[id]?.name ?? "this agent";
-  const focusAgent = searchParams.get("focus");
-  const focusKey = focusAgent ? (firstKeyOf.get(focusAgent) ?? null) : null;
+  const positionById = new Map(positions.map((p) => [p.id, p]));
+
+  // Names of people and teams for menus and messages (cards resolve their own).
+  const [names, setNames] = useState<Record<string, string>>({});
+  const unnamed = [...firstKeyOf.keys()]
+    .filter((b) => {
+      const t = parseBoxId(b).type;
+      return (t === "user" || t === "team") && !(b in names);
+    })
+    .sort()
+    .join(",");
+  useEffect(() => {
+    if (!unnamed) return;
+    let live = true;
+    void (async () => {
+      const found: Record<string, string> = {};
+      const teams = unnamed.includes("team:") ? await loadTeamsDirectory() : null;
+      await Promise.all(
+        unnamed.split(",").map(async (b) => {
+          const { type, id } = parseBoxId(b);
+          if (type === "user") found[b] = (await resolveVisiblePerson(id))?.name ?? "this person";
+          if (type === "team") found[b] = teams?.get(id)?.name ?? "this team";
+        }),
+      );
+      if (live) setNames((cur) => ({ ...cur, ...found }));
+    })();
+    return () => {
+      live = false;
+    };
+  }, [unnamed]);
+
+  const nameOf = (b: string) => {
+    const { type, id } = parseBoxId(b);
+    if (type === "agent") return agents[id]?.name ?? "this agent";
+    if (type === "position") return positionById.get(id)?.name ?? "this position";
+    return names[b] ?? (type === "user" ? "this person" : "this team");
+  };
+  const nounOf = (b: string) => ORG_BOX_LABEL[parseBoxId(b).type].toLowerCase();
+  const agentOf = (n: Node) => (n.data.boxType === "agent" ? n.data.entityId : null);
+
+  const focusBox = searchParams.get("focus");
+  const focusKey = focusBox ? (firstKeyOf.get(focusBox) ?? firstKeyOf.get(boxId("agent", focusBox)) ?? null) : null;
 
   const crossLinks: OrgChartCrossLink[] = crossLinksOf(manualEdges).flatMap((l) => {
     const fromKey = firstKeyOf.get(l.fromId);
@@ -140,7 +203,7 @@ export function AgentOrgChartView({
   };
 
   /** Place `reportId` under `managerId` (recorded). Undo puts back its earlier manager, if any. */
-  const placeUnder = async (managerId: string, reportId: string, quiet = false) => {
+  const placeUnder = async (managerId: string, reportId: string) => {
     const before = manualEdges.find((e) => e.reportId === reportId && ORG_LINK_KIND_META[e.kind].tree);
     const res = await dispatch(setManualManager(managerId, reportId));
     if (!res.ok) {
@@ -149,19 +212,17 @@ export function AgentOrgChartView({
       } else fail(res.error);
       return false;
     }
-    if (!quiet) {
-      announceReversible({
-        verb: "move",
-        noun: "agent",
-        subject: `${nameOf(reportId)} under ${nameOf(managerId)}`,
-        undo: async () => {
-          const back = before
-            ? await dispatch(setManualManager(before.managerId, reportId))
-            : await dispatch(removeManualManager(managerId, reportId));
-          if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
-        },
-      });
-    }
+    announceReversible({
+      verb: "move",
+      noun: nounOf(reportId),
+      subject: `${nameOf(reportId)} under ${nameOf(managerId)}`,
+      undo: async () => {
+        const back = before
+          ? await dispatch(setManualManager(before.managerId, reportId))
+          : await dispatch(removeManualManager(managerId, reportId));
+        if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
+      },
+    });
     return true;
   };
 
@@ -179,7 +240,7 @@ export function AgentOrgChartView({
       undo: async () => {
         const back =
           before && !ORG_LINK_KIND_META[before.kind].tree
-            ? await dispatch(addCrossLink(managerId, reportId, before.kind as Exclude<RecordedLinkKind, "reports_to">))
+            ? await dispatch(addCrossLink(managerId, reportId, before.kind as CrossKind))
             : await dispatch(setManualManager(managerId, reportId));
         if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
       },
@@ -195,7 +256,7 @@ export function AgentOrgChartView({
     announceReversible({
       verb: "move",
       noun: "agent",
-      subject: `${nameOf(agentId)} into the ${nameOf(conductorId)} Orchestra`,
+      subject: `${agents[agentId]?.name ?? "the agent"} into the ${agents[conductorId]?.name ?? ""} Orchestra`,
       undo: async () => {
         const back = await dispatch(removeAgentFromOrchestra({ conductorId, agentId }));
         if (!back.ok) throw new Error(back.error ?? "Could not take it back out.");
@@ -204,9 +265,11 @@ export function AgentOrgChartView({
   };
 
   const leaveOrchestra = async (conductorId: string, agentId: string) => {
+    const conductorName = agents[conductorId]?.name ?? "the Conductor";
+    const agentName = agents[agentId]?.name ?? "this agent";
     const ok = await confirm({
-      title: `Take ${nameOf(agentId)} out of the ${nameOf(conductorId)} Orchestra?`,
-      description: `${nameOf(conductorId)} will stop directing it, so its runs no longer use ${nameOf(agentId)}.`,
+      title: `Take ${agentName} out of the ${conductorName} Orchestra?`,
+      description: `${conductorName} will stop directing it, so its runs no longer use ${agentName}.`,
       confirmLabel: "Take it out",
       variant: "destructive",
     });
@@ -219,7 +282,7 @@ export function AgentOrgChartView({
     announceReversible({
       verb: "remove",
       noun: "agent",
-      subject: `${nameOf(agentId)} from the ${nameOf(conductorId)} Orchestra`,
+      subject: `${agentName} from the ${conductorName} Orchestra`,
       undo: async () => {
         const back = await dispatch(addAgentToOrchestra({ conductorId, agentId }));
         if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
@@ -227,7 +290,7 @@ export function AgentOrgChartView({
     });
   };
 
-  const linkAcross = async (fromId: string, toId: string, link: Exclude<RecordedLinkKind, "reports_to">) => {
+  const linkAcross = async (fromId: string, toId: string, link: CrossKind) => {
     const res = await dispatch(addCrossLink(fromId, toId, link));
     if (!res.ok) {
       fail(res.error);
@@ -236,40 +299,78 @@ export function AgentOrgChartView({
     toast.success(`${nameOf(fromId)} ${ORG_LINK_KIND_META[link].verb} ${nameOf(toId)}.`);
   };
 
+  const fillPosition = async (positionId: string, userBox: string | null) => {
+    const before = positionById.get(positionId)?.filledByUserId ?? null;
+    const res = await dispatch(
+      updateOrgPosition(positionId, { filledByUserId: userBox ? parseBoxId(userBox).id : null }),
+    );
+    if (!res.ok) {
+      fail(res.error);
+      return;
+    }
+    announceReversible({
+      verb: "change",
+      noun: "position",
+      subject: positionById.get(positionId)?.name ?? null,
+      undo: async () => {
+        const back = await dispatch(updateOrgPosition(positionId, { filledByUserId: before }));
+        if (!back.ok) throw new Error(back.error ?? "Could not put it back.");
+      },
+    });
+  };
+
+  const deletePosition = async (p: OrgPosition) => {
+    const res = await dispatch(removeOrgPosition(p));
+    if (!res.ok) {
+      fail(res.error);
+      return;
+    }
+    announceReversible({
+      verb: "delete",
+      noun: "position",
+      subject: p.name,
+      undo: async () => {
+        const back = await dispatch(restoreOrgPosition(p));
+        if (!back.ok) throw new Error(back.error ?? "Could not restore it.");
+      },
+    });
+  };
+
   // ── what a drop means ─────────────────────────────────────────────────────
   /** Every sensible outcome of dropping `dragged` onto `target`, best first. */
   const dropActions = (dragged: Node, target: Node): ChartAction[] => {
     const d = dragged.data;
     const t = target.data;
     const actions: ChartAction[] = [];
-    const fromOrchestra = d.edgeKind === "directs" && d.parentId ? d.parentId : null;
-    if (t.isConductor) {
+    const draggedAgent = agentOf(dragged);
+    const fromOrchestra = d.edgeKind === "directs" && d.parentId ? parseBoxId(d.parentId).id : null;
+    if (t.isConductor && draggedAgent) {
       actions.push({
-        label: fromOrchestra ? `Move into the ${nameOf(t.agentId)} Orchestra` : `Add to the ${nameOf(t.agentId)} Orchestra`,
-        hint: `${nameOf(t.agentId)} will direct it when it runs.`,
+        label: fromOrchestra ? `Move into the ${nameOf(t.boxId)} Orchestra` : `Add to the ${nameOf(t.boxId)} Orchestra`,
+        hint: `${nameOf(t.boxId)} will direct it when it runs.`,
         run: async () => {
-          await joinOrchestra(t.agentId, d.agentId);
-          if (fromOrchestra && fromOrchestra !== t.agentId) await leaveOrchestra(fromOrchestra, d.agentId);
+          await joinOrchestra(t.entityId, draggedAgent);
+          if (fromOrchestra && fromOrchestra !== t.entityId) await leaveOrchestra(fromOrchestra, draggedAgent);
         },
       });
     }
     actions.push({
-      label: `Place under ${nameOf(t.agentId)}`,
-      hint: fromOrchestra ? `Recorded only. It stays in the ${nameOf(fromOrchestra)} Orchestra.` : "Recorded only.",
-      run: () => void placeUnder(t.agentId, d.agentId),
+      label: `Place under ${nameOf(t.boxId)}`,
+      hint: fromOrchestra ? `Recorded only. It stays in the ${agents[fromOrchestra]?.name ?? ""} Orchestra.` : "Recorded only.",
+      run: () => void placeUnder(t.boxId, d.boxId),
     });
-    if (fromOrchestra) {
+    if (fromOrchestra && draggedAgent) {
       actions.push({
-        label: `Place under ${nameOf(t.agentId)} and leave ${nameOf(fromOrchestra)}`,
+        label: `Place under ${nameOf(t.boxId)} and leave the Orchestra`,
         run: async () => {
-          if (await placeUnder(t.agentId, d.agentId)) await leaveOrchestra(fromOrchestra, d.agentId);
+          if (await placeUnder(t.boxId, d.boxId)) await leaveOrchestra(fromOrchestra, draggedAgent);
         },
       });
     }
     actions.push({
-      label: `${nameOf(d.agentId)} hands off to ${nameOf(t.agentId)}`,
+      label: `${nameOf(d.boxId)} hands off to ${nameOf(t.boxId)}`,
       hint: "Draws an arrow; nothing moves.",
-      run: () => void linkAcross(d.agentId, t.agentId, "hands_off_to"),
+      run: () => void linkAcross(d.boxId, t.boxId, "hands_off_to"),
     });
     return actions;
   };
@@ -280,7 +381,7 @@ export function AgentOrgChartView({
     if (!targetKey) {
       // Dropped on empty canvas: take recorded boxes out from under their manager (to the top).
       const manual = dragged.filter((n) => n.data.edgeKind === "reports_to" && n.data.parentId);
-      manual.forEach((n) => void unplace(n.data.parentId as string, n.data.agentId));
+      manual.forEach((n) => void unplace(n.data.parentId as string, n.data.boxId));
       if (manual.length < dragged.length) {
         toast.info("Orchestra members stay in their Orchestra — use the card menu to take one out.");
       }
@@ -291,20 +392,34 @@ export function AgentOrgChartView({
     const simple = dragged.every((n) => n.data.edgeKind !== "directs") && !target.data.isConductor;
     if (simple) {
       // Unambiguous: act at once, Undo in the announcement.
-      dragged.forEach((n) => void placeUnder(target.data.agentId, n.data.agentId));
+      dragged.forEach((n) => void placeUnder(target.data.boxId, n.data.boxId));
       return;
     }
     if (dragged.length === 1) {
-      setDropMenu({ ...point, title: `Drop ${nameOf(dragged[0].data.agentId)} on ${nameOf(target.data.agentId)}`, actions: dropActions(dragged[0], target) });
-    } else {
       setDropMenu({
         ...point,
-        title: `Drop ${dragged.length} agents on ${nameOf(target.data.agentId)}`,
+        title: `Drop ${nameOf(dragged[0].data.boxId)} on ${nameOf(target.data.boxId)}`,
+        actions: dropActions(dragged[0], target),
+      });
+    } else {
+      const agentsDragged = dragged.map(agentOf).filter((a): a is string => Boolean(a));
+      setDropMenu({
+        ...point,
+        title: `Drop ${dragged.length} on ${nameOf(target.data.boxId)}`,
         actions: [
-          ...(target.data.isConductor
-            ? [{ label: `Add all to the ${nameOf(target.data.agentId)} Orchestra`, run: () => dragged.forEach((n) => void joinOrchestra(target.data.agentId, n.data.agentId)) }]
+          ...(target.data.isConductor && agentsDragged.length
+            ? [
+                {
+                  label: `Add the agents to the ${nameOf(target.data.boxId)} Orchestra`,
+                  run: () => agentsDragged.forEach((a) => void joinOrchestra(target.data.entityId, a)),
+                },
+              ]
             : []),
-          { label: `Place all under ${nameOf(target.data.agentId)}`, hint: "Recorded only.", run: () => dragged.forEach((n) => void placeUnder(target.data.agentId, n.data.agentId)) },
+          {
+            label: `Place all under ${nameOf(target.data.boxId)}`,
+            hint: "Recorded only.",
+            run: () => dragged.forEach((n) => void placeUnder(target.data.boxId, n.data.boxId)),
+          },
         ],
       });
     }
@@ -315,7 +430,7 @@ export function AgentOrgChartView({
     if (!target) return false;
     return dragKeys.every((k) => {
       const n = byKey.get(k);
-      if (!n || n.data.agentId === target.data.agentId) return false;
+      if (!n || n.data.boxId === target.data.boxId) return false;
       // Never under its own team: a key path is ancestry ("a/b/c").
       return !targetKey.startsWith(`${k}/`);
     });
@@ -325,16 +440,15 @@ export function AgentOrgChartView({
     for (const k of keys) {
       const n = byKey.get(k);
       if (!n?.data.parentId) continue;
-      if (n.data.edgeKind === "directs") void leaveOrchestra(n.data.parentId, n.data.agentId);
-      else void unplace(n.data.parentId, n.data.agentId);
+      const agent = agentOf(n);
+      if (n.data.edgeKind === "directs" && agent) void leaveOrchestra(parseBoxId(n.data.parentId).id, agent);
+      else void unplace(n.data.parentId, n.data.boxId);
     }
   };
 
-  const hrefOf = (d: AgentOrgNodeData) => (d.isConductor ? `/agents/orchestras/${d.agentId}` : `/agents/${d.agentId}`);
-
-  const copyLink = async (agentId: string) => {
+  const copyLink = async (b: string) => {
     const url = new URL(window.location.href);
-    url.searchParams.set("focus", agentId);
+    url.searchParams.set("focus", b);
     try {
       await navigator.clipboard.writeText(url.toString());
       toast.success("Link to this box copied.");
@@ -352,7 +466,9 @@ export function AgentOrgChartView({
   const cardMenu = (n: Node, { Item, Label, Sep }: MenuParts) => {
     const d = n.data;
     const many = selection.length > 1 && selection.includes(n.key);
-    const outgoing = manualEdges.filter((e) => e.managerId === d.agentId && !ORG_LINK_KIND_META[e.kind].tree);
+    const outgoing = manualEdges.filter((e) => e.managerId === d.boxId && !ORG_LINK_KIND_META[e.kind].tree);
+    const href = boxHref(d);
+    const position = d.boxType === "position" ? positionById.get(d.entityId) : undefined;
     return (
       <>
         {many ? (
@@ -362,12 +478,12 @@ export function AgentOrgChartView({
               onSelect={() =>
                 setPick({
                   kind: "manager-for",
-                  reportIds: selection.map((k) => byKey.get(k)?.data.agentId).filter((x): x is string => Boolean(x)),
+                  reportIds: selection.map((k) => byKey.get(k)?.data.boxId).filter((x): x is string => Boolean(x)),
                 })
               }
             >
               <ArrowUpToLine className="mr-2 h-4 w-4" />
-              Place all under another agent…
+              Place all under…
             </Item>
             <Item onSelect={() => onDelete(selection)}>
               <Unlink className="mr-2 h-4 w-4" />
@@ -376,44 +492,70 @@ export function AgentOrgChartView({
             <Sep />
           </>
         ) : null}
-        <Item onSelect={() => router.push(hrefOf(d))}>
-          <Network className="mr-2 h-4 w-4" />
-          {d.isConductor ? "Open Orchestra" : "Open agent"}
-        </Item>
-        <Item onSelect={() => setBranchRoot(d.agentId)}>
+        {href && (
+          <Item onSelect={() => router.push(href)}>
+            <Network className="mr-2 h-4 w-4" />
+            {d.isConductor ? "Open Orchestra" : `Open ${ORG_BOX_LABEL[d.boxType].toLowerCase()}`}
+          </Item>
+        )}
+        <Item onSelect={() => setBranchRoot(d.boxId)}>
           <Focus className="mr-2 h-4 w-4" />
           Show only this branch
         </Item>
-        <Item onSelect={() => void copyLink(d.agentId)}>
+        <Item onSelect={() => void copyLink(d.boxId)}>
           <LinkIcon className="mr-2 h-4 w-4" />
           Copy link to this box
         </Item>
+        {position && (
+          <>
+            <Sep />
+            <Label className="text-xs text-muted-foreground">Position</Label>
+            <Item onSelect={() => setRenaming(position)}>
+              <PencilLine className="mr-2 h-4 w-4" />
+              Rename…
+            </Item>
+            <Item onSelect={() => setPick({ kind: "fill", positionId: position.id })}>
+              <UserRoundPlus className="mr-2 h-4 w-4" />
+              {position.filledByUserId ? "Change who fills it…" : "Fill with a person…"}
+            </Item>
+            {position.filledByUserId && (
+              <Item onSelect={() => void fillPosition(position.id, null)}>
+                <X className="mr-2 h-4 w-4" />
+                Mark as open
+              </Item>
+            )}
+            <Item onSelect={() => void deletePosition(position)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete position
+            </Item>
+          </>
+        )}
         <Sep />
         <Label className="text-xs text-muted-foreground">Arrange</Label>
-        <Item onSelect={() => setPick({ kind: "manager-for", reportIds: [d.agentId] })}>
+        <Item onSelect={() => setPick({ kind: "manager-for", reportIds: [d.boxId] })}>
           <ArrowUpToLine className="mr-2 h-4 w-4" />
-          Place under another agent…
+          Place under…
         </Item>
-        <Item onSelect={() => setPick({ kind: "report-of", managerId: d.agentId })}>
+        <Item onSelect={() => setPick({ kind: "report-of", managerId: d.boxId })}>
           <ArrowDownToLine className="mr-2 h-4 w-4" />
-          Put an agent under this one…
+          Put something under this one…
         </Item>
-        <Item onSelect={() => setPick({ kind: "cross-link", fromId: d.agentId, link: "hands_off_to" })}>
+        <Item onSelect={() => setPick({ kind: "cross-link", fromId: d.boxId, link: "hands_off_to" })}>
           <ArrowRightLeft className="mr-2 h-4 w-4" />
           Hands off to…
         </Item>
-        <Item onSelect={() => setPick({ kind: "cross-link", fromId: d.agentId, link: "dotted_line" })}>
+        <Item onSelect={() => setPick({ kind: "cross-link", fromId: d.boxId, link: "dotted_line" })}>
           <Share2 className="mr-2 h-4 w-4" />
           Dotted line to…
         </Item>
         {d.parentId && d.edgeKind === "reports_to" && (
-          <Item onSelect={() => void unplace(d.parentId as string, d.agentId)}>
+          <Item onSelect={() => void unplace(d.parentId as string, d.boxId)}>
             <Unlink className="mr-2 h-4 w-4" />
             Remove from under {nameOf(d.parentId)}
           </Item>
         )}
-        {d.parentId && d.edgeKind === "directs" && (
-          <Item onSelect={() => void leaveOrchestra(d.parentId as string, d.agentId)}>
+        {d.parentId && d.edgeKind === "directs" && agentOf(n) && (
+          <Item onSelect={() => void leaveOrchestra(parseBoxId(d.parentId as string).id, d.entityId)}>
             <Unlink className="mr-2 h-4 w-4" />
             Take out of the {nameOf(d.parentId)} Orchestra…
           </Item>
@@ -434,14 +576,19 @@ export function AgentOrgChartView({
   };
 
   // ── pickers ───────────────────────────────────────────────────────────────
-  const onPicked = async (agentId: string) => {
+  const onPicked = async (picked: string) => {
     const mode = pick;
     setPick(null);
     if (!mode) return;
-    if (mode.kind === "manager-for") for (const r of mode.reportIds) await placeUnder(agentId, r);
-    else if (mode.kind === "report-of") await placeUnder(mode.managerId, agentId);
-    else if (mode.kind === "cross-link") await linkAcross(mode.fromId, agentId, mode.link);
-    else setPick({ kind: "manager-for", reportIds: [agentId] }); // step 2 of "Place an agent"
+    if (mode.kind === "manager-for") for (const r of mode.reportIds) await placeUnder(picked, r);
+    else if (mode.kind === "report-of") await placeUnder(mode.managerId, picked);
+    else if (mode.kind === "cross-link") await linkAcross(mode.fromId, picked, mode.link);
+    else if (mode.kind === "fill") await fillPosition(mode.positionId, picked);
+    else if (parseBoxId(picked).type === "position" && !manualEdges.some((e) => e.reportId === picked)) {
+      // A new or unplaced position is already on the chart on its own; placing it is optional.
+      setSelection([firstKeyOf.get(picked) ?? picked]);
+      setPick({ kind: "manager-for", reportIds: [picked] });
+    } else setPick({ kind: "manager-for", reportIds: [picked] }); // step 2 of "Add to chart"
   };
 
   if (forest.length === 0 && loading) {
@@ -458,12 +605,12 @@ export function AgentOrgChartView({
         size="sm"
         variant="outline"
         className="h-9 bg-card/95 px-2.5 shadow-sm"
-        aria-label="Place an agent"
-        title="Place an agent"
+        aria-label="Add to chart"
+        title="Add to chart"
         onClick={() => setPick({ kind: "new-root" })}
       >
         <Plus className="h-3.5 w-3.5 sm:mr-1" />
-        <span className="hidden sm:inline">Place an agent</span>
+        <span className="hidden sm:inline">Add to chart</span>
       </Button>
       {branchRoot && (
         <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-card/95 pl-2.5 pr-1 text-xs shadow-sm">
@@ -483,23 +630,36 @@ export function AgentOrgChartView({
         ? `Who do these ${pick.reportIds.length} sit under?`
         : `Who does ${nameOf(pick.reportIds[0])} sit under?`
       : pick?.kind === "report-of"
-        ? `Put an agent under ${nameOf(pick.managerId)}`
+        ? `Put something under ${nameOf(pick.managerId)}`
         : pick?.kind === "cross-link"
           ? `${nameOf(pick.fromId)} ${ORG_LINK_KIND_META[pick.link].verb}…`
-          : "Place an agent on the chart";
+          : pick?.kind === "fill"
+            ? `Who fills ${nameOf(boxId("position", pick.positionId))}?`
+            : "Add to the chart";
   const pickerBody =
     pick?.kind === "cross-link"
       ? ORG_LINK_KIND_META[pick.link].description
       : pick?.kind === "new-root"
-        ? "Pick the agent first, then who it sits under."
-        : "Recorded structure. To have one agent direct others, make it an Orchestra.";
+        ? "Pick what to add, then who it sits under."
+        : pick?.kind === "fill"
+          ? "The person who holds this seat."
+          : "Recorded structure. To have an agent direct others, make it an Orchestra.";
+  const pickerTypes: readonly OrgBoxType[] = pick?.kind === "fill" ? ["user"] : ["agent", "user", "team", "position"];
+  const pickerExclude =
+    pick?.kind === "manager-for"
+      ? pick.reportIds
+      : pick?.kind === "report-of"
+        ? [pick.managerId]
+        : pick?.kind === "cross-link"
+          ? [pick.fromId]
+          : [];
 
   return (
     <div className="relative h-full w-full">
       {error && (
         <div className="absolute inset-x-3 top-14 z-30 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
           Part of the chart could not load: {error}
-          <ErrorAlchemyMenu error={error} operation="Load the agent org chart" />
+          <ErrorAlchemyMenu error={error} operation="Load the org chart" />
         </div>
       )}
       <OrgChart
@@ -510,20 +670,21 @@ export function AgentOrgChartView({
         onSelectionChange={setSelection}
         focusKey={focusKey}
         persistKey={`agents:${(effectiveRoots ?? ["all"]).join(",")}`}
-        getSearchText={(d) => `${agents[d.agentId]?.name ?? ""} ${d.roleTitle ?? ""}`}
-        dragLabel={(d) => nameOf(d.agentId)}
+        getSearchText={(d) => `${nameOf(d.boxId)} ${d.roleTitle ?? ""}`}
+        dragLabel={(d) => nameOf(d.boxId)}
         onDrop={onDrop}
         canDrop={canDrop}
         onAddBelow={(key) => {
           const n = byKey.get(key);
-          if (n) setPick({ kind: "report-of", managerId: n.data.agentId });
+          if (n) setPick({ kind: "report-of", managerId: n.data.boxId });
         }}
         onOpen={(key) => {
           const n = byKey.get(key);
-          if (n) router.push(hrefOf(n.data));
+          const href = n ? boxHref(n.data) : null;
+          if (href) router.push(href);
         }}
         onDelete={onDelete}
-        ariaLabel="Agent org chart"
+        ariaLabel="Org chart"
         toolbar={toolbar}
         emptyState={
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-textured p-6 text-center">
@@ -533,7 +694,7 @@ export function AgentOrgChartView({
             <div className="flex gap-2">
               <Button size="sm" onClick={() => setPick({ kind: "new-root" })}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                Place an agent
+                Add to chart
               </Button>
               <Button size="sm" variant="outline" asChild>
                 <Link href="/agents/orchestras">Open Orchestras</Link>
@@ -548,7 +709,9 @@ export function AgentOrgChartView({
                 <AgentOrgCard
                   node={n}
                   state={state}
-                  memberCount={orchestras.get(n.node.data.agentId)?.members.length}
+                  memberCount={
+                    n.node.data.boxType === "agent" ? orchestras.get(n.node.data.entityId)?.members.length : undefined
+                  }
                   menu={
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -611,25 +774,31 @@ export function AgentOrgChartView({
             <DialogDescription>{pickerBody}</DialogDescription>
           </DialogHeader>
           {pick && (
-            <AgentListInlinePicker
+            <OrgBoxPicker
               key={JSON.stringify(pick)}
-              consumerId="agent-org-chart-picker"
-              onSelect={(id: string) => void onPicked(id)}
-              showPinnedAgent={false}
-              excludeAgentIds={
-                pick.kind === "manager-for"
-                  ? pick.reportIds
-                  : pick.kind === "report-of"
-                    ? [pick.managerId]
-                    : pick.kind === "cross-link"
-                      ? [pick.fromId]
-                      : []
-              }
-              className="h-96 rounded-md border border-border bg-card"
+              onPick={(b) => void onPicked(b)}
+              exclude={pickerExclude}
+              types={pickerTypes}
+              initialType={pick.kind === "fill" ? "user" : "agent"}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      <TextInputDialog
+        open={renaming !== null}
+        onOpenChange={(open) => !open && setRenaming(null)}
+        title="Rename position"
+        defaultValue={renaming?.name ?? ""}
+        confirmLabel="Rename"
+        onConfirm={async (value) => {
+          const p = renaming;
+          setRenaming(null);
+          if (!p || value.trim() === p.name) return;
+          const res = await dispatch(updateOrgPosition(p.id, { name: value }));
+          if (!res.ok) fail(res.error);
+        }}
+      />
     </div>
   );
 }

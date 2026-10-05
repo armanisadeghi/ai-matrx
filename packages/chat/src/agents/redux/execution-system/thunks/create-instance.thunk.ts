@@ -67,11 +67,15 @@ import {
   replaceSurfaceContextEntries,
   setContextEntries,
 } from "../instance-context/instance-context.slice";
-import type { InstanceContextEntry } from "../../../types/instance.types";
 import {
   initInstanceUserInput,
+  setUserInputMessageParts,
   setUserInputText,
 } from "../instance-user-input/instance-user-input.slice";
+import {
+  copyInstanceRequestDraft,
+  replaceInstanceResources,
+} from "./copy-instance-request-draft.thunk";
 import { initInstanceClientTools } from "../instance-client-tools/instance-client-tools.slice";
 import {
   initInstanceUIState,
@@ -921,6 +925,8 @@ export const startNewConversation = createAsyncThunk<
         originalSubmittedText: currentInputEntry?.originalSubmittedText,
         originalSubmittedUserValues:
           currentInputEntry?.originalSubmittedUserValues,
+        originalSubmittedAttachments:
+          currentInputEntry?.originalSubmittedAttachments,
       }),
     );
     dispatch(initInstanceClientTools({ conversationId: newConversationId }));
@@ -989,7 +995,8 @@ interface StartNewConversationAndExecuteResult {
  * submitting creates a NEW conversation alongside the old one:
  *   1. Read current variable values and user input text from the old conversation
  *   2. Create a new conversation by re-snapshotting the agent definition
- *   3. Transfer variable values and user input into the new conversation
+ *   3. Copy the whole request draft (text, variables, attachments, context,
+ *      run settings) into the new conversation
  *   4. Switch focus to the new conversation via setFocus (no callback needed)
  *   5. Execute on the new conversation (fresh agent call)
  *
@@ -1081,6 +1088,7 @@ export const startNewConversationAndExecute = createAsyncThunk<
         lastSubmittedUserValues: currentInput?.lastSubmittedUserValues,
         originalSubmittedText: currentInput?.originalSubmittedText,
         originalSubmittedUserValues: currentInput?.originalSubmittedUserValues,
+        originalSubmittedAttachments: currentInput?.originalSubmittedAttachments,
       }),
     );
     dispatch(initInstanceClientTools({ conversationId: newConversationId }));
@@ -1118,6 +1126,16 @@ export const startNewConversationAndExecute = createAsyncThunk<
       initInstanceMessages({
         conversationId: newConversationId,
         apiEndpointMode: currentMode,
+      }),
+    );
+
+    // The whole request — attachments, context, run settings — moves with
+    // the text: the one full-draft copier, then the authorship-preserving
+    // replay of the values below.
+    dispatch(
+      copyInstanceRequestDraft({
+        sourceConversationId: currentConversationId,
+        targetConversationId: newConversationId,
       }),
     );
 
@@ -1181,7 +1199,8 @@ interface SplitInputIntoNewConversationResult {
  * Autoclear's "split" step — called immediately after a submit.
  *
  * Creates a fresh conversation (same agent snapshot, same UI state) pre-populated
- * with the text + variables the user just submitted, then points ONLY the input
+ * with the request the user just submitted — text, variables AND attachments
+ * (resource chips + message parts), context and run settings — then points ONLY the input
  * focus slot at it. The display slot stays on `currentConversationId` so the
  * user watches the stream land into the previous conversation while typing the
  * next turn into the new one.
@@ -1190,7 +1209,8 @@ interface SplitInputIntoNewConversationResult {
  */
 export const splitInputIntoNewConversation = createAsyncThunk<
   SplitInputIntoNewConversationResult,
-  SplitInputIntoNewConversationArgs
+  SplitInputIntoNewConversationArgs,
+  { state: ChatRootState }
 >(
   "instances/splitInputIntoNewConversation",
   async ({ currentConversationId, surfaceKey }, { dispatch, getState }) => {
@@ -1258,31 +1278,6 @@ export const splitInputIntoNewConversation = createAsyncThunk<
     dispatch(initInstanceResources({ conversationId: newConversationId }));
     dispatch(initInstanceContext({ conversationId: newConversationId }));
 
-    // Carry context entries forward onto the fresh conversation so the
-    // engineer's slot values persist across the autoclear boundary. The
-    // builder-side localStorage seed will also attempt this, but doing it
-    // here removes the race with the hook's useEffect.
-    const currentContextMap =
-      state.instanceContext.byConversationId[currentConversationId];
-    if (currentContextMap) {
-      const carriedEntries: InstanceContextEntry[] =
-        Object.values(currentContextMap);
-      if (carriedEntries.length > 0) {
-        dispatch(
-          setContextEntries({
-            conversationId: newConversationId,
-            entries: carriedEntries.map((e) => ({
-              key: e.key,
-              value: e.value,
-              slotMatched: e.slotMatched,
-              type: e.type,
-              label: e.label,
-            })),
-          }),
-        );
-      }
-    }
-
     dispatch(
       initInstanceUserInput({
         conversationId: newConversationId,
@@ -1291,6 +1286,7 @@ export const splitInputIntoNewConversation = createAsyncThunk<
         lastSubmittedUserValues: currentInput?.lastSubmittedUserValues,
         originalSubmittedText: currentInput?.originalSubmittedText,
         originalSubmittedUserValues: currentInput?.originalSubmittedUserValues,
+        originalSubmittedAttachments: currentInput?.originalSubmittedAttachments,
       }),
     );
     dispatch(initInstanceClientTools({ conversationId: newConversationId }));
@@ -1331,8 +1327,24 @@ export const splitInputIntoNewConversation = createAsyncThunk<
       }),
     );
 
-    // Same rule as the carry above — the submitted snapshot is a replay, not
-    // a new authorship claim.
+    // THE IDENTICAL RE-RUN: the fresh conversation gets the WHOLE request the
+    // engineer just ran — attachments (resource chips + message parts),
+    // context entries, scope values, run settings, server override, client
+    // tools and the page switch — through the one full-draft copier. Before
+    // 2026-10-04 this carried text + variables only, so every auto-clear run
+    // after the first silently went without its files. The submit is still
+    // in flight here (its stream has not cleared anything), so the source's
+    // live attachments ARE the ones just sent.
+    dispatch(
+      copyInstanceRequestDraft({
+        sourceConversationId: currentConversationId,
+        targetConversationId: newConversationId,
+      }),
+    );
+
+    // The typed text and the values come from the FROZEN submit, never the
+    // live composer (the person may already be typing): the submitted
+    // snapshot is a replay, not a new authorship claim.
     if (Object.keys(carryUserValues).length > 0) {
       dispatch(
         restoreVariableValues({
@@ -1345,18 +1357,16 @@ export const splitInputIntoNewConversation = createAsyncThunk<
       );
     }
 
-    // initInstanceUserInput sets `text` but the setUserInputText path is what
-    // the undo stack uses — re-apply via setUserInputText so the snapshot is
-    // consistent and the input slice's phase/undo invariants hold.
-    if (carryText) {
-      dispatch(
-        setUserInputText({
-          conversationId: newConversationId,
-          text: carryText,
-          userValues: carryUserValues,
-        }),
-      );
-    }
+    // Re-apply the submitted text via setUserInputText (the undo-stack path)
+    // so the snapshot is consistent — and so the copier's read of the live
+    // composer never replaces what was actually sent.
+    dispatch(
+      setUserInputText({
+        conversationId: newConversationId,
+        text: carryText,
+        userValues: carryUserValues,
+      }),
+    );
 
     // Catch the display up to the conversation that's now streaming, and
     // move ONLY the input focus onto the fresh conversation.
@@ -1391,7 +1401,7 @@ interface SetAutoClearModeArgs {
  * handled automatically by smartExecute and works on its own).
  *
  * Enabling additionally restores the engineer to the ORIGINAL test inputs — the
- * exact text + variable values from the FIRST submit, when there was no history
+ * exact text, variable values and attachments from the FIRST submit, when there was no history
  * (see `originalSubmitted*` on the input slice, captured once and carried across
  * splits). This lets the engineer return to the exact state they were in when
  * they first clicked submit and re-run it. If no original snapshot exists yet
@@ -1453,6 +1463,26 @@ export const setAutoClearMode = createAsyncThunk<
     if (originalText === undefined) return; // nothing submitted yet — plain flip
 
     const originalValues = entry?.originalSubmittedUserValues ?? {};
+    const originalAttachments = entry?.originalSubmittedAttachments;
+    // The first submit's files come back with its words: the same message
+    // parts and the same resource chips, exactly as they were sent.
+    const restoreOriginalAttachments = (targetConversationId: string) => {
+      if (!originalAttachments) return;
+      dispatch(
+        setUserInputMessageParts({
+          conversationId: targetConversationId,
+          parts: originalAttachments.messageParts
+            ? [...originalAttachments.messageParts]
+            : null,
+        }),
+      );
+      dispatch(
+        replaceInstanceResources({
+          conversationId: targetConversationId,
+          resources: originalAttachments.resources,
+        }),
+      );
+    };
     // Restoring the first submit restores WHO WROTE IT too — the surface that
     // launched this conversation still owns the values it wired.
     const originalHostValueNames =
@@ -1487,6 +1517,7 @@ export const setAutoClearMode = createAsyncThunk<
           userValues: originalValues,
         }),
       );
+      restoreOriginalAttachments(newConversationId);
       return;
     }
 
@@ -1509,5 +1540,6 @@ export const setAutoClearMode = createAsyncThunk<
         userValues: originalValues,
       }),
     );
+    restoreOriginalAttachments(conversationId);
   },
 );
