@@ -1,5 +1,12 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Table and picklist tiles carry real basics
+
+- Live finding (test@test.com, reloaded 6-item board, nothing selected): the agent was right about notes, task and scope but only guessed for the moving-boxes table and the Rooms picklist.
+- Cause: the data-tables manifest's `briefValues` ended in `column_list`, and a brief projects a list to `{ count }`, so a loaded table's basics were its name, a row count and "N columns" (no names, no rows). A table that had not drawn (`not_loaded_yet`) was ignored by the sampler and kept only `{ type, name }`.
+- Fix: two on-demand scope values, `brief_columns` (header names) and `brief_first_rows` (first 1-3 rows, one line, empty cells left out), built by `features/data-tables/agent-context/tableBrief.ts` inside `buildDataTablesScope`; `briefValues` = `table_name, brief_columns, row_count, brief_first_rows` (the fair share still sets how many and how long). A never-drawn table's scope now offers its name and columns from `useTable` / `useFields` (cached store reads the grid makes anyway; no row count until a page is read), and the overview and sampler use that cheap brief, marked `stale`, until the grid loads and replaces it. A fuller last-known brief is never overwritten by the cheap one.
+- Guard: `__tests__/table-tile-basics.test.tsx`.
+
 ## 2026-10-04 — Every item's basics are always in the agent's first request
 
 - Owner: "the agent should instantly know the basics of what I have on my board and if I have one selected, then it should have the full data for that one ... it always sees enough to know what I'm talking about and has id references."

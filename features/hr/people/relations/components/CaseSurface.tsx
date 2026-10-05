@@ -23,6 +23,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, Ban, Lock, Scale } from "lucide-react";
 
@@ -217,9 +218,7 @@ export function CaseSurface({
             <h2 className="text-sm font-semibold text-foreground">
               {caseKind === "incident" ? "What happened" : "Summary"}
             </h2>
-            <p className="mt-1.5 whitespace-pre-wrap text-sm text-foreground">
-              {incident?.summary ?? action?.summary}
-            </p>
+            <div className="mt-1.5 text-sm text-foreground"><RichContent source={incident?.summary ?? action?.summary ?? ""} level="standard" /></div>
           </section>
         ) : null}
 

@@ -10,7 +10,18 @@
  *
  * These are the guards. Remove the `enabled` gate and the first two fail.
  */
-import { renderHook } from "@host/test-utils/renderHook";
+import * as React from "react";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import { renderHook as renderBareHook } from "@host/test-utils/renderHook";
+
+// The hook reads the selected organization (it is part of the question), so it
+// renders under a store, as it does in the app.
+const store = configureStore({ reducer: { chatHost: () => ({ org: null }) } });
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <Provider store={store}>{children}</Provider>
+);
+const renderHook = <T,>(hook: () => T) => renderBareHook(hook, { wrapper });
 
 const resolveMandate = jest.fn();
 

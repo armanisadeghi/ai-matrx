@@ -21,6 +21,7 @@
  * Bodies render through `MarkdownStream` in persisted mode, never hand-drawn.
  */
 import { useEffect, useRef, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Eye, MessageSquare, RefreshCw, Send, X } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -64,7 +65,7 @@ function ReviewIntro({ review }: { review: Review }) {
           </span>
         </div>
         {review.summary && (
-          <p className="whitespace-pre-wrap text-sm">{review.summary}</p>
+          <div className="text-sm"><RichContent source={review.summary ?? ""} level="standard" /></div>
         )}
         {review.what_worked && (
           <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">

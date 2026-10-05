@@ -1,6 +1,7 @@
 "use client";
 
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -420,9 +421,7 @@ export function AgentSneakPeekContent({
         <EntityCustomFields entityToken="agent" recordId={agentId} />
         <Section label="Description">
           {record.description ? (
-            <p className="text-sm text-foreground whitespace-pre-wrap break-words">
-              {record.description}
-            </p>
+            <div className="text-sm text-foreground break-words"><RichContent source={record.description ?? ""} level="standard" /></div>
           ) : (
             <EmptyValue />
           )}

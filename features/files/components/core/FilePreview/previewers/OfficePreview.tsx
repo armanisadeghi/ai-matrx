@@ -23,10 +23,8 @@
  * Both the extraction and the PDF FileRef are cached at module level
  * (office-extraction-cache.ts) so reopening the preview pane is instant.
  *
- * DELIBERATE standalone react-markdown (same reasoning as MarkdownPreview):
- * this module is only entered via the lazy previewer edge, so the markdown
- * stack's weight stays inside the previewer chunk — and it must NOT pull the
- * shared MarkdownCore chunk that chat surfaces stream through. PdfPreview is
+ * Markdown renders through <RichContent> (the one core; slide bodies at the
+ * standard level, the whole document at the full level). PdfPreview is
  * a React.lazy in-gate edge to the SAME module PreviewerSwitch lazy-loads,
  * so both resolve to one shared react-pdf chunk (Fragmentation Law: no new
  * next/dynamic loadable).
@@ -44,10 +42,8 @@ import {
   Loader2,
   Presentation,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { cn } from "@/lib/utils";
-import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import { stripDuplicatePortionHeading } from "@/lib/markdown/portion-heading";
 import type {
   OfficeExtraction,
@@ -133,10 +129,8 @@ function SlideCard({
         )}
       </div>
       {body ? (
-        <article className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {guardMarkdownDelimiters(body).text}
-          </ReactMarkdown>
+        <article className="max-w-none">
+          <RichContent source={body} level="standard" />
         </article>
       ) : (
         // A title-only slide: stripping its heading leaves nothing, and an
@@ -592,10 +586,8 @@ export function OfficePreview({
               ))}
             </div>
           ) : (
-            <article className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {guardMarkdownDelimiters(extraction.markdown ?? "").text}
-              </ReactMarkdown>
+            <article className="max-w-none">
+              <RichContent source={extraction.markdown ?? ""} level="full" />
             </article>
           )}
           {(extraction.markdown ?? "").trim() === "" && (

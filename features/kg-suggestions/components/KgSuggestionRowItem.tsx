@@ -23,6 +23,7 @@
 "use client";
 
 import { useState } from "react";
+import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import {
@@ -1118,9 +1119,7 @@ function SourceItemPreview({
             <ErrorAlchemyMenu error={error} operation="Load the source preview" />
           </p>
         ) : body ? (
-          <p className="line-clamp-4 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-foreground/80">
-            {body}
-          </p>
+          <div className="line-clamp-4 break-words text-[11px] leading-relaxed text-foreground/80"><RichContentPreview source={body} lines={4} /></div>
         ) : (
           <p className="text-[11px] italic text-muted-foreground">
             {doc?.notFound

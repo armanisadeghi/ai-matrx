@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { formatDistanceToNow } from "date-fns";
 import { Loader2, MessageSquarePlus, Trash2 } from "lucide-react";
 
@@ -242,9 +243,7 @@ export function MandateNotesPanel({
               className="min-w-0 rounded-md border border-border bg-card p-2"
             >
               <div className="flex min-w-0 items-start gap-2">
-                <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-xs text-foreground">
-                  {note.body}
-                </p>
+                <div className="min-w-0 flex-1 break-words text-xs text-foreground"><RichContent source={note.body ?? ""} level="standard" /></div>
                 <button
                   type="button"
                   onClick={() => void remove(note)}

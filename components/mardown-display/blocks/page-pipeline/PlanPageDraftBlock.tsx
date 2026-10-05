@@ -31,6 +31,7 @@
  */
 
 import type { ReactNode } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { FileText, Loader2, Search, Target } from "lucide-react";
 
 import type {
@@ -144,9 +145,7 @@ function DraftSection({ section }: { section: PlanDraftSectionData }) {
         </p>
       ) : null}
       {section.body ? (
-        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-          {section.body}
-        </p>
+        <div className="mt-1 text-sm leading-relaxed text-foreground"><RichContent source={section.body ?? ""} level="standard" /></div>
       ) : null}
       {section.bullets.length > 0 ? (
         <ul className="mt-1 list-disc space-y-0.5 pl-4">

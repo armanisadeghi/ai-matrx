@@ -240,6 +240,10 @@ dormant; the host keeps them in an `ItemSurfaceIndex` (`BoardToolHost.itemSurfac
   (`{type, name}`, `basics_stale: true`). Two tabs: a basics-only change never overrides the other
   tab's move and is never a conflict; the later sample wins (`board/merge.ts`). Guard:
   `__tests__/board-items-always-inline.test.ts`.
+  **Tables and picklists** (`matrx-user/data-tables`): their brief is `table_name`, `brief_columns`
+  (header names), `row_count`, `brief_first_rows` (first 1-3 rows as one short line) — text on purpose,
+  because a brief turns a list into `{ count }`. A table that has not drawn still offers name + columns
+  (store reads, no row count) as stale basics until the grid loads. Guard: `__tests__/table-tile-basics.test.tsx`.
 - **Request two, same turn — `board_open_item(id)`**: the item's declared values (with descriptions,
   capped) and controls — write-target lines from `describeAgentWritableTargets` (the injected
   `apply_surface_write` wording) and client tools with schemas — and it selects the item (a parked

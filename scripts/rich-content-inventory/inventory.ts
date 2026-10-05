@@ -313,6 +313,20 @@ function selfTest(): never {
     [`${dir}/barrel.ts`]: 'export * from "@/components/content-refine/BasicContentEditor";\n',
     [`${dir}/PlantedViaBarrel.tsx`]:
       'import { BasicContentEditor } from "./barrel";\nexport const x = BasicContentEditor;\n',
+    // The census-item-9 patterns: markdown shown as source, regex link parsing, a re-grown
+    // preview stripper / announcement parser, a second markdown package.
+    [`${dir}/PlantedPreWrap.tsx`]:
+      'export function P({ item }: { item: { description: string } }) {\n' +
+      '  return <p className="text-sm whitespace-pre-wrap">{item.description}</p>;\n}\n',
+    [`${dir}/PlantedRegexLinks.tsx`]:
+      "export function L({ m }: { m: string }) {\n" +
+      "  const parts = m.split(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g);\n" +
+      "  return <span>{parts}</span>;\n}\n",
+    [`${dir}/planted-strip.ts`]:
+      "export const cleanMarkdownPreview = (t: string) => t.replace(/\\*\\*/g, '');\n" +
+      "export function renderAnnouncementMessage(m: string) { return [m]; }\n",
+    [`${dir}/PlantedMarked.tsx`]:
+      'import { marked } from "marked";\nexport const H = (s: string) => <div dangerouslySetInnerHTML={{ __html: marked(s) as string }} />;\n',
   };
   const expected = new Set([
     `pkg:react-markdown :: ${dir}/PlantedDirect.tsx`,
@@ -320,6 +334,11 @@ function selfTest(): never {
     `hand-rolled:AutoTextarea :: ${dir}/PlantedDirect.tsx`,
     `BasicContentEditor :: ${dir}/barrel.ts`,
     `BasicContentEditor :: ${dir}/PlantedViaBarrel.tsx`,
+    `raw:pre-wrap-field :: ${dir}/PlantedPreWrap.tsx`,
+    `regex-markdown-link-in-jsx :: ${dir}/PlantedRegexLinks.tsx`,
+    `cleanMarkdownPreview :: ${dir}/planted-strip.ts`,
+    `renderAnnouncementMessage :: ${dir}/planted-strip.ts`,
+    `pkg:marked :: ${dir}/PlantedMarked.tsx`,
   ]);
   const v1 = evaluate(syntheticBaseline, bannedKeys(analyze(withVirtual(real, planted))));
   const got = new Set(v1.fresh.map((f) => f.key));
@@ -386,6 +405,24 @@ function main(): never {
     const kept = baseline.filter((k) => cur.has(k));
     writeBaseline(kept);
     console.log(`Pruned ${baseline.length - kept.length} stale entries; ${kept.length} remain. (New entries are never added here.)`);
+    return exitAfterDrain(0);
+  }
+  if (args.includes("--seed-piece")) {
+    // One-time census for a piece that has JUST been banned: appends its current sites.
+    // Refuses when the baseline already holds an entry for the piece (the baseline only shrinks).
+    const id = args[args.indexOf("--seed-piece") + 1];
+    if (!id || !LEGACY_PIECES.some((p) => p.id === id && p.status === "banned")) {
+      console.error(`✖ --seed-piece needs the id of a banned piece (got ${id})`);
+      return exitAfterDrain(1);
+    }
+    const baseline = readBaseline() ?? [];
+    if (baseline.some((k) => k.startsWith(`${id} :: `))) {
+      console.error(`✖ baseline already holds ${id} entries — the baseline only shrinks. Use --prune-baseline.`);
+      return exitAfterDrain(1);
+    }
+    const seeded = [...bannedKeys(a).keys()].filter((k) => k.startsWith(`${id} :: `));
+    writeBaseline([...baseline, ...seeded]);
+    console.log(`Seeded ${seeded.length} ${id} entries.`);
     return exitAfterDrain(0);
   }
   if (args.includes("--init-baseline")) {

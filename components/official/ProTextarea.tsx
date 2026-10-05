@@ -118,6 +118,7 @@ import React, {
   useState,
   useRef,
   useEffect,
+  useLayoutEffect,
   useId,
   lazy,
   Suspense,
@@ -216,6 +217,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 // in-place panel has no route. Re-gating is a deliberate Arman tradeoff
 // (page weight vs build cost) — never a drive-by "optimization".
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import { sourceFeatureFromSurfaceName } from "@ai-matrx/chat/agents/utils/source-feature-from-surface";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import {
@@ -437,6 +439,14 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
    */
   floatingLabel?: string;
   /**
+   * Markdown formatting in this box: the keyboard chords (⌘B, ⌘I, ⌘K, ⌘⇧X,
+   * ⌘E, ⌘⇧7/8…) and the selection toolbar's formatting buttons, through the
+   * ONE command layer (`components/rich-editor/format`). Default: on for a
+   * long-form box — off for a one-row box, an Enter-to-submit box, or a hosted
+   * editor. Pass `true`/`false` to decide explicitly.
+   */
+  markdownFormatting?: boolean;
+  /**
    * Host a different editor in place of the <textarea> (e.g. MergeFieldInput,
    * which draws {{merge fields}} as chips). The whole toolbar — mic, "…" menu,
    * agents, stats, right-click menu — reads and writes through `handle`.
@@ -500,6 +510,7 @@ export const ProTextarea = React.forwardRef<
       placeholder,
       style,
       editor,
+      markdownFormatting,
       ...props
     },
     ref,
@@ -521,6 +532,17 @@ export const ProTextarea = React.forwardRef<
       if (typeof ref === "function") ref(node);
       else if (ref) (ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = node;
     };
+
+    // Markdown formatting (chords + the selection toolbar's buttons) for a
+    // long-form box. The element is mirrored into state once per mount so the
+    // selection zone registers on the real node.
+    const formattingOn =
+      markdownFormatting ?? (!editor && !submitOnEnter && (props.rows === undefined || Number(props.rows) >= 2));
+    const [formatElement, setFormatElement] = useState<HTMLTextAreaElement | null>(null);
+    useLayoutEffect(() => {
+      if (internalRef.current !== formatElement) setFormatElement(internalRef.current);
+    });
+    useTextareaFormatting(formatElement, formattingOn);
 
     // ── "…" menu popover ───────────────────────────────────────────────────
     // ONE Popover anchored at the "…" button. Its content swaps between the

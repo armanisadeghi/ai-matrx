@@ -15,6 +15,7 @@
 // gets the same peek.
 
 import { useEffect, useMemo, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import Link from "next/link";
 import { ArrowRight, Braces, Lightbulb, Workflow } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -335,7 +336,7 @@ export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeek
           ) : ready ? (
             <>
               {ready.description ? (
-                <p className="whitespace-pre-wrap break-words text-sm text-foreground">{ready.description}</p>
+                <div className="break-words text-sm text-foreground"><RichContent source={ready.description ?? ""} level="standard" /></div>
               ) : null}
               <Section label="Inputs">
                 <Inputs mandateKey={ready.mandateKey} organizationId={ladderOrgId} />

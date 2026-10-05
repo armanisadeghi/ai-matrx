@@ -41,7 +41,8 @@ import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import { declareSelectionProvider, hostHalf, placeSelectionActions, shownInSelectionMode } from "@/components/selection-toolbar/selection-actions";
 import { insertCodeBlock, insertVariable, setColumnAlign, toggleTaskList } from "../core/commands";
 import type { FormatCommandId } from "../core/markdown-format";
-import { MARKDOWN_FORMAT_HOST_KEY, visualFormatTarget, type FormatTarget, type MarkdownFormatHost } from "../format/format-target";
+import { MARKDOWN_FORMAT_HOST_KEY, type FormatTarget, type MarkdownFormatHost } from "../format/format-target";
+import { visualFormatTarget } from "./visual-format-target";
 import { markAutoEdit } from "./auto-edit";
 import { toVariableName } from "../core/variables";
 

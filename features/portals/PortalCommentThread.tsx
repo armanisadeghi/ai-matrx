@@ -8,6 +8,7 @@
 // store's own words and the draft is kept.
 
 import { useState, useTransition } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -91,9 +92,7 @@ export function PortalCommentThread({
                 </span>
                 <span className="shrink-0 tabular-nums">{comment.when}</span>
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
-                {comment.body}
-              </p>
+              <div className="mt-1 text-sm text-foreground"><RichContent source={comment.body ?? ""} level="standard" /></div>
             </li>
           ))}
         </ul>

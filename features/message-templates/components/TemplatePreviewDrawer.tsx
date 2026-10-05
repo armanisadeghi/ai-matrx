@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
@@ -78,9 +79,9 @@ function PreviewContent({
 
             {/* Content area */}
             <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">
-                <pre className="text-sm text-foreground whitespace-pre-wrap font-mono leading-relaxed break-words">
-                    {template.content || ""}
-                </pre>
+                <div className="text-sm text-foreground break-words">
+                    <RichContent source={template.content || ""} level="standard" />
+                </div>
             </div>
 
             {/* Footer actions */}

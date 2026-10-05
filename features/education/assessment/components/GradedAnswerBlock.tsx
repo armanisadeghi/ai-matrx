@@ -16,6 +16,7 @@
 // `StepBreakdown` beneath this block.
 
 import { cn } from "@/lib/utils";
+import { RichContent } from "@/components/rich-content/RichContent";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import type { AnswerGrade } from "@/features/content-ir/kinds/generated/kinds.generated";
 import type { GradedAnswer } from "../data/grading";
@@ -72,20 +73,23 @@ function PlainGrade({ graded }: { graded: GradedAnswer }) {
       </span>
       {graded.misconception && (
         <p className="text-amber-700 dark:text-amber-300">
-          <span className="font-medium">Watch out:</span> {graded.misconception}
+          <span className="font-medium">Watch out:</span>{" "}
+          <RichContent source={graded.misconception} level="inline" />
         </p>
       )}
       {graded.explanation && (
-        <p className="text-muted-foreground">{graded.explanation}</p>
+        <div className="text-muted-foreground">
+          <RichContent source={graded.explanation} level="standard" />
+        </div>
       )}
       {graded.transcription && (
         <details className="rounded-lg border border-border bg-muted/40 px-3 py-2">
           <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted-foreground">
             What we read from your photo
           </summary>
-          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-foreground">
-            {graded.transcription}
-          </pre>
+          <div className="mt-2 text-sm text-foreground">
+            <RichContent source={graded.transcription} level="standard" />
+          </div>
         </details>
       )}
     </div>

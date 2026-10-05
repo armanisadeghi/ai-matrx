@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { RichContent } from "@/components/rich-content/RichContent";
 import { idMatchesQuery } from '@ai-matrx/kit/search-scoring';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -431,9 +432,7 @@ export function CategoryNotesModal({
 
                                         {/* Note Content */}
                                         <ScrollArea className="flex-1 p-4 bg-card">
-                                            <pre className="text-sm text-foreground font-mono whitespace-pre-wrap">
-                                                {selectedNote.content}
-                                            </pre>
+                                            <div className="text-sm text-foreground"><RichContent source={selectedNote.content ?? ""} level="standard" /></div>
                                         </ScrollArea>
                                     </div>
                                 ) : (

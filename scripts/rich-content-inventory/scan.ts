@@ -203,7 +203,12 @@ const HEURISTIC_PIECE: Record<HeuristicRule, string | undefined> = {
   "pre-wrap-field": LEGACY_PIECES.find(
     (p) => p.matcher.kind === "heuristic" && p.matcher.rule === "pre-wrap-field",
   )?.id,
+  "regex-markdown-link": LEGACY_PIECES.find(
+    (p) => p.matcher.kind === "heuristic" && p.matcher.rule === "regex-markdown-link",
+  )?.id,
 };
+/** A regex literal shaped like a markdown link / image: \[...\](...) */
+const MD_LINK_REGEX_RE = /\\\[.*\\\]\\\(/;
 const JSX_ATTR_PIECES = LEGACY_PIECES.filter((p) => p.matcher.kind === "jsx-attribute");
 
 function scriptKind(rel: string): ts.ScriptKind {
@@ -344,6 +349,9 @@ export function parseFacts(rel: string, text: string): FileFacts {
       } else if (isJsxFile && isSplitNewlineMap(n)) {
         addFinding(HEURISTIC_PIECE["split-newline-paragraphs"], n, n.getText(sf));
       }
+    }
+    if (isJsxFile && ts.isRegularExpressionLiteral(n) && MD_LINK_REGEX_RE.test(n.text)) {
+      addFinding(HEURISTIC_PIECE["regex-markdown-link"], n, n.text);
     }
     if (isJsxFile) {
       if (ts.isJsxAttribute(n) && ts.isIdentifier(n.name)) {

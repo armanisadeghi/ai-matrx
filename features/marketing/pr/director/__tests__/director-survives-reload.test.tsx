@@ -50,7 +50,8 @@ const dispatch = jest.fn((action: unknown) => {
 });
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
-  useAppSelector: (sel: (s: unknown) => unknown) => sel({}),
+  // The Director's composer reads `chatRoute.composerMode`; an empty route state is the default.
+  useAppSelector: (sel: (s: unknown) => unknown) => sel({ chatRoute: {} }),
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));

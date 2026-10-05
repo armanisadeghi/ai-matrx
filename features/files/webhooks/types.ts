@@ -8,7 +8,7 @@
 
 export interface Webhook {
   id: string;
-  owner_id: string;
+  created_by: string;
   target_url: string;
   /**
    * The HMAC signing secret. ONLY returned at create / rotate time (shown to

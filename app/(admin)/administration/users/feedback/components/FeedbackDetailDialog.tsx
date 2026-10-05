@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   updateFeedback,
   setAdminDecision,
@@ -1210,9 +1211,7 @@ export default function FeedbackDetailDialog({
                   <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
                     Description
                   </label>
-                  <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
-                    {item.description}
-                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50 border text-sm"><RichContent source={item.description ?? ""} level="standard" /></div>
                 </div>
 
                 {/* Metadata Grid — one column on a phone: the route is a
@@ -1306,9 +1305,7 @@ export default function FeedbackDetailDialog({
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Resolution Notes
                     </div>
-                    <div className="text-sm whitespace-pre-wrap">
-                      {item.resolution_notes}
-                    </div>
+                    <div className="text-sm"><RichContent source={item.resolution_notes ?? ""} level="standard" /></div>
                     {item.resolved_at && (
                       <div className="text-xs text-muted-foreground mt-2">
                         Resolved{" "}
@@ -1429,9 +1426,7 @@ export default function FeedbackDetailDialog({
                         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
                           AI Assessment
                         </label>
-                        <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/20 text-sm whitespace-pre-wrap">
-                          {item.ai_assessment}
-                        </div>
+                        <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/20 text-sm"><RichContent source={item.ai_assessment ?? ""} level="standard" /></div>
                       </div>
                     )}
 
@@ -1441,9 +1436,7 @@ export default function FeedbackDetailDialog({
                         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
                           Solution Proposal
                         </label>
-                        <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
-                          {item.ai_solution_proposal}
-                        </div>
+                        <div className="p-3 rounded-lg bg-muted/50 border text-sm"><RichContent source={item.ai_solution_proposal ?? ""} level="standard" /></div>
                       </div>
                     )}
 
@@ -2201,9 +2194,7 @@ export default function FeedbackDetailDialog({
                                 })}
                               />
                             </div>
-                            <div className="text-sm whitespace-pre-wrap text-foreground/90">
-                              {comment.content}
-                            </div>
+                            <div className="text-sm text-foreground/90"><RichContent source={comment.content ?? ""} level="standard" /></div>
                           </div>
                         </div>
                       );
@@ -2249,9 +2240,7 @@ export default function FeedbackDetailDialog({
                       <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
                         Original Issue
                       </label>
-                      <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap text-muted-foreground">
-                        {item.description}
-                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50 border text-sm text-muted-foreground"><RichContent source={item.description ?? ""} level="standard" /></div>
                     </div>
 
                     {/* Testing URL */}
@@ -2278,9 +2267,7 @@ export default function FeedbackDetailDialog({
                         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
                           Testing Instructions
                         </label>
-                        <div className="p-3 rounded-lg bg-muted/50 border text-sm whitespace-pre-wrap">
-                          {item.testing_instructions}
-                        </div>
+                        <div className="p-3 rounded-lg bg-muted/50 border text-sm"><RichContent source={item.testing_instructions ?? ""} level="standard" /></div>
                       </div>
                     )}
 
@@ -2290,9 +2277,7 @@ export default function FeedbackDetailDialog({
                         <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
                           Resolution Notes
                         </label>
-                        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 text-sm whitespace-pre-wrap">
-                          {item.resolution_notes}
-                        </div>
+                        <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 text-sm"><RichContent source={item.resolution_notes ?? ""} level="standard" /></div>
                       </div>
                     )}
 

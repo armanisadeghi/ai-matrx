@@ -21,7 +21,7 @@ export function useCanvasLike(canvasId: string) {
                 .select('id')
                 .is('deleted_at', null)
                 .eq('canvas_id', canvasId)
-                .eq('user_id', userId)
+                .eq('created_by', userId)
                 .maybeSingle();
 
             return !!data;

@@ -10,6 +10,7 @@
  */
 
 import { useState } from "react";
+import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import Link from "next/link";
 import {
   HoverCard,
@@ -138,9 +139,7 @@ export function ConversationPreviewContent({
       </div>
 
       {conv.description && (
-        <p className="text-xs text-foreground/90 whitespace-pre-wrap line-clamp-3">
-          {conv.description}
-        </p>
+        <div className="text-xs text-foreground/90 line-clamp-3"><RichContentPreview source={conv.description} lines={3} /></div>
       )}
 
       {conv.keywords && conv.keywords.length > 0 && (

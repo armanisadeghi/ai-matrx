@@ -15,7 +15,7 @@ const ME = "33333333-3333-4333-8333-333333333333";
 function hook(id: string, url: string, owner: string, org: string): Webhook {
   return {
     id,
-    owner_id: owner,
+    created_by: owner,
     target_url: url,
     description: null,
     is_active: true,

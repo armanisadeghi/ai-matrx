@@ -35,6 +35,9 @@ import { mergedCellsNotice, normalizePastedHtml } from "../core/paste-html";
 import { findMatches, replaceMatches, type FindOptions } from "../core/find-replace";
 import { continueMarkupOnEnter, makeLink, setLinePrefix, toggleWrap, type SourceEditResult } from "../core/source-format";
 import { markdownSourceLanguage } from "./markdown-language";
+import { formatMarkdown, type FormatCommandId } from "../core/markdown-format";
+import { markdownFormatHost, textFormatTarget, type FormatTarget } from "../format/format-target";
+import { useSelectionZone } from "@/components/selection-toolbar/selection-zones";
 import { RICH_EDITOR_SHORTCUTS, TYPED_TRIGGERS } from "../core/shortcuts";
 import { variableNamesInText, variableSuggestions } from "../core/variables";
 import { islandsReleasedBetweenTexts } from "../core/history-approval";
@@ -104,6 +107,33 @@ function wrap(marker: string): SourceVerb {
   };
 }
 
+/** A command of THE formatting layer (core/markdown-format.ts) — the same verbs every textarea host runs. */
+function command(id: FormatCommandId): SourceVerb {
+  return (view) => {
+    if (view.state.readOnly) return false;
+    const { from, to } = view.state.selection.main;
+    const result = formatMarkdown(view.state.doc.toString(), from, to, id);
+    return result.changes.length ? applyResult(view, result) : true;
+  };
+}
+
+/** This CodeMirror view as a FormatTarget (the selection toolbar's formatting buttons). */
+function sourceFormatTarget(getView: () => EditorView | null): FormatTarget {
+  return textFormatTarget(
+    "source",
+    () => {
+      const v = getView();
+      if (!v) return null;
+      const { from, to } = v.state.selection.main;
+      return { text: v.state.doc.toString(), from, to, editable: !v.state.readOnly };
+    },
+    (result) => {
+      const v = getView();
+      if (v) applyResult(v, result);
+    },
+  );
+}
+
 function prefix(value: string | null): SourceVerb {
   return (view) => {
     const { from, to } = view.state.selection.main;
@@ -144,33 +174,25 @@ export function SourceEditor({
   useEffect(() => {
     if (!host.current) return;
     const verbs: Record<string, SourceVerb> = {
-      bold: wrap("**"),
-      italic: wrap("*"),
-      strike: wrap("~~"),
-      code: wrap("`"),
-      link: (v) => {
-        const { from, to } = v.state.selection.main;
-        return applyResult(v, makeLink(v.state.doc.toString(), from, to));
-      },
+      bold: command("bold"),
+      italic: command("italic"),
+      strike: command("strike"),
+      code: command("code"),
+      link: command("link"),
       paragraph: prefix(null),
-      heading1: prefix("# "),
-      heading2: prefix("## "),
-      heading3: prefix("### "),
+      heading1: command("heading1"),
+      heading2: command("heading2"),
+      heading3: command("heading3"),
       heading4: prefix("#### "),
       heading5: prefix("##### "),
       heading6: prefix("###### "),
-      orderedList: prefix("1. "),
-      bulletList: prefix("- "),
-      taskList: prefix("- [ ] "),
+      orderedList: command("orderedList"),
+      bulletList: command("bulletList"),
+      taskList: command("taskList"),
+      quote: command("quote"),
       moveUp: moveLineUp,
       moveDown: moveLineDown,
-      codeBlock: (v) => {
-        const { from, to } = v.state.selection.main;
-        const selected = v.state.sliceDoc(from, to);
-        const insert = `\`\`\`\n${selected}\n\`\`\``;
-        v.dispatch({ changes: { from, to, insert }, selection: { anchor: from + 3 } });
-        return true;
-      },
+      codeBlock: command("codeBlock"),
       inlineMath: wrap("$"),
       undo,
       redo,
@@ -310,6 +332,11 @@ export function SourceEditor({
     });
   };
 
+  // The formatting buttons of the ONE selection toolbar act here too (not only
+  // in Write): this view is a selection zone carrying the markdown-text half.
+  const [zoneElement, setZoneElement] = useState<HTMLDivElement | null>(null);
+  useSelectionZone(zoneElement, { editable: !context.readOnly, host: markdownFormatHost(sourceFormatTarget(() => view.current)) });
+
   useImperativeHandle(handleRef, (): EditorViewHandle => ({
     focus: () => view.current?.focus(),
     selectedText: () => {
@@ -430,7 +457,10 @@ export function SourceEditor({
       className={cn("rich-editor-source relative h-full overflow-y-auto", focusMode && "rich-editor-focus")}
     >
       <div
-        ref={host}
+        ref={(node) => {
+          host.current = node;
+          setZoneElement(node);
+        }}
         className={layout === "pane" ? "min-h-full" : "mx-auto min-h-full max-w-3xl pb-[40dvh]"}
         data-testid="rich-editor-source"
       />

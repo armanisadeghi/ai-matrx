@@ -9,6 +9,7 @@
 // tasks/files via the canonical AssociationCardGrid.
 
 import { useMemo, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Building2, Handshake, History, Send, User } from "lucide-react";
@@ -381,9 +382,7 @@ export function DealRecordPage({ dealId }: Props) {
                     </div>
                   </dl>
                   {deal.description && (
-                    <p className="mt-2 whitespace-pre-wrap border-t border-border/60 pt-2 text-sm text-muted-foreground">
-                      {deal.description}
-                    </p>
+                    <div className="mt-2 border-t border-border/60 pt-2 text-sm text-muted-foreground"><RichContent source={deal.description ?? ""} level="standard" /></div>
                   )}
                 </SectionCard>
 

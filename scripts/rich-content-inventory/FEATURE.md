@@ -54,3 +54,8 @@ Wired as two ADVISORY rows in `scripts/run-release-gates.sh` (non-strict list, t
 ## Change log
 
 - 2026-09-23 — created: registry, engine, generated checklist, shrink-only guard + self-test, release-gate rows.
+- 2026-10-04 — consistency census item 9: `raw:pre-wrap-field` promoted `review` → `banned` (seeded, shrink-only
+  census via `--seed-piece <id>`, which refuses when the piece already has baseline entries); new banned piece
+  `regex-markdown-link-in-jsx` (a markdown-link regex literal in a component file). Self-test now also plants a
+  pre-wrap field, a regex link parser, a re-grown `cleanMarkdownPreview` / `renderAnnouncementMessage`, and a
+  `marked` import. Surfaces moved onto `<RichContent>` / `<RichContentPreview>` left the baseline.

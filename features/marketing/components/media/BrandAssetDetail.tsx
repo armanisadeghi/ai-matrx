@@ -20,6 +20,7 @@
  */
 
 import { useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Copy, ExternalLink, FileVideo, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,9 +167,7 @@ export function BrandAssetDetail({
             {asset.title || "Untitled asset"}
           </h3>
           {asset.notes ? (
-            <p className="whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
-              {asset.notes}
-            </p>
+            <div className="text-xs leading-relaxed text-muted-foreground"><RichContent source={asset.notes ?? ""} level="standard" /></div>
           ) : null}
           <CondensedFieldGrid
             fields={[

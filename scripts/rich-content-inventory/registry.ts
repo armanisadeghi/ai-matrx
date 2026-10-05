@@ -35,7 +35,11 @@ export type PieceCategory =
   | "raw-content-render"
   | "document-generator";
 
-export type HeuristicRule = "raw-field-render" | "split-newline-paragraphs" | "pre-wrap-field";
+export type HeuristicRule =
+  | "raw-field-render"
+  | "split-newline-paragraphs"
+  | "pre-wrap-field"
+  | "regex-markdown-link";
 
 export type PieceMatcher =
   /** Bare package specifier matched by regex source (anchored by the author). */
@@ -360,12 +364,27 @@ export const LEGACY_PIECES: LegacyPiece[] = [
     replacement: "Paragraphs come from the markdown core, never a hand split on newlines (PLAN §3.1).",
   },
   {
+    // Banned 2026-10-04 (consistency census item 9): pre-wrap on a content field shows
+    // markdown SOURCE. Existing sites are the seeded, shrink-only census; the ones that are
+    // markdown were moved onto <RichContent>; the rest leave the baseline when they do too.
     id: "raw:pre-wrap-field",
     label: "whitespace-pre-wrap / pre-line on a content field",
     category: "raw-content-render",
-    status: "review",
+    status: "banned",
     matcher: { kind: "heuristic", rule: "pre-wrap-field" },
-    replacement: "pre-wrap shows markdown source; render it through the core instead (PLAN §3.1).",
+    replacement:
+      "pre-wrap shows markdown source; render it through the core instead: `<RichContent source level=\"inline|standard|full\">` " +
+      "(one-line previews: `<RichContentPreview>`) — PLAN §3.1.",
+  },
+  {
+    id: "regex-markdown-link-in-jsx",
+    label: "a markdown-link regex in a component file (hand-rolled markdown parsing for display)",
+    category: "hand-rolled-helper",
+    status: "banned",
+    matcher: { kind: "heuristic", rule: "regex-markdown-link" },
+    replacement:
+      "Never parse markdown links with a regex to build JSX (the announcement parser class): render the text through " +
+      "`<RichContent source level>` — the core handles links, emphasis, code and math (PLAN §3.1).",
   },
 ];
 

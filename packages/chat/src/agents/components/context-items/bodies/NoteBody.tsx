@@ -8,6 +8,7 @@
  */
 
 import { useEffect } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Link } from "../../../../host/navigation";
 import { Folder, ExternalLink } from "lucide-react";
 import { NoteContentEditor } from "@host/features/notes/components/NoteContentEditor";
@@ -90,9 +91,7 @@ export function NoteBody({ item, setTitle }: ContextItemBodyProps) {
             onRetry={() => void dispatch(fetchNoteContent(noteId))}
           />
         ) : note?.content?.trim() ? (
-          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-            {note.content}
-          </p>
+          <div className="break-words text-sm leading-relaxed text-foreground"><RichContent source={note.content ?? ""} level="standard" /></div>
         ) : (
           <p className="text-xs italic text-muted-foreground">
             {note && contentLoadStatus === "loaded" ? "This note is empty." : "Loading note…"}

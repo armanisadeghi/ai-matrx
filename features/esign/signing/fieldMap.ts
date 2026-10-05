@@ -110,3 +110,23 @@ export function rotateBox(
   if (turn === 270) return { x: y, y: 1 - (x + w), w: h, h: w };
   return { x, y, w, h };
 }
+
+/**
+ * THE PAPER PALETTE. A field sits on the document, and the document is always printed paper —
+ * white in dark mode too — so its colours are fixed, never theme tokens (a token flips to light
+ * text on the white page in dark mode). `ink` is the stamped signed copy's own ink
+ * (aidream services/esign/signed_copy.py INK), so what a signer sees is what gets printed.
+ */
+export const PAPER = {
+  paper: "#ffffff",
+  ink: "#0d2673",
+  mine: "#2563eb",
+  mineFill: "rgba(37, 99, 235, 0.12)",
+  mineFilled: "rgba(37, 99, 235, 0.05)",
+  otherFill: "rgba(100, 116, 139, 0.12)",
+  otherBorder: "#94a3b8",
+  otherText: "#475569",
+  signedFill: "rgba(22, 163, 74, 0.08)",
+  signedBorder: "#16a34a",
+  signedText: "#166534",
+} as const;

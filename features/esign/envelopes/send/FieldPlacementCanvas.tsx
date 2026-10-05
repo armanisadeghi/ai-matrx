@@ -14,6 +14,7 @@ import { Calendar, FileText, Loader2, PenLine, Type, X, type LucideIcon } from "
 
 import { Tabs } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
+import { PAPER } from "@/features/esign/signing/fieldMap";
 
 import {
   clampBox,
@@ -377,7 +378,7 @@ function FieldBox({ field, colorIndex, who, selected, layerRef, onSelect, onChan
 
   const spec = fieldKindSpec(field.kind);
   const Icon = KIND_ICON[field.kind];
-  const color = colorIndex >= 0 ? recipientColor(colorIndex) : "hsl(var(--muted-foreground))";
+  const color = colorIndex >= 0 ? recipientColor(colorIndex) : PAPER.otherBorder;
   const fill = colorIndex >= 0 ? recipientColor(colorIndex, 0.16) : "transparent";
 
   return (
@@ -393,7 +394,7 @@ function FieldBox({ field, colorIndex, who, selected, layerRef, onSelect, onChan
       onPointerCancel={end}
       onFocus={onSelect}
       className={cn(
-        "absolute flex select-none items-center gap-1 overflow-visible rounded-sm border px-1 text-[11px] leading-none text-foreground",
+        "absolute flex select-none items-center gap-1 overflow-visible rounded-sm border px-1 text-[11px] leading-none",
         selected ? "border-2 shadow-md" : "border-dashed",
       )}
       style={{
@@ -403,6 +404,8 @@ function FieldBox({ field, colorIndex, who, selected, layerRef, onSelect, onChan
         height: `${field.h * 100}%`,
         borderColor: color,
         background: fill,
+        // On the page, never a theme token: the paper is white in dark mode too.
+        color: PAPER.ink,
         touchAction: "none",
       }}
     >
@@ -418,15 +421,16 @@ function FieldBox({ field, colorIndex, who, selected, layerRef, onSelect, onChan
               e.stopPropagation();
               onRemove();
             }}
-            className="absolute -right-2.5 -top-2.5 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm"
+            className="absolute -right-2.5 -top-2.5 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm"
+            style={{ background: PAPER.paper, borderColor: PAPER.otherBorder, color: PAPER.ink }}
           >
             <X className="h-3 w-3" />
           </button>
           <span
             aria-hidden
             onPointerDown={(e) => begin("resize", e)}
-            className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border-2 bg-card"
-            style={{ borderColor: color }}
+            className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-se-resize rounded-sm border-2"
+            style={{ borderColor: color, background: PAPER.paper }}
           />
         </>
       )}

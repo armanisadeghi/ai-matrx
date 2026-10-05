@@ -16,6 +16,7 @@
  */
 
 import React from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   Pencil,
   X,
@@ -352,9 +353,7 @@ export function InlineProjectDescription({
       )}
       title={canEdit ? "Click to edit" : undefined}
     >
-      <span className="min-w-0 flex-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
-        {project.description}
-      </span>
+      <div className="min-w-0 flex-1 text-sm text-muted-foreground leading-relaxed break-words"><RichContent source={project.description ?? ""} level="standard" /></div>
       {canEdit && (
         <Pencil className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
       )}

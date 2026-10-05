@@ -14,7 +14,7 @@ import { useEffect, useRef } from "react";
 import { Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { FIELD_LABEL, FIELD_PROMPT, rotateBox, type PlacedField } from "./fieldMap";
+import { FIELD_LABEL, FIELD_PROMPT, PAPER, rotateBox, type PlacedField } from "./fieldMap";
 
 /** What the signer's fields show once they have adopted a signature. */
 export interface FieldValues {
@@ -64,9 +64,15 @@ export function SigningFields({
           return (
             <div
               key={field.id}
-              style={{ ...style, containerType: "size" }}
+              style={{
+                ...style,
+                containerType: "size",
+                background: PAPER.otherFill,
+                borderColor: PAPER.otherBorder,
+                color: PAPER.otherText,
+              }}
               title={`${FIELD_LABEL[field.kind]} for another signer`}
-              className="absolute flex items-center justify-center overflow-hidden rounded-sm border border-dashed border-muted-foreground/40 bg-muted/70 text-muted-foreground"
+              className="absolute flex items-center justify-center overflow-hidden rounded-sm border border-dashed"
             >
               <span className="truncate px-1" style={{ fontSize: "clamp(7px, 45cqh, 13px)" }}>
                 Other signer
@@ -121,18 +127,21 @@ function MyField({
     <button
       ref={ref}
       type="button"
-      style={{ ...style, containerType: "size" }}
+      style={{
+        ...style,
+        containerType: "size",
+        background: filled ? PAPER.mineFilled : PAPER.mineFill,
+        borderColor: filled ? "rgba(37, 99, 235, 0.4)" : PAPER.mine,
+        color: filled ? PAPER.ink : PAPER.mine,
+      }}
       aria-label={filled ? `${FIELD_LABEL[field.kind]}, filled` : FIELD_PROMPT[field.kind]}
       aria-disabled={!pressable || undefined}
       data-esign-field={field.id}
       onClick={() => pressable && onPress(field)}
       className={cn(
         "pointer-events-auto absolute flex items-center justify-start overflow-visible rounded-sm border text-left outline-none transition-[background-color,box-shadow]",
-        filled
-          ? "border-primary/40 bg-primary/5 text-foreground"
-          : "border-primary bg-primary/15 text-primary",
-        active && pressable && "ring-2 ring-primary ring-offset-1 ring-offset-background",
-        pressable && !filled && "hover:bg-primary/25",
+        active && pressable && "ring-2 ring-primary ring-offset-1 ring-offset-white",
+        pressable && !filled && "hover:brightness-95",
         "focus-visible:ring-2 focus-visible:ring-primary",
       )}
     >

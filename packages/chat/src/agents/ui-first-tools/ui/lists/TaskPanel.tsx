@@ -14,6 +14,7 @@
  */
 
 import { readOf } from "@host/components/read-state/ReadGate";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { UntrustedCount } from "@host/components/official/stale-data/UntrustedCount";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -193,9 +194,7 @@ function PlanSection({ conversationId }: { conversationId: string }) {
       <div className="rounded-md border border-border bg-card p-3 flex flex-col gap-1.5">
         <div className="text-sm font-medium text-foreground">{plan.title}</div>
         {plan.reasoning && (
-          <div className="text-xs text-muted-foreground whitespace-pre-wrap">
-            {plan.reasoning}
-          </div>
+          <div className="text-xs text-muted-foreground"><RichContent source={plan.reasoning ?? ""} level="standard" /></div>
         )}
         {plan.steps && plan.steps.length > 0 && (
           <ol className="list-decimal pl-5 space-y-0.5 text-sm">
@@ -461,9 +460,7 @@ function TodoRow({ todo }: { todo: CxUserTodoRow }) {
           {todo.title}
         </div>
         {todo.context && !todo.done && (
-          <div className="text-xs text-muted-foreground whitespace-pre-wrap mt-0.5">
-            {todo.context}
-          </div>
+          <div className="text-xs text-muted-foreground mt-0.5"><RichContent source={todo.context ?? ""} level="standard" /></div>
         )}
         {todo.due && !todo.done && (
           <div className="text-xs text-muted-foreground mt-0.5">

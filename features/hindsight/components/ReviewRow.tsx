@@ -5,6 +5,7 @@
  * exact real runs it read (each one openable), and the replay comparisons.
  */
 import { useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -83,9 +84,7 @@ export function ReviewRow({
               <div className="text-xs font-medium uppercase text-muted-foreground">
                 What the reviewer saw
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm">
-                {review.summary}
-              </p>
+              <div className="mt-1 text-sm"><RichContent source={review.summary ?? ""} level="standard" /></div>
             </div>
           )}
           {review.what_worked && (
@@ -93,9 +92,7 @@ export function ReviewRow({
               <div className="text-xs font-medium uppercase text-muted-foreground">
                 What worked (keep it)
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-                {review.what_worked}
-              </p>
+              <div className="mt-1 text-sm text-muted-foreground"><RichContent source={review.what_worked ?? ""} level="standard" /></div>
             </div>
           )}
 

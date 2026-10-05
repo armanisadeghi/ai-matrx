@@ -22,6 +22,7 @@
 // opens the recap for review.
 
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -296,9 +297,7 @@ function Workspace({
           <section aria-label="Summary" className="space-y-1.5">
             <h2 className="text-sm font-semibold">Summary</h2>
             {wrapUp.state === "written" ? (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                {bundle.summary?.text}
-              </p>
+              <div className="text-sm leading-relaxed"><RichContent source={bundle.summary?.text ?? ""} level="standard" /></div>
             ) : wrapUp.state === "in-progress" ? (
               <div role="status" className="text-sm text-muted-foreground">
                 <p>{wrapUp.message}</p>

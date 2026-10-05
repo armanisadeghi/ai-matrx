@@ -9,6 +9,7 @@ import type {
   ResearchRecommendation,
 } from "./parseResearchMarkdown";
 import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   BookOpen,
   ExternalLink,
@@ -753,9 +754,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({
                           <div key={section.id} className="border border-orange-200 dark:border-orange-800 rounded-lg p-4">
                             <h3 className="font-semibold text-orange-700 dark:text-orange-300 mb-2">{section.title}</h3>
                             <div className="bg-orange-50 dark:bg-orange-950/30 rounded p-3">
-                              <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap overflow-x-auto">
-                                {section.content}
-                              </pre>
+                              <div className="text-sm text-gray-700 dark:text-gray-300 overflow-x-auto"><RichContent source={section.content ?? ""} level="standard" /></div>
                             </div>
                           </div>
                         ))}

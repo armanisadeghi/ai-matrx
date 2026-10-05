@@ -33,6 +33,7 @@
  */
 
 import Link from "next/link";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { ExternalLink, FlaskConical, Info } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -113,7 +114,7 @@ export function StartMapResult({
               : "Tree proposed — nothing written"}
         </h3>
         {result.summary ? (
-          <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{result.summary}</p>
+          <div className="mt-1 text-sm text-muted-foreground"><RichContent source={result.summary ?? ""} level="standard" /></div>
         ) : null}
         <dl className="mt-3 grid grid-cols-3 gap-2 text-sm sm:grid-cols-5">
           <Stat label="Source" value={result.source_kind.replace("_", " ")} />
@@ -175,9 +176,7 @@ export function StartMapResult({
       result.coverage_notes !== result.proposal?.coverage_notes ? (
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm font-medium">Still to settle</p>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-            {result.coverage_notes}
-          </p>
+          <div className="mt-1 text-sm text-muted-foreground"><RichContent source={result.coverage_notes ?? ""} level="standard" /></div>
         </div>
       ) : null}
 

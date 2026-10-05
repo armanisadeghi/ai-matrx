@@ -51,6 +51,7 @@
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   Info,
   AlertTriangle,
@@ -797,9 +798,7 @@ function NotifyBody({ ask, onAnswer, onDraft }: AskBodyProps) {
   return (
     <div className="flex flex-col gap-2">
       {ask.message && (
-        <div className="whitespace-pre-wrap text-sm text-foreground">
-          {ask.message}
-        </div>
+        <div className="text-sm text-foreground"><RichContent source={ask.message ?? ""} level="standard" /></div>
       )}
       {!showOther && (
         <div className="flex flex-wrap items-center gap-2">
@@ -874,9 +873,7 @@ function PlanApprovalBody({ ask, onAnswer, onSkip, labels }: AskBodyProps) {
   return (
     <div className="flex flex-col gap-2">
       {plan?.reasoning && (
-        <div className="whitespace-pre-wrap text-xs text-muted-foreground">
-          {plan.reasoning}
-        </div>
+        <div className="text-xs text-muted-foreground"><RichContent source={plan.reasoning ?? ""} level="standard" /></div>
       )}
       {plan?.steps && plan.steps.length > 0 && (
         <ol className="list-decimal space-y-0.5 pl-5 text-sm">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { isOpenStatus } from "@/features/tasks/constants/status";
 import { Loader2, FolderKanban, ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -202,9 +203,7 @@ export function TasksResourcePicker({ onBack, onSelect }: TasksResourcePickerPro
           <div className="space-y-2 pb-2 pl-11 pr-2">
             {task.description && (
               <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-background p-2.5">
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                  {task.description}
-                </div>
+                <div className="text-sm leading-relaxed text-foreground"><RichContent source={task.description ?? ""} level="standard" /></div>
               </div>
             )}
             {(task.priority || task.due_date) && (

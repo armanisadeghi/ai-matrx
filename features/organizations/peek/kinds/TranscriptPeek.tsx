@@ -8,6 +8,7 @@
  */
 
 import React from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AudioLines } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { peekHref } from "../peekHref";
@@ -65,9 +66,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
         <>
           <PeekField label="Description">
             {row.description ? (
-              <div className="text-sm whitespace-pre-wrap break-words text-muted-foreground rounded-md border border-border bg-muted/20 p-3 max-h-72 overflow-y-auto">
-                {row.description}
-              </div>
+              <div className="text-sm break-words text-muted-foreground rounded-md border border-border bg-muted/20 p-3 max-h-72 overflow-y-auto"><RichContent source={row.description ?? ""} level="standard" /></div>
             ) : (
               <span className="text-muted-foreground italic">
                 No description

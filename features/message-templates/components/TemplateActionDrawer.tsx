@@ -1,6 +1,7 @@
 "use client";
 
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
 import {
     Dialog,
@@ -80,9 +81,9 @@ function TemplateActionContent({
                 <p className="text-sm font-semibold mb-3">{template.label}</p>
                 {template.content && (
                     <div className="rounded-lg bg-muted/50 border border-border/50 p-3 max-h-48 overflow-y-auto overscroll-contain">
-                        <p className="text-xs text-muted-foreground font-mono leading-relaxed whitespace-pre-wrap break-words">
-                            {template.content}
-                        </p>
+                        <div className="text-xs text-muted-foreground break-words">
+                            <RichContent source={template.content} level="standard" />
+                        </div>
                     </div>
                 )}
                 {template.tags && template.tags.length > 0 && (

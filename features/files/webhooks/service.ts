@@ -1,7 +1,7 @@
 // features/files/webhooks/service.ts
 //
 // Owner-scoped CRUD for outbound webhooks, direct against the `files` schema
-// (RLS `owner_id = auth.uid()`). No Python hop, no Next.js API route — this is
+// (RLS `created_by = auth.uid()`). No Python hop, no Next.js API route — this is
 // pure UI↔DB, the canonical path. Delivery itself is handled DB-side by the
 // pg_cron pipeline in migrations/files_webhook_dispatcher.sql.
 
@@ -35,7 +35,7 @@ import type { LaneRow } from "@/lib/entity-list/laneRows";
 // the client grant, this is also the only shape that READS: `select("*")` on this table is now
 // a 42501, which is the point — a screen never needs a secret to render.
 const WEBHOOK_LIST_COLUMNS =
-  "id, owner_id, target_url, description, is_active, organization_id, event_types, resource_types, " +
+  "id, created_by, target_url, description, is_active, organization_id, event_types, resource_types, " +
   "last_attempt_at, last_success_at, consecutive_failures, max_consecutive_failures, created_at, updated_at";
 
 export async function listWebhooks(): Promise<Webhook[]> {
@@ -85,7 +85,7 @@ export async function createWebhook(
   // selected, or they are asked to choose one.
   // common-docs/policies/context-is-carried-never-rebuilt.md
   const organizationId = await ensureOrgId(input.organization_id);
-  // The door mints the secret and returns the whole row once — including it. `owner_id` is
+  // The door mints the secret and returns the whole row once — including it. The owner is
   // stamped from `auth.uid()` inside the door, so it is not sent from here either.
   const { data, error } = await filesDb(supabase)
     .rpc("webhook_create", {

@@ -16,6 +16,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   Check,
   ChevronLeft,
@@ -205,9 +206,7 @@ export function DraftReviewQueue() {
               <h3 className="text-xs font-semibold text-muted-foreground">
                 Why the AI wrote this
               </h3>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">
-                {item.reasoning}
-              </p>
+              <div className="mt-1 text-sm text-foreground"><RichContent source={item.reasoning ?? ""} level="standard" /></div>
             </div>
           )}
           <Link

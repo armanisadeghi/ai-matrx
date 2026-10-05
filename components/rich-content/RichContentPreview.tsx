@@ -14,11 +14,12 @@
 import { cn } from "@/lib/utils";
 import { RichContent } from "./RichContent";
 
-const CLAMP: Record<1 | 2 | 3 | 4, string> = {
+const CLAMP: Record<1 | 2 | 3 | 4 | 6, string> = {
   1: "truncate",
   2: "line-clamp-2",
   3: "line-clamp-3",
   4: "line-clamp-4",
+  6: "line-clamp-6",
 };
 
 /** Cut at a line boundary: the first non-empty lines, bounded by characters. */
@@ -37,7 +38,7 @@ export function previewSource(source: string, lines: number, maxChars: number): 
 export interface RichContentPreviewProps {
   source: string | null | undefined;
   /** CSS line clamp (1 = single-line truncate). Default 2. */
-  lines?: 1 | 2 | 3 | 4;
+  lines?: 1 | 2 | 3 | 4 | 6;
   /** Hard cap on source characters handed to the renderer. Default 400. */
   maxChars?: number;
   className?: string;

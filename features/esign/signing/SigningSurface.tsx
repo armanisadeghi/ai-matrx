@@ -34,8 +34,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
 import { AdoptSignature, type SignatureMark } from "./AdoptSignature";
-import { initialsOf, readFieldMap, signingDate, type PlacedField } from "./fieldMap";
-import { SignedCopy } from "./SignedCopy";
+import { initialsOf, PAPER, readFieldMap, signingDate, type PlacedField } from "./fieldMap";
+import { SignedDone } from "./SignedDone";
 import { SigningFields, type FieldValues } from "./SigningFields";
 
 import {
@@ -172,6 +172,8 @@ export function SigningSurface({
   const [docs, setDocs] = useState<DocView[]>([]);
   const [activeDoc, setActiveDoc] = useState(0);
   const [step, setStep] = useState<Step>("review");
+  /** The envelope is complete: from the load, or from the answer to this signer's own Sign. */
+  const [everyoneSigned, setEveryoneSigned] = useState(false);
   const [typedName, setTypedName] = useState("");
   const [mark, setMark] = useState<SignatureMark>("typed");
   const [drawing, setDrawing] = useState<string | null>(null);
@@ -217,6 +219,7 @@ export function SigningSurface({
         const typeAllowed = options.typed !== false;
         if (drawAllowed && (!typeAllowed || window.matchMedia("(pointer: coarse)").matches)) setMark("drawn");
         const envelopeDone = text(load.envelope, "status") === "completed";
+        setEveryoneSigned(envelopeDone);
         setStep(text(me, "signed_at") || envelopeDone ? "done" : text(me, "consented_at") ? "sign" : "review");
         const listed: DocView[] = (load.documents ?? []).map((d) => ({
           id: String(d.id),
@@ -462,7 +465,11 @@ export function SigningSurface({
         observed: docs.map((d) => ({ document_id: d.id, content_hash: d.seenHash ?? "" })),
         action_id: SIGN_ACTION_ID,
       });
-      if (signed.granted) setStep("done");
+      if (signed.granted) {
+        const progress = signed.envelope;
+        setEveryoneSigned(typeof progress === "object" && progress !== null && "completed" in progress && progress.completed === true);
+        setStep("done");
+      }
       else setNotice(reasonText(signed.reason));
     } catch (err) {
       setNotice(err instanceof SigningRefusal ? err.message : "We could not save your signature. Try again in a moment.");
@@ -638,13 +645,14 @@ export function SigningSurface({
                 </span>
               </div>
               {adopted && fieldValues ? (
-                <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
-                  <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 rounded-md border border-border bg-card px-2 py-2">
+                  {/* The signature on paper, in every theme: dark ink on a dark panel disappears. */}
+                  <div className="min-w-0 flex-1 rounded-sm px-2 py-1" style={{ background: PAPER.paper, color: PAPER.ink }}>
                     {fieldValues.signature.kind === "drawn" ? (
                       // The signer's own drawing, a data URL from the pad on this screen.
                       <img src={fieldValues.signature.src} alt="Your signature" className="h-10 max-w-full object-contain" />
                     ) : (
-                      <span className="block truncate font-serif text-2xl italic text-foreground">
+                      <span className="block truncate font-serif text-2xl italic">
                         {fieldValues.signature.name}
                       </span>
                     )}
@@ -676,20 +684,12 @@ export function SigningSurface({
           )}
 
           {step === "done" && (
-            <>
-              <StepTitle icon={Check} label="Signed" />
-              <SignedCopy door={door} />
-              {docs.map((d) =>
-                d.url ? (
-                  <Button key={d.id} variant="ghost" asChild>
-                    <a href={d.url} download={d.name}>
-                      <Download className="mr-2 h-4 w-4" />
-                      {d.name}
-                    </a>
-                  </Button>
-                ) : null,
-              )}
-            </>
+            <SignedDone
+              door={door}
+              title={title}
+              everyoneSigned={everyoneSigned}
+              signedAt={text(load.me, "signed_at")}
+            />
           )}
 
           {notice && <p className="text-sm text-destructive">{notice}</p>}

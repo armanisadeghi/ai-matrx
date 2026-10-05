@@ -49,7 +49,7 @@ record("signed in as the test admin", session.user.email === EMAIL, { user: uid 
 
 const row = async () => {
   const { data, error } = await cv().from("canvas_likes").select("id, deleted_at, organization_id, created_by")
-    .eq("canvas_id", CANVAS).eq("user_id", uid).maybeSingle();
+    .eq("canvas_id", CANVAS).eq("created_by", uid).maybeSingle();
   if (error) throw error;
   return data;
 };

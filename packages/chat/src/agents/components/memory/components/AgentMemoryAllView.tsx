@@ -8,6 +8,7 @@
  */
 
 import { Loader2 } from "lucide-react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import {
@@ -94,9 +95,7 @@ export function AgentMemoryAllView({ state }: AgentMemoryAllViewProps) {
                 {memory.scope}
               </Badge>
             </div>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-              {memory.content}
-            </p>
+            <div className="text-sm leading-relaxed text-muted-foreground"><RichContent source={memory.content ?? ""} level="standard" /></div>
           </button>
         ))}
       </div>

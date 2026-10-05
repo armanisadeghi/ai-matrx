@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { RichContent } from "@/components/rich-content/RichContent";
 import Link from 'next/link';
 import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen, ChevronRight } from 'lucide-react';
 import type { PcArticleDisplayRow, PcEpisodeWithShow } from '../../types';
@@ -255,7 +256,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                         {episode.description && (
                             <div>
                                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">About this episode</h2>
-                                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{episode.description}</p>
+                                <div className="text-sm text-foreground/80 leading-relaxed"><RichContent source={episode.description ?? ""} level="standard" /></div>
                             </div>
                         )}
 

@@ -13,6 +13,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   Check,
   ChevronLeft,
@@ -213,9 +214,7 @@ export function TriageQueue() {
           <p className="mt-2 text-sm text-muted-foreground">{item.aiReasoning}</p>
         )}
         {item.notes && (
-          <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">
-            {item.notes}
-          </p>
+          <div className="mt-2 text-sm text-foreground"><RichContent source={item.notes ?? ""} level="standard" /></div>
         )}
         <Link
           href={`/commerce/intake/assets/${item.assetId}`}

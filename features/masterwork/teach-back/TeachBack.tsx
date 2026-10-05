@@ -33,6 +33,7 @@
 // Server half: `aidream/aidream/services/distillation/teach_back.py`.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -619,9 +620,7 @@ export function TeachBack({
               Here&apos;s how I understand{" "}
               {current.subject || "you make this call"}
             </h2>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {current.explanation}
-            </p>
+            <div className="text-sm leading-relaxed text-foreground"><RichContent source={current.explanation ?? ""} level="standard" /></div>
             {(current.rule_ids ?? []).length ? (
               <p className="mt-3 text-xs text-muted-foreground">
                 Built from {(current.rule_ids ?? []).length}{" "}

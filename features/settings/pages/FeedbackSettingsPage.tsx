@@ -1,6 +1,7 @@
 "use client";
 
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { RichContent } from "@/components/rich-content/RichContent";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -691,9 +692,7 @@ function FeedbackItem({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-foreground whitespace-pre-wrap [overflow-wrap:anywhere]">
-                {item.description}
-              </p>
+              <div className="text-sm text-foreground [overflow-wrap:anywhere]"><RichContent source={item.description ?? ""} level="standard" /></div>
             )}
           </div>
 
@@ -787,9 +786,7 @@ function FeedbackItem({
                             })}
                           </span>
                         </div>
-                        <p className="whitespace-pre-wrap text-foreground/90 [overflow-wrap:anywhere]">
-                          {msg.content}
-                        </p>
+                        <div className="text-foreground/90 [overflow-wrap:anywhere]"><RichContent source={msg.content ?? ""} level="standard" /></div>
                       </div>
                     );
                   })}

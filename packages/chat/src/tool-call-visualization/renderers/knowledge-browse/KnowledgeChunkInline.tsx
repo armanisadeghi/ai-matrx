@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   FileText,
   Maximize2,
@@ -224,9 +225,7 @@ export function KnowledgeChunkInline({
                 : ""}
             </button>
             {showParent ? (
-              <div className="mt-2 whitespace-pre-wrap text-[11px] leading-relaxed text-muted-foreground">
-                {chunk.parent.content}
-              </div>
+              <div className="mt-2 text-[11px] leading-relaxed text-muted-foreground"><RichContent source={chunk.parent.content ?? ""} level="standard" /></div>
             ) : null}
           </div>
         ) : null}

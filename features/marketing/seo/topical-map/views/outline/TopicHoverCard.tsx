@@ -13,6 +13,7 @@
  */
 
 import { PanelRight } from "lucide-react";
+import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 
 import { Button } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -51,9 +52,7 @@ export function TopicHoverCard({ mapId, slug, onOpen }: TopicHoverCardProps) {
       </div>
 
       {topic.description ? (
-        <p className="line-clamp-6 whitespace-pre-line text-xs text-muted-foreground">
-          {topic.description}
-        </p>
+        <div className="line-clamp-6 text-xs text-muted-foreground"><RichContentPreview source={topic.description} lines={6} /></div>
       ) : (
         // read-gate-exempt: an empty field on a topic row that is already loaded (the card returns null without the row), not an empty list
         <p className="text-xs italic text-muted-foreground">No description yet.</p>

@@ -14,6 +14,7 @@
  */
 
 import React from "react";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { Building2 } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
 import { PeekDialog, PeekField } from "../PeekDialog";
@@ -73,9 +74,7 @@ export default function OrganizationPeek({ id, open, onClose }: PeekProps) {
           ) : null}
           <PeekField label="Description">
             {row.description ? (
-              <div className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
-                {row.description}
-              </div>
+              <div className="max-h-72 overflow-y-auto break-words rounded-md border border-border bg-muted/20 p-3 text-sm text-muted-foreground"><RichContent source={row.description ?? ""} level="standard" /></div>
             ) : (
               <span className="text-sm text-muted-foreground">—</span>
             )}

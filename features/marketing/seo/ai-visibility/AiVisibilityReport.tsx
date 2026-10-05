@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { RichContent } from "@/components/rich-content/RichContent";
 import {
   ArrowRight,
   CheckCircle2,
@@ -309,10 +308,8 @@ export function AiVisibilityReport({
                 {provider.error ? (
                   <p className="text-sm text-destructive">{provider.error} <ErrorAlchemyMenu error={provider.error} /></p>
                 ) : null}
-                <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {provider.answer_text}
-                  </ReactMarkdown>
+                <div className="max-w-none">
+                  <RichContent source={provider.answer_text ?? ""} level="standard" />
                 </div>
                 <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
                   <div>
