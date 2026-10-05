@@ -361,7 +361,7 @@ export function WriteInsteadBody({
       />
       <div className="flex items-center gap-2">
         <Button
-          variant={hasText ? "default" : "outline"}
+          variant={hasText ? "primary" : "outline"}
           onClick={hasText ? onSend : onSkip}
         >
           {hasText && <Send className="size-3.5" />}
@@ -423,9 +423,9 @@ function PrimaryAction({
 }) {
   return (
     <Button
-      variant={hasContent ? "default" : "outline"}
+      variant={hasContent ? "primary" : "outline"}
       onClick={hasContent ? onSend : onSkip}
-      className={cn("gap-1.5", className)}
+      className={className}
     >
       {hasContent && <Send className="size-3.5" />}
       {hasContent ? labels.send : labels.skip}
@@ -789,7 +789,7 @@ function NotifyBody({ ask, onAnswer, onDraft }: AskBodyProps) {
           {(ask.actions ?? []).map((a) => (
             <Button
               key={a}
-              variant={ask.level === "error" ? "destructive" : "secondary"}
+              variant={ask.level === "error" ? "danger" : "outline"}
               onClick={() =>
                 onAnswer({ ...EMPTY_ASK_RESPONSE, action: a, freeform: null })
               }
