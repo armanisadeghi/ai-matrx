@@ -24,8 +24,8 @@ export const COVER_PHOTOS: Array<{ key: string; label: string; src: string }> = 
   { key: "photo-pine-forest", label: "Pine forest", src: pineForest.src },
 ];
 
-/** Picture icons (Notion's portrait-style page icon). */
-export const ICON_PICTURES: Array<{ key: string; label: string; src: string }> = [{ key: "portrait-founder", label: "Portrait", src: portraitFounder.src }];
+/** Picture icons (Notion's portrait-style page icon) — illustrated, drawn procedurally; never a photo of a person. */
+export const ICON_PICTURES: Array<{ key: string; label: string; src: string }> = [{ key: "portrait-founder", label: "Illustrated portrait", src: portraitFounder.src }];
 
 const BY_KEY = new Map([...COVER_PHOTOS, ...ICON_PICTURES].map((p) => [p.key, p.src]));
 
