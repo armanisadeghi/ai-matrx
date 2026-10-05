@@ -8669,11 +8669,13 @@ export type ChatDatabase = {
           audience: string
           category: string
           created_at: string
+          deleted_at: string | null
           description: string
           icon: string
           id: string
           is_active: boolean
           key: string
+          metadata: Json
           name: string
           sort_order: number
           updated_at: string
@@ -8682,11 +8684,13 @@ export type ChatDatabase = {
           audience?: string
           category: string
           created_at?: string
+          deleted_at?: string | null
           description?: string
           icon?: string
           id?: string
           is_active?: boolean
           key: string
+          metadata?: Json
           name: string
           sort_order?: number
           updated_at?: string
@@ -8695,11 +8699,13 @@ export type ChatDatabase = {
           audience?: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string
           icon?: string
           id?: string
           is_active?: boolean
           key?: string
+          metadata?: Json
           name?: string
           sort_order?: number
           updated_at?: string
@@ -10354,11 +10360,13 @@ export type ChatDatabase = {
       math_course_structure: {
         Row: {
           course_name: string
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           id: string
           lesson_content: Json | null
           lesson_name: string | null
           lesson_objectives: string | null
+          metadata: Json
           module_description: string | null
           module_name: string
           sort_order: number | null
@@ -10367,11 +10375,13 @@ export type ChatDatabase = {
         }
         Insert: {
           course_name: string
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           lesson_content?: Json | null
           lesson_name?: string | null
           lesson_objectives?: string | null
+          metadata?: Json
           module_description?: string | null
           module_name: string
           sort_order?: number | null
@@ -10380,11 +10390,13 @@ export type ChatDatabase = {
         }
         Update: {
           course_name?: string
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           lesson_content?: Json | null
           lesson_name?: string | null
           lesson_objectives?: string | null
+          metadata?: Json
           module_description?: string | null
           module_name?: string
           sort_order?: number | null
@@ -12978,7 +12990,7 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "org_member_controls_created_by_fkey_p"
+            foreignKeyName: "org_member_controls_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -12992,14 +13004,14 @@ export type ChatDatabase = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "org_member_controls_updated_by_fkey_p"
+            foreignKeyName: "org_member_controls_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "org_member_controls_user_id_fkey_p"
+            foreignKeyName: "org_member_controls_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -17254,64 +17266,7 @@ export type ChatDatabase = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "continued_access_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_subject_user_id_fkey"
-            columns: ["subject_user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_subject_user_id_fkey"
-            columns: ["subject_user_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       custom_entity_definition: {
         Row: {
@@ -18309,36 +18264,7 @@ export type ChatDatabase = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "domain_classification_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domain_classification_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domain_classification_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domain_classification_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       doors_only_pending_cutover: {
         Row: {
@@ -18568,52 +18494,10 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "egress_pairing_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "egress_pairing_device_id_fkey"
             columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "egress_device"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -18669,52 +18553,10 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "egress_ticket_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "egress_ticket_device_id_fkey"
             columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "egress_device"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -19868,36 +19710,7 @@ export type ChatDatabase = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "knob_write_door_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knob_write_door_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knob_write_door_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knob_write_door_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lifecycle_archive: {
         Row: {
@@ -20658,38 +20471,10 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "masterwork_source_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "masterwork_source_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "masterwork_source_rulebook_id_fkey"
             columns: ["rulebook_id"]
             isOneToOne: false
             referencedRelation: "rulebook"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "masterwork_source_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "masterwork_source_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]

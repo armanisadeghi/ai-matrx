@@ -23130,6 +23130,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           direction: string
           family: string
           fingerprint: string
@@ -23150,6 +23151,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           direction: string
           family: string
           fingerprint: string
@@ -23170,6 +23172,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           direction?: string
           family?: string
           fingerprint?: string
@@ -25060,11 +25063,13 @@ export type Database = {
           audience: string
           category: string
           created_at: string
+          deleted_at: string | null
           description: string
           icon: string
           id: string
           is_active: boolean
           key: string
+          metadata: Json
           name: string
           sort_order: number
           updated_at: string
@@ -25073,11 +25078,13 @@ export type Database = {
           audience?: string
           category: string
           created_at?: string
+          deleted_at?: string | null
           description?: string
           icon?: string
           id?: string
           is_active?: boolean
           key: string
+          metadata?: Json
           name: string
           sort_order?: number
           updated_at?: string
@@ -25086,11 +25093,13 @@ export type Database = {
           audience?: string
           category?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string
           icon?: string
           id?: string
           is_active?: boolean
           key?: string
+          metadata?: Json
           name?: string
           sort_order?: number
           updated_at?: string
@@ -28231,6 +28240,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           id: string
           issued_at: string
           last_user_agent: string | null
@@ -28251,6 +28261,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           issued_at?: string
           last_user_agent?: string | null
@@ -28271,6 +28282,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           issued_at?: string
           last_user_agent?: string | null
@@ -32228,6 +32240,10 @@ export type Database = {
       _ctx_marked: { Args: never; Returns: boolean }
       _ctx_own_words: { Args: { p_kind: string; p_spec: Json }; Returns: Json }
       _ctx_py_json: { Args: { p_v: Json }; Returns: string }
+      _ctx_reference_value_holds: {
+        Args: { p_item: string; p_org: string; p_value_text: string }
+        Returns: undefined
+      }
       _ctx_rekey: {
         Args: { p_from: string; p_org: string; p_to: string; p_type: string }
         Returns: number
@@ -37745,6 +37761,21 @@ export type Database = {
         Args: { p_id: string; p_organization_id: string; p_type: string }
         Returns: boolean
       }
+      row_template_declare: {
+        Args: { p_organization_id: string; p_spec: Json; p_table_id: string }
+        Returns: string
+      }
+      row_templates: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: {
+          created_at: string
+          name: string
+          table_id: string
+          template_id: string
+          updated_at: string
+          values: Json
+        }[]
+      }
       rule_applies: {
         Args: {
           p_organization_id: string
@@ -42231,11 +42262,13 @@ export type Database = {
       math_course_structure: {
         Row: {
           course_name: string
-          created_at: string | null
+          created_at: string
+          deleted_at: string | null
           id: string
           lesson_content: Json | null
           lesson_name: string | null
           lesson_objectives: string | null
+          metadata: Json
           module_description: string | null
           module_name: string
           sort_order: number | null
@@ -42244,11 +42277,13 @@ export type Database = {
         }
         Insert: {
           course_name: string
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           lesson_content?: Json | null
           lesson_name?: string | null
           lesson_objectives?: string | null
+          metadata?: Json
           module_description?: string | null
           module_name: string
           sort_order?: number | null
@@ -42257,11 +42292,13 @@ export type Database = {
         }
         Update: {
           course_name?: string
-          created_at?: string | null
+          created_at?: string
+          deleted_at?: string | null
           id?: string
           lesson_content?: Json | null
           lesson_name?: string | null
           lesson_objectives?: string | null
+          metadata?: Json
           module_description?: string | null
           module_name?: string
           sort_order?: number | null
@@ -71776,7 +71813,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "org_member_controls_created_by_fkey_p"
+            foreignKeyName: "org_member_controls_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -71790,14 +71827,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "org_member_controls_updated_by_fkey_p"
+            foreignKeyName: "org_member_controls_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "org_member_controls_user_id_fkey_p"
+            foreignKeyName: "org_member_controls_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -74840,6 +74877,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           error_message: string | null
           finished_at: string | null
           id: string
@@ -74862,6 +74900,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           error_message?: string | null
           finished_at?: string | null
           id?: string
@@ -74884,6 +74923,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           error_message?: string | null
           finished_at?: string | null
           id?: string
@@ -82704,64 +82744,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "continued_access_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_subject_user_id_fkey"
-            columns: ["subject_user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_subject_user_id_fkey"
-            columns: ["subject_user_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "continued_access_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       custom_entity_definition: {
         Row: {
@@ -83759,36 +83742,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "domain_classification_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domain_classification_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domain_classification_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domain_classification_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       doors_only_pending_cutover: {
         Row: {
@@ -84018,52 +83972,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "egress_pairing_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "egress_pairing_device_id_fkey"
             columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "egress_device"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_pairing_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -84119,52 +84031,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "egress_ticket_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "egress_ticket_device_id_fkey"
             columns: ["device_id"]
             isOneToOne: false
             referencedRelation: "egress_device"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "egress_ticket_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -85318,36 +85188,7 @@ export type Database = {
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "knob_write_door_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knob_write_door_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knob_write_door_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knob_write_door_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       lifecycle_archive: {
         Row: {
@@ -86108,38 +85949,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "masterwork_source_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "masterwork_source_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "masterwork_source_rulebook_id_fkey"
             columns: ["rulebook_id"]
             isOneToOne: false
             referencedRelation: "rulebook"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "masterwork_source_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "masterwork_source_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "visible_user_identity"
             referencedColumns: ["id"]
           },
         ]
@@ -106653,6 +106466,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           id: string
           kind: string
           label: string
@@ -106671,6 +106485,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           kind?: string
           label: string
@@ -106689,6 +106504,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           kind?: string
           label?: string
@@ -106785,6 +106601,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           embedding: string | null
           id: string
           importance: number | null
@@ -106806,6 +106623,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           embedding?: string | null
           id?: string
           importance?: number | null
@@ -106827,6 +106645,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           embedding?: string | null
           id?: string
           importance?: number | null
@@ -111357,25 +111176,31 @@ export type Database = {
       scrape_domain_settings: {
         Row: {
           created_at: string
+          deleted_at: string | null
           domain_id: string
           enabled: boolean
           id: string
+          metadata: Json
           proxy_type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           domain_id: string
           enabled?: boolean
           id?: string
+          metadata?: Json
           proxy_type?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           domain_id?: string
           enabled?: boolean
           id?: string
+          metadata?: Json
           proxy_type?: string
           updated_at?: string
         }
@@ -111562,9 +111387,11 @@ export type Database = {
           action: string
           config_type: string
           created_at: string
+          deleted_at: string | null
           id: string
           is_active: boolean
           match_type: string
+          metadata: Json
           path_pattern_id: string
           selector_type: string
           values: Json
@@ -111573,9 +111400,11 @@ export type Database = {
           action: string
           config_type: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           match_type: string
+          metadata?: Json
           path_pattern_id: string
           selector_type: string
           values?: Json
@@ -111584,9 +111413,11 @@ export type Database = {
           action?: string
           config_type?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           match_type?: string
+          metadata?: Json
           path_pattern_id?: string
           selector_type?: string
           values?: Json
