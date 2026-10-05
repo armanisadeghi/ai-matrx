@@ -12,26 +12,35 @@ Shows how an organization's agents are arranged: who sits under whom. Arman, 202
 employee becomes 50–100 agents, and Orchestras already work like an org chart (managers over managers
 over the ones doing the work), so the chart is real structure, not decoration.
 
-## The two kinds of link — and only two
+## Boxes and links
 
-| Kind | Where it comes from | Enforced? | Drawn as |
+**Boxes** (any can sit under any): **Agent** (an Orchestra's Conductor is an agent),
+**Person** = a `membership` (their place in ONE organization — `iam.has_access` has no rule for a
+bare `user`), **Team** (`iam.team`), **Position** (`agent.position`, a named seat a person may
+fill — vocabulary row ruled 2026-10-04). Box ids are `type:entityId` (`constants.ts`).
+
+**Link types** are a registry (`ORG_LINK_KIND_META`), not code paths:
+
+| Type | Tree or arrow | Enforced? | Drawn as |
 |---|---|---|---|
-| **Automatic** | An Orchestra: its Conductor over its members. A member that is itself an Orchestra brings its whole team, recursively. Nobody maintains it by hand. | Yes — the Conductor directs them at run time | solid, `--primary` (on the builder canvas: the Orchestra's accent) |
-| **Manual** | A person records "this agent sits under that one". | No — the agents don't act on it | dashed, `--warning` |
+| **Directs** | tree | yes — an Orchestra; derived from its member edges | solid `--primary` |
+| **Reports to** | tree (one manager per box) | no | dashed `--warning` |
+| **Hands off to** | arrow across the tree | no — work passes on and doesn't come back | `--success` arrow |
+| **Dotted line** | arrow across the tree | no — advises, no authority | dashed muted arrow |
 
-Both render in ONE chart, and mix freely (a manual box can sit above an automatic subtree). Tokens and
-colours: `constants.ts` (`AGENT_ORG_EDGE_KINDS`).
+## Data — no new link table
 
-## Data — no new table
-
-- Automatic links ARE the Orchestra member edges (`features/agents/docs/ORCHESTRAS.md`).
-- Manual links: `platform.associations` agent → agent, **role `org_chart`, manager = source, report =
-  target** (same direction as a member edge), written only through `associationsService` via
-  `orgChartService.ts`. The `agent → agent` pair is already registered in `platform.association_types`
-  (open label, `allows_loops = false`).
-- One manual manager per agent: `setManualManager` replaces any earlier placement and refuses a loop.
-- Redux: `orchestras.manualOrgChart` in the orchestras slice; thunks in
-  `features/agents/redux/orchestras/orgChartThunks.ts`.
+- Directs links ARE the Orchestra member edges (`features/agents/docs/ORCHESTRAS.md`).
+- Every other link: `platform.associations`, **role `org_chart`**, source = the box above (or the
+  arrow's start), target = the box below (or its end), type in `metadata.link_kind`. All 16 pairs of
+  {agent, membership, team, position} are registered in `platform.association_types` (no access
+  conveyed). Written only through `associationsService` via `orgChartService.ts`.
+- One recorded manager per box; a tree loop is refused (read fresh from the server); hand-offs may loop.
+- Positions: `positionsService.ts` (canonical entity, certified; `agent` schema because `iam` is
+  write-through-doors only). A new position lands in the active organization, shown and changeable in
+  the picker — never a silent wait on the organization gate.
+- Redux: `orchestras.manualOrgChart` (links + positions). Refreshes MERGE; links leave the store only
+  through the remove thunks (a read racing a save once erased a new link).
 
 ## Entry points
 
@@ -52,6 +61,11 @@ colours: `constants.ts` (`AGENT_ORG_EDGE_KINDS`).
   any hierarchy (layout adapted from Paperclip, MIT, credited in `layout.ts`). Never a second one.
 
 ## Change log
+
+- 2026-10-04 — Link types as a registry (directs / reports to / hands off to / dotted line);
+  drag to move with Undo, multi-select, right-click, "+", keyboard, branch focus, deep links,
+  remembered view; Person (membership), Team and Position boxes with one picker; positions
+  (`agent.position`) with rename / fill / delete; `@ai-matrx/associations` 0.13.146.
 
 - 2026-09-28 — Separate trees wrap into rows to fit the screen; phone layout fixed (the chart layer opts
   out of the phone `max-width: 100%` default that collapsed cards); canvas teams reuse the shared stacked
