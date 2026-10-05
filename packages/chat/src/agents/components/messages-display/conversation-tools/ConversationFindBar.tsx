@@ -21,6 +21,7 @@ import {
   paintFindHighlights,
   type FindHistoryState,
 } from "./find-in-conversation";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const HIGHLIGHT_CSS = `
 ::highlight(${FIND_HIGHLIGHT}) { background-color: rgb(250 204 21 / 0.45); color: inherit; }
@@ -172,15 +173,6 @@ function FindButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
-    >
-      {children}
-    </button>
+    <Button variant="quiet" aria-label={label} title={label} onClick={onClick} disabled={disabled}>{children}</Button>
   );
 }

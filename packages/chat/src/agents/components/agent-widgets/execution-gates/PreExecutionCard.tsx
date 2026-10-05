@@ -10,6 +10,7 @@ import { destroyInstanceIfAllowed } from "../../../redux/execution-system/conver
 import { SmartAgentInput } from "../../inputs/smart-input/SmartAgentInput";
 import { useComposerMode } from "../../inputs/smart-input/composer/useComposerMode";
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 
 // ─── Pre-execution compact card (portalled, no WindowPanel) ──────────────────
 
@@ -63,22 +64,8 @@ export function PreExecutionCard({
             {agentName ?? "Please enter details..."}
           </p>
           <div className="flex items-center gap-1 shrink-0 ml-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Cancel"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleContinue}
-              className="h-6 w-6 flex items-center justify-center rounded-md text-primary hover:text-primary hover:bg-primary/10 transition-colors"
-              title={hasInput ? "Continue" : "Skip"}
-            >
-              <Check className="w-3.5 h-3.5" />
-            </button>
+            <Button variant="quiet" icon={<X />} onClick={handleCancel} title="Cancel" aria-label="Cancel" />
+            <Button variant="quiet" tone="primary" icon={<Check />} onClick={handleContinue} title={hasInput ? "Continue" : "Skip"} aria-label={hasInput ? "Continue" : "Skip"} />
           </div>
         </div>
 

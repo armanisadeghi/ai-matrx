@@ -14,6 +14,7 @@ import { selectEffectiveAutoTools } from "../../../redux/execution-system/utils/
 import { setBuilderAdvancedSettings } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectAgentAutoToolsDisabled } from "../../../redux/agent-definition/selectors";
 import type { ResourceBlockType } from "../../../types/instance.types";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** Attachments the agent reaches through a tool (T3 triggers). */
 const TOOL_BACKED_RESOURCE_TYPES: ReadonlySet<ResourceBlockType> = new Set([
@@ -64,20 +65,14 @@ export function ComposerToolsNotice({ conversationId }: { conversationId: string
     <div className="flex items-center gap-1.5 px-1 pt-1 text-[11px] text-amber-600 dark:text-amber-500">
       <Wrench className="h-3 w-3 shrink-0" />
       <span className="min-w-0 truncate">Auto tools are off; it may not fully use this</span>
-      <button
-        type="button"
-        onClick={() =>
+      <Button variant="link" onClick={() =>
           dispatch(
             setBuilderAdvancedSettings({
               conversationId,
               changes: { autoTools: agentDefaultOn ? null : true },
             }),
           )
-        }
-        className="shrink-0 whitespace-nowrap underline underline-offset-2 hover:text-foreground"
-      >
-        Turn on
-      </button>
+        } className="shrink-0">Turn on</Button>
     </div>
   );
 }

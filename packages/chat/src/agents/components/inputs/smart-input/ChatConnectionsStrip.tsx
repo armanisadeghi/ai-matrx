@@ -68,6 +68,7 @@ import { useAttachResourcePicker } from "../../../../host/ui-slots";
 import { useConversationAttachments } from "../../../../host/ui-slots";
 import { ComposerConnectorsPanel } from "./composer/ComposerConnectorsPanel";
 import { ComposerChip, ComposerChipPart } from "./ComposerChip";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ChatConnectionsStripProps {
   conversationId: string | null | undefined;
@@ -318,19 +319,7 @@ export function ChatConnectionsStrip({
             className,
           )}
         >
-          <button
-            type="button"
-            onClick={openPicker}
-            title="Nothing is connected to this chat — open Connections to add a service"
-            aria-label="Nothing is connected to this chat. Open Connections to add a service."
-            className="group flex shrink-0 items-center gap-1 rounded-full pr-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <Server className="h-3 w-3 text-muted-foreground" aria-hidden />
-            <span className="uppercase tracking-wide">Connections</span>
-            <span className="font-normal normal-case tracking-normal">
-              none for this chat
-            </span>
-          </button>
+          <Button variant="quiet" icon={<Server />} onClick={openPicker} title="Nothing is connected to this chat — open Connections to add a service" aria-label="Nothing is connected to this chat. Open Connections to add a service." className="shrink-0">Connections: none</Button>
         </div>
         {mobilePicker}
       </>
@@ -345,16 +334,7 @@ export function ChatConnectionsStrip({
           className,
         )}
       >
-        <button
-          type="button"
-          onClick={openPicker}
-          title="Connections for this chat — open Connections"
-          aria-label={`Connections for this chat: ${connections.length} service${connections.length === 1 ? "" : "s"}${broken > 0 ? `, ${broken} need attention` : ""}. Open Connections.`}
-          className="group flex shrink-0 items-center gap-1 rounded-full pr-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <Server className="h-3 w-3 text-primary" aria-hidden />
-          <span className="uppercase tracking-wide">Connections</span>
-        </button>
+        <Button variant="quiet" icon={<Server />} onClick={openPicker} title="Connections for this chat — open Connections" aria-label={`Connections for this chat: ${connections.length} service${connections.length === 1 ? "" : "s"}${broken > 0 ? `, ${broken} need attention` : ""}. Open Connections.`} className="shrink-0">Connections</Button>
 
         {connections.map((connection) => {
           const presentation = mcpChipPresentation(

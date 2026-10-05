@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, Button } from "@ai-matrx/design-system/controls";
 import {
   PencilTapButton,
   ExternalLinkTapButton,
@@ -377,22 +377,8 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
               ) : null}
             </span>
             <div className="flex shrink-0 items-center gap-2">
-              <button
-                onClick={() => setCloneOpen(true)}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-                title="Clone a git repo into this box"
-              >
-                <GitBranch className="h-3 w-3" />
-                Clone
-              </button>
-              <button
-                onClick={() => applyRef(null)}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-destructive"
-                title="Detach"
-              >
-                <X className="h-3 w-3" />
-                Detach
-              </button>
+              <Button variant="quiet" icon={<GitBranch />} onClick={() => setCloneOpen(true)} title="Clone a git repo into this box">Clone</Button>
+              <Button variant="quiet" icon={<X />} onClick={() => applyRef(null)} title="Detach">Detach</Button>
             </div>
           </div>
         ) : null}

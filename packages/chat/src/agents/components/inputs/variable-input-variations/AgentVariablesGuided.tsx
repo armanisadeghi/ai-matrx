@@ -28,6 +28,7 @@ import { setUserVariableValue } from "../../../redux/execution-system/instance-v
 import { selectShowVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectShouldShowVariables } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { ProTextarea } from "@ai-matrx/chat/host/ui-slots";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 // ============================================================================
 // TYPES
@@ -822,13 +823,7 @@ export function AgentVariablesGuided({
           {/* Row 1: progress dots + title + skip */}
           <div className="flex items-center gap-2">
             {progressDots}
-            <button
-              type="button"
-              onClick={handleSkipAll}
-              className="flex-shrink-0 text-xs text-muted-foreground hover:text-foreground hover:bg-accent px-2 py-0.5 rounded transition-colors whitespace-nowrap"
-            >
-              Skip questions
-            </button>
+            <ControlButton variant="quiet" onClick={handleSkipAll}>Skip questions</ControlButton>
           </div>
           {/* Row 2: description (only when present) */}
           <p className="mt-1.5 text-xs text-muted-foreground leading-snug break-words min-w-0 w-full">
@@ -860,39 +855,16 @@ export function AgentVariablesGuided({
 
         {/* Navigation — always visible, never scrolls */}
         <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 shrink-0">
-          <button
-            type="button"
-            onClick={goPrev}
-            disabled={activeIndex === 0}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-default transition-colors px-1 py-0.5"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-            Prev
-          </button>
+          <ControlButton variant="quiet" icon={<ChevronLeft />} onClick={goPrev} disabled={activeIndex === 0}>Prev</ControlButton>
 
           <span className="text-xs text-muted-foreground">
             {activeIndex + 1} of {total}
           </span>
 
           {activeIndex < total - 1 ? (
-            <button
-              type="button"
-              onClick={goNext}
-              className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
-            >
-              Next
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <ControlButton variant="quiet" tone="primary" iconEnd={<ChevronRight />} onClick={goNext}>Next</ControlButton>
           ) : (
-            <button
-              type="button"
-              onClick={handleSkipAll}
-              className="flex items-center gap-1 text-xs text-primary hover:text-foreground transition-colors px-1 py-0.5 font-medium"
-            >
-              <Check className="w-3.5 h-3.5" />
-              Done
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <ControlButton variant="quiet" tone="primary" icon={<Check />} iconEnd={<ChevronRight />} onClick={handleSkipAll}>Done</ControlButton>
           )}
         </div>
       </div>

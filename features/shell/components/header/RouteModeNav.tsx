@@ -453,21 +453,26 @@ export function RouteModeNav({
           </>
         ) : (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className={cn(PILL, "px-1")}
-                aria-label="Switch view"
-              >
-                <span className={cn(ITEM, NAV_ITEM_SELECTED)}>
+            {/* The track is decoration; the BUTTON is the selected capsule
+                itself, so the pressable box hugs its label. A button that is
+                the whole track reads as a pill stretched by the track's inset
+                (pill-guard, Rulebook/Industry packs/Setup headers,
+                2026-10-05). */}
+            <span className={cn(PILL, "px-1")}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(ITEM, NAV_ITEM_SELECTED)}
+                  aria-label="Switch view"
+                >
                   {ActiveIcon && <ActiveIcon />}
                   <span className={cn(iconTrigger && ActiveIcon && "sr-only")}>
                     {current?.name ?? fallbackLabel}
                   </span>
                   <ChevronDown className="opacity-60" />
-                </span>
-              </button>
-            </DropdownMenuTrigger>
+                </button>
+              </DropdownMenuTrigger>
+            </span>
             <DropdownMenuContent
               align="center"
               className={cn(items.some((i) => i.description) ? "w-72" : "w-52")}

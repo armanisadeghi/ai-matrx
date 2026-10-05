@@ -597,15 +597,7 @@ export const ConversationSourceFilterTree: React.FC<
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Filter conversations
           </span>
-          <button
-            type="button"
-            onClick={resetToDefaults}
-            className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-            title="Reset to this surface's defaults"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Defaults
-          </button>
+          <Button variant="quiet" icon={<RotateCcw />} onClick={resetToDefaults} title="Reset to this surface's defaults">Defaults</Button>
         </div>
 
         <div className="border-b border-border px-2 py-2">
@@ -703,13 +695,7 @@ export const ConversationSourceFilterTree: React.FC<
               ? "No filter — showing everything"
               : `${activeCount} source${activeCount === 1 ? "" : "s"} selected`}
           </span>
-          <button
-            type="button"
-            onClick={activeCount === 0 ? selectAll : clearAll}
-            className="text-[10px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            {activeCount === 0 ? "Select all" : "Clear filter"}
-          </button>
+          <Button variant="quiet" onClick={activeCount === 0 ? selectAll : clearAll}>{activeCount === 0 ? "Select all" : "Clear filter"}</Button>
         </div>
       </PopoverContent>
     </Popover>

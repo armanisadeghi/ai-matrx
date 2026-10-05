@@ -64,6 +64,7 @@ import { SmartInputMessageTemplatePicker } from "../../../../host/ui-slots";
 import { selectUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "../../../redux/execution-system/instance-user-input/instance-user-input.slice";
 import { prependTemplateToDraft } from "@ai-matrx/chat/agents/components/inputs/smart-input/prepend-template-to-draft";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const MANUAL_MODE_SETTINGS_HINT =
   "Per-run settings are edited in the builder panel during test runs";
@@ -385,14 +386,7 @@ export function PlusAttachMenu({
               {view === "menu" ? (
                 <>
                   <div className="border-t border-border px-2 py-1">
-                    <button
-                      type="button"
-                      onClick={() => setView("templates")}
-                      className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Message templates
-                    </button>
+                    <Button variant="quiet" icon={<FileText />} onClick={() => setView("templates")} className="w-full">Message templates</Button>
                   </div>
                   <DocumentSwitchesRow conversationId={conversationId} />
 

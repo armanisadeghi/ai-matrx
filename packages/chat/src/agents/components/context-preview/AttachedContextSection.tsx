@@ -20,7 +20,7 @@
  * `removeContextEntry`, and the doc gates — never a parallel path.
  */
 
-import { Badge, Chip } from "@ai-matrx/design-system/controls";
+import { Badge, Chip, Button } from "@ai-matrx/design-system/controls";
 import { useMemo } from "react";
 import {
   FileText,
@@ -97,17 +97,7 @@ function RemoveX({
   onRemove: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onRemove}
-      aria-label={`Remove ${label} from what is sent`}
-      className={cn(
-        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground",
-        "transition-colors hover:bg-destructive hover:text-destructive-foreground",
-      )}
-    >
-      <X className="h-3 w-3" />
-    </button>
+    <Button variant="quiet" icon={<X />} onClick={onRemove} aria-label={`Remove ${label} from what is sent`} className="shrink-0" />
   );
 }
 

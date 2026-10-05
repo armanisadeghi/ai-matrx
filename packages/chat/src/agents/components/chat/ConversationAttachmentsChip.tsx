@@ -20,7 +20,7 @@
  * provider, never a `<span>` naming something the reader cannot reach).
  */
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { AlertTriangle, ExternalLink, Paperclip } from "lucide-react";
 import {
@@ -90,13 +90,7 @@ export function ConversationAttachmentsChip({
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>
               {attachments.error}{" "}
-              <button
-                type="button"
-                onClick={attachments.reload}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Try again
-              </button>
+              <Button variant="link" onClick={attachments.reload}>Try again</Button>
               <ErrorAlchemyMenu error={attachments.error} />
             </span>
           </p>

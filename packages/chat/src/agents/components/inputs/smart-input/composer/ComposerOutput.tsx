@@ -50,7 +50,7 @@ import {
 import { fetchAgentOutputSchemas } from "../../../../../mandates/output-contract";
 import { Popover, PopoverContent, PopoverTrigger, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { SegmentedControl, Button } from "@ai-matrx/design-system/controls";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
 import { selectBuilderAdvancedSettings } from "../../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -345,14 +345,7 @@ function ShapePicker({
           className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
         />
         {search ? (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            aria-label="Clear search"
-            className="shrink-0 rounded text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={() => setSearch("")} aria-label="Clear search" className="shrink-0" />
         ) : null}
       </label>
       <SegmentedControl
@@ -464,15 +457,7 @@ export function ComposerOutputPill({
           </button>
         </PopoverTrigger>
         {!output.isDefault ? (
-          <button
-            type="button"
-            onClick={output.clear}
-            className="mr-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Reset output to Text only"
-            title="Reset to Text only"
-          >
-            <X className="h-3 w-3" />
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={output.clear} aria-label="Reset output to Text only" title="Reset to Text only" className="mr-1 shrink-0" />
         ) : null}
       </div>
       <PopoverContent

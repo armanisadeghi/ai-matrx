@@ -50,6 +50,7 @@ import {
 import { RowChoicesButton } from "./RowChoicesButton";
 import { isControlVariable } from "@ai-matrx/agents";
 import { enterSendsHere } from "@ai-matrx/chat/ui/composer/composerSubmit";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AgentVariablesInlineProps {
   conversationId: string;
@@ -499,15 +500,7 @@ export function AgentVariablesInline({
                   label={variableRunLabel(variable)}
                 />
               )}
-              <button
-                type="button"
-                onClick={() => handleExpand(variable.name)}
-                className="shrink-0 h-6 w-6 inline-flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 transition-colors"
-                title="Expand to full editor"
-                aria-label="Expand to full editor"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+              <Button variant="quiet" icon={<ChevronRight />} onClick={() => handleExpand(variable.name)} title="Expand to full editor" aria-label="Expand to full editor" className="shrink-0" />
             </div>
           );
         })}

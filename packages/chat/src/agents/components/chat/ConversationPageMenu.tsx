@@ -259,14 +259,7 @@ export function ConversationPageMenu({
           event.preventDefault();
         }}
       >
-        <button
-          type="button"
-          aria-label="Conversation actions"
-          title="Conversation actions"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        <Button variant="quiet" icon={<MoreHorizontal />} aria-label="Conversation actions" title="Conversation actions" className="shrink-0" />
       </ItemMenu>
     </>
   );

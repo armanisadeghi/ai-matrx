@@ -8,6 +8,7 @@
 
 import { RotateCcw, TriangleAlert } from "lucide-react";
 import { useComposerDraftRestore } from "../../../redux/execution-system/instance-user-input/useComposerDraftRestore";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** Long enough that losing it on a reload would actually hurt. */
 const SILENCE_BELOW_CHARS = 120;
@@ -33,13 +34,7 @@ export function ComposerDraftNotice({
           We put your unsent draft back ({restoredChars.toLocaleString()}{" "}
           characters).
         </span>
-        <button
-          type="button"
-          onClick={acknowledge}
-          className="shrink-0 whitespace-nowrap underline underline-offset-2 hover:text-foreground"
-        >
-          Dismiss
-        </button>
+        <Button variant="link" onClick={acknowledge} className="shrink-0">Dismiss</Button>
       </div>
     );
   }

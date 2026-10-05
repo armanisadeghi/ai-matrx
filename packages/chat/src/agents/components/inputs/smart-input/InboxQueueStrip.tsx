@@ -51,6 +51,7 @@ import {
   removeInboxItem,
   type ConversationInboxItem,
 } from "../../../redux/execution-system/inbox/inbox.slice";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface InboxQueueStripProps {
   conversationId: string;
@@ -166,13 +167,7 @@ export function InboxQueueStrip({ conversationId }: InboxQueueStripProps) {
                 </span>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="How waiting messages work"
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring lg:h-5 lg:w-5"
-                    >
-                      <CircleHelp className="h-3.5 w-3.5" />
-                    </button>
+                    <Button variant="quiet" icon={<CircleHelp />} aria-label="How waiting messages work" />
                   </TooltipTrigger>
                   <TooltipContent
                     side="top"

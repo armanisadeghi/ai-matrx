@@ -211,12 +211,7 @@ export function CompactAssistantInput({
               <span className="text-[10px] font-medium text-blue-700 dark:text-blue-300">
                 {formatDurationSeconds(duration, { style: "clock" })}
               </span>
-              <button
-                onClick={stopRecording}
-                className="text-[10px] text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Stop
-              </button>
+              <Button variant="quiet" onClick={stopRecording}>Stop</Button>
             </div>
           ) : (
             <>

@@ -32,6 +32,7 @@ import {
 } from "../../redux/execution-system/messages/messages.selectors";
 import { useLiveRunStatus } from "./useLiveRunStatus";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const selectNoConversationMessages = () => EMPTY_CONVERSATION_MESSAGES;
 
@@ -189,14 +190,7 @@ export function LiveRunDisplay({
           ) : null}
         </span>
         {onDismiss ? (
-          <button
-            type="button"
-            onClick={onDismiss}
-            aria-label="Dismiss run output"
-            className="ml-auto rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={onDismiss} aria-label="Dismiss run output" className="ml-auto" />
         ) : null}
       </div>
       {errorMessage ? (

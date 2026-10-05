@@ -28,6 +28,7 @@ import { useMandateSet } from "../../../../../mandates/useMandateSet";
 import { useSessionKnob } from "../../../../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";
 import { COMPOSER_KNOBS } from "./composer-mode-cookie";
+import { Button } from "@ai-matrx/design-system/controls";
 
 function timeOfDayGreeting(hour: number): string {
   if (hour < 5) return "Evening";
@@ -172,16 +173,9 @@ export function ComposerQuickActions({
               className="pointer-events-none absolute inset-y-0 right-0 w-[72px] bg-gradient-to-r from-transparent via-background/80 to-background"
               aria-hidden="true"
             />
-            <button
-              type="button"
-              onClick={() =>
+            <Button variant="outline" icon={<ChevronRight />} onClick={() =>
                 scrollerRef.current?.scrollBy({ left: 240, behavior: "smooth" })
-              }
-              className="absolute right-0 top-0 inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
-              aria-label="More quick actions"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+              } aria-label="More quick actions" className="absolute right-0 top-0" />
           </>
         ) : null}
       </div>

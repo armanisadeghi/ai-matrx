@@ -83,6 +83,7 @@ import { groupMessageIds, groupsToRender } from "./conversation-tools/pinned-fil
 import type { FindHistoryState } from "./conversation-tools/find-in-conversation";
 import { loadFullConversationHistory } from "../../conversation-export/load-full-history";
 import { useMessageListInteractions } from "./conversation-tools/useMessageListInteractions";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AgentConversationDisplayProps {
   conversationId: string;
@@ -563,13 +564,7 @@ export function AgentConversationDisplay({
         {pinnedOnly && visibleGroups.length === 0 && (
           <div className="py-10 text-center text-sm text-muted-foreground">
             Nothing pinned in this conversation.{" "}
-            <button
-              type="button"
-              className="font-medium text-primary hover:underline"
-              onClick={() => setPinnedOnly(false)}
-            >
-              Show all messages
-            </button>
+            <Button variant="quiet" tone="primary" onClick={() => setPinnedOnly(false)}>Show all messages</Button>
           </div>
         )}
       </div>

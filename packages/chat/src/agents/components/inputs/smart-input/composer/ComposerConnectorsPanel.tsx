@@ -41,6 +41,7 @@ import { useOpenLiveIntegrationsWindow } from "../../../../../host/window-opener
 import { fetchAgentRunControls } from "../../../../redux/agent-definition/thunks";
 import { fetchCatalog } from "../../../../redux/mcp/mcp.slice";
 import { ComposerMenuLabel, ComposerMenuRow } from "./ComposerMenu";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export function ComposerConnectorsPanel({
   conversationId,
@@ -132,9 +133,7 @@ export function ComposerConnectorsPanel({
           </button>
           </>
         ) : on && chooser ? (
-          <button
-            type="button"
-            onClick={() => {
+          <Button variant="quiet" icon={<Paperclip />} onClick={() => {
               onNavigate();
               openAttachPicker({
                 conversationId,
@@ -142,13 +141,7 @@ export function ComposerConnectorsPanel({
                 providerName: s.entry.name,
                 attachable: s.attachable,
               });
-            }}
-            title={chooser}
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
-          >
-            <Paperclip className="h-3.5 w-3.5" aria-hidden="true" />
-            {chosen > 0 ? `${chosen} chosen ›` : "Choose ›"}
-          </button>
+            }} title={chooser} className="shrink-0">{chosen > 0 ? `${chosen} chosen ›` : "Choose ›"}</Button>
         ) : on && toolCount != null ? (
           <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{toolCount} tools</span>
         ) : null}
@@ -176,7 +169,7 @@ export function ComposerConnectorsPanel({
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1.5">
         {availabilityStatus === "failed" && (
           <p className="px-2 py-2 text-xs text-amber-600 dark:text-amber-400">
-            Live connection health unavailable. <button type="button" onClick={() => void refreshAvailability()} className="underline">Retry</button> <ErrorAlchemyMenu />
+            Live connection health unavailable. <Button variant="link" onClick={() => void refreshAvailability()}>Retry</Button> <ErrorAlchemyMenu />
           </p>
         )}
         {active.length > 0 ? <ComposerMenuLabel>Active in this chat</ComposerMenuLabel> : null}
@@ -186,9 +179,7 @@ export function ComposerConnectorsPanel({
         {catalogStatus === "failed" ? (
           <p className="px-2 py-3 text-sm text-muted-foreground">
             Your connectors did not load.{" "}
-            <button type="button" onClick={() => { void dispatch(fetchCatalog()); refreshAvailability(); }} className="font-medium text-primary hover:underline">
-              Try again
-            </button>
+            <Button variant="quiet" tone="primary" onClick={() => { void dispatch(fetchCatalog()); refreshAvailability(); }}>Try again</Button>
           </p>
         ) : catalogStatus === "loading" && serverStates.length === 0 ? (
           <p className="px-2 py-3 text-sm text-muted-foreground">Loading your connectors…</p>

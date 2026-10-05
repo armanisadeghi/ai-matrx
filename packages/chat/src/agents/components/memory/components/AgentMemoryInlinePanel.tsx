@@ -22,6 +22,7 @@ import {
 import { AgentMemorySidebar } from "./AgentMemorySidebar";
 import { AgentMemoryBody } from "./AgentMemoryBody";
 import { AgentMemoryFooter } from "./AgentMemoryFooter";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export function AgentMemoryInlinePanel() {
   const state = useAgentMemories();
@@ -39,15 +40,7 @@ export function AgentMemoryInlinePanel() {
         </div>
         {!isMobile && (
           <div className="flex shrink-0 items-center justify-end border-t border-border px-2 py-1">
-            <button
-              type="button"
-              onClick={() => openMemoryWindow()}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
-              title="Open the full Memory window"
-            >
-              <AppWindow className="h-2.5 w-2.5" />
-              Open window
-            </button>
+            <Button variant="quiet" icon={<AppWindow />} onClick={() => openMemoryWindow()} title="Open the full Memory window">Open window</Button>
           </div>
         )}
       </div>
@@ -57,14 +50,7 @@ export function AgentMemoryInlinePanel() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center border-b border-border px-1.5 py-1">
-        <button
-          type="button"
-          onClick={() => state.setSelectedId(ALL_MEMORIES_ID)}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          All memories
-        </button>
+        <Button variant="quiet" icon={<ArrowLeft />} onClick={() => state.setSelectedId(ALL_MEMORIES_ID)}>All memories</Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <AgentMemoryBody state={state} />

@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, ImageIcon } from "lucide-react";
 import { UnifiedImageBlockRenderer } from "@ai-matrx/chat/host/ui-slots";
 import type { UnifiedImageBlock } from "@ai-matrx/media/files";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export interface ImageArrivalPeekProps {
   /** `${requestId}:${blockId}` — globally unique across all requests. */
@@ -115,13 +116,7 @@ export function ImageArrivalPeek({
                 {mimeLabel}
               </span>
             )}
-            <button
-              onClick={dismiss}
-              className="ml-auto p-0.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-              aria-label="Dismiss"
-            >
-              <X className="w-3 h-3" />
-            </button>
+            <Button variant="quiet" icon={<X />} onClick={dismiss} aria-label="Dismiss" className="ml-auto" />
           </div>
 
           {/* Thumbnail — click opens the full ImageViewerWindow */}

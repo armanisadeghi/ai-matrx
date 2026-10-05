@@ -15,6 +15,7 @@ import {
   tableReferenceValue,
   type TableVariableType,
 } from "../../../utils/table-variable";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface TableVariableInputProps {
   type: TableVariableType;
@@ -63,16 +64,9 @@ export function TableVariableInput({
             >
               <span className="truncate">{nameOf(id)}</span>
               {!readonly && (
-                <button
-                  type="button"
-                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-                  aria-label={`Remove ${nameOf(id)}`}
-                  onClick={() =>
+                <Button variant="quiet" icon={<X />} aria-label={`Remove ${nameOf(id)}`} onClick={() =>
                     onChange(tableReferenceValue("tables", ids.filter((x) => x !== id)))
-                  }
-                >
-                  <X className="h-3 w-3" />
-                </button>
+                  } className="shrink-0" />
               )}
             </li>
           ))}

@@ -40,6 +40,7 @@ import {
   SORT_MODE_OPTIONS,
   type UseAgentMemoriesReturn,
 } from "../hooks/useAgentMemories";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 const TIER_CHIP_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
   high: "bg-primary/15 text-primary",
@@ -102,13 +103,7 @@ function MemoryRow({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className="absolute right-1 top-1/2 flex h-5 w-5 shrink-0 -translate-y-1/2 items-center justify-center rounded opacity-0 transition-opacity hover:bg-muted group-hover/row:opacity-100 data-[state=open]:opacity-100"
-            aria-label="Memory options"
-          >
-            <MoreHorizontal className="h-3.5 w-3.5" />
-          </button>
+          <ControlButton variant="quiet" icon={<MoreHorizontal />} aria-label="Memory options" className="absolute right-1 top-1/2 shrink-0 opacity-0 group-hover/row:opacity-100 data-[state=open]:opacity-100" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="right">
           <DropdownMenuItem
@@ -187,13 +182,7 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <ArrowUpDown className="h-2.5 w-2.5" />
-              {sortLabel}
-            </button>
+            <ControlButton variant="quiet" icon={<ArrowUpDown />}>{sortLabel}</ControlButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {SORT_MODE_OPTIONS.map((option) => (

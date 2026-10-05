@@ -30,6 +30,7 @@ import {
   normalizeLanes,
   type ConversationLane,
 } from "../../redux/conversation-history/lanes";
+import { Button } from "@ai-matrx/design-system/controls";
 
 /** Writes the viewer's lane choice (persisted by the preferences engine). */
 export function useSetConversationLanes(): (
@@ -113,13 +114,7 @@ export const AllLanesOffNotice: React.FC<{ className?: string }> = ({
       )}
     >
       <span>Every lane is off.</span>
-      <button
-        type="button"
-        onClick={() => setLanes(DEFAULT_CONVERSATION_LANES)}
-        className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-accent"
-      >
-        Show Chat and Matrx
-      </button>
+      <Button variant="outline" onClick={() => setLanes(DEFAULT_CONVERSATION_LANES)}>Show Chat and Matrx</Button>
     </div>
   );
 };

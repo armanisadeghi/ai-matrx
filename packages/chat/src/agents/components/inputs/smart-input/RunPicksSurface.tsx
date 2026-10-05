@@ -27,6 +27,7 @@ import {
   PickerSearchField,
   PickerSectionLabel,
 } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -133,13 +134,7 @@ export function RunPicksSurface({
         <>
           <PickerSectionLabel
             action={
-              <button
-                type="button"
-                onClick={onClear}
-                className="rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              >
-                Clear
-              </button>
+              <Button variant="quiet" onClick={onClear}>Clear</Button>
             }
           >
             Added for this run · {added.length}

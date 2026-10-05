@@ -26,6 +26,7 @@ import { destroyInstanceIfAllowed } from "../../redux/execution-system/conversat
 import { selectInstanceAgentName } from "../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { SmartAgentInput } from "./smart-input/SmartAgentInput";
 import { useComposerMode } from "./smart-input/composer/useComposerMode";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface PreExecutionAgentInputProps {
   conversationId: string;
@@ -60,22 +61,8 @@ export function PreExecutionAgentInput({
           {title ?? "Please enter details..."}
         </p>
         <div className="flex items-center gap-1 shrink-0 ml-2">
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="h-6 w-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Cancel"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="h-6 w-6 flex items-center justify-center rounded-md text-primary hover:text-primary hover:bg-primary/10 transition-colors"
-            title={hasInput ? "Continue" : "Skip"}
-          >
-            <Check className="w-3.5 h-3.5" />
-          </button>
+          <Button variant="quiet" icon={<X />} onClick={handleCancel} title="Cancel" aria-label="Cancel" />
+          <Button variant="quiet" tone="primary" icon={<Check />} onClick={handleContinue} title={hasInput ? "Continue" : "Skip"} aria-label={hasInput ? "Continue" : "Skip"} />
         </div>
       </div>
 

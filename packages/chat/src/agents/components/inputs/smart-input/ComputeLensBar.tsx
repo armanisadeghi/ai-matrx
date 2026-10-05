@@ -296,14 +296,7 @@ export function ComputeLensBar({
         ))}
 
         {!boundView && visibleTargets.length === 0 && !loading ? (
-          <button
-            type="button"
-            onClick={onOpenPanel}
-            className="inline-flex h-5 items-center rounded-full px-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-            title="No sandbox or local computer available"
-          >
-            None
-          </button>
+          <Button variant="quiet" onClick={onOpenPanel} title="No sandbox or local computer available">None</Button>
         ) : null}
       </div>
 

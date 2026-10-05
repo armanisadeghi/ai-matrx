@@ -3926,3 +3926,13 @@ html[data-board-embed] .shell-main {
   }
 }
 
+
+/* THE 3px HALF-GAP, class-wide for route header actions (2026-10-05). A tap
+   button's box carries 3px of unseen space each side; anything ELSE in the
+   actions row (a scope chip, a status, a text control) must add its own 3px,
+   or it sits 3px from the neighbouring pill — the Content Plan "Set scopes"
+   chip against the shell's first icon. An action that is itself a tap control
+   already carries the half-gap and is left alone. */
+[data-route-header-right] > [data-route-header-action]:not(:has(.matrx-tap-target, .matrx-control)) {
+  margin-inline: calc(var(--matrx-tap-gap, 0.375rem) / 2);
+}

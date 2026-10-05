@@ -14,6 +14,7 @@ import { makeSelectFilteredAgents } from "@ai-matrx/agents/catalog";
 import { initializeChatAgents } from "../../redux/agent-definition/thunks";
 import { useAppStore } from "../../../store/hooks";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface PinnedAgentsSectionProps {
   /** Currently active agentId — used to highlight the row when present. */
@@ -161,14 +162,7 @@ export function PinnedAgentsSection({
           })}
           {hasMorePins && (
             <li className="mx-1">
-              <button
-                type="button"
-                onClick={() => setShowAll((v) => !v)}
-                className="flex h-7 w-full items-center rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
-                aria-expanded={showAll}
-              >
-                {showAll ? "Show less" : "Show all"}
-              </button>
+              <Button variant="quiet" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="w-full">{showAll ? "Show less" : "Show all"}</Button>
             </li>
           )}
         </ul>

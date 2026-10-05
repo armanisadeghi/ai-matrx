@@ -28,6 +28,7 @@ import {
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
 import { BoundVariableChips } from "../BoundVariableChips";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface AgentVariablesWizardProps {
   conversationId: string;
@@ -160,37 +161,15 @@ export function AgentVariablesWizard({
 
       {/* Footer — delicate inline nav */}
       <div className="flex items-center justify-between px-3 py-1.5 shrink-0">
-        <button
-          type="button"
-          onClick={goBack}
-          disabled={isFirst}
-          className="flex items-center gap-0.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          Back
-        </button>
+        <Button variant="quiet" icon={<ChevronLeft />} onClick={goBack} disabled={isFirst}>Back</Button>
 
         <div className="flex items-center gap-3">
           {!isLast && (
-            <button
-              type="button"
-              onClick={goNext}
-              className="flex items-center gap-0.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-            >
-              Next
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <Button variant="quiet" iconEnd={<ChevronRight />} onClick={goNext}>Next</Button>
           )}
 
           {isLast && (
-            <button
-              type="button"
-              onClick={goNext}
-              className="flex items-center gap-0.5 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              Done
-              <ChevronRight className="w-3 h-3" />
-            </button>
+            <Button variant="quiet" tone="primary" iconEnd={<ChevronRight />} onClick={goNext}>Done</Button>
           )}
         </div>
       </div>

@@ -94,7 +94,7 @@ import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { AllLanesOffNotice } from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { SegmentedControl, Button } from "@ai-matrx/design-system/controls";
 import { ItemRow } from "@ai-matrx/chat/host/ui-slots";
 import { toast } from "../../../host/notify";
 import {
@@ -1021,25 +1021,10 @@ const ConsumerView: React.FC<
                 className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-ring/40"
                 aria-label="Search conversations"
               />
-              <button
-                type="button"
-                onClick={closeSearch}
-                className="absolute right-1.5 flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-                aria-label="Close search"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              <Button variant="quiet" icon={<X />} onClick={closeSearch} aria-label="Close search" className="absolute right-1.5" />
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={openSearch}
-              className="flex h-8 flex-1 items-center gap-1.5 rounded-lg px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              aria-label="Search conversations"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span>Search chats</span>
-            </button>
+            <Button variant="quiet" icon={<Search />} onClick={openSearch} aria-label="Search conversations" className="flex-1">Search chats</Button>
           )}
         </div>
       )}
@@ -1513,14 +1498,7 @@ const PinnedChatsSection: React.FC<{
             />
           ))}
           {hasMorePins && (
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              className="mx-1 flex h-7 w-[calc(100%-0.5rem)] items-center rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
-              aria-expanded={showAll}
-            >
-              {showAll ? "Show less" : "Show all"}
-            </button>
+            <Button variant="quiet" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll} className="mx-1">{showAll ? "Show less" : "Show all"}</Button>
           )}
         </div>
       )}

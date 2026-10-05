@@ -31,7 +31,7 @@ import {
   SelectTrigger,
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Chip, Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
@@ -302,15 +302,7 @@ function BoundChip({
           </button>
         </PopoverTrigger>
         {activeScopeId && (
-          <button
-            type="button"
-            onClick={handleRemoveScope}
-            className="inline-flex h-full shrink-0 items-center rounded-r-full py-0.5 pl-1 pr-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label={`Stop using ${scopeLabel}`}
-            title={`Stop using ${scopeLabel} — ${humanizeIdentifier(info.name)} goes back to a normal input`}
-          >
-            <X className="h-3 w-3" />
-          </button>
+          <ControlButton variant="quiet" icon={<X />} onClick={handleRemoveScope} aria-label={`Stop using ${scopeLabel}`} title={`Stop using ${scopeLabel} — ${humanizeIdentifier(info.name)} goes back to a normal input`} className="shrink-0" />
         )}
       </span>
       <PopoverContent

@@ -52,6 +52,7 @@ import {
   type WorkingDocumentKind,
 } from "../../../redux/execution-system/instance-working-document/instance-working-document.slice";
 import { DocumentLinkPicker } from "../../working-document/DocumentLinkPicker";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ContextDocsMenuProps {
   conversationId: string;
@@ -99,17 +100,10 @@ function DocRow({
           {enabled && (
             /* Immediate "see it" affordance — opens the doc in the non-blocking
                right sidebar so the user never has to hunt for a window. */
-            <button
-              type="button"
-              onClick={() => {
+            <Button variant="outline" icon={<PanelRight />} onClick={() => {
                 openPanel({ conversationId, initialKind: kind });
                 onOpen?.();
-              }}
-              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <PanelRight className="h-3 w-3" />
-              Open
-            </button>
+              }}>Open</Button>
           )}
           {/* Always available: a working document is usually CONTINUED across
               chats and agents, not started blank — picking an existing doc
@@ -128,13 +122,7 @@ function DocRow({
               )
             }
             trigger={
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-              >
-                <Link2 className="h-3 w-3" />
-                {enabled ? "Link existing…" : "Start from existing…"}
-              </button>
+              <Button variant="outline" icon={<Link2 />}>{enabled ? "Link existing…" : "Start from existing…"}</Button>
             }
           />
         </div>
@@ -207,17 +195,10 @@ function ScratchRow({
         </p>
         {enabled && (
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
+            <Button variant="outline" icon={<PanelRight />} onClick={() => {
                 openPanel({ conversationId, initialKind: "scratch" });
                 onOpen?.();
-              }}
-              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              <PanelRight className="h-3 w-3" />
-              Open
-            </button>
+              }}>Open</Button>
           </div>
         )}
       </div>

@@ -35,6 +35,7 @@ import {
   MOBILE_TABLE_FROZEN_HEAD,
 } from "@ai-matrx/chat/ui/mobileTable";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type MemoryCostByEventType = components["schemas"]["MemoryCostByEventType"];
 
@@ -99,16 +100,7 @@ export function MemoryCostCard({
             Not in the conversation's total cost
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className="flex items-center gap-1 h-6 px-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-          title="Refresh from DB"
-        >
-          <RefreshCw className={cn("w-3 h-3", isLoading && "animate-spin")} />
-          Refresh
-        </button>
+        <Button variant="quiet" icon={<RefreshCw />} onClick={handleRefresh} disabled={isLoading} title="Refresh from DB">Refresh</Button>
       </div>
 
       {fetchState?.status === "error" && (

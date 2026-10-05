@@ -63,6 +63,7 @@ import {
   shortId,
 } from "../../../redux/execution-system/messages/transcript-journal";
 import { selectIsSuperAdmin } from "../../../../host/identity";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 export function AgentUserMessageContent({
   conversationId,
@@ -451,16 +452,10 @@ export function AgentUserMessage({
             isHovered ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
         >
-          <button
-            onClick={(e) => {
+          <ControlButton variant="outline" icon={<ChevronUp />} onClick={(e) => {
               e.stopPropagation();
               setIsCollapsed(true);
-            }}
-            className="flex items-center justify-center h-5 w-5 rounded-full bg-background/90 border border-border shadow-sm text-muted-foreground hover:text-foreground transition-colors"
-            title="Collapse"
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
+            }} title="Collapse" aria-label="Collapse" />
         </div>
       )}
 

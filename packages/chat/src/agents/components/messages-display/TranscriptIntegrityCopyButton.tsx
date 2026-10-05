@@ -22,6 +22,7 @@ import {
   formatTranscriptIntegrityReport,
 } from "./transcript-integrity-report";
 import { selectIsSuperAdmin } from "../../../host/identity";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface TranscriptIntegrityCopyButtonProps {
   conversationId: string;
@@ -97,19 +98,6 @@ function TranscriptIntegrityCopyButtonInner({
   };
 
   return (
-    <button
-      type="button"
-      onClick={() => void copy()}
-      className={cn(
-        "absolute top-2 right-4 z-10 flex h-7 w-7 items-center justify-center rounded-full",
-        "matrx-glass-thin-border text-muted-foreground/60 hover:text-foreground",
-        "transition-colors",
-      )}
-      title="Copy transcript integrity report (admin) — paste it to an agent when a message is missing"
-      aria-label="Copy transcript integrity report"
-      data-testid="transcript-integrity-copy"
-    >
-      <Stethoscope className="h-3.5 w-3.5" />
-    </button>
+    <Button variant="quiet" icon={<Stethoscope />} onClick={() => void copy()} title="Copy transcript integrity report (admin) — paste it to an agent when a message is missing" aria-label="Copy transcript integrity report" data-testid="transcript-integrity-copy" className="absolute top-2 right-4 z-10" />
   );
 }

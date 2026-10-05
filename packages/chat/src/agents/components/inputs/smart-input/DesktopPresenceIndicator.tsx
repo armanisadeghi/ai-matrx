@@ -23,6 +23,7 @@ import {
   useComputeTargetActions,
 } from "./use-compute-target-actions";
 import { describeBoundTargetState } from "../../../../compute/targets";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface DesktopPresenceIndicatorProps {
   conversationId: string;
@@ -109,15 +110,7 @@ export function DesktopPresenceIndicator({
               />
               <span className="truncate">{boundView.name}</span>
             </span>
-            <button
-              type="button"
-              onClick={() => applyBinding(null)}
-              className="text-muted-foreground hover:text-destructive"
-              title="Disconnect"
-              aria-label={`Disconnect ${boundView.name}`}
-            >
-              <Unplug className="h-3.5 w-3.5" />
-            </button>
+            <Button variant="quiet" icon={<Unplug />} onClick={() => applyBinding(null)} title="Disconnect" aria-label={`Disconnect ${boundView.name}`} />
           </div>
         </div>
         {remedy ? (

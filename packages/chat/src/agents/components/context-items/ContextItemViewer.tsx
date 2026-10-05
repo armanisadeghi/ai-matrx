@@ -31,6 +31,7 @@ import {
 } from "./registry";
 import { buildReattachSpec, canReattach } from "./recontext";
 import type { ContextDrawerItem } from "./types";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ContextItemViewerProps {
   items: readonly ContextDrawerItem[];
@@ -158,14 +159,7 @@ export function ContextItemViewer({ items, index, onIndexChange, onTitleChange }
           {showReattach && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={handleReattach}
-                  aria-label="Send updated version"
-                  className="ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md text-primary hover:bg-accent"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                </button>
+                <Button variant="quiet" tone="primary" icon={<Send />} onClick={handleReattach} aria-label="Send updated version" className="ml-auto" />
               </TooltipTrigger>
               <TooltipContent>Send updated version to the agent</TooltipContent>
             </Tooltip>

@@ -52,6 +52,7 @@ import {
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { MicDeviceMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -399,15 +400,7 @@ function ComposerSendButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onSend}
-          disabled={disabled}
-          aria-label={name}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"
-        >
-          <CornerDownLeft className="h-4 w-4" />
-        </button>
+        <ControlButton variant="quiet" icon={<CornerDownLeft />} onClick={onSend} disabled={disabled} aria-label={name} className="shrink-0" />
       </TooltipTrigger>
       <TooltipContent side="top" align="end" className="flex flex-col gap-1 py-1.5">
         {voiceBusy ? (

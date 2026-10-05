@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { conversationSearchRangeLabel } from "../../redux/conversation-history/conversation-search";
 import type { useConversationServerSearch } from "./useConversationServerSearch";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type ServerSearchState = ReturnType<typeof useConversationServerSearch>;
 
@@ -48,43 +49,18 @@ export function ConversationSearchStatus({
       {state.isSettled && state.status !== "loading" && (
         <div className="mt-1.5 flex flex-wrap gap-1">
           {state.status === "failed" && (
-            <button
-              type="button"
-              onClick={state.retry}
-              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent"
-            >
-              Retry
-            </button>
+            <Button variant="quiet" onClick={state.retry}>Retry</Button>
           )}
           {remaining > 0 && (
-            <button
-              type="button"
-              onClick={() => void state.loadMore()}
-              disabled={state.status === "loading-more"}
-              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent disabled:opacity-60"
-            >
-              {state.status === "loading-more"
+            <Button variant="quiet" onClick={() => void state.loadMore()} disabled={state.status === "loading-more"}>{state.status === "loading-more"
                 ? "Loading…"
-                : `Show ${nextCount} more`}
-            </button>
+                : `Show ${nextCount} more`}</Button>
           )}
           {nextLabel && (
-            <button
-              type="button"
-              onClick={state.expandRange}
-              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent"
-            >
-              Search {nextLabel}
-            </button>
+            <Button variant="quiet" onClick={state.expandRange}>Search {nextLabel}</Button>
           )}
           {!state.effectiveDeep && (
-            <button
-              type="button"
-              onClick={state.enableDeepSearch}
-              className="rounded-md px-2 py-1 font-medium text-foreground hover:bg-accent"
-            >
-              Search message text
-            </button>
+            <Button variant="quiet" onClick={state.enableDeepSearch}>Search message text</Button>
           )}
         </div>
       )}
