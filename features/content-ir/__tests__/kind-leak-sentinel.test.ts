@@ -15,6 +15,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { installKindLeakSentinel, resetKindLeakSentinelReports } from "../surfaces/kind-leak-sentinel";
 import { KIND_SOURCE_ATTR } from "../surfaces/kind-leak-scan";
+import * as scan from "../surfaces/kind-leak-scan";
 
 const KIND = '{"__kind":"flashcard_set","title":"Cells","cards":[]}';
 const capture = captureError as jest.Mock;
@@ -102,6 +103,85 @@ describe("the kind leak sentinel (G1)", () => {
     document.body.innerHTML = `<div><p>${KIND}</p></div>`;
     dispose = installKindLeakSentinel({ root: document.body, debounceMs: 100, logToConsole: false });
     await settle();
+    expect(capture).toHaveBeenCalledTimes(1);
+  });
+
+  // H2 (round 5): a per-scan character cap must never decide what is seen.
+  const FILLER = "Plain sentence about cell biology and nothing structured at all here. ".repeat(2).slice(0, 100);
+  function longList(items: number): HTMLElement {
+    const list = document.createElement("ul");
+    for (let i = 0; i < items; i += 1) {
+      const li = document.createElement("li");
+      li.textContent = `${i}: ${FILLER}`;
+      list.appendChild(li);
+    }
+    return list;
+  }
+  async function drain() {
+    for (let i = 0; i < 200; i += 1) await settle();
+  }
+
+  it("H2a: finishes the initial page scan past any per-slice cap (content before mount)", async () => {
+    dispose();
+    const list = longList(2_500); // ~260k characters before the leak
+    const last = document.createElement("li");
+    last.textContent = KIND;
+    list.appendChild(last);
+    document.body.appendChild(list);
+    dispose = installKindLeakSentinel({ root: document.body, debounceMs: 100, logToConsole: false });
+    await drain();
+    expect(capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("H2a: a node appended to the END of a long list is scanned (only what changed)", async () => {
+    const list = longList(2_500);
+    document.body.appendChild(list);
+    await drain();
+    expect(capture).not.toHaveBeenCalled();
+    const li = document.createElement("li");
+    li.textContent = KIND;
+    list.appendChild(li);
+    await drain();
+    expect(capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("H2: appending to a long list reads the change, not the list (cost)", async () => {
+    const list = longList(2_500);
+    document.body.appendChild(list);
+    await drain();
+    const spy = jest.spyOn(scan, "visibleKindText");
+    const li = document.createElement("li");
+    li.textContent = "One more plain row.";
+    list.appendChild(li);
+    await drain();
+    const read = spy.mock.results.reduce((sum, r) => sum + String(r.value).length, 0);
+    const calls = spy.mock.calls.length;
+    spy.mockRestore();
+    expect(calls).toBeGreaterThan(0); // the spy sees the sentinel's reads
+    expect(read).toBeLessThan(2_000);
+  });
+
+  it("H2b: a big kindless addition never drops the other pending additions", async () => {
+    const big = document.createElement("div");
+    big.textContent = FILLER.repeat(2_600); // ~260k characters, one text node
+    document.body.appendChild(big);
+    const p = document.createElement("p");
+    p.textContent = KIND;
+    document.body.appendChild(p);
+    await drain();
+    expect(capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("H2: an appended token completes a key split across sibling text nodes", async () => {
+    const p = document.createElement("p");
+    for (const token of ['{"', "__", "ki"]) p.appendChild(document.createTextNode(token));
+    document.body.appendChild(p);
+    await settle();
+    expect(capture).not.toHaveBeenCalled();
+    for (const token of ['nd"', ":", '"note"}']) {
+      p.appendChild(document.createTextNode(token));
+      await settle();
+    }
     expect(capture).toHaveBeenCalledTimes(1);
   });
 
