@@ -8,8 +8,8 @@
  * - `<UserTableWindowController />` — declarative wrapper. Mount to open,
  *   unmount to close.
  *
- * Opens a saved UDT dataset table (by id) at full size in a floating
- * WindowPanel via the realtime UserTableViewer.
+ * Opens a saved table (by id) at full size in a floating
+ * WindowPanel — the one table page (`LocatedTableViewer` → `UnifiedTableBody`).
  */
 
 import { useCallback, useEffect } from "react";
