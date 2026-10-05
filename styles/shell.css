@@ -3934,6 +3934,6 @@ html[data-board-embed] .shell-main {
    chip against the shell's first icon. An action that is itself a tap control
    already carries the half-gap and is left alone. */
 [data-route-header-right] > [data-route-header-action]:not(:has(.matrx-tap-target, .matrx-control)),
-[data-header-extra]:not(:has(.matrx-tap-target, .matrx-control)) {
+[data-header-extra]:not(:has(.matrx-tap-target)) {
   margin-inline: calc(var(--matrx-tap-gap, 0.375rem) / 2);
 }
