@@ -221,7 +221,7 @@ export function PhoneSheetAction({ action }: { action: ReturnType<typeof flatten
   return (
     <div ref={ref} data-route-header-overflow-item className="flex shrink-0 items-center gap-1.5 px-1">
       {action.node}
-      {label ? <span data-phone-sheet-label className="whitespace-nowrap text-xs text-muted-foreground">{label}</span> : null}
+      {label ? <span data-phone-sheet-label className="whitespace-nowrap type-secondary text-muted-foreground">{label}</span> : null}
     </div>
   );
 }

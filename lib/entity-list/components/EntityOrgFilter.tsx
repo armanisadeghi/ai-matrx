@@ -163,13 +163,13 @@ export function EntityOrgFilter({ orgId, onChange, counts, countsLoading, onOpen
                 <span className="truncate">{org.name}</span>
               </span>
               {n !== undefined && (
-                <span className="text-xs tabular-nums text-muted-foreground">{n}</span>
+                <span className="type-secondary tabular-nums text-muted-foreground">{n}</span>
               )}
             </DropdownMenuItem>
           );
         })}
         {shown.length === 0 && (
-          <p className="px-2 py-1.5 text-xs text-muted-foreground">
+          <p className="px-2 py-1.5 type-secondary text-muted-foreground">
             No organization matches “{needle.trim()}”.
           </p>
         )}

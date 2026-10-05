@@ -260,7 +260,7 @@ export default function MobileRouteMenuSlot({
               </div>
             )}
             {failed && !RouteMenu ? (
-              <div className="flex items-center gap-3 px-3 py-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-3 px-3 py-4 type-body text-muted-foreground">
                 <span className="min-w-0 flex-1">
                   The {match.label} menu didn&apos;t load.
                 </span>

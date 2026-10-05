@@ -68,7 +68,7 @@ export default function SidebarErrorInspectorToggle() {
       </span>
       <span className="shell-nav-label">Error Inspector</span>
       {red > 0 ? (
-        <span className="shell-nav-badge-expanded rounded-full bg-destructive/20 text-destructive px-1.5 text-[10px] font-semibold tabular-nums">
+        <span className="shell-nav-badge-expanded rounded-full bg-destructive/20 text-destructive px-1.5 type-meta font-semibold tabular-nums">
           {red}
         </span>
       ) : orange > 0 ? (

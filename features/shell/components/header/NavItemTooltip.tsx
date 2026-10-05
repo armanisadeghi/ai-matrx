@@ -71,7 +71,7 @@ export function NavItemTooltip({
       >
         {label}
         {description && (
-          <p className="mt-0.5 text-[0.6875rem] font-normal leading-snug opacity-80">
+          <p className="mt-0.5 type-meta font-normal leading-snug opacity-80">
             {description}
           </p>
         )}

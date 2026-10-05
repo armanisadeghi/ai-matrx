@@ -31,7 +31,7 @@ export function ApprovalsMenuItem() {
         <ClipboardCheck />
         <span className="flex-1 text-left">Waiting on you</span>
         {!unknown && count > 0 ? (
-          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+          <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1.5 type-meta font-semibold text-primary-foreground">
             {count > 99 ? "99+" : count}
           </span>
         ) : null}

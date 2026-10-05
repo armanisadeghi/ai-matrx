@@ -180,7 +180,7 @@ export function TailwindColorPicker({
             >
               <span 
                 className={cn(
-                  "text-xs font-medium text-center w-full truncate block",
+                  "type-secondary font-medium text-center w-full truncate block",
                   getTextColorClass(colorGroup.shades['500'])
                 )}
               >

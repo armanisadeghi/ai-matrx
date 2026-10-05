@@ -181,14 +181,14 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           <Loader2 className="w-4 h-4 animate-spin" />
           {title || 'Loading Workflow'}
         </h2>
-        <p className="text-sm text-muted-foreground max-w-sm">
+        <p className="type-body text-muted-foreground max-w-sm">
           {subtitle || message || 'Setting up your workflow...'}
         </p>
       </div>
 
       {/* Progress steps */}
       {showProgressSteps && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 type-secondary text-muted-foreground">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 bg-primary dark:bg-primary-foreground rounded-full animate-pulse" />
             <span>Loading</span>

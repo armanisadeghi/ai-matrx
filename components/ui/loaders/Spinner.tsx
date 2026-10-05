@@ -98,7 +98,7 @@ const Spinner = forwardRef<HTMLDivElement, SpinnerProps>(
                     />
                 </div>
                 {label && (
-                    <span className="text-sm">{label}</span>
+                    <span className="type-body">{label}</span>
                 )}
             </div>
         );

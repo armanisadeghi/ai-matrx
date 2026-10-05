@@ -155,7 +155,7 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
 
   const notice = viewingIn ? (
     <p
-      className="mb-1 flex items-center gap-2 px-2.5 py-1.5 text-xs text-muted-foreground"
+      className="mb-1 flex items-center gap-2 px-2.5 py-1.5 type-secondary text-muted-foreground"
       data-page-object-organization-viewing=""
     >
       <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

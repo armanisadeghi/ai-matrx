@@ -431,7 +431,7 @@ export function EntityListTable<TRow>({
         <div className="min-w-0">
           {own}
           <div
-            className="truncate text-xs text-muted-foreground"
+            className="truncate type-secondary text-muted-foreground"
             data-lookalike-note=""
           >
             {note}

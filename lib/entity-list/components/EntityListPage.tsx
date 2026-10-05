@@ -1345,7 +1345,7 @@ export function EntityListPage<TRow>({
         {list.error && (
           <div
             role="alert"
-            className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive"
           >
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span className="flex-1">{list.error.message}</span>
@@ -1636,8 +1636,8 @@ function EntityListEmpty({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-      <p className="text-sm font-medium text-foreground">{state.title}</p>
-      <p className="text-xs text-muted-foreground">{state.description}</p>
+      <p className="type-title text-foreground">{state.title}</p>
+      <p className="type-secondary text-muted-foreground">{state.description}</p>
       {state.action}
     </div>
   );
@@ -1667,7 +1667,7 @@ function LoadMoreFooter({
   if (total === 0 && !openEnded) return null;
   if (openEnded && loaded === 0 && page <= 1) return null;
   return (
-    <div className="flex items-center justify-center gap-3 pt-4 text-xs text-muted-foreground">
+    <div className="flex items-center justify-center gap-3 pt-4 type-secondary text-muted-foreground">
       <span className="tabular-nums">
         {openEnded ? (
           `${((page - 1) * pageSize + 1).toLocaleString()}-${shownThrough.toLocaleString()}`

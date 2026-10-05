@@ -226,8 +226,8 @@ function BannerShell({
       aria-live="polite"
       className={
         tone === "warn"
-          ? "flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-foreground"
-          : "flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs text-foreground"
+          ? "flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 type-secondary text-foreground"
+          : "flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 type-secondary text-foreground"
       }
     >
       {children}

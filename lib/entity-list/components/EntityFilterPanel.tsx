@@ -302,7 +302,7 @@ export function EntityFilterPanel<TRow>({
           {/* Named on a phone too (page-pass 2026-09-27: three bare icons). */}
           {compact ? null : <span className="@max-3xl/list:sr-only">Filters</span>}
           {activeCount > 0 && (
-            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+            <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 type-meta font-bold text-primary-foreground">
               {activeCount}
             </span>
           )}
@@ -336,7 +336,7 @@ export function EntityFilterPanel<TRow>({
         }}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5">
-          <span className="text-sm font-semibold">
+          <span className="type-title">
             {canSort ? "Filters & Sort" : "Filters"}
           </span>
           {activeCount > 0 && (
@@ -386,7 +386,7 @@ export function EntityFilterPanel<TRow>({
                   label={section.label}
                   active={false}
                 >
-                  <p className="pb-1 text-[11px] leading-snug text-muted-foreground">
+                  <p className="pb-1 type-meta leading-snug text-muted-foreground">
                     {countsLoading
                       ? `Reading which ${section.label.toLowerCase()} options you can narrow to…`
                       : (counts?.narrowUnavailable?.[section.scope] ??
@@ -405,7 +405,7 @@ export function EntityFilterPanel<TRow>({
                 active={narrowedTo !== ""}
               >
                 {section.hint ? (
-                  <p className="pb-1 text-[11px] leading-snug text-muted-foreground">
+                  <p className="pb-1 type-meta leading-snug text-muted-foreground">
                     {section.hint}
                   </p>
                 ) : null}

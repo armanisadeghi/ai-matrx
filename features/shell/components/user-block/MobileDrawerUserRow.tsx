@@ -75,11 +75,11 @@ export default function MobileDrawerUserRow() {
         )}
       </span>
       <span className="flex min-w-0 flex-1 flex-col text-left">
-        <span className="truncate text-sm font-medium text-foreground">
+        <span className="truncate type-title text-foreground">
           {name}
         </span>
         {user.email && user.email !== name ? (
-          <span className="truncate text-xs text-muted-foreground">
+          <span className="truncate type-secondary text-muted-foreground">
             {user.email}
           </span>
         ) : null}

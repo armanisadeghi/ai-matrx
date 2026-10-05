@@ -32,7 +32,7 @@ export function UserProfileHeader({ userData }: UserProfileHeaderProps) {
             </span>
           ) : (
             <span
-              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+              className="flex h-7 w-7 items-center justify-center rounded-full type-secondary font-semibold"
               style={organizationColor(userData.id ?? displayName)}
             >
               {initial}

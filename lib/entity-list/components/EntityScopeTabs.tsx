@@ -171,7 +171,7 @@ function CountPill({ n, active }: { n: number | null; active: boolean }) {
   return (
     <span
       className={cn(
-        "rounded px-1 text-[10px] font-semibold tabular-nums",
+        "rounded px-1 type-meta font-semibold tabular-nums",
         active ? "bg-primary-foreground/20" : "bg-muted-foreground/15",
       )}
     >
@@ -383,7 +383,7 @@ export function EntityScopeTabs({
                     )}
                     All
                   </span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                  <span className="type-secondary tabular-nums text-muted-foreground">
                     {counts.uncounted ? null : (counts.byKind[kind] ?? 0)}
                   </span>
                 </DropdownMenuItem>
@@ -402,7 +402,7 @@ export function EntityScopeTabs({
                       )}
                       <span className="truncate">{opt.label}</span>
                     </span>
-                    <span className="text-xs tabular-nums text-muted-foreground">
+                    <span className="type-secondary tabular-nums text-muted-foreground">
                       {opt.count}
                     </span>
                   </DropdownMenuItem>

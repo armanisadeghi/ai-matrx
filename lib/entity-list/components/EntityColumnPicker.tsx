@@ -67,7 +67,7 @@ export function EntityColumnPicker<TRow>({
       </PopoverTrigger>
       <PopoverContent sizing="content" align="end" sideOffset={8} className="p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
-          <span className="text-sm font-semibold">Columns</span>
+          <span className="type-title">Columns</span>
           <button
             type="button"
             onClick={() => onChange(defaultHidden)}
@@ -105,12 +105,12 @@ export function EntityColumnPicker<TRow>({
                 </span>
                 <span className="flex-1 truncate">{spec.label}</span>
                 {spec.locked ? (
-                  <span className="text-[10px] uppercase text-muted-foreground">
+                  <span className="type-meta uppercase text-muted-foreground">
                     Always
                   </span>
                 ) : visible && noRoomColumns.includes(spec.id) ? (
                   <span
-                    className="text-[10px] uppercase text-muted-foreground"
+                    className="type-meta uppercase text-muted-foreground"
                     title="Hidden until the window is wider."
                     data-column-no-room=""
                   >

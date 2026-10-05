@@ -24,7 +24,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span
       data-entity-filter-chip=""
-      className="inline-flex h-11 max-w-[16rem] sm:h-8 items-center gap-1 rounded-full border border-border bg-muted/50 pl-2.5 pr-1 text-xs text-foreground"
+      className="inline-flex h-11 max-w-[16rem] sm:h-8 items-center gap-1 rounded-full border border-border bg-muted/50 pl-2.5 pr-1 type-secondary text-foreground"
     >
       <span className="truncate" title={label}>
         {label}

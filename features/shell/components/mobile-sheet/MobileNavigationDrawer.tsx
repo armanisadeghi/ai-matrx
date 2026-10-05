@@ -380,7 +380,7 @@ export default function MobileNavigationDrawer({
           ),
         )
       ) : (
-        <div className="px-4 py-12 text-center text-sm text-muted-foreground">
+        <div className="px-4 py-12 text-center type-body text-muted-foreground">
           No destinations match “{query.trim()}”.
         </div>
       )}

@@ -111,7 +111,7 @@ export default function AdminMobileMenu() {
                 <IconResolver iconName={domain.iconName} className="h-5 w-5" />
               </span>
               <span className="flex-1">{domain.name}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="type-secondary text-muted-foreground">
                 {domain.sections.reduce(
                   (count, section) => count + section.destinations.length,
                   0,
@@ -145,7 +145,7 @@ export default function AdminMobileMenu() {
               </AppLink>
               {domain.sections.map((section) => (
                 <div key={section.name}>
-                  <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <div className="flex items-center gap-2 px-4 pb-1 pt-2 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                     <IconResolver
                       iconName={section.iconName}
                       className="h-3 w-3"

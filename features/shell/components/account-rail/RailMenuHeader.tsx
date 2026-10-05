@@ -28,7 +28,7 @@ export function RailMenuHeader({
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-base font-medium text-foreground">{title}</span>
-        {subtitle ? <span className="truncate text-xs text-muted-foreground">{subtitle}</span> : null}
+        {subtitle ? <span className="truncate type-secondary text-muted-foreground">{subtitle}</span> : null}
       </span>
     </>
   );

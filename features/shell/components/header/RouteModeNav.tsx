@@ -440,7 +440,7 @@ export function RouteModeNav({
                       <span className="flex-1 text-left">
                         {item.name}
                         {item.description ? (
-                          <span className="mt-0.5 block text-[13px] font-normal leading-snug text-muted-foreground">
+                          <span className="mt-0.5 block type-body font-normal leading-snug text-muted-foreground">
                             {item.description}
                           </span>
                         ) : null}
@@ -510,7 +510,7 @@ export function RouteModeNav({
                       {item.description ? (
                         <span className="min-w-0 flex-1">
                           <span className="block">{item.name}</span>
-                          <span className="mt-0.5 block whitespace-normal text-xs font-normal leading-snug text-muted-foreground">
+                          <span className="mt-0.5 block whitespace-normal type-secondary font-normal leading-snug text-muted-foreground">
                             {item.description}
                           </span>
                         </span>

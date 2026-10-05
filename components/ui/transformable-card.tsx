@@ -405,7 +405,7 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
         >
           {pillView || (
             <>
-              <span className="text-sm font-medium truncate">{id}</span>
+              <span className="type-title truncate">{id}</span>
               <X size={14} className="text-gray-500" />
             </>
           )}

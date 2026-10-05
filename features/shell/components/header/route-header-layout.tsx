@@ -281,7 +281,7 @@ export function OverflowMenuItem({ action }: { action: FlatAction }) {
     >
       {action.node}
       {label ? (
-        <span className="whitespace-nowrap text-xs text-muted-foreground">
+        <span className="whitespace-nowrap type-secondary text-muted-foreground">
           {label}
         </span>
       ) : null}

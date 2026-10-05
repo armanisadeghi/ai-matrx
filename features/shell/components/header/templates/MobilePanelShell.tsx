@@ -209,7 +209,7 @@ export function MobilePanelShell({
                 panel.onOpenChange?.(event.currentTarget.open)
               }
             >
-              <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-medium text-foreground marker:text-muted-foreground">
+              <summary className="min-h-11 cursor-pointer px-4 py-3 type-title text-foreground marker:text-muted-foreground">
                 {Icon && (
                   <Icon className="mr-2 inline-block h-4 w-4" aria-hidden />
                 )}
@@ -242,7 +242,7 @@ export function MobilePanelShell({
             {pendingTotal > 0 && (
               <span
                 aria-hidden
-                className="pointer-events-none absolute right-0 top-0.5 min-w-[17px] rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-[17px] text-primary-foreground"
+                className="pointer-events-none absolute right-0 top-0.5 min-w-[17px] rounded-full bg-primary px-1 text-center type-meta font-semibold leading-[17px] text-primary-foreground"
               >
                 {pendingTotal > 99 ? "99+" : pendingTotal}
               </span>

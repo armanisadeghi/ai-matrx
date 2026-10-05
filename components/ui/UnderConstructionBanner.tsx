@@ -18,7 +18,7 @@ const UnderConstructionBanner = ({
         <div className="flex items-center">
           <Construction size={18} className="mr-2 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium">{message}</p>
+            <p className="type-title">{message}</p>
           </div>
         </div>
       </div>

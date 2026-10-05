@@ -176,7 +176,7 @@ export default function SidebarEnvToggle() {
             <DropdownMenuSub key={target.service}>
               <DropdownMenuSubTrigger className="gap-2">
                 <span>{API_SERVICE_LABELS[target.service]}</span>
-                <span className="ml-auto mr-1 text-[10px] uppercase text-muted-foreground">
+                <span className="ml-auto mr-1 type-meta uppercase text-muted-foreground">
                   {target.environment}
                 </span>
               </DropdownMenuSubTrigger>

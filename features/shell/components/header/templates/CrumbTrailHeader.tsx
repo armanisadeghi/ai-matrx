@@ -130,12 +130,12 @@ export function CrumbNode({ crumb, isLast }: { crumb: Crumb; isLast: boolean }) 
   ) : crumb.href ? (
     <AppLink
       href={crumb.href}
-      className="truncate max-w-[12rem] text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+      className="truncate max-w-[12rem] type-body text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
     >
       {crumb.label}
     </AppLink>
   ) : (
-    <span className="truncate max-w-[12rem] text-sm text-muted-foreground">
+    <span className="truncate max-w-[12rem] type-body text-muted-foreground">
       {crumb.label}
     </span>
   );

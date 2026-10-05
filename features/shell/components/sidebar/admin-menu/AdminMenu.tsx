@@ -112,7 +112,7 @@ export default function AdminMenu() {
                   <IconResolver iconName={domain.iconName} />
                 </span>
                 <span className="flex-1 truncate">{domain.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   {domain.sections.reduce(
                     (count, section) => count + section.destinations.length,
                     0,

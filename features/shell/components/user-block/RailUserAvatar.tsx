@@ -27,7 +27,7 @@ export function RailUserAvatar({
         <ShellUserAvatarImage src={avatarUrl} alt={displayName} sizes="24px" />
       ) : name ? (
         <span
-          className="flex h-full w-full items-center justify-center text-[11px] font-semibold leading-none"
+          className="flex h-full w-full items-center justify-center type-meta font-semibold leading-none"
           style={organizationColor(id ?? displayName)}
         >
           {name.charAt(0).toUpperCase()}

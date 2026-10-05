@@ -46,7 +46,7 @@ const ColorSwatch = ({ label, variable, contrastClass }: { label: string; variab
                 className="w-8 h-8 mr-2 rounded border border-gray-300"
                 style={{ backgroundColor: color }}
             />
-            <span className="text-sm">{label}: {color}</span>
+            <span className="type-body">{label}: {color}</span>
         </div>
     );
 };

@@ -100,7 +100,7 @@ function Row({
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-base">{label}</span>
         {detail ? (
-          <span className="text-xs text-muted-foreground">{detail}</span>
+          <span className="type-secondary text-muted-foreground">{detail}</span>
         ) : null}
       </span>
       {trailing}
@@ -111,7 +111,7 @@ function Row({
 function CountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold leading-none text-primary-foreground">
+    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 type-secondary font-semibold leading-none text-primary-foreground">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -216,7 +216,7 @@ function PageActionsSection({
       className="border-b border-border pb-1"
       style={anyDrawn ? undefined : { display: "none" }}
     >
-      <p className="px-3 pb-1 pt-1 text-xs font-medium text-muted-foreground">This page</p>
+      <p className="px-3 pb-1 pt-1 type-secondary font-medium text-muted-foreground">This page</p>
       {/* 🚨 A PAGE ROW LOOKS LIKE A SHELL ROW (page-pass 2026-09-28). A page's
           header actions arrive as desktop-sized buttons (14px text, 14px
           icons, medium weight) and sat above the shell's 16px/20px rows in

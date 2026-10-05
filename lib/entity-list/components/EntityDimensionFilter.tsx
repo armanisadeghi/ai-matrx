@@ -122,14 +122,14 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           ) : hits.length === 0 ? (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">No value matches “{q}”.</p>
+            <p className="px-2 py-1.5 type-secondary text-muted-foreground">No value matches “{q}”.</p>
           ) : (
             hits.map((h) => (
               <DropdownMenuItem key={h.value.id} onSelect={() => onChange(h.value.id)}>
                 <span className="flex min-w-0 items-center gap-2">
                   {valueId === h.value.id ? <Check className="h-3.5 w-3.5 shrink-0" /> : <span className="w-3.5 shrink-0" />}
                   <span className="truncate">{h.value.name}</span>
-                  <span className="ml-auto shrink-0 truncate pl-2 text-xs text-muted-foreground">{h.dimension.label}</span>
+                  <span className="ml-auto shrink-0 truncate pl-2 type-secondary text-muted-foreground">{h.dimension.label}</span>
                 </span>
               </DropdownMenuItem>
             ))
@@ -159,7 +159,7 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                       </div>
                     ) : values.length === 0 ? (
-                      <p className="py-1 pl-8 text-xs text-muted-foreground">No values yet.</p>
+                      <p className="py-1 pl-8 type-secondary text-muted-foreground">No values yet.</p>
                     ) : (
                       values.map((v) => (
                         <ValueItem key={v.id} value={v} chosen={valueId === v.id} onPick={() => onChange(v.id)} />
@@ -174,10 +174,10 @@ export function EntityDimensionFilter({ valueId, onChange, className }: EntityDi
               </div>
             )}
             {!dims.loading && dims.error && (
-              <p className="px-2 py-1.5 text-xs text-destructive">Dimensions could not load.</p>
+              <p className="px-2 py-1.5 type-secondary text-destructive">Dimensions could not load.</p>
             )}
             {!dims.loading && !dims.error && dims.dimensions.length === 0 && (
-              <p className="px-2 py-1.5 text-xs text-muted-foreground">No dimensions yet.</p>
+              <p className="px-2 py-1.5 type-secondary text-muted-foreground">No dimensions yet.</p>
             )}
           </>
         )}
