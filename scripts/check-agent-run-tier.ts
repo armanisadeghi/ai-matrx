@@ -76,9 +76,15 @@ function stripComments(src: string): string {
     .replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 }
 
+/** Run-side files OUTSIDE the package that §3 names (baseline 0). */
+const APP_RUN_SIDE = [
+  // Counts on the attach menu — mounted on every chat page.
+  "features/resource-manager/resource-picker/useRunControlCounts.ts",
+];
+
 function sourceFiles(root: string): string[] {
   const out = execSync(
-    `git ls-files --cached --others --exclude-standard '${PKG}*.ts' '${PKG}*.tsx'`,
+    `git ls-files --cached --others --exclude-standard '${PKG}*.ts' '${PKG}*.tsx' ${APP_RUN_SIDE.map((f) => `'${f}'`).join(" ")}`,
     { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   );
   return out.split("\n").filter(Boolean).filter((f) => !isTest(f));

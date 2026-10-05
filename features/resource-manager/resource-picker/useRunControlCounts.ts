@@ -18,20 +18,28 @@
  *              `buildSkillConfigForRequest`. A disabled skill config counts
  *              only the explicit per-run adds, which re-enable it.
  *
- * Tools/Skills counts are withheld until the agent definition has loaded, so
+ * Tools/Skills counts are withheld until the agent's RUN TIER has loaded, so
  * the menu never shows a confident "0" that jumps to "12" a moment later.
+ *
+ * P24 (PACKAGE-INDEPENDENCE §3): this hook runs on every chat page, so it reads
+ * the run tier (`fetchAgentRunTier`), never the definition. The run tier carries
+ * the built-in tool ids but not custom tool bodies, so the Tools count is
+ * withheld (absent, never a wrong number) until the custom tools are known —
+ * the Tools picker loads them when opened.
  */
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentIdFromInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
+import { hasField } from "@ai-matrx/agents/field-flags";
 import {
+  selectAgentById,
   selectAgentTools,
   selectAgentCustomTools,
   selectAgentSkillConfig,
-  selectAgentReadyForCustomExecution,
+  selectAgentRunTier,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchAgentExecutionFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { fetchAgentRunTier } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { selectBuilderAdvancedSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@ai-matrx/chat/agents/types/instance.types";
 import type { ResourcePickerViewId } from "./resource-picker-menu-items";
@@ -49,8 +57,12 @@ export function useRunControlCounts(
     conversationId ? selectAgentIdFromInstance(conversationId)(s) : undefined,
   );
   const agentReady = useAppSelector((s) =>
-    agentId ? selectAgentReadyForCustomExecution(s, agentId) : false,
+    agentId ? selectAgentRunTier(s, agentId).isReady : false,
   );
+  const customToolsKnown = useAppSelector((s) => {
+    const record = agentId ? selectAgentById(s, agentId) : undefined;
+    return !!record && hasField(record._loadedFields, "customTools");
+  });
   const agentToolIds = useAppSelector((s) =>
     agentId ? selectAgentTools(s, agentId) : undefined,
   );
@@ -66,11 +78,10 @@ export function useRunControlCounts(
       : undefined,
   );
 
-  // Same on-demand load the Tools/Skills pickers do — one row fetch per agent,
-  // a no-op once the definition is in the slice.
+  // The run tier — one small read per agent, a no-op once it is in the slice.
   useEffect(() => {
     if (agentId && !agentReady) {
-      void dispatch(fetchAgentExecutionFull(agentId));
+      void dispatch(fetchAgentRunTier(agentId));
     }
   }, [agentId, agentReady, dispatch]);
 
@@ -87,8 +98,10 @@ export function useRunControlCounts(
   if (!agentId || agentReady) {
     const builtIn = Array.isArray(agentToolIds) ? agentToolIds : [];
     const custom = Array.isArray(agentCustomTools) ? agentCustomTools : [];
-    counts.tools =
-      new Set([...builtIn, ...addedTools]).size + custom.length;
+    if (!agentId || customToolsKnown) {
+      counts.tools =
+        new Set([...builtIn, ...addedTools]).size + custom.length;
+    }
 
     const config = agentSkillConfig;
     const activeSkills = new Set<string>(addedSkills);
