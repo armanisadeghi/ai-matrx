@@ -63,6 +63,7 @@
     "check:realtime-tools:strict": "tsx scripts/check-realtime-tools-drift.ts --strict",
     "check:agent-submit-content": "tsx scripts/check-agent-submit-content-gates.ts",
     "test": "jest --no-coverage",
+    "stripe:reconcile-subscriptions": "tsx scripts/stripe-subscription-reconcile.ts",
     "jest-health": "node scripts/jest-health.mjs",
     "jest-health:strict": "node scripts/jest-health.mjs --strict",
     "jest-health:self-test": "node scripts/jest-health.mjs --self-test",

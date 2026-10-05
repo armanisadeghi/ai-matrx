@@ -414,10 +414,16 @@ webhook handlers in `app/api/stripe/webhook/route.ts`. FE consumers:
 **Operational contract (live since 2026-08-30):**
 
 - Stripe has one live and one test standard webhook endpoint at
-  `https://www.aimatrx.com/api/stripe/webhook`. Each subscribes to the exact same eight events:
+  `https://www.aimatrx.com/api/stripe/webhook`. Each subscribes to the exact same twelve events:
   `checkout.session.completed`, `charge.refunded`, `charge.dispute.created`,
   `customer.subscription.created`, `customer.subscription.updated`,
-  `customer.subscription.deleted`, `customer.subscription.trial_will_end`, and `account.updated`.
+  `customer.subscription.deleted`, `customer.subscription.trial_will_end`, `account.updated`,
+  `invoice.payment_failed`, `invoice.payment_action_required`, `invoice.paid`, and
+  `invoice.upcoming`. The four invoice events retrieve the current Stripe subscription before
+  applying the canonical mirror writer; they do not create grace, refund, or email policy.
+- **UNVERIFIABLE from this checkout:** the live Stripe Dashboard endpoint allowlists must be
+  checked to contain this exact twelve-event contract for both ledgers. A handler change alone
+  does not subscribe Stripe to new event types.
 - Production keeps the live endpoint secret in `STRIPE_WEBHOOK_SECRET` and the test endpoint secret
   in `STRIPE_TEST_MODE_WEBHOOK_SECRET`. Preview/development use the established
   `STRIPE_WEBHOOK_SECRET` for test delivery. The verifier tries only configured modes and requires

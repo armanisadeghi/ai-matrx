@@ -16,6 +16,7 @@ import {
   markSubscriptionCanceled,
   syncSubscription,
 } from "@/features/entitlements/stripe/sync";
+import { retrieveSubscriptionForInvoice } from "@/features/entitlements/stripe/recovery";
 import {
   COPPA_VERIFICATION_PURPOSE,
   confirmCoppaVerification,
@@ -80,6 +81,21 @@ export async function POST(request: NextRequest) {
           event.created,
         );
         break;
+      case "invoice.payment_failed":
+      case "invoice.payment_action_required":
+      case "invoice.paid":
+      case "invoice.upcoming": {
+        // Invoice payloads are a notification, not the subscription source of
+        // truth. In Stripe SDK v22 the subscription lives under
+        // invoice.parent.subscription_details; retrieve the current state so a
+        // delayed invoice event cannot regress the canonical mirror.
+        const subscription = await retrieveSubscriptionForInvoice(
+          stripe,
+          event.data.object as Stripe.Invoice,
+        );
+        if (subscription) await syncSubscription(subscription, event.created);
+        break;
+      }
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         // COPPA parental-consent card verification ($0.50 auth-and-void) — a
