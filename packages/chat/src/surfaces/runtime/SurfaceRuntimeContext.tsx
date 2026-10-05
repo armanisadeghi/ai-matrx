@@ -481,6 +481,25 @@ export function getClosedSurfaceHosts(surfaceName: string): string[] {
   return mounted.map((entry) => entry.surfaceName).filter((name) => hosts.has(name));
 }
 
+/**
+ * The surfaces mounted right now that sit OUTSIDE `surfaceName` (shallower
+ * depth, layers excluded), deepest first. A board tile's hosts are the board;
+ * a page with nothing around it has none. Used to fall back to the host when
+ * the surface's own provider cannot be read.
+ */
+export function getMountedEnclosingHosts(surfaceName: string): string[] {
+  const mounted = globalRegistry.depths();
+  const own = mounted.find((entry) => entry.surfaceName === surfaceName);
+  if (!own) return [];
+  const layers = new Set(
+    globalRegistry.stack().filter((value) => value.layer).map((value) => value.surfaceName),
+  );
+  return mounted
+    .filter((entry) => entry.depth < own.depth && !layers.has(entry.surfaceName))
+    .sort((a, b) => b.depth - a.depth)
+    .map((entry) => entry.surfaceName);
+}
+
 /** The ONE global registry — what agents and chrome read. */
 export function getGlobalSurfaceRegistry(): SurfaceRegistry {
   return globalRegistry;

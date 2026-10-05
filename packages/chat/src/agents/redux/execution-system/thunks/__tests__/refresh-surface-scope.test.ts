@@ -329,6 +329,45 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     }
   });
 
+  // Break this catches: one board tile's getScope throwing (a notes tile whose
+  // scope merge failed) aborted every agent launch on the board with "Nothing
+  // was sent" (live 2026-10-05). The tile's failure is announced; the Board's
+  // values still go.
+  test("a live tile whose scope cannot be read does not stop the send; the Board's values go and the person is told", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    const BOARD = "matrx-user/board";
+    const TILE = "matrx-user/notes";
+    store.dispatch(patchConversation({ conversationId: CONVERSATION_ID, surfaceName: TILE }));
+    const unregisterBoard = registerSurfaceRuntime(
+      { surfaceName: BOARD, getScope: () => ({ board_title: "My board" }) },
+      1,
+    );
+    const unregisterTile = registerSurfaceRuntime(
+      {
+        surfaceName: TILE,
+        getScope: () => {
+          throw new Error("tried to replace the provider-owned value");
+        },
+      },
+      2,
+    );
+    const { toast } = jest.requireMock("../../../../../host/notify");
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      await (store.dispatch as unknown as ChatDispatch)(
+        refreshSurfaceScope({ conversationId: CONVERSATION_ID }),
+      ).unwrap();
+      const state = store.getState() as unknown as ChatRootState;
+      expect(state.conversations.byConversationId[CONVERSATION_ID]?.surfaceName).toBe(BOARD);
+      expect(toast.warning).toHaveBeenCalledWith(expect.stringContaining("Sent without them"));
+    } finally {
+      unregisterTile();
+      unregisterBoard();
+      jest.restoreAllMocks();
+    }
+  });
+
   // Break this catches: refreshSurfaceScope writing `surface_closed` ("Chat …
   // has been closed") into the page's OWN conversation while a route swap
   // (/chat/new → /chat/<id>) has the page's provider momentarily unmounted —

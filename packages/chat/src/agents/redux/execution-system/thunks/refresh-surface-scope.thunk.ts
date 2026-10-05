@@ -18,6 +18,7 @@ import { mapScopeToInstanceWithSurface } from "../../../utils/scope-mapping";
 import type { ApplicationScope } from "../../../types/scope.types";
 import {
   getClosedSurfaceHosts,
+  getMountedEnclosingHosts,
   getSurfaceRuntimeForName,
   wasPageOwnConversationOf,
   wasSurfaceMountedThisSession,
@@ -254,7 +255,37 @@ export const refreshSurfaceScope = createAsyncThunk<
 
     let applicationScope: ApplicationScope;
     try {
-      const liveScope = await runtime.getScope();
+      let liveScope;
+      try {
+        liveScope = await runtime.getScope();
+      } catch (ownError) {
+        // A TILE'S scope failing must not stop the launch: its host (the board
+        // around it) is still readable. Follow the host; if the host cannot be
+        // read either, send with the baseline only — and SAY so. A surface with
+        // no host around it (a page) keeps the strict refusal below.
+        const hostRuntimes = getMountedEnclosingHosts(surfaceName)
+          .map((name) => getSurfaceRuntimeForName(name))
+          .filter((candidate) => candidate && !candidate.layer);
+        if (hostRuntimes.length === 0) throw ownError;
+        console.error(
+          `[surfaces] submit-time getScope failed for "${surfaceName}" — continuing without its values`,
+          ownError,
+        );
+        toast.warning(`Could not read the live ${surfaceName} values. Sent without them.`);
+        liveScope = {};
+        for (const host of hostRuntimes) {
+          if (!host?.surfaceName) continue;
+          try {
+            liveScope = await host.getScope();
+            dispatch(patchConversation({ conversationId, surfaceName: host.surfaceName }));
+            surfaceName = host.surfaceName;
+            runtime = host;
+            break;
+          } catch (hostError) {
+            console.error(`[surfaces] host "${host.surfaceName}" getScope failed too`, hostError);
+          }
+        }
+      }
       // Each follow-up turn sees what is open NOW — the surface chain and
       // any unregistered window (features/surfaces/runtime/surface-chain.ts).
       applicationScope = withSurfaceDocumentEvidence(

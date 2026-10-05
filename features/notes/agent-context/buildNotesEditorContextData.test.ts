@@ -14,6 +14,14 @@ function build(overrides: Partial<Parameters<typeof buildNotesEditorContextData>
 }
 
 describe("notes agent context", () => {
+  // Break this catches: the provider answering `custom_fields: []` while the
+  // note's custom-fields section contributes the same value — the registry
+  // throws "tried to replace the provider-owned value", and every agent launch
+  // from a board holding a notes tile was refused (live 2026-10-05).
+  it("never owns custom_fields — the custom-fields section is its one owner", () => {
+    expect(Object.keys(build())).not.toContain("custom_fields");
+  });
+
   it("sends one canonical reference for a clean persisted note", () => {
     const scope = build();
     expect(scope.current_note).toEqual({
