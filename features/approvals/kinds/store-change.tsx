@@ -37,6 +37,7 @@ import {
   fieldTypeSentence,
   waitFromQueueRow,
 } from "@/features/record-change-approvals/recordChangeApproval";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { invalidateApprovals } from "../queryKeys";
 import { listStoreApprovals, STORE_APPROVALS_PAGE, type StoreApproval } from "../store-door";
 import type {
@@ -105,7 +106,7 @@ function askedBy(approval: StoreApproval): string | null {
 }
 
 /** The headline, the two effects and the diff — read from the row the store filed. */
-function describe(approval: StoreApproval): Pick<
+export function describe(approval: StoreApproval): Pick<
   ApprovalItem,
   "headline" | "acceptEffect" | "rejectEffect"
 > & { fields: ChangeFieldDiff[] } | null {
@@ -168,7 +169,10 @@ function describe(approval: StoreApproval): Pick<
   // A change to a STANDARD row (a CRM person, …): its values, by their labels; the before side
   // is not read here, so each row shows the new value.
   if (kind === "entity_row_change") {
-    const label = text(change["label"]) ?? "record";
+    // The noun is the registry's for the row's TOKEN (the one label source), never the word the
+    // store froze into the payload when it filed — that word was "Party" before the registry said "Contact".
+    const token = text(change["token"]) ?? text(row["subject_token"]);
+    const label = ((token ? tryGetEntityInfo(token)?.label : null) ?? text(change["label"]) ?? "record").toLowerCase();
     const labels = record(change["labels"]) ?? {};
     const values = { ...(record(change["columns"]) ?? {}), ...(record(change["custom"]) ?? {}) };
     const archive = typeof change["archive"] === "boolean" ? change["archive"] : null;
