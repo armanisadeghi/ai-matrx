@@ -171,8 +171,11 @@ export function MobileActionBar({
             )}
 
             {/* Compact Search Bar — a field-shaped trigger that fills the bar, not a label pill. */}
+            {/* `data-matrx-control="field"`: it is a field (glyph · text · mic),
+                so the pill guards' centring rule does not apply to it. */}
             <div
               data-matrx-pill="off"
+              data-matrx-control="field"
               onClick={handleSearchActivate}
               className="flex-1 flex items-center gap-2 h-10 px-3 rounded-full matrx-glass-thin-border cursor-pointer"
             >
