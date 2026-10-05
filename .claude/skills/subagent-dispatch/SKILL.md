@@ -62,6 +62,7 @@ Templates: [implementer-brief.md](implementer-brief.md) · [verifier-brief.md](v
 - **Artifacts as files.** Briefs, reports, and review packages go in a scratch dir (`mktemp -d` or the
   session scratchpad); agents exchange paths. Whatever an agent prints back stays in your context —
   hold returns to the ≤15-line contract (§2).
+- **Counts, searches, log or doc reads → `researcher`** (cheapest helper; skips the instruction files).
 - **Batch same-shape work.** N tiny identical edits = ONE dispatch listing every file; the reviewer
   checks the list file by file (an untouched listed file is a Missing finding). A review's findings
   list = ONE fix dispatch, never one fixer per finding.
@@ -103,7 +104,7 @@ A worker never dispatches a reviewer of its own work — it counts for nothing a
 
 ## 3. Independent review — two verdicts, never merged
 
-Dispatch per [verifier-brief.md](verifier-brief.md) with the brief path, report path, review package,
+Dispatch the `reviewer` helper per [verifier-brief.md](verifier-brief.md) with the brief path, report path, review package,
 and the binding constraints copied verbatim from spec/DECISIONS.
 - **A verifier is always a FRESH seat with zero authorship** — never the builder, never a resumed
   worker, never the reviewer that raised the finding. Resuming a seat saves a setup and costs you the
