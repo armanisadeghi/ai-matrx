@@ -111,8 +111,6 @@ export default function ChatWelcomeClient({
             <SmartAgentInput
               conversationId={conversationId}
               surfaceKey={`cx-chat:${agentId}`}
-              sendButtonVariant="blue"
-              showSubmitOnEnterToggle
               composer={{ size: "splash", mode: composerMode }}
               enablePasteImages={isAuthenticated}
             />

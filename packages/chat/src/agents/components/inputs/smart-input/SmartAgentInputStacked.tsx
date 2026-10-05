@@ -256,7 +256,7 @@ export function SmartAgentInputStacked({
     return (
       <div
         ref={composerRootRef}
-        className="mx-auto flex w-full min-w-0 max-w-[420px] shrink-0 flex-col"
+        className="matrx-touch-targets mx-auto flex w-full min-w-0 max-w-[420px] shrink-0 flex-col"
         data-composer-size={composer.size}
         data-composer-mode={composer.mode}
         data-assist-dock-avoid=""
@@ -323,7 +323,9 @@ export function SmartAgentInputStacked({
     <div
       ref={composerRootRef}
       className={cn(
-        "mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1",
+        // THE 44px FLOOR for every control on a touch layout (globals.css);
+        // desktop density is untouched.
+        "matrx-touch-targets mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1",
         isCompact ? undefined : "max-w-[768px]",
       )}
       data-composer-size={composer.size}

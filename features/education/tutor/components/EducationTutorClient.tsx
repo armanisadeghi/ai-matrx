@@ -1083,7 +1083,6 @@ function EducationTutorClientInner({
             edgeToEdgeScroll
             hideInput={isSharedView}
             smartInputProps={{
-              placeholder: tutorPlaceholder,
               disableSend: sendBlocked,
               composer: embedded
                 ? { size: "compact", mode: composerMode, placeholder: tutorPlaceholder, maxInputHeightPx }

@@ -218,7 +218,6 @@ export default function ChatConversationClient({
             <SmartAgentInput
               conversationId={conversationId}
               surfaceKey={`cx-chat:${agentId}`}
-              showSubmitOnEnterToggle
               composer={{ size: "page", mode: composerMode }}
               enablePasteImages={isAuthenticated}
             />

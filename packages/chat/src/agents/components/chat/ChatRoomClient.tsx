@@ -766,7 +766,7 @@ export function ChatRoomClient({
   // did: the SAME draft-carrying door (`stageChatAgentSwitch`). Custom is the
   // default-chat JOB, so it lands on /chat/new, where that job answers with
   // the person's own default model.
-  const composerPresentation: ComposerPresentation | undefined = composerOptions
+  const composerPresentation: ComposerPresentation = composerOptions
     ? {
         size: "page",
         mode: composerMode,
@@ -789,7 +789,14 @@ export function ChatRoomClient({
         },
         textMenu: buildChatComposerTextMenu({ store, conversationId, agentId }),
       }
-    : undefined;
+    : // Rooms that share this client without the chat composer options
+      // (voice, staff, interview): the Smart Agent Input, Full style, Chat
+      // mode, their agent fixed (no switching outside /chat).
+      {
+        size: "page",
+        mode: "chat",
+        placeholder: hasShownMessages ? "Reply" : "How can I help you today?",
+      };
 
   return (
     <ChatConversationSurface
