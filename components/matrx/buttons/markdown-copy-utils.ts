@@ -7,12 +7,12 @@ import {
   serializeMarkdownRich,
   type Payload,
 } from "@ai-matrx/kit/content-transfer";
-import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { markdownToReadableText } from "./markdown-readable-text";
-import { formattedCopyHtml } from "@/components/matrx/buttons/markdown-copy-html"; // the frame aliases this seam
+// The print seam — the kind sandbox frame aliases this module (no KaTeX in the frame).
+import { formattedCopyHtml, removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-html";
 
 interface CopyOptions {
   isMarkdown?: boolean;
