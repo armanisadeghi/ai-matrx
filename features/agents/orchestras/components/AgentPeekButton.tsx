@@ -10,7 +10,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Lightbulb } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
 
 const AgentPeekWindow = dynamic(() => import("./AgentPeekWindow"), { ssr: false });
 
@@ -18,21 +18,17 @@ export function AgentPeekButton({ agentId, className }: { agentId: string; class
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="quiet"
+        icon={<Lightbulb />}
         aria-label="Quick look"
         title="Quick look"
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
-        className={cn(
-          "rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-          className,
-        )}
-      >
-        <Lightbulb className="h-3.5 w-3.5" />
-      </button>
+        className={className}
+      />
       {open && <AgentPeekWindow agentId={agentId} onClose={() => setOpen(false)} />}
     </>
   );

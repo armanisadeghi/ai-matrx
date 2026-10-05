@@ -161,7 +161,7 @@ export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibrary
                   <div className="truncate text-[11px] text-muted-foreground">{a.category}</div>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
                 <AgentPeekButton agentId={a.id} />
                 {/* Clicking this row ADDS the agent to the Orchestra, so the name
                     cannot be the door — the door rides alongside it. New tab
@@ -171,6 +171,7 @@ export function AgentLibraryRail({ conductorId, memberIds, onAdd }: AgentLibrary
                   id={a.id}
                   name={a.name || null}
                   disablePeek
+                  size="md"
                   alwaysShowActions
                 />
                 <Plus className="h-4 w-4 text-muted-foreground" />

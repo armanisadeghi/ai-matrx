@@ -48,6 +48,7 @@ import {
   saveOrchestraConfig,
 } from "@/features/agents/redux/orchestras/thunks";
 import { AgentRoleCard } from "./AgentRoleCard";
+import { Button } from "@ai-matrx/design-system/controls";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { useMemberRunState } from "../run/OrchestraRunStatusContext";
 import { accentClasses } from "./accents";
@@ -115,20 +116,18 @@ function ConductorNode({ data }: NodeProps) {
       <Handle type="source" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-transparent" />
       {/* Hover toolbar — mirrors the member card: Quick-look snapshot + open the
           side inspector (details + system prompt). */}
-      <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/orch:opacity-100">
+      <div className="absolute right-1.5 top-1.5 z-10 flex items-center rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/orch:opacity-100">
         <AgentPeekButton agentId={d.agentId} />
-        <button
-          type="button"
+        <Button
+          variant="quiet"
+          icon={<PanelRight />}
           aria-label="Conductor details"
           title="Conductor details"
           onClick={(e) => {
             e.stopPropagation();
             d.onOpen();
           }}
-          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <PanelRight className="h-3.5 w-3.5" />
-        </button>
+        />
       </div>
       <div className="flex items-center gap-3">
         <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl shadow-sm", a.glyph)}>

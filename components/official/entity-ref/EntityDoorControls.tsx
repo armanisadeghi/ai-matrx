@@ -73,6 +73,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ExternalLink, Lightbulb } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 import { ResourcePeekHost } from "@/features/organizations/peek/ResourcePeekHost";
 import { cn } from "@/lib/utils";
 import { resolveEntityDoors } from "./doors";
@@ -105,7 +106,11 @@ export interface EntityDoorControlsProps {
   revealOnHover?: boolean;
   /** Surface-specific extra doors (open in window, jump to versions, …). */
   extraActions?: React.ReactNode;
-  /** `md` = 28px controls with 16px icons (list rows in the attach menu). */
+  /**
+   * `md` = THE control (`Button` variant="quiet", 28px, 16px glyph) — use it in
+   * any bar of 28px controls (card hover bars, attach-menu rows) so the bar
+   * never mixes sizes. `sm` = the compact inline 20px door beside text.
+   */
   size?: "sm" | "md";
   className?: string;
 }
@@ -124,8 +129,7 @@ export function EntityDoorControls({
   size = "sm",
   className,
 }: EntityDoorControlsProps) {
-  const control = cn(ENTITY_DOOR_CONTROL_CLASS, size === "md" && "h-7 w-7 rounded-md");
-  const glyph = size === "md" ? "h-4 w-4" : "h-3 w-3";
+  const glyph = "h-3 w-3";
   const [peekOpen, setPeekOpen] = useState(false);
 
   const doors = resolveEntityDoors(token, id, href);
@@ -143,52 +147,97 @@ export function EntityDoorControls({
     <>
       <span
         className={cn(
-          "inline-flex shrink-0 items-center gap-0.5",
+          // THE control carries its own 3px half-gap, so a `md` cluster adds none.
+          "inline-flex shrink-0 items-center",
+          size !== "md" && "gap-0.5",
           revealOnHover &&
             !alwaysShowActions &&
             "opacity-0 transition-opacity group-hover/entity-ref:opacity-100 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100",
           className,
         )}
       >
-        {canPeek && (
-          <button
-            type="button"
-            title={`Quick look at ${label}`}
-            aria-label={`Quick look at ${label}`}
-            onClick={(e) => {
-              stop(e);
-              setPeekOpen(true);
-            }}
-            className={control}
-          >
-            <Lightbulb className={glyph} />
-          </button>
-        )}
-        {resolvedHref && showOpen && (
-          <Link
-            href={resolvedHref}
-            data-tap-target
-            onClick={stop}
-            title={`Open ${label}`}
-            aria-label={`Open ${label}`}
-            className={control}
-          >
-            <ArrowUpRight className={glyph} />
-          </Link>
-        )}
-        {resolvedHref && !disableNewTab && (
-          <Link
-            href={resolvedHref}
-            data-tap-target
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={stop}
-            title={`Open ${label} in a new tab`}
-            aria-label={`Open ${label} in a new tab`}
-            className={control}
-          >
-            <ExternalLink className={glyph} />
-          </Link>
+        {size === "md" ? (
+          <>
+            {canPeek && (
+              <Button
+                variant="quiet"
+                icon={<Lightbulb />}
+                title={`Quick look at ${label}`}
+                aria-label={`Quick look at ${label}`}
+                onClick={(e) => {
+                  stop(e);
+                  setPeekOpen(true);
+                }}
+              />
+            )}
+            {resolvedHref && showOpen && (
+              <Button variant="quiet" icon={<ArrowUpRight />} asChild>
+                <Link
+                  href={resolvedHref}
+                  data-tap-target
+                  onClick={stop}
+                  title={`Open ${label}`}
+                  aria-label={`Open ${label}`}
+                />
+              </Button>
+            )}
+            {resolvedHref && !disableNewTab && (
+              <Button variant="quiet" icon={<ExternalLink />} asChild>
+                <Link
+                  href={resolvedHref}
+                  data-tap-target
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={stop}
+                  title={`Open ${label} in a new tab`}
+                  aria-label={`Open ${label} in a new tab`}
+                />
+              </Button>
+            )}
+          </>
+        ) : (
+          <>
+            {canPeek && (
+              <button
+                type="button"
+                title={`Quick look at ${label}`}
+                aria-label={`Quick look at ${label}`}
+                onClick={(e) => {
+                  stop(e);
+                  setPeekOpen(true);
+                }}
+                className={ENTITY_DOOR_CONTROL_CLASS}
+              >
+                <Lightbulb className={glyph} />
+              </button>
+            )}
+            {resolvedHref && showOpen && (
+              <Link
+                href={resolvedHref}
+                data-tap-target
+                onClick={stop}
+                title={`Open ${label}`}
+                aria-label={`Open ${label}`}
+                className={ENTITY_DOOR_CONTROL_CLASS}
+              >
+                <ArrowUpRight className={glyph} />
+              </Link>
+            )}
+            {resolvedHref && !disableNewTab && (
+              <Link
+                href={resolvedHref}
+                data-tap-target
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={stop}
+                title={`Open ${label} in a new tab`}
+                aria-label={`Open ${label} in a new tab`}
+                className={ENTITY_DOOR_CONTROL_CLASS}
+              >
+                <ExternalLink className={glyph} />
+              </Link>
+            )}
+          </>
         )}
         {extraActions}
       </span>

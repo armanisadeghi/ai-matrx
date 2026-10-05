@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { accentClasses } from "./accents";
+import { Button } from "@ai-matrx/design-system/controls";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import type { OrchestraAccent } from "../constants";
@@ -78,7 +79,7 @@ export function AgentRoleCard({
       <div className={cn("absolute inset-y-0 left-0 w-1 rounded-l-xl", a.dot)} />
 
       {/* floating hover actions over a backdrop, so they never eat name width */}
-      <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/role:opacity-100">
+      <div className="absolute right-1 top-1 z-10 flex items-center rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/role:opacity-100">
         <AgentPeekButton agentId={agentId} />
         {/* THE DOOR LAW: the card names a member AGENT and only ever offered a
             peek — the record itself was unreachable. New tab is the door that
@@ -89,28 +90,22 @@ export function AgentRoleCard({
           id={agentId}
           name={agent?.name ?? null}
           disablePeek
+          size="md"
           showOpen={!isNode}
           alwaysShowActions
         />
         {onEdit && (
-          <button
-            type="button"
-            aria-label="Edit role"
-            onClick={onEdit}
-            className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
+          <Button variant="quiet" icon={<Pencil />} aria-label="Edit role" title="Edit role" onClick={onEdit} />
         )}
         {onRemove && (
-          <button
-            type="button"
+          <Button
+            variant="quiet"
+            data-delete
+            icon={<X />}
             aria-label="Remove from Orchestra"
+            title="Remove from Orchestra"
             onClick={onRemove}
-            className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
+          />
         )}
       </div>
 

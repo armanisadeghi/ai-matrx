@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
@@ -66,9 +67,7 @@ export function ConductorInspector({
           <div className="text-[11px] text-muted-foreground">Conductor</div>
         </div>
         <AgentPeekButton agentId={conductorId} />
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
-          <X className="h-4 w-4" />
-        </Button>
+        <ControlButton variant="quiet" icon={<X />} aria-label="Close" title="Close" onClick={onClose} />
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-3">
