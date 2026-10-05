@@ -66,24 +66,26 @@ function render(props: Partial<React.ComponentProps<typeof SmartAgentInput>>) {
   return given.at(-1);
 }
 
-describe.each([["single-line"], ["multiline"]] as const)("the %s page assistant", (ambientLayout) => {
+const LAUNCHER = { composer: { size: "launcher", mode: "chat" } } as const;
+
+describe("the page launcher", () => {
   it("holds Send while its box is empty", () => {
     shape("   ");
-    expect(render({ presentation: "ambient", ambientLayout })?.disableSend).toBe(true);
+    expect(render(LAUNCHER)?.disableSend).toBe(true);
   });
 
   it("sends once the person has typed something", () => {
     shape("What is the payment plan for this crown?");
-    expect(render({ presentation: "ambient", ambientLayout })?.disableSend).toBe(false);
+    expect(render(LAUNCHER)?.disableSend).toBe(false);
   });
 
   it("sends an attachment with no words", () => {
     shape("", { "e3734a59-908f-466c-ac08-48e681ac6b8b": { status: "ready" } });
-    expect(render({ presentation: "ambient", ambientLayout })?.disableSend).toBe(false);
+    expect(render(LAUNCHER)?.disableSend).toBe(false);
   });
 });
 
 it("leaves every other composer's Send to its host (an agent may run on its own messages)", () => {
   shape("");
-  expect(render({ presentation: "default" })?.disableSend).toBe(false);
+  expect(render({})?.disableSend).toBe(false);
 });

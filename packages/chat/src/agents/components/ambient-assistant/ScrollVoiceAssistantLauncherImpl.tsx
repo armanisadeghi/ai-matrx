@@ -5,6 +5,10 @@ import { usePathname } from "../../../host/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
+import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
+
+/** The page launcher is the composer's `launcher` style: text · mic · send. */
+const LAUNCHER_COMPOSER: ComposerPresentation = { size: "launcher", mode: "chat" };
 import {
   ambientAssistantMandateChain,
   ambientPageGuidanceValues,
@@ -62,8 +66,7 @@ function AmbientTextMode({
       <div className="pointer-events-auto min-w-0 flex-1">
         <SmartAgentInput
           conversationId={conversationId}
-          presentation="ambient"
-          ambientLayout="single-line"
+          composer={LAUNCHER_COMPOSER}
           surfaceKey={surfaceKey}
           enablePasteImages={false}
         />
@@ -247,8 +250,7 @@ function AmbientTextOnlyAssistant({
       <div className="pointer-events-auto opacity-75 transition-opacity hover:opacity-100 focus-within:opacity-100">
         <SmartAgentInput
           conversationId={conversationId}
-          presentation="ambient"
-          ambientLayout="single-line"
+          composer={LAUNCHER_COMPOSER}
           surfaceKey={surfaceKey}
           enablePasteImages={false}
         />

@@ -44,12 +44,19 @@ import { SmartAgentInputStacked } from "../SmartAgentInputStacked";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 it.each([
-  ["ambient", "e89d9466-page-assistant"],
-  ["default", "3712f46e-cost-sheet-chat"],
-] as const)("the %s composer renders the context rail for its conversation", (presentation, id) => {
+  ["launcher", "e89d9466-page-assistant"],
+  ["classic", "3712f46e-cost-sheet-chat"],
+] as const)("the %s composer renders the context rail for its conversation", (style, id) => {
   railFor.length = 0;
   const root = createRoot(document.createElement("div"));
-  act(() => root.render(<SmartAgentInputStacked conversationId={id} presentation={presentation} />));
+  act(() =>
+    root.render(
+      <SmartAgentInputStacked
+        conversationId={id}
+        composer={style === "launcher" ? { size: "launcher", mode: "chat" } : undefined}
+      />,
+    ),
+  );
   expect(railFor).toContain(id);
   act(() => root.unmount());
 });
