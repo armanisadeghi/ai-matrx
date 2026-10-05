@@ -1,8 +1,19 @@
 import { fetchPersonalUsageHistory } from "./service";
 import { USAGE_HISTORY_PAGE_SIZE } from "./types";
 
+type UsageRequest = {
+  select: () => UsageRequest;
+  eq: (...args: [string, unknown]) => UsageRequest;
+  is: (...args: [string, unknown]) => UsageRequest;
+  lte: (...args: [string, unknown]) => UsageRequest;
+  gte: (...args: [string, unknown]) => UsageRequest;
+  or: (...args: [string]) => UsageRequest;
+  order: (...args: [string, unknown]) => UsageRequest;
+  limit: (limit: number) => Promise<{ data: []; error: null }>;
+};
+
 function clientWith(calls: Array<[string, unknown?]>, auth: { user: { id: string } | null; error?: Error | null }) {
-  const request = {
+  const request: UsageRequest = {
     select: jest.fn(() => request),
     eq: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),
     is: jest.fn((...args: [string, unknown]) => { calls.push(args); return request; }),

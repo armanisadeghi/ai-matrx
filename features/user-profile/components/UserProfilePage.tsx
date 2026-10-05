@@ -70,6 +70,7 @@ import { SocialHandleListEditor } from "./SocialHandleListEditor";
 import { EmergencyContactListEditor } from "./EmergencyContactListEditor";
 import { AddressFields, type AddressValues } from "./AddressFields";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { AccountAccessSection } from "@/features/user-profile/account-access/AccountAccessSection";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -200,6 +201,7 @@ export function UserProfilePage({
       )}
     >
       <HeaderSection account={account.data} />
+      <AccountAccessSection />
       <DisplaySection
         data={account.data}
         dirty={account.dirty}
