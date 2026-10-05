@@ -83,6 +83,12 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
 - New floating chrome carries `data-matrx-floating-bottom`. A page opts out only with `data-floating-clearance="off"` + `// ui-exception:`. Never hand-write `pb-safe` / big `pb-*` on a page scroller.
 - Guards: `useFloatingClearanceGuard` (dev; `[floating-clearance]` console error + dashed outline when content is still in the floating band at scroll end; `window.__matrxFloatingClearanceProbe()` runs it on demand) and `pnpm check:floating-clearance` (`--self-test`).
 
+## PAGE RHYTHM — one spacing scale for page structure, the bottom once (owner, 2026-10-05)
+
+- Tokens on `:root` (`styles/shell.css`), numbers + rules in `lib/layout/page-rhythm.ts`, pinned by `lib/layout/page-rhythm.test.ts`: `--matrx-page-gutter` 12/16px, `--matrx-page-top` 16/24, `--matrx-page-block-gap` 16/24 (between BIG blocks only; control sets keep their dense gaps), `--matrx-page-end` = the gutter (phone / ≥640px).
+- The runway is the page end ONCE: `--matrx-floating-clearance` = what floats + page end, and a scroller that takes the runway loses its own bottom padding. A non-scrolling page surface (`data-matrx-page-end`: the `EntityListPage` body) gets no runway; it pads its foot by page end + `--matrx-floating-fixed-measured` (chrome WITHOUT `data-matrx-floating-follows-page`, i.e. not the assists pill that already rests above the pager) — so a pager never sits under the page assistant.
+- Guard: the same dev hook screams `[page-rhythm]` (amber outline) when a page ends with more than page end + 4px under its last element; `window.__matrxPageRhythmProbe()` runs it. Walk + screenshots: `scripts/page-rhythm-walk.mjs`.
+
 ## PAGE-TOP TEMPLATES — every page top is one of four (owner, 2026-10-05)
 
 A page picks a template; it never hand-builds its top. Named options only — a need a template lacks is added to the template as a named option (`common-docs/policies/one-ui-system.md`).
