@@ -213,7 +213,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
       <PageHeader>
         <div className="flex min-w-0 items-center gap-2">
           <h1 className="truncate type-title text-foreground">{text(e, "title") ?? "Envelope"}</h1>
-          <Badge variant="outline" className="shrink-0 py-0 text-[11px]">
+          <Badge variant="outline" className="shrink-0">
             {statusLabel(status)}
           </Badge>
         </div>

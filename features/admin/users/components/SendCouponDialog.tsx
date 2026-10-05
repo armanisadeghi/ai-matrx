@@ -124,7 +124,7 @@ export function SendCouponDialog({
 
   return (
     <Dialog open={target !== null} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Send coupon</DialogTitle>
           <DialogDescription className="truncate">{target?.redeemable}</DialogDescription>

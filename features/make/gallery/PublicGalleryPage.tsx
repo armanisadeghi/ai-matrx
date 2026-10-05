@@ -111,7 +111,7 @@ function FacetLink({ href, active, children }: { href: string; active: boolean; 
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "rounded-full border px-3 py-1",
+        "max-w-[16rem] truncate rounded-full border px-3 py-1",
         active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground",
       )}
     >

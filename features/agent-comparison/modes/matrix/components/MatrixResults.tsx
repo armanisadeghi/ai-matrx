@@ -33,7 +33,7 @@ import { selectMatrixCells, selectMatrixSetup } from "../redux/selectors";
 import type { MatrixCell, MatrixVariant } from "../types";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Badge, Button } from "@ai-matrx/design-system/controls";
 const nf = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 const nf1 = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -136,14 +136,7 @@ export function MatrixResults({
                     <div className="flex items-center gap-1.5">
                       <span className="truncate">{r.label || "—"}</span>
                       {used != null && (
-                        <span
-                          className={cn(
-                            "shrink-0 h-4 px-1 rounded text-[9px] font-medium inline-flex items-center",
-                            used ? "bg-warning/15 text-warning" : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {used ? "tools" : "no tools"}
-                        </span>
+                        <Badge tone={used ? "warning" : "neutral"}>{used ? "tools" : "no tools"}</Badge>
                       )}
                     </div>
                   </th>

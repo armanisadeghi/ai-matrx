@@ -64,7 +64,7 @@ function StreakChip({ streak }: { streak: StudyStreakRow | null }) {
   return (
     <Badge
       variant="warning"
-      className="matrx-glyph-trim mr-1 shrink-0 rounded-full"
+      className="mr-1 shrink-0"
       title={`Study streak across every mode. Longest: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
       aria-label={`Study streak: ${days} day${days === 1 ? "" : "s"}`}
     >

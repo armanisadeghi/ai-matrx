@@ -369,7 +369,7 @@ function GroupRows({
             <div className="flex items-center gap-1.5">
               <span className="font-medium">{plan.name}</span>
               {plan.is_default && (
-                <Badge variant="secondary" className="px-1 py-0 type-meta">
+                <Badge variant="secondary">
                   default
                 </Badge>
               )}

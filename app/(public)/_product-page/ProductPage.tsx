@@ -30,12 +30,12 @@ export function ProductBackdrop() {
 
 export function StatusPill({ status }: { status: "live" | "soon" }) {
   return status === "live" ? (
-    <Badge variant="success" className="gap-1">
+    <Badge variant="success">
       <Check className="h-3 w-3" aria-hidden="true" />
       Available now
     </Badge>
   ) : (
-    <Badge variant="warning" className="gap-1">
+    <Badge variant="warning">
       <Clock className="h-3 w-3" aria-hidden="true" />
       Coming soon
     </Badge>

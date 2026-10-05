@@ -707,7 +707,6 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                 {agent.isArchived && (
                   <Badge
                     variant="outline"
-                    className="gap-1 text-amber-600 dark:text-amber-400 border-amber-500/40"
                   >
                     <Archive className="w-3 h-3" /> Archived
                   </Badge>
@@ -721,7 +720,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
                   <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                   {tags.map((t) => (
-                    <Badge key={t} variant="secondary" className="text-xs">
+                    <Badge key={t} variant="secondary">
                       {t}
                     </Badge>
                   ))}
@@ -778,11 +777,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Settings — first per ordering request */}
             {settingsCount > 0 && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader>
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <Settings className="w-4 h-4 text-muted-foreground" />
                     Model Settings
-                  </CardTitle>
+                  </span></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -804,11 +803,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Variables */}
             {variables && variableCount > 0 && (
               <Card>
-                <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader className="flex-row items-center justify-between">
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <Variable className="w-4 h-4 text-primary" />
                     Variables ({variableCount})
-                  </CardTitle>
+                  </span></CardTitle>
                   <CopyButtons
                     size="xs"
                     label="Variables"
@@ -868,7 +867,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         {v.required && (
                           <Badge
                             variant="outline"
-                            className="text-[0.625rem] shrink-0"
+                            className="shrink-0"
                           >
                             required
                           </Badge>
@@ -883,11 +882,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Context Policies */}
             {contextPolicies && contextPolicyCount > 0 && (
               <Card>
-                <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader className="flex-row items-center justify-between">
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <Layers className="w-4 h-4 text-info" />
                     Context Policies ({contextPolicyCount})
-                  </CardTitle>
+                  </span></CardTitle>
                   <CopyButtons
                     size="xs"
                     label="Context policies"
@@ -941,7 +940,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                         </div>
                         <Badge
                           variant="outline"
-                          className="text-[0.625rem] shrink-0"
+                          className="shrink-0"
                         >
                           {slot.type}
                         </Badge>
@@ -955,11 +954,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Tools */}
             {totalTools > 0 && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader>
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <Wrench className="w-4 h-4 text-warning" />
                     Tools ({totalTools})
-                  </CardTitle>
+                  </span></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
@@ -975,7 +974,6 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                       <Badge
                         key={t.name}
                         variant="outline"
-                        className="font-mono text-xs gap-1"
                       >
                         {t.name}
                         <span className="text-muted-foreground">(custom)</span>
@@ -989,11 +987,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* MCP Servers */}
             {mcpServers && mcpCount > 0 && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader>
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <Server className="w-4 h-4 text-info" />
                     MCP Servers ({mcpCount})
-                  </CardTitle>
+                  </span></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
@@ -1001,7 +999,6 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                       <Badge
                         key={id}
                         variant="secondary"
-                        className="font-mono text-xs"
                       >
                         {id}
                       </Badge>
@@ -1014,11 +1011,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Output Schema */}
             {outputSchema && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader>
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <FileJson className="w-4 h-4 text-primary" />
                     Output Schema
-                  </CardTitle>
+                  </span></CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 pb-0">
                   <div className="h-64">
@@ -1036,11 +1033,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* System prompt */}
             {systemMessage && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader>
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-warning" />
                     System Instructions
-                  </CardTitle>
+                  </span></CardTitle>
                 </CardHeader>
                 <CardContent>
                   <MessageCard content={extractTextContent(systemMessage)} />
@@ -1051,11 +1048,11 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
             {/* Conversation messages */}
             {conversationMessages.length > 0 && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 type-body">
+                <CardHeader>
+                  <CardTitle className="flex items-center type-body"><span className="flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-primary" />
                     Messages ({conversationMessages.length})
-                  </CardTitle>
+                  </span></CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {conversationMessages.map((msg, i) => (

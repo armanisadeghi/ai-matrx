@@ -663,7 +663,6 @@ export function AgentVersionDiffPage({
                 leftVersion === liveAgent.version && (
                   <Badge
                     variant="secondary"
-                    className="gap-1 text-xs text-emerald-600 dark:text-emerald-400"
                   >
                     <CheckCircle2 className="w-3 h-3" />
                     Current Version

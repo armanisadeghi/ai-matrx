@@ -174,7 +174,7 @@ function ResetDialog({
 
   return (
     <Dialog open={row !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Reset AI usage</DialogTitle>
           <DialogDescription className="truncate">{name}</DialogDescription>

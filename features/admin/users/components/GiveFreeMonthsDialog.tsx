@@ -130,7 +130,7 @@ export function GiveFreeMonthsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Give free months</DialogTitle>
           <DialogDescription>

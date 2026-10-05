@@ -790,7 +790,7 @@ export function KitHub({
               return (
                 <div key={stage.number} className="min-w-0">
                   <div className="mb-3 flex items-start gap-3">
-                    <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-primary px-3 type-secondary font-bold text-primary-foreground">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary type-secondary font-bold text-primary-foreground">
                       {stage.number}
                     </span>
                     <div>

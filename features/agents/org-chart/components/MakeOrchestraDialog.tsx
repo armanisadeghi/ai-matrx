@@ -49,7 +49,7 @@ export function MakeOrchestraDialog({
 }) {
   return (
     <Dialog open={request !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent>
         {request && <Body key={request.suggestedName + request.memberIds.join()} request={request} onMade={onMade} onClose={onClose} />}
       </DialogContent>
     </Dialog>
@@ -134,10 +134,10 @@ function Body({
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+        <DialogTitle className="flex items-center"><span className="flex items-center gap-2">
           <Network className="h-4 w-4" />
           {n > 0 ? `Make an Orchestra of ${n}` : "Add a leader agent"}
-        </DialogTitle>
+        </span></DialogTitle>
         <DialogDescription>
           {n > 0
             ? `A new Conductor directs ${n === 1 ? "this agent" : `these ${n} agents`}${request.underName ? ` under ${request.underName}` : ""}.`

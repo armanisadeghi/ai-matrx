@@ -89,12 +89,12 @@ export function SendTutorialDialog({
 
   return (
     <Dialog open={person !== null} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center"><span className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" aria-hidden />
             Send a tutorial
-          </DialogTitle>
+          </span></DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <label className="block space-y-1 text-xs text-muted-foreground">

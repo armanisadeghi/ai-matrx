@@ -31,7 +31,7 @@ export const ENVELOPE_COLUMNS: EntityColumnSpec<EnvelopeListRow>[] = [
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.title}</span>
           {row.my_turn && (
-            <Badge variant="default" className="shrink-0 py-0 text-[10px]">
+            <Badge variant="default" className="shrink-0">
               Your turn
             </Badge>
           )}
@@ -48,7 +48,7 @@ export const ENVELOPE_COLUMNS: EntityColumnSpec<EnvelopeListRow>[] = [
       header: "Status",
       filter: "text",
       cell: (row) => (
-        <Badge variant={STATUS_TONE[row.status] ?? "outline"} className="py-0 text-[11px]">
+        <Badge variant={STATUS_TONE[row.status] ?? "outline"}>
           {statusLabel(row.status)}
         </Badge>
       ),

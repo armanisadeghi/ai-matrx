@@ -237,7 +237,7 @@ function ParticipantRow({
             </SelectTrigger>
             <SelectContent>
               {SEES_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">
+                <SelectItem key={o.value} value={o.value}>
                   {o.label}
                 </SelectItem>
               ))}
@@ -284,7 +284,7 @@ function ParticipantRow({
               </SelectTrigger>
               <SelectContent>
                 {REVEAL_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                  <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
                 ))}
@@ -310,7 +310,7 @@ function ParticipantRow({
               </SelectTrigger>
               <SelectContent>
                 {CADENCE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                  <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
                 ))}
