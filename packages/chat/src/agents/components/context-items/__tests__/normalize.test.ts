@@ -4,7 +4,7 @@ import type {
   PreFetchedUrl,
 } from "@ai-matrx/agents/generated/stream-events";
 import type { ContextDrawerItem } from "../types";
-import { readWebpageInputs } from "@host/features/resource-manager/webpage/webpage-snapshot";
+import { readWebpageInputs } from "../../../resources/webpage-snapshot";
 import { DEMO_WEBPAGE_SNAPSHOT } from "../../messages-display/user/userMessageChipsDemoData";
 
 jest.mock("../registry", () => ({

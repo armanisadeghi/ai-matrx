@@ -17,6 +17,7 @@
 import { createElement, Fragment, useRef, type ComponentType, type ReactNode } from "react";
 import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
+import { DefaultWebpageSnapshotView } from "./defaults/webpage-snapshot-view";
 import { DefaultFullScreenOverlay, DefaultWindowPanel } from "./defaults/window-panel";
 import type { EditableContextMenuProps, NonEditableContextMenuProps } from "@host/features/context-menu-v3/types";
 
@@ -57,6 +58,8 @@ export interface ChatUiSlots {
   ShareModal: AnyComponent;
   ReviewAnswersLink: AnyComponent;
   RecordChangeApprovalCard: AnyComponent;
+  /** The exact webpage text selected for a message (the scraper's pretty view). */
+  WebpageSnapshotView: AnyComponent;
   /** The inline error card (title, sentence, actions); the host's carries the Alchemy menu. */
   ErrorNotice: AnyComponent;
   // Context-item drawer bodies the app owns (notes and tasks are app features).
@@ -81,6 +84,8 @@ export interface ChatUiSlots {
   notesCreate: AnyFn;
   useKnowledgeAttachSearch: AnyFn;
   useConversationAttachments: AnyFn;
+  /** The NAME of the table a held write is about (`string | null`); a host that cannot name it leaves the table out. */
+  useHeldWriteTableName: AnyFn;
   /** The platform-owned organization's id (`iam.system_orgs`); only a global-scope write needs it. */
   resolveSystemOrgId: AnyFn;
   /** The organization a project or task belongs to, as `{ data, error }` (the projects schema is the host's). */
@@ -253,6 +258,7 @@ export const ShareButton = slotComponent("ShareButton", unregisteredWidget("Shar
 export const ShareModal = slotComponent("ShareModal", unregisteredWidget("ShareModal"));
 export const ReviewAnswersLink = slotComponent("ReviewAnswersLink", unregisteredWidget("ReviewAnswersLink"));
 export const RecordChangeApprovalCard = slotComponent("RecordChangeApprovalCard", unregisteredWidget("RecordChangeApprovalCard"));
+export const WebpageSnapshotView = slotComponent("WebpageSnapshotView", DefaultWebpageSnapshotView);
 
 export const confirm = slotFn("confirm");
 export const copyRichContent = slotFn("copyRichContent");
@@ -266,6 +272,7 @@ export const connectorDefinitionFromMcp = slotFn("connectorDefinitionFromMcp");
 export const notesCreate = slotFn("notesCreate");
 export const useKnowledgeAttachSearch = slotFn("useKnowledgeAttachSearch");
 export const useConversationAttachments = slotFn("useConversationAttachments");
+export const useHeldWriteTableName = slotFn("useHeldWriteTableName", () => null);
 export const resolveSystemOrgId = slotFn("resolveSystemOrgId");
 export const readProjectScopeOrganizationId = slotFn("readProjectScopeOrganizationId");
 export const summarizeContextCell = slotFn("summarizeContextCell", (cell: unknown) =>

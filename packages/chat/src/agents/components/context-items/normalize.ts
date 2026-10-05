@@ -17,7 +17,7 @@ import {
   readWebpageInputs,
   webpageTitle,
   webpageUrl,
-} from "@host/features/resource-manager/webpage/webpage-snapshot";
+} from "../../resources/webpage-snapshot";
 import { resolveContextItemDef } from "./registry";
 import { hasContextItemDef } from "./context-item-block-types";
 import { REMARKS_BLOCK_TYPE } from "../../redux/execution-system/instance-resources/remarks";

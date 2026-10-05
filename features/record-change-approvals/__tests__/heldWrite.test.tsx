@@ -76,9 +76,6 @@ jest.mock("@ai-matrx/chat/tool-call-visualization/components/ArtifactResultBar",
 }));
 // The card's own doors are the store's; what is under test is THAT the shell
 // mounts it, with the wait the tool carried.
-jest.mock("@/features/record-change-approvals/useHeldWriteTableName", () => ({
-  useHeldWriteTableName: () => "Hygiene Recall Schedule",
-}));
 
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/components/ToolCallVisualization";
@@ -86,6 +83,7 @@ import { toolErrorLabel } from "@ai-matrx/chat/tool-call-visualization/result-fi
 // The card is registered into the package (host/ui-slots); its own doors are the store's. What is
 // under test is THAT the shell mounts it, with the wait the tool carried.
 registerChatUi({
+  useHeldWriteTableName: () => "Hygiene Recall Schedule",
   RecordChangeApprovalCard: ({ wait }: { wait: { approvalId: string } }) => (
     <div data-testid="held-write-card" data-approval-id={wait.approvalId}>
       Approve Refuse

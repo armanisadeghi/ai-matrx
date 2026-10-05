@@ -19,7 +19,7 @@ import {
   type PreFetchedUrl,
 } from "@ai-matrx/agents/generated/stream-events";
 import type { UserInputPart } from "../../../types/request.types";
-import { isPreFetchedUrl } from "@host/features/resource-manager/webpage/webpage-snapshot";
+import { isPreFetchedUrl } from "../../../resources/webpage-snapshot";
 import {
   isEditorXmlResource,
   serializeEditorResourcesAsXml,

@@ -10,11 +10,11 @@ import {
   TooltipTrigger,
 } from "@ai-matrx/design-system";
 import { toast } from "../../../../host/notify";
-import { WebpageSnapshotView } from "@host/features/resource-manager/webpage/WebpageSnapshotView";
+import { WebpageSnapshotView } from "../../../../host/ui-slots";
 import {
   webpageTitle,
   webpageUrl,
-} from "@host/features/resource-manager/webpage/webpage-snapshot";
+} from "../../../resources/webpage-snapshot";
 import type { ContextItemBodyProps } from "../types";
 
 function firstWebpage(item: ContextItemBodyProps["item"]) {

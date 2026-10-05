@@ -19,12 +19,6 @@ jest.mock("../registry", () => ({
   }),
 }));
 
-jest.mock("@host/features/scraper/parts/ScrapedContentPretty", () => ({
-  ScrapedContentPretty: ({ markdown }: { markdown: string }) => (
-    <article data-testid="saved-webpage-text">{markdown}</article>
-  ),
-}));
-
 jest.mock("@ai-matrx/design-system", () => ({
   ...jest.requireActual<Record<string, unknown>>("@ai-matrx/design-system"),
   ...({

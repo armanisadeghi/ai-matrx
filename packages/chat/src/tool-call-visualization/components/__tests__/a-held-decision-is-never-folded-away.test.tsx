@@ -53,7 +53,7 @@ jest.mock("../../components/agentWorkTurn", () => ({ useCloudBrowserTurnRun: () 
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { ToolCallBatch } = require(process.env.TOOL_CALL_BATCH_UNDER_TEST ?? "../ToolCallBatch") as typeof import("../ToolCallBatch");
-import captured from "@host/features/record-change-approvals/__tests__/fixtures/awaiting-approval.captured.json";
+import captured from "./fixtures/awaiting-approval.captured.json";
 
 function entry(callId: string, result: unknown): ToolLifecycleEntry {
   return {

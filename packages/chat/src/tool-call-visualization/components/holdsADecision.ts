@@ -9,7 +9,7 @@
  */
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import type { CxToolCallRecord } from "../../agents/redux/execution-system/observability/observability.slice";
-import { readRecordChangeWait } from "@host/features/record-change-approvals/recordChangeApproval";
+import { readRecordChangeWait } from "../record-change/recordChangeApproval";
 
 import { resultAsObject } from "../renderers/_shared";
 import { cxToolCallToLifecycleEntry } from "../utils/cxToolCallToLifecycleEntry";

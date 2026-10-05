@@ -1,6 +1,6 @@
 {
   "$note": "SHRINK-ONLY budget of host ties per specifier in packages/chat/src. Never raise a number or add a key by hand — route the need through the chat host adapter or a registration (common-docs/projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Lower it with: node scripts/check-chat-package-boundary.mjs --write",
-  "total": 990,
+  "total": 980,
   "budget": {
     "@/features/content-ir/registry/schema-source-kind-tables": 1,
     "@/features/surfaces/manifests/registry": 1,
@@ -294,11 +294,6 @@
     "@host/features/podcasts/generator/useVoices": 1,
     "@host/features/projects/debug/projectCreateAiDebug": 4,
     "@host/features/rag/components/library/LibraryPreviewPage": 1,
-    "@host/features/record-change-approvals/__tests__/fixtures/awaiting-approval.captured.json": 1,
-    "@host/features/record-change-approvals/recordChangeApproval": 2,
-    "@host/features/record-change-approvals/useHeldWriteTableName": 1,
-    "@host/features/resource-manager/webpage/webpage-snapshot": 4,
-    "@host/features/resource-manager/webpage/WebpageSnapshotView": 1,
     "@host/features/rich-document/actions/handlers/ask": 1,
     "@host/features/rich-document/actions/handlers/preparedEdit": 1,
     "@host/features/rich-document/actions/handlers/transfer": 1,
@@ -321,7 +316,6 @@
     "@host/features/scopes/redux/scopesSlice": 1,
     "@host/features/scopes/registry/entityRegistry": 1,
     "@host/features/scopes/service/entityTitles": 2,
-    "@host/features/scraper/parts/ScrapedContentPretty": 1,
     "@host/features/sharing/components/AccessSummaryPanel": 1,
     "@host/features/skills/hooks/useSkills": 3,
     "@host/features/skills/service/skillsStreamHandler": 1,
