@@ -418,7 +418,9 @@ else
   # 63-minute restore on 2026-09-23, because only this one call site had been fixed. The DSN helpers
   # in lib-night.sh now return connections with NO password at all (it is in the per-run PGPASSFILE),
   # so every call below is safe by construction. Guard: scripts/night/night-argv-self-test.sh.
-  PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "$SRC_DSN" \
+  # Never through the transaction pooler: pg_dump's session SETs would stay on shared connections.
+  DUMP_DSN="$(night_dump_dsn "$SRC_DSN")" || exit 78
+  PGOPTIONS='-c statement_timeout=600000' timeout $DUMP_CAP "$PGDUMP" "$DUMP_DSN" \
     --schema-only --no-owner --no-comments --quote-all-identifiers \
     --lock-wait-timeout=5000 "${DUMPARGS[@]}" -f "$DUMP" 2> "$WORK/dump.err"
   DRC=$?

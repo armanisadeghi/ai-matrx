@@ -138,6 +138,45 @@ night_pgpass_add() {
   print -r -- "$line" >> "$PGPASSFILE"
 }
 
+# night_dump_dsn <dsn> -> the same DSN on the SESSION pooler port (5432), never the transaction
+# pooler (6543). pg_dump opens with a session-level `SET restrict_nonsystem_relation_kind`; through
+# the transaction pooler that SET is left on a SHARED server connection and every app read of a
+# view through it then fails with 55000 "access to non-system view … is restricted" (measured on
+# live 2026-10-05, ~50 platform errors). The pgpass entry is copied to the session port. Every
+# pg_dump in this directory takes its DSN from here; anything still on 6543 is refused.
+night_dump_dsn() {
+  local dsn="$1" rest hostpart host port user line esc_host
+  rest="${dsn#*://}"; user="${rest%%@*}"; user="${user%%:*}"; hostpart="${rest#*@}"; hostpart="${hostpart%%[/?]*}"
+  host="${hostpart%%:*}"; port="${hostpart##*:}"; [ "$port" = "$hostpart" ] && port=5432
+  if [ "$port" = "6543" ]; then
+    if [ -n "${PGPASSFILE:-}" ] && [ -f "$PGPASSFILE" ]; then
+      esc_host="$(_night_pgpass_escape "$host")"
+      line="$(grep -F -m1 "${esc_host}:6543:" "$PGPASSFILE" || true)"
+      [ -n "$line" ] && night_pgpass_add_raw "${esc_host}:5432:${line#${esc_host}:6543:}"
+    fi
+    dsn="${dsn/${host}:6543/${host}:5432}"
+  fi
+  night_refuse_transaction_pooler "$dsn" || return 1
+  print -r -- "$dsn"
+}
+
+# night_refuse_transaction_pooler <dsn>: non-zero (with the reason) for a DSN on port 6543.
+night_refuse_transaction_pooler() {
+  local hp="${1#*://}"; hp="${hp#*@}"; hp="${hp%%[/?]*}"
+  case "$hp" in
+    *:6543) say "REFUSED: a dump through the transaction pooler (port 6543) leaves pg_dump's session settings on shared server connections. Use the session port 5432 or the direct host."; return 1 ;;
+  esac
+  return 0
+}
+
+night_pgpass_add_raw() {
+  local cur
+  [ -n "${PGPASSFILE:-}" ] && [ -f "$PGPASSFILE" ] || return 1
+  cur="$(<"$PGPASSFILE")"
+  [[ $'\n'"$cur"$'\n' == *$'\n'"$1"$'\n'* ]] && return 0
+  print -r -- "$1" >> "$PGPASSFILE"
+}
+
 # night_dsn_strip <postgresql://user:pass@host:port/db?opts> -> the same DSN with NO password,
 # the password registered in PGPASSFILE. A DSN that carries no password passes through unchanged.
 night_dsn_strip() {
