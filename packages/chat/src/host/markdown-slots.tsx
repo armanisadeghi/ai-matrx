@@ -14,17 +14,33 @@
  */
 
 import { createElement, type ComponentType } from "react";
-import { hostSlot } from "./ui-slots";
+import { hostFn, hostSlot } from "./ui-slots";
+import type { MessageCitationSource } from "../agents/redux/execution-system/messages/message-citations";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/** The engine's props the package's call sites rely on being typed; the rest pass through as written. */
+export interface MarkdownStreamSlotProps {
+  content?: string;
+  className?: string;
+  /** `previousContent` is the text the edit applied to; `remark` names an answer edit. */
+  onContentChange?: (newContent: string, previousContent: string, remark?: any) => void;
+  [prop: string]: any;
+}
+
 declare module "./ui-slots" {
   interface ChatUiSlots {
     /** The streaming rich-document engine (the host's `MarkdownStream`), same props. */
-    MarkdownStream: ComponentType<any>;
+    MarkdownStream: ComponentType<MarkdownStreamSlotProps>;
     /** The host's plain markdown leaf (`BasicMarkdownContent`), same props. */
     BasicMarkdownContent: ComponentType<any>;
     /** The placeholder while a spoken answer's audio is being made. */
     AudioOutputBlockSkeleton: ComponentType<any>;
+    /** Opens one numbered message source (the host's Source Inspector): returns `(source) => void`. */
+    useOpenCitationSource: () => (source: MessageCitationSource) => void;
+    /** Draws every mermaid diagram under a root (print / DOM capture); resolves when done. */
+    renderAllDiagrams: (...args: any[]) => Promise<{ release: () => void }>;
+    /** One mermaid source drawn for print (SVG markup), the host's lazy diagram engine. */
+    drawMermaidForPrint: (...args: any[]) => Promise<any>;
   }
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -45,5 +61,17 @@ export const MarkdownStream = hostSlot("MarkdownStream", plainText("MarkdownStre
 export const BasicMarkdownContent = hostSlot("BasicMarkdownContent", plainText("BasicMarkdownContent"));
 /** A host with no audio placeholder shows nothing while the audio is made (reported once). */
 export const AudioOutputBlockSkeleton = hostSlot("AudioOutputBlockSkeleton");
+
+/** A host with no Source Inspector opens a web source in a new tab; a file source has no target here. */
+export const useOpenCitationSource = hostFn("useOpenCitationSource", () => (source: MessageCitationSource) => {
+  if (source.url && typeof window !== "undefined") window.open(source.url, "_blank", "noopener,noreferrer");
+});
+
+/** A host with no diagram engine draws nothing extra: diagrams stay as drawn (or as source). */
+export const renderAllDiagrams = hostFn("renderAllDiagrams", async () => ({ release: () => undefined }));
+/** A host with no diagram engine cannot draw for print; the print path prints the source and says so. */
+export const drawMermaidForPrint = hostFn("drawMermaidForPrint", async () => {
+  throw new Error("This host has no diagram engine (registerChatUi drawMermaidForPrint)");
+});
 
 export default MarkdownStream;

@@ -18,12 +18,7 @@
 import type { CitationInput } from "@/features/rag/components/source-inspector/useOpenCitation";
 import type { MessageCitationSource } from "@ai-matrx/chat/agents/redux/execution-system/messages/message-citations";
 
-/** Does this source have any click-through target? */
-export function citationSourceIsOpenable(
-  source: MessageCitationSource,
-): boolean {
-  return Boolean(source.fileId || source.url);
-}
+export { citationSourceIsOpenable } from "@ai-matrx/chat/agents/components/messages-display/citations/citation-source";
 
 /** Mirrors `citationHrefFor`'s cld_file deep-link (features/rag/api/search.ts)
  *  minus the chunk param a provider citation doesn't have. */

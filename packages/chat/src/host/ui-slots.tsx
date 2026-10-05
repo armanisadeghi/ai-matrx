@@ -401,6 +401,14 @@ export const AttachedResourcesSection = slotComponent("AttachedResourcesSection"
 export const ConnectorPromptHost = slotComponent("ConnectorPromptHost");
 export const WebpageSnapshotView = slotComponent("WebpageSnapshotView", DefaultWebpageSnapshotView);
 
+/**
+ * A named function or hook slot declared outside this file (by `ChatUiSlots` augmentation, e.g.
+ * host/markdown-slots), with its stand-in. Same contract as the slots below.
+ */
+export function hostFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
+  return slotFn(name, fallback);
+}
+
 export const confirm = slotFn("confirm");
 export const copyRichContent = slotFn("copyRichContent");
 export const copyToClipboard = slotFn("copyToClipboard");

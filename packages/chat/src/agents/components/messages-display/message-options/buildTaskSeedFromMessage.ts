@@ -19,7 +19,7 @@
  */
 
 import { durableRecordId } from "@ai-matrx/kit/ids";
-import { plainTitleFromMarkdown } from "@host/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "../../../../utils/markdown/plain-title";
 import { cleanMarkdown } from "@ai-matrx/content-ir/source";
 import { buildConversationMessageTitle } from "../../../utils/conversation-message-title";
 import type { PendingSource } from "./pending-source";

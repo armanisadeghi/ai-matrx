@@ -15,7 +15,7 @@
  *   • fork     — branch here with the edit and re-run; original untouched
  */
 
-import type { EditorPrimaryAction } from "@host/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
+import type { EditorPrimaryAction } from "../../../../host/window-openers";
 import type { ChatDispatch } from "../../../../store/root-state";
 import { toast } from "../../../../host/notify";
 

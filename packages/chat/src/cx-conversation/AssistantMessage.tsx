@@ -10,8 +10,7 @@ import {
   Save,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
-import MarkdownStream from "@host/components/MarkdownStream";
-import AudioOutputBlockSkeleton from "@host/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
+import { MarkdownStream, AudioOutputBlockSkeleton } from "../host/markdown-slots";
 import { useDomCapturePrint } from "../conversation/hooks/useDomCapturePrint";
 import { useAppSelector, useAppDispatch } from "../store/hooks";
 import { selectMessageHasUnsavedChanges } from "./_legacy-stubs";

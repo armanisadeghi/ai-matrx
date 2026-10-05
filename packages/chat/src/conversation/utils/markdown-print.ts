@@ -39,7 +39,7 @@ export function printMarkdownContent(
         prepare: async () => {
             let drawn: { pictures: Map<string, string>; failed: number };
             try {
-                const { drawMermaidForPrint } = await import("@host/components/mermaid/print-render");
+                const { drawMermaidForPrint } = await import("../../host/markdown-slots");
                 drawn = await drawMermaidForPrint(markdown);
             } catch (error) {
                 // The diagram engine could not load: print the source, and say so.

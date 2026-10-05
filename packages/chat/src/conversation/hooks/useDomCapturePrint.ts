@@ -47,7 +47,7 @@ export function useDomCapturePrint(): UseDomCapturePrintReturn {
         let releaseRenderAll: (() => void) | null = null;
         try {
             // Diagrams draw only near the viewport; a capture needs every one.
-            const { renderAllDiagrams } = await import('@host/components/mermaid/lazy-draw');
+            const { renderAllDiagrams } = await import('../../host/markdown-slots');
             releaseRenderAll = (await renderAllDiagrams()).release;
             // Lazy import the heavy capture utility
             const { captureToPDF } = await import('@ai-matrx/print/pdf');

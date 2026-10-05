@@ -235,6 +235,16 @@ export interface ChatLiveRunWindowHandle {
   close: () => void;
 }
 
+/**
+ * One footer button of the full-screen markdown editor (a plain-data descriptor so it travels in
+ * the overlay payload; the click rides `onAction`). Supplied buttons replace the default Save.
+ */
+export interface EditorPrimaryAction {
+  id: string;
+  label: string;
+  variant?: "default" | "secondary" | "outline" | "destructive" | "ghost" | "link";
+}
+
 export interface OpenFullScreenMarkdownEditorOptions {
   instanceId?: string;
   content?: string;

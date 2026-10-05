@@ -27,7 +27,7 @@ import { useAppSelector } from "../../../store/hooks";
 import { selectAgentCallChildStream } from "../../../agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useConversationTitle } from "../../../agents/hooks/useConversationTitle";
 import { EntityRef } from "@ai-matrx/chat/host/ui-slots";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { MarkdownStream } from "../../../host/markdown-slots";
 import { AnswerValueView } from "@ai-matrx/chat/host/ui-slots";
 import { stripThinkingStreaming } from "@ai-matrx/kit/text";
 import { cn } from "@ai-matrx/design-system";

@@ -22,12 +22,8 @@ import {
   citationSourceDisplayKind,
   type MessageCitationSource,
 } from "../../../redux/execution-system/messages/message-citations";
-import {
-  citationSourceLabel,
-  citationSourceLocator,
-} from "@host/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
-import { citationSourceIsOpenable } from "@host/components/mardown-display/chat-markdown/citations/citation-open-request";
-import { useOpenCitationSource } from "@host/components/mardown-display/chat-markdown/citations/useOpenCitationSource";
+import { citationSourceIsOpenable, citationSourceLabel, citationSourceLocator } from "./citation-source";
+import { useOpenCitationSource } from "../../../../host/markdown-slots";
 
 export interface MessageSourcesRowProps {
   sources: MessageCitationSource[];

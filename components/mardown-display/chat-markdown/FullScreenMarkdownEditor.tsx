@@ -1,4 +1,5 @@
 "use client";
+import type { EditorPrimaryAction } from "@ai-matrx/chat/host/window-openers";
 import { Button as ControlButton, Chip } from "@ai-matrx/design-system/controls";
 import React, {
   useState,
@@ -127,17 +128,7 @@ const TAB_LABELS: Record<TabId, string> = {
  * default Save button — enabling Save / Save & Resubmit / Create Fork from one
  * editor with no follow-up confirmation dialog.
  */
-export interface EditorPrimaryAction {
-  id: string;
-  label: string;
-  variant?:
-    | "default"
-    | "secondary"
-    | "outline"
-    | "destructive"
-    | "ghost"
-    | "link";
-}
+export type { EditorPrimaryAction };
 
 interface FullScreenMarkdownEditorProps {
   isOpen: boolean;
