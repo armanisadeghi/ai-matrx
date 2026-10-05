@@ -22,7 +22,7 @@
  * renders any JSON value as a human document with the raw data one click away.
  */
 
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 
@@ -60,9 +60,9 @@ export function JsonTextBody({ text }: { text: string }) {
     // it to the kind parser as a json region so it shows the kind's broken
     // state instead of the raw characters.
     return (
-      <MarkdownStream
+      <RichContent level="full"
         imagePolicy="ai"
-        content={hasKindKey(text) ? `\u0060\u0060\u0060json\n${text}\n\u0060\u0060\u0060` : text}
+        source={hasKindKey(text) ? `\u0060\u0060\u0060json\n${text}\n\u0060\u0060\u0060` : text}
       />
     );
   }
@@ -101,7 +101,7 @@ export function SettledOutputBody({
     return looksLikeJsonDocument(agent.finalText) ? (
       <JsonTextBody text={agent.finalText} />
     ) : (
-      <MarkdownStream imagePolicy="ai" content={agent.finalText} />
+      <RichContent level="full" imagePolicy="ai" source={agent.finalText} />
     );
   }
   if (heldOutcome === "approved") {

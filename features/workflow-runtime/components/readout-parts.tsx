@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { LiveAudioPlayer, useLiveAudioPlayer } from "@ai-matrx/media/live-audio-react";
@@ -485,9 +485,9 @@ function InvocationBodyContent({
       );
     }
     return (
-      <MarkdownStream imagePolicy="ai"
-        content={stripProtocolTags(invocation.textTail)}
-        isStreamActive={working}
+      <RichContent level="full" imagePolicy="ai"
+        source={stripProtocolTags(invocation.textTail)}
+        isStreaming={working}
         hideCopyButton
       />
     );
@@ -561,8 +561,8 @@ function InvocationBodyContent({
   }
   if (invocation.textTail) {
     return (
-      <MarkdownStream imagePolicy="ai"
-        content={stripProtocolTags(invocation.textTail)}
+      <RichContent level="full" imagePolicy="ai"
+        source={stripProtocolTags(invocation.textTail)}
         hideCopyButton
       />
     );
