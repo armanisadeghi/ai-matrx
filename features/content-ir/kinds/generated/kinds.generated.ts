@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 584 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 585 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "85b04f9e8383";
+export const KIND_REGISTRY_FINGERPRINT = "aef96a28401d";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -21066,6 +21066,35 @@ export interface StudyTip {
 }
 
 /**
+ * One inbound customer email, triaged for routing: which queue, how urgent, what
+ * the customer wants in one sentence, and the order it is about.
+ *  *
+ *  * Kind `support_email_triage_result` (registry v2).
+ */
+export interface SupportEmailTriageResult {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "support_email_triage_result";
+  /**
+   * One sentence for the support agent stating what the customer wants.
+   */
+  summary: string;
+  /**
+   * high when money was taken wrongly, an item arrived damaged, or a chargeback is threatened; low for general questions; otherwise normal.
+   */
+  urgency: "high" | "normal" | "low";
+  /**
+   * The routing category, one of the queues the job names (e.g. order_status, return_refund, billing).
+   */
+  category: string;
+  /**
+   * The order number exactly as it appears in the email, without a leading '#'; null when none appears.
+   */
+  order_number: string | null;
+}
+
+/**
  * Rows read out of a person's own table (``data.table.lookup``).
  *  *
  *  * Kind `table_rows` (registry v7).
@@ -26217,6 +26246,7 @@ export type GeneratedKindSlug =
   | "study_plan"
   | "study_summary"
   | "study_tip"
+  | "support_email_triage_result"
   | "table_rows"
   | "task_list"
   | "tasting_note"
@@ -26804,6 +26834,7 @@ export interface KindPayloadBySlug {
   "study_plan": StudyPlan;
   "study_summary": StudySummary;
   "study_tip": StudyTip;
+  "support_email_triage_result": SupportEmailTriageResult;
   "table_rows": TableRows;
   "task_list": TaskList;
   "tasting_note": TastingNote;
@@ -27395,6 +27426,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "study_plan",
   "study_summary",
   "study_tip",
+  "support_email_triage_result",
   "table_rows",
   "task_list",
   "tasting_note",
