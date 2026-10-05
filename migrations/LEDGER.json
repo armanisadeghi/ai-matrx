@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T04:09:39.107Z",
+  "generated_at": "2026-10-05T04:19:40.397Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -37,6 +37,12 @@
       "filename": "agentsondata_a_a_person_allows_an_agent_the_rest_of_one_chat.sql",
       "checksum": "cae0f134b2279951b2701abd88c9040fbca3af8341ecde687a590f0d395920c2",
       "applied_at": "2026-10-05 04:01:05.755308+00"
+    },
+    "migrations/campaign/agentsondata_b_a_column_approval_trusts_the_persons_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "agentsondata_b_a_column_approval_trusts_the_persons_table.sql",
+      "checksum": "4eedf92479ca5a4a18bdc89d19b84f9971bd3008f8573b38005853f06ab2900c",
+      "applied_at": "2026-10-05 04:19:00.125132+00"
     },
     "migrations/campaign/aggwithheld_a_withheld_measure_answers_as_withheld_never_an_error.sql": {
       "source": "matrx-frontend",
@@ -3001,6 +3007,18 @@
       "filename": "fts4_a_tags_are_a_platform_table.sql",
       "checksum": "32cda776dc9226fdc7b51eb08f5566fb659046e78699d42dbd11c8ca01887d4f",
       "applied_at": "2026-10-05 04:09:24.940667+00"
+    },
+    "migrations/campaign/fts4_b_every_tag_scope_moves_into_the_tag_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts4_b_every_tag_scope_moves_into_the_tag_table.sql",
+      "checksum": "b4b49d629e1d01355b41e08072ab9eb2acb1a115e315aeeff8d346267e7d9243",
+      "applied_at": "2026-10-05 04:09:47.727627+00"
+    },
+    "migrations/campaign/fts4_c_the_tag_doors_write_the_tag_table.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts4_c_the_tag_doors_write_the_tag_table.sql",
+      "checksum": "71333e5c299b2fe9d382a218a85e64481ff760456f6b749661ad4a662e2220a7",
+      "applied_at": "2026-10-05 04:15:38.012006+00"
     },
     "migrations/campaign/g0a_has_permission_for_declares_its_door.sql": {
       "source": "matrx-frontend",
@@ -7123,6 +7141,12 @@
       "filename": "templates7_b_a_template_copy_follows_its_source.sql",
       "checksum": "005eddeb2b039a283b596736824dd9a1ac7de77c1b11f1675f09145ccbfce979",
       "applied_at": "2026-10-05 04:03:18.955716+00"
+    },
+    "migrations/campaign/templates7_c_an_uninstall_keeps_a_home_others_still_use.sql": {
+      "source": "matrx-frontend",
+      "filename": "templates7_c_an_uninstall_keeps_a_home_others_still_use.sql",
+      "checksum": "5ac3edffe1cac9254c55697f7e10f78981a9dcbbe442b5afdd97f820657e3448",
+      "applied_at": "2026-10-05 04:19:38.902712+00"
     },
     "migrations/campaign/tidy_one_freshness_ceiling.sql": {
       "source": "matrx-frontend",
