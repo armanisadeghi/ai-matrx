@@ -20,7 +20,7 @@
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { InlineMediaRef } from "@ai-matrx/media/react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import {
   StructuredValueView,
@@ -99,9 +99,9 @@ export function AnswerValueView({
     return <p className="text-sm text-muted-foreground">{emptyText}</p>;
   }
   return (
-    <MarkdownStream
+    <RichContent level="full"
       imagePolicy="ai"
-      content={
+      source={
         kindJsonText
           ? `\u0060\u0060\u0060json\n${shown}\n\u0060\u0060\u0060`
           : shown
