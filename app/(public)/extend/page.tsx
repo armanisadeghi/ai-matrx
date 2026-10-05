@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   BookOpenCheck,
-  Chrome,
+  Puzzle,
   Fingerprint,
   KeyRound,
   Layers,
@@ -12,7 +12,6 @@ import {
   Search,
   ToggleLeft,
   UserRoundCheck,
-  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -26,6 +25,7 @@ import {
   ProductHero,
   ProductSection,
   Steps,
+  StatusPill,
   TrustList,
   type FaqItem,
   type FeatureItem,
@@ -94,15 +94,6 @@ const AVAILABLE: readonly FeatureItem[] = [
     title: "Saved logins in Vault",
     body: "When you're signed in, choose a saved login to fill a sign-in form. Filling never submits the form, and nothing is saved without your click.",
     status: "live",
-  },
-];
-
-const COMING: readonly FeatureItem[] = [
-  {
-    icon: Globe,
-    title: "Safari",
-    body: "The same assistant for Safari is in progress. Chrome comes first.",
-    status: "soon",
   },
 ];
 
@@ -204,7 +195,7 @@ export default function MatrxExtendPage() {
               className="h-12 w-full rounded-xl px-6 text-base font-semibold shadow-lg shadow-primary/20 sm:w-auto"
             >
               <a href={CHROME_WEB_STORE_URL} rel="noopener noreferrer">
-                <Chrome className="h-4 w-4" aria-hidden="true" />
+                <Puzzle className="h-4 w-4" aria-hidden="true" />
                 Add to Chrome
               </a>
             </Button>
@@ -234,7 +225,11 @@ export default function MatrxExtendPage() {
         title="Everything the page in front of you can become"
         lead="One side panel, always one click away."
       >
-        <FeatureGrid items={[...AVAILABLE, ...COMING]} />
+        <FeatureGrid items={AVAILABLE} />
+        <p className="mt-6 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+          <StatusPill status="soon" />
+          Safari is in progress. Chrome comes first.
+        </p>
       </ProductSection>
 
       <ProductSection
@@ -291,7 +286,7 @@ export default function MatrxExtendPage() {
           className="h-12 w-full rounded-xl px-6 text-base font-semibold sm:w-auto"
         >
           <a href={CHROME_WEB_STORE_URL} rel="noopener noreferrer">
-            <Chrome className="h-4 w-4" aria-hidden="true" />
+            <Puzzle className="h-4 w-4" aria-hidden="true" />
             Add to Chrome
           </a>
         </Button>

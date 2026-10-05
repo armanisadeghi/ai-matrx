@@ -34,3 +34,4 @@ This surface composes the public header/footer, `Button`, and theme tokens. It a
 
 - `2026-08-17` — Added the public download and install landing page for release 1.4.32, OS recommendation, plain-language Mac selection, and sitewide header/footer doors.
 - `2026-08-17` — Removed the duplicate hero logo, compacted the first fold, and moved recommendation detection to server render so loading cannot shift the page.
+- `2026-10-05` — Added `desktop-release.ts` (the Matrx Desktop Mac release, read from the update feed) and a pointer to `/desktop` above the cards. Product pages: `app/(public)/_product-page/FEATURE.md`.

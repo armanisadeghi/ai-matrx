@@ -22,7 +22,7 @@ export function ExtendMock() {
             <span className="h-3 w-3 rounded-full bg-amber-400/80" />
             <span className="h-3 w-3 rounded-full bg-emerald-400/80" />
           </div>
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-background px-3 py-1 text-[11px] text-muted-foreground">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg bg-background px-3 py-1 text-[11px] text-muted-foreground">
             <Globe className="h-3 w-3 shrink-0" />
             <span className="truncate">any-website.com/the-page-you-are-on</span>
           </div>

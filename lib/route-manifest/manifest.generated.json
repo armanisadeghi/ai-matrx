@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1337,
+  "routeCount": 1339,
   "routes": [
     {
       "pattern": "/",
@@ -2344,6 +2344,11 @@
       "source": "app/(core)/decisions/review/page.tsx"
     },
     {
+      "pattern": "/desktop",
+      "status": "live",
+      "source": "app/(public)/desktop/page.tsx"
+    },
+    {
       "pattern": "/detail",
       "status": "live",
       "source": "app/(core)/detail/page.tsx"
@@ -2952,6 +2957,11 @@
       "pattern": "/exports/[libraryId]",
       "status": "live",
       "source": "app/(core)/exports/[libraryId]/page.tsx"
+    },
+    {
+      "pattern": "/extend",
+      "status": "live",
+      "source": "app/(public)/extend/page.tsx"
     },
     {
       "pattern": "/f/[formId]",

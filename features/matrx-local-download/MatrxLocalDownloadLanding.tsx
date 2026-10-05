@@ -184,7 +184,7 @@ export function MatrxLocalDownloadLanding({
       </section>
 
       <main className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
-        <aside className="mb-4 flex flex-col items-start gap-3 rounded-3xl border border-primary/30 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <aside className="mb-8 flex flex-col items-start gap-3 rounded-3xl border border-primary/30 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-base font-bold tracking-tight">
               New for Mac: Matrx Desktop

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Check, ChevronDown, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,15 +30,15 @@ export function ProductBackdrop() {
 
 export function StatusPill({ status }: { status: "live" | "soon" }) {
   return status === "live" ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+    <Badge variant="success" className="gap-1">
       <Check className="h-3 w-3" aria-hidden="true" />
       Available now
-    </span>
+    </Badge>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+    <Badge variant="warning" className="gap-1">
       <Clock className="h-3 w-3" aria-hidden="true" />
       Coming soon
-    </span>
+    </Badge>
   );
 }
 
@@ -59,9 +60,7 @@ export function ProductHero({
   return (
     <section className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-10 sm:px-6 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:px-8 lg:pb-20 lg:pt-20">
       <div className="text-center lg:text-left">
-        <p className="inline-flex items-center rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-          {eyebrow}
-        </p>
+        <Badge variant="info">{eyebrow}</Badge>
         <h1 className="mt-5 text-balance text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
           {title}
         </h1>
@@ -129,7 +128,13 @@ export interface FeatureItem {
 
 export function FeatureGrid({ items }: { items: readonly FeatureItem[] }) {
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul
+      className={cn(
+        "grid gap-4 sm:grid-cols-2",
+        // Four cards sit as a 2 x 2, never three and an orphan.
+        items.length === 4 ? "lg:mx-auto lg:max-w-4xl" : "lg:grid-cols-3",
+      )}
+    >
       {items.map(({ icon: Icon, title, body, status }) => (
         <li
           key={title}
