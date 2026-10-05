@@ -78,16 +78,21 @@ is limited to immediately usable providers.
 
 ---
 
-**Bring your work** (`/bring-your-work`, `features/connectors/bring-your-work/BringYourWorkPage.tsx`;
+**Connect your AI** (`/bring-your-work` — path kept for now; `features/connectors/bring-your-work/BringYourWorkPage.tsx`;
 Integrations menu) — the other direction: a person's OWN AI (Claude Code, Claude app, ChatGPT,
-Cursor) connecting TO the AI Matrx MCP (aidream `api/mcp/people/`), a personal key made in place
-(`ApiKeysTab`), the public Claude plugin and skill zips served from `public/claude/` (catalog
+Cursor) connecting TO the AI Matrx MCP (aidream `api/mcp/people/`). A guided flow: pick your AI
+(four cards) → numbered steps for that AI only, each one line + one action, checked once done
+(Claude Code: key → connect command → plugin block; Claude app: connector URL → skill zips;
+ChatGPT: connector URL; Cursor: key → `mcp.json`) → "What do you want to do?" cards whose prompt
+text stays collapsed behind "Show prompt". The key step creates a personal key inline through
+`personalApiKeysService` (org Select only with several memberships), reveals it once, and fills it
+into every `YOUR_KEY` on the page; "Manage keys" links to `/user-settings/integrations/api-keys`.
+The public Claude plugin and skill zips are served from `public/claude/` (catalog
 `https://aimatrx.com/claude/marketplace.json`, plugin source an `archive` URL — a web-hosted catalog
 refuses relative paths; rebuild with `bash scripts/build-claude-plugin.sh` after editing
-`public/claude/plugins/ai-matrx/`), and copyable template prompts (Notion via the skill; Airtable,
-Sheets, ClickUp via the MCP tools directly; split-into-agents). "Bring your work" is Arman's working
-label — no vocabulary word exists yet. `proxy.ts` excludes `.zip` so a signed-out install is never
-bounced to /login.
+`public/claude/plugins/ai-matrx/`). Prompts: Notion via the skill; Airtable, Sheets, ClickUp via
+the MCP tools directly; split-into-agents. `proxy.ts` excludes `.zip` so a signed-out install is
+never bounced to /login.
 
 ## Data model
 
@@ -309,6 +314,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- 2026-10-04 — Connect your AI: `/bring-your-work` rebuilt as a guided flow (AI cards → numbered steps with inline key → collapsed prompt cards); title and nav label renamed from "Bring your work"; the embedded API keys list removed.
 - 2026-10-04 — NOTION-MIGRATE: `/bring-your-work` page, public Claude plugin + skills under `public/claude/`, Integrations menu entry.
 
 - `2026-09-22` — **`connectors / shared_account.member_default_level` was a registered knob NO code read, so every member of an organization was offered Disconnect on the organization's shared account.** `migrations/connectors_knobs.sql` declared the row "consumed by the sharing layer"; there was no sharing layer, org-owned connections are reachable through RLS by every member, and `ConnectorsSettingsPanel` handed each of them Reconnect and Disconnect — the clinic's shared `info@` mailbox could be disconnected by anyone in the clinic, while an admin who set the knob to "Viewer" saw "saved" and nothing changed (`pnpm check:settings-orphans`, LANE SETTINGS-3). The read is now [`shared-account-level.ts`](shared-account-level.ts), through `useEffectiveKnob` and the register's own `{ feature, key }` pair, resolved **per card for the account's OWN organization** (a personal Google account and an employer's shared one sit on the same screen; the knob is organization-rung). `admin` and above may reconnect or disconnect; `viewer`/`commenter`/`editor` may only USE the account, which is the knob's own vocabulary. The organization's owners and admins keep full control — the knob governs MEMBERS, and `overridable_by` is `{organization}` only so a member cannot raise their own level. **No code fallback:** a knob that has not answered, or answers with a level this build does not know, hides the credential controls and prints the reason instead of guessing "editor" (law 4). Guard: [`__tests__/a-member-cannot-disconnect-the-organizations-account.test.tsx`](__tests__/a-member-cannot-disconnect-the-organizations-account.test.tsx) — red on the pre-fix bytes (Disconnect rendered for a member at the seeded default), green after. Evidence: `features/connectors` 58 suites / 425 passed 1 skipped, `tsc --noEmit` clean, `check:settings-orphans` exit 0 with the address gone from `fresh`.
