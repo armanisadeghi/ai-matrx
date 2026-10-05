@@ -1,7 +1,7 @@
 {
   "note": "Record-naming toasts not yet routed through recordToast (lib/toast.ts). This list may only SHRINK — see scripts/check-record-toasts.ts.",
   "updated": "2026-09-12",
-  "count": 262,
+  "count": 260,
   "ids": [
     "app/(admin)/administration/agents/system-agents/apps/page.tsx::`${label} updated.`",
     "app/(admin)/administration/automation/scheduling/system-jobs/page.tsx::`${t.title} queued to run now`",
@@ -68,13 +68,8 @@
     "features/agents/components/admin/AgentSyncBody.tsx::`Pushed \"${userSide.name}\" to the system agent.`",
     "features/agents/components/agent-listings/AgentSneakPeekModal.tsx::`${label} copied to clipboard`",
     "features/agents/components/agent-listings/AgentsGrid.tsx::`Deleted \"${name}\" — nothing runs it now.`",
-    "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Hiding ${featureLabel(featureKey)} here`",
-    "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Showing only ${featureLabel(featureKey)}`",
-    "packages/chat/src/agents/components/inputs/BoundVariableChips.tsx::`Saved to ${info.scopeTypeLabel}`",
-    "packages/chat/src/agents/components/inputs/resources/usePasteImageResource.ts::`Couldn't upload ${file.name}: ${reason}`",
     "features/agents/components/messages-display/message-options/messageActionRegistry.ts::`Created \"${result.name}\" in your Google Drive`",
     "features/agents/orchestras/components/AddToOrchestraMenu.tsx::`Added to “${name}”.`",
-    "packages/chat/src/agents/prompt-preview/PromptPreviewContent.tsx::`${label} copied`",
     "features/agents/war-room-master-tools/handlers/message-thread.handler.ts::`Master agent is messaging \"${threadLabel}\"`",
     "features/ai-models/components/ProviderSyncPolicyDialog.tsx::`\"${id}\" is already excluded for ${target.providerName}.`",
     "features/ai-models/components/ProviderSyncPolicyDialog.tsx::`Could not save the ${target.providerName} sync policy`",
@@ -112,8 +107,6 @@
     "features/crm/components/outreach-lists/OutreachListsPage.tsx::`${row.name} deleted`",
     "features/crm/components/record/PartyRecordPage.tsx::`${party.display_name} deleted`",
     "features/crm/components/saved-views/SavedViewBar.tsx::`\"${view.name}\" deleted`",
-    "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`",
-    "packages/chat/src/cx-conversation/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`",
     "features/education/assessment/components/AssessmentDetail.tsx::`${config.label} deleted`",
     "features/education/classes/components/JoinClassView.tsx::`Welcome to ${preview.name}!`",
     "features/education/convert/ConvertContentDialog.tsx::`Created \"${result.title}\"`",
@@ -256,11 +249,26 @@
     "features/war-room/components/resources/WarRoomResourcesList.tsx::`${info.label} deleted`",
     "features/whatsapp-clone/chat-view/MessageInputAttachMenu.tsx::`${item.label} — coming soon`",
     "features/window-panels/diagnostics/overlayRenderWatchdog.ts::`\"${label}\" didn't appear`",
+    "features/window-panels/windows/FeedbackWindow.tsx::`Use ${modifierKeyLabel()}+V to paste an image`",
     "features/window-panels/windows/agents/AgentTestCasesWindow.tsx::`Loaded “${sample.label}”`",
     "features/window-panels/windows/context-scopes/ContextItemsWindow.tsx::`Deleted \"${row.display_name}\"`",
     "features/workflow-comparison/components/WorkflowBattlePage.tsx::`Cancelling ${arm.label}…`",
     "features/workflow-comparison/components/WorkflowBattlePage.tsx::`Re-running ${arm.label}…`",
     "features/workflow-runtime/browse/useWorkflowRowActions.tsx::`Deleted \"${row.name}\"`",
-    "features/workflow-runtime/triggers/components/CopyableValue.tsx::`${label} copied`"
-  ]
+    "features/workflow-runtime/triggers/components/CopyableValue.tsx::`${label} copied`",
+    "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Hiding ${featureLabel(featureKey)} here`",
+    "packages/chat/src/agents/components/conversation-history/ConversationHistorySidebar.tsx::`Showing only ${featureLabel(featureKey)}`",
+    "packages/chat/src/agents/components/inputs/BoundVariableChips.tsx::`Saved to ${info.scopeTypeLabel}`",
+    "packages/chat/src/agents/components/inputs/resources/usePasteImageResource.ts::`Couldn't upload ${file.name}: ${reason}`",
+    "packages/chat/src/agents/prompt-preview/PromptPreviewContent.tsx::`${label} copied`",
+    "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`",
+    "packages/chat/src/cx-conversation/ConversationInput.tsx::`Couldn't upload ${file.name}: ${reason}`"
+  ],
+  "reasons": {
+    "features/window-panels/windows/FeedbackWindow.tsx::`Use ${modifierKeyLabel()}+V to paste an image`": {
+      "reason": "Clipboard keyboard guidance names no persisted record; there is no record ID or destination to attach.",
+      "accepted_by": "Armani Sadeghi",
+      "date": "2026-10-05"
+    }
+  }
 }
