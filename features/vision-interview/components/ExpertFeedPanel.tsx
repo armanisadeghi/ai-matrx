@@ -211,8 +211,7 @@ export function ExpertFeedPanel() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {hydrated && sections.length === 1 && humanTurns.length === 0 ? (
           <p className="px-3 py-3 text-xs leading-relaxed text-muted-foreground">
-            Every expert&apos;s output collects here as the room works — yours
-            at the top, theirs below, live as it is written.
+            No output yet
           </p>
         ) : (
           <Accordion

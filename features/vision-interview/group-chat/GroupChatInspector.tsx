@@ -8,7 +8,7 @@
 // "Group chat" block), what was withheld and by which rule, and what it said. Dense, no prose.
 // The policy write is the server's (`useGroupChat`); the turn is read from `chat.message`.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import {
   Checkbox,
@@ -191,7 +191,7 @@ function ParticipantRow({
   if (!participant) {
     return (
       <tr className="border-b border-border/60" data-participant={row.id}>
-        <td colSpan={7} className="px-2 py-1 text-xs text-destructive">
+        <td colSpan={5} className="px-2 py-1 text-xs text-destructive">
           {row.error ?? "Unreadable participant"}
         </td>
       </tr>
@@ -210,9 +210,11 @@ function ParticipantRow({
   };
   const others = [PERSON_KEY, ...groupKeys.filter((k) => k !== participant.key)];
   const round = turn?.status === "ready" ? (turn.turn?.roomView?.round ?? null) : null;
+  const band = selected ? "bg-accent/60" : "hover:bg-muted/50";
   return (
+    <>
     <tr
-      className={cn("border-b border-border/60 align-middle", selected ? "bg-accent/60" : "hover:bg-muted/50")}
+      className={cn("align-middle", band)}
       data-participant={participant.key}
       aria-selected={selected}
       onClick={onSelect}
@@ -268,73 +270,79 @@ function ParticipantRow({
           ]}
         />
       </td>
-      <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-1">
-          <Select
-            value={full.reveal}
-            onValueChange={(v) => change({ reveal: v as FullPolicy["reveal"], revealRounds: full.revealRounds ?? 1 })}
-          >
-            <SelectTrigger size="sm" className="h-7 w-[7.5rem] text-xs" aria-label="Reveal">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {REVEAL_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {full.reveal !== "always" ? (
-            <CountInput
-              ariaLabel="Reveal rounds"
-              value={full.revealRounds}
-              onCommit={(n) => change({ revealRounds: n })}
-              className="w-12"
-            />
-          ) : null}
-        </div>
-      </td>
-      <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-1">
-          <Select
-            value={full.cadence}
-            onValueChange={(v) => change({ cadence: v as FullPolicy["cadence"], cadenceRounds: full.cadenceRounds ?? 1 })}
-          >
-            <SelectTrigger size="sm" className="h-7 w-[7rem] text-xs" aria-label="Cadence">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CADENCE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {full.cadence !== "person" ? (
-            <CountInput
-              ariaLabel="Cadence rounds"
-              value={full.cadenceRounds}
-              onCommit={(n) => change({ cadenceRounds: n })}
-              className="w-12"
-            />
-          ) : null}
-        </div>
-      </td>
-      <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
-        <CountInput
-          ariaLabel="Budget (characters)"
-          step={1000}
-          value={full.budgetChars}
-          onCommit={(n) => change({ budgetChars: n ?? 0 })}
-          className="w-[4.5rem]"
-        />
-      </td>
       <td className="px-2 py-1 text-right text-[11px] tabular-nums text-muted-foreground" title="Policy version">
         {saving ? "…" : `v${participant.policy_version ?? 1}`}
       </td>
     </tr>
+    <tr className={cn("border-b border-border/60 align-middle", band)} data-participant-rules={participant.key} onClick={onSelect} data-clickable>
+      <td colSpan={5} className="px-2 pb-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] text-muted-foreground">Reveal</span>
+            <Select
+              value={full.reveal}
+              onValueChange={(v) => change({ reveal: v as FullPolicy["reveal"], revealRounds: full.revealRounds ?? 1 })}
+            >
+              <SelectTrigger size="sm" className="h-7 w-[7.5rem] text-xs" aria-label="Reveal">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REVEAL_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {full.reveal !== "always" ? (
+              <CountInput
+                ariaLabel="Reveal rounds"
+                value={full.revealRounds}
+                onCommit={(n) => change({ revealRounds: n })}
+                className="w-12"
+              />
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] text-muted-foreground">Cadence</span>
+            <Select
+              value={full.cadence}
+              onValueChange={(v) => change({ cadence: v as FullPolicy["cadence"], cadenceRounds: full.cadenceRounds ?? 1 })}
+            >
+              <SelectTrigger size="sm" className="h-7 w-[7rem] text-xs" aria-label="Cadence">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CADENCE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value} className="text-xs">
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {full.cadence !== "person" ? (
+              <CountInput
+                ariaLabel="Cadence rounds"
+                value={full.cadenceRounds}
+                onCommit={(n) => change({ cadenceRounds: n })}
+                className="w-12"
+              />
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-[11px] text-muted-foreground">Budget</span>
+            <CountInput
+              ariaLabel="Budget (characters)"
+              step={1000}
+              value={full.budgetChars}
+              onCommit={(n) => change({ budgetChars: n ?? 0 })}
+              className="w-[4.5rem]"
+            />
+          </div>
+        </div>
+      </td>
+    </tr>
+    </>
   );
 }
 
@@ -376,6 +384,16 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
   // A new turn recorded in the room (or Refresh) re-reads every participant's latest turn.
   const roomTurns = useAppSelector(selectTurnsOrdered).length;
   const [refresh, setRefresh] = useState(0);
+  // The round counts the person's messages: re-read it when the room records a turn, and once more
+  // after the write has surely landed.
+  const firstRoomTurns = useRef(roomTurns);
+  useEffect(() => {
+    if (roomTurns === firstRoomTurns.current) return;
+    reload();
+    const t = setTimeout(reload, 2500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomTurns]);
   const [selectedKey, setSelectedKey] = useState<string | null>(initialKey ?? null);
   const rows = state.status === "ready" ? (state.group.participants ?? []) : [];
   const turns = useLatestTurns(
@@ -415,17 +433,14 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[44rem] border-collapse">
+          <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-1 font-medium">Participant</th>
-                <th className="px-1 py-1 font-medium" title="Round of its latest turn">Rd</th>
+                <th className="px-1 py-1 font-medium" title="Round of its latest turn">Round</th>
                 <th className="px-1 py-1 font-medium">Sees</th>
                 <th className="px-1 py-1 font-medium">Labels</th>
-                <th className="px-1 py-1 font-medium">Reveal</th>
-                <th className="px-1 py-1 font-medium">Cadence</th>
-                <th className="px-1 py-1 font-medium">Budget</th>
-                <th className="px-2 py-1 text-right font-medium">Ver</th>
+                <th className="px-2 py-1 text-right font-medium" title="Policy version">Version</th>
               </tr>
             </thead>
             <tbody>
@@ -442,6 +457,13 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
                   onSave={(policy) => void savePolicy(row, policy)}
                 />
               ))}
+              {anchorType === "interview_session" ? (
+                <tr className="border-b border-border/60" data-participant="scribe">
+                  <td className="px-2 py-1 text-xs text-muted-foreground" colSpan={5}>
+                    Scribe · background pass, not a group participant
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
