@@ -34,7 +34,7 @@ import { buildVariableDisplayLines } from "../../../utils/variable-display-lines
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
 import { useEntityTitles } from "../../../../host/ui-slots";
 import { AnswerValueView } from "@host/components/official/structured-value/AnswerValueView";
-import { hasKindKey, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
+import { isKindJsonText, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/surfaces/json-kind-signal";
 
 /**
  * The structured value of a variable that carries a `__kind` (at any depth),
@@ -42,18 +42,19 @@ import { hasKindKey, valueCarriesKind } from "@ai-matrx/chat/utils/content-ir/su
  * (kind-never-raw R5); a string holding kind JSON is read the same way.
  */
 function kindCarryingValue(value: unknown): unknown {
-  if (value != null && typeof value === "object") {
-    return valueCarriesKind(value) ? value : null;
-  }
-  if (typeof value === "string" && hasKindKey(value)) {
+  // Every value shape through the one detector (K1, round 7). A string that
+  // IS kind JSON is handed over parsed; a string of prose with a kind in it
+  // is handed over as text — the value door renders it through the pipeline.
+  if (!valueCarriesKind(value)) return null;
+  if (typeof value === "string" && isKindJsonText(value)) {
     try {
       const parsed: unknown = JSON.parse(value);
-      return parsed != null && typeof parsed === "object" ? parsed : null;
+      if (parsed != null && typeof parsed === "object") return parsed;
     } catch {
-      return null;
+      // Not whole JSON after all: the text itself carries the kind.
     }
   }
-  return null;
+  return value;
 }
 
 interface FirstTurnVariablesProps {

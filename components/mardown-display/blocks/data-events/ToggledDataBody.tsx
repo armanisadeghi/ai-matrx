@@ -13,11 +13,6 @@
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
-function carriesKind(value: unknown): boolean {
-  if (value == null || typeof value !== "object") return false;
-  return valueCarriesKind(value);
-}
-
 export function ToggledDataBody({
   value,
   className,
@@ -26,7 +21,9 @@ export function ToggledDataBody({
   /** The `<pre>` classes the block used for its JSON view. */
   className: string;
 }) {
-  if (carriesKind(value)) {
+  // Every value shape is asked (K1, round 7): a tool `result` is typed Any
+  // server-side and often arrives as a plain STRING holding kind JSON.
+  if (valueCarriesKind(value)) {
     return (
       <div className="min-w-0 overflow-auto" data-toggled-data="kind">
         <AnswerValueView value={value} density="inline" />

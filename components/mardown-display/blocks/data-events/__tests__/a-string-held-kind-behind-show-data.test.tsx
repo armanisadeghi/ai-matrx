@@ -60,11 +60,12 @@ afterEach(() => {
 
 const door = () => container.querySelector('[data-route="value-door"]');
 function clickAll() {
-  // Open every toggle once: the card header first, then each row / meta toggle.
+  // Open every toggle once, innermost (last) first, so a card that starts
+  // expanded is never collapsed by its own header before its row opens.
   const clicked = new Set<Element>();
   for (;;) {
     if (door()) return;
-    const next = Array.from(container.querySelectorAll("button")).find((b) => !clicked.has(b));
+    const next = Array.from(container.querySelectorAll("button")).reverse().find((b) => !clicked.has(b));
     if (!next) return;
     clicked.add(next);
     act(() => next.click());

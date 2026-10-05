@@ -107,9 +107,8 @@ export function payloadKind(payload: unknown): string | null {
   return typeof kind === "string" && kind.trim() ? kind.trim() : null;
 }
 
-/** A kind anywhere inside a structured payload — string-held kinds included. */
+/** A kind anywhere in the payload — a payload that IS a kind-holding string included (K1). */
 function carriesNestedKind(payload: unknown): boolean {
-  if (!payload || typeof payload !== "object") return false;
   return valueCarriesKind(payload);
 }
 
