@@ -101,7 +101,8 @@ export interface Census {
 
 const MARKER = /^\s*\/\/\s*record-view:\s*(.+?)\s*$/m;
 const ROW_TOKEN_MARKER = /\/\/\s*row-token:\s*none\s*[—-]+\s*(\S.*)$/m;
-const LITERAL = /<EntityCustomFields\b[^>]*?entityToken=["']([a-z0-9_]+)["']/gs;
+// A standard row's ONE form (`<StandardRecordForm token="entity:party">`) carries the same section inside it.
+const LITERAL = /<(?:EntityCustomFields\b[^>]*?entityToken|StandardRecordForm\b[^>]*?\btoken)=["'](?:entity:)?([a-z0-9_]+)["']/gs;
 const HOST_REACH = /\b(DetailBody|DetailHostProvider|DetailPageRoute|DetailWindow|RecordPeekCanvasView|DetailHost)\b/;
 const EXTS = [".tsx", ".ts", "/index.tsx", "/index.ts", ".jsx", ".js"];
 const MAX_CLOSURE = 600;
@@ -212,7 +213,7 @@ export function buildCensus(opts: CensusOptions): Census {
       const tokens = marker.split(/[,\s]+/).filter(Boolean);
       for (const token of tokens) {
         judgeToken(key, token);
-        const re = new RegExp(`<EntityCustomFields\\b[^>]*?entityToken=["']${token}["']`, "s");
+        const re = new RegExp(`<(?:EntityCustomFields\\b[^>]*?entityToken|StandardRecordForm\\b[^>]*?\\btoken)=["'](?:entity:)?${token}["']`, "s");
         // A Next.js page may render nothing itself while its LAYOUT renders the record (/notes/[id]):
         // the route's own layout.tsx files (this folder up to the route group) count as what it renders.
         const layouts: string[] = [];

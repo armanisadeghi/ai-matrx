@@ -2,20 +2,14 @@
 
 // features/crm/components/record/PartyIdentityCard.tsx
 //
-// Identity key-value rows with click-to-edit. What you can see, you can
-// change: each field commits one UPDATE on blur/Enter through updateParty.
+// Identity: the shared RecordForm in standard-table mode (`@ai-matrx/records-ui`
+// StandardRecordForm). The row's own columns and the organization's custom fields
+// are ONE form; each value is one write through `entity_row_write` as the person.
+// Stage / Rating / Roles / Do-not-contact stay here as the form's children.
 
-import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { IdCard, Pencil, PhoneOff, Plus, UserRound } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { IdCard, PhoneOff, UserRound } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CategorySelect } from "@ai-matrx/associations/react";
 import { CategoryTagPicker } from "@ai-matrx/associations/react";
@@ -35,7 +29,6 @@ import {
 import {
   EXPERT_STATUSES,
   type PartyListRow,
-  type PartyUpdate,
 } from "../../types";
 import { parseIdentityFields } from "../../agent-context/crmRecordSurfaceWrite";
 import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
@@ -46,37 +39,23 @@ import {
   type CrmRecordCopyParent,
 } from "./record-copy";
 import { SectionCard } from "./SectionCard";
-import { ProTextarea } from "@/components/official/ProTextarea";
+import { RecordsMount, StandardRecordForm, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import type { StandardColumn } from "@ai-matrx/records-ui";
+import { registerCustomFieldsDoor } from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
+import { createClient } from "@/utils/supabase/client";
 
 interface Props {
   party: PartyListRow;
   onChanged: () => Promise<void>;
 }
 
-type EditableKey =
-  | "display_name"
-  | "first_name"
-  | "last_name"
-  | "job_title"
-  | "headline"
-  | "legal_name"
-  | "primary_domain"
-  | "timezone"
-  | "tax_id"
-  | "date_of_birth"
-  | "bio";
-
-interface FieldSpec {
-  key: EditableKey;
-  label: string;
+interface FieldSpec extends StandardColumn {
   personOnly?: boolean;
   companyOnly?: boolean;
-  multiline?: boolean;
-  placeholder?: string;
 }
 
 const FIELDS: FieldSpec[] = [
-  { key: "display_name", label: "Name" },
+  { key: "display_name", label: "Name", required: true },
   { key: "first_name", label: "First name", personOnly: true },
   { key: "last_name", label: "Last name", personOnly: true },
   { key: "job_title", label: "Title", personOnly: true },
@@ -88,130 +67,6 @@ const FIELDS: FieldSpec[] = [
   { key: "tax_id", label: "Tax ID", companyOnly: true },
   { key: "bio", label: "Bio", multiline: true },
 ];
-
-function InlineField({
-  spec,
-  value,
-  onCommit,
-  startEditing = false,
-  onLeftEmpty,
-}: {
-  spec: FieldSpec;
-  value: string | null;
-  onCommit: (next: string | null) => Promise<void>;
-  /** Opened from "Add details": start in the editor. */
-  startEditing?: boolean;
-  /** Closed with nothing typed — the row folds back into "Add details". */
-  onLeftEmpty?: () => void;
-}) {
-  const [editing, setEditing] = useState(startEditing);
-  const [draft, setDraft] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const start = () => {
-    setDraft(value ?? "");
-    setEditing(true);
-  };
-
-  const commit = async () => {
-    const next = draft.trim() || null;
-    setEditing(false);
-    if (next === null && !value) onLeftEmpty?.();
-    if (next === (value ?? null)) return;
-    setSaving(true);
-    try {
-      await onCommit(next);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const inputClasses =
-    "min-h-11 w-full min-w-0 flex-1 rounded border border-primary/40 bg-background px-1.5 py-0.5 text-base text-foreground outline-none focus:border-primary sm:min-h-0 sm:text-sm";
-
-  return (
-    // Label and value INLINE at every width for short fields (phone: an 80px
-    // label column; desktop: the dense 96px right-aligned column). Stacking
-    // label over value made the phone card ~450px tall and pushed Contact
-    // points off the first screen (page-pass 2026-09-28). A multiline field
-    // (Bio) still stacks on a phone — it needs the width.
-    <div
-      className={cn(
-        "flex gap-2 py-0.5 sm:flex-row sm:items-start",
-        spec.multiline ? "max-sm:flex-col max-sm:gap-0.5" : "items-center",
-      )}
-    >
-      <span className="w-20 shrink-0 text-xs text-muted-foreground sm:w-24 sm:pt-0.5 sm:text-right">
-        {spec.label}
-      </span>
-      {editing ? (
-        spec.multiline ? (
-          <ProTextarea
-            autoFocus
-            surfaceName={CRM_RECORD_SURFACE_NAME}
-            rows={3}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setEditing(false);
-                if (!value) onLeftEmpty?.();
-              }
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void commit();
-            }}
-            className={inputClasses}
-          />
-        ) : (
-          // Bare input on purpose: this is a click-to-edit cell that commits on
-          // blur, and ProInput's mic / "…" controls take focus from the field —
-          // pressing them would blur, commit and close the editor mid-dictation.
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void commit();
-              if (e.key === "Escape") {
-                setEditing(false);
-                if (!value) onLeftEmpty?.();
-              }
-            }}
-            placeholder={spec.placeholder}
-            className={inputClasses}
-          />
-        )
-      ) : (
-        <button
-          type="button"
-          onClick={start}
-          className={cn(
-            "group/field flex min-h-11 min-w-0 flex-1 items-center gap-1 rounded px-0 py-0 text-left text-sm hover:bg-accent/50 sm:min-h-0 sm:items-start sm:px-1.5 sm:py-0.5",
-            value ? "text-foreground" : "text-muted-foreground/60",
-            saving && "opacity-60",
-          )}
-          title={`Edit ${spec.label.toLowerCase()}`}
-          aria-label={`Edit ${spec.label.toLowerCase()}: ${value || "empty"}`}
-        >
-          <span
-            className={cn(
-              "min-w-0 flex-1",
-              spec.multiline ? "whitespace-pre-wrap" : "truncate",
-            )}
-          >
-            {value || "—"}
-          </span>
-          {/* Says the field is editable: always on touch, on hover with a
-              mouse — never a mystery which values can be changed. */}
-          <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-0 group-hover/field:opacity-100 pointer-coarse:opacity-100" />
-        </button>
-      )}
-    </div>
-  );
-}
 
 export function PartyIdentityCard({ party, onChanged }: Props) {
   const userId = useAppSelector(selectUserId);
@@ -229,31 +84,15 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
     id: party.id,
   });
   const isPerson = party.party_kind === "person";
-  const fields = FIELDS.filter(
+  const columns: StandardColumn[] = FIELDS.filter(
     (f) => !(f.personOnly && !isPerson) && !(f.companyOnly && isPerson),
-  );
-  // EMPTY IS COMPACT: a thin record shows its name and what it actually has,
-  // never a wall of "—" rows. Empty fields wait behind ONE "Add details" menu;
-  // picking one opens that field's editor in place.
-  const [opened, setOpened] = useState<EditableKey[]>([]);
-  const shownFields = fields.filter(
-    (f) =>
-      f.key === "display_name" ||
-      Boolean(party[f.key]) ||
-      opened.includes(f.key),
-  );
-  const emptyFields = fields.filter((f) => !shownFields.includes(f));
-
-  const commitField = async (key: EditableKey, next: string | null) => {
-    const patch: PartyUpdate = { [key]: next };
-    // display_name is NOT NULL — an emptied name keeps the old one.
-    if (key === "display_name" && !next) {
-      toast.error("Name cannot be empty");
-      return;
-    }
-    await updateParty(party.id, patch);
-    await onChanged();
-  };
+  ).map((f) => ({
+    key: f.key,
+    label: f.label,
+    ...(f.multiline ? { multiline: true } : {}),
+    ...(f.placeholder ? { placeholder: f.placeholder } : {}),
+    ...(f.required ? { required: true } : {}),
+  }));
 
   // Stage + rating are FK columns on crm.party; roles are party → category
   // association edges (role 'member') — the split FEATURE.md mandates.
@@ -435,47 +274,24 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
         />
       }
     >
-      <div className="space-y-0">
-        {shownFields.map((spec) => (
-          <InlineField
-            key={spec.key}
-            spec={spec}
-            value={party[spec.key]}
-            onCommit={(next) => commitField(spec.key, next)}
-            startEditing={opened.includes(spec.key) && !party[spec.key]}
-            onLeftEmpty={() =>
-              setOpened((keys) => keys.filter((key) => key !== spec.key))
-            }
-          />
-        ))}
-        {emptyFields.length > 0 && (
-          <div className="flex items-center gap-2 py-0.5">
-            <span className="w-20 shrink-0 sm:w-24" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-1.5 text-xs text-muted-foreground"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Add details
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {emptyFields.map((spec) => (
-                  <DropdownMenuItem
-                    key={spec.key}
-                    onSelect={() => setOpened((keys) => [...keys, spec.key])}
-                  >
-                    {spec.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-
+      <RecordsMount
+        letTheStoreDecideRights
+        config={{
+          dataSource: recordsDataSource(createClient()),
+          actor: personActor(userId),
+          organizationId: party.organization_id,
+        }}
+      >
+        <StandardRecordForm
+          token="entity:party"
+          recordId={party.id}
+          columns={columns}
+          onSaved={() => void onChanged()}
+          custom={{
+            entityLabel: "Contact",
+            agentDoor: (door) => registerCustomFieldsDoor({ ...door, isLive: () => true }),
+          }}
+        >
         {/* Classification — the CRM stance on this record. */}
         <div className="mt-1.5 space-y-1.5 border-t border-border pt-2">
           <div className="flex items-center gap-2">
@@ -550,7 +366,8 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
             />
           </div>
         </label>
-      </div>
+        </StandardRecordForm>
+      </RecordsMount>
     </SectionCard>
   );
 }

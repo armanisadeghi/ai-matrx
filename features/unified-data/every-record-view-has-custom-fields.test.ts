@@ -78,12 +78,16 @@ describe("G1: every record view has its custom fields", () => {
 // The guard's own proof: each fault it exists for, planted in memory, turns it red.
 describe("G1 self-test: the guard can fail", () => {
   const party = "features/crm/components/record/PartyRecordPage.tsx";
+  // The party section now lives inside the identity card's one form (StandardRecordForm).
+  const card = "features/crm/components/record/PartyIdentityCard.tsx";
+  const cardText = readFileSync(join(ROOT, card), "utf8");
   const partyText = readFileSync(join(ROOT, party), "utf8");
+  const withoutSection = (t: string) => t.replace(/<StandardRecordForm\b[\s\S]*?>/g, "<div>");
 
   it("a record page that loses its section is red", () => {
-    const stripped = partyText.replace(/<EntityCustomFields\b[\s\S]*?\/>/g, "");
-    expect(stripped).not.toEqual(partyText);
-    const c = buildCensus({ root: ROOT, entityTypes, ledger, overrides: { [party]: stripped } });
+    const stripped = withoutSection(cardText);
+    expect(stripped).not.toEqual(cardText);
+    const c = buildCensus({ root: ROOT, entityTypes, ledger, overrides: { [card]: stripped } });
     expect(c.problems.join("\n")).toMatch(/declares "party" but renders no <EntityCustomFields entityToken="party">/);
   });
 
@@ -93,7 +97,7 @@ describe("G1 self-test: the guard can fail", () => {
       entityTypes,
       ledger,
       extraRoutes: [{ pattern: "/clinic-visits/[visitId]", source: party }],
-      overrides: { [party]: partyText.replace(/<EntityCustomFields\b[\s\S]*?\/>/g, "") },
+      overrides: { [card]: withoutSection(cardText) },
     });
     expect(c.problems.join("\n")).toMatch(/route:\/clinic-visits\/\[visitId\]: shows no declaration/);
   });

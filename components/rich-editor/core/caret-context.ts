@@ -54,13 +54,13 @@ export function locateCaret(text: string, context: CaretContext): number | null 
     if (idx >= 0 && (b + a).length >= Math.min(3, before.length + after.length)) return toOriginal(idx + b.length);
   }
   for (const len of [CONTEXT_CHARS, 12, 4]) {
-    const a = after.slice(0, len).trimStart();
-    if (a.length >= 3) {
+    const a = after.slice(0, len);
+    if (a.trim().length >= 3) {
       const idx = flat.indexOf(a);
       if (idx >= 0) return toOriginal(idx);
     }
-    const b = before.slice(-len).trimEnd();
-    if (b.length >= 3) {
+    const b = before.slice(-len);
+    if (b.trim().length >= 3) {
       const idx = flat.indexOf(b);
       if (idx >= 0) return toOriginal(idx + b.length);
     }

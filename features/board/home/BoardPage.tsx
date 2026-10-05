@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { BoardOrganizationProvider } from "../items/board-organization";
 import { type SavedBoardTarget, useSavedBoard } from "../persistence/useSavedBoard";
 import { BOARD_TOKEN } from "../persistence/boardsService";
 import { useCreateBoard } from "../persistence/useCreateBoard";
@@ -123,15 +124,17 @@ export function BoardPage({
                     details={{ problems: ready.board.problems }}
                   />
                 )}
-                <UserBoard
-                  key={ready.board.id}
-                  boardId={ready.board.id}
-                  title={ready.board.title}
-                  doc={ready.board.doc}
-                  viewerCamera={ready.board.viewerCamera}
-                  onChange={ready.save}
-                  onCamera={ready.saveCamera}
-                />
+                <BoardOrganizationProvider value={ready.board.organizationId}>
+                  <UserBoard
+                    key={ready.board.id}
+                    boardId={ready.board.id}
+                    title={ready.board.title}
+                    doc={ready.board.doc}
+                    viewerCamera={ready.board.viewerCamera}
+                    onChange={ready.save}
+                    onCamera={ready.saveCamera}
+                  />
+                </BoardOrganizationProvider>
               </>
             )}
           </div>

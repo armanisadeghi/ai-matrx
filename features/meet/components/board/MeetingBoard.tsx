@@ -56,6 +56,7 @@ import type { BoardDocument } from "@/features/board/board/document";
 import type { Camera } from "@/features/board/engine/camera";
 import { useSavedBoard } from "@/features/board/persistence/useSavedBoard";
 import { meetingNotesDocument } from "@/features/board/items/meeting-items.logic";
+import { BoardOrganizationProvider } from "@/features/board/items/board-organization";
 import { LayoutSwitch, type MeetingLayoutChoice } from "./LayoutSwitch";
 import { PeopleStrip } from "./PeopleStrip";
 import { useGuestMeetingBoard } from "./useGuestMeetingBoard";
@@ -135,14 +136,16 @@ function SavedMeetingBoard({ meeting, ...frame }: FrameProps & { meeting: Meetin
               details={{ problems: ready.board.problems }}
             />
           )}
-          <BoardCanvas
-            key={ready.board.id}
-            title={meeting.title}
-            doc={ready.board.doc}
-            viewerCamera={ready.board.viewerCamera}
-            onChange={ready.save}
-            onCamera={ready.saveCamera}
-          />
+          <BoardOrganizationProvider value={ready.board.organizationId}>
+            <BoardCanvas
+              key={ready.board.id}
+              title={meeting.title}
+              doc={ready.board.doc}
+              viewerCamera={ready.board.viewerCamera}
+              onChange={ready.save}
+              onCamera={ready.saveCamera}
+            />
+          </BoardOrganizationProvider>
         </>
       )}
     </MeetingBoardFrame>

@@ -75,7 +75,6 @@ import {
   storedJournalistActivity,
 } from "./JournalistIntelligenceCard";
 import { PartyProvenanceCard } from "./PartyProvenanceCard";
-import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { PartyOutputsSection } from "./PartyOutputsSection";
 import { PartyDealsCard } from "../deals/PartyDealsCard";
 import type { CrmRecordCopyParent } from "./record-copy";
@@ -698,15 +697,6 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                       rendered as real doors, with "Add to contacts".
                       Renders nothing for a record the user typed in. */}
                   <PartyProvenanceCard party={party} onChanged={refresh} />
-                </div>
-                <div className="empty:hidden max-lg:order-14">
-                  {/* REC-34 / SCR-12 — the organization's OWN fields on this
-                      standard entity. Absent until this org declares one. */}
-                  <EntityCustomFields
-                    entityToken="party"
-                    recordId={party.id}
-                    organizationId={party.organization_id}
-                  />
                 </div>
                 <div className="max-lg:order-14">
                   {/* Everything linked to this person or company, both ways (W1.4). */}

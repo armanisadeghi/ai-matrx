@@ -9,7 +9,7 @@
 // API: addHighlight / postComment / link).
 
 import type { ComponentType } from "react";
-import { Link2, MessageCirclePlus, MessageSquarePlus, PencilLine, Send } from "lucide-react";
+import { CircleArrowOutUpRight, Link2, MessageSquarePlus, PencilLine, Send } from "lucide-react";
 import type { Action, ActionProvider, ClickTarget } from "@ai-matrx/alchemy/actions";
 import { registerAlchemyIcon } from "@/components/agent-copy/alchemy-icon-keys";
 import {
@@ -161,11 +161,19 @@ const REPORT: Action = {
   },
 };
 
+/**
+ * The two icons a person tells apart at a glance: Comment stays here (a speech
+ * bubble with a plus); "New chat about this" LEAVES here, so it is an arrow out —
+ * never a second plus-bubble (2026-10-05: the near-identical pair was mis-clicked).
+ */
+export const COMMENT_ICON = MessageSquarePlus;
+export const NEW_CHAT_ICON = CircleArrowOutUpRight;
+
 /** A chat answer's passage → a new chat, the passage staged as a comment on that answer. */
 const NEW_CHAT: Action = {
   id: "selection:new-chat",
   label: "New chat about this",
-  icon: registerAlchemyIcon(MessageCirclePlus),
+  icon: registerAlchemyIcon(NEW_CHAT_ICON),
   category: "share",
   order: 13,
   placement: "primary",
@@ -189,7 +197,7 @@ const ACTIONS: Action[] = [
   ...HIGHLIGHTS,
   REPORT,
   NEW_CHAT,
-  panelAction("selection:comment", "Comment", MessageSquarePlus, 10, ANNOTATION_PANELS.comment),
+  panelAction("selection:comment", "Comment", COMMENT_ICON, 10, ANNOTATION_PANELS.comment),
   panelAction("selection:suggest", "Suggest an edit", PencilLine, 11, ANNOTATION_PANELS.suggest),
   panelAction("selection:link-record", "Link a record…", Link2, 12, ANNOTATION_PANELS.link, (h) => h.api.state.capabilities.links),
 ];

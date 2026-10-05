@@ -122,7 +122,10 @@ export default function SelectionToolbarFrame({
   const [position, setPosition] = React.useState<{ left: number; top: number; hidden: boolean } | null>(null);
   const place = React.useCallback(() => {
     const frame = frameRef.current;
-    if (!frame) return;
+    // The strip draws a moment after the frame mounts: placing an EMPTY frame
+    // measures a height of 0 and leaves the real one above the selection / under
+    // a header. Stay off-screen until there is something to measure.
+    if (!frame || frame.offsetHeight === 0) return;
     let at = rect;
     if (range) {
       const live = range.getBoundingClientRect();
@@ -143,10 +146,14 @@ export default function SelectionToolbarFrame({
     const frame = frameRef.current;
     const ro = frame && typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => place()) : null;
     if (frame) ro?.observe(frame);
+    // Content arriving is a layout change the size observer can miss: re-place on it.
+    const mo = frame && typeof MutationObserver !== "undefined" ? new MutationObserver(() => place()) : null;
+    if (frame) mo?.observe(frame, { childList: true, subtree: true });
     window.addEventListener("scroll", place, true);
     window.addEventListener("resize", place);
     return () => {
       ro?.disconnect();
+      mo?.disconnect();
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };

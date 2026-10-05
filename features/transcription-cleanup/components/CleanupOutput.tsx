@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface CleanupOutputProps {
@@ -55,6 +56,14 @@ export function CleanupOutput({
       ) : (
         <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
           {requestId || content ? (
+            // EDIT IN PLACE (components/rich-editor/in-place): a double-click
+            // opens THE ONE editor here; Save hands the text to the page.
+            <EditInPlace
+              value={content}
+              canEdit={!isBusy && content.length > 0}
+              write={(text) => onContentChange(text)}
+              editor={{ imagePolicy: "ai", contentSource: { type: "raw", title: label } }}
+            >
             <RichDocument
               content={content}
               requestId={isBusy ? (requestId ?? undefined) : undefined}
@@ -67,6 +76,7 @@ export function CleanupOutput({
               allowFullScreenEditor={!isBusy}
               actionsVariant="none"
             />
+            </EditInPlace>
           ) : (
             <p className="text-sm text-muted-foreground">{placeholder}</p>
           )}

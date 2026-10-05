@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T07:21:05.160Z",
+  "generated_at": "2026-10-05T07:39:14.971Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3728,6 +3728,12 @@
       "checksum": "0aca853afa5b7519c2e706c327404ac536fcd7bec95888e6863f30dba7561165",
       "applied_at": "2026-10-05 06:55:25.184567+00"
     },
+    "migrations/campaign/kits_template_merge_s1b_uninstall_qualifies_permission_level.sql": {
+      "source": "matrx-frontend",
+      "filename": "kits_template_merge_s1b_uninstall_qualifies_permission_level.sql",
+      "checksum": "d9dde55bb2538ac5ee025cfdab3fd3ace669f3ffc481ffd043671c105a299c67",
+      "applied_at": "2026-10-05 07:33:38.545932+00"
+    },
     "migrations/campaign/knobguard2_the_archive_door_asks_the_same_predicate.sql": {
       "source": "matrx-frontend",
       "filename": "knobguard2_the_archive_door_asks_the_same_predicate.sql",
@@ -5377,6 +5383,24 @@
       "filename": "scopesfts1f_the_scope_doors_write_no_old_row.sql",
       "checksum": "ff7bc58a80d82c805e9543bd0b74819de8b83c2ff9a836182f599c8fe517fdbd",
       "applied_at": "2026-10-05 07:03:03.259471+00"
+    },
+    "migrations/campaign/scopesfts1g_search_no_longer_reads_the_old_scope_tables.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesfts1g_search_no_longer_reads_the_old_scope_tables.sql",
+      "checksum": "d4a7d72c8fdc930d2081ddeac057e083d9d9d2a10664bfe4a16f177785fc562d",
+      "applied_at": "2026-10-05 07:36:44.393087+00"
+    },
+    "migrations/campaign/scopesfts1g_the_last_scope_readers_read_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesfts1g_the_last_scope_readers_read_the_store.sql",
+      "checksum": "2d9a6c14a6754a4e091721b27db9b590dd5149e7bf0d9153aed95710979715d7",
+      "applied_at": "2026-10-05 07:30:39.199083+00"
+    },
+    "migrations/campaign/scopesfts1g_the_scope_doors_refuse_in_plain_words.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesfts1g_the_scope_doors_refuse_in_plain_words.sql",
+      "checksum": "d7e976d98647ec2030caf831092ddcecccb3122f2af87e04bb2b165f15696c62",
+      "applied_at": "2026-10-05 07:39:12.896311+00"
     },
     "migrations/campaign/scopesfts1g_the_scope_switches_are_retired_with_their_instruments.sql": {
       "source": "matrx-frontend",
