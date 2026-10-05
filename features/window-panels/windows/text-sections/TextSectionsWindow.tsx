@@ -32,7 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { RichDocumentActions } from "@/features/rich-document/RichDocumentActions";
 import { formatChars } from "@ai-matrx/kit/tokens";
 import type { OverlayId } from "@/features/overlays/catalogue";
@@ -271,7 +271,7 @@ export function TextSectionsWindow({
                         : "w-full",
                     )}
                   >
-                    <MarkdownStream imagePolicy="other" content={shownContent} />
+                    <RichContent level="full" imagePolicy="other" source={shownContent} />
                   </div>
                 )}
                 {(view === "raw" || view === "split") && (
