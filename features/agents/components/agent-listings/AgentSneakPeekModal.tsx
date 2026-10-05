@@ -926,23 +926,19 @@ export function AgentSneakPeekModal({
           {hasNav && (
             <div className="flex items-center gap-0.5 shrink-0">
               <Button
+                icon={<ChevronLeft />} aria-label="Previous (←)"
                 variant="quiet"
-                className="w-7"
                 onClick={goPrev}
                 disabled={!hasPrev}
                 title="Previous (←)"
-              >
-                <ChevronLeft />
-              </Button>
+              />
               <Button
+                icon={<ChevronRight />} aria-label="Next (→)"
                 variant="quiet"
-                className="w-7"
                 onClick={goNext}
                 disabled={!hasNext}
                 title="Next (→)"
-              >
-                <ChevronRight />
-              </Button>
+              />
               {navigationIds && (
                 <span className="text-[10px] font-medium tabular-nums text-muted-foreground ml-1">
                   {currentIndex + 1} / {navigationIds.length}

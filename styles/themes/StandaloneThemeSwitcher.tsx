@@ -79,18 +79,15 @@ export const StandaloneThemeSwitcher: React.FC<StandaloneThemeSwitcherProps> = (
 
     return (
         <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleMode}
-            className={clsx("h-8 w-8 px-0", className)}
-            aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-            {mode === 'dark' ? (
-                <Sun className="h-4 w-4" />
+            icon={mode === 'dark' ? (
+                <Sun />
             ) : (
-                <Moon className="h-4 w-4" />
+                <Moon />
             )}
-            <span className="sr-only">Toggle theme</span>
-        </Button>
+            variant="quiet"
+            onClick={toggleMode}
+            className={className}
+            aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        />
     );
 };

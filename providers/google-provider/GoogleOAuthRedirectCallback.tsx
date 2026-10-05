@@ -244,6 +244,7 @@ export function GoogleOAuthRedirectCallback({
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">{failure}</p>
             <Button
+              variant="primary"
               className="mt-4"
               onClick={() => window.location.replace(returnTo)}
             >

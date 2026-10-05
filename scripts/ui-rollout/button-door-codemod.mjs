@@ -53,7 +53,7 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../.
 const DOOR = "@/components/ui/button";
 const PKG = "@ai-matrx/design-system";
 const SURFACE = "SurfaceButton";
-const SCAN_DIRS = ["app", "features", "components", "packages", "lib", "hooks"];
+const SCAN_DIRS = ["app", "features", "components", "packages", "lib", "hooks", "providers", "styles", "utils"];
 
 /* ── Excluded areas ─────────────────────────────────────────────────────── */
 const EXCLUDED_PREFIXES = [

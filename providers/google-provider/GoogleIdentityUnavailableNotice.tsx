@@ -50,11 +50,10 @@ export function GoogleIdentityUnavailableNotice({
         <p className="leading-snug">{GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2 pl-6">
-        <Button size="sm" variant="outline" onClick={onRetry}>
-          <RotateCw className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<RotateCw />} variant="outline" onClick={onRetry}>
           Retry
         </Button>
-        <Button size="sm" variant="ghost" asChild>
+        <Button variant="quiet" asChild>
           <a
             href={GOOGLE_STATUS_DASHBOARD_URL}
             target="_blank"

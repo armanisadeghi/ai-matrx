@@ -778,7 +778,8 @@ export function main(argv = process.argv.slice(2)) {
   const fresh = judged.filter((j) => j.status === "new");
   for (const j of judged) {
     const title = RULES[j.rule].title;
-    const lead = j.status === "new" ? j.fresh[0] : j.sites[0];
+    // A grown key can have no site the old-sites reader names as fresh: lead with its first site.
+    const lead = (j.status === "new" ? j.fresh[0] : undefined) ?? j.sites[0];
     // New sites FIRST: the runner cuts a finding title at ~100 characters, so what is new must
     // lead; the file is the item's own `file`/`line`, never repeated here.
     const named = j.fresh.map((f) => `L${f.line} ${f.what}`).join("; ");
@@ -791,7 +792,7 @@ export function main(argv = process.argv.slice(2)) {
           ? `+${j.fresh.length} ${title}: ${named} (now ${j.sites.length}, baseline ${j.allowed})`
           : `${j.sites.length} × ${title} (baseline ${j.allowed})`,
       file: j.file,
-      line: lead.line,
+      line: lead?.line,
       rule: j.rule,
     });
   }

@@ -163,9 +163,8 @@ export function DescribeBox() {
           className="min-h-[2.75rem] flex-1 resize-none"
           data-make-describe-input=""
         />
-        <Button type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} className="gap-1.5" data-make-describe-go="">
+        <Button iconEnd={busy ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={busy || !sentence.trim()} aria-busy={busy || undefined} data-make-describe-go="">
           {run.phase === "writing" ? `Designing… ${elapsed}` : run.phase === "installing" ? `Building… ${elapsed}` : "Make it"}
-          {busy ? null : <ArrowRight className="h-4 w-4" aria-hidden />}
         </Button>
       </form>
 
@@ -195,7 +194,7 @@ export function DescribeBox() {
         <div className="flex flex-col gap-2" role="alert" data-make-describe-refusal="">
           <div className="flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 text-sm text-destructive">{run.why}</p>
-            <Button variant="outline" onClick={() => void start()} data-make-describe-retry="">
+            <Button type="submit" variant="outline" onClick={() => void start()} data-make-describe-retry="">
               Try again
             </Button>
           </div>
