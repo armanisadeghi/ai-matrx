@@ -294,6 +294,31 @@ a machine; explicit raw controls ("Copy JSON", the extraction "JSON" download, t
       an edit wins); `responseValue` — what `persistCleanRun`, apply and compare use — stays the raw answer text. Typing in the field is a
       person's explicit edit of what they see. Guard `cleaned-response-display-never-raw-kind.test.ts`.
 
+## Z. Round 4 — verifier-confirmed leaks (2026-10-05)
+
+Door added: `surfaces/kind-text-label.ts` (`kindTextLabel`) — answer text → ONE readable line ("<Kind> · <instance title>",
+`deriveInstanceTitle`; prose with a kind → the prose's first line; cut-off kind → its one-line note). Destination transform only.
+
+- [x] Z1 (S1). Collaboration agent-call card header subtitle: `collabHeaderSubtitle` (text, stored preview and structured value all
+      through the kind's label). Guard `collab-subtitle-never-raw-kind.test.ts`.
+- [x] Z2 (S4). "Worth keeping?" add-to-rulebook: `appendDraftRuleFromMessage` keeps the kind's markdown as the rule statement and
+      `deriveRuleNameFromContent` names it from the kind's title (the dialog preview converts too). Guard in `oracleTapDraft.test.ts`.
+- [x] Z3 (S5). Artifact version history: `ArtifactVersionBody` draws a kind version through `AnswerValueView`; "View JSON" is the labelled raw
+      toggle (`data-kind-source="explicit"`); the compare diff reads the readable text; restore keeps the stored data. Guard
+      `artifact-version-never-raw-kind.test.tsx`.
+- [x] Z4 (S-compare). Compare with clipboard / set base / compare with base: `contentForDestination` (the diff is read by a person).
+      `compare.ts` left the raw-allowed list in `destinationContent.test.ts`. Guard `compare-and-save-code-never-raw-kind.test.ts`.
+- [x] Z5 (S-save). DECIDED: "Save code" saves CODE the person saw. A fence whose body carries a kind rendered as the kind's component,
+      so it is not code: `extractFirstCodeBlock` skips it (`found: false`), "Save code to Scratch" is not offered for it and
+      "Save to Code" opens with the readable markdown. A real code fence after a kind fence still wins. (Editors save what is on the
+      screen; raw kind source stays reachable by the explicit source/JSON controls.)
+- [x] Z6 (S-attach). "Attach your version" opens with the kind's readable text; the frozen original handed to the capture and an
+      already-attached version stay as stored/written. Guard `attach-version-prefills-readable.test.tsx`.
+- [x] Z7 (S-share). Shared-chat link-preview/OG description: `kindTextLabel(firstUserText)`. Guard `a-shared-chat-preview-never-raw-kind.test.ts`.
+- [x] Z8 (also). Note and task list previews, task seeds, note auto-labels: all go through the ONE title projection
+      (`plainTitleFromMarkdown`), which now names a kind by its label (`plain-title.test.ts`). Toast + `AnswerTextPreview` already closed (S3).
+      Email-to-me / email dialog / public-menu email send `contentForDestination` text (W1); no client-side SMS body is built from an answer.
+
 ## Out of scope (deliberate raw views — keep)
 
 Admin debug windows and panels, Error Inspector, tool overlay "Raw" tab, directive item "Raw" tab, text-sections
