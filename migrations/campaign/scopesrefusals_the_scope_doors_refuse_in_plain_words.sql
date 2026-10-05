@@ -1,10 +1,9 @@
--- draft: SCOPES-ON-THE-STORE unproven — builder cut off by the weekly usage limit 2026-10-03; clone proof + independent verify before removing this line
 -- chair-step: it REPLACES the bodies of the lane-9 scope doors (custom.context_* and the custom._ctx_* helpers they raise from; signatures, SECURITY DEFINER, search_path and grants unchanged) so that no refusal a member can read names a function, a schema or a lane: each is one plain sentence with a remedy, the SQLSTATE kept, and the developer's sentence moved to DETAIL. A person who is not a member of the organization now hears that, in words, instead of the door's name (custom.assert_scope_door re-raises the ladder's refusal; the ladder itself is not changed). The archive/restore, item and value write doors are not touched here.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom._context_copy_fence() 255372a9abfdbb033276890dfc4b86d53ab70cbcf9ed7d222f589d2d6bb16e28
--- based-on: custom._ctx_answer(uuid, uuid, jsonb) abdb58c9b01849050f7bc75d00768f32c9602d10f31b477606ef3f90f2633578
+-- based-on: custom._ctx_answer(uuid, uuid, jsonb) 07a74f5e43298b648b203630c576884110b8c05d2e66ed348215c6a70bbeb802
 -- based-on: custom._ctx_dataset_field_holds(uuid, jsonb) c62febbce7e4ecbae16cad33c24ea742ecbd0324bc66c4c0ddc12b12e99e7688
--- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) 4a0d73378dd56d9dd0068545f8689605f44d060bb26d1a07605a4ccab103b826
+-- based-on: custom._ctx_store_scope(uuid, uuid, uuid, jsonb) 8fde07dcd4834d0edef856aedb0bf4f0fb87c0ad7b034d10d0d4872a6cb3de50
 -- based-on: custom._ctx_tree_part(uuid, uuid[], uuid[], text, uuid[], text, integer, integer) f750c20170b8a582ad2f49d4f39112d0816074a4a41bf5735fed954f8857092e
 -- based-on: custom.assert_scope_door(uuid, text) 247faf38c5cacf6a2eee661216e6673f6c09b237eb84daa5ede79b9e8348a1bf
 -- based-on: custom.context_archived_types(uuid) 988da75b1445627157636434e7b3d01d8e642a8efedc3305ffdb90590bbf1847
@@ -157,7 +156,11 @@ begin
   end if;
   perform custom.assert_scope_door(p_org, 'custom._ctx_answer');
   return (
-  -- The store row's facts are answered only to a member of its organization (or the server).
+  -- The store row's facts are answered only to a member of its organization (or the server) WHO
+  -- MAY OPEN THAT ROW (TABLE-ACTIONS): the same open-check every other row door asks
+  -- (custom._where_id_may_open -> custom.assert_client_may_open -> the one ladder), so another
+  -- person's "only me" row, or a row of a table still being copied, answers store: null, the same
+  -- as a row that is not there. A caller who can see the row gets exactly what it got before.
     select jsonb_build_object(
       'ok', true,
       'writer', custom.context_writer(p_org),
@@ -166,7 +169,9 @@ begin
                                           'version', r.version, 'archived', r.deleted_at is not null)
                   from custom.record r
                  where r.organization_id = p_org and r.id = p_id
-                   and (auth.uid() is null or iam.is_org_member(auth.uid(), p_org))))
+                   and (auth.uid() is null
+                        or (iam.is_org_member(auth.uid(), p_org)
+                            and custom._where_id_may_open(p_org, r.id, 'viewer'::public.permission_level)))))
   );
 end;
 $function$;
@@ -225,7 +230,10 @@ declare
   v_existing custom.record;
   v_patch    jsonb := '{}'::jsonb;
   v_deleted  timestamptz := nullif(p_spec ->> 'deleted_at', '')::timestamptz;
-  v_vis      text := coalesce(nullif(p_spec ->> 'visibility', ''), 'internal');
+  -- CD-LADDER (2026-10-03): a custom record is never 'personal' (every Table starts at Organization);
+  -- a spec that says so means "Only me", which is Shown to (written on insert below).
+  v_vis      text := case when nullif(p_spec ->> 'visibility', '') = 'personal' then 'internal'
+                          else coalesce(nullif(p_spec ->> 'visibility', ''), 'internal') end;
   v_k        text;
   v_v        jsonb;
   v_did      text;
@@ -348,9 +356,10 @@ begin
     end loop;
   end if;
   if v_existing.id is null then
-    insert into custom.record (id, organization_id, table_id, data_class, data, created_by, visibility, metadata, deleted_at)
+    insert into custom.record (id, organization_id, table_id, data_class, data, created_by, visibility, shown_to, metadata, deleted_at)
     values (p_scope, p_org, p_type, 'record', v_data, coalesce(nullif(p_spec ->> 'created_by', '')::uuid, auth.uid()),
             v_vis::platform.visibility,
+            case when p_spec ->> 'visibility' = 'personal' then 'only_me'::platform.shown_to end,
             jsonb_build_object('moved_from', jsonb_build_object('table', 'context.scopes', 'id', p_scope::text)),
             v_deleted);
     v_did := 'made';

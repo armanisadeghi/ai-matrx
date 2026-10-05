@@ -1,4 +1,3 @@
--- draft: SCOPES-ON-THE-STORE unproven — builder cut off by the weekly usage limit 2026-10-03; clone proof + independent verify before removing this line
 -- chair-step: it REPLACES three bodies so that a scope type's search index title is its label (plural, as the scope tree names it; singular and then the slug as fallbacks) instead of its slug: the store's change-feed twin custom._context_side_effects, the older table's search trigger function platform._search_item_sync_scope_type, and the scope_type branch of the canonical reindex platform.search_item_backfill. Signatures, SECURITY DEFINER, search_path and grants unchanged. Existing index rows are not edited: they take the label the next time the type is written or when platform.search_item_backfill('scope_type', null, 20000) is run.
 -- lane: SCOPES-ON-THE-STORE
 -- based-on: custom._context_side_effects(jsonb) 1ce88feb98f19316d34ed85ba2284ad507fa7b49040b0d70365f9b37d2a749c8

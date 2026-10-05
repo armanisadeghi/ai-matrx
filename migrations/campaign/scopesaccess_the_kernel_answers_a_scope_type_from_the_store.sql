@@ -1,17 +1,16 @@
--- draft: CHAIR-STORE-PERF 2026-10-03 — NOT superseded by CD-LADDER (production's platform.entity_row_access_attrs still answers context.scope_types off the old table through its dynamic probe; context.scope_types is still a real table there, 147 rows, every row's Table carries the same creator), but STALE: all three based-on bodies have moved, the kernel fingerprint it was proved against (b80a5056…) now reads 768da7f4… on production, and the re-record below (entity_read_kernel_expected / members_expected, the 340-answer equivalence count, the kernel_fingerprint_record row) must be re-derived on PRODUCTION's kernel — the clone's kernel differs from it today — which is the SCOPES access owner's re-base, not a header re-hash. Nothing of it may be applied as written. Remove this line only with that re-record done.
--- chair-step: lane SCOPES-READS-ACCESS (chair ruling 2026-09-29 (6), first half: "scope type creator now has a store home: move entity_row_access_attrs' scope_types lookup … to the store with the same shadow proof"). platform.entity_row_access_attrs answers the token scope_type from the scope type's context Table (same id): 'personal', the Table's creator and its organization — exactly what its dynamic probe returned from context.scope_types, not-found included. The creator is the old one because the copy carries a nameless type as nameless (lane SCOPES-STORE-HOMES, production 2026-09-30 03:09:55Z). THIS FILE REFUSES ITSELF while any scope type's Table names a creator its old row does not (Step 1's Copy again carries the rest). The kernel fingerprint moves b80a5056842aefb142b0631f545ad329 -> 2d154ca8f1a9bfd8c8532e7788635604 and is re-recorded here; platform.kernel_equivalence_check() must answer ok with the same 340 answers. Proof: scripts/campaign-tests/scopesaccess_the_kernel_answers_a_scope_type_from_the_store_compare.sql (every scope type and random ids, old body vs new; a planted store-only creator change caught).
--- based-on: platform.entity_row_access_attrs(text, text, uuid) 03bd2aa16c22bf3f3b85fdc35885580fbf6dc16880024c5276af020213d4a326
--- based-on: iam.entity_read_kernel_expected() 0a3e31f11fd8251a431963346ec106c9d496d1c781188e726088f12e01515f4b
--- based-on: iam.entity_read_kernel_members_expected() 70c196f7ba95bb82030180301b53dde5641a5a3315ca1c7293950b9bbd8dc0e9
--- lane: SCOPES-READS-ACCESS
+-- chair-step: lane SCOPES-READS-ACCESS (chair ruling 2026-09-29 (6), first half: "scope type creator now has a store home: move entity_row_access_attrs' scope_types lookup … to the store with the same shadow proof"). platform.entity_row_access_attrs answers the token scope_type from the scope type's context Table (same id): 'personal', the Table's creator and its organization — exactly what its dynamic probe returned from context.scope_types, not-found included. The creator is the old one because the copy carries a nameless type as nameless (lane SCOPES-STORE-HOMES, production 2026-09-30 03:09:55Z). THIS FILE REFUSES ITSELF while any scope type's Table names a creator its old row does not (Step 1's Copy again carries the rest). The kernel fingerprint moves 768da7f4d347c1d2546f8fcc111c9a1d -> 366d53dafbc5f280bfbdc7e20ccf78c5 and is re-recorded here; platform.kernel_equivalence_check() must answer ok with the same 340 answers. Proof: scripts/campaign-tests/scopesaccess_the_kernel_answers_a_scope_type_from_the_store_compare.sql (every scope type and random ids, old body vs new; a planted store-only creator change caught).
+-- based-on: platform.entity_row_access_attrs(text, text, uuid) 5bbabb8a59f92f15197401774bb6f5587eeaf18db053c751bc80fed31de87d8c
+-- based-on: iam.entity_read_kernel_expected() e446ffb53ea97df6f15cdd350a7919bef821da8c4a58823fbe054ab6d24b6aef
+-- based-on: iam.entity_read_kernel_members_expected() 51849b67e329a5ed6396e257915ca0cb2d54cdf208b17be022c78044d55728af
+-- lane: SCOPES-READS-ACCESS; re-based on production's kernel by FINISH-THE-SWITCH FTS-1 2026-10-05
 -- INVERSE: migrations/inverse/scopesaccess_the_kernel_answers_a_scope_type_from_the_store_down.sql
 -- window-class: one kernel function body and its re-record; no DDL on any table.
 
 do $pre$
 declare v_chk jsonb; v_diff int;
 begin
-  if iam.entity_read_kernel_fingerprint() is distinct from 'b80a5056842aefb142b0631f545ad329' then
-    raise exception 'scopesaccess: the live access-kernel fingerprint is % but this file was proved against b80a5056842aefb142b0631f545ad329; re-derive the file.', iam.entity_read_kernel_fingerprint();
+  if iam.entity_read_kernel_fingerprint() is distinct from '768da7f4d347c1d2546f8fcc111c9a1d' then
+    raise exception 'scopesaccess: the live access-kernel fingerprint is % but this file was proved against 768da7f4d347c1d2546f8fcc111c9a1d; re-derive the file.', iam.entity_read_kernel_fingerprint();
   end if;
   select count(*) into v_diff from context.scope_types s join custom.record t on t.id = s.id
    where t.created_by is distinct from s.created_by;
@@ -65,12 +64,13 @@ BEGIN
 
   -- 🚨 SCOPES-READS-ACCESS (2026-09-29) — A SCOPE AND A CONTEXT FIELD ARE ANSWERED FROM THE RECORD STORE.
   -- A scope is the Record of its context Table under the same id, and a context field the Field record
-  -- under the same id; the scopes cutover moves context.* to the graveyard, after which the dynamic
+  -- under the same id; the scopes cutover moves context.* to the deprecated, after which the dynamic
   -- probe below would find nothing. Each arm returns exactly what that probe returns on the old table
   -- today, including its not-found answer (every output NULL: a SELECT INTO over no row), proved by
   -- the lane's shadow compare over every scope and field. This is a hand-written arm beside the
   -- generated ones on purpose: platform.rebuild_static_row_probes() generates probes of a table by its
-  -- own name, and these answer for a table that is leaving (a scope, a scope type, a context field).
+  -- own name, and these answer for a table that is leaving. A scope type is answered from its Table
+  -- (FINISH-THE-SWITCH FTS-1, below).
   IF p_schema = 'context' AND p_table = 'scopes' THEN
     SELECT r.visibility, r.created_by, r.organization_id, true
       INTO o_vis, o_owner, o_org, o_found
@@ -79,9 +79,10 @@ BEGIN
      WHERE r.id = p_id AND r.data_class = 'record' AND t.data ->> 'kept_for' = 'context';
     RETURN;
   END IF;
-  -- A scope type is its context Table under the same id (lane SCOPES-READS-ACCESS, 2026-09-30): the old probe answers
-  -- 'personal', its creator and its organization, and the copy now carries a nameless type as nameless (lane
-  -- SCOPES-STORE-HOMES, 03:09Z), so the Table's own creator is the old one.
+  -- FINISH-THE-SWITCH FTS-1 (2026-10-05; first written by SCOPES-READS-ACCESS 2026-09-30): a scope type is
+  -- answered from its context Table (same id): 'personal', the Table's creator and its organization — exactly
+  -- what the dynamic probe returned from context.scope_types, not-found included (every scope type's Table
+  -- carries the old row's creator: 0 differ on production, 2026-10-05).
   IF p_schema = 'context' AND p_table = 'scope_types' THEN
     SELECT 'personal'::platform.visibility, t.created_by, t.organization_id, true
       INTO o_vis, o_owner, o_org, o_found
@@ -196,14 +197,14 @@ CREATE OR REPLACE FUNCTION iam.entity_read_kernel_expected()
  LANGUAGE sql
  IMMUTABLE
 AS $function$
-  SELECT '2d154ca8f1a9bfd8c8532e7788635604'::text
+  SELECT '366d53dafbc5f280bfbdc7e20ccf78c5'::text
 $function$;
 CREATE OR REPLACE FUNCTION iam.entity_read_kernel_members_expected()
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
 AS $function$
-  SELECT '{"members": {"files.is_crawl_artifact(p_file_id uuid)": "7eb586213cedff72ee4abb4dd60a0433", "iam.candidate_admits(p_type text, p_id uuid)": "aaafd2a1d1fb3e3579c326fe11d70cac", "iam.accessible_entity_candidates(p_type text)": "ff4a1d407ed7e37438cb773f0d5ce80e", "iam.accessible_child_parents(p_child_type text)": "97be40a64243f6225d0eadfb82e33827", "iam.has_org_access_for(p_user_id uuid, p_org uuid)": "05abb4362cb28aa7d775eedf975889f9", "public.is_pack_curator(p_user uuid, p_pack_id uuid)": "5e6f2b3c9c4f0f9011655974ef1532b7", "public.is_org_admin_for(p_user_id uuid, p_org_id uuid)": "ac5072f5e23eb0dfffb7ef05e9899ad4", "files.crawl_site_conveys(p_user_id uuid, p_file_id uuid)": "5fadac4e0d1ad31e788cdb446422d8fc", "public._edu_can_read_via_assignment(p_type text, p_id uuid)": "d97bbb3323238c5b8afb88e3e6337434", "public.is_rulebook_curator(p_user uuid, p_rulebook_id uuid)": "b781c4c0210974d680f53a603cb723aa", "public.library_is_open(p_entity_type text, p_entity_id uuid)": "36c934bb956df459e334c15085aacd30", "public.user_can_read_data_store_via_grant(p_user uuid, p_store uuid)": "63b3fd7f798351c9c8e7517fcfedc3fc", "public._edu_can_read_via_assignment(p_user_id uuid, p_type text, p_id uuid)": "a0d7ac13ea23ec81b8eb15bbb87e3cbb", "public.user_can_read_via_library_grant(p_user uuid, p_type text, p_id uuid)": "a49b44fa2f0de5d3aecace9d950f49e4", "files.has_access_for(p_user_id uuid, p_file_id uuid, p_required permission_level)": "d324b5143d4172b0a6b8b8188930ff7b", "iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer)": "9fe155aa00093efd6fc9c89ab94b8479", "iam.has_access_for(p_user_id uuid, p_type text, p_id uuid, p_required permission_level)": "c7e2eec401c991f06be4bf28453548e5", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level)": "e37fdacb359b9a528d7aef6b2bfb5270", "iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)": "a6ab1c2ef321a02fc89d6e453c37bc4a", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean)": "e6b147f6962003e0dc2c8b826ef4ee06", "public.has_permission_for(p_user_id uuid, p_resource_type text, p_resource_id uuid, p_required_permission permission_level)": "9dc1eecf01de31f4db0b0e07b1665a2b", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean, p_path text[])": "746f0149143475d84be45497155a7b27", "platform.entity_row_access_attrs(p_schema text, p_table text, p_id uuid, OUT o_vis platform.visibility, OUT o_owner uuid, OUT o_org uuid, OUT o_found boolean)": "425fc8ffd202711eda0422a1cbda0592"}, "fingerprint": "2d154ca8f1a9bfd8c8532e7788635604"}'::jsonb
+  SELECT '{"members": {"files.is_crawl_artifact(p_file_id uuid)": "7eb586213cedff72ee4abb4dd60a0433", "iam.candidate_admits(p_type text, p_id uuid)": "aaafd2a1d1fb3e3579c326fe11d70cac", "iam.accessible_entity_candidates(p_type text)": "ff4a1d407ed7e37438cb773f0d5ce80e", "iam.accessible_child_parents(p_child_type text)": "97be40a64243f6225d0eadfb82e33827", "iam.has_org_access_for(p_user_id uuid, p_org uuid)": "05abb4362cb28aa7d775eedf975889f9", "public.is_pack_curator(p_user uuid, p_pack_id uuid)": "5e6f2b3c9c4f0f9011655974ef1532b7", "public.is_org_admin_for(p_user_id uuid, p_org_id uuid)": "ac5072f5e23eb0dfffb7ef05e9899ad4", "files.crawl_site_conveys(p_user_id uuid, p_file_id uuid)": "5fadac4e0d1ad31e788cdb446422d8fc", "public._edu_can_read_via_assignment(p_type text, p_id uuid)": "d97bbb3323238c5b8afb88e3e6337434", "public.is_rulebook_curator(p_user uuid, p_rulebook_id uuid)": "b781c4c0210974d680f53a603cb723aa", "public.library_is_open(p_entity_type text, p_entity_id uuid)": "36c934bb956df459e334c15085aacd30", "public.user_can_read_data_store_via_grant(p_user uuid, p_store uuid)": "63b3fd7f798351c9c8e7517fcfedc3fc", "public._edu_can_read_via_assignment(p_user_id uuid, p_type text, p_id uuid)": "a0d7ac13ea23ec81b8eb15bbb87e3cbb", "public.user_can_read_via_library_grant(p_user uuid, p_type text, p_id uuid)": "a49b44fa2f0de5d3aecace9d950f49e4", "files.has_access_for(p_user_id uuid, p_file_id uuid, p_required permission_level)": "d324b5143d4172b0a6b8b8188930ff7b", "iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer)": "9fe155aa00093efd6fc9c89ab94b8479", "iam.has_access_for(p_user_id uuid, p_type text, p_id uuid, p_required permission_level)": "c7e2eec401c991f06be4bf28453548e5", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level)": "e37fdacb359b9a528d7aef6b2bfb5270", "iam.accessible_entity_ids(p_type text, p_required permission_level, p_depth integer, p_include_public boolean)": "d61c767a9bf880a35fba29e44faf546a", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean)": "e6b147f6962003e0dc2c8b826ef4ee06", "public.has_permission_for(p_user_id uuid, p_resource_type text, p_resource_id uuid, p_required_permission permission_level)": "9dc1eecf01de31f4db0b0e07b1665a2b", "iam.has_access_for_base(p_user_id uuid, p_type text, p_id uuid, p_required permission_level, p_include_public boolean, p_path text[])": "b664c84d0199c9489847ca146f2b2d5e", "platform.entity_row_access_attrs(p_schema text, p_table text, p_id uuid, OUT o_vis platform.visibility, OUT o_owner uuid, OUT o_org uuid, OUT o_found boolean)": "760dc66d23a0c8ef2b1f06f9a1954f19"}, "fingerprint": "366d53dafbc5f280bfbdc7e20ccf78c5"}'::jsonb
 $function$;
 
 do $post$
@@ -227,9 +228,9 @@ begin
   end if;
   insert into platform.kernel_fingerprint_record
     (fingerprint_from, fingerprint_to, members_changed, ruling, fixture_version, evidence, via, target)
-  values ('b80a5056842aefb142b0631f545ad329', '2d154ca8f1a9bfd8c8532e7788635604',
+  values ('768da7f4d347c1d2546f8fcc111c9a1d', '366d53dafbc5f280bfbdc7e20ccf78c5',
           array['platform.entity_row_access_attrs(p_schema text, p_table text, p_id uuid, OUT o_vis platform.visibility, OUT o_owner uuid, OUT o_org uuid, OUT o_found boolean)'],
           'SCOPES-READS-ACCESS (2026-09-30): entity_row_access_attrs answers the token scope_type from its context Table (personal, the Table''s creator, its organization), exactly its dynamic probe''s answer now that the copy carries a nameless type as nameless; the compare over every scope type found 0 differences.',
           'v2', jsonb_build_object('after', v_chk - 'answers', 'proof', 'scripts/campaign-tests/scopesaccess_the_kernel_answers_a_scope_type_from_the_store_compare.sql'),
-          'campaign scopesaccess_the_kernel_answers_a_scope_type_from_the_store.sql / lane SCOPES-READS-ACCESS', 'platform.entity_row_access_attrs');
+          'campaign scopesaccess_the_kernel_answers_a_scope_type_from_the_store.sql / lane FINISH-THE-SWITCH (FTS-1)', 'platform.entity_row_access_attrs');
 end $post$;

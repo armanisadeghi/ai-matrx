@@ -133,7 +133,11 @@ begin
   end if;
   perform custom.assert_client_may_reach(p_org, 'custom._ctx_answer');
   return (
-  -- The store row's facts are answered only to a member of its organization (or the server).
+  -- The store row's facts are answered only to a member of its organization (or the server) WHO
+  -- MAY OPEN THAT ROW (TABLE-ACTIONS): the same open-check every other row door asks
+  -- (custom._where_id_may_open -> custom.assert_client_may_open -> the one ladder), so another
+  -- person's "only me" row, or a row of a table still being copied, answers store: null, the same
+  -- as a row that is not there. A caller who can see the row gets exactly what it got before.
     select jsonb_build_object(
       'ok', true,
       'writer', custom.context_writer(p_org),
@@ -142,7 +146,9 @@ begin
                                           'version', r.version, 'archived', r.deleted_at is not null)
                   from custom.record r
                  where r.organization_id = p_org and r.id = p_id
-                   and (auth.uid() is null or iam.is_org_member(auth.uid(), p_org))))
+                   and (auth.uid() is null
+                        or (iam.is_org_member(auth.uid(), p_org)
+                            and custom._where_id_may_open(p_org, r.id, 'viewer'::public.permission_level)))))
   );
 end;
 $function$;
@@ -201,7 +207,10 @@ declare
   v_existing custom.record;
   v_patch    jsonb := '{}'::jsonb;
   v_deleted  timestamptz := nullif(p_spec ->> 'deleted_at', '')::timestamptz;
-  v_vis      text := coalesce(nullif(p_spec ->> 'visibility', ''), 'internal');
+  -- CD-LADDER (2026-10-03): a custom record is never 'personal' (every Table starts at Organization);
+  -- a spec that says so means "Only me", which is Shown to (written on insert below).
+  v_vis      text := case when nullif(p_spec ->> 'visibility', '') = 'personal' then 'internal'
+                          else coalesce(nullif(p_spec ->> 'visibility', ''), 'internal') end;
   v_k        text;
   v_v        jsonb;
   v_did      text;
@@ -324,9 +333,10 @@ begin
     end loop;
   end if;
   if v_existing.id is null then
-    insert into custom.record (id, organization_id, table_id, data_class, data, created_by, visibility, metadata, deleted_at)
+    insert into custom.record (id, organization_id, table_id, data_class, data, created_by, visibility, shown_to, metadata, deleted_at)
     values (p_scope, p_org, p_type, 'record', v_data, coalesce(nullif(p_spec ->> 'created_by', '')::uuid, auth.uid()),
             v_vis::platform.visibility,
+            case when p_spec ->> 'visibility' = 'personal' then 'only_me'::platform.shown_to end,
             jsonb_build_object('moved_from', jsonb_build_object('table', 'context.scopes', 'id', p_scope::text)),
             v_deleted);
     v_did := 'made';

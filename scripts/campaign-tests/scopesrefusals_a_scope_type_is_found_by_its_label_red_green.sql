@@ -59,7 +59,7 @@ begin
 
   -- ══ T3: the canonical reindex ══
   update platform.search_item set title = 'clients-2026', title_norm = 'clients 2026' where entity_token = 'scope_type' and entity_id = v_type;
-  select max(id) into v_after from context.scope_types where id < v_type;
+  select id into v_after from context.scope_types where id < v_type order by id desc limit 1;
   perform platform.search_item_backfill('scope_type', v_after, 20000);
   select title into v_title from platform.search_item where entity_token = 'scope_type' and entity_id = v_type;
   if v_title is distinct from 'Pet Owners' then
@@ -75,7 +75,7 @@ begin
 
   -- ══ T5: fallbacks ══
   perform set_config('role', 'authenticated', true);
-  v_t2 := (custom.context_type_write(c_cedar, null, '{"label_singular":"Referral Source","slug":"referral-sources"}'::jsonb) -> 'row' ->> 'id')::uuid;
+  v_t2 := (custom.context_type_write(c_cedar, null, '{"label_singular":"Referral Source","label_plural":" ","slug":"referral-sources"}'::jsonb) -> 'row' ->> 'id')::uuid;
   perform set_config('role', 'none', true);
   select title into v_title from platform.search_item where entity_token = 'scope_type' and entity_id = v_t2;
   if v_title is distinct from 'Referral Source' then

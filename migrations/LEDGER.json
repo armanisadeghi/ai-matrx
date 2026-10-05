@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:59:44.994Z",
+  "generated_at": "2026-10-05T03:59:57.318Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -5173,6 +5173,12 @@
       "filename": "scopesaccess_the_class_and_access_readers_read_the_store.sql",
       "checksum": "985413aa8b27aef5d3568c980a36ca70403a37f03dada9483dce6b7fae3a6075",
       "applied_at": "2026-09-30 01:37:47.110873+00"
+    },
+    "migrations/campaign/scopesaccess_the_kernel_answers_a_scope_type_from_the_store.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesaccess_the_kernel_answers_a_scope_type_from_the_store.sql",
+      "checksum": "7d6aea6a409e8837c3d923728ba75884a721d4d02234e0405aab332ff4c955df",
+      "applied_at": "2026-10-05 03:59:52.96431+00"
     },
     "migrations/campaign/scopesaccess_the_kernel_lists_scopes_from_the_store.sql": {
       "source": "matrx-frontend",
