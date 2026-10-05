@@ -8,7 +8,9 @@
 //
 //   gutter      the page's left/right inset                          12px phone · 16px ≥640px
 //   top         header bottom → the page's first block               16px phone · 24px ≥640px
-//   block gap   between two big blocks (cards → list, list → pager…) 16px phone · 24px ≥640px
+//   block gap   between two big blocks (page top → list, section → section) 24px · 32px ≥640px
+//               (measured before: 22-24px under the agents feature cards, which the owner
+//               called too tight — "we need more space above and below them")
 //   end         the page's TOTAL bottom space                        = gutter (12px · 16px)
 //
 // Why end = gutter, not the block gap: the page's content sits in one even frame — the space
@@ -32,8 +34,8 @@
 
 /** The page-structure scale, in px, per breakpoint (`wide` applies at ≥ PAGE_RHYTHM_WIDE_MIN_PX). */
 export const PAGE_RHYTHM = {
-  narrow: { gutter: 12, top: 16, blockGap: 16, end: 12 },
-  wide: { gutter: 16, top: 24, blockGap: 24, end: 16 },
+  narrow: { gutter: 12, top: 16, blockGap: 24, end: 12 },
+  wide: { gutter: 16, top: 24, blockGap: 32, end: 16 },
 } as const;
 
 /** The viewport width the wide scale starts at (Tailwind `sm`). */

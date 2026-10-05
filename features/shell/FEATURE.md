@@ -85,7 +85,7 @@ rail's icon column (x = 12px) — collapsed = icon, expanded = icon + name.
 
 ## PAGE RHYTHM — one spacing scale for page structure, the bottom once (owner, 2026-10-05)
 
-- Tokens on `:root` (`styles/shell.css`), numbers + rules in `lib/layout/page-rhythm.ts`, pinned by `lib/layout/page-rhythm.test.ts`: `--matrx-page-gutter` 12/16px, `--matrx-page-top` 16/24, `--matrx-page-block-gap` 16/24 (between BIG blocks only; control sets keep their dense gaps), `--matrx-page-end` = the gutter (phone / ≥640px).
+- Tokens on `:root` (`styles/shell.css`), numbers + rules in `lib/layout/page-rhythm.ts`, pinned by `lib/layout/page-rhythm.test.ts`: `--matrx-page-gutter` 12/16px, `--matrx-page-top` 16/24, `--matrx-page-block-gap` 24/32 (between BIG blocks only; control sets keep their dense gaps), `--matrx-page-end` = the gutter (phone / ≥640px).
 - The runway is the page end ONCE: `--matrx-floating-clearance` = what floats + page end, and a scroller that takes the runway loses its own bottom padding. A non-scrolling page surface (`data-matrx-page-end`: the `EntityListPage` body) gets no runway; it pads its foot by page end + `--matrx-floating-fixed-measured` (chrome WITHOUT `data-matrx-floating-follows-page`, i.e. not the assists pill that already rests above the pager) — so a pager never sits under the page assistant.
 - Guard: the same dev hook screams `[page-rhythm]` (amber outline) when a page ends with more than page end + 4px under its last element; `window.__matrxPageRhythmProbe()` runs it. Walk + screenshots: `scripts/page-rhythm-walk.mjs`.
 

@@ -1904,7 +1904,7 @@ body[style*="pointer-events: none"] {
 :root {
   --matrx-page-gutter: 0.75rem;
   --matrx-page-top: 1rem;
-  --matrx-page-block-gap: 1rem;
+  --matrx-page-block-gap: 1.5rem;
   --matrx-page-end: var(--matrx-page-gutter);
 }
 
@@ -1912,7 +1912,7 @@ body[style*="pointer-events: none"] {
   :root {
     --matrx-page-gutter: 1rem;
     --matrx-page-top: 1.5rem;
-    --matrx-page-block-gap: 1.5rem;
+    --matrx-page-block-gap: 2rem;
   }
 }
 

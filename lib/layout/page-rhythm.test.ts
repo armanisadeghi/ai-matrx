@@ -30,10 +30,10 @@ describe("the page-rhythm scale", () => {
       SHELL_CSS.slice(SHELL_CSS.indexOf("/* PAGE RHYTHM")),
     )?.[1] ?? "";
 
-  it("is the owner's scale: 12/16 gutter, 16/24 top, 16/24 between big blocks, end = gutter", () => {
+  it("is the owner's scale: 12/16 gutter, 16/24 top, 24/32 between big blocks, end = gutter", () => {
     expect(PAGE_RHYTHM).toEqual({
-      narrow: { gutter: 12, top: 16, blockGap: 16, end: 12 },
-      wide: { gutter: 16, top: 24, blockGap: 24, end: 16 },
+      narrow: { gutter: 12, top: 16, blockGap: 24, end: 12 },
+      wide: { gutter: 16, top: 24, blockGap: 32, end: 16 },
     });
     for (const scale of [PAGE_RHYTHM.narrow, PAGE_RHYTHM.wide]) expect(scale.end).toBe(scale.gutter);
   });
