@@ -8,7 +8,7 @@
 // `services/agent_studio/from_chat.py`). Masterwork: a draft Rulebook plus the existing conversation
 // importer, opened with this chat already selected. Client: `features/agents/from-chat/service.ts`.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Layers } from "lucide-react";
@@ -24,6 +24,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   FROM_CHAT_STEPS,
+  latestAgentFromChat,
   makeAgentFromChat,
   startMasterworkFromChat,
   type FromChatResult,
@@ -88,6 +89,23 @@ function AgentFromChatWindowInner({
   const masterworkToken = useRef<string | null>(null);
 
   const title = conversationTitle?.trim() || "this chat";
+
+  // The last agent made from this chat, read back from the record (it outlives a reload).
+  const [previous, setPrevious] = useState<FromChatResult | null>(null);
+  useEffect(() => {
+    if (!conversationId) return;
+    let live = true;
+    latestAgentFromChat(conversationId)
+      .then((found) => {
+        if (live) setPrevious(found);
+      })
+      .catch(() => {
+        // Only a convenience door: the build itself never depends on it.
+      });
+    return () => {
+      live = false;
+    };
+  }, [conversationId]);
 
   const buildAgent = async () => {
     if (!conversationId) return;
@@ -163,7 +181,7 @@ function AgentFromChatWindowInner({
       minWidth={420}
       minHeight={220}
       width={phase === "done" ? 960 : 520}
-      height={phase === "done" ? 680 : phase === "idle" ? 240 : 420}
+      height={phase === "done" ? 680 : phase === "idle" ? (previous ? 290 : 240) : 420}
       position="center"
       onClose={onClose}
       overlayId="agentFromChatWindow"
@@ -190,6 +208,22 @@ function AgentFromChatWindowInner({
                 ? "One agent that gets this result on the first try."
                 : "A Rulebook built from this chat, for a multi-step job."}
             </p>
+            {previous ? (
+              <div className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
+                <AGENT_ICON className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate text-xs">Made: {previous.agent_name}</span>
+                <Button
+                  variant="quiet"
+                  onClick={() => {
+                    setResult(previous);
+                    setTab("compare");
+                    setPhase("done");
+                  }}
+                >
+                  Show result
+                </Button>
+              </div>
+            ) : null}
             <div className="flex justify-end">
               {lane === "agent" ? (
                 <Button variant="primary" icon={<AGENT_ICON className="h-4 w-4" />} onClick={buildAgent} disabled={!conversationId}>

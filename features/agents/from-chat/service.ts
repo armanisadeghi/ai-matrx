@@ -16,6 +16,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import { adminDoorOpen } from "@/lib/api/adminDoor";
 import { createDraftRulebook } from "@/features/masterwork/service";
+import { supabase } from "@/utils/supabase/client";
 import type {
   AgentStudioFromChatProgressData,
   AgentStudioFromChatResultData,
@@ -103,6 +104,25 @@ export async function makeAgentFromChat(
     return { ok: false, says: "The run ended without the new agent. Check your agents list.", failedAt: lastStep };
   }
   return { ok: true, result: done };
+}
+
+/**
+ * The newest agent already made from this chat, with its stored result — what the window shows
+ * when it reopens after a reload (the server keeps the result on the agent:
+ * `agent.definition.metadata.agent_studio_from_chat`). Reads only agents the viewer may see.
+ */
+export async function latestAgentFromChat(conversationId: string): Promise<FromChatResult | null> {
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("definition")
+    .select("metadata, created_at")
+    .eq("metadata->agent_studio_from_chat->>conversation_id", conversationId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error) throw new Error(error.message);
+  const stored = (data?.[0]?.metadata as Record<string, unknown> | undefined)?.agent_studio_from_chat;
+  return isResult(stored) ? stored : null;
 }
 
 /**
