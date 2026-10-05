@@ -84,7 +84,7 @@ import { useAgentOrgChart } from "../useAgentOrgChart";
 import { OrgChartActivityProvider, useOrgChartActivity } from "../useOrgChartActivity";
 import { loadOrgDirectory } from "../useBoxIdentity";
 import type { OrgPosition } from "../positionsService";
-import { AgentOrgCard, boxHref, cardIconButton } from "./AgentOrgCard";
+import { AgentOrgCard, boxHref } from "./AgentOrgCard";
 import { OrgBoxPicker } from "./OrgBoxPicker";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -757,17 +757,13 @@ export function AgentOrgChartView({
                   menu={
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        {/* Sized with its row (Quick look, Open) — the card hover bar moves to the
-                            28px control together with every other card bar, never one button alone. */}
-                        <button
-                          type="button"
+                        <Button
+                          variant="quiet"
+                          icon={<MoreHorizontal />}
                           aria-label="More actions"
                           title="More actions"
                           onClick={(e) => e.stopPropagation()}
-                          className={cardIconButton}
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </button>
+                        />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-72" onClick={(e) => e.stopPropagation()}>
                         {cardMenu(n.node, { Item: DropdownMenuItem, Label: DropdownMenuLabel, Sep: DropdownMenuSeparator })}

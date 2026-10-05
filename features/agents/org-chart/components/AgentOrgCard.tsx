@@ -11,6 +11,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, Briefcase, Copy, Lightbulb, Loader2, Network, UsersRound } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { AgentPeekButton } from "@/features/agents/orchestras/components/AgentPeekButton";
@@ -26,11 +27,6 @@ import { ORG_BOX_LABEL } from "../constants";
 import { useBoxIdentity } from "../useBoxIdentity";
 import { useAgentActivity, type AgentActivity } from "../useOrgChartActivity";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-
-
-/** The card hover bar's icon button (same as AgentPeekButton and the Orchestra cards). */
-export const cardIconButton =
-  "rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 
 /** Where a box opens. A position has no page of its own: its menu edits it in place. */
 export function boxHref(d: AgentOrgNodeData): string | null {
@@ -49,18 +45,16 @@ function PeekButton({ token, id }: { token: string; id: string }) {
   if (!hasPeek(token)) return null;
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="quiet"
+        icon={<Lightbulb />}
         aria-label="Quick look"
         title="Quick look"
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
-        className={cardIconButton}
-      >
-        <Lightbulb className="h-3.5 w-3.5" />
-      </button>
+      />
       {open && (
         <span onClick={(e) => e.stopPropagation()}>
           <ResourcePeekHost kind={token} id={id} onClose={() => setOpen(false)} />
@@ -222,7 +216,7 @@ export function AgentOrgCard({
       <div
         data-no-pan
         className={cn(
-          "absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded-md border border-border bg-card opacity-0 shadow-sm transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100",
+          "absolute right-1.5 top-1.5 flex items-center rounded-md border border-border bg-card opacity-0 shadow-sm transition-opacity group-hover/card:opacity-100 group-focus-within/card:opacity-100",
           state.selected && "opacity-100",
         )}
       >
@@ -234,9 +228,9 @@ export function AgentOrgCard({
           <PeekButton token={d.boxType} id={d.entityId} />
         )}
         {href && (
-          <Link href={href} onClick={(e) => e.stopPropagation()} aria-label={openLabel} title={openLabel} className={cardIconButton}>
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
+          <Button variant="quiet" icon={<ArrowUpRight />} asChild>
+            <Link href={href} onClick={(e) => e.stopPropagation()} aria-label={openLabel} title={openLabel} />
+          </Button>
         )}
         {menu}
       </div>
