@@ -78,7 +78,7 @@ Every stream item below adds its case there.
 - [x] B3. Nested search/rank/rag/scraper/seo-ruling helpers drop to the JSON card when the route declines.
       Closed at the leaf: `renderJsonFallback` → `JsonBlock` now draws a settled kind through `AnswerValueView`
       (a loop back to the same value keeps the code card).
-- [ ] B4. `AgentResultBlock` turns unparseable / nested output into a ```json fence.
+- [x] B4. `AgentResultBlock` turned unparseable / nested output into a ```json fence. (→ a kind nested in the payload goes to `AnswerValueView` (value); kind text that never parsed goes to `AnswerValueView` (text, broken state); the private depth-4 `carriesKind` is gone, `valueCarriesKind` is the one detector; kindless unparseable JSON keeps its fence. Guard `agent-result-nested-kind-routes-through-the-kind-door.test.tsx`)
 - [x] B5. "Show data" toggles on workflow-step, function, fetch, search, categorization result blocks. (→ `data-events/ToggledDataBody`: a payload carrying `__kind` at any depth → `AnswerValueView`; kindless stays JSON)
 - [x] B6. Invalid-payload fallbacks on decision-answers, list-change-proposal, map-topic-proposal blocks. (→ alert heading over `StructuredValueView` with the kind + "could not be read"; raw data behind its explicit toggle)
 - [x] B7. `MarkdownStream`'s top-level error boundary (and EnhancedChatMarkdown's give-up path) fall to `PlainTextFallback`, which printed kind JSON raw. (→ each kind region through `KindInstanceRender` inside its own error boundary, then `kindTextToMarkdown`; truncated kind → "<Kind> could not be read"; kindless stays plain. Guard: `internal-handlers/__tests__/plain-text-fallback-never-raw.test.tsx`)
@@ -170,10 +170,10 @@ Every stream item below adds its case there.
       toast "Opened as a preview — not saved".
 - [x] S6. "Ask about this meeting". Answer drawn through `AnswerValueView` (no unit test — workspace too heavy).
 - [x] S7. Assignments demo. Output text and input values through `AnswerValueView` (no unit test).
-- [ ] S8. Research review/repair page. Already `BasicMarkdownContent` — left to the bottom-layer lane (C4).
+- [x] S8. Research review/repair page (`RagReviewRepairWorkspace`). `BasicMarkdownContent` is gated by `KindTextGate`; verified with the page's exact props in `kind-text-gate.test.tsx`.
 - [x] S9. Assist cards. Suspense fallback now `AnswerTextPreview`; the body is `BasicMarkdownContent` (C4 lane).
 - [x] S10. Scheduled-run results. Summary via `kindTextPreview`; kind-carrying result metadata via `AnswerValueView`.
-- [ ] S11. Vision interview live turn card. Already `BasicMarkdownContent` — left to the bottom-layer lane (C4).
+- [x] S11. Vision interview live turn card. `BasicMarkdownContent` is gated by `KindTextGate`; verified with the card's exact props (streaming, partial kind too) in `kind-text-gate.test.tsx`.
 - [x] S12. Old AI chat dialogs (flashcards, strategy brief) on `MarkdownRenderer`.
       Closed at the leaf: `MarkdownRenderer` hands `__kind` text to `MarkdownStream` (`KindTextGate`).
 - [x] S13. Voice agent transcript. Assistant turns via `kindTextPreview` (spoken text; a kind is never read out).
@@ -247,6 +247,30 @@ no longer lifted; `embedded-kind-container-recovery.test.ts` updated).
       (midstream A9 describe). Workflow run page: the recorded real run judged frame by frame, never raw
       (`real-run-partial-kinds.test.ts`). Message edit: `saveAnswerEdit` writes text parts; the re-render is the static
       splitter (covered by V1/V2 parity) — no dedicated UI test.
+
+## W. Writers — a human destination never receives raw kind JSON (2026-10-05)
+
+Clipboard, file, CSV/XLSX/Sheet, notes, task, email, speech: the answer goes out as the kind's markdown
+(`kindTextToMarkdown` for text, `kindValueToMarkdown` for a value). `__kind` stays in anything stored or handed to
+a machine; explicit raw controls ("Copy JSON", the extraction "JSON" download, the agent/json copy flavors) stay raw.
+
+- [x] W1. `PublicMessageOptionsMenu` (Copy text / Google Docs / reasoning / HTML preview / Copy HTML page / Save as file /
+      Scratch / Notes / Tasks / Email / speech) converts the answer once at the top. Guard
+      `public-menu-never-copies-raw-kind.test.tsx`.
+- [x] W2. Scheduled runs: `runCsvRows` `result_summary` (CSV download and Google Sheet export). Guard `run-csv-never-raw-kind.test.ts`.
+- [x] W3. Page extraction exports: `cellToHumanString` feeds CSV / XLSX / TSV / markdown table / the Univer workbook push
+      (string cells that are kind JSON, object cells carrying a kind, the "Response" text). The plain "JSON" download
+      stays DATA — its label says JSON, a machine format; the data-table push (`datasetGrid`) stays raw because it STORES the
+      value. Guard `export-never-raw-kind.test.ts`.
+- [x] W4. Data-table copies: `kindCellCopyText` (same `kindCell` door as the display's chip) feeds bulk-row TSV, the viewer's
+      cell/range copy (`getCellText` → `useGridSelection`), row copy, context-menu scope. Guard
+      `a-kind-in-a-cell-copies-as-its-markdown.test.ts` (the viewer wiring itself has no render test — workspace too heavy).
+- [x] W5. Tool-call `CopyButtons` `human` flavor: `resultToHuman` / `bundleToHuman` (one helper, `tool-call-visualization/utils/human-copy.ts`)
+      for `ToolTabBodies`, `GenericRenderer`, the window panel's all-tools copy. Workflow `workflowFailureHuman`
+      (`readout-parts`, `RunActivityFeed`) copies the failure sentence exactly as rendered — an error explanation, not a
+      result value: not a leak. Guard `tool-copy-human-is-never-raw-kind.test.ts`.
+- [x] W6. `AgentExecutionTestModal` plain "Copy" now copies the markdown of what the harness shows. Guard
+      `execution-test-modal-never-raw-kind.test.tsx` (new case).
 
 ## Out of scope (deliberate raw views — keep)
 

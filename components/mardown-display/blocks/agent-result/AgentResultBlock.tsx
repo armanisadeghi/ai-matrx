@@ -61,7 +61,9 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AgentContentList } from "@/features/workflow-runtime/components/AgentContentList";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
-import { KIND_KEY, readObjectKind } from "@ai-matrx/content-ir";
+import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { hasKindKey, valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { readObjectKind } from "@ai-matrx/content-ir";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { cn } from "@/lib/utils";
 import type { AgentResultData } from "@/features/content-ir/kinds/agent-result";
@@ -95,24 +97,6 @@ function readData(serverData: unknown): AgentResultData | null {
 
 function fenceJson(text: string): string {
   return `\`\`\`json\n${text}\n\`\`\``;
-}
-
-/** Depth past which a nested `__kind` would not route anyway. */
-const KIND_SCAN_DEPTH = 4;
-
-/**
- * True when this payload names a kind somewhere the pipeline can reach — the
- * ONLY reason to fence it rather than render it. Without one, the fence is a
- * code block and nothing more.
- */
-function carriesKind(value: unknown, depth = 0): boolean {
-  if (depth > KIND_SCAN_DEPTH) return false;
-  if (Array.isArray(value)) {
-    return value.some((item) => carriesKind(item, depth + 1));
-  }
-  if (!isRecord(value)) return false;
-  if (typeof value[KIND_KEY] === "string") return true;
-  return Object.values(value).some((item) => carriesKind(item, depth + 1));
 }
 
 /** Parse or null — a string that only LOOKS like JSON stays text. */
@@ -283,7 +267,7 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
   const jsonValue = structured ?? (jsonText === null ? null : safeParse(jsonText));
   // Zero data loss: text that only LOOKED like JSON never parsed, so it keeps
   // the fence rather than becoming an empty document.
-  const onTheFloor = jsonValue !== null && !carriesKind(jsonValue);
+  const onTheFloor = jsonValue !== null && !valueCarriesKind(jsonValue);
   // A payload naming its own kind renders through THE instance renderer,
   // directly. It used to be re-serialized into a ```json fence and pushed back
   // through the markdown pipeline in the hope the detector would re-route it —
@@ -308,6 +292,15 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
       ) : jsonText !== null ? (
         onTheFloor ? (
           <StructuredValueView value={jsonValue} />
+        ) : jsonValue !== null ? (
+          // A kind NESTED in the payload (not the top-level value): the one
+          // answer door draws it through the value grid's kind route — it is
+          // never re-serialised into a JSON fence for the pipeline to rescue.
+          <AnswerValueView value={jsonValue} />
+        ) : hasKindKey(jsonText) ? (
+          // Kind text that never parsed (cut off mid-stream): the door's text
+          // leg draws the kind's broken state, never the raw JSON.
+          <AnswerValueView text={jsonText} />
         ) : (
           <MarkdownStream imagePolicy="inherit" content={fenceJson(jsonText)} />
         )
