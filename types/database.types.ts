@@ -4095,6 +4095,7 @@ export type Database = {
           id: number
           meta_description: string | null
           meta_keywords: string | null
+          metadata: Json
           title: string | null
           url: string
           user_agent: string | null
@@ -4109,6 +4110,7 @@ export type Database = {
           id?: number
           meta_description?: string | null
           meta_keywords?: string | null
+          metadata?: Json
           title?: string | null
           url: string
           user_agent?: string | null
@@ -4123,6 +4125,7 @@ export type Database = {
           id?: number
           meta_description?: string | null
           meta_keywords?: string | null
+          metadata?: Json
           title?: string | null
           url?: string
           user_agent?: string | null
@@ -4757,6 +4760,7 @@ export type Database = {
           holder: string
           id: string
           item_id: string
+          metadata: Json
           runtime_execution_id: string | null
           started_at: string
           status: string
@@ -4771,6 +4775,7 @@ export type Database = {
           holder: string
           id: string
           item_id: string
+          metadata?: Json
           runtime_execution_id?: string | null
           started_at?: string
           status: string
@@ -4785,6 +4790,7 @@ export type Database = {
           holder?: string
           id?: string
           item_id?: string
+          metadata?: Json
           runtime_execution_id?: string | null
           started_at?: string
           status?: string
@@ -4898,6 +4904,7 @@ export type Database = {
           id: string
           idempotency_key: string
           materialized_plan: Json
+          metadata: Json
           organization_id: string
           plan_fingerprint: string
           request: Json
@@ -4914,6 +4921,7 @@ export type Database = {
           id?: string
           idempotency_key: string
           materialized_plan: Json
+          metadata?: Json
           organization_id: string
           plan_fingerprint: string
           request: Json
@@ -4930,6 +4938,7 @@ export type Database = {
           id?: string
           idempotency_key?: string
           materialized_plan?: Json
+          metadata?: Json
           organization_id?: string
           plan_fingerprint?: string
           request?: Json
@@ -12485,6 +12494,7 @@ export type Database = {
           custom_fields: Json
           daily_blocked: boolean
           last_request_at: string | null
+          metadata: Json
           requests_24h: number
           requests_6h: number
           tokens_24h: number
@@ -12503,6 +12513,7 @@ export type Database = {
           custom_fields?: Json
           daily_blocked?: boolean
           last_request_at?: string | null
+          metadata?: Json
           requests_24h?: number
           requests_6h?: number
           tokens_24h?: number
@@ -12521,6 +12532,7 @@ export type Database = {
           custom_fields?: Json
           daily_blocked?: boolean
           last_request_at?: string | null
+          metadata?: Json
           requests_24h?: number
           requests_6h?: number
           tokens_24h?: number
@@ -20270,6 +20282,7 @@ export type Database = {
           id: string
           lease_expires_at: string | null
           message_id: string | null
+          metadata: Json
           processed: boolean
           processed_at: string | null
           processing_attempts: number
@@ -20288,6 +20301,7 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           message_id?: string | null
+          metadata?: Json
           processed?: boolean
           processed_at?: string | null
           processing_attempts?: number
@@ -20306,6 +20320,7 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           message_id?: string | null
+          metadata?: Json
           processed?: boolean
           processed_at?: string | null
           processing_attempts?: number
@@ -24418,7 +24433,7 @@ export type Database = {
           has_nested_objects: boolean
           id: string
           is_current: boolean
-          organization_id: string | null
+          organization_id: string
           scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
           value_boolean: boolean | null
@@ -24445,7 +24460,7 @@ export type Database = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
-          organization_id?: string | null
+          organization_id: string
           scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
@@ -24472,7 +24487,7 @@ export type Database = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
-          organization_id?: string | null
+          organization_id?: string
           scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
@@ -39427,6 +39442,242 @@ export type Database = {
   }
   deprecated: {
     Tables: {
+      custom_entity_definition: {
+        Row: {
+          ai_exposure: string
+          allow_record_sharing: boolean
+          archived_at: string | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          deleted_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_searchable: boolean
+          max_fields: number | null
+          max_records: number | null
+          metadata: Json
+          name: string
+          name_plural: string
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          record_name_backfill_done: number
+          record_name_backfill_error: string | null
+          record_name_backfill_state: string
+          record_name_template: string | null
+          sensitivity_tier: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          validation_mode: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          ai_exposure?: string
+          allow_record_sharing?: boolean
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_searchable?: boolean
+          max_fields?: number | null
+          max_records?: number | null
+          metadata?: Json
+          name: string
+          name_plural: string
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          record_name_backfill_done?: number
+          record_name_backfill_error?: string | null
+          record_name_backfill_state?: string
+          record_name_template?: string | null
+          sensitivity_tier?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          ai_exposure?: string
+          allow_record_sharing?: boolean
+          archived_at?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          deleted_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_searchable?: boolean
+          max_fields?: number | null
+          max_records?: number | null
+          metadata?: Json
+          name?: string
+          name_plural?: string
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          record_name_backfill_done?: number
+          record_name_backfill_error?: string | null
+          record_name_backfill_state?: string
+          record_name_template?: string | null
+          sensitivity_tier?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_mode?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      custom_record: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          deleted_at: string | null
+          entity_definition_id: string
+          external_key: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          record_name: string | null
+          search_vector: unknown
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          deleted_at?: string | null
+          entity_definition_id: string
+          external_key?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          record_name?: string | null
+          search_vector?: unknown
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          deleted_at?: string | null
+          entity_definition_id?: string
+          external_key?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          record_name?: string | null
+          search_vector?: unknown
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_record_entity_definition_id_fkey"
+            columns: ["entity_definition_id"]
+            isOneToOne: false
+            referencedRelation: "custom_entity_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flexible_data: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          data: Json
+          deleted_at: string | null
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          slug: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       pb_claim_appeals_fd31de: {
         Row: {
           claim_id: string
@@ -40048,6 +40299,7 @@ export type Database = {
           id: string
           ipa: string | null
           is_active: boolean
+          metadata: Json
           organization_id: string | null
           pronunciation: string | null
           scope_id: string | null
@@ -40067,6 +40319,7 @@ export type Database = {
           id?: string
           ipa?: string | null
           is_active?: boolean
+          metadata?: Json
           organization_id?: string | null
           pronunciation?: string | null
           scope_id?: string | null
@@ -40086,6 +40339,7 @@ export type Database = {
           id?: string
           ipa?: string | null
           is_active?: boolean
+          metadata?: Json
           organization_id?: string | null
           pronunciation?: string | null
           scope_id?: string | null
@@ -40105,6 +40359,7 @@ export type Database = {
           external_id: string | null
           id: string
           level: string
+          metadata: Json
           owner_id: string | null
           provider: string
           rule_count: number
@@ -40121,6 +40376,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           level: string
+          metadata?: Json
           owner_id?: string | null
           provider?: string
           rule_count?: number
@@ -40137,6 +40393,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           level?: string
+          metadata?: Json
           owner_id?: string | null
           provider?: string
           rule_count?: number
@@ -41508,6 +41765,7 @@ export type Database = {
           created_at: string
           custom_fields: Json
           id: string
+          metadata: Json
           owner_id: string
           resolved_at: string | null
           resource_id: string
@@ -41520,6 +41778,7 @@ export type Database = {
           created_at?: string
           custom_fields?: Json
           id?: string
+          metadata?: Json
           owner_id: string
           resolved_at?: string | null
           resource_id: string
@@ -41532,6 +41791,7 @@ export type Database = {
           created_at?: string
           custom_fields?: Json
           id?: string
+          metadata?: Json
           owner_id?: string
           resolved_at?: string | null
           resource_id?: string
@@ -43356,6 +43616,7 @@ export type Database = {
           embedding_pending: boolean
           id: string
           kind: string
+          metadata: Json
           owner_id: string
           source_media_ref_id: string | null
           source_metadata: Json
@@ -43374,6 +43635,7 @@ export type Database = {
           embedding_pending?: boolean
           id?: string
           kind: string
+          metadata?: Json
           owner_id: string
           source_media_ref_id?: string | null
           source_metadata?: Json
@@ -43392,6 +43654,7 @@ export type Database = {
           embedding_pending?: boolean
           id?: string
           kind?: string
+          metadata?: Json
           owner_id?: string
           source_media_ref_id?: string | null
           source_metadata?: Json
@@ -45775,6 +46038,7 @@ export type Database = {
           analyzer_version: string
           classification: Json | null
           completed_at: string | null
+          created_at: string
           custom_fields: Json
           deleted_at: string | null
           detectors_run: Json
@@ -45782,7 +46046,7 @@ export type Database = {
           id: string
           metadata: Json
           mime_type: string | null
-          organization_id: string | null
+          organization_id: string
           owner_id: string
           page_count: number | null
           progress: Json
@@ -45797,6 +46061,7 @@ export type Database = {
           analyzer_version?: string
           classification?: Json | null
           completed_at?: string | null
+          created_at?: string
           custom_fields?: Json
           deleted_at?: string | null
           detectors_run?: Json
@@ -45804,7 +46069,7 @@ export type Database = {
           id?: string
           metadata?: Json
           mime_type?: string | null
-          organization_id?: string | null
+          organization_id: string
           owner_id: string
           page_count?: number | null
           progress?: Json
@@ -45819,6 +46084,7 @@ export type Database = {
           analyzer_version?: string
           classification?: Json | null
           completed_at?: string | null
+          created_at?: string
           custom_fields?: Json
           deleted_at?: string | null
           detectors_run?: Json
@@ -45826,7 +46092,7 @@ export type Database = {
           id?: string
           metadata?: Json
           mime_type?: string | null
-          organization_id?: string | null
+          organization_id?: string
           owner_id?: string
           page_count?: number | null
           progress?: Json
@@ -45858,7 +46124,8 @@ export type Database = {
           error: string | null
           file_id: string
           id: string
-          organization_id: string | null
+          metadata: Json
+          organization_id: string
           page_id: string | null
           payload: Json | null
           payload_bytes: number
@@ -45877,7 +46144,8 @@ export type Database = {
           error?: string | null
           file_id: string
           id?: string
-          organization_id?: string | null
+          metadata?: Json
+          organization_id: string
           page_id?: string | null
           payload?: Json | null
           payload_bytes?: number
@@ -45896,7 +46164,8 @@ export type Database = {
           error?: string | null
           file_id?: string
           id?: string
-          organization_id?: string | null
+          metadata?: Json
+          organization_id?: string
           page_id?: string | null
           payload?: Json | null
           payload_bytes?: number
@@ -45935,7 +46204,7 @@ export type Database = {
           label_category: string
           metadata: Json
           normalized_value: Json | null
-          organization_id: string | null
+          organization_id: string
           owner_id: string
           source_annotation_id: string | null
           updated_at: string
@@ -45953,7 +46222,7 @@ export type Database = {
           label_category?: string
           metadata?: Json
           normalized_value?: Json | null
-          organization_id?: string | null
+          organization_id: string
           owner_id: string
           source_annotation_id?: string | null
           updated_at?: string
@@ -45971,7 +46240,7 @@ export type Database = {
           label_category?: string
           metadata?: Json
           normalized_value?: Json | null
-          organization_id?: string | null
+          organization_id?: string
           owner_id?: string
           source_annotation_id?: string | null
           updated_at?: string
@@ -46446,7 +46715,7 @@ export type Database = {
           id: string
           metadata: Json
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           override_kind: string
           override_value: Json
           owner_id: string
@@ -46463,7 +46732,7 @@ export type Database = {
           id?: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           override_kind: string
           override_value: Json
           owner_id: string
@@ -46480,7 +46749,7 @@ export type Database = {
           id?: string
           metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           override_kind?: string
           override_value?: Json
           owner_id?: string
@@ -46524,7 +46793,7 @@ export type Database = {
           metadata: Json
           normalized_value: Json | null
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           owner_id: string
           page_id: string | null
           page_number: number
@@ -46554,7 +46823,7 @@ export type Database = {
           metadata?: Json
           normalized_value?: Json | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           owner_id: string
           page_id?: string | null
           page_number: number
@@ -46584,7 +46853,7 @@ export type Database = {
           metadata?: Json
           normalized_value?: Json | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           owner_id?: string
           page_id?: string | null
           page_number?: number
@@ -46640,7 +46909,7 @@ export type Database = {
           id: string
           metadata: Json
           ocr_confidence: number | null
-          organization_id: string | null
+          organization_id: string
           owner_id: string
           page_index: number
           processed_document_page_id: string | null
@@ -46665,7 +46934,7 @@ export type Database = {
           id?: string
           metadata?: Json
           ocr_confidence?: number | null
-          organization_id?: string | null
+          organization_id: string
           owner_id: string
           page_index: number
           processed_document_page_id?: string | null
@@ -46690,7 +46959,7 @@ export type Database = {
           id?: string
           metadata?: Json
           ocr_confidence?: number | null
-          organization_id?: string | null
+          organization_id?: string
           owner_id?: string
           page_index?: number
           processed_document_page_id?: string | null
@@ -46737,42 +47006,42 @@ export type Database = {
       structure: {
         Row: {
           bucket_id: string
-          created_at: string | null
+          created_at: string
           custom_fields: Json
           file_id: string | null
           id: string
           is_folder: boolean
-          metadata: Json | null
+          metadata: Json
           name: string
-          organization_id: string | null
+          organization_id: string
           parent_path: string | null
           path: string
           updated_at: string | null
         }
         Insert: {
           bucket_id: string
-          created_at?: string | null
+          created_at?: string
           custom_fields?: Json
           file_id?: string | null
           id?: string
           is_folder: boolean
-          metadata?: Json | null
+          metadata?: Json
           name: string
-          organization_id?: string | null
+          organization_id: string
           parent_path?: string | null
           path: string
           updated_at?: string | null
         }
         Update: {
           bucket_id?: string
-          created_at?: string | null
+          created_at?: string
           custom_fields?: Json
           file_id?: string | null
           id?: string
           is_folder?: boolean
-          metadata?: Json | null
+          metadata?: Json
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           parent_path?: string | null
           path?: string
           updated_at?: string | null
@@ -46967,6 +47236,7 @@ export type Database = {
           custom_fields: Json
           custom_limits: Json
           is_blocked: boolean
+          metadata: Json
           notes: string | null
           tier_id: string
           updated_at: string
@@ -46978,6 +47248,7 @@ export type Database = {
           custom_fields?: Json
           custom_limits?: Json
           is_blocked?: boolean
+          metadata?: Json
           notes?: string | null
           tier_id: string
           updated_at?: string
@@ -46989,6 +47260,7 @@ export type Database = {
           custom_fields?: Json
           custom_limits?: Json
           is_blocked?: boolean
+          metadata?: Json
           notes?: string | null
           tier_id?: string
           updated_at?: string
@@ -47049,9 +47321,10 @@ export type Database = {
           http_status: number | null
           id: string
           latency_ms: number | null
+          metadata: Json
           net_request_id: number | null
           next_attempt_at: string | null
-          organization_id: string | null
+          organization_id: string
           signature: string | null
           status: string
           webhook_id: string
@@ -47067,9 +47340,10 @@ export type Database = {
           http_status?: number | null
           id?: string
           latency_ms?: number | null
+          metadata?: Json
           net_request_id?: number | null
           next_attempt_at?: string | null
-          organization_id?: string | null
+          organization_id: string
           signature?: string | null
           status?: string
           webhook_id: string
@@ -47085,9 +47359,10 @@ export type Database = {
           http_status?: number | null
           id?: string
           latency_ms?: number | null
+          metadata?: Json
           net_request_id?: number | null
           next_attempt_at?: string | null
-          organization_id?: string | null
+          organization_id?: string
           signature?: string | null
           status?: string
           webhook_id?: string
@@ -47431,7 +47706,7 @@ export type Database = {
           id: string
           loop_run_id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           payload: Json
           seq: number
           stage: string | null
@@ -47445,7 +47720,7 @@ export type Database = {
           id?: string
           loop_run_id: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           payload?: Json
           seq?: number
           stage?: string | null
@@ -47459,7 +47734,7 @@ export type Database = {
           id?: string
           loop_run_id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           payload?: Json
           seq?: number
           stage?: string | null
@@ -47598,7 +47873,7 @@ export type Database = {
           id: string
           loop_run_id: string
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           outcome: Json | null
           pipe: string | null
           pipe_requested: string
@@ -47623,7 +47898,7 @@ export type Database = {
           id?: string
           loop_run_id: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           outcome?: Json | null
           pipe?: string | null
           pipe_requested: string
@@ -47648,7 +47923,7 @@ export type Database = {
           id?: string
           loop_run_id?: string
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           outcome?: Json | null
           pipe?: string | null
           pipe_requested?: string
@@ -75447,7 +75722,7 @@ export type Database = {
           industrial: number | null
           le: number | null
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           pain: number | null
           rating: number | null
           report_id: string | null
@@ -75469,7 +75744,7 @@ export type Database = {
           industrial?: number | null
           le?: number | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           pain?: number | null
           rating?: number | null
           report_id?: string | null
@@ -75491,7 +75766,7 @@ export type Database = {
           industrial?: number | null
           le?: number | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           pain?: number | null
           rating?: number | null
           report_id?: string | null
@@ -75533,7 +75808,7 @@ export type Database = {
           left_side_total: number | null
           life_pension_weekly: number | null
           metadata: Json
-          organization_id: string | null
+          organization_id: string
           pd_adjustment_pct: number | null
           pd_adjustment_reason: string | null
           right_side_total: number | null
@@ -75555,7 +75830,7 @@ export type Database = {
           left_side_total?: number | null
           life_pension_weekly?: number | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id: string
           pd_adjustment_pct?: number | null
           pd_adjustment_reason?: string | null
           right_side_total?: number | null
@@ -75577,7 +75852,7 @@ export type Database = {
           left_side_total?: number | null
           life_pension_weekly?: number | null
           metadata?: Json
-          organization_id?: string | null
+          organization_id?: string
           pd_adjustment_pct?: number | null
           pd_adjustment_reason?: string | null
           right_side_total?: number | null
@@ -79117,6 +79392,7 @@ export type Database = {
           id: string
           is_active: boolean
           key: string
+          metadata: Json
           name: string
           provider: string | null
           resolution_notes: string | null
@@ -79133,6 +79409,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           key: string
+          metadata?: Json
           name: string
           provider?: string | null
           resolution_notes?: string | null
@@ -79149,6 +79426,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           key?: string
+          metadata?: Json
           name?: string
           provider?: string | null
           resolution_notes?: string | null
@@ -82643,114 +82921,6 @@ export type Database = {
         }
         Relationships: []
       }
-      custom_entity_definition: {
-        Row: {
-          ai_exposure: string
-          allow_record_sharing: boolean
-          archived_at: string | null
-          color: string | null
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          deleted_at: string | null
-          description: string | null
-          icon: string | null
-          id: string
-          is_searchable: boolean
-          max_fields: number | null
-          max_records: number | null
-          metadata: Json
-          name: string
-          name_plural: string
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          record_name_backfill_done: number
-          record_name_backfill_error: string | null
-          record_name_backfill_state: string
-          record_name_template: string | null
-          sensitivity_tier: string
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string
-          updated_at: string
-          updated_by: string | null
-          validation_mode: string
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          ai_exposure?: string
-          allow_record_sharing?: boolean
-          archived_at?: string | null
-          color?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_searchable?: boolean
-          max_fields?: number | null
-          max_records?: number | null
-          metadata?: Json
-          name: string
-          name_plural: string
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          record_name_backfill_done?: number
-          record_name_backfill_error?: string | null
-          record_name_backfill_state?: string
-          record_name_template?: string | null
-          sensitivity_tier?: string
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string
-          updated_at?: string
-          updated_by?: string | null
-          validation_mode?: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          ai_exposure?: string
-          allow_record_sharing?: boolean
-          archived_at?: string | null
-          color?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          deleted_at?: string | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_searchable?: boolean
-          max_fields?: number | null
-          max_records?: number | null
-          metadata?: Json
-          name?: string
-          name_plural?: string
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          record_name_backfill_done?: number
-          record_name_backfill_error?: string | null
-          record_name_backfill_state?: string
-          record_name_template?: string | null
-          sensitivity_tier?: string
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug?: string
-          updated_at?: string
-          updated_by?: string | null
-          validation_mode?: string
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
       custom_field_definition: {
         Row: {
           ai_exposure: string
@@ -82954,68 +83124,6 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
-      }
-      custom_record: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          data: Json
-          deleted_at: string | null
-          entity_definition_id: string
-          external_key: string | null
-          id: string
-          metadata: Json
-          organization_id: string
-          record_name: string | null
-          search_vector: unknown
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data?: Json
-          deleted_at?: string | null
-          entity_definition_id: string
-          external_key?: string | null
-          id?: string
-          metadata?: Json
-          organization_id: string
-          record_name?: string | null
-          search_vector?: unknown
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data?: Json
-          deleted_at?: string | null
-          entity_definition_id?: string
-          external_key?: string | null
-          id?: string
-          metadata?: Json
-          organization_id?: string
-          record_name?: string | null
-          search_vector?: unknown
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "custom_record_entity_definition_id_fkey"
-            columns: ["entity_definition_id"]
-            isOneToOne: false
-            referencedRelation: "custom_entity_definition"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       cutover_census_run: {
         Row: {
@@ -84391,80 +84499,6 @@ export type Database = {
             columns: ["taxonomy_node_id"]
             isOneToOne: false
             referencedRelation: "taxonomy_node"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      flexible_data: {
-        Row: {
-          category_id: string | null
-          created_at: string
-          created_by: string | null
-          custom_fields: Json
-          data: Json
-          deleted_at: string | null
-          id: string
-          label: string
-          metadata: Json
-          organization_id: string
-          published_to_web: boolean
-          published_to_web_at: string | null
-          published_to_web_by: string | null
-          shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          slug: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label: string
-          metadata?: Json
-          organization_id: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          category_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          custom_fields?: Json
-          data?: Json
-          deleted_at?: string | null
-          id?: string
-          label?: string
-          metadata?: Json
-          organization_id?: string
-          published_to_web?: boolean
-          published_to_web_at?: string | null
-          published_to_web_by?: string | null
-          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slug?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "flexible_data_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -92984,6 +93018,7 @@ export type Database = {
           acknowledged_at: string | null
           custom_fields: Json
           dismissed_at: string | null
+          metadata: Json
           pinned_at: string | null
           seen_at: string | null
           snoozed_until: string | null
@@ -92995,6 +93030,7 @@ export type Database = {
           acknowledged_at?: string | null
           custom_fields?: Json
           dismissed_at?: string | null
+          metadata?: Json
           pinned_at?: string | null
           seen_at?: string | null
           snoozed_until?: string | null
@@ -93006,6 +93042,7 @@ export type Database = {
           acknowledged_at?: string | null
           custom_fields?: Json
           dismissed_at?: string | null
+          metadata?: Json
           pinned_at?: string | null
           seen_at?: string | null
           snoozed_until?: string | null
@@ -99291,14 +99328,6 @@ export type Database = {
           related_table_name: string
         }[]
       }
-      flexible_data_archive: {
-        Args: { p_id: string; p_organization_id: string }
-        Returns: Json
-      }
-      flexible_data_write: {
-        Args: { p_id?: string; p_organization_id: string; p_patch: Json }
-        Returns: Json
-      }
       fn_get_user_usage_snapshot: {
         Args: { p_user_id: string }
         Returns: {
@@ -105172,36 +105201,42 @@ export type Database = {
         Row: {
           added_at: string
           added_by: string
+          created_at: string
           custom_fields: Json
           data_store_id: string
           deleted_at: string | null
           id: string
+          metadata: Json
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           source_id: string
           source_kind: string
         }
         Insert: {
           added_at?: string
           added_by: string
+          created_at?: string
           custom_fields?: Json
           data_store_id: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           source_id: string
           source_kind: string
         }
         Update: {
           added_at?: string
           added_by?: string
+          created_at?: string
           custom_fields?: Json
           data_store_id?: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           source_id?: string
           source_kind?: string
         }
@@ -110680,6 +110715,7 @@ export type Database = {
           failure_category: string | null
           failure_reason: string
           id: string
+          metadata: Json
           proxy_type: string | null
           proxy_used: boolean
           status_code: number | null
@@ -110693,6 +110729,7 @@ export type Database = {
           failure_category?: string | null
           failure_reason: string
           id?: string
+          metadata?: Json
           proxy_type?: string | null
           proxy_used?: boolean
           status_code?: number | null
@@ -110706,6 +110743,7 @@ export type Database = {
           failure_category?: string | null
           failure_reason?: string
           id?: string
+          metadata?: Json
           proxy_type?: string | null
           proxy_used?: boolean
           status_code?: number | null
@@ -110964,6 +111002,7 @@ export type Database = {
           failure_reason: string
           id: string
           last_error: string | null
+          metadata: Json
           original_failure_at: string
           request_context: Json
           status: string
@@ -110982,6 +111021,7 @@ export type Database = {
           failure_reason: string
           id?: string
           last_error?: string | null
+          metadata?: Json
           original_failure_at?: string
           request_context?: Json
           status?: string
@@ -111000,6 +111040,7 @@ export type Database = {
           failure_reason?: string
           id?: string
           last_error?: string | null
+          metadata?: Json
           original_failure_at?: string
           request_context?: Json
           status?: string
@@ -114260,6 +114301,7 @@ export type Database = {
           enqueued_at: string
           keyword_id: string
           last_error: string | null
+          metadata: Json
           place_detector_version: string | null
           place_scanned_at: string | null
           places_found: number | null
@@ -114281,6 +114323,7 @@ export type Database = {
           enqueued_at?: string
           keyword_id: string
           last_error?: string | null
+          metadata?: Json
           place_detector_version?: string | null
           place_scanned_at?: string | null
           places_found?: number | null
@@ -114302,6 +114345,7 @@ export type Database = {
           enqueued_at?: string
           keyword_id?: string
           last_error?: string | null
+          metadata?: Json
           place_detector_version?: string | null
           place_scanned_at?: string | null
           places_found?: number | null
@@ -118356,6 +118400,7 @@ export type Database = {
           enqueued_at: string
           keyword_id: string
           last_error: string | null
+          metadata: Json
           placement_source: string | null
           priority_clicks: number
           priority_impressions: number
@@ -118373,6 +118418,7 @@ export type Database = {
           enqueued_at?: string
           keyword_id: string
           last_error?: string | null
+          metadata?: Json
           placement_source?: string | null
           priority_clicks?: number
           priority_impressions?: number
@@ -118390,6 +118436,7 @@ export type Database = {
           enqueued_at?: string
           keyword_id?: string
           last_error?: string | null
+          metadata?: Json
           placement_source?: string | null
           priority_clicks?: number
           priority_impressions?: number
@@ -124222,6 +124269,7 @@ export type Database = {
           custom_fields: Json
           deleted_at: string | null
           id: string
+          metadata: Json
           pass_index: number
           processor_key: string
           recording_segment_id: string | null
@@ -124238,6 +124286,7 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           pass_index: number
           processor_key?: string
           recording_segment_id?: string | null
@@ -124254,6 +124303,7 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           pass_index?: number
           processor_key?: string
           recording_segment_id?: string | null
@@ -124299,6 +124349,7 @@ export type Database = {
           id: string
           kind: string
           label: string
+          metadata: Json
           pass_index: number
           run_id: string | null
           session_id: string
@@ -124314,6 +124365,7 @@ export type Database = {
           id?: string
           kind: string
           label: string
+          metadata?: Json
           pass_index: number
           run_id?: string | null
           session_id: string
@@ -124329,6 +124381,7 @@ export type Database = {
           id?: string
           kind?: string
           label?: string
+          metadata?: Json
           pass_index?: number
           run_id?: string | null
           session_id?: string
@@ -124418,6 +124471,7 @@ export type Database = {
           custom_fields: Json
           deleted_at: string | null
           id: string
+          metadata: Json
           module_id: string
           pass_index: number
           payload: Json
@@ -124432,6 +124486,7 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           module_id: string
           pass_index: number
           payload?: Json
@@ -124446,6 +124501,7 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           module_id?: string
           pass_index?: number
           payload?: Json
@@ -124478,6 +124534,7 @@ export type Database = {
           custom_fields: Json
           deleted_at: string | null
           id: string
+          metadata: Json
           recording_segment_id: string | null
           session_id: string
           source: string
@@ -124492,6 +124549,7 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           recording_segment_id?: string | null
           session_id: string
           source?: string
@@ -124506,6 +124564,7 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           recording_segment_id?: string | null
           session_id?: string
           source?: string
@@ -126262,6 +126321,7 @@ export type Database = {
           custom_fields: Json
           feedback_id: string
           id: string
+          metadata: Json
         }
         Insert: {
           author_name?: string | null
@@ -126271,6 +126331,7 @@ export type Database = {
           custom_fields?: Json
           feedback_id: string
           id?: string
+          metadata?: Json
         }
         Update: {
           author_name?: string | null
@@ -126280,6 +126341,7 @@ export type Database = {
           custom_fields?: Json
           feedback_id?: string
           id?: string
+          metadata?: Json
         }
         Relationships: [
           {
@@ -126301,6 +126363,7 @@ export type Database = {
           id: string
           image_file_ids: string[]
           image_urls: string[] | null
+          metadata: Json
           sender_name: string | null
           sender_type: string
         }
@@ -126313,6 +126376,7 @@ export type Database = {
           id?: string
           image_file_ids?: string[]
           image_urls?: string[] | null
+          metadata?: Json
           sender_name?: string | null
           sender_type: string
         }
@@ -126325,6 +126389,7 @@ export type Database = {
           id?: string
           image_file_ids?: string[]
           image_urls?: string[] | null
+          metadata?: Json
           sender_name?: string | null
           sender_type?: string
         }
@@ -127441,6 +127506,7 @@ export type Database = {
           follower_id: string
           following_id: string
           id: string
+          metadata: Json
         }
         Insert: {
           created_at?: string | null
@@ -127448,6 +127514,7 @@ export type Database = {
           follower_id: string
           following_id: string
           id?: string
+          metadata?: Json
         }
         Update: {
           created_at?: string | null
@@ -127455,6 +127522,7 @@ export type Database = {
           follower_id?: string
           following_id?: string
           id?: string
+          metadata?: Json
         }
         Relationships: []
       }
@@ -133220,7 +133288,8 @@ export type Database = {
           field_order: number
           id: string
           is_required: boolean
-          organization_id: string | null
+          metadata: Json
+          organization_id: string
           template_id: string
           updated_at: string
           validation_rules: Json | null
@@ -133235,7 +133304,8 @@ export type Database = {
           field_order?: number
           id?: string
           is_required?: boolean
-          organization_id?: string | null
+          metadata?: Json
+          organization_id: string
           template_id: string
           updated_at?: string
           validation_rules?: Json | null
@@ -133250,7 +133320,8 @@ export type Database = {
           field_order?: number
           id?: string
           is_required?: boolean
-          organization_id?: string | null
+          metadata?: Json
+          organization_id?: string
           template_id?: string
           updated_at?: string
           validation_rules?: Json | null
@@ -133321,6 +133392,7 @@ export type Database = {
           document_id: string
           id: string
           label: string | null
+          metadata: Json
           origin: string
           snapshot: Json
         }
@@ -133331,6 +133403,7 @@ export type Database = {
           document_id: string
           id?: string
           label?: string | null
+          metadata?: Json
           origin?: string
           snapshot: Json
         }
@@ -133341,6 +133414,7 @@ export type Database = {
           document_id?: string
           id?: string
           label?: string | null
+          metadata?: Json
           origin?: string
           snapshot?: Json
         }
@@ -133439,7 +133513,8 @@ export type Database = {
           custom_fields: Json
           id: string
           label: string | null
-          organization_id: string | null
+          metadata: Json
+          organization_id: string
           origin: string
           snapshot: Json
           workbook_id: string
@@ -133450,7 +133525,8 @@ export type Database = {
           custom_fields?: Json
           id?: string
           label?: string | null
-          organization_id?: string | null
+          metadata?: Json
+          organization_id: string
           origin?: string
           snapshot: Json
           workbook_id: string
@@ -133461,7 +133537,8 @@ export type Database = {
           custom_fields?: Json
           id?: string
           label?: string | null
-          organization_id?: string | null
+          metadata?: Json
+          organization_id?: string
           origin?: string
           snapshot?: Json
           workbook_id?: string
@@ -135919,7 +135996,8 @@ export type Database = {
           id: string
           lease_expires_at: string | null
           max_attempts: number
-          organization_id: string | null
+          metadata: Json
+          organization_id: string
           payload: Json
           run_id: string
           seq: number
@@ -135940,7 +136018,8 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           max_attempts?: number
-          organization_id?: string | null
+          metadata?: Json
+          organization_id: string
           payload?: Json
           run_id: string
           seq?: number
@@ -135961,7 +136040,8 @@ export type Database = {
           id?: string
           lease_expires_at?: string | null
           max_attempts?: number
-          organization_id?: string | null
+          metadata?: Json
+          organization_id?: string
           payload?: Json
           run_id?: string
           seq?: number
