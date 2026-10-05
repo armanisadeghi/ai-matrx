@@ -15,7 +15,7 @@ import {
   Network,
   RefreshCw,
 } from "lucide-react";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -878,8 +878,8 @@ function ProviderTranscriptMessage({
               attachmentParts={[]}
             />
           ) : (
-            <MarkdownStream imagePolicy="ai"
-              content={message.display.text}
+            <RichContent level="full" imagePolicy="ai"
+              source={message.display.text}
               className="text-sm text-foreground"
               hideCopyButton={false}
               allowFullScreenEditor={false}
