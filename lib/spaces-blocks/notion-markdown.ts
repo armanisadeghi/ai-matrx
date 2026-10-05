@@ -331,7 +331,7 @@ class Converter {
         const body: string[] = [];
         let j = i + 1;
         while (j < lines.length && !lines[j].text.startsWith(fence[1])) body.push(dedent(lines[j].raw, line.col)), j++;
-        const language = fence[2] || "plain text";
+        const language = fence[2] || "text";
         out.push(this.block(at(), "code", { text: [{ text: body.join("\n") }], props: { language } }));
         i = j + 1;
         continue;
