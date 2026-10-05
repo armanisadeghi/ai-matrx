@@ -199,14 +199,17 @@ const slice = createSlice({
       action: PayloadAction<{ managerIds: string[]; edges: ManualOrgEdge[] }>,
     ) {
       const m = state.manualOrgChart;
-      const read = new Set(action.payload.managerIds);
-      // Replace exactly the boxes just read; keep everyone else's links. A link
-      // read from both ends is kept once.
-      const fresh = new Set(action.payload.edges.map((e) => e.edgeId));
-      m.edges = [
-        ...m.edges.filter((e) => !read.has(e.managerId) && !fresh.has(e.edgeId)),
-        ...action.payload.edges,
-      ];
+      // MERGE, never replace: a read that started before a local write committed
+      // comes back without that link, and replacing would silently erase a link
+      // the person just made (seen live 2026-10-04). Links leave the store only
+      // through the remove thunks; a reload re-reads everything.
+      for (const e of action.payload.edges) {
+        const i = m.edges.findIndex(
+          (x) => x.edgeId === e.edgeId || (x.managerId === e.managerId && x.reportId === e.reportId),
+        );
+        if (i === -1) m.edges.push(e);
+        else m.edges[i] = e;
+      }
       m.queried = [...new Set([...m.queried, ...action.payload.managerIds])];
       m.status = "ready";
       m.error = null;

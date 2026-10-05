@@ -183,6 +183,16 @@ export function AgentOrgChartView({
     return names[b] ?? (type === "membership" ? "this person" : "this team");
   };
   const nounOf = (b: string) => ORG_BOX_LABEL[parseBoxId(b).type].toLowerCase();
+  /** A name for a message, even for a person or team that isn't on the chart yet. */
+  const nameNow = async (b: string): Promise<string> => {
+    const { type, id } = parseBoxId(b);
+    if (type === "membership" || type === "team") {
+      const dir = await loadOrgDirectory();
+      const found = type === "membership" ? dir.members.get(id)?.name : dir.teams.get(id)?.name;
+      if (found) return found;
+    }
+    return nameOf(b);
+  };
   const agentOf = (n: Node) => (n.data.boxType === "agent" ? n.data.entityId : null);
 
   const focusBox = searchParams.get("focus");
@@ -205,14 +215,15 @@ export function AgentOrgChartView({
     const res = await dispatch(setManualManager(managerId, reportId));
     if (!res.ok) {
       if (res.loop && managerId !== reportId) {
-        fail(`${nameOf(managerId)} already sits under ${nameOf(reportId)}, so this would make a loop. Move ${nameOf(managerId)} first.`);
+        const [m, r] = [await nameNow(managerId), await nameNow(reportId)];
+        fail(`${m} already sits under ${r}, so this would make a loop. Move ${m} first.`);
       } else fail(res.error);
       return false;
     }
     announceReversible({
       verb: "move",
       noun: nounOf(reportId),
-      subject: `${nameOf(reportId)} under ${nameOf(managerId)}`,
+      subject: `${await nameNow(reportId)} under ${await nameNow(managerId)}`,
       undo: async () => {
         const back = before
           ? await dispatch(setManualManager(before.managerId, reportId))
@@ -233,7 +244,7 @@ export function AgentOrgChartView({
     announceReversible({
       verb: "remove",
       noun: "link",
-      subject: `${nameOf(reportId)} from under ${nameOf(managerId)}`,
+      subject: `${await nameNow(reportId)} from under ${await nameNow(managerId)}`,
       undo: async () => {
         const back =
           before && !ORG_LINK_KIND_META[before.kind].tree
@@ -293,7 +304,7 @@ export function AgentOrgChartView({
       fail(res.error);
       return;
     }
-    toast.success(`${nameOf(fromId)} ${ORG_LINK_KIND_META[link].verb} ${nameOf(toId)}.`);
+    toast.success(`${await nameNow(fromId)} ${ORG_LINK_KIND_META[link].verb} ${await nameNow(toId)}.`);
   };
 
   /** Fill a position with a person (their membership box), or mark it open (null). */
