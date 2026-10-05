@@ -385,6 +385,13 @@ export function spliceDisplayEdit(
   nextDisplay: string,
 ): DisplayEditResult {
   if (previousDisplay === nextDisplay) return { text: stored, changedSpans: 0, mostlyRewritten: false };
+  // A renderer may hold the answer with its blank-line runs intact (a model's
+  // `</artifact>\n\n\n---`) while the stored-text scrub collapses them. The
+  // same text under both scrubs is the same answer: compare and diff in the
+  // scrubbed form, never refuse a tick on whitespace alone.
+  if (displayOfStoredAnswer(stored) !== previousDisplay && displayOfStoredAnswer(previousDisplay) === displayOfStoredAnswer(stored)) {
+    return spliceDisplayEdit(stored, displayOfStoredAnswer(previousDisplay), displayOfStoredAnswer(nextDisplay));
+  }
   if (displayOfStoredAnswer(stored) !== previousDisplay) {
     return {
       error: "The answer changed since this text was shown (or it is still being written). Nothing was saved — reload and try again.",

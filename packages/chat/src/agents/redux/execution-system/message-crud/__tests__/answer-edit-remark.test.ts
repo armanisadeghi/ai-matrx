@@ -270,7 +270,21 @@ describe("task-list ticks are interactions, not diffs", () => {
       origin: "kind",
       projection: "I checked off: 2 cups flour, 2 tbsp sugar.",
     });
-    expect(remarkChipTitle(chips[0].remark)).toBe("I checked off: 2 cups flour, 2 tbsp sugar.");
+    expect(remarkChipTitle(chips[0].remark)).toBe("Checked 2: 2 cups flour, 2 tbsp sugar");
+  });
+
+  test("the chip label names the items compactly, never the first long item cut off", async () => {
+    const long = [
+      "- [ ] Verify utility infrastructure before signing: Confirm space has minimum 200A 3-phase electric service.",
+      "- [ ] Inspect structural and plumbing requirements: Ensure floor load rating supports heavy ovens.",
+      "- [ ] Venue",
+    ].join("\n");
+    const s = makeStore(long);
+    const all = long.replace(/\[ \]/g, "[x]");
+    await save(s, all);
+    const title = remarkChipTitle(editChips(s)[0].remark);
+    expect(title).toBe("Checked 3: Verify utility infrastructure, Inspect structural and +1");
+    expect(title.length).toBeLessThan(70);
   });
 
   test("unticking one of them renames the chip; unticking all removes it", async () => {

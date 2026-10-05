@@ -14,7 +14,15 @@ function itemName(text: string): string {
     .trim();
 }
 
-export function taskToggleProjection(before: string, after: string): string | null {
+/** A box's name in a few words: parentheticals and anything after a colon dropped, three words, short. */
+function compactName(name: string): string {
+  const head = name.replace(/\([^)]*\)/g, " ").split(/:|\s[—–-]\s/)[0] ?? name;
+  const words = head.replace(/\s+/g, " ").trim().split(" ").filter(Boolean).slice(0, 3).join(" ");
+  const clean = words || name;
+  return clean.length > 30 ? `${clean.slice(0, 29).trimEnd()}…` : clean;
+}
+
+function toggledItems(before: string, after: string): { checked: string[]; unchecked: string[] } | null {
   if (before === after) return null;
   const a = before.split("\n");
   const b = after.split("\n");
@@ -32,8 +40,33 @@ export function taskToggleProjection(before: string, after: string): string | nu
     if (was === now) return null;
     (now ? checked : unchecked).push(itemName(ma[4] ?? "") || "an item");
   }
+  return checked.length || unchecked.length ? { checked, unchecked } : null;
+}
+
+export function taskToggleProjection(before: string, after: string): string | null {
+  const items = toggledItems(before, after);
+  if (!items) return null;
+  const { checked, unchecked } = items;
   const parts: string[] = [];
   if (checked.length) parts.push(`I checked off: ${checked.join(", ")}`);
   if (unchecked.length) parts.push(`I unchecked: ${unchecked.join(", ")}`);
   return parts.length ? `${parts.join(". ")}.`.replace(/\.\.$/, ".") : null;
+}
+
+/**
+ * The chip's label for a task-toggle edit: how many and which, compactly
+ * ("Checked 2: Venue, Permits"). The full item names stay in the projection the
+ * model reads; the label only has to fit a chip.
+ */
+export function taskToggleChipTitle(before: string, after: string): string | null {
+  const items = toggledItems(before, after);
+  if (!items) return null;
+  const say = (verb: string, names: string[]): string => {
+    const shown = names.slice(0, 2).map(compactName).join(", ");
+    return `${verb} ${names.length}: ${shown}${names.length > 2 ? ` +${names.length - 2}` : ""}`;
+  };
+  const parts: string[] = [];
+  if (items.checked.length) parts.push(say("Checked", items.checked));
+  if (items.unchecked.length) parts.push(say("Unchecked", items.unchecked));
+  return parts.join(" · ");
 }

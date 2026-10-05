@@ -36,6 +36,7 @@ import type { ChatDispatch, ChatRootState } from "../../../../store/root-state";
 import type { ManagedResource } from "../../../types/instance.types";
 import { generateResourceId } from "../utils/ids";
 import { remarkChangeSummary, remarkDiff } from "./remark-diff";
+import { taskToggleChipTitle } from "./task-toggle-projection";
 import {
   addResource,
   removeResource,
@@ -215,7 +216,10 @@ export function remarkChipTitle(item: RemarkItem): string {
       return clip(item.chosen) || KIND_LABEL.choice;
     case "edit":
       // The words the person changed, not the answer's opening line.
-      return clip(item.projection ?? remarkChangeSummary(item.before, item.after)) || KIND_LABEL.edit;
+      return (
+        taskToggleChipTitle(item.before, item.after) ??
+        (clip(item.projection ?? remarkChangeSummary(item.before, item.after)) || KIND_LABEL.edit)
+      );
     case "answers":
       return item.title ? clip(item.title) : `${item.answers.length} answers`;
     case "interaction":
