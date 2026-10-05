@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 579 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 584 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "6cbfb4e95caf";
+export const KIND_REGISTRY_FINGERPRINT = "85b04f9e8383";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -47,7 +47,7 @@ export interface AccessoryComponent {
  * never bare strings — the Masterwork Conductor's ``platform_capabilities`` /
  * ``my_resources`` policies are the reference shape).
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionContextPolicy {
   key: string;
@@ -66,7 +66,7 @@ export interface AgentDefinitionContextPolicy {
 /**
  * Where a context policy's value comes from (a registered inventory kind).
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionContextPolicySource {
   kind: string;
@@ -79,7 +79,7 @@ export interface AgentDefinitionContextPolicySource {
 /**
  * One prompt message. The system message comes first.
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionMessage {
   role: "system" | "user" | "assistant";
@@ -97,7 +97,7 @@ export interface AgentDefinitionMessage {
  * the reply continues from. ``cache_boundary``: cache everything up to here.
  * ``example``: a few-shot user/assistant turn.
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionMessageFlags {
   /**
@@ -116,7 +116,7 @@ export interface AgentDefinitionMessageFlags {
  *  *
  *  * From kind `agent_definition`.
  */
-export interface AgentDefinitionSettings {
+export interface AgentDefinitionSettings_AgentDefinition {
   top_p?: number | null;
   /**
    * The registered kind this payload is an instance of, when it is one.
@@ -132,10 +132,33 @@ export interface AgentDefinitionSettings {
 }
 
 /**
+ * Run settings. A reasoning agent spends ``max_output_tokens`` on reasoning
+ * FIRST and the answer second — the birth floor reconciles a ceiling too small
+ * to hold both (``agent_factory.guards.enforce_reasoning_output_budget``).
+ *  *
+ *  * From kind `agent_factory_build`.
+ */
+export interface AgentDefinitionSettings_AgentFactoryBuild {
+  top_p?: number | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  stream?: boolean;
+  offering_id?: string | null;
+  temperature?: number | null;
+  reasoning_effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | null;
+  max_output_tokens?: number | null;
+  reasoning_summary?: "concise" | "detailed" | "never" | "auto" | "always" | null;
+  internal_web_search?: boolean | null;
+  internal_url_context?: boolean | null;
+}
+
+/**
  * One content block of a prompt message. Content is ALWAYS a list of these
  * — never a bare string (the PromptJSON rule the builder is trained on).
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionTextBlock {
   text: string;
@@ -149,7 +172,7 @@ export interface AgentDefinitionTextBlock {
 /**
  * One ``{{name}}`` placeholder the agent's messages reference.
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionVariable {
   name: string;
@@ -167,7 +190,7 @@ export interface AgentDefinitionVariable {
 /**
  * The input control a variable renders as. Omit for a plain textarea.
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionVariableComponent {
   max?: number | null;
@@ -190,7 +213,7 @@ export interface AgentDefinitionVariableComponent {
  * is the organization's ``agents.controls / variable_bindable_keys`` knob —
  * ``agent_catalog list_models`` reports it per model.
  *  *
- *  * From kind `agent_definition`.
+ *  * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AgentDefinitionVariableControl {
   key: string;
@@ -198,6 +221,245 @@ export interface AgentDefinitionVariableControl {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+}
+
+/**
+ * One captured real input, two answers labelled A and B in an order the judge never learns.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_proof_review).
+ */
+export interface AgentFactoryCaseVerdict {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  case_id: string;
+  criteria: AgentFactoryCriterionVerdict[];
+  preferred: "a" | "b" | "tie" | "both_fail";
+}
+
+/**
+ * One criterion, judged on one case, blind.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_proof_review).
+ */
+export interface AgentFactoryCriterionVerdict {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  evidence: string;
+  criterion: string;
+  preferred: "a" | "b" | "tie" | "both_fail";
+}
+
+/**
+ * Whether one agent can do the job, or it is workflow-sized.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_contract).
+ */
+export interface AgentFactoryFit {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reason: string;
+  verdict: "one_agent" | "workflow";
+  /**
+   * When verdict is 'workflow': the separate jobs, one line each, in order.
+   */
+  proposed_steps?: string[];
+}
+
+/**
+ * One gate (a criterion marked gate in the goal spec), judged across every case.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_proof_review).
+ */
+export interface AgentFactoryGateResult {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  passed: boolean;
+  /**
+   * The case and the words that decide it.
+   */
+  evidence: string;
+  criterion: string;
+}
+
+/**
+ * One input the new agent receives at runtime.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_contract).
+ */
+export interface AgentFactoryInput {
+  /**
+   * A registered kind slug or a generic slug (text, markdown, number, integer, boolean, string_list, file, file_list).
+   */
+  kind: string;
+  /**
+   * snake_case name the agent's variable will carry, never renamed later.
+   */
+  name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * The value used when when_absent is 'use_default'.
+   */
+  default?: string | null;
+  /**
+   * One realistic value, never a placeholder.
+   */
+  example?: string | null;
+  required: boolean;
+  /**
+   * What the value is, in one line a caller can act on.
+   */
+  description: string;
+  /**
+   * What the agent does when an optional input is not sent; 'fail' only for a required input.
+   */
+  when_absent: "skip" | "use_default" | "fail";
+}
+
+/**
+ * A shape no active kind provides — filed to the data-to-kinds lane, never created here.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_contract).
+ */
+export interface AgentFactoryKindProposal {
+  /**
+   * Proposed snake_case slug.
+   */
+  slug: string;
+  label: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  fields: AgentFactoryOutputField[];
+  /**
+   * One realistic payload, as JSON text.
+   */
+  example: string;
+  /**
+   * What a consumer does with this output.
+   */
+  purpose: string;
+  /**
+   * The closest active kind and why it does not fit, when one comes close.
+   */
+  nearest_active_kind?: string | null;
+}
+
+/**
+ * What the new agent answers with.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_contract).
+ */
+export interface AgentFactoryOutputChoice {
+  /**
+   * The chosen ACTIVE kind slug; set exactly when choice is 'active_kind'.
+   */
+  kind?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  choice: "active_kind" | "new_kind_proposal";
+  /**
+   * One line: why this kind fits the job.
+   */
+  reason: string;
+  /**
+   * Set exactly when choice is 'new_kind_proposal'.
+   */
+  proposal?: AgentFactoryKindProposal | null;
+  /**
+   * Top-level keys a consumer reads, when narrower than the whole kind.
+   */
+  required_output_keys?: string[];
+}
+
+/**
+ * One field of a proposed new kind.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_contract).
+ */
+export interface AgentFactoryOutputField {
+  name: string;
+  /**
+   * JSON type, or a registered kind slug for a nested shape.
+   */
+  type: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  required: boolean;
+  description: string;
+}
+
+/**
+ * The model profile class. Code maps it through the live catalog; a caller pin wins.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_tool_choice).
+ */
+export interface AgentFactoryProfile {
+  tier: "fast" | "standard" | "deep";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * One line: what about the job sets this tier.
+   */
+  reason: string;
+  needs_tools: boolean;
+  input_modalities?: ("text" | "image" | "audio" | "video" | "document")[];
+  needs_long_context?: boolean;
+  needs_structured_output: boolean;
+}
+
+/**
+ * Where the build goes back to, and what that step must fix.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_proof_review).
+ */
+export interface AgentFactorySendBack {
+  step: "contract" | "goal" | "tool_choice" | "instructions";
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * Each a concrete defect the step can act on, never a style note.
+   */
+  findings: string[];
+}
+
+/**
+ * One tool the agent gets.
+ *  *
+ *  * Shared by 2 kinds (agent_factory_build, agent_factory_tool_choice).
+ */
+export interface AgentFactoryToolPick {
+  /**
+   * The tool's canonical name, exactly as the catalog lists it.
+   */
+  name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  /**
+   * One line: which part of the job needs it.
+   */
+  reason: string;
 }
 
 /**
@@ -824,7 +1086,7 @@ export interface AssignmentSessionSummary {
 }
 
 /**
- * * From kind `agent_definition`.
+ * * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface AudioMediaPart {
   url?: string | null;
@@ -1795,7 +2057,7 @@ export interface DecisionProvenance {
 /**
  * One question. Not a kind: it has no meaning outside its batch.
  *  *
- *  * Shared by 2 kinds (agent_definition, decision_questions).
+ *  * Shared by 3 kinds (agent_definition, agent_factory_build, decision_questions).
  */
 export interface DecisionQuestion {
   name: string;
@@ -1818,7 +2080,7 @@ export interface DecisionQuestion {
 /**
  * What the decision call consumed. Zero is a real value, never a stand-in.
  *  *
- *  * Shared by 2 kinds (agent_definition, decision_answers).
+ *  * Shared by 3 kinds (agent_definition, agent_factory_build, decision_answers).
  */
 export interface DecisionUsage {
   /**
@@ -2067,7 +2329,7 @@ export interface DocStructuredSection {
 }
 
 /**
- * * From kind `agent_definition`.
+ * * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface DocumentMediaPart {
   url?: string | null;
@@ -2738,7 +3000,7 @@ export interface ImageConceptKind {
 }
 
 /**
- * * From kind `agent_definition`.
+ * * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface ImageMediaPart {
   url?: string | null;
@@ -7250,7 +7512,7 @@ export interface SourcedSpec {
 /**
  * One spoken turn. Not a kind: it has no meaning outside its script.
  *  *
- *  * Shared by 2 kinds (agent_definition, speech_script).
+ *  * Shared by 3 kinds (agent_definition, agent_factory_build, speech_script).
  */
 export interface SpeechTurn {
   /**
@@ -7874,7 +8136,7 @@ export interface ValueUnknown {
 }
 
 /**
- * * From kind `agent_definition`.
+ * * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface VideoMediaPart {
   url?: string | null;
@@ -7962,7 +8224,7 @@ export interface VoiceViolation {
 }
 
 /**
- * * From kind `agent_definition`.
+ * * Shared by 2 kinds (agent_definition, agent_factory_build).
  */
 export interface YouTubeMediaPart {
   url: string;
@@ -8025,11 +8287,142 @@ export interface AgentDefinition {
   category: string;
   messages: AgentDefinitionMessage[];
   model_id: string;
-  settings: AgentDefinitionSettings;
+  settings: AgentDefinitionSettings_AgentDefinition;
   description?: string;
   custom_tools?: string[];
   context_policies?: AgentDefinitionContextPolicy[];
   variable_definitions?: AgentDefinitionVariable[];
+}
+
+/**
+ * One finished build: the agent, and every step answer it was built from.
+ *
+ * ``agent`` is a plain ``agent_definition`` — never a directive. The factory's
+ * code saves it through the one guarded writer, so a build creates exactly one
+ * agent row.
+ *  *
+ *  * Kind `agent_factory_build` (registry v2).
+ */
+export interface AgentFactoryBuild {
+  /**
+   * Absent only when the outcome is 'workflow_sized'.
+   */
+  agent?: AgentDefinition | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "agent_factory_build";
+  outcome: "passed" | "failed" | "workflow_sized" | "send_backs_exhausted";
+  /**
+   * Present on greenfield builds; a Mandate-backed build has none.
+   */
+  contract?: AgentFactoryContract | null;
+  /**
+   * The Goal Writer's agent_mandate_specification answer, carried unchanged.
+   */
+  goal_spec?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+  };
+  /**
+   * How many times the judge sent the build back (cap 2).
+   */
+  send_backs?: number;
+  /**
+   * Each Goal Writer question no one could answer, recorded as the assumption the build made.
+   */
+  assumptions?: string[];
+  tool_choice?: AgentFactoryToolChoice | null;
+  instructions?: AgentFactoryInstructions | null;
+  proof_review?: AgentFactoryProofReview | null;
+}
+
+/**
+ * The new agent's contract, for a build no Mandate backs (greenfield).
+ *
+ * A Mandate-backed build skips this step: its Provision and output kind ARE
+ * the contract, and the factory never re-decides them.
+ *  *
+ *  * Kind `agent_factory_contract` (registry v2).
+ */
+export interface AgentFactoryContract {
+  fit: AgentFactoryFit;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "agent_factory_contract";
+  inputs: AgentFactoryInput[];
+  output: AgentFactoryOutputChoice;
+  /**
+   * True when a run carries the person's own typed text beside the inputs.
+   */
+  accepts_user_input: boolean;
+}
+
+/**
+ * The new agent's two messages.
+ *  *
+ *  * Kind `agent_factory_instructions` (registry v2).
+ */
+export interface AgentFactoryInstructions {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "agent_factory_instructions";
+  /**
+   * The user message template; each input appears as {{name}} and reads like a real request.
+   */
+  user_message: string;
+  system_message: string;
+  /**
+   * Every input name the user message places — the guard checks it equals the contract's inputs.
+   */
+  placed_variables: string[];
+}
+
+/**
+ * The judge's verdict on one candidate agent.
+ *
+ * Deterministic gates (schema valid, kind validates, every variable placed,
+ * model routable) are code and run first; this kind carries the judgment of
+ * the goal spec's gated criteria and the blind pairwise comparison. Code
+ * un-blinds A/B afterwards.
+ *  *
+ *  * Kind `agent_factory_proof_review` (registry v2).
+ */
+export interface AgentFactoryProofReview {
+  cases: AgentFactoryCaseVerdict[];
+  gates: AgentFactoryGateResult[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "agent_factory_proof_review";
+  summary: string;
+  verdict: "pass" | "send_back" | "fail";
+  /**
+   * Set exactly when verdict is 'send_back'.
+   */
+  send_back?: AgentFactorySendBack | null;
+}
+
+/**
+ * The tools the new agent gets, and the profile class its model is chosen by.
+ *  *
+ *  * Kind `agent_factory_tool_choice` (registry v2).
+ */
+export interface AgentFactoryToolChoice {
+  tools?: AgentFactoryToolPick[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "agent_factory_tool_choice";
+  profile: AgentFactoryProfile;
+  /**
+   * Set when tools is empty: why the job needs none.
+   */
+  no_tools_reason?: string | null;
 }
 
 /**
@@ -21114,7 +21507,7 @@ export interface ToolTraceIncidentReport {
 }
 
 /**
- * Kind `topic_assignment_batch_v1` (registry v7).
+ * Kind `topic_assignment_batch_v1` (registry v8).
  */
 export interface TopicAssignmentBatchV1 {
   /**
@@ -21264,7 +21657,7 @@ export interface TopicRelevance {
 }
 
 /**
- * Kind `transcript` (registry v6).
+ * Kind `transcript` (registry v7).
  */
 export interface Transcript {
   title?: string | null;
@@ -21299,7 +21692,7 @@ export interface TranscriptUsage {
 /**
  * Output of ``ai.transcribe`` — plain text + timing, no chat shape.
  *  *
- *  * Kind `transcription_result` (registry v8).
+ *  * Kind `transcription_result` (registry v9).
  */
 export interface TranscriptionResult {
   text?: string;
@@ -21314,7 +21707,7 @@ export interface TranscriptionResult {
 }
 
 /**
- * Kind `translation_cell_evidence` (registry v3).
+ * Kind `translation_cell_evidence` (registry v4).
  */
 export interface TranslationCellEvidence {
   /**
@@ -21425,7 +21818,7 @@ export interface TranslationCellProposal {
 }
 
 /**
- * Kind `translation_cell_unsettled_value` (registry v2).
+ * Kind `translation_cell_unsettled_value` (registry v3).
  */
 export interface TranslationCellUnsettledValue {
   why?: string;
@@ -21434,7 +21827,7 @@ export interface TranslationCellUnsettledValue {
 }
 
 /**
- * Kind `troubleshooting_guide` (registry v6).
+ * Kind `troubleshooting_guide` (registry v7).
  */
 export interface TroubleshootingGuide {
   title: string;
@@ -21483,7 +21876,7 @@ export interface TrustEnvelope {
 /**
  * Output of ``assets.upload`` — the master file plus its rendered variants.
  *  *
- *  * Kind `uploaded_asset` (registry v12).
+ *  * Kind `uploaded_asset` (registry v13).
  */
 export interface UploadedAsset {
   /**
@@ -21527,7 +21920,7 @@ export interface UserInputs {
 }
 
 /**
- * Kind `uuid_value` (registry v8).
+ * Kind `uuid_value` (registry v9).
  */
 export interface UuidValue {
   /**
@@ -21577,7 +21970,7 @@ export interface Value {
  * never ships with confidence < 0.8 — below that the bucket is ``unknown``
  * by construction.
  *  *
- *  * Kind `value_assessment` (registry v3).
+ *  * Kind `value_assessment` (registry v4).
  */
 export interface ValueAssessment {
   /**
@@ -21595,7 +21988,7 @@ export interface ValueAssessment {
 }
 
 /**
- * Kind `video_prompt_options` (registry v7).
+ * Kind `video_prompt_options` (registry v8).
  */
 export interface VideoPromptOptions {
   /**
@@ -21631,7 +22024,7 @@ export interface VideoPromptOptions {
 }
 
 /**
- * Kind `video_result` (registry v15).
+ * Kind `video_result` (registry v16).
  */
 export interface VideoResult {
   url: string;
@@ -21655,7 +22048,7 @@ export interface VideoResult {
 }
 
 /**
- * Kind `video_transcript_research` (registry v5).
+ * Kind `video_transcript_research` (registry v6).
  */
 export interface VideoTranscriptResearch {
   title: string;
@@ -21689,7 +22082,7 @@ export interface VisualQcResult {
 /**
  * A measured writing voice: cadence, mechanics, lexicon, openers, register, idioms.
  *  *
- *  * Kind `voice_fingerprint` (registry v3).
+ *  * Kind `voice_fingerprint` (registry v4).
  */
 export interface VoiceFingerprint {
   /**
@@ -21744,7 +22137,7 @@ export interface VoiceFingerprint {
 /**
  * One result of ``brand_voice_measure``: an extraction or a draft check.
  *  *
- *  * Kind `voice_measure_result` (registry v4).
+ *  * Kind `voice_measure_result` (registry v5).
  */
 export interface VoiceMeasureResult {
   stats?: VoiceCheckStats | null;
@@ -21811,7 +22204,7 @@ export interface VoiceRewrite {
 }
 
 /**
- * Kind `web_a11y_lab_basics_v1` (registry v4).
+ * Kind `web_a11y_lab_basics_v1` (registry v5).
  */
 export interface WebA11yLabBasicsV1 {
   /**
@@ -21851,7 +22244,7 @@ export interface WebA11yLabBasicsV1 {
 }
 
 /**
- * Kind `web_anchor_text_descriptiveness_v1` (registry v4).
+ * Kind `web_anchor_text_descriptiveness_v1` (registry v5).
  */
 export interface WebAnchorTextDescriptivenessV1 {
   /**
@@ -21891,7 +22284,7 @@ export interface WebAnchorTextDescriptivenessV1 {
 }
 
 /**
- * Kind `web_asset_delivery_v1` (registry v4).
+ * Kind `web_asset_delivery_v1` (registry v5).
  */
 export interface WebAssetDeliveryV1 {
   /**
@@ -21931,7 +22324,7 @@ export interface WebAssetDeliveryV1 {
 }
 
 /**
- * Kind `web_broken_external_links_v1` (registry v4).
+ * Kind `web_broken_external_links_v1` (registry v5).
  */
 export interface WebBrokenExternalLinksV1 {
   /**
@@ -21968,7 +22361,7 @@ export interface WebBrokenExternalLinksV1 {
 }
 
 /**
- * Kind `web_broken_images_v1` (registry v4).
+ * Kind `web_broken_images_v1` (registry v5).
  */
 export interface WebBrokenImagesV1 {
   /**
@@ -22006,7 +22399,7 @@ export interface WebBrokenImagesV1 {
 }
 
 /**
- * Kind `web_broken_internal_links_v1` (registry v4).
+ * Kind `web_broken_internal_links_v1` (registry v5).
  */
 export interface WebBrokenInternalLinksV1 {
   /**
@@ -22045,7 +22438,7 @@ export interface WebBrokenInternalLinksV1 {
 }
 
 /**
- * Kind `web_broken_page_4xx_v1` (registry v4).
+ * Kind `web_broken_page_4xx_v1` (registry v5).
  */
 export interface WebBrokenPage4xxV1 {
   /**
@@ -22085,7 +22478,7 @@ export interface WebBrokenPage4xxV1 {
 }
 
 /**
- * Kind `web_caching_policy_v1` (registry v4).
+ * Kind `web_caching_policy_v1` (registry v5).
  */
 export interface WebCachingPolicyV1 {
   /**
@@ -22125,7 +22518,7 @@ export interface WebCachingPolicyV1 {
 }
 
 /**
- * Kind `web_canonical_conflicts_v1` (registry v4).
+ * Kind `web_canonical_conflicts_v1` (registry v5).
  */
 export interface WebCanonicalConflictsV1 {
   /**
@@ -22164,7 +22557,7 @@ export interface WebCanonicalConflictsV1 {
 }
 
 /**
- * Kind `web_canonical_presence_v1` (registry v4).
+ * Kind `web_canonical_presence_v1` (registry v5).
  */
 export interface WebCanonicalPresenceV1 {
   /**
@@ -22202,7 +22595,7 @@ export interface WebCanonicalPresenceV1 {
 }
 
 /**
- * Kind `web_content_depth_v1` (registry v4).
+ * Kind `web_content_depth_v1` (registry v5).
  */
 export interface WebContentDepthV1 {
   /**
@@ -22241,7 +22634,7 @@ export interface WebContentDepthV1 {
 }
 
 /**
- * Kind `web_content_freshness_v1` (registry v4).
+ * Kind `web_content_freshness_v1` (registry v5).
  */
 export interface WebContentFreshnessV1 {
   /**
@@ -22281,7 +22674,7 @@ export interface WebContentFreshnessV1 {
 }
 
 /**
- * Kind `web_content_quality_eeat_v1` (registry v4).
+ * Kind `web_content_quality_eeat_v1` (registry v5).
  */
 export interface WebContentQualityEeatV1 {
   /**
@@ -22332,7 +22725,7 @@ export interface WebContentQualityEeatV1 {
 }
 
 /**
- * Kind `web_crawl_depth_v1` (registry v4).
+ * Kind `web_crawl_depth_v1` (registry v5).
  */
 export interface WebCrawlDepthV1 {
   /**
@@ -22370,7 +22763,7 @@ export interface WebCrawlDepthV1 {
 }
 
 /**
- * Kind `web_cwv_cls_v1` (registry v4).
+ * Kind `web_cwv_cls_v1` (registry v5).
  */
 export interface WebCwvClsV1 {
   cls?: number;
@@ -22409,7 +22802,7 @@ export interface WebCwvClsV1 {
 }
 
 /**
- * Kind `web_cwv_inp_tbt_v1` (registry v4).
+ * Kind `web_cwv_inp_tbt_v1` (registry v5).
  */
 export interface WebCwvInpTbtV1 {
   /**
@@ -22448,7 +22841,7 @@ export interface WebCwvInpTbtV1 {
 }
 
 /**
- * Kind `web_cwv_lcp_v1` (registry v4).
+ * Kind `web_cwv_lcp_v1` (registry v5).
  */
 export interface WebCwvLcpV1 {
   /**
@@ -22490,7 +22883,7 @@ export interface WebCwvLcpV1 {
 }
 
 /**
- * Kind `web_duplicate_content_exact_v1` (registry v4).
+ * Kind `web_duplicate_content_exact_v1` (registry v5).
  */
 export interface WebDuplicateContentExactV1 {
   /**
@@ -22532,7 +22925,7 @@ export interface WebDuplicateContentExactV1 {
 }
 
 /**
- * Kind `web_excessive_outlinks_v1` (registry v4).
+ * Kind `web_excessive_outlinks_v1` (registry v5).
  */
 export interface WebExcessiveOutlinksV1 {
   /**
@@ -22571,7 +22964,7 @@ export interface WebExcessiveOutlinksV1 {
 }
 
 /**
- * Kind `web_grammar_spelling_v1` (registry v4).
+ * Kind `web_grammar_spelling_v1` (registry v5).
  */
 export interface WebGrammarSpellingV1 {
   /**
@@ -22610,7 +23003,7 @@ export interface WebGrammarSpellingV1 {
 }
 
 /**
- * Kind `web_gsc_ctr_opportunity_v1` (registry v4).
+ * Kind `web_gsc_ctr_opportunity_v1` (registry v5).
  */
 export interface WebGscCtrOpportunityV1 {
   /**
@@ -22654,7 +23047,7 @@ export interface WebGscCtrOpportunityV1 {
 }
 
 /**
- * Kind `web_gsc_index_coverage_v1` (registry v4).
+ * Kind `web_gsc_index_coverage_v1` (registry v5).
  */
 export interface WebGscIndexCoverageV1 {
   /**
@@ -22702,7 +23095,7 @@ export interface WebGscIndexCoverageV1 {
 }
 
 /**
- * Kind `web_gsc_keyword_cannibalization_v1` (registry v4).
+ * Kind `web_gsc_keyword_cannibalization_v1` (registry v5).
  */
 export interface WebGscKeywordCannibalizationV1 {
   /**
@@ -22743,7 +23136,7 @@ export interface WebGscKeywordCannibalizationV1 {
 }
 
 /**
- * Kind `web_gsc_performance_decay_v1` (registry v4).
+ * Kind `web_gsc_performance_decay_v1` (registry v5).
  */
 export interface WebGscPerformanceDecayV1 {
   trend?: string;
@@ -22785,7 +23178,7 @@ export interface WebGscPerformanceDecayV1 {
 }
 
 /**
- * Kind `web_h1_presence_v1` (registry v4).
+ * Kind `web_h1_presence_v1` (registry v5).
  */
 export interface WebH1PresenceV1 {
   /**
@@ -22825,7 +23218,7 @@ export interface WebH1PresenceV1 {
 }
 
 /**
- * Kind `web_heading_hierarchy_v1` (registry v4).
+ * Kind `web_heading_hierarchy_v1` (registry v5).
  */
 export interface WebHeadingHierarchyV1 {
   /**
@@ -22874,7 +23267,7 @@ export interface WebHeadingHierarchyV1 {
 }
 
 /**
- * Kind `web_host_protocol_consistency_v1` (registry v4).
+ * Kind `web_host_protocol_consistency_v1` (registry v5).
  */
 export interface WebHostProtocolConsistencyV1 {
   /**
@@ -22913,7 +23306,7 @@ export interface WebHostProtocolConsistencyV1 {
 }
 
 /**
- * Kind `web_hreflang_reciprocity_v1` (registry v4).
+ * Kind `web_hreflang_reciprocity_v1` (registry v5).
  */
 export interface WebHreflangReciprocityV1 {
   /**
@@ -22953,7 +23346,7 @@ export interface WebHreflangReciprocityV1 {
 }
 
 /**
- * Kind `web_hreflang_validity_v1` (registry v4).
+ * Kind `web_hreflang_validity_v1` (registry v5).
  */
 export interface WebHreflangValidityV1 {
   /**
@@ -22993,7 +23386,7 @@ export interface WebHreflangValidityV1 {
 }
 
 /**
- * Kind `web_hsts_policy_v1` (registry v4).
+ * Kind `web_hsts_policy_v1` (registry v5).
  */
 export interface WebHstsPolicyV1 {
   /**
@@ -23032,7 +23425,7 @@ export interface WebHstsPolicyV1 {
 }
 
 /**
- * Kind `web_html_lang_validity_v1` (registry v4).
+ * Kind `web_html_lang_validity_v1` (registry v5).
  */
 export interface WebHtmlLangValidityV1 {
   /**
@@ -23071,7 +23464,7 @@ export interface WebHtmlLangValidityV1 {
 }
 
 /**
- * Kind `web_https_enforcement_v1` (registry v4).
+ * Kind `web_https_enforcement_v1` (registry v5).
  */
 export interface WebHttpsEnforcementV1 {
   /**
@@ -23110,7 +23503,7 @@ export interface WebHttpsEnforcementV1 {
 }
 
 /**
- * Kind `web_image_alt_presence_v1` (registry v4).
+ * Kind `web_image_alt_presence_v1` (registry v5).
  */
 export interface WebImageAltPresenceV1 {
   /**
@@ -23150,7 +23543,7 @@ export interface WebImageAltPresenceV1 {
 }
 
 /**
- * Kind `web_image_alt_quality_v1` (registry v4).
+ * Kind `web_image_alt_quality_v1` (registry v5).
  */
 export interface WebImageAltQualityV1 {
   /**
@@ -23189,7 +23582,7 @@ export interface WebImageAltQualityV1 {
 }
 
 /**
- * Kind `web_image_dimension_attrs_v1` (registry v4).
+ * Kind `web_image_dimension_attrs_v1` (registry v5).
  */
 export interface WebImageDimensionAttrsV1 {
   /**
@@ -23229,7 +23622,7 @@ export interface WebImageDimensionAttrsV1 {
 }
 
 /**
- * Kind `web_image_lazy_loading_v1` (registry v4).
+ * Kind `web_image_lazy_loading_v1` (registry v5).
  */
 export interface WebImageLazyLoadingV1 {
   /**
@@ -23269,7 +23662,7 @@ export interface WebImageLazyLoadingV1 {
 }
 
 /**
- * Kind `web_image_modern_format_v1` (registry v4).
+ * Kind `web_image_modern_format_v1` (registry v5).
  */
 export interface WebImageModernFormatV1 {
   /**
@@ -23310,7 +23703,7 @@ export interface WebImageModernFormatV1 {
 }
 
 /**
- * Kind `web_image_oversized_v1` (registry v4).
+ * Kind `web_image_oversized_v1` (registry v5).
  */
 export interface WebImageOversizedV1 {
   /**
@@ -23351,7 +23744,7 @@ export interface WebImageOversizedV1 {
 }
 
 /**
- * Kind `web_internal_inlink_coverage_v1` (registry v4).
+ * Kind `web_internal_inlink_coverage_v1` (registry v5).
  */
 export interface WebInternalInlinkCoverageV1 {
   /**
@@ -23389,7 +23782,7 @@ export interface WebInternalInlinkCoverageV1 {
 }
 
 /**
- * Kind `web_internal_link_equity_v1` (registry v4).
+ * Kind `web_internal_link_equity_v1` (registry v5).
  */
 export interface WebInternalLinkEquityV1 {
   /**
@@ -23430,7 +23823,7 @@ export interface WebInternalLinkEquityV1 {
 }
 
 /**
- * Kind `web_internal_redirect_links_v1` (registry v4).
+ * Kind `web_internal_redirect_links_v1` (registry v5).
  */
 export interface WebInternalRedirectLinksV1 {
   /**
@@ -23471,7 +23864,7 @@ export interface WebInternalRedirectLinksV1 {
 }
 
 /**
- * Kind `web_intrusive_interstitials_v1` (registry v4).
+ * Kind `web_intrusive_interstitials_v1` (registry v5).
  */
 export interface WebIntrusiveInterstitialsV1 {
   /**
@@ -23510,7 +23903,7 @@ export interface WebIntrusiveInterstitialsV1 {
 }
 
 /**
- * Kind `web_keyword_topical_coverage_v1` (registry v4).
+ * Kind `web_keyword_topical_coverage_v1` (registry v5).
  */
 export interface WebKeywordTopicalCoverageV1 {
   /**
@@ -23550,7 +23943,7 @@ export interface WebKeywordTopicalCoverageV1 {
 }
 
 /**
- * Kind `web_local_business_markup_v1` (registry v4).
+ * Kind `web_local_business_markup_v1` (registry v5).
  */
 export interface WebLocalBusinessMarkupV1 {
   nap?: {
@@ -23598,7 +23991,7 @@ export interface WebLocalBusinessMarkupV1 {
 }
 
 /**
- * Kind `web_meta_description_duplication_v1` (registry v4).
+ * Kind `web_meta_description_duplication_v1` (registry v5).
  */
 export interface WebMetaDescriptionDuplicationV1 {
   /**
@@ -23637,7 +24030,7 @@ export interface WebMetaDescriptionDuplicationV1 {
 }
 
 /**
- * Kind `web_meta_description_length_v1` (registry v4).
+ * Kind `web_meta_description_length_v1` (registry v5).
  */
 export interface WebMetaDescriptionLengthV1 {
   /**
@@ -23675,7 +24068,7 @@ export interface WebMetaDescriptionLengthV1 {
 }
 
 /**
- * Kind `web_meta_description_presence_v1` (registry v4).
+ * Kind `web_meta_description_presence_v1` (registry v5).
  */
 export interface WebMetaDescriptionPresenceV1 {
   /**
@@ -23714,7 +24107,7 @@ export interface WebMetaDescriptionPresenceV1 {
 }
 
 /**
- * Kind `web_meta_refresh_redirect_v1` (registry v4).
+ * Kind `web_meta_refresh_redirect_v1` (registry v5).
  */
 export interface WebMetaRefreshRedirectV1 {
   /**
@@ -23753,7 +24146,7 @@ export interface WebMetaRefreshRedirectV1 {
 }
 
 /**
- * Kind `web_meta_robots_conflicts_v1` (registry v4).
+ * Kind `web_meta_robots_conflicts_v1` (registry v5).
  */
 export interface WebMetaRobotsConflictsV1 {
   /**
@@ -23796,7 +24189,7 @@ export interface WebMetaRobotsConflictsV1 {
 }
 
 /**
- * Kind `web_mixed_content_v1` (registry v4).
+ * Kind `web_mixed_content_v1` (registry v5).
  */
 export interface WebMixedContentV1 {
   /**
@@ -23834,7 +24227,7 @@ export interface WebMixedContentV1 {
 }
 
 /**
- * Kind `web_mobile_render_quality_v1` (registry v4).
+ * Kind `web_mobile_render_quality_v1` (registry v5).
  */
 export interface WebMobileRenderQualityV1 {
   /**
@@ -23872,7 +24265,7 @@ export interface WebMobileRenderQualityV1 {
 }
 
 /**
- * Kind `web_mobile_usability_lab_v1` (registry v4).
+ * Kind `web_mobile_usability_lab_v1` (registry v5).
  */
 export interface WebMobileUsabilityLabV1 {
   /**
@@ -23911,7 +24304,7 @@ export interface WebMobileUsabilityLabV1 {
 }
 
 /**
- * Kind `web_near_duplicate_content_v1` (registry v4).
+ * Kind `web_near_duplicate_content_v1` (registry v5).
  */
 export interface WebNearDuplicateContentV1 {
   /**
@@ -23952,7 +24345,7 @@ export interface WebNearDuplicateContentV1 {
 }
 
 /**
- * Kind `web_nofollow_internal_links_v1` (registry v4).
+ * Kind `web_nofollow_internal_links_v1` (registry v5).
  */
 export interface WebNofollowInternalLinksV1 {
   /**
@@ -23990,7 +24383,7 @@ export interface WebNofollowInternalLinksV1 {
 }
 
 /**
- * Kind `web_og_image_validity_v1` (registry v4).
+ * Kind `web_og_image_validity_v1` (registry v5).
  */
 export interface WebOgImageValidityV1 {
   /**
@@ -24031,7 +24424,7 @@ export interface WebOgImageValidityV1 {
 }
 
 /**
- * Kind `web_orphan_pages_v1` (registry v4).
+ * Kind `web_orphan_pages_v1` (registry v5).
  */
 export interface WebOrphanPagesV1 {
   /**
@@ -24072,7 +24465,7 @@ export interface WebOrphanPagesV1 {
 }
 
 /**
- * Kind `web_page_weight_v1` (registry v4).
+ * Kind `web_page_weight_v1` (registry v5).
  */
 export interface WebPageWeightV1 {
   /**
@@ -24111,7 +24504,7 @@ export interface WebPageWeightV1 {
 }
 
 /**
- * Kind `web_pagination_markup_v1` (registry v4).
+ * Kind `web_pagination_markup_v1` (registry v5).
  */
 export interface WebPaginationMarkupV1 {
   /**
@@ -24148,7 +24541,7 @@ export interface WebPaginationMarkupV1 {
 }
 
 /**
- * Kind `web_readability_v1` (registry v4).
+ * Kind `web_readability_v1` (registry v5).
  */
 export interface WebReadabilityV1 {
   /**
@@ -24191,7 +24584,7 @@ export interface WebReadabilityV1 {
 }
 
 /**
- * Kind `web_redirect_chain_v1` (registry v4).
+ * Kind `web_redirect_chain_v1` (registry v5).
  */
 export interface WebRedirectChainV1 {
   /**
@@ -24232,7 +24625,7 @@ export interface WebRedirectChainV1 {
 }
 
 /**
- * Kind `web_redirect_loop_v1` (registry v4).
+ * Kind `web_redirect_loop_v1` (registry v5).
  */
 export interface WebRedirectLoopV1 {
   /**
@@ -24269,7 +24662,7 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v19).
+ * Kind `web_result` (registry v20).
  */
 export interface WebResult {
   url: string;
@@ -24330,7 +24723,7 @@ export interface WebResult {
 }
 
 /**
- * Kind `web_robots_txt_health_v1` (registry v4).
+ * Kind `web_robots_txt_health_v1` (registry v5).
  */
 export interface WebRobotsTxtHealthV1 {
   /**
@@ -24372,7 +24765,7 @@ export interface WebRobotsTxtHealthV1 {
 }
 
 /**
- * Kind `web_search_intent_alignment_v1` (registry v4).
+ * Kind `web_search_intent_alignment_v1` (registry v5).
  */
 export interface WebSearchIntentAlignmentV1 {
   /**
@@ -24427,7 +24820,7 @@ export interface WebSearchResults {
 /**
  * Output of ``ai.util.extract_search_urls`` — flat URL list.
  *  *
- *  * Kind `web_search_urls` (registry v7).
+ *  * Kind `web_search_urls` (registry v8).
  */
 export interface WebSearchUrls {
   urls?: string[];
@@ -24438,7 +24831,7 @@ export interface WebSearchUrls {
 }
 
 /**
- * Kind `web_security_headers_v1` (registry v4).
+ * Kind `web_security_headers_v1` (registry v5).
  */
 export interface WebSecurityHeadersV1 {
   /**
@@ -24476,7 +24869,7 @@ export interface WebSecurityHeadersV1 {
 }
 
 /**
- * Kind `web_serp_snippet_quality_v1` (registry v4).
+ * Kind `web_serp_snippet_quality_v1` (registry v5).
  */
 export interface WebSerpSnippetQualityV1 {
   /**
@@ -24516,7 +24909,7 @@ export interface WebSerpSnippetQualityV1 {
 }
 
 /**
- * Kind `web_server_error_5xx_v1` (registry v4).
+ * Kind `web_server_error_5xx_v1` (registry v5).
  */
 export interface WebServerError5xxV1 {
   /**
@@ -24555,7 +24948,7 @@ export interface WebServerError5xxV1 {
 }
 
 /**
- * Kind `web_sitemap_coverage_v1` (registry v4).
+ * Kind `web_sitemap_coverage_v1` (registry v5).
  */
 export interface WebSitemapCoverageV1 {
   /**
@@ -24598,7 +24991,7 @@ export interface WebSitemapCoverageV1 {
 }
 
 /**
- * Kind `web_sitemap_health_v1` (registry v4).
+ * Kind `web_sitemap_health_v1` (registry v5).
  */
 export interface WebSitemapHealthV1 {
   /**
@@ -24640,7 +25033,7 @@ export interface WebSitemapHealthV1 {
 }
 
 /**
- * Kind `web_social_meta_completeness_v1` (registry v4).
+ * Kind `web_social_meta_completeness_v1` (registry v5).
  */
 export interface WebSocialMetaCompletenessV1 {
   /**
@@ -24680,7 +25073,7 @@ export interface WebSocialMetaCompletenessV1 {
 }
 
 /**
- * Kind `web_soft_404_detection_v1` (registry v4).
+ * Kind `web_soft_404_detection_v1` (registry v5).
  */
 export interface WebSoft404DetectionV1 {
   /**
@@ -24719,7 +25112,7 @@ export interface WebSoft404DetectionV1 {
 }
 
 /**
- * Kind `web_structured_data_coverage_v1` (registry v4).
+ * Kind `web_structured_data_coverage_v1` (registry v5).
  */
 export interface WebStructuredDataCoverageV1 {
   /**
@@ -24761,7 +25154,7 @@ export interface WebStructuredDataCoverageV1 {
 }
 
 /**
- * Kind `web_structured_data_validity_v1` (registry v4).
+ * Kind `web_structured_data_validity_v1` (registry v5).
  */
 export interface WebStructuredDataValidityV1 {
   /**
@@ -24802,7 +25195,7 @@ export interface WebStructuredDataValidityV1 {
 }
 
 /**
- * Kind `web_temporary_redirect_usage_v1` (registry v4).
+ * Kind `web_temporary_redirect_usage_v1` (registry v5).
  */
 export interface WebTemporaryRedirectUsageV1 {
   /**
@@ -24841,7 +25234,7 @@ export interface WebTemporaryRedirectUsageV1 {
 }
 
 /**
- * Kind `web_text_html_ratio_v1` (registry v4).
+ * Kind `web_text_html_ratio_v1` (registry v5).
  */
 export interface WebTextHtmlRatioV1 {
   /**
@@ -24880,7 +25273,7 @@ export interface WebTextHtmlRatioV1 {
 }
 
 /**
- * Kind `web_thin_content_v1` (registry v4).
+ * Kind `web_thin_content_v1` (registry v5).
  */
 export interface WebThinContentV1 {
   /**
@@ -24919,7 +25312,7 @@ export interface WebThinContentV1 {
 }
 
 /**
- * Kind `web_title_duplication_v1` (registry v4).
+ * Kind `web_title_duplication_v1` (registry v5).
  */
 export interface WebTitleDuplicationV1 {
   /**
@@ -24958,7 +25351,7 @@ export interface WebTitleDuplicationV1 {
 }
 
 /**
- * Kind `web_title_keyword_alignment_v1` (registry v4).
+ * Kind `web_title_keyword_alignment_v1` (registry v5).
  */
 export interface WebTitleKeywordAlignmentV1 {
   /**
@@ -24998,7 +25391,7 @@ export interface WebTitleKeywordAlignmentV1 {
 }
 
 /**
- * Kind `web_title_length_v1` (registry v4).
+ * Kind `web_title_length_v1` (registry v5).
  */
 export interface WebTitleLengthV1 {
   /**
@@ -25037,7 +25430,7 @@ export interface WebTitleLengthV1 {
 }
 
 /**
- * Kind `web_title_presence_v1` (registry v4).
+ * Kind `web_title_presence_v1` (registry v5).
  */
 export interface WebTitlePresenceV1 {
   /**
@@ -25076,7 +25469,7 @@ export interface WebTitlePresenceV1 {
 }
 
 /**
- * Kind `web_tls_certificate_v1` (registry v4).
+ * Kind `web_tls_certificate_v1` (registry v5).
  */
 export interface WebTlsCertificateV1 {
   /**
@@ -25116,7 +25509,7 @@ export interface WebTlsCertificateV1 {
 }
 
 /**
- * Kind `web_ttfb_server_response_v1` (registry v4).
+ * Kind `web_ttfb_server_response_v1` (registry v5).
  */
 export interface WebTtfbServerResponseV1 {
   /**
@@ -25154,7 +25547,7 @@ export interface WebTtfbServerResponseV1 {
 }
 
 /**
- * Kind `web_url_design_quality_v1` (registry v4).
+ * Kind `web_url_design_quality_v1` (registry v5).
  */
 export interface WebUrlDesignQualityV1 {
   /**
@@ -25193,7 +25586,7 @@ export interface WebUrlDesignQualityV1 {
 }
 
 /**
- * Kind `web_viewport_meta_v1` (registry v4).
+ * Kind `web_viewport_meta_v1` (registry v5).
  */
 export interface WebViewportMetaV1 {
   /**
@@ -25247,7 +25640,7 @@ export interface WineTasting {
 }
 
 /**
- * Kind `word_count_result` (registry v10).
+ * Kind `word_count_result` (registry v11).
  */
 export interface WordCountResult {
   /**
@@ -25281,7 +25674,7 @@ export interface WordCountResult {
 }
 
 /**
- * Kind `work_queue_wave_result` (registry v8).
+ * Kind `work_queue_wave_result` (registry v9).
  */
 export interface WorkQueueWaveResult {
   /**
@@ -25315,7 +25708,7 @@ export interface WorkQueueWaveResult {
 }
 
 /**
- * Kind `work_seed_result` (registry v8).
+ * Kind `work_seed_result` (registry v9).
  */
 export interface WorkSeedResult {
   /**
@@ -25379,6 +25772,11 @@ export interface WorkflowRunResult {
 export type GeneratedKindSlug =
   | "agent_assignment_batch_result"
   | "agent_definition"
+  | "agent_factory_build"
+  | "agent_factory_contract"
+  | "agent_factory_instructions"
+  | "agent_factory_proof_review"
+  | "agent_factory_tool_choice"
   | "agent_function_spec"
   | "agent_input_qme_report"
   | "agent_mandate_specification"
@@ -25961,6 +26359,11 @@ export type GeneratedKindSlug =
 export interface KindPayloadBySlug {
   "agent_assignment_batch_result": AgentAssignmentBatchResult;
   "agent_definition": AgentDefinition;
+  "agent_factory_build": AgentFactoryBuild;
+  "agent_factory_contract": AgentFactoryContract;
+  "agent_factory_instructions": AgentFactoryInstructions;
+  "agent_factory_proof_review": AgentFactoryProofReview;
+  "agent_factory_tool_choice": AgentFactoryToolChoice;
   "agent_function_spec": AgentFunctionSpec;
   "agent_input_qme_report": AgentInputQmeReport;
   "agent_mandate_specification": AgentMandateSpecification;
@@ -26547,6 +26950,11 @@ export type KindPayload<S extends GeneratedKindSlug> = KindPayloadBySlug[S];
 export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "agent_assignment_batch_result",
   "agent_definition",
+  "agent_factory_build",
+  "agent_factory_contract",
+  "agent_factory_instructions",
+  "agent_factory_proof_review",
+  "agent_factory_tool_choice",
   "agent_function_spec",
   "agent_input_qme_report",
   "agent_mandate_specification",

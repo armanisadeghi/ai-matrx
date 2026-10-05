@@ -162,6 +162,15 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         ],
       },
       {
+        name: "Agent Factory",
+        iconName: "Factory",
+        destinations: [
+          destination("/administration/agents/factory", [
+            "/administration/agents/factory/[buildId]",
+          ]),
+        ],
+      },
+      {
         name: "Published Agent Apps",
         iconName: "Boxes",
         destinations: [

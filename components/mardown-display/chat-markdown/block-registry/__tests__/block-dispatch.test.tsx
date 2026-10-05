@@ -174,6 +174,13 @@ const FE_SYNTHESIZED_TYPES = [
   "seo_ruling_correction_set",
   "seo_ruling_confirmation_set",
   "seo_ruling_matcher_set",
+  // The five Agent Factory step kinds: one component per kind, reached
+  // through that kind's kind_component row.
+  "agent_factory_contract",
+  "agent_factory_tool_choice",
+  "agent_factory_instructions",
+  "agent_factory_proof_review",
+  "agent_factory_build",
 ];
 
 describe("block-dispatch registry", () => {

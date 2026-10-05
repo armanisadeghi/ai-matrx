@@ -103,6 +103,13 @@ import {
   SeoRulingMatcherSetBlock,
 } from "@/components/mardown-display/blocks/seo-ruling-kinds/SeoRulingSetBlocks";
 import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
+import {
+  AgentFactoryBuildBlock,
+  AgentFactoryContractBlock,
+  AgentFactoryInstructionsBlock,
+  AgentFactoryProofReviewBlock,
+  AgentFactoryToolChoiceBlock,
+} from "@/components/mardown-display/blocks/agent-factory-kinds/AgentFactoryKindBlocks";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
 import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComponent";
@@ -616,6 +623,11 @@ export type FeSynthesizedBlockType =
   | "seo_ruling_correction_set"
   | "seo_ruling_confirmation_set"
   | "seo_ruling_matcher_set"
+  | "agent_factory_contract"
+  | "agent_factory_tool_choice"
+  | "agent_factory_instructions"
+  | "agent_factory_proof_review"
+  | "agent_factory_build"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -820,6 +832,11 @@ export type ShapeBlockType =
   | "seo_ruling_correction_set"
   | "seo_ruling_confirmation_set"
   | "seo_ruling_matcher_set"
+  | "agent_factory_contract"
+  | "agent_factory_tool_choice"
+  | "agent_factory_instructions"
+  | "agent_factory_proof_review"
+  | "agent_factory_build"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -2947,6 +2964,25 @@ const SHAPE_BLOCK_DISPATCH = {
   ),
   pick_list: ({ block, index }) => (
     <PickListBlock key={index} content={block.content} metadata={block.metadata} />
+  ),
+
+  // The five Agent Factory step kinds (kind-route.ts resolver-only path): each
+  // has its own bundled `kind_component` row whose key IS the slug. Models:
+  // aidream/aidream/kinds/agent_factory.py.
+  agent_factory_contract: ({ block, index }) => (
+    <AgentFactoryContractBlock key={index} content={block.content} metadata={block.metadata} />
+  ),
+  agent_factory_tool_choice: ({ block, index }) => (
+    <AgentFactoryToolChoiceBlock key={index} content={block.content} metadata={block.metadata} />
+  ),
+  agent_factory_instructions: ({ block, index }) => (
+    <AgentFactoryInstructionsBlock key={index} content={block.content} metadata={block.metadata} />
+  ),
+  agent_factory_proof_review: ({ block, index }) => (
+    <AgentFactoryProofReviewBlock key={index} content={block.content} metadata={block.metadata} />
+  ),
+  agent_factory_build: ({ block, index }) => (
+    <AgentFactoryBuildBlock key={index} content={block.content} metadata={block.metadata} />
   ),
 
   // The `markdown` kind route (features/content-ir/react/kind-route.ts

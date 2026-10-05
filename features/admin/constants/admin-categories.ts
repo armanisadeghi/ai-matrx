@@ -470,6 +470,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Agent Factory",
+        description:
+          "Every Agent Factory build step by step: goal, tools, instructions, proof, judge, and the agent it saved.",
+        iconName: "Factory",
+        link: "/administration/agents/factory",
+        isNew: true,
+      },
+      {
         title: "Agent support lookup",
         description:
           "Support tool: look into an organization's or a person's agents while doing tech support. The System Agents pages manage the platform's own agents only.",
