@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@ai-matrx/design-system/controls";
+import { Badge, Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -728,32 +728,27 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                   <span className="text-[10px] font-medium text-muted-foreground hidden sm:inline mr-1">
                     Columns
                   </span>
-                  {comparison.criteria.map((criterion) => (
-                    <button
-                      key={criterion.name}
-                      type="button"
-                      onClick={() => toggleColumnVisibility(criterion.name)}
-                      title={
-                        hiddenColumns.has(criterion.name)
-                          ? `Show ${criterion.name}`
-                          : `Hide ${criterion.name}`
-                      }
-                      className={`inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium border transition-colors ${
-                        hiddenColumns.has(criterion.name)
-                          ? "bg-muted text-muted-foreground border-border"
-                          : "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700"
-                      }`}
-                    >
-                      {hiddenColumns.has(criterion.name) ? (
-                        <EyeOff className="h-3 w-3" />
-                      ) : (
-                        <Eye className="h-3 w-3" />
-                      )}
-                      <span className="hidden md:inline truncate max-w-[8rem]">
-                        {criterion.name}
-                      </span>
-                    </button>
-                  ))}
+                  <ChipSet>
+                    {comparison.criteria.map((criterion) => {
+                      const hidden = hiddenColumns.has(criterion.name);
+                      return (
+                        <Chip
+                          key={criterion.name}
+                          asChild
+                          pressed={!hidden}
+                          tone="emerald"
+                          label={criterion.name}
+                          icon={hidden ? <EyeOff /> : <Eye />}
+                          title={hidden ? `Show ${criterion.name}` : `Hide ${criterion.name}`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleColumnVisibility(criterion.name)}
+                          />
+                        </Chip>
+                      );
+                    })}
+                  </ChipSet>
                 </div>
               </div>
 

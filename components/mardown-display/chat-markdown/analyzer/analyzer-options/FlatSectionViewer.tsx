@@ -1,3 +1,4 @@
+import { Button } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { Copy, Check, FileText, Eye, EyeOff } from "lucide-react";
 import { 
@@ -148,27 +149,15 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
                   </h3>
                   
                   {/* Raw/Rendered Toggle */}
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => setShowRawContent(!showRawContent)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                      showRawContent
-                        ? "bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300"
-                        : "bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                    }`}
+                    aria-pressed={showRawContent}
+                    icon={showRawContent ? <EyeOff /> : <Eye />}
                     title={showRawContent ? "Switch to rendered markdown" : "Switch to raw content"}
                   >
-                    {showRawContent ? (
-                      <>
-                        <EyeOff size={12} />
-                        Raw
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={12} />
-                        Rendered
-                      </>
-                    )}
-                  </button>
+                    {showRawContent ? "Raw" : "Rendered"}
+                  </Button>
                 </div>
                 
                 {/* Bookmark Path Display */}

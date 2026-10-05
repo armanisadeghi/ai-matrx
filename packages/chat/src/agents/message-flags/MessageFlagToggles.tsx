@@ -11,6 +11,7 @@ import { BookMarked, DatabaseZap, TextCursorInput, type LucideIcon } from "lucid
 import { cn } from "@ai-matrx/design-system";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ai-matrx/design-system";
 import type { FlagVerdict, MessageFlagKey, MessageFlags } from "./flags";
+import { Chip } from "@ai-matrx/design-system/controls";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 export interface FlagToggleState {
@@ -61,43 +62,58 @@ export function MessageFlagToggles({ flags, states, onToggle, className }: Messa
         return (
           <Tooltip key={flag}>
             <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-pressed={on}
-                aria-label={label}
-                data-testid={`message-flag-${flag}`}
-                data-verdict={state.verdict.verdict}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle(flag);
-                }}
-                className={cn(
-                  "inline-flex h-5 items-center justify-center gap-1 rounded transition-opacity",
-                  on
-                    ? // An ON flag names itself — a lone coloured icon said
-                      // nothing about what this message now does.
-                      cn(
-                        "rounded-full px-1.5 text-[11px] font-medium",
-                        broken
-                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                          : "bg-primary/10 text-primary hover:bg-primary/15",
-                      )
-                    : cn(
-                        "w-5 hover:bg-accent",
-                        // Hover reveals the off toggles; a touch screen has no
-                        // hover, so there they always show.
-                        "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100",
-                        impaired ? "text-muted-foreground/40" : "text-muted-foreground",
-                      ),
-                )}
-              >
-                <Icon className="h-3 w-3 shrink-0" />
-                {on && <span className="whitespace-nowrap">{label}</span>}
-              </button>
+              {on ? (
+                // An ON flag names itself — a lone coloured icon said nothing
+                // about what this message now does.
+                <Chip
+                  asChild
+                  pressed
+                  tone={broken ? "warning" : "primary"}
+                  label={label}
+                  icon={<Icon />}
+                  title=""
+                >
+                  <button
+                    type="button"
+                    aria-label={label}
+                    data-testid={`message-flag-${flag}`}
+                    data-verdict={state.verdict.verdict}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggle(flag);
+                    }}
+                  />
+                </Chip>
+              ) : (
+                <button
+                  type="button"
+                  aria-pressed={false}
+                  aria-label={label}
+                  data-testid={`message-flag-${flag}`}
+                  data-verdict={state.verdict.verdict}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggle(flag);
+                  }}
+                  className={cn(
+                    "inline-flex h-5 w-5 items-center justify-center rounded transition-opacity hover:bg-accent",
+                    // Hover reveals the off toggles; a touch screen has no
+                    // hover, so there they always show.
+                    "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100",
+                    impaired ? "text-muted-foreground/40" : "text-muted-foreground",
+                  )}
+                >
+                  <Icon className="h-3 w-3 shrink-0" />
+                </button>
+              )}
             </TooltipTrigger>
             <TooltipContent side="top" className="z-[9999] max-w-xs text-xs">
               <p className="font-medium">

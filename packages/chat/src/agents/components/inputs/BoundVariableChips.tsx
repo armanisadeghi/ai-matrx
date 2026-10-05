@@ -29,9 +29,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
+import { Chip } from "@ai-matrx/design-system/controls";
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "../../../host/notify";
 import { confirm } from "@host/components/dialogs/confirm/ConfirmDialogHost";
@@ -174,8 +174,10 @@ function BoundScopePrompt({
         dispatch(addActiveScope(scopeId))
       }
     >
-      <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs text-primary hover:bg-primary/15">
-        <SelectValue placeholder={`Select ${label}`} />
+      <SelectTrigger asChild hideArrow>
+        <Chip asChild tone="primary" label={`Select ${label}`}>
+          <button type="button" />
+        </Chip>
       </SelectTrigger>
       <SelectContent>
         {scopes.length === 0 ? (

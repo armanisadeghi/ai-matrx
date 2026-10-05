@@ -35,6 +35,7 @@
  * in every SmartAgentInput.
  */
 
+import { Chip } from "@ai-matrx/design-system/controls";
 import { useEffect } from "react";
 import {
   FileText,
@@ -723,29 +724,22 @@ function RailPill({ item }: { item: RailItem }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <span data-rail-entry="" className="group relative inline-flex shrink-0">
-          <button
-            type="button"
-            onClick={item.onOpen}
-            aria-label={item.label}
-            className={cn(
-              "inline-flex h-6 min-w-0 items-center gap-1 rounded-md border px-2",
-              "text-xs font-medium transition-colors",
-              item.active
-                ? item.tone === "primary"
-                  ? "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
-                  : "border-foreground/20 bg-muted text-foreground ring-1 ring-inset ring-foreground/10"
-                : item.tone === "primary"
-                  ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-                  : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-            )}
+          <Chip
+            asChild
+            tone={item.tone === "primary" ? "primary" : "neutral"}
+            pressed={item.active ? true : undefined}
+            label={item.word}
+            title=""
+            icon={
+              item.busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Icon />
+              )
+            }
           >
-            {item.busy ? (
-              <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-            ) : (
-              <Icon className="h-3 w-3 shrink-0" />
-            )}
-            <span className="max-w-[4.5rem] truncate">{item.word}</span>
-          </button>
+            <button type="button" onClick={item.onOpen} aria-label={item.label} />
+          </Chip>
           {item.onRemove && (
             <button
               type="button"

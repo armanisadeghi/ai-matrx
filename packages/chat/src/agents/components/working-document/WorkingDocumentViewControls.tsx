@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
 } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 import type { EditorMode } from "@host/features/notes/components/NoteEditorCore";
 import {
   setWorkingDocEditorMode,
@@ -92,24 +93,18 @@ export function WorkingDocumentViewControls({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
-            type="button"
+          <Button
+            variant="quiet"
             title="Change view mode"
             aria-label={`View: ${current.label}`}
             disabled={!editorActive}
-            className={cn(
-              "flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
-              editorActive
-                ? "bg-accent/50 text-foreground hover:bg-accent"
-                : "cursor-not-allowed text-muted-foreground/50",
-            )}
+            icon={<CurrentIcon />}
+            iconEnd={<ChevronDown />}
           >
-            <CurrentIcon />
             {/* The word goes when the host panel is narrow (its @container);
                 the icon and the aria-label still say which view this is. */}
             <span className="hidden @[20rem]/wdhead:inline">{current.label}</span>
-            <ChevronDown className="opacity-60" />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[150px]">
           {modes.map(({ mode, label, icon: Icon }) => (
@@ -137,8 +132,12 @@ export function WorkingDocumentViewControls({
       </DropdownMenu>
 
       {showDiff && (
-        <button
-          type="button"
+        <Button
+          variant="quiet"
+          icon={<GitCompare />}
+          aria-pressed={mainView === "agent-diff"}
+          // Unseen agent changes tint the door instead of a hand-drawn dot.
+          tone={hasUnseenChange && mainView !== "agent-diff" ? "primary" : undefined}
           onClick={() =>
             setWorkingDocMainView(
               conversationId,
@@ -150,38 +149,24 @@ export function WorkingDocumentViewControls({
               ? "Back to editor"
               : "View the agent's latest changes"
           }
-          className={cn(
-            "relative flex shrink-0 cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
+          aria-label={
             mainView === "agent-diff"
-              ? "bg-accent text-foreground"
-              : hasUnseenChange
-                ? "text-primary hover:bg-accent/50"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-          )}
-        >
-          <GitCompare />
-          {hasUnseenChange && mainView !== "agent-diff" && (
-            <span className="absolute right-1 top-0.5 h-1.5 w-1.5 rounded-full bg-primary" />
-          )}
-        </button>
+              ? "Back to editor"
+              : "View the agent's latest changes"
+          }
+        />
       )}
 
-      <button
-        type="button"
+      <Button
+        variant="quiet"
+        icon={<History />}
         onClick={() =>
           history.toggle({ title: "Version history", data: { conversationId } })
         }
         title="Version history"
+        aria-label="Version history"
         aria-pressed={history.isVisible}
-        className={cn(
-          "flex shrink-0 cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors [&_svg]:h-3.5 [&_svg]:w-3.5",
-          history.isVisible
-            ? "bg-accent text-foreground"
-            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-        )}
-      >
-        <History />
-      </button>
+      />
     </div>
   );
 }

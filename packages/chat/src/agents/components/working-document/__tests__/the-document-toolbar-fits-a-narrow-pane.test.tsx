@@ -52,16 +52,16 @@ describe("the view-mode button never squeezes", () => {
     const { container, unmount } = render(<WorkingDocumentViewControls conversationId="c-narrow" />);
     const modeButton = container.querySelector('button[title="Change view mode"]');
     expect(modeButton).not.toBeNull();
-    const button = classesOf(modeButton);
-    expect(button.has("shrink-0")).toBe(true);
-    expect(button.has("whitespace-nowrap")).toBe(true);
+    // THE button (design-system controls) never shrinks and never wraps: its
+    // geometry is locked in controls.css, so the contract is "is THE button".
+    expect(modeButton?.getAttribute("data-matrx-control")).toBe("button");
     // Icon-only in a narrow panel, and still named.
     expect(modeButton?.getAttribute("aria-label")).toBe("View: Edit");
     const word = Array.from(modeButton?.querySelectorAll("span") ?? []).find((span) => span.textContent === "Edit");
     expect(classesOf(word ?? null).has("hidden")).toBe(true);
     expect(classesOf(word ?? null).has("@[20rem]/wdhead:inline")).toBe(true);
     for (const other of Array.from(container.querySelectorAll("button"))) {
-      expect(classesOf(other).has("shrink-0")).toBe(true);
+      expect(other.getAttribute("data-matrx-control")).toBe("button");
     }
     unmount();
   });

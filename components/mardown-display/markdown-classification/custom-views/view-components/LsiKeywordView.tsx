@@ -1,3 +1,4 @@
+import { Button, Input } from "@ai-matrx/design-system/controls";
 import { useState, useEffect, type CSSProperties } from "react";
 import { toast } from "@/lib/toast";
 import {
@@ -322,24 +323,25 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
                     <div className="flex items-center gap-2">
                       {/* Add keyword inline */}
                       <div className="flex items-center gap-1">
-                        <input
-                          type="text"
-                          value={newKeywords[section] || ""}
-                          onChange={(e) =>
-                            handleNewKeywordChange(section, e.target.value)
-                          }
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && addKeyword(section)
-                          }
-                          placeholder="Add New Keyword..."
-                          className="w-96 px-4 py-1 text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100 placeholder-slate-400"
-                        />
-                        <button
+                        <div className="w-96">
+                          <Input
+                            type="text"
+                            value={newKeywords[section] || ""}
+                            onChange={(e) =>
+                              handleNewKeywordChange(section, e.target.value)
+                            }
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && addKeyword(section)
+                            }
+                            placeholder="Add New Keyword..."
+                          />
+                        </div>
+                        <Button
+                          variant="primary"
                           onClick={() => addKeyword(section)}
-                          className="p-1 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                        >
-                          <Plus size={16} />
-                        </button>
+                          aria-label="Add keyword"
+                          icon={<Plus />}
+                        />
                       </div>
                     </div>
                   </div>

@@ -9,6 +9,7 @@
  */
 
 import React from "react";
+import { Chip, ChipSet } from "@ai-matrx/design-system/controls";
 import {
   BarChart,
   ChefHat,
@@ -68,40 +69,36 @@ export function ResponseModeButtons({
   const activeMode = selectedAgentId ? modeForAgent(selectedAgentId) : "text";
 
   return (
-    <div className="flex flex-wrap justify-center gap-1 md:gap-1.5">
+    <ChipSet className="justify-center">
       {modes.map((entry) => {
         const isActive = activeMode === entry.mode;
         const isMapped = entry.agentId !== null;
         const unresolved = entry.mandateKey !== null && entry.error !== null;
         return (
-          <button
+          <Chip
             key={entry.mode}
-            onClick={() => {
-              if (disabled || !entry.agentId) return;
-              onModeSelect?.(entry.mode, entry.agentId);
-            }}
-            disabled={disabled || !isMapped}
+            asChild
+            pressed={isActive}
+            label={RESPONSE_MODE_LABELS[entry.mode]}
+            icon={RESPONSE_MODE_ICONS[entry.mode]}
             title={
               unresolved
                 ? `Not available yet — no agent is assigned (${entry.mandateKey})`
                 : undefined
             }
-            className={`py-1 px-2.5 rounded-full flex items-center gap-1 border text-xs transition-colors ${
-              isActive
-                ? "bg-zinc-300 dark:bg-zinc-600 text-gray-800 dark:text-gray-200 border-zinc-300 dark:border-zinc-700"
-                : isMapped
-                  ? "text-gray-800 dark:text-gray-300 hover:bg-zinc-300 dark:hover:bg-zinc-700 border-zinc-300 dark:border-zinc-700"
-                  : "text-gray-400 dark:text-gray-600 border-zinc-200 dark:border-zinc-800 cursor-not-allowed"
-            } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <span className={isActive ? "text-yellow-500" : ""}>
-              {RESPONSE_MODE_ICONS[entry.mode]}
-            </span>
-            <span className="pr-0.5">{RESPONSE_MODE_LABELS[entry.mode]}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (disabled || !entry.agentId) return;
+                onModeSelect?.(entry.mode, entry.agentId);
+              }}
+              disabled={disabled || !isMapped}
+            />
+          </Chip>
         );
       })}
-    </div>
+    </ChipSet>
   );
 }
 

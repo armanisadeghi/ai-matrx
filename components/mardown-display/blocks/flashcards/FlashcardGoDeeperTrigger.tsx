@@ -2,7 +2,7 @@
 
 import { type MouseEvent } from "react";
 import { Layers } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Chip } from "@ai-matrx/design-system/controls";
 import { useOpenFlashcardSubcardsWindow } from "@/features/overlays/openers/flashcardSubcardsWindow";
 import type { FlashcardSubcard } from "./flashcard-subcards";
 import { subcardsWindowTitle } from "./flashcard-subcards";
@@ -57,20 +57,15 @@ export function FlashcardGoDeeperTrigger({
   };
 
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={handleClick}
+    <Chip
+      asChild
+      tone="emerald"
+      label="Go deeper"
+      icon={<Layers />}
       title={`Explore ${subcards.length} deeper card${subcards.length === 1 ? "" : "s"}`}
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-full border border-green-300/70 bg-green-100/90 px-1.5 py-0.5 text-[10px] font-medium text-green-800 shadow-sm transition-colors",
-        "hover:bg-green-200/90 disabled:opacity-50",
-        "dark:border-green-700/70 dark:bg-green-900/60 dark:text-green-200 dark:hover:bg-green-900/80",
-        className,
-      )}
+      className={className}
     >
-      <Layers className="h-3 w-3 shrink-0" />
-      <span className="whitespace-nowrap">Go deeper</span>
-    </button>
+      <button type="button" disabled={disabled} onClick={handleClick} />
+    </Chip>
   );
 }

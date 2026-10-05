@@ -281,7 +281,7 @@ export const InForceLine: React.FC<{
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border px-2 py-1 text-[11px]",
+        "flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-md border px-2 py-1 text-[11px]",
         superseded
           ? "border-destructive/40 bg-destructive/5 text-destructive"
           : "border-border bg-muted/30 text-muted-foreground",

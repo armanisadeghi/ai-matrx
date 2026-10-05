@@ -932,26 +932,16 @@ function AdminTabOpener({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
+        <ControlButton
           variant="outline"
-          size={compact ? "icon" : "sm"}
+          tone="primary"
           aria-label="Dev Tabs"
           title="Dev Tabs"
-          className={cn(
-            "border-primary/40 text-primary hover:bg-primary/10 hover:text-primary",
-            compact
-              ? "h-9 w-9 rounded-full"
-              : "h-7 rounded-full px-3 text-xs gap-1.5",
-          )}
+          icon={<FlaskConical />}
+          iconEnd={compact ? undefined : <ChevronDown />}
         >
-          <FlaskConical className={cn(compact ? "h-4 w-4" : "h-3.5 w-3.5")} />
-          {!compact && (
-            <>
-              Dev Tabs
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </>
-          )}
-        </Button>
+          {compact ? undefined : "Dev Tabs"}
+        </ControlButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-xs flex items-center gap-1.5 text-primary">

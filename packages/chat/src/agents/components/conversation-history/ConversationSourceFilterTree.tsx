@@ -26,7 +26,7 @@
  * host list just renders `scope.items`.
  */
 
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -779,18 +779,18 @@ const OnlyButton: React.FC<{ onClick: () => void; label: string }> = ({
   onClick,
   label,
 }) => (
-  <button
-    type="button"
+  <Button
+    variant="link"
+    className="hidden shrink-0 group-hover/srcrow:inline-flex"
     onClick={(e) => {
       e.stopPropagation();
       onClick();
     }}
-    className="hidden shrink-0 rounded px-1 text-[9px] font-semibold uppercase tracking-wide text-primary hover:bg-primary/10 group-hover/srcrow:inline-flex"
     aria-label={label}
     title={label}
   >
     only
-  </button>
+  </Button>
 );
 
 /** OnlyButton twin for rows whose whole surface is already a <button>. */
@@ -798,19 +798,20 @@ const OnlySpan: React.FC<{ onClick: () => void; label: string }> = ({
   onClick,
   label,
 }) => (
-  <span
-    role="button"
-    tabIndex={-1}
-    onClick={(e) => {
-      e.stopPropagation();
-      onClick();
-    }}
-    className="hidden shrink-0 rounded px-1 text-[9px] font-semibold uppercase tracking-wide text-primary hover:bg-primary/10 group-hover/srcrow:inline-flex"
-    aria-label={label}
-    title={label}
-  >
-    only
-  </span>
+  <Button variant="link" asChild className="hidden shrink-0 group-hover/srcrow:inline-flex">
+    <span
+      role="button"
+      tabIndex={-1}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={label}
+      title={label}
+    >
+      only
+    </span>
+  </Button>
 );
 
 /** Tiny muted pill marking automation sources in the tree. */
