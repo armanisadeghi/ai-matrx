@@ -20,12 +20,7 @@ jest.mock("../../../../../host/diagnostics", () => ({
 }));
 // The subject still reaches the app's Error Inspector through other host
 // modules; both sinks share one mock so no capture escapes the assertions.
-jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
-  captureError: (input: { code?: string; message?: string; details?: string }) => {
-    captured.push(input);
-    return "id";
-  },
-}));
+
 jest.mock("../../../../../host/notify", () => ({ toast: { warning: jest.fn(), error: jest.fn() } }));
 
 import { deliveredFieldsFor, recordContextReceipt, toContextReceipt } from "../receipt-check";

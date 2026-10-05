@@ -13,7 +13,7 @@
 // The import chain reaches rich-document's transfer handler, which imports a records-ui subpath (`table-shape`)
 // present in the package source (0.93.68) but not yet in the published copy installed here (0.93.67).
 // Unrelated to grouping; that one module is stubbed until the release train publishes it.
-jest.mock("@host/features/rich-document/actions/handlers/transfer", () => ({}));
+
 
 import { buildDisplayEntries, groupDisplayEntries } from "../display-groups";
 import type { MessageRecord } from "../../../redux/execution-system/messages/messages.slice";

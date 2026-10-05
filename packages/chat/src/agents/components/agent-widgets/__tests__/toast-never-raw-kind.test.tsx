@@ -15,7 +15,7 @@ jest.mock("../../../../store/hooks", () => ({
   useAppSelector: (sel: () => unknown) => sel(),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+
 jest.mock("../../../redux/execution-system/selectors/aggregate.selectors", () => ({
   selectLatestAccumulatedText: () => () => answer,
   selectIsExecuting: () => () => executing,

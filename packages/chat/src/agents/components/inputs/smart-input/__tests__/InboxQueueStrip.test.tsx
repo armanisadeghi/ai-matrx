@@ -19,9 +19,7 @@ import { promoteQueuedToSteer } from "../../../../redux/execution-system/inbox/i
 
 // Editing itself has separate dialog coverage; this strip test exercises the
 // availability of its entry point without depending on jsdom media queries.
-jest.mock("@host/components/dialogs/text-input/TextInputDialog", () => ({
-  TextInputDialog: () => null,
-}));
+
 
 // The real promotion does a DELETE followed by a POST. Keep that boundary
 // pending: this is the interval in which a second click used to be possible.

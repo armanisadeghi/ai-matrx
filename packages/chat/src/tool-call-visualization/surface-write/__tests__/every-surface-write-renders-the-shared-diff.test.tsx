@@ -27,10 +27,7 @@ import type { ToolLifecycleEntry } from "../../../agents/types/request.types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@host/components/MarkdownStream", () => ({
-  __esModule: true,
-  default: ({ content }: { content: string }) => <div>{content}</div>,
-}));
+
 jest.mock("../../../host/prefs-react", () => ({
   ...jest.requireActual("../../../host/prefs-react"),
   useSessionKnob: () => undefined,

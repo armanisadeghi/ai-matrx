@@ -37,9 +37,7 @@ jest.mock("../conversation-bundle", () => {
   };
 });
 
-jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
-  loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
-}));
+
 
 const CONVERSATION_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 

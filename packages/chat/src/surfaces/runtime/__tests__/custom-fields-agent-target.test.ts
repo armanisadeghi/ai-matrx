@@ -14,9 +14,7 @@ jest.mock("../../../host/notify", () => ({
 jest.mock("../registry", () => ({
   getManifest: () => undefined,
 }));
-jest.mock("@host/features/content-ir/registry/schema-source-kind-tables", () => ({
-  getKindInputContractBySlug: jest.fn(),
-}));
+
 
 import {
   applySurfaceWrite,

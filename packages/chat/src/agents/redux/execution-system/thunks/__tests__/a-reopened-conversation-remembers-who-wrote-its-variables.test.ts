@@ -48,9 +48,7 @@ jest.mock("../conversation-bundle", () => {
   };
 });
 
-jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
-  loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
-}));
+
 
 jest.mock("../../inbox/inbox.thunks", () => ({
   hydrateInbox: () => ({ type: "test/hydrateInbox" }),

@@ -57,9 +57,7 @@ jest.mock(
   },
 );
 
-jest.mock("@host/features/code/redux/codeEditHistoryHydration", () => ({
-  loadCodeEditHistoryThunk: () => ({ type: "test/loadCodeEditHistory" }),
-}));
+
 
 jest.mock(
   "../../redux/execution-system/thunks/create-instance.thunk",

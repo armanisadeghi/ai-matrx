@@ -41,7 +41,7 @@ jest.mock("../../../store/hooks", () => ({
       pendingAsks,
     }),
 }));
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
+
 jest.mock("../../redux/execution-system/thunks/resume-instance.thunk", () => ({
   resumeInstance: jest.fn(),
 }));

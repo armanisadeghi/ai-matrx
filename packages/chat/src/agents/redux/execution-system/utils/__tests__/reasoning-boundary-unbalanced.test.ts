@@ -56,12 +56,7 @@ jest.mock("../../../../../host/diagnostics", () => ({
 }));
 // The subject still reaches the app's Error Inspector through other host
 // modules; both sinks share one mock so no capture escapes the assertions.
-jest.mock("@host/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@host/lib/diagnostics/errorCaptureStore"),
-  captureError: (input: { source: string; message: string }) => {
-    captured.push({ source: input.source, message: input.message });
-  },
-}));
+
 
 const REQ = "req_reasoning_boundary";
 const CONV = "conv_reasoning_boundary";

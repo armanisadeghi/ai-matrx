@@ -11,7 +11,7 @@ jest.mock("../../../../store/hooks", () => ({
   useAppSelector: () => [{ id: "run-1" }],
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
+
 
 jest.mock("../../../../host/window-openers", () => ({
   useFloatingLiveRun: (options: unknown) => mockUseFloatingLiveRun(options),

@@ -31,7 +31,7 @@ jest.mock("../../../store/hooks", () => ({
   useAppDispatch: () => dispatchSpy,
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
+
 const loadConversation = jest.fn((args: unknown) => ({ type: "loadConversation", args }));
 jest.mock("../../../agents/redux/execution-system/thunks/load-conversation.thunk", () => ({
   loadConversation: (args: unknown) => loadConversation(args),

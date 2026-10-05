@@ -25,7 +25,7 @@ jest.mock("../../../store/hooks", () => ({
     sel?.suspendedFor ? suspended : "default",
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../store/hooks"));
+
 jest.mock(
   "../../../agents/redux/execution-system/active-requests/active-requests.selectors",
   () => ({

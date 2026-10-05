@@ -29,9 +29,7 @@ jest.mock("@ai-matrx/design-system", () => ({
   },
 }));
 
-jest.mock("@host/components/official/ProTextarea", () => ({
-  ProTextarea: () => null,
-}));
+
 
 describe("SelectInput modal-layer close boundary", () => {
   let host: HTMLDivElement;
