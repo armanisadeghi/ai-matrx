@@ -1,11 +1,6 @@
--- chair-step: replaces three function bodies, same signatures and grants, no table/column/index/policy touched. (1) platform.enforce_relation_edge: the two cardinality counts leave out the edge being written (`a.id is distinct from new.id`), so a merge that moves a single-valued link onto the surviving record is no longer refused by the link itself. (2) custom.migrate_merge: also records, in the same migration row's inverse, what it did to the winner and to what pointed at the loser (`merge_undo`). (3) custom.migrate_undo: undoing a merge also moves those links back, restores the withdrawn duplicate links, re-parents the children and puts the winner's values back while the winner is unchanged since the merge.
+-- chair-step: puts back the three bodies tableactions_f replaced — platform.enforce_relation_edge, custom.migrate_merge and custom.migrate_undo — byte for byte as they were live on 2026-10-04 (same signatures and grants).
 -- lock: custom
 -- lane: TABLE-EXPERIENCE
--- based-on: platform.enforce_relation_edge() c1db6a58811938a7df1506ae0dbe22b80572c48bf2ac9c329d1076a9d3272ec6
--- based-on: custom.migrate_merge(uuid, uuid, uuid, text) d845dd4d274d77dd244599fdaac30b04963f7d2253cb38155819dab7197969ad
--- based-on: custom.migrate_undo(uuid, uuid) e62c8be9ced4b5fe1b0aa0e2b74eb0f8685846267db879aa5a6cd22fdd708adb
---
--- The inverse is `migrations/inverse/tableactions_f_merge_is_not_refused_by_a_link_to_the_merged_record_down.sql`.
 --
 CREATE OR REPLACE FUNCTION platform.enforce_relation_edge()
  RETURNS trigger
@@ -122,14 +117,12 @@ begin
    where a.source_type = new.source_type and a.source_id = new.source_id
      and a.role = new.role and a.deleted_at is null
      and a.relation_field_id is not null
-     and a.id is distinct from new.id
      and not (a.target_type = new.target_type and a.target_id = new.target_id);
   if v_live >= v_max then
     select a.target_id into v_other
       from platform.associations a
      where a.source_type = new.source_type and a.source_id = new.source_id
        and a.role = new.role and a.deleted_at is null and a.relation_field_id is not null
-       and a.id is distinct from new.id
      limit 1;
     if v_max = 1 then
       raise exception 'this points at one thing at a time, and it already points at %',
@@ -166,7 +159,6 @@ begin
   return new;
 end;
 $function$
-
 ;
 
 CREATE OR REPLACE FUNCTION custom.migrate_merge(p_organization_id uuid, p_winner_id uuid, p_loser_id uuid, p_note text DEFAULT NULL::text)
@@ -198,10 +190,6 @@ declare
   v_after    jsonb;
   v_checked  text[] := '{}';
   a          record;
-  v_retargeted_ids uuid[] := '{}';
-  v_detached_ids   uuid[] := '{}';
-  v_reparented_ids uuid[] := '{}';
-  v_win_after      jsonb;
 begin
   -- THE CALLER AND THE TWO ROWS, decided on the one ladder — lane REACH's prologue, kept
   -- verbatim: this verb became a client door while DOOR-FIX 2 was landing, and a merge that
@@ -346,15 +334,11 @@ begin
 
   -- Everything the loser contained now hangs off the winner, or the merge would orphan it —
   -- and, since the delete door honours containment, would take it with the loser.
-  -- TABLE-EXPERIENCE (v7 item 3): which children moved is kept, so an undo moves them back.
-  with moved as (
-    update custom.record r
-       set data = r.data || jsonb_build_object('parent_id', p_winner_id::text)
-     where r.organization_id = p_organization_id
-       and r.deleted_at is null
-       and nullif(r.data ->> 'parent_id', '')::uuid = p_loser_id
-    returning r.id)
-  select coalesce(array_agg(id), '{}') into v_reparented_ids from moved;
+  update custom.record r
+     set data = r.data || jsonb_build_object('parent_id', p_winner_id::text)
+   where r.organization_id = p_organization_id
+     and r.deleted_at is null
+     and nullif(r.data ->> 'parent_id', '')::uuid = p_loser_id;
 
   -- WHAT POINTED AT THE LOSER POINTS AT THE WINNER. REC-21's "forever" for relations, not
   -- only for readers who remember to resolve the id.
@@ -370,11 +354,9 @@ begin
                   and y.id <> a.id) then
       update platform.associations set deleted_at = now() where id = a.id;
       v_detached := v_detached + 1;
-      v_detached_ids := v_detached_ids || a.id;
     else
       update platform.associations set target_id = p_winner_id where id = a.id;
       v_retargeted := v_retargeted + 1;
-      v_retargeted_ids := v_retargeted_ids || a.id;
     end if;
   end loop;
 
@@ -390,25 +372,6 @@ begin
             revoked_at = null;
 
   perform custom.record_delete(p_organization_id, p_loser_id);
-
-  -- TABLE-EXPERIENCE (v7 item 3) — EVERYTHING THE MERGE DID, FOR ITS UNDO. The loser's own
-  -- document was stored before anything moved; what the merge did to the WINNER and to what
-  -- pointed at the loser is only known now, so it joins the same inverse. `custom.migrate_undo`
-  -- reads `merge_undo`: the winner's keys as they were (put back only while the winner is still
-  -- exactly as the merge left it), the links moved to the winner, the duplicate links withdrawn,
-  -- and the children re-parented.
-  select r.data into v_win_after from custom.record r
-   where r.organization_id = p_organization_id and r.id = p_winner_id;
-  update history.migration_log l
-     set inverse = l.inverse || jsonb_build_object('merge_undo', jsonb_build_object(
-           'winner_id', p_winner_id::text,
-           'winner_before', (select coalesce(jsonb_object_agg(k, coalesce(v_win.data -> k, 'null'::jsonb)), '{}'::jsonb)
-                               from unnest(v_checked || array['_values', '_retired']) k),
-           'winner_after', v_win_after,
-           'retargeted', to_jsonb(v_retargeted_ids),
-           'detached', to_jsonb(v_detached_ids),
-           'reparented', to_jsonb(v_reparented_ids)))
-   where l.organization_id = p_organization_id and l.id = v_log;
 
   return jsonb_build_object('verb', 'merge', 'winner', p_winner_id, 'loser', p_loser_id,
                             'migration_id', v_log, 'values_taken', v_moved,
@@ -431,21 +394,14 @@ AS $function$
 declare
   v_target uuid;
   v_verb   text;
-  v_mu     jsonb;
-  v_answer jsonb;
-  v_win    uuid;
-  v_loser  uuid;
-  v_links  integer := 0;
-  v_kids   integer := 0;
-  v_winner_back boolean := false;
 begin
   perform custom.assert_client_may_reach(p_organization_id, 'custom.migrate_undo');
   if p_log_id is null then
     raise exception 'custom.migrate_undo: which Migration?' using errcode = '22004';
   end if;
 
-  select coalesce(nullif(l.inverse ->> 'record_id', '')::uuid, l.target_id), l.verb, l.inverse -> 'merge_undo'
-    into v_target, v_verb, v_mu
+  select coalesce(nullif(l.inverse ->> 'record_id', '')::uuid, l.target_id), l.verb
+    into v_target, v_verb
     from history.migration_log l
    where l.organization_id = p_organization_id and l.id = p_log_id;
   if v_target is null and v_verb is null then
@@ -462,48 +418,7 @@ begin
 
   -- The undo itself is unchanged: `history.migration_undo` writes through the store's own
   -- verbs, and schema `history` stays closed to clients — this door is the reach into it.
-  v_answer := history.migration_undo(p_organization_id, p_log_id);
-
-  -- TABLE-EXPERIENCE (v7 item 3) — A MERGE COMES UNDONE WHOLE. `history.migration_undo` brings
-  -- the merged-away record back and revokes its alias; what the merge did to everything else is
-  -- put back here from `merge_undo` (written by `custom.migrate_merge`). A merge recorded before
-  -- this carries no `merge_undo` and is undone as before.
-  if v_verb = 'merge' and v_mu is not null then
-    v_win   := nullif(v_mu ->> 'winner_id', '')::uuid;
-    v_loser := v_target;
-    -- The links that were moved to the winner point at the record they were made for again.
-    update platform.associations x
-       set target_id = v_loser
-     where x.organization_id = p_organization_id
-       and x.id in (select (e #>> '{}')::uuid from jsonb_array_elements(coalesce(v_mu -> 'retargeted', '[]')) e)
-       and x.target_id = v_win and x.deleted_at is null;
-    get diagnostics v_links = row_count;
-    -- The duplicate links the merge withdrew come back (they pointed at the loser all along).
-    update platform.associations x
-       set deleted_at = null
-     where x.organization_id = p_organization_id
-       and x.id in (select (e #>> '{}')::uuid from jsonb_array_elements(coalesce(v_mu -> 'detached', '[]')) e)
-       and x.deleted_at is not null;
-    -- Children hang off the record they belonged to again.
-    update custom.record r
-       set data = r.data || jsonb_build_object('parent_id', v_loser::text)
-     where r.organization_id = p_organization_id
-       and r.id in (select (e #>> '{}')::uuid from jsonb_array_elements(coalesce(v_mu -> 'reparented', '[]')) e)
-       and nullif(r.data ->> 'parent_id', '')::uuid = v_win;
-    get diagnostics v_kids = row_count;
-    -- The winner's own values, alternates and kept-aside values as they were — only while the
-    -- winner is exactly as the merge left it: an edit made since is somebody's work, never undone.
-    if v_win is not null
-       and (select r.data from custom.record r where r.organization_id = p_organization_id and r.id = v_win)
-           = (v_mu -> 'winner_after')
-       and (v_mu -> 'winner_before') <> '{}'::jsonb then
-      perform custom.record_update(p_organization_id, v_win, v_mu -> 'winner_before');
-      v_winner_back := true;
-    end if;
-    v_answer := coalesce(v_answer, '{}'::jsonb) || jsonb_build_object(
-      'links_moved_back', v_links, 'children_moved_back', v_kids, 'winner_put_back', v_winner_back);
-  end if;
-  return v_answer;
+  return history.migration_undo(p_organization_id, p_log_id);
 end;
 $function$
 ;

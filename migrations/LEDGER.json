@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T03:53:44.358Z",
+  "generated_at": "2026-10-05T03:54:04.726Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6877,6 +6877,12 @@
       "filename": "tableactions_e_the_archive_sorts_by_its_column.sql",
       "checksum": "8d02b7517d7250304c1916612673e71e0ff4e0c3dc4053d641db49b2876c4f0f",
       "applied_at": "2026-10-03 19:00:28.21495+00"
+    },
+    "migrations/campaign/tableactions_f_merge_is_not_refused_by_a_link_to_the_merged_record.sql": {
+      "source": "matrx-frontend",
+      "filename": "tableactions_f_merge_is_not_refused_by_a_link_to_the_merged_record.sql",
+      "checksum": "05999709b8793079dd1996808d302997b2e7683c2650018b4b6d863ed80d0750",
+      "applied_at": "2026-10-05 03:54:02.956921+00"
     },
     "migrations/campaign/tableapi1_a_person_can_hold_a_key_that_is_them.sql": {
       "source": "matrx-frontend",
