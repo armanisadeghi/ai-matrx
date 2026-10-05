@@ -63,6 +63,8 @@ import {
   resolveOriginalView,
 } from "@/features/source-studio/sourceStudioModel";
 import { OriginalPane } from "@/features/source-studio/components/OriginalPane";
+import { ConversationEmbed } from "@/features/knowledge/hub/embeds/ConversationEmbed";
+import { messageRangeOfPart } from "@/features/education/trust/recordCitation";
 
 // react-pdf is heavy — keep it out of the inspector chunk until a PDF is shown.
 const PdfPreview = dynamic(
@@ -98,7 +100,33 @@ export interface SourceInspectorPaneProps {
 
 type TabKey = "match" | "clean" | "raw" | "extractions";
 
-export function SourceInspectorPane({
+/** A conversation citation: the chat's own read-only transcript, at the cited messages. */
+function ConversationCitationBody(props: SourceInspectorPaneProps) {
+  const range = messageRangeOfPart(props.chunkId ?? "");
+  return (
+    <div className="flex h-full min-h-0 flex-col" data-testid="source-inspector-conversation">
+      {props.placeLabel ? (
+        <div className="shrink-0 border-b border-border px-3 py-1.5 text-xs font-medium">
+          {props.placeLabel}
+        </div>
+      ) : null}
+      <div className="min-h-0 flex-1">
+        <ConversationEmbed
+          conversationId={props.sourceId}
+          messageId={null}
+          messageRange={range}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function SourceInspectorPane(props: SourceInspectorPaneProps) {
+  if (props.sourceKind === "conversation") return <ConversationCitationBody {...props} />;
+  return <PageSourceInspector {...props} />;
+}
+
+function PageSourceInspector({
   sourceKind,
   sourceId,
   chunkId,

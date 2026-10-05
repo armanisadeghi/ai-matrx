@@ -25,7 +25,7 @@ import type {
   ResolvedSourceSet,
 } from "@ai-matrx/agents/sources";
 import type { Depth } from "@/features/education/assessment/data/types";
-import { attachRefsToCitation } from "@/features/education/trust/grounding";
+import { attachRefsToCitation, recordKindOfResourceType } from "@/features/education/trust/grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import {
@@ -169,6 +169,7 @@ export function groundCitations(
         // own page in the app.
         url: source.file_id ? null : openHrefOf(source),
         title: source.label,
+        recordKind: recordKindOfResourceType(source.ref.resource_type),
         pageForCitation: () => owner?.page,
       });
     }),

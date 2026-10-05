@@ -27,6 +27,7 @@ import {
   type CitedPlace,
 } from "@/features/rag/components/source-inspector/citedAnchor";
 import type { SourceCitation } from "./types";
+import { recordKindOf } from "./recordCitation";
 import { sourceStudioPath } from "@/features/source-studio/sourceStudioModel";
 import {
   inspectorArgsForSourceRef,
@@ -96,6 +97,9 @@ export interface CitationPlaceState {
  */
 export function recordIdOfCitation(c: SourceCitation | null | undefined): string | null {
   if (!c || c.fileId || c.documentId) return null;
+  // A conversation / table / pick list / saved result / document names its place
+  // by its part id (`recordCitation.ts`), never as a transcript to search.
+  if (recordKindOf(c)) return null;
   if (c.url && /^https?:\/\//i.test(c.url)) return null;
   return parsePartId(c.sourceId)?.documentId ?? null;
 }

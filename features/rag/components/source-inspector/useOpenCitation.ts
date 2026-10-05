@@ -9,6 +9,7 @@
  *
  * Routing by `source_kind`:
  *   - cld_file / library_doc → Source Inspector (lands on the exact page)
+ *   - conversation           → Source Inspector, at the cited message range
  *   - note                   → Notes window, opened to the note
  *   - transcript             → Transcript Studio window, opened to the session
  *   - scraped                → Scraper window, opened to the page URL
@@ -61,6 +62,9 @@ export function useOpenCitation() {
       switch (c.sourceKind) {
         case "cld_file":
         case "library_doc":
+        // A conversation opens in the same window, at the cited message range
+        // (`chunkId` carries the part id `m<first>-<last>`).
+        case "conversation":
           openInspector({
             sourceKind: c.sourceKind,
             sourceId: c.sourceId,
@@ -111,6 +115,7 @@ export function citationOpensInWindow(sourceKind: string): boolean {
   return (
     sourceKind === "cld_file" ||
     sourceKind === "library_doc" ||
+    sourceKind === "conversation" ||
     sourceKind === "note" ||
     sourceKind === "transcript" ||
     sourceKind === "scraped"

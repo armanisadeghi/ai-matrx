@@ -75,7 +75,30 @@ export interface SourceCitation {
   url?: string;
   /** 1-based page to open the file/PDF at, when known. */
   page?: number;
+  /**
+   * What kind of record the Source is when it has no file or document behind
+   * it (a conversation, a table, a pick list, a saved result, a markdown
+   * document). Stamped by the persisting surface from the Source's own
+   * resource type; the part id (`sourceId`) then names the place inside it.
+   */
+  recordKind?: RecordCitationKind;
 }
+
+/** The record kinds a citation can open at a place, without a file behind them. */
+export type RecordCitationKind =
+  | "conversation"
+  | "table"
+  | "pick_list"
+  | "saved_result"
+  | "document";
+
+export const RECORD_CITATION_KINDS: readonly RecordCitationKind[] = [
+  "conversation",
+  "table",
+  "pick_list",
+  "saved_result",
+  "document",
+];
 
 /**
  * THE ENVELOPE. Attach as the `trust` field on any AI-generated education item
@@ -410,6 +433,10 @@ function coerceCitation(raw: unknown): SourceCitation | null {
     typeof pageRaw === "number" && Number.isFinite(pageRaw)
       ? pageRaw
       : undefined;
+  const recordKindRaw = asString(raw.recordKind ?? raw.record_kind);
+  const recordKind = RECORD_CITATION_KINDS.includes(recordKindRaw as RecordCitationKind)
+    ? (recordKindRaw as RecordCitationKind)
+    : undefined;
   return {
     sourceId,
     sourceKind,
@@ -420,6 +447,7 @@ function coerceCitation(raw: unknown): SourceCitation | null {
     documentId,
     url,
     page,
+    ...(recordKind ? { recordKind } : {}),
   };
 }
 

@@ -35,17 +35,50 @@ type Phase =
 
 export function ConversationEmbed({
   conversationId,
-  messageId,
+  messageId: messageIdProp,
+  messageRange = null,
 }: {
   conversationId: string;
   messageId: string | null;
+  /**
+   * A citation's message range (0-based `position`s): the first message is the
+   * landing and every message in the range is marked. Wins over `messageId`.
+   */
+  messageRange?: { first: number; last: number } | null;
 }) {
+  const rangeKey = messageRange ? `${messageRange.first}-${messageRange.last}` : "";
+  const [rangeIds, setRangeIds] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!messageRange) {
+      setRangeIds(null);
+      return;
+    }
+    let live = true;
+    void (async () => {
+      const { data } = await createClient()
+        .schema("chat")
+        .from("message")
+        .select("id, position")
+        .eq("conversation_id", conversationId)
+        .gte("position", messageRange.first)
+        .lte("position", messageRange.last)
+        .is("deleted_at", null)
+        .order("position", { ascending: true });
+      if (live) setRangeIds((data ?? []).map((r) => r.id as string));
+    })();
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, rangeKey]);
+  const messageId = messageRange ? (rangeIds?.[0] ?? null) : messageIdProp;
+  const markIds = rangeIds && rangeIds.length ? rangeIds : null;
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const [phase, setPhase] = useState<Phase>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [landing, setLanding] = useState<"idle" | "finding" | "found" | "not_found">(
-    messageId ? "finding" : "idle",
+    messageId || messageRange ? "finding" : "idle",
   );
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -98,9 +131,13 @@ export function ConversationEmbed({
       const el = root ? findMessageGroup(root, messageId) : null;
       if (el) {
         el.scrollIntoView({ block: "center" });
-        el.setAttribute("data-peek-match", "");
+        // A citation's range keeps every cited message marked; a search hit marks one for a moment.
+        const marked = (markIds ?? [messageId])
+          .map((id) => (root ? findMessageGroup(root, id) : null))
+          .filter((g): g is HTMLElement => !!g);
+        for (const g of marked) g.setAttribute("data-peek-match", "");
         setLanding("found");
-        clear = setTimeout(() => el.removeAttribute("data-peek-match"), 2400);
+        if (!markIds) clear = setTimeout(() => el.removeAttribute("data-peek-match"), 2400);
         return;
       }
       frame += 1;
@@ -115,7 +152,8 @@ export function ConversationEmbed({
       cancelAnimationFrame(raf);
       if (clear) clearTimeout(clear);
     };
-  }, [phase.status, messageId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase.status, messageId, rangeIds]);
 
   if (phase.status === "missing") {
     return (

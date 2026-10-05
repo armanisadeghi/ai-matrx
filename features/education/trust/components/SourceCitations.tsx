@@ -26,6 +26,8 @@ import { citationIsOpenable, openCitationSource } from "../open-source";
 import { openSourceLabel, plainLocator } from "../plainWords";
 import { sourceRefFromCitation } from "../sourceRef";
 import { useCitationPlace } from "../useCitationPlace";
+import { recordCitationTarget } from "../recordCitation";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 
 const KIND_ICON = {
   url: LinkIcon,
@@ -69,10 +71,37 @@ function TrustCitationChip({
 }) {
   const ref = sourceRefFromCitation(c);
   const { place, open } = useCitationPlace(ref, c);
-  const locator = ref ? (place?.label ?? null) : (place?.label ?? plainLocator(c.locator));
+  // A conversation / table / pick list / saved result / document: the part id
+  // names the place and the door opens AT it.
+  const record = recordCitationTarget(c);
+  const openCitation = useOpenCitation();
+  const openRecord = record
+    ? () => {
+        if (record.kind === "conversation") {
+          openCitation({
+            sourceKind: "conversation",
+            sourceId: record.recordId,
+            href: record.href,
+            chunkId: record.part,
+            snippet: c.excerpt ?? null,
+            fileName: c.title ?? null,
+            placeLabel: record.label,
+          });
+        } else if (typeof window !== "undefined") {
+          window.open(record.href, "_blank", "noopener,noreferrer");
+        }
+      }
+    : undefined;
+  const locator = record
+    ? record.label
+    : ref
+      ? (place?.label ?? null)
+      : (place?.label ?? plainLocator(c.locator));
   const onOpen = onOpenSource
     ? () => onOpenSource(c)
-    : open
+    : openRecord
+      ? openRecord
+      : open
       ? open
       : citationIsOpenable(c)
         ? () => {

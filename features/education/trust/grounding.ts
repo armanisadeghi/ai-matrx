@@ -9,7 +9,7 @@
 // Used identically by every creation surface (Knowledge from-source, uploaded/attached
 // files, chat-created decks). Nothing here is Knowledge-specific.
 
-import type { SourceCitation, TrustEnvelope } from "./types";
+import type { RecordCitationKind, SourceCitation, TrustEnvelope } from "./types";
 
 export interface SourceRefs {
   /** Durable file id backing the source (opens the real file/PDF). */
@@ -28,6 +28,31 @@ export interface SourceRefs {
    * surface does not know the name.
    */
   title?: string | null;
+  /** The Source is a record (no file behind it): what kind — its part ids name the place. */
+  recordKind?: RecordCitationKind | null;
+}
+
+/**
+ * A Source's resource type (the token it was picked and sent as) → the record
+ * kind its citations open at. Null for a file, a processed document, a
+ * transcript, a note… — those open through the Source Inspector's page/time.
+ */
+export function recordKindOfResourceType(resourceType: string | null | undefined): RecordCitationKind | null {
+  switch (resourceType) {
+    case "conversation":
+      return "conversation";
+    case "dataset":
+      return "table";
+    case "structured_list":
+      return "pick_list";
+    case "content_ir_kind_instance":
+      return "saved_result";
+    case "document":
+    case "udt_document":
+      return "document";
+    default:
+      return null;
+  }
 }
 
 /** Backfill durable, openable references onto one citation (agent values win where present). */
@@ -43,6 +68,9 @@ export function attachRefsToCitation(
     url: citation.url ?? refs.url ?? undefined,
     page,
     title: refs.title || citation.title,
+    ...(citation.recordKind || refs.recordKind
+      ? { recordKind: citation.recordKind ?? refs.recordKind ?? undefined }
+      : {}),
   };
 }
 
