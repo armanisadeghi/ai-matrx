@@ -1013,6 +1013,7 @@ export function AgentOrgChartView({
         }}
         onDelete={onDelete}
         ariaLabel="Org chart"
+        exportTitle={branchRoot ? `${nameOf(branchRoot)} — org chart` : "Org chart"}
         toolbar={toolbar}
         emptyState={
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-textured p-6 text-center">

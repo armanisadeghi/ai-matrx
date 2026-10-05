@@ -28,8 +28,12 @@ import {
   Plus,
   Search,
   X,
+  FileDown,
+  ImageDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { exportChart, type ChartExportFormat } from "./exportChart";
 import {
   DEFAULT_ORG_CHART_LAYOUT,
   ancestorKeys,
@@ -106,6 +110,8 @@ export interface OrgChartProps<T> {
   collapseFromDepth?: number;
   cardWidth?: number;
   cardHeight?: number;
+  /** Name for downloads (PNG / PDF of the whole chart). Omit to hide the download buttons. */
+  exportTitle?: string;
   /** Extra controls rendered at the left of the top bar. */
   toolbar?: ReactNode;
   /**
@@ -181,6 +187,7 @@ export function OrgChart<T>({
   cardHeight = DEFAULT_ORG_CHART_LAYOUT.cardHeight,
   toolbar,
   highlight,
+  exportTitle,
   emptyState,
   ariaLabel = "Org chart",
   className,
@@ -323,6 +330,20 @@ export function OrgChart<T>({
   useEffect(() => {
     if (highlightLabel) setMatchIndex(0);
   }, [highlightLabel]);
+
+  const worldRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const download = async (format: ChartExportFormat) => {
+    if (!worldRef.current || !exportTitle || exporting) return;
+    setExporting(true);
+    try {
+      await exportChart(worldRef.current, { width: layout.width, height: layout.height }, { title: exportTitle, format });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "The chart could not be downloaded.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const goToMatch = (i: number) => {
     if (matches.length === 0) return;
@@ -689,6 +710,7 @@ export function OrgChart<T>({
             `* { max-width: 100% }` default (globals.css): with a 0px-wide parent
             that default collapsed every card to a sliver on screens ≤768px. */}
         <div
+          ref={worldRef}
           className={cn("absolute left-0 top-0 max-w-none origin-top-left will-change-transform", smooth && glide)}
           style={{
             width: layout.width,
@@ -941,6 +963,17 @@ export function OrgChart<T>({
                 <MapIcon className="h-3.5 w-3.5" />
               </ControlButton>
             </span>
+            {exportTitle && (
+              <>
+                <span className="mx-0.5 h-5 w-px bg-border" />
+                <ControlButton label={exporting ? "Preparing…" : "Download PNG"} onClick={() => void download("png")}>
+                  <ImageDown className="h-3.5 w-3.5" />
+                </ControlButton>
+                <ControlButton label={exporting ? "Preparing…" : "Download PDF"} onClick={() => void download("pdf")}>
+                  <FileDown className="h-3.5 w-3.5" />
+                </ControlButton>
+              </>
+            )}
           </div>
         </div>
 
