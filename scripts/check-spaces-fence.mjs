@@ -23,6 +23,9 @@ import { readFileSync } from "node:fs";
 const FENCE = [/^features\/spaces\//, /^app\/\(core\)\/spaces\//];
 const FENCE_LAID = "2026-10-05";
 const SUBJECT = /^spaces[:(]/;
+// The ONE door out of the fence before the switch-over (owner, 2026-10-05): the record-page body slot of
+// @ai-matrx/records-ui renders a row's body Space through this entry. Add an entry only by owner decision.
+const ENTRY_POINTS = [/features\/spaces\/embed\/RecordBodySpace["'/]/];
 const IMPORT_INTO_FENCE = /(?:from\s+|import\s*\(\s*|require\s*\(\s*)["'](?:@\/features\/spaces(?:\/|["'])|[./]+(?:[^"']*\/)?features\/spaces(?:\/|["']))/;
 
 export function insideFence(path) {
@@ -44,7 +47,7 @@ export function judgeImports(files) {
   const out = [];
   for (const f of files) {
     if (insideFence(f.path)) continue;
-    const line = f.source.split("\n").findIndex((l) => IMPORT_INTO_FENCE.test(l));
+    const line = f.source.split("\n").findIndex((l) => IMPORT_INTO_FENCE.test(l) && !ENTRY_POINTS.some((re) => re.test(l)));
     if (line >= 0) out.push(`${f.path}:${line + 1} imports from the Spaces fence`);
   }
   return out;
@@ -92,12 +95,14 @@ function selfTest() {
   expect("alias import from outside", judgeImports([{ path: "features/notes/a.tsx", source: 'import { X } from "@/features/spaces/blocks";' }]), 1);
   expect("relative import from outside", judgeImports([{ path: "components/b.tsx", source: 'const m = await import("../features/spaces/editor");' }]), 1);
   expect("import inside the fence", judgeImports([{ path: "features/spaces/a.tsx", source: 'import { X } from "@/features/spaces/blocks";' }]), 0);
+  expect("the named entry point may be imported", judgeImports([{ path: "features/data-tables/records-ui-host/recordsUiHost.tsx", source: 'import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";' }]), 0);
+  expect("a sibling of the entry point may not", judgeImports([{ path: "features/data-tables/x.tsx", source: 'import { useRowBodySpace } from "@/features/spaces/embed/useRowBody";' }]), 1);
   expect("look-alike name is not the fence", judgeImports([{ path: "features/notes/c.tsx", source: 'import { Y } from "@/features/spaces-old/z";' }]), 0);
   if (failures.length) {
     console.error(`check:spaces-fence self-test FAILED\n  ${failures.join("\n  ")}`);
     process.exit(1);
   }
-  console.log("check:spaces-fence self-test passed (7 cases: planted violations fail, clean cases pass)");
+  console.log("check:spaces-fence self-test passed (9 cases: planted violations fail, clean cases pass)");
 }
 
 if (process.argv.includes("--self-test")) {
