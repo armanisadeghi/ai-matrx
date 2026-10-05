@@ -26,11 +26,13 @@ function rowTone(entry: UsageHistoryEntry): string {
   return entry.quantity < 0 ? "text-emerald-700 dark:text-emerald-400" : "text-foreground";
 }
 
-const initialQuery: UsageHistoryQuery = { range: "30d", activity: "all", page: 0 };
+const initialQuery: UsageHistoryQuery = { range: "30d", activity: "all", page: 0, snapshotAt: null, cursor: null };
 
 export function UsageHistory() {
   const [query, setQuery] = useState<UsageHistoryQuery>(initialQuery);
   const [result, setResult] = useState<UsageHistoryPage | null>(null);
+  const [priorPages, setPriorPages] = useState<UsageHistoryPage[]>([]);
+  const [pageIndex, setPageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
@@ -41,7 +43,10 @@ export function UsageHistory() {
     setError(null);
     void fetchPersonalUsageHistory(query)
       .then((page) => {
-        if (live) setResult(page);
+        if (!live) return;
+        setResult(page);
+        setPriorPages((pages) => [...pages.slice(0, query.page), page]);
+        setPageIndex(query.page);
       })
       .catch(() => {
         if (live) setError("We couldn’t load your usage history. Try again.");
@@ -52,8 +57,19 @@ export function UsageHistory() {
     return () => { live = false; };
   }, [query, retry]);
 
-  const updateRange = (range: UsageHistoryRange) => setQuery((current) => ({ ...current, range, page: 0 }));
-  const updateActivity = (activity: UsageHistoryActivity) => setQuery((current) => ({ ...current, activity, page: 0 }));
+  const updateRange = (range: UsageHistoryRange) => setQuery((current) => ({ ...current, range, page: 0, snapshotAt: null, cursor: null }));
+  const updateActivity = (activity: UsageHistoryActivity) => setQuery((current) => ({ ...current, activity, page: 0, snapshotAt: null, cursor: null }));
+  const previousPage = () => {
+    const previousIndex = pageIndex - 1;
+    const previous = priorPages[previousIndex];
+    if (!previous) return;
+    setResult(previous);
+    setPageIndex(previousIndex);
+  };
+  const nextPage = () => {
+    if (!result?.nextCursor) return;
+    setQuery((current) => ({ ...current, page: pageIndex + 1, snapshotAt: result.snapshotAt, cursor: result.nextCursor }));
+  };
 
   return (
     <SettingsSection title="Usage history">
@@ -105,11 +121,11 @@ export function UsageHistory() {
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between gap-3">
-            <Button variant="outline" size="sm" disabled={query.page === 0} onClick={() => setQuery((current) => ({ ...current, page: current.page - 1 }))}>
+            <Button variant="outline" size="sm" disabled={pageIndex === 0} onClick={previousPage}>
               <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Previous
             </Button>
-            <span className="text-xs text-muted-foreground">Page {query.page + 1}</span>
-            <Button variant="outline" size="sm" disabled={!result.hasNextPage} onClick={() => setQuery((current) => ({ ...current, page: current.page + 1 }))}>
+            <span className="text-xs text-muted-foreground">Page {pageIndex + 1}</span>
+            <Button variant="outline" size="sm" disabled={!result.nextCursor} onClick={nextPage}>
               Next <ChevronRight className="h-3.5 w-3.5" aria-hidden />
             </Button>
           </div>
