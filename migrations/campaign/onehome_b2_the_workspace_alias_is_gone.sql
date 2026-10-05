@@ -1,4 +1,3 @@
--- draft: ONE-HOME DD-067 contract NOT applied to production (2026-10-03) — preconditions now met on production (0 bodies name workspace after onehome_b1; 0 code refs in 5 repos; 0 realtime subs; only alias use is 31 calls of an old-bundle project picker since 19:06Z, flat 00:18–00:28Z) but the clone proof was declined by the session's permission prompt; needs that approval, then clone proof, then MCP
 -- chair-step: lane ONE-HOME wave 3, DD-067 CONTRACT — the temporary `workspace` alias schema (security_invoker views
 -- created by onehome_b) is dropped and PostgREST stops exposing it. After this, the retired word names no schema.
 -- Preconditions, each checked here and refused by name:
