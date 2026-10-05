@@ -722,7 +722,7 @@ const ToolCallVisualizationInner: React.FC<{
                               // THE LOOP CLOSES ITSELF (AGENTS-ON-DATA item 2): a decision taken on
                               // this card tells the agent, so it carries on with the rest of the
                               // job instead of waiting for the person to type "go on".
-                              onDecided: ({ choice, sentence }) => {
+                              onDecided: ({ choice, sentence }: { choice: string; sentence: string }) => {
                                 const text =
                                   choice === "approve"
                                     ? `Approved — ${sentence} Carry on.`
