@@ -298,3 +298,36 @@ a machine; explicit raw controls ("Copy JSON", the extraction "JSON" download, t
 
 Admin debug windows and panels, Error Inspector, tool overlay "Raw" tab, directive item "Raw" tab, text-sections
 raw/split view, scraper JSON tabs, podcast run-truth inspector, research "show raw search result".
+
+## X. Round 3 — attacker-confirmed leaks (2026-10-05)
+
+**Rulings (owner, this round):** (a) a ```xml FENCE and an inline code span stay quoted source. (b) An XML TAG the
+model wraps content in (`<answer>`, `<result>`, `<output>`, any generic tag, attributes, nested, closed or never
+closed) is STRUCTURE: a kind inside it renders as the kind, live and on reload. Kindless XML stays the XML card;
+comments, CDATA, attributes and fences of other languages inside it stay literal. (c) A `__kind` key whose value is
+missing, unreadable or not a slug is broken structured output → the generic broken floor, never the raw card.
+ONE marker says which XML card is which: `genericXmlContainer` on every piece of an XML tag (splitter AND
+accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by XmlBlock's three callers and the judge.
+
+- [x] X1. Kind inside an XML tag streamed raw (36/46 frames in source view); a short ```json fence in a closed
+      `<output>` and a short kind in a never-closed tag stayed raw for good. Accumulator: a JSON object or JSON-family
+      fence inside `generic_xml` leaves the card the moment `__kind` is visible (line or fragment) and the tag resumes
+      after it (`trackGenericXmlKindCandidate` / `splitKindOutOfGenericXml`); never-closed tags recover at finalize.
+      Splitter: incomplete XML is recovered too, and `liftJsonFences` makes a JSON fence's lines chrome around the kind
+      (`embedded-kind-json.ts`) — same bytes live and on reload. XmlBlock takes `quotedSource`; only a ```xml fence
+      keeps the source view. `InlineCodeSnippet` refuses settled kind JSON (json/jsonc/json5/unlabelled) through a lazy
+      `KindDataGate`, honouring the source view (moved to `kind-source-view.tsx`). Judge: an XML card is followed as it
+      draws (`xmlCardDrawsKindRaw`, standard decision `standard-kind-region.ts`). Render matrix: `chat_xml_tag` path.
+      Guards `kind-never-raw-xml-tag.test.ts`, `blocks/xml/__tests__/xml-tag-kind-renders-as-kind.test.tsx`.
+- [x] X3. ```jsonc / ```json / unlabelled fence opening with `// …` or `/* … */` stayed raw all stream.
+      `withoutLeadingJsonComments` feeds the one detector (`jsonKindSignal`), the pending gate (JSON-family languages
+      only) and the standard level. Settled jsonc with comments still does not PARSE → the kind's broken state (not raw).
+- [x] X4. `settleBrokenKindRoute` returned the raw card when no slug → `settleUnnamedKindRoute`: the generic floor
+      with a `parse_error` notice, live (loader) and on reload. Guard `kind-never-raw-round3.test.ts`.
+- [x] X5. One-line `<details>` holding a kind: an HTML BLOCK line is prose to the A5 split (`startsStructuralLine`).
+- [x] X6. Table cell frame `| x | {"__kind":"flashcard_set` — not reproduced by the round-3 guard (no raw frame).
+- [x] X7. ```json5 `{__kind: …}`: `hasKindKey` / `firstKindSlug` / `jsonKindSignal` accept an unquoted or
+      single-quoted key with `{ json5: true }` only; a settled json5 body is parsed through `json5AsJson`.
+- [x] X8. Front-matter kind: DECIDED hidden (document properties). `frontMatterEnd` moved into `json-kind-signal.ts`;
+      `markdownCarriesKind` ignores front matter, and the accumulator holds an OPEN front matter instead of drawing
+      its `---` as a rule and its values as prose. Judge and renderer agree.
