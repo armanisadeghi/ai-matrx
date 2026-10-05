@@ -37,6 +37,23 @@ describe("the DOM frame judge fails on what it exists to catch", () => {
     expect(verdict.failed).toBe(false);
   });
 
+  // K3 (round 7): the judge reads the same readable attributes the runtime
+  // sentinel does — a kind in a tooltip, a label or an alt text is on screen.
+  it.each(["title", "aria-label", "alt"])("(e) a kind in a %s attribute fails", async (attr) => {
+    const verdict = await domElementVerdict(
+      React.createElement(attr === "alt" ? "img" : "span", { [attr]: `Skill: ${KIND}` }, attr === "alt" ? undefined : "Cells"),
+    );
+    expect(verdict.raw).toBe(true);
+    expect(verdict.failed).toBe(true);
+  });
+
+  it("(e) a kind attribute inside a marked source view passes", async () => {
+    const verdict = await domElementVerdict(
+      React.createElement("div", { "data-kind-source": "explicit" }, React.createElement("span", { title: KIND }, "Cells")),
+    );
+    expect(verdict.raw).toBe(false);
+  });
+
   it("(b) a frame holding the markdown-escaped key counts as a kind frame", () => {
     const block = {
       blockId: "b0",

@@ -1,7 +1,8 @@
 /**
  * THE DOM FRAME JUDGE (G2) — renders a frame through the REAL BlockRenderer
  * path in jsdom and reads what reached the DOM with the same scan the runtime
- * leak sentinel uses (`textLeaksKind`): a `__kind` key in rendered text outside
+ * leak sentinel uses (`domLeaksKind`): a `__kind` key in rendered text — or in a
+ * title / aria-label / alt attribute — outside
  * a `data-kind-source` container is raw. `decideBlockRender` (the pure judge,
  * `draws-raw-kind-json.ts`) answers what the renderer DECIDES; this answers
  * what it DRAWS — table cells, KindTextGate rescues and every leaf included.
@@ -104,7 +105,7 @@ import {
   markdownCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 // eslint-disable-next-line import/first
-import { textLeaksKind, visibleKindText } from "@/features/content-ir/surfaces/kind-leak-scan";
+import { domLeaksKind, visibleKindText } from "@/features/content-ir/surfaces/kind-leak-scan";
 
 export interface DomFrameVerdict {
   raw: boolean;
@@ -165,7 +166,8 @@ export async function domElementVerdict(element: React.ReactElement): Promise<Do
       root.render(React.createElement(TooltipProvider, null, element));
     });
     await flush(container);
-    const raw = textLeaksKind(container);
+    // Text AND readable attributes — the sentinel's own scan (K3).
+    const raw = domLeaksKind(container);
     const empty = !drewSomething(container);
     return {
       raw,

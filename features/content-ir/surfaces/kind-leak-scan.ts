@@ -169,6 +169,18 @@ export function findKindAttributeLeaks(root: Node, limit = 20): KindAttributeLea
   return leaks;
 }
 
+/**
+ * THE whole-subtree answer: does anything under `root` show a kind — as
+ * visible text OR in a readable attribute (title / aria-label / alt)? The DOM
+ * frame judge reads this; the runtime sentinel reads the same two pieces
+ * (`textLeaksKind` via its incremental runs, `findKindAttributeLeaks` on what
+ * changed), so the test judge and the live sentinel can never disagree (K3).
+ */
+export function domLeaksKind(root: Node): boolean {
+  if (isInsideKindSource(root)) return false;
+  return textLeaksKind(root) || findKindAttributeLeaks(root, 1).length > 0;
+}
+
 const IDENTIFYING_ATTRS = ["id", "data-testid", "data-block-type", "data-mtx-ctx", "data-language", "data-slot", "data-surface", "role", "aria-label"];
 
 /** A short CSS-ish path to `el` (tag.class:nth-child), for one report per place. */
