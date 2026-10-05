@@ -14,7 +14,7 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/accou
 - `components/UserProfilePage.tsx` is shared by the account settings page, window and phone drawer. The five lazy settings children supply stable `PROFILE_SECTION_IDS` anchors, not parallel forms. Writing voice has its own tab.
 - `hooks/useUserProfile.ts` edits Auth metadata and the chat-visible profile; `hooks/useUserFormProfile.ts` edits the section-saved contact/identity form. Form-profile state stays local rather than in Redux.
 - `app/api/user/profile/route.ts` and `app/api/user/form-profile/route.ts` are the existing profile read/patch paths. `types.ts` owns the form and JSONB normalization shapes.
-- `features/account-access` owns verified Auth email changes and other-session revocation; password recovery reuses `/forgot-password`.
+- `account-access` owns verified Auth email changes and other-session revocation; password recovery reuses `/forgot-password`.
 - `account-export/service.ts` reads the authenticated person's explicitly whitelisted account datasets directly through the client. `AccountExportSection.tsx` downloads that bounded JSON export.
 - `features/account-lifecycle` and `/api/account/closure`, `/api/account/restore` own the restartable Auth-admin/Stripe closure workflow. The public restore page never restores on GET.
 - `users.user_email_preferences` belongs to `features/settings/tabs/EmailTab.tsx`, not this feature. Avatar upload reuses `features/image-manager/components/ProfilePhotoTab`.
