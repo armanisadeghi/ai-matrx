@@ -6897,7 +6897,6 @@ export type Database = {
           quantity: number
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
@@ -6913,7 +6912,6 @@ export type Database = {
           quantity?: number
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
@@ -6929,7 +6927,6 @@ export type Database = {
           quantity?: number
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: []
@@ -32275,6 +32272,15 @@ export type Database = {
         Returns: Json
       }
       _ctx_scope_slug: { Args: { p: string }; Returns: string }
+      _ctx_scope_subtree_follows: {
+        Args: {
+          p_org: string
+          p_restore: boolean
+          p_root: string
+          p_when: string
+        }
+        Returns: number
+      }
       _ctx_setting_back: {
         Args: { p_behavior: string; p_value: Json }
         Returns: Json
@@ -32329,6 +32335,15 @@ export type Database = {
           p_type_ids?: string[]
         }
         Returns: Json
+      }
+      _ctx_type_subtree_follows: {
+        Args: {
+          p_org: string
+          p_restore: boolean
+          p_root: string
+          p_when: string
+        }
+        Returns: number
       }
       _ctx_upsert_doc: {
         Args: {
@@ -95187,6 +95202,16 @@ export type Database = {
         Args: { p_schema?: string }
         Returns: Json
       }
+      admin_audit_search: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: Json
+      }
       admin_configure_entity_access: {
         Args: {
           p_fk_column?: string
@@ -95373,6 +95398,16 @@ export type Database = {
       }
       admin_heal_hr_grant_drift: { Args: never; Returns: Json }
       admin_heal_reachability_drift: { Args: never; Returns: Json }
+      admin_kg_cost_orgs: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: Json
+      }
       admin_lane_open: { Args: never; Returns: boolean }
       admin_list: {
         Args: never
@@ -96055,6 +96090,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_user_ids_matching: { Args: { p_term: string }; Returns: string[] }
       agent_mandate_rungs: {
         Args: {
           p_agent_ids: string[]

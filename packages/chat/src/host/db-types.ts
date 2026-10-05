@@ -28348,6 +28348,16 @@ export type ChatDatabase = {
         Args: { p_schema?: string }
         Returns: Json
       }
+      admin_audit_search: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: Json
+      }
       admin_configure_entity_access: {
         Args: {
           p_fk_column?: string
@@ -28534,6 +28544,16 @@ export type ChatDatabase = {
       }
       admin_heal_hr_grant_drift: { Args: never; Returns: Json }
       admin_heal_reachability_drift: { Args: never; Returns: Json }
+      admin_kg_cost_orgs: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: Json
+      }
       admin_lane_open: { Args: never; Returns: boolean }
       admin_list: {
         Args: never
@@ -29216,6 +29236,7 @@ export type ChatDatabase = {
         }
         Returns: undefined
       }
+      admin_user_ids_matching: { Args: { p_term: string }; Returns: string[] }
       agent_mandate_rungs: {
         Args: {
           p_agent_ids: string[]
