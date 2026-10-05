@@ -84,9 +84,9 @@ drops the option you just deselected traps the user inside their own filter.
   (chips) still edit on click. Edits stay local until the floating Save pill
   commits them, then persist via one UPDATE per row. `"tags"` and
   `editTrigger: "pencil"` live on the canonical `MatrxDataTable` — extended,
-  not forked. Description previews use `cleanMarkdownPreview`; headings are
-  flattened, image destinations omitted, and whitespace collapsed before the
-  width-capped table or card renders them.
+  not forked. Description previews render through `<RichContentPreview>`
+  (`components/rich-content`, the inline level of `<RichContent>`: bold, links,
+  code and math render; clamped to 1-2 lines by CSS) — never regex-stripped.
 - The kebab (⋮) still carries the FULL `ItemMenu` (every registry action).
   Modal and menu share the same handlers from `useAgentRowActions`.
 - **Non-owner favorites explain themselves.** Table, Cards, and Compact list
