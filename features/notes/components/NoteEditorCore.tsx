@@ -49,8 +49,8 @@ import {
   NOTE_READONLY_SAVE_MESSAGE,
 } from "../utils/writeErrors";
 import { cn } from "@/lib/utils";
-import RichEditor, {
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
+import RichEditor, {
   type RichEditorController,
   type RichEditorView,
 } from "@/components/rich-editor/RichEditor";

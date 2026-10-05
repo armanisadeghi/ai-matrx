@@ -805,7 +805,7 @@ export default function TaskDetailsPanel({
                     await dispatch(updateTaskFieldThunk({ taskId: task.id, patch: { description: text } })).unwrap();
                   }}
                   discardDescription="The description stays exactly as it was saved."
-                  editor={{ surfaceName: "matrx-user/tasks", sourceFeature: "task-create", imagePolicy: "other" }}
+                  editor={{ surfaceName: "matrx-user/tasks", sourceFeature: "tasks", imagePolicy: "other" }}
                 >
                   <RichContent source={description} level="standard" />
                 </EditInPlace>
