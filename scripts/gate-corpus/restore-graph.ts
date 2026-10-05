@@ -1570,14 +1570,18 @@ async function main(): Promise<number> {
         fail(`${t} is owned by ${owner}, not by ${me} — ALTER TABLE … DISABLE TRIGGER would be refused. Stopping before anything is changed.`);
         return 1;
       }
-      const userTrg = Number(
+      // Exactly the allow-listed triggers (auth.users: on_auth_user_mirror) are
+      // tolerated, by name; any other user trigger still fails below.
+      const unexpectedTrg = unexpectedUserTriggers(
+        t,
         (
-          await branch.query<{ n: string }>(
-            `select count(*)::text n from pg_trigger where tgrelid = $1::regclass and not tgisinternal`,
+          await branch.query<{ tgname: string }>(
+            `select tgname from pg_trigger where tgrelid = $1::regclass and not tgisinternal order by tgname`,
             [t],
           )
-        ).rows[0]!.n,
+        ).rows.map((r) => r.tgname),
       );
+      const userTrg = unexpectedTrg.length;
       const notValid = Number(
         (
           await branch.query<{ n: string }>(
@@ -1594,7 +1598,7 @@ async function main(): Promise<number> {
       ).rows[0]!;
       if (userTrg > 0 || notValid > 0) {
         fail(
-          `${t} is owned by ${owner}, not by ${me}, AND it carries ${userTrg} user trigger(s) and ` +
+          `${t} is owned by ${owner}, not by ${me}, AND it carries ${userTrg} unexpected user trigger(s) (${unexpectedTrg.join(", ") || "none"}) and ` +
             `${notValid} NOT VALID foreign key(s) on the branch. Those are exactly what this script ` +
             `must disable and drop, and only the owner may. It was marked \`notOurs\` on the ` +
             `understanding that it had neither — that is no longer true. Stopping before anything ` +
@@ -1606,7 +1610,7 @@ async function main(): Promise<number> {
         fail(`${t} is owned by ${owner} and ${me} holds no INSERT on it. Stopping before anything is changed.`);
         return 1;
       }
-      notOursOk.push(`${t} (owner ${owner}, 0 user triggers, 0 NOT VALID FKs, INSERT ${canWrite.i}, DELETE ${canWrite.d})`);
+      notOursOk.push(`${t} (owner ${owner}, 0 unexpected user triggers, 0 NOT VALID FKs, INSERT ${canWrite.i}, DELETE ${canWrite.d})`);
     }
     console.log(
       `${OK}every copied table this script must DISABLE TRIGGER on is owned by ${me}` +
