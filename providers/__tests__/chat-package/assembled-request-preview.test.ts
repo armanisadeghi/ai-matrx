@@ -11,13 +11,13 @@ jest.mock("uuid", () => ({
   v4: () => "uuid-stub",
 }));
 
-import { makeSelectAssembledRequest } from "../aggregate.selectors";
-import agentDefinitionReducer from "../../../agent-definition/slice";
-import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
-import type { DirectiveApplyPolicy } from "../../../../../host/prefs";
-import { DEFAULT_CHAT_PREFERENCES } from "../../../../../host/defaults/prefs";
-import type { ChatRootState } from "../../../../../store/root-state";
+import { makeSelectAssembledRequest } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
+import agentDefinitionReducer from "@ai-matrx/chat/agents/redux/agent-definition/slice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
+import type { DirectiveApplyPolicy } from "@ai-matrx/chat/host/prefs";
+import { DEFAULT_CHAT_PREFERENCES } from "@ai-matrx/chat/host/defaults/prefs";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
 
 const CONVERSATION_ID = "conversation-1";
 

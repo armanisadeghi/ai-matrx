@@ -26,8 +26,8 @@ const heldGates: Array<{
   resolve: () => void;
   reject: (error: unknown) => void;
 }> = [];
-jest.mock("../../utils/required-organization", () => ({
-  ...jest.requireActual("../../utils/required-organization"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/utils/required-organization", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/utils/required-organization"),
   ensureExecutionOrganization: jest.fn(() => {
     if (orgGateMode === "open") return Promise.resolve();
     if (orgGateMode === "cancel") {
@@ -47,50 +47,50 @@ const thunkResolving = (value: unknown) => () => {
   const p = Promise.resolve(value);
   return Object.assign(p, { unwrap: () => p });
 };
-jest.mock("../refresh-surface-scope.thunk", () => ({
-  ...jest.requireActual("../refresh-surface-scope.thunk"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/refresh-surface-scope.thunk", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/refresh-surface-scope.thunk"),
   refreshSurfaceScope: () => thunkResolving(undefined),
 }));
-jest.mock("../sandbox-gate.thunk", () => ({
-  ...jest.requireActual("../sandbox-gate.thunk"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/sandbox-gate.thunk", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/thunks/sandbox-gate.thunk"),
   ensureSandboxOrDecide: () => thunkResolving("ok"),
 }));
-jest.mock("../../../../../context/sources/scopes", () => ({
-  ...jest.requireActual("../../../../../context/sources/scopes"),
+jest.mock("@ai-matrx/chat/context/sources/scopes", () => ({
+  ...jest.requireActual("@ai-matrx/chat/context/sources/scopes"),
   ...(() => ({
   ensureConversationScopesOrAsk: () => () =>
     Promise.resolve({ blocked: false, scopeIdsOverride: undefined }),
 }))(),
 }));
-jest.mock("../../../../ui-first-tools/redux/resolve-asks-with-input.thunk", () => ({
+jest.mock("@ai-matrx/chat/agents/ui-first-tools/redux/resolve-asks-with-input.thunk", () => ({
   resolvePendingAsksWithInput: () => () => false,
 }));
-jest.mock("../../context-rules/context-rules.thunks", () => ({
-  ...jest.requireActual("../../context-rules/context-rules.thunks"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/context-rules/context-rules.thunks", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/context-rules/context-rules.thunks"),
   ensureContextRulesReady: () => () => Promise.resolve(),
 }));
-jest.mock("../../context-rules/mandate-kill-switch", () => ({
-  ...jest.requireActual("../../context-rules/mandate-kill-switch"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/context-rules/mandate-kill-switch", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/context-rules/mandate-kill-switch"),
   resolveMandateKillSwitch: () => Promise.resolve(false),
 }));
-jest.mock("../../../../runtime/generation-job", () => ({
-  ...jest.requireActual("../../../../runtime/generation-job"),
+jest.mock("@ai-matrx/chat/agents/runtime/generation-job", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/runtime/generation-job"),
   labelGenerationJob: () => Promise.resolve(),
 }));
-jest.mock("../../../../runtime/get-model-capabilities", () => ({
-  ...jest.requireActual("../../../../runtime/get-model-capabilities"),
+jest.mock("@ai-matrx/chat/agents/runtime/get-model-capabilities", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/runtime/get-model-capabilities"),
   getCapabilitiesForConversation: () => null,
 }));
 // The stream itself is not under test: once the door has sent the turn
 // (optimistic row + `running`), the run stays open.
-jest.mock("../../utils/build-tool-injection", () => ({
-  ...jest.requireActual("../../utils/build-tool-injection"),
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/utils/build-tool-injection", () => ({
+  ...jest.requireActual("@ai-matrx/chat/agents/redux/execution-system/utils/build-tool-injection"),
   buildToolInjection: () => new Promise(() => undefined),
 }));
 
 // The ONE network edge reached: the queue POST.
 const inboxPosts: Array<{ text: string; delivery: string }> = [];
-jest.mock("../../../../../host/server/call-api", () => ({
+jest.mock("@ai-matrx/chat/host/server/call-api", () => ({
   callApi: (args: { body: { text: string; delivery: string } }) => () => {
     inboxPosts.push({ text: args.body.text, delivery: args.body.delivery });
     return Promise.resolve({
@@ -98,14 +98,14 @@ jest.mock("../../../../../host/server/call-api", () => ({
     });
   },
 }));
-jest.mock("../../../../../host/notify", () => ({
+jest.mock("@ai-matrx/chat/host/notify", () => ({
   toast: { info: jest.fn(), error: jest.fn(), warning: jest.fn() },
 }));
 
 let __uuid = 0;
 jest.mock("uuid", () => ({ v4: () => `uuid-stub-${++__uuid}` }));
 // The org seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../../../host/org", () => {
+jest.mock("@ai-matrx/chat/host/org", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({
   isOrganizationSelectionCancelled: (error: unknown) =>
@@ -114,7 +114,7 @@ jest.mock("../../../../../host/org", () => {
   };
   const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
   return {
-    ...jest.requireActual("../../../../../host/org"),
+    ...jest.requireActual("@ai-matrx/chat/host/org"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
   };
 });
@@ -123,35 +123,35 @@ import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import conversationsReducer, {
   createInstance,
   setInstanceStatus,
-} from "../../conversations/conversations.slice";
-import conversationFocusReducer from "../../conversation-focus/conversation-focus.slice";
-import instanceModelOverridesReducer from "../../instance-model-overrides/instance-model-overrides.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import conversationFocusReducer from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import instanceModelOverridesReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import instanceVariableValuesReducer, {
   initInstanceVariables,
-} from "../../instance-variable-values/instance-variable-values.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import instanceResourcesReducer, {
   initInstanceResources,
-} from "../../instance-resources/instance-resources.slice";
-import instanceContextReducer from "../../instance-context/instance-context.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import instanceContextReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import instanceUserInputReducer, {
   initInstanceUserInput,
   setUserInputText,
-} from "../../instance-user-input/instance-user-input.slice";
-import instanceClientToolsReducer from "../../instance-client-tools/instance-client-tools.slice";
-import instanceUIStateReducer from "../../instance-ui-state/instance-ui-state.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import instanceClientToolsReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import instanceUIStateReducer from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import messagesReducer, {
   initInstanceMessages,
-} from "../../messages/messages.slice";
-import activeRequestsReducer from "../../active-requests/active-requests.slice";
-import conversationInboxReducer from "../../inbox/inbox.slice";
-import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@host/lib/redux/slices/appContextSlice";
-import { configureRecordingWindows } from "../../../../../host/__tests__/recording-windows";
-import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
-import { smartExecute } from "../smart-execute.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
+import activeRequestsReducer from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
+import conversationInboxReducer from "@ai-matrx/chat/agents/redux/execution-system/inbox/inbox.slice";
+import creatorDebugReducer from "@/lib/redux/preferences/creatorDebugSlice";
+import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSlice";
+import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
+import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
+import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import { configureRecordingWindows } from "@ai-matrx/chat/host/__tests__/recording-windows";
+import type { ChatDispatch, ChatRootState } from "@ai-matrx/chat/store/root-state";
+import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 
 const AGENT_ID = "compass-itinerary-clerk";
 const LINE_A =

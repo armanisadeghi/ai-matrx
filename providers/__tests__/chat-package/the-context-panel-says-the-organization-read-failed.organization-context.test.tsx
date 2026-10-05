@@ -26,8 +26,8 @@ import { createRoot } from "react-dom/client";
   true;
 
 const { makeAppContextState } = jest.requireActual<
-  typeof import("@host/lib/redux/slices/appContextSlice")
->("@host/lib/redux/slices/appContextSlice");
+  typeof import("@/lib/redux/slices/appContextSlice")
+>("@/lib/redux/slices/appContextSlice");
 
 let appContext = makeAppContextState();
 const dispatched: unknown[] = [];
@@ -47,22 +47,22 @@ const dispatch = (action: unknown) => {
   return promise;
 };
 
-jest.mock("../../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) =>
     selector({ appContext }),
   useAppDispatch: () => dispatch,
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../../store/hooks"));
+jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
 
-jest.mock("../../../../../store/store-singleton", () => ({
+jest.mock("@ai-matrx/chat/store/store-singleton", () => ({
   getStoreSingleton: () => ({ dispatch: () => {} }),
 }));
 
 
 /** No context snapshot exists — the state every branch under test starts from. */
 jest.mock(
-  "../../../../redux/execution-system/context-state/context-state.selectors",
+  "@ai-matrx/chat/agents/redux/execution-system/context-state/context-state.selectors",
   () => ({
     selectContextState: () => () => null,
     selectEstimatedTokens: () => () => 0,
@@ -75,11 +75,11 @@ jest.mock(
   }),
 );
 
-jest.mock("../../../../../host/server/context-api", () => ({
+jest.mock("@ai-matrx/chat/host/server/context-api", () => ({
   fetchContextState: (args: unknown) => ({ type: "test/fetchContextState", args }),
 }));
 
-import { ModelContextPanel } from "../ModelContextPanel";
+import { ModelContextPanel } from "@ai-matrx/chat/agents/components/run-controls/panels/ModelContextPanel";
 
 function mount() {
   const container = document.createElement("div");

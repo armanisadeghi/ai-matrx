@@ -21,8 +21,8 @@ import { createRoot, type Root } from "react-dom/client";
 import {
   createSandboxTestStore,
   SandboxStoreProvider,
-} from "@host/test-utils/sandbox-store";
-import { AssistantNoAnswer } from "./AssistantNoAnswer";
+} from "@/test-utils/sandbox-store";
+import { AssistantNoAnswer } from "@ai-matrx/chat/agents/components/messages-display/assistant/AssistantNoAnswer";
 
 /** The engineer's to-do list, as the box wrote it. */
 const AGENT_INSTRUCTION_ADVICE = "instructions or model";

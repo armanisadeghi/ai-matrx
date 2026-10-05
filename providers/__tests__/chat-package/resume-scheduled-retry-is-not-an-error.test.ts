@@ -13,18 +13,18 @@ import { configureStore, type Middleware } from "@reduxjs/toolkit";
 import {
   clearCapturedErrors,
   getSnapshot,
-} from "@host/lib/diagnostics/errorCaptureStore";
-import { reduxErrorCaptureMiddleware } from "@host/lib/diagnostics/reduxErrorCaptureMiddleware";
+} from "@/lib/diagnostics/errorCaptureStore";
+import { reduxErrorCaptureMiddleware } from "@/lib/diagnostics/reduxErrorCaptureMiddleware";
 
 import {
   registerAbortController,
   unregisterAbortController,
-} from "../abort-registry";
-import { resumeInstance } from "../resume-instance.thunk";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/abort-registry";
+import { resumeInstance } from "@ai-matrx/chat/agents/redux/execution-system/thunks/resume-instance.thunk";
 import {
   RESUME_STREAM_CLOSING_MAX_RETRIES,
   RESUME_STREAM_CLOSING_WAIT_MS,
-} from "../resume-claims";
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/resume-claims";
 
 const CONVERSATION = "7c1d2f4e-3a8b-4c55-9e21-6b0f8d4a2c19";
 const USER_REQUEST = "b3e9a1c7-52d4-4f0e-8a6b-1d7c9e2f4a83";

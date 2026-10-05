@@ -108,21 +108,21 @@ function table() {
   return builder;
 }
 
-jest.mock("../../../../../host/db", () => ({
+jest.mock("@ai-matrx/chat/host/db", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
 const toastError = jest.fn();
-jest.mock("../../../../../host/notify", () => ({
+jest.mock("@ai-matrx/chat/host/notify", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), warning: jest.fn(), success: jest.fn() },
 }));
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../../../host/identity", () => {
+jest.mock("@ai-matrx/chat/host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({ requireUserId: () => PERSON_ID }))(),
   };
   const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
   return {
-    ...jest.requireActual("../../../../../host/identity"),
+    ...jest.requireActual("@ai-matrx/chat/host/identity"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
   };
 });
@@ -130,24 +130,24 @@ jest.mock("../../../../../host/identity", () => {
 import {
   ensureSurfaceFeatureLoaded,
   surfaceUserStateReducer,
-} from "../../../../../surfaces/redux/userStateSlice";
+} from "@ai-matrx/chat/surfaces/redux/userStateSlice";
 import {
   ensureOrganizationContext as askThroughTheAppGate,
   registerOrganizationPicker,
   settleOrganizationSelection,
-} from "@host/lib/organization/organization-gate";
-import { configureChat, _resetChatHostForTests } from "../../../../../host/configure";
-import { createFakeDb } from "../../../../../host/__tests__/fake-db";
+} from "@/lib/organization/organization-gate";
+import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host/configure";
+import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
 import {
   ensureContextRulesReady,
   reloadContextRules,
   saveContextRule,
   saveContextRules,
   selectSavedContextRuleRows,
-} from "../context-rules.thunks";
-import { surfaceUserStateService } from "../../../../../surfaces/user-state/service";
-import type { ChatRootState } from "../../../../../store/root-state";
-import { setStoreSingleton } from "../../../../../store/store-singleton";
+} from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-rules.thunks";
+import { surfaceUserStateService } from "@ai-matrx/chat/surfaces/user-state/service";
+import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
+import { setStoreSingleton } from "@ai-matrx/chat/store/store-singleton";
 
 /** The app's own store, as the organization gate reads it: which workspace is selected. */
 function selectWorkspace(organizationId: string | null) {

@@ -5,13 +5,13 @@
 const getSession = jest.fn();
 const getState = jest.fn();
 
-jest.mock("../../host/db", () => {
+jest.mock("@ai-matrx/chat/host/db", () => {
   const client = {
     auth: { getSession: (...args: unknown[]) => getSession(...args) },
   };
   return { createClient: () => client, supabase: client };
 });
-jest.mock("../../store/store-singleton", () => ({
+jest.mock("@ai-matrx/chat/store/store-singleton", () => ({
   getStoreSingleton: () => ({ getState }),
 }));
 
@@ -22,11 +22,11 @@ import {
   organizationHeaderOf,
   resetGate,
   selectOrganization,
-} from "@host/lib/organization/__tests__/gate-harness";
+} from "@/lib/organization/__tests__/gate-harness";
 import {
   discoverMcpServerTools,
   invokeMcpServerTool,
-} from "./mcp-connections.service";
+} from "@ai-matrx/chat/agents/services/mcp-connections.service";
 
 describe("MCP connections — organization gate", () => {
   beforeEach(() => {

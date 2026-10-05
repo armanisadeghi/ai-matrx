@@ -22,27 +22,27 @@ import {
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
-import { createInstance } from "../../../redux/execution-system/conversations/conversations.slice";
+import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import { createInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
 import {
   hydrateMessages,
   type MessageRecord,
-} from "../../../redux/execution-system/messages/messages.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import {
   createRequest,
   setRequestStatus,
-} from "../../../redux/execution-system/active-requests/active-requests.slice";
+} from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { TooltipProvider } from "@ai-matrx/design-system";
-import { ChatHostTestProvider } from "../../../../host/__tests__/chat-host-test-provider";
-import { AlchemyActionsTestHost } from "@host/test-utils/alchemy-actions-host";
-import { AgentAssistantMessage } from "../assistant/AgentAssistantMessage";
+import { ChatHostTestProvider } from "@ai-matrx/chat/host/__tests__/chat-host-test-provider";
+import { AlchemyActionsTestHost } from "@/test-utils/alchemy-actions-host";
+import { AgentAssistantMessage } from "@ai-matrx/chat/agents/components/messages-display/assistant/AgentAssistantMessage";
 
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: (loader: () => Promise<unknown>) => {
     if (String(loader).includes("MarkdownStreamImpl")) {
       const Impl = (
-        jest.requireActual("@host/components/MarkdownStreamImpl") as {
+        jest.requireActual("@/components/MarkdownStreamImpl") as {
           default: React.ComponentType<Record<string, unknown>>;
         }
       ).default;

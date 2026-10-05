@@ -3,7 +3,7 @@
 // at the top, so an import written further down left `supabase_auth_1` uninitialised and this
 // whole suite failed to run ("Cannot access 'supabase_auth_1' before initialization") — zero
 // tests, silently, rather than a red assertion. Found and fixed by lane DEAD-KEYS, 2026-09-22.
-import { withClaims } from "@host/test-utils/supabase-auth";
+import { withClaims } from "@/test-utils/supabase-auth";
 
 const fetchMandatePins = jest.fn(async () => ({
   "podcast.producer": {
@@ -15,7 +15,7 @@ const fetchMandatePins = jest.fn(async () => ({
   },
 }));
 
-jest.mock("../../../mandates/service", () => ({ fetchMandatePins }));
+jest.mock("@ai-matrx/chat/mandates/service", () => ({ fetchMandatePins }));
 
 let userId: string | null = null;
 /** Every `schema.table` this bundle actually asks PostgREST for, in order. */
@@ -68,12 +68,12 @@ const client = {
   }),
 };
 
-jest.mock("../../../host/db", () => ({
-  ...jest.requireActual("../../../host/db"),
+jest.mock("@ai-matrx/chat/host/db", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/db"),
   createClient: () => client,
 }));
 
-import { fetchSurfaceConfigBundle } from "../surface-config.service";
+import { fetchSurfaceConfigBundle } from "@ai-matrx/chat/surfaces/services/surface-config.service";
 
 beforeEach(() => {
   userId = null;

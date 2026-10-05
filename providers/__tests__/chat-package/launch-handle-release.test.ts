@@ -9,21 +9,21 @@
  */
 
 import { configureStore, type Middleware } from "@reduxjs/toolkit";
-import overlaysReducer, { closeOverlay, openOverlay } from "@host/lib/redux/slices/overlaySlice";
+import overlaysReducer, { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import conversationsReducer, {
   createInstance,
   destroyInstance,
   destroyInstancesForAgent,
-} from "../conversations/conversations.slice";
-import instanceUIStateReducer, { initInstanceUIState } from "./instance-ui-state.slice";
-import { launchHandleReleaseMiddleware } from "./launch-handle-release.middleware";
+} from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.slice";
+import instanceUIStateReducer, { initInstanceUIState } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { launchHandleReleaseMiddleware } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/launch-handle-release.middleware";
 import {
   liveLaunchWidgetHandleCount,
   registerLaunchWidgetHandle,
-} from "../../../utils/launch-widget-handles";
+} from "@ai-matrx/chat/agents/utils/launch-widget-handles";
 import { callbackManager } from "@ai-matrx/chat/utils/callbackManager";
-import type { SelectionWriteBack } from "../../../types/widget-handle.types";
-import { CHAT_WINDOWS } from "../../../../host/windows";
+import type { SelectionWriteBack } from "@ai-matrx/chat/agents/types/widget-handle.types";
+import { CHAT_WINDOWS } from "@ai-matrx/chat/host/windows";
 
 const writeBack: SelectionWriteBack = {
   originalText: "Skip to main content | Patient portal",

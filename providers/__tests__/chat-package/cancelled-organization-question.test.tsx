@@ -41,12 +41,12 @@ function table() {
   });
   return builder;
 }
-jest.mock("../../../../../host/db", () => ({
+jest.mock("@ai-matrx/chat/host/db", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
 
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../../../host/identity", () => {
+jest.mock("@ai-matrx/chat/host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({
   requireUserId: () => PERSON,
@@ -54,28 +54,28 @@ jest.mock("../../../../../host/identity", () => {
   };
   const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
   return {
-    ...jest.requireActual("../../../../../host/identity"),
+    ...jest.requireActual("@ai-matrx/chat/host/identity"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
   };
 });
 
 // eslint-disable-next-line no-restricted-syntax -- the real Surface A slice, as the gate dialog's own test uses it
-import appContext from "@host/lib/redux/slices/appContextSlice";
-import userAuth, { setUserAuth } from "@host/lib/redux/slices/userAuthSlice";
-import scopesTree, { scopesActions } from "@host/features/scopes/redux/scopesSlice";
-import { setStoreSingleton } from "../../../../../store/store-singleton";
+import appContext from "@/lib/redux/slices/appContextSlice";
+import userAuth, { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
+import scopesTree, { scopesActions } from "@/features/scopes/redux/scopesSlice";
+import { setStoreSingleton } from "@ai-matrx/chat/store/store-singleton";
 import {
   ensureOrganizationContext as askThroughTheAppGate,
   settleOrganizationSelection,
-} from "@host/lib/organization/organization-gate";
-import { configureChat, _resetChatHostForTests } from "../../../../../host/configure";
-import { createFakeDb } from "../../../../../host/__tests__/fake-db";
-import { surfaceUserStateReducer } from "../../../../../surfaces/redux/userStateSlice";
+} from "@/lib/organization/organization-gate";
+import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host/configure";
+import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
+import { surfaceUserStateReducer } from "@ai-matrx/chat/surfaces/redux/userStateSlice";
 import { ContextRulesChip } from "@ai-matrx/agents/context/react";
 import { resolveContextRow } from "@ai-matrx/agents/context";
-import { OrganizationGateDialog } from "@host/features/organizations/gate/OrganizationGateDialog";
-import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";
-import { saveContextRule, selectSavedContextRuleRows } from "../context-rules.thunks";
+import { OrganizationGateDialog } from "@/features/organizations/gate/OrganizationGateDialog";
+import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
+import { saveContextRule, selectSavedContextRuleRows } from "@ai-matrx/chat/agents/redux/execution-system/context-rules/context-rules.thunks";
 
 function Table() {
   const dispatch = useAppDispatch();

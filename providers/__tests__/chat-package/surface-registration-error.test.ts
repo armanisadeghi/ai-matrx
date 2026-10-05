@@ -1,14 +1,14 @@
-jest.mock("../../../host/diagnostics", () => ({
+jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
   // A PARTIAL MOCK OF A REAL MODULE DIES ON THE NEXT EXPORT (DD-239): spread
   // the real store so a new export can never take this suite down at import.
-  ...jest.requireActual("../../../host/diagnostics"),
+  ...jest.requireActual("@ai-matrx/chat/host/diagnostics"),
   captureError: jest.fn(),
 }));
 // The subject still reaches the app's Error Inspector through other host
 // modules; both sinks share one mock so no capture escapes the assertions.
 
-import { captureError } from "../../../host/diagnostics";
-import { SurfaceRegistrationError } from "../surface-registration-error";
+import { captureError } from "@ai-matrx/chat/host/diagnostics";
+import { SurfaceRegistrationError } from "@ai-matrx/chat/surfaces/services/surface-registration-error";
 
 describe("missing surface registration diagnostics", () => {
   beforeEach(() => jest.mocked(captureError).mockReset());
@@ -56,8 +56,8 @@ import { configureStore, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   isCapturedSurfaceRegistrationError,
   serializeSurfaceBindingError,
-} from "../surface-registration-error";
-import { reduxErrorCaptureMiddleware } from "@host/lib/diagnostics/reduxErrorCaptureMiddleware";
+} from "@ai-matrx/chat/surfaces/services/surface-registration-error";
+import { reduxErrorCaptureMiddleware } from "@/lib/diagnostics/reduxErrorCaptureMiddleware";
 
 it("preserves the capture receipt through a real RTK rejection without recapturing in middleware", async () => {
   jest.mocked(captureError).mockReset();

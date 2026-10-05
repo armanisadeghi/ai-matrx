@@ -58,7 +58,7 @@ const CACHED_PAGE = [
 
 const mockRpcCalls: Array<{ name: string; args: unknown }> = [];
 
-jest.mock("../../../../host/db", () => {
+jest.mock("@ai-matrx/chat/host/db", () => {
   const page = { data: CACHED_PAGE, error: null, count: 0 };
   const chain: Record<string, unknown> = {};
   const self = () => chain;
@@ -98,7 +98,7 @@ jest.mock("../../../../host/db", () => {
 });
 
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../../host/identity", () => {
+jest.mock("@ai-matrx/chat/host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({
   getUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
@@ -107,14 +107,14 @@ jest.mock("../../../../host/identity", () => {
   };
   const moved = ["selectUserId","selectIsAuthenticated","selectIsAdmin","selectIsSuperAdmin","getUserId","requireUserId","NotAuthenticatedError","isNotAuthenticatedError","hasBrowserSession"];
   return {
-    ...jest.requireActual("../../../../host/identity"),
+    ...jest.requireActual("@ai-matrx/chat/host/identity"),
     ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
   };
 });
 
-import { makeStore } from "@host/lib/redux/store";
+import { makeStore } from "@/lib/redux/store";
 import { TooltipProvider } from "@ai-matrx/design-system";
-import { ConversationHistorySidebar } from "../ConversationHistorySidebar";
+import { ConversationHistorySidebar } from "@ai-matrx/chat/agents/components/conversation-history/ConversationHistorySidebar";
 
 async function flush(ms: number) {
   await act(async () => {
@@ -182,7 +182,7 @@ describe("every conversation-history search box asks the server", () => {
     const fs = require("node:fs") as typeof import("node:fs");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require("node:path") as typeof import("node:path");
-    const root = path.resolve(__dirname, "../../../../../../..");
+    const root = path.resolve(__dirname, "../../..");
     const out = execSync(
       "git grep -l -e 'setScopeSearch(' -- '*.ts' '*.tsx' ':!**/__tests__/**' ':!packages/chat/src/agents/redux/conversation-history/slice.ts'",
       { cwd: root, encoding: "utf8" },

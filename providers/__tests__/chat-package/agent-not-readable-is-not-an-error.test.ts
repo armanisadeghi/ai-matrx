@@ -5,8 +5,8 @@
  * The refusal keeps its code through a thunk's `.unwrap()` serialization.
  */
 import { miniSerializeError } from "@reduxjs/toolkit";
-import { logFailure } from "@host/lib/errors/expectedRefusal";
-import { agentNotReadableError, isAgentNotReadable } from "../agent-not-readable";
+import { logFailure } from "@/lib/errors/expectedRefusal";
+import { agentNotReadableError, isAgentNotReadable } from "@ai-matrx/chat/agents/redux/agent-definition/agent-not-readable";
 
 it("the refusal is recognized as thrown and as serialized by unwrap()", () => {
   const refusal = agentNotReadableError("a-1");
