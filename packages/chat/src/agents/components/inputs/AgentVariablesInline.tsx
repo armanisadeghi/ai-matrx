@@ -275,7 +275,7 @@ export function AgentVariablesInline({
             userValues[variable.name] ?? variable.defaultValue ?? "";
           // Envelope-aware: picklist values render as their public label, never
           // "[object Object]" and never the secret description.
-          const displayValue: string = variableValueToDisplay(rawValue);
+          const displayValue: string = toggleRowWord(variable, variableValueToDisplay(rawValue));
           const inputText = variableValueToInputText(rawValue);
           const isPicklistBound = !!readStructuredList(variable.customComponent)
             ?.listId;
@@ -514,4 +514,23 @@ export function AgentVariablesInline({
       </div>
     </div>
   );
+}
+
+/**
+ * A toggle's two values are what the agent RECEIVES, and authors often make
+ * them whole passages ("## Source Bias Assessment…"). The collapsed row names
+ * the state instead — "On" / "Off" — whenever a value is too long to be a label;
+ * short values ("Formal" / "Casual") still show as themselves.
+ */
+function toggleRowWord(
+  variable: { customComponent?: { type?: string; toggleValues?: readonly string[] } | null },
+  display: string,
+): string {
+  const cc = variable.customComponent;
+  if (cc?.type !== "toggle" && cc?.type !== "light-switch") return display;
+  const [offValue = "No", onValue = "Yes"] = cc.toggleValues ?? [];
+  const isLabel = (text: string) => text.length <= 24 && !text.includes("\n");
+  if (display === onValue && !isLabel(onValue)) return "On";
+  if (display === offValue && !isLabel(offValue)) return "Off";
+  return display;
 }
