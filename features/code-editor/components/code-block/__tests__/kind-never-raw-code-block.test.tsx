@@ -57,8 +57,9 @@ jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   },
 }));
 const mockCaptureError = jest.fn();
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
-  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+// The kind-at-raw-renderer report goes through the chat package's diagnostics seam.
+jest.mock("@ai-matrx/chat/host/diagnostics", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/diagnostics"),
   captureError: (input: unknown) => mockCaptureError(input),
 }));
 

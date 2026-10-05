@@ -192,6 +192,8 @@ import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchp
 import "@/providers/chatUiRegistration";
 // The rich-document rendering engine (P14).
 import "@/providers/chatMarkdownRegistration";
+import "@/providers/chatContentIrRegistration";
+import "@/providers/chatRichDocumentRegistration";
 // Scopes (context sources) and compute targets (P21).
 import "@/providers/chatContextSources";
 

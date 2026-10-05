@@ -15,16 +15,14 @@
  */
 
 import Link from "next/link";
-import { ActionInbox, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { ActionInbox, RecordsMount } from "@ai-matrx/records-ui";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { createClient } from "@/utils/supabase/client";
 import { openPath } from "@/lib/deep-link/openPath";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-
-const dataSource = recordsDataSource(createClient());
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 function openRecordInNewTab(recordId: string, tableId: string) {
   const href = openPath(recordId, { fallback: `/data/${tableId}?record=${recordId}` });
@@ -33,6 +31,7 @@ function openRecordInNewTab(recordId: string, tableId: string) {
 
 export function WorkInboxWindow({ onClose }: { onClose?: () => void }) {
   const userId = useAppSelector(selectUserId);
+  const recordsConfig = useAppRecordsConfig(null);
   return (
     <WindowPanel
       id="work-inbox-window"
@@ -50,7 +49,7 @@ export function WorkInboxWindow({ onClose }: { onClose?: () => void }) {
         {userId ? (
           <RecordsMount
             letTheStoreDecideRights
-            config={{ dataSource, actor: personActor(userId), organizationId: null }}
+            config={recordsConfig}
             host={{ Link, density: "condensed", notify: RECORDS_NOTIFY }}
           >
             <ActionInbox onOpenRecord={openRecordInNewTab} />

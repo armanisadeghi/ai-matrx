@@ -18,11 +18,10 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { RecordsProvider } from "@ai-matrx/records/react";
-import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
+import { recordsDataSource } from "@ai-matrx/records-ui";
 import { createClient } from "@/utils/supabase/client";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 
 // ONE data seam per page, built lazily (the same pattern as
 // features/data-tables/data-source/record-store-grid.ts): a fresh seam per
@@ -58,12 +57,12 @@ interface CustomDataRecordsScopeProps {
 const BoundOrganization = createContext<string | null>(null);
 
 export function CustomDataRecordsScope({ tableId, organizationId, children, fallback }: CustomDataRecordsScopeProps) {
-  const userId = useAppSelector(selectUserId);
   // Asked only when the caller did not already know the Table's organization.
   const opens = useObjectOrganization(sharedDataSource(), organizationId ? null : tableId);
 
   let bound: string | null = organizationId ?? null;
   if (!bound && opens.state === "found") bound = opens.organizationId;
+  const recordsConfig = useAppRecordsConfig(bound);
 
   if (!bound) {
     const held: CustomDataScopeHeld =
@@ -77,13 +76,7 @@ export function CustomDataRecordsScope({ tableId, organizationId, children, fall
 
   return (
     <BoundOrganization.Provider value={bound}>
-      <RecordsProvider
-        config={{
-          dataSource: sharedDataSource(),
-          actor: personActor(userId),
-          organizationId: bound,
-        }}
-      >
+      <RecordsProvider config={recordsConfig}>
         {children}
       </RecordsProvider>
     </BoundOrganization.Provider>

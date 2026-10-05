@@ -54,6 +54,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
+import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import type { DataBuildOrAskOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 
@@ -315,8 +316,40 @@ export function useRecordsUiPorts({
   return { members, onAskForOne, openRecords, runAgentAction, organizationId, linkRecord };
 }
 
-/** One data seam per mount, carrying the person's session. */
+/**
+ * One data seam for the whole app, carrying the person's session (the browser client is itself a
+ * singleton). Shared so the ports a mount builds and its `config` always hold the SAME seam.
+ */
+let sharedDataSource: DataSource | null = null;
 export function useRecordsDataSource(): DataSource {
-  return useMemo(() => recordsDataSource(createClient()), []);
+  return useMemo(() => (sharedDataSource ??= recordsDataSource(createClient())), []);
 }
 
+
+/** The `config` every records-ui mount takes (`RecordsMount` / `RecordsProvider`). */
+export interface AppRecordsConfig {
+  dataSource: DataSource;
+  actor: ReturnType<typeof personActor>;
+  organizationId: string | null;
+  /** Live updates for the organization's tables; absent only while there is no organization. */
+  realtime?: ReturnType<typeof createRecordsRealtimePort>;
+}
+
+/**
+ * THE ONE RECORDS CONFIG. Every records-ui mount in the app takes its `config` from here:
+ * the data seam, the signed-in person as actor, the organization, and the live-updates port
+ * (one per organization, so the same organization is the same port). Never hand-build one.
+ */
+export function useAppRecordsConfig(organizationId: string | null): AppRecordsConfig {
+  const dataSource = useRecordsDataSource();
+  const userId = useAppSelector(selectUserId);
+  return useMemo(
+    () => ({
+      dataSource,
+      actor: personActor(userId),
+      organizationId,
+      ...(organizationId ? { realtime: createRecordsRealtimePort(organizationId) } : {}),
+    }),
+    [dataSource, userId, organizationId],
+  );
+}

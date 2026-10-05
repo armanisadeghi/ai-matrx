@@ -12,10 +12,10 @@
 // switch and its notices, 13 making a table in the ACTIVE organization, 15 the inbox (a header
 // action opening the one inbox window, in place), 16 the mount ports. The list, lanes, organization filter, kinds and row facts are DataHomeList's.
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount } from "@ai-matrx/records-ui";
 
 import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import { RecordScopedChat } from "@/features/unified-data/record-chat/RecordScopedChat";
@@ -29,13 +29,12 @@ import type { OrganizationState } from "@/features/organizations/useOrganization
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { createClient } from "@/utils/supabase/client";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 
 import { DataHomeList } from "./DataHomeList";
 import type { DataHomeMaking } from "./DataHomeRoute";
 import { TEMPLATE_GALLERY_HREF } from "@/features/make/gallery/galleryHref";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 /** `making` is the route's: the header's presses open the route's one New table dialog. */
 export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
@@ -69,7 +68,8 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
     }));
   }, [organizationId]);
 
-  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+  const recordsConfig = useAppRecordsConfig(organizationId);
+  const dataSource = recordsConfig.dataSource;
 
 
   const goBack = useCallback(() => {
@@ -113,12 +113,7 @@ export function DataHomeShellPage({ making }: { making: DataHomeMaking }) {
         ) : (
           <RecordsMount
             letTheStoreDecideRights
-            config={{
-              dataSource,
-              actor: personActor(userId),
-              organizationId,
-              realtime: organizationId ? createRecordsRealtimePort(organizationId) : undefined,
-            }}
+            config={recordsConfig}
             host={{
               Link,
               density: "condensed",

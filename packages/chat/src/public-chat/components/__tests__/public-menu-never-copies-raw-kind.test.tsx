@@ -11,9 +11,6 @@ import { createRoot } from "react-dom/client";
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const copyToClipboard = jest.fn(async (..._a: unknown[]) => {});
-jest.mock("@host/components/matrx/buttons/markdown-copy-utils", () => ({
-  copyToClipboard: (...a: unknown[]) => copyToClipboard(...a),
-}));
 jest.mock("@ai-matrx/print/markdown", () => ({ getMarkdownStylesheet: () => "" }));
 const notesCreate = jest.fn(async (..._a: unknown[]) => {});
 registerChatUi({
@@ -29,6 +26,7 @@ registerChatUi({
   EmailInputDialog: () => null,
   AuthGateDialog: () => null,
   notesCreate: (...a: unknown[]) => notesCreate(...a),
+  copyToClipboard: (...a: unknown[]) => copyToClipboard(...a),
 });
 jest.mock("../../../host/notify", () => ({
   toast: { error: jest.fn(), success: jest.fn(), info: jest.fn() },

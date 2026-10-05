@@ -169,7 +169,7 @@ const SMART_SINGLE = "\u2018\u2019\u201A\u201B\u2032";
 /** The key in typographic quotes (`“__kind”:`, `‘__kind’:`) — key position only. */
 const SMART_KIND_KEY = new RegExp(`[${SMART_DOUBLE}${SMART_SINGLE}]__kind[${SMART_DOUBLE}${SMART_SINGLE}"']\\s*:`);
 /** The key in HTML entities (`&quot;__kind&quot;:`, `&#34;`, `&#x22;`, `&#39;`, `&apos;`). */
-const ENTITY_QUOTE = "&(?:quot|apos|#0*3[49]|#[xX]0*2[27]);";
+const ENTITY_QUOTE = "&(?:[qQ][uU][oO][tT]|[aA][pP][oO][sS]|#0*3[49]|#[xX]0*2[27]);";
 const ENTITY_KIND_KEY = new RegExp(`${ENTITY_QUOTE}__kind${ENTITY_QUOTE}\\s*:`);
 
 /** Whether a fence language is JSON5 (the one context that widens the key rule). */
@@ -633,7 +633,7 @@ export interface KindSpellingRegion {
 
 const ZW = "[\\u200B-\\u200D\\u2060\\uFEFF\\u00AD]";
 /** One underscore of the key: literal, backslash-escaped at any depth, or `_`. */
-const KEY_UNDERSCORE = String.raw`(?:\\*_|\\u005[fF])`;
+const KEY_UNDERSCORE = String.raw`(?:\\*_|\\u005[fF]|&#0*95;|&#[xX]0*5[fF];|&lowbar;|&UnderBar;)`;
 const KEY_CORE = `${ZW}*${KEY_UNDERSCORE}${ZW}*${KEY_UNDERSCORE}${ZW}*k${ZW}*i${ZW}*n${ZW}*d${ZW}*`;
 const SMART_ANY = `[${SMART_DOUBLE}${SMART_SINGLE}]`;
 
@@ -690,6 +690,9 @@ function keyFamily(m: RegExpExecArray): { family: KindSpellingFamily; core: stri
   if (m[6] !== undefined) return { family: "js", core: m[6], levels: 0 };
   const backslashes = m[1]!.length;
   const core = m[2]!;
+  // An entity-spelled underscore (`&#95;`) is markdown-decoded to a real key on
+  // screen but is not JSON: exotic, detection only, drawn as written.
+  if (core.includes("&")) return { family: "entity", core, levels: 0 };
   if (backslashes > 0) {
     // `\"` is one level, `\\\"` two, `\\\\\\\"` three: 2^levels − 1 backslashes.
     return { family: "escaped", core, levels: Math.min(4, Math.ceil(Math.log2(backslashes + 1))) };
@@ -875,15 +878,15 @@ function decodeChain(raw: string, steps: SpellingStep[]): DecodedText {
   return current;
 }
 
-const ENTITY_STEP_RE = /^&(?:(quot|apos|amp|lt|gt)|#(\d{1,6})|#[xX]([0-9a-fA-F]{1,6}));/;
-const NAMED_ENTITIES: Record<string, string> = { quot: '"', apos: "'", amp: "&", lt: "<", gt: ">" };
+const ENTITY_STEP_RE = /^&(?:(quot|apos|amp|lt|gt|lowbar|UnderBar)|#(\d{1,6})|#[xX]([0-9a-fA-F]{1,6}));/i;
+const NAMED_ENTITIES: Record<string, string> = { quot: '"', apos: "'", amp: "&", lt: "<", gt: ">", lowbar: "_", underbar: "_" };
 const ESCAPE_CHARS: Record<string, string> = { '"': '"', "\\": "\\", "/": "/", n: "\n", t: "\t", r: "\r", b: "", f: "" };
 
 const entityStep: SpellingStep = (raw, i) => {
   if (raw[i] !== "&") return [raw[i]!, 1];
   const m = ENTITY_STEP_RE.exec(raw.slice(i, i + 12));
   if (!m) return ["&", 1];
-  const ch = m[1] ? NAMED_ENTITIES[m[1]]! : String.fromCodePoint(Number.parseInt(m[2] ?? m[3]!, m[2] ? 10 : 16));
+  const ch = m[1] ? NAMED_ENTITIES[m[1].toLowerCase()]! : String.fromCodePoint(Number.parseInt(m[2] ?? m[3]!, m[2] ? 10 : 16));
   return [ch, m[0].length];
 };
 const smartStep: SpellingStep = (raw, i) => {

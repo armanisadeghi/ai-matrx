@@ -19,7 +19,7 @@ import { buildContentBlocksForSave } from "./utils/buildContentBlocksForSave";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
 import { recognizeOurFileUrl } from "@ai-matrx/chat/host/ui-slots";
 import { chatConversationsActions } from "./_legacy-stubs";
-import { RichDocumentActions } from "@host/features/rich-document/RichDocumentActions";
+import { RichDocumentActions } from "@ai-matrx/chat/host/rich-document-slots";
 import { MessageTimestamp } from "../agents/components/messages-display/MessageTimestamp";
 import type { ConversationMessage } from "./_legacy-stubs";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";

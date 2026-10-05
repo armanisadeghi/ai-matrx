@@ -15,8 +15,8 @@ import {
   detectResultShape,
   coerceMediaRef,
   mediaElementHintForKey,
-} from "../shape";
-import { RESULT_MEDIA_DEMO_REF } from "../demo-fixtures";
+} from "@ai-matrx/chat/tool-call-visualization/result-fields/shape";
+import { RESULT_MEDIA_DEMO_REF } from "@ai-matrx/chat/tool-call-visualization/result-fields/demo-fixtures";
 
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
 const FILE_ID = "6feae31a-945b-4dcc-8fc0-2041bb76c6b1";

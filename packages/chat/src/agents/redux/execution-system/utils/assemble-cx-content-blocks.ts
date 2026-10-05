@@ -60,15 +60,15 @@ import type {
 import { computeChildOwnedRanges } from "./child-owned-ranges";
 import { toCxMediaPart } from "@ai-matrx/media/files";
 import { isUnifiedImageBlock } from "@ai-matrx/media/files";
-import { SPECIAL_CODE_LANGUAGES } from "@host/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { isSpecialCodeLanguage } from "@ai-matrx/chat/host/content-ir-slots";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";
 import type { NormalizedCitation } from "../messages/message-citations";
 import { envelopeCacheFromEnvelopes } from "@ai-matrx/content-ir";
-import { readEnvelope } from "@host/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/content-ir";
 import {
   DECISION_ANSWERS_BLOCK_TYPE,
   DECISION_ANSWERS_KIND,
-} from "@host/features/content-ir/kinds/decision-answers";
+} from "@ai-matrx/chat/utils/content-ir/decision-answers-ids";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -244,7 +244,7 @@ export function reconstructBlockMarkdown(block: {
       // the fence and the reload splitter can never re-detect the block
       // (e.g. a ```tasks list silently degrades to raw checkbox markdown
       // in the chat-from-DB path while direct render routes still work).
-      if (SPECIAL_CODE_LANGUAGES.includes(block.type)) {
+      if (isSpecialCodeLanguage(block.type)) {
         return `\`\`\`${block.type}\n${content}\n\`\`\``;
       }
       // Unknown types fall back to content — may lose structure but text

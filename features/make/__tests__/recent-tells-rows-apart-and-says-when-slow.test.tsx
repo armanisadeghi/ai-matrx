@@ -67,6 +67,7 @@ jest.mock("@/features/organizations/components/OrganizationPickerPopover", () =>
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   recordsUiHostFor: () => ({}),
   useRecordsDataSource: () => ({}),
+  useAppRecordsConfig: () => ({}),
   useRecordsUiPorts: () => ({}),
 }));
 jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));

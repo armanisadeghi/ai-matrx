@@ -13,16 +13,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { RecordsMount, SaveToTable, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount, SaveToTable } from "@ai-matrx/records-ui";
 import type { SaveToTableSource } from "@ai-matrx/records-ui";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { whereANewTableIsBorn } from "@/features/data-tables/data-source/where-a-table-is-born";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { disposeSaveToTableCallbackGroup, emitSaveToTableEvent } from "@/features/overlays/callbacks/saveToTable";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { createClient } from "@/utils/supabase/client";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 export interface SaveToTableOverlayProps {
   isOpen: boolean;
@@ -56,8 +55,8 @@ export function SaveToTableOverlay({
 }: SaveToTableOverlayProps) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const [dataSource] = useState(() => recordsDataSource(createClient()));
   const [where, setWhere] = useState<Where>({ state: "asking" });
+  const recordsConfig = useAppRecordsConfig(where.state === "record" ? where.organizationId : null);
 
   const source: SaveToTableSource = {
     ...(grid ? { grid } : hasValue ? { value } : { text: text ?? "" }),
@@ -100,12 +99,7 @@ export function SaveToTableOverlay({
         ) : userId ? (
           <RecordsMount
             letTheStoreDecideRights
-            config={{
-              dataSource,
-              actor: personActor(userId),
-              organizationId: where.organizationId,
-              realtime: createRecordsRealtimePort(where.organizationId),
-            }}
+            config={recordsConfig}
             host={{ Link, density: "condensed", notify: RECORDS_NOTIFY }}
           >
             <SaveToTable

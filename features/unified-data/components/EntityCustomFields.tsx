@@ -39,14 +39,12 @@ import { useEffect, useState, type ReactNode } from "react";
 // which was the same twenty lines: the second page to want them would have
 // copied them, and the third would have copied them differently.
 
-import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { CustomFieldsSection, RecordsMount, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button } from "@ai-matrx/design-system";
 import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
 import { useCustomFieldsHost } from "@/features/unified-data/components/useCustomFieldsHost";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { mayReadAsMember } from "@/features/organizations/organizationsIAmIn";
 import {
@@ -64,6 +62,7 @@ import {
   type RecordReadableAnswer,
 } from "@/features/unified-data/customFieldsRead";
 import { getManifest } from "@/features/surfaces/manifests/registry";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 export interface EntityCustomFieldsProps {
   /** The standard table's registry token (REC-33) — `party`, `crm_deal`, `crm_interaction`. */
@@ -226,7 +225,6 @@ export function EntityCustomFields({
   organizationId: pageOrganizationId,
 }: EntityCustomFieldsProps) {
   const { home, retry: retryHome } = useRecordHome(entityToken, recordId, pageOrganizationId ?? null);
-  const userId = useAppSelector(selectUserId);
   // The record's organization is known only once the home door answers; the host wiring (own-table
   // offer, registry word, dormant-aware agent door) is the ONE hook every record page shares.
   const hostOrganizationId = home.state === "home" ? home.organizationId : null;
@@ -247,6 +245,7 @@ export function EntityCustomFields({
     [CUSTOM_FIELDS_VALUE_NAME]: customFieldsScopeValue(),
   }));
   const organizationId = home.state === "home" ? home.organizationId : null;
+  const recordsConfig = useAppRecordsConfig(organizationId);
   const { readable, retry: retryRead } = useRecordReadable(entityToken, recordId, organizationId);
   // Whether she is a member of the ROW's organization: `null` until asked. A record shared from
   // an organization she is not in shows that organization's fields as not hers (no store switch
@@ -308,7 +307,7 @@ export function EntityCustomFields({
   return (
     <RecordsMount
       letTheStoreDecideRights
-      config={{ dataSource: recordsDataSource(createClient()), actor: personActor(userId), organizationId }}
+      config={recordsConfig}
     >
       {/* THE AGENT TWIN OF "ADD FIELD": the section hands its door to the
           platform write target \`custom_fields_add\`, so every page that embeds

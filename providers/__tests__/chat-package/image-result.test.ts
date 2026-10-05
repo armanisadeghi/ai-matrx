@@ -4,7 +4,7 @@
  */
 
 import "@/__tests__/helpers/register-chat-host";
-import { findResultMedia } from "../findResultMedia";
+import { findResultMedia } from "@ai-matrx/chat/tool-call-visualization/renderers/agent-call/findResultMedia";
 
 const FILE_ID = "6feae31a-945b-4dcc-8fc0-2041bb76c6b1";
 const SIGNED_URL =

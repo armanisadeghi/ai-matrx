@@ -14,7 +14,7 @@
  */
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
+import { contentIrKindValidator } from "@ai-matrx/chat/host/content-ir-slots";
 import type { SurfaceWritePolicy, SurfaceWriteTarget } from "../types";
 
 /**
@@ -81,7 +81,7 @@ export async function describeAgentWritableTargets(
           .filter((kind): kind is string => Boolean(kind)),
       ),
     ].map(async (kind) => {
-      const summary = summarizeKindSchema(await kindValidator.cachedSchema(kind));
+      const summary = summarizeKindSchema(await contentIrKindValidator().cachedSchema(kind));
       if (summary) contracts.set(kind, summary);
     }),
   );

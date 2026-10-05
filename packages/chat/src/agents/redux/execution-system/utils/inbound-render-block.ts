@@ -28,7 +28,7 @@
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { captureError } from "../../../../host/diagnostics";
-import { sanitizeInboundEnvelopeMetadata } from "@host/features/content-ir/redux/render-block-envelope";
+import { sanitizeInboundEnvelopeMetadata } from "@ai-matrx/chat/host/content-ir-slots";
 import { sanitizeInboundPartialKindMetadata } from "@ai-matrx/content-ir/wire";
 import { fromRenderBlock } from "@ai-matrx/media/files";
 

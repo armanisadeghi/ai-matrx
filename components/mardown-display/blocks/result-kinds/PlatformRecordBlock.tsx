@@ -59,16 +59,10 @@ import {
   RecordsUiProvider,
   cardTitleField,
   cardWords,
-  personActor,
-  recordsDataSource,
-  useRecordLabels,
-} from "@ai-matrx/records-ui";
+  useRecordLabels } from "@ai-matrx/records-ui";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { PanelRightTapButton } from "@ai-matrx/tap-target/buttons";
 import InfoHint from "@/components/official/InfoHint";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { createClient } from "@/utils/supabase/client";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import {
   useTableKind,
@@ -95,6 +89,7 @@ import {
 import { RecordDoor } from "../google-kinds/google-result-shared";
 import type { ItemType } from "@/features/item-presentation/types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 /**
  * Every key this component prints itself. Exported so the render-leg suite can
@@ -179,13 +174,6 @@ const HonestNotice: React.FC<{
 // inside the card's own records host and label provider, bound to the TABLE's organization (never
 // the active one), so a member or a relation reads as its name, not an id.
 
-/** ONE data seam per page — a fresh seam per render would rebuild the provider's client. */
-let tableCardDataSource: ReturnType<typeof recordsDataSource> | null = null;
-function sharedTableCardDataSource() {
-  tableCardDataSource ??= recordsDataSource(createClient());
-  return tableCardDataSource;
-}
-
 /** One header line: icon, the record's words, the Table's name, then the trailing control. */
 const TableCardHeader: React.FC<{
   title: string;
@@ -268,26 +256,24 @@ const TableRecordBody: React.FC<{
   );
 };
 
+function TableCardRecordsProvider({ organizationId, children }: { organizationId: string; children: React.ReactNode }) {
+  const recordsConfig = useAppRecordsConfig(organizationId);
+  return <RecordsProvider config={recordsConfig}>{children}</RecordsProvider>;
+}
+
 const TableRecordCard: React.FC<{ value: Record<string, unknown>; className?: string }> = ({ value, className }) => {
   const kind = String(value.__kind);
   const table = useTableKind(kind);
-  const userId = useAppSelector(selectUserId);
   if (table.state === "loading") return <TableCardLoading className={className} />;
   if (table.state === "refused") return <TableCardRefused label="No access to this table" sentence={table.sentence} className={className} />;
   return (
-    <RecordsProvider
-      config={{
-        dataSource: sharedTableCardDataSource(),
-        actor: personActor(userId),
-        organizationId: table.facts.organization_id,
-      }}
-    >
+    <TableCardRecordsProvider organizationId={table.facts.organization_id}>
       <RecordsUiProvider value={{}}>
         <RecordLabelProvider>
           <TableRecordBody value={value} table={table} recordsTick={table.recordsTick} className={className} />
         </RecordLabelProvider>
       </RecordsUiProvider>
-    </RecordsProvider>
+    </TableCardRecordsProvider>
   );
 };
 

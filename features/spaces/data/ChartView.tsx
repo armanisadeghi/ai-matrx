@@ -15,30 +15,33 @@ import type { ChartSettings } from "./sources";
 
 export const GROUP_LIMIT = 200;
 
-/** Notion's option colors, mapped from the store's choice color words. */
+/** Notion's chart colors (sampled from its chart view), keyed by the store's choice color words. */
 const CHOICE_HEX: Record<string, string> = {
-  slate: "#9b9a97",
-  gray: "#9b9a97",
-  brown: "#a27763",
-  orange: "#d9730d",
-  amber: "#e9a23b",
-  yellow: "#dfab01",
-  green: "#4dab9a",
-  teal: "#4dab9a",
-  blue: "#529cca",
-  violet: "#9a6dd7",
-  purple: "#9a6dd7",
-  pink: "#e255a1",
-  red: "#e16259",
+  slate: "#b4b2ad",
+  gray: "#b4b2ad",
+  brown: "#b89a83",
+  orange: "#d69258",
+  amber: "#e9c26c",
+  yellow: "#e9c26c",
+  green: "#73b98f",
+  teal: "#73b98f",
+  blue: "#5c9be3",
+  violet: "#b98fd5",
+  purple: "#b98fd5",
+  pink: "#e295bf",
+  red: "#e08679",
 };
-const PALETTE = ["#529cca", "#9a6dd7", "#4dab9a", "#e9a23b", "#e16259", "#d9730d", "#e255a1", "#a27763", "#9b9a97"];
+const PALETTE = ["#5c9be3", "#b98fd5", "#73b98f", "#e9c26c", "#e08679", "#d69258", "#e295bf", "#b89a83", "#b4b2ad"];
+/** Past a couple dozen groups Notion draws one pale color in many thin slices. */
+const MANY_HEX = "#d3e9dc";
 
 interface Choice {
   value: string;
   color?: string;
 }
 
-function choicesOfField(field: Field | undefined): Choice[] {
+/** A select / status column's options, in their order (empty for any other column). */
+export function choicesOfField(field: Field | undefined): Choice[] {
   const fmt: unknown = field ? (field as unknown as Record<string, unknown>)["display_format"] : null;
   if (!fmt || typeof fmt !== "object") return [];
   const options = (fmt as { options?: { choices?: unknown } }).options;
@@ -96,11 +99,13 @@ function aggregateRows(rows: readonly ReadRow[], group: string | null, measure: 
 }
 
 /** One aggregate for the groups, one for the total (a donut's middle never counts only the first 200). */
-export function useChartData(tableId: string, settings: ChartSettings): { data: ChartData | null; error: string | null; fields: Field[] } {
+export function useChartData(tableId: string, settings: ChartSettings, overRows = false): { data: ChartData | null; error: string | null; fields: Field[] } {
   const client = useRecordsClient();
   const fields = useFields(tableId).data ?? [];
   const [state, setState] = useState<{ data: ChartData | null; error: string | null }>({ data: null, error: null });
-  const [byRows, setByRows] = useState(false);
+  // A store with no aggregate door (the in-memory sample) is answered over read rows from the start,
+  // so it is never asked — an unanswerable ask is logged by the store as a refusal.
+  const [byRows, setByRows] = useState(overRows);
   const read = useRecords(byRows ? tableId : null, { pageSize: 1000 });
   const measure = measureOf(settings);
   const mKey = measureKey(measure);
@@ -110,6 +115,7 @@ export function useChartData(tableId: string, settings: ChartSettings): { data: 
   const ask = JSON.stringify([tableId, group, measure, settings.sort ?? "manual"]);
 
   useEffect(() => {
+    if (overRows) return;
     let gone = false;
     void (async () => {
       const [grouped, whole] = await Promise.all([
@@ -131,7 +137,7 @@ export function useChartData(tableId: string, settings: ChartSettings): { data: 
     };
     // `ask` carries every input of the question.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, ask]);
+  }, [client, ask, overRows]);
 
   let answered = state.data;
   const readRows = read.data?.rows ?? [];
@@ -147,8 +153,7 @@ export function useChartData(tableId: string, settings: ChartSettings): { data: 
     const choice = choices.find((c) => c.value === raw || choiceSlug(c.value) === raw);
     const label = raw === null ? (group ? "No value" : "All") : (choice?.value ?? raw);
     const value = typeof row.measures[mKey] === "number" ? (row.measures[mKey] as number) : 0;
-    // Past a couple dozen groups Notion draws one color in many thin slices.
-    const color = (choice?.color && CHOICE_HEX[choice.color]) || (groupCount > 24 ? "#4dab9a" : PALETTE[i % PALETTE.length]);
+    const color = groupCount > 24 ? MANY_HEX : (choice?.color && CHOICE_HEX[choice.color]) || PALETTE[i % PALETTE.length];
     return { key: raw ?? `none-${i}`, label, value, color };
   });
   if (settings.sort === "asc") points.sort((a, b) => a.value - b.value);
@@ -166,33 +171,39 @@ function pretty(n: number | null): string {
   return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
 
-/** The donut: one ring, a 1.5° gap between slices, the total in the middle. */
+/** The donut (Notion's ring): a thin ring from 12 o'clock clockwise, a hairline gap between slices,
+ *  the total in the middle in a large semibold numeral. Sizes are Notion's, measured: 112px ring,
+ *  5px stroke, ~50px numeral (smaller as the number grows). */
+const RING = 116;
 function Donut({ data, settings }: { data: ChartData; settings: ChartSettings }) {
-  const r = 52;
+  const r = 54;
   const c = 2 * Math.PI * r;
+  const mid = RING / 2;
   const sum = data.points.reduce((s, p) => s + Math.max(0, p.value), 0) || 1;
   const many = data.points.length > 24;
-  const gap = data.points.length > 1 ? (many ? c / 720 : c / 240) : 0;
+  const gap = data.points.length > 1 ? (many ? c / 400 : c / 260) : 0;
   let offset = 0;
   const center = settings.op === "count" || settings.op === "sum" ? data.total ?? sum : data.total;
+  const shown = pretty(center);
+  const fontSize = shown.length <= 2 ? 52 : shown.length === 3 ? 47 : shown.length === 4 ? 38 : 30;
   return (
     <div className="spaces-chart-donut">
-      <svg viewBox="0 0 140 140" role="img" aria-label={`${pretty(center)}`}>
+      <svg viewBox={`0 0 ${RING} ${RING}`} width={RING} height={RING} role="img" aria-label={shown}>
         {data.points.map((p) => {
           const len = (Math.max(0, p.value) / sum) * c;
           const dash = Math.max(0.5, len - gap);
           const el = (
             <circle
               key={p.key}
-              cx="70"
-              cy="70"
+              cx={mid}
+              cy={mid}
               r={r}
               fill="none"
               stroke={p.color}
-              strokeWidth={many ? 6 : 9}
+              strokeWidth={many ? 6 : 5}
               strokeDasharray={`${dash} ${c - dash}`}
               strokeDashoffset={-offset}
-              transform="rotate(-90 70 70)"
+              transform={`rotate(-90 ${mid} ${mid})`}
               strokeLinecap="butt"
             >
               <title>{`${p.label}: ${pretty(p.value)}`}</title>
@@ -202,8 +213,8 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
           return el;
         })}
         {settings.centerValue !== false ? (
-          <text x="70" y="70" textAnchor="middle" dominantBaseline="central" className="spaces-chart-center">
-            {pretty(center)}
+          <text x={mid} y={mid} textAnchor="middle" dominantBaseline="central" className="spaces-chart-center" style={{ fontSize }}>
+            {shown}
           </text>
         ) : null}
       </svg>
@@ -224,8 +235,8 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
 
 const RECORDS_KIND = { bar: "column", hbar: "bar", line: "line", donut: "donut" } as const;
 
-export function ChartView({ tableId, settings, title }: { tableId: string; settings: ChartSettings; title: string }) {
-  const { data, error } = useChartData(tableId, settings);
+export function ChartView({ tableId, settings, title, overRows }: { tableId: string; settings: ChartSettings; title: string; overRows?: boolean }) {
+  const { data, error } = useChartData(tableId, settings, overRows);
   if (error) return <p className="spaces-db-note">{error}</p>;
   if (!data) return <div className="spaces-chart-loading" />;
   return (

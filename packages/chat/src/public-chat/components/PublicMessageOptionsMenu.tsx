@@ -22,9 +22,8 @@ import {
   LayoutDashboard,
   Share2,
 } from "lucide-react";
-import { copyToClipboard } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
-import { AdvancedMenu } from "@ai-matrx/chat/host/ui-slots";
+import { AdvancedMenu, copyToClipboard } from "@ai-matrx/chat/host/ui-slots";
 import { EmailInputDialog } from "@ai-matrx/chat/host/ui-slots";
 import { AuthGateDialog } from "@ai-matrx/chat/host/ui-slots";
 import { notesCreate } from "@ai-matrx/chat/host/ui-slots";

@@ -39,9 +39,7 @@ import {
   useRef,
 } from "react";
 import { MarkdownStream } from "../../../../host/markdown-slots";
-import { RecordAnnotations } from "@host/features/rich-document/annotations/RecordAnnotations";
-import { annotationRecordOf } from "@host/features/rich-document/annotations/record-of-source";
-import type { AnnotationSource } from "@host/features/rich-document/annotations/types";
+import { RecordAnnotations, annotationRecordOf } from "@ai-matrx/chat/host/rich-document-slots";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { PrefillNote } from "../../../message-flags/PrefillNote";
 import { StoppedNote } from "../../../message-flags/StoppedNote";
@@ -645,7 +643,7 @@ export function AgentAssistantMessage({
     messageId && !isStreamActive && renderedText?.trim()
       ? annotationRecordOf({ type: "chat-message", messageId, conversationId })
       : null;
-  const annotationRecord: AnnotationSource | null = answerRecord
+  const annotationRecord = answerRecord
     ? {
         token: answerRecord.token,
         id: answerRecord.id,

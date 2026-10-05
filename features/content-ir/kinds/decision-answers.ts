@@ -21,6 +21,7 @@
 import type { KindDefinition, KindSchema } from "@ai-matrx/content-ir";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 
+import { DECISION_ANSWERS_BLOCK_TYPE, DECISION_ANSWERS_KIND } from "@ai-matrx/chat/utils/content-ir/decision-answers-ids";
 import { makeCompleteEnvelopeBridge } from "./legacy-bridge-utils";
 import { joinBlocks } from "./kind-markdown-utils";
 import {
@@ -29,9 +30,8 @@ import {
   readDecisionAnswers,
 } from "@ai-matrx/agents/presentation/decision-answers";
 
-export const DECISION_ANSWERS_KIND = "decision_answers";
+export { DECISION_ANSWERS_KIND, DECISION_ANSWERS_BLOCK_TYPE };
 /** The render key `kind-route` sets `block.type` to (SHAPE_BLOCK_DISPATCH). */
-export const DECISION_ANSWERS_BLOCK_TYPE = "decision_answers";
 
 export const decisionAnswersKindSchema: KindSchema = {
   kind: DECISION_ANSWERS_KIND,

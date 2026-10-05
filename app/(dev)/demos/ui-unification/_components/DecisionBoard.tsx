@@ -12,12 +12,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RecordsProvider, useAppTable } from "@ai-matrx/records/react";
-import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { createClient } from "@/utils/supabase/client";
 import { uiDecisionPicks } from "../decision-picks.app-table";
 import { Input } from "@ai-matrx/design-system";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
@@ -30,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisions";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 const STORAGE_KEY = "ui-unification-decisions-round2";
 
@@ -231,7 +230,7 @@ function DecisionSection({
 export function DecisionBoard() {
   const userId = useAppSelector(selectUserId);
   const active = useOrganizationRequired();
-  const [dataSource] = useState(() => recordsDataSource(createClient()));
+  const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
   if (!userId || active.organizationState !== "ready" || !active.organizationId) {
     return (
       <OrganizationContextNotice
@@ -242,7 +241,7 @@ export function DecisionBoard() {
   }
   return (
     <RecordsProvider
-      config={{ dataSource, actor: personActor(userId), organizationId: active.organizationId }}
+      config={recordsConfig}
     >
       <ConnectedBoard />
     </RecordsProvider>

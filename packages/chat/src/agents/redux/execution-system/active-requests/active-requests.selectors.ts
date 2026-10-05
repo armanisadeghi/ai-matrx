@@ -18,7 +18,7 @@ import {
 } from "../utils/agent-call-trace";
 import { createSelector } from "@reduxjs/toolkit";
 import { blockMediaFileId } from "../utils/block-media-identity";
-import { DECISION_ANSWERS_BLOCK_TYPE } from "@host/features/content-ir/kinds/decision-answers";
+import { DECISION_ANSWERS_BLOCK_TYPE } from "@ai-matrx/chat/utils/content-ir/decision-answers-ids";
 import { decisionAnswersText } from "@ai-matrx/agents/presentation/decision-answers";
 import type { ChatRootState } from "../../../../store/root-state";
 import type {
@@ -73,7 +73,7 @@ import type { CxToolCallRecord } from "../observability/observability.slice";
 import {
   readEnvelope,
   reconstructRegionValue,
-} from "@host/features/content-ir/redux/render-block-envelope";
+} from "@ai-matrx/content-ir";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   buildLiveCitationIndex,

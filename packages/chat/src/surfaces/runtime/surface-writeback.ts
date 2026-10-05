@@ -40,7 +40,7 @@
  *    returns as `{ summary?, data? }` rides back on the success result.
  */
 
-import { kindValidator } from "@host/features/content-ir/registry/kind-schema-source";
+import { contentIrKindValidator } from "@ai-matrx/chat/host/content-ir-slots";
 import { getManifest } from "./registry";
 import {
   isSurfaceWritePatch,
@@ -1006,7 +1006,7 @@ async function valueContractHolds(
   const kind = target.valueKind;
   if (!kind) return true;
 
-  const verdict = await kindValidator.validate(value, kind);
+  const verdict = await contentIrKindValidator().validate(value, kind);
 
   if (!verdict.checked) {
     return fail(

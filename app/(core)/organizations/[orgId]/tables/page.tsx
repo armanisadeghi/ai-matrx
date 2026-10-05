@@ -9,11 +9,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 import { useResolvedOrganization } from "@/features/organizations/hooks";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { RecordsMount, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { RecordsMount, WhereItLives } from "@ai-matrx/records-ui";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
 import { KeptByTheAppLine } from "@/features/unified-data/hub/KeptByTheAppLine";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 const SELECT_COLS = "id, table_name, description, version, updated_at";
 
@@ -72,8 +71,8 @@ export default function OrgTablesPage() {
     refresh: retryOrgRead,
   } = useResolvedOrganization(orgIdParam);
   const orgName = resolvedOrg?.name ?? null;
-  const [dataSource] = React.useState(() => recordsDataSource(supabase as unknown as SupabaseClient));
-  const userId = useAppSelector(selectUserId);
+  const recordsConfig = useAppRecordsConfig(resolvedOrgId ?? null);
+  const dataSource = recordsConfig.dataSource;
   // A table moved from a card re-reads the list (the moved card leaves this organization's page).
   const [reread, setReread] = React.useState(0);
   // THE SAME "SHOW EVERYTHING" AS /data (KeptByTheAppLine): the tables the app keeps for
@@ -106,7 +105,7 @@ export default function OrgTablesPage() {
            where ITS table lives — never this organization). */
         <RecordsMount
           letTheStoreDecideRights
-          config={{ dataSource, actor: personActor(userId), organizationId: resolvedOrgId }}
+          config={recordsConfig}
           // The page's toasts: a landed move's sentence outlives the list's re-read (UI-FIX-19).
           host={{ notify: RECORDS_NOTIFY }}
         >

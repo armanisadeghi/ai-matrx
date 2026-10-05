@@ -30,16 +30,16 @@
 import { use, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CaptureRun, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { CaptureRun, RecordsMount } from "@ai-matrx/records-ui";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
-import { createClient } from "@/utils/supabase/client";
 import { uploadCaptureFile } from "@/features/capture/uploadCaptureFile";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAppRecordsConfig, useRecordsDataSource } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 export default function CrewCaptureRoute({
   params,
@@ -48,10 +48,11 @@ export default function CrewCaptureRoute({
 }) {
   const { sheetId } = use(params);
   const userId = useAppSelector(selectUserId);
-  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+  const dataSource = useRecordsDataSource();
   const sheet = useObjectOrganization(dataSource, sheetId);
   const organizationId: string | null = sheet.state === "found" ? sheet.organizationId : null;
   const organizationState: OrganizationState = organizationId ? "ready" : "resolving";
+  const recordsConfig = useAppRecordsConfig(organizationId);
 
   return (
     <main className="min-h-dvh bg-background">
@@ -83,11 +84,7 @@ export default function CrewCaptureRoute({
       ) : (
         <RecordsMount
           letTheStoreDecideRights
-          config={{
-            dataSource,
-            actor: personActor(userId),
-            organizationId: organizationId!,
-          }}
+          config={recordsConfig}
           host={{
             Link,
             density: "condensed",

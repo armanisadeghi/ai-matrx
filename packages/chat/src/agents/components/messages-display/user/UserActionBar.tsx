@@ -26,9 +26,8 @@
  * it). That keeps dialog ownership in one place per message bubble.
  */
 
-import { buildChatMessageActions } from "@host/features/rich-document/chat/chatMessageActions";
-import { useDocumentDialogsHost } from "@host/features/rich-document/hosts/DocumentDialogsHost";
-import React, { useState, lazy, Suspense, useCallback } from "react";
+import { RegistryActionMenu, buildChatMessageActions, useDocumentDialogsHost } from "@ai-matrx/chat/host/rich-document-slots";
+import React, { useState, Suspense, useCallback } from "react";
 import { Copy, Check, Edit, Send, MoreHorizontal, Pin, PinOff, Loader2 } from "lucide-react";
 import {
   togglePinnedMessage,
@@ -94,12 +93,7 @@ function serializeSaveError(error: unknown): {
 }
 
 // The ⋯ menu is the ONE action registry (features/rich-document) rendered
-// through AdvancedMenu — the same actions a document gets on every surface.
-const RegistryActionMenu = lazy(() =>
-  import("@host/features/rich-document/variants/RegistryActionMenu").then((m) => ({
-    default: m.RegistryActionMenu,
-  })),
-);
+// through AdvancedMenu — the host registers it as a lazy chunk (providers/chatRichDocumentRegistration).
 
 export interface UserActionBarProps {
   /**

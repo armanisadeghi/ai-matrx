@@ -18,12 +18,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, BookOpen, Database, Eye, Play, Table2 } from "lucide-react";
-import { Grid, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { Grid, RecordsMount } from "@ai-matrx/records-ui";
 import type { CustomDataBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { Button } from "@/components/ui/button";
 import { InfoHint } from "@/components/official/InfoHint";
 import { RECORDS_NOTIFY } from "@/features/unified-data/recordsNotify";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { CustomDataBindingPreview } from "@/features/agents/components/variables-management/custom-data/CustomDataBindingPreview";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -31,6 +30,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { variableLabel } from "../format";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 export interface InstalledMade {
   kind: string;
@@ -191,7 +191,7 @@ export function InstalledTemplate({
 }) {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const [dataSource] = useState(() => recordsDataSource(createClient()));
+  const recordsConfig = useAppRecordsConfig(organizationId);
   const tables = made.filter((m): m is InstalledMade & { id: string } => m.kind === "table" && Boolean(m.id));
   const agents = made.filter((m): m is InstalledMade & { id: string } => m.kind === "agent" && Boolean(m.id));
   const { facts, error } = useAgentFacts(agents.map((a) => a.id));
@@ -252,12 +252,7 @@ export function InstalledTemplate({
       <RecordsMount
         key={organizationId}
         letTheStoreDecideRights
-        config={{
-          dataSource,
-          actor: personActor(userId),
-          organizationId,
-          realtime: createRecordsRealtimePort(organizationId),
-        }}
+        config={recordsConfig}
         host={{ Link, density: "condensed", notify: RECORDS_NOTIFY }}
       >
         {tables.map((t) => (

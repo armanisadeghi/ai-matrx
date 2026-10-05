@@ -8,7 +8,7 @@
 
 // The same rendered-text matcher powers RichDocument search in study guides.
 // Preserve the conversation find bar's whitespace-trimming contract.
-import { collectRenderedFindRanges, findRenderedTextMatches } from "@host/features/rich-document/search/renderedFind";
+import { collectRenderedFindRanges, findRenderedTextMatches } from "../../../../utils/rendered-find";
 
 export function findTextMatches(text: string, query: string): Array<[number, number]> {
   return findRenderedTextMatches(text, query.trim());

@@ -7,25 +7,24 @@
 // blocks: lists, records, charts, forms… and applets); an applet can hold a page in turn. Any page's
 // "Make start page" sets it; /make stays the first step for making things.
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { LayoutDashboard } from "lucide-react";
-import { RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount } from "@ai-matrx/records-ui";
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
 
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { createClient } from "@/utils/supabase/client";
 import { DataPage } from "@/features/agent-apps/embed/AppletParts";
 import { useStartPage } from "./useStartPage";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 export function StartPage() {
   const userId = useAppSelector(selectUserId);
-  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
   // org-filter: write-target a changed start-page choice is saved where new things are saved; the read walks every organization
   const active = useOrganizationRequired();
+  const recordsConfig = useAppRecordsConfig(active.organizationId ?? null);
   return (
     <>
       <RecordPageHeader backHref="/" record={{ name: "Start" }} />
@@ -34,7 +33,7 @@ export function StartPage() {
           // org-filter: write-target a changed start-page choice is saved here; the read walks every organization
           <RecordsMount
             letTheStoreDecideRights
-            config={{ dataSource, actor: personActor(userId), organizationId: active.organizationId ?? null }}
+            config={recordsConfig}
             host={{ Link, density: "condensed" }}
           >
             <StartBody />

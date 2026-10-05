@@ -18,9 +18,9 @@
  * the table itself.
  */
 
-import { useMemo, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { RecordsMount, TablePage, WhereItLives, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount, TablePage, WhereItLives } from "@ai-matrx/records-ui";
 import type { PageView, RecordsMountProps, TablePageActionHost, ViewAddressState } from "@ai-matrx/records-ui";
 import type { RecordFilter } from "@ai-matrx/records";
 import { Button } from "@ai-matrx/design-system";
@@ -33,14 +33,12 @@ import {
 } from "@/features/sharing/outside/PendingTableInvitation";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { createClient } from "@/utils/supabase/client";
 import { useSharedTable } from "@/features/unified-data/hub/useSharedTable";
 import { useObjectOrganization } from "@/features/unified-data/objectOrganization";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
 import { SheetLayout } from "@/features/data-tables/components/SheetLayout";
-import { PREVIEW_RIGHTS, recordsUiHostFor, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { PREVIEW_RIGHTS, recordsUiHostFor, useAppRecordsConfig, useRecordsDataSource, useRecordsUiPorts } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import type { ObjectAction } from "@ai-matrx/records-ui/object-actions";
 import { useMergedGridKnob } from "@/features/data-tables/records-ui-host/mergedGridKnob";
 import { toast } from "@/lib/toast";
@@ -127,7 +125,7 @@ export function useUnifiedTable({
   /** THE AGENT'S VIEW OF THE MERGED GRID (merge 6l): the grid tells the channel, the surface reads it. */
   const gridContext = useGridContextChannel();
   /** THE ONE DATA SEAM, built once. */
-  const dataSource = useMemo(() => recordsDataSource(createClient()), []);
+  const dataSource = useRecordsDataSource();
   /**
    * WHOSE TABLE THIS IS, ASKED OF THE TABLE — ACCESS IS PERSONAL (owner, 2026-09-23). The page
    * asks `custom.where_id_opens(<table>)` — the organization the table lives in, answered only
@@ -241,15 +239,9 @@ export function useUnifiedTable({
    */
   /** The organization the mount reads as, once the table can mount. */
   const mountOrganizationId = mountsTheTable ? readingOrganizationId : null;
-  const recordsConfig: RecordsMountProps["config"] | null = mountOrganizationId
-    ? {
-        dataSource,
-        actor: personActor(userId),
-        organizationId: mountOrganizationId,
-        // LIVE UPDATES: the private topic the database broadcasts a NOTICE on.
-        realtime: createRecordsRealtimePort(mountOrganizationId),
-      }
-    : null;
+  // LIVE UPDATES + data seam + actor: the app's ONE records config.
+  const appRecordsConfig = useAppRecordsConfig(mountOrganizationId);
+  const recordsConfig: RecordsMountProps["config"] | null = mountOrganizationId ? appRecordsConfig : null;
   const recordsHost: RecordsMountProps["host"] | null = mountOrganizationId
     ? recordsUiHostFor({
         ports,

@@ -58,13 +58,11 @@ import {
     ShareControl,
     TablesHome,
     ViewSwitcher,
-    personActor,
     recordsDataSource,
     refusalLineForAPerson,
     rowNameIn,
     tableName,
-    tablePickerEntries,
-} from "@ai-matrx/records-ui";
+    tablePickerEntries } from "@ai-matrx/records-ui";
 
 import { Button } from "@/components/ui/button";
 // THE PLATFORM'S ONE RICH DOCUMENT. A rendered document is a body of text with
@@ -103,6 +101,7 @@ import {
 import type { RouteFact, RoutesInThisBuild } from "./routeFacts";
 import { organizationSavedViews } from "./savedViewsPort";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 /**
  * The organization setting section 2 flips, at its one registry address: "Shown to by default" for
@@ -322,6 +321,7 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
     const organizationName = useAppSelector(selectActiveOrganizationName);
     // org-filter: write-target ONLY — the bench creates its disposable table and runs its writes in the organization the person works in; every list/read below ignores it (work_inbox asks for all organizations)
     const { organizationId, organizationState } = useOrganizationRequired();
+    const recordsConfig = useAppRecordsConfig(organizationId ?? null);
 
     /** The membership port the sibling pages bind — a person field must offer people. */
     const members = useCallback(async () => {
@@ -348,11 +348,7 @@ export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBu
     return (
         <RecordsMount // org-filter: server-call the test bench exercises one organization on purpose; it is not a browse list
             letTheStoreDecideRights
-            config={{
-                dataSource: recordsDataSource(createClient()),
-                actor: personActor(userId),
-                organizationId: organizationId!,
-            }}
+            config={recordsConfig}
             host={{
                 Link,
                 density: "condensed",
