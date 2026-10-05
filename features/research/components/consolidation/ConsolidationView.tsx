@@ -115,14 +115,14 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
     return (
         <div className="p-3 sm:p-4 space-y-3">
             <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
-                <Link href={`/research/topics/${topicId}/tags`} className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                <Link href={`/research/topics/${topicId}/tags`} className="inline-flex items-center gap-0.5 type-meta text-muted-foreground hover:text-foreground transition-colors">
                     <ChevronLeft className="h-3 w-3" />
                     Tags
                 </Link>
                 {tag && (
                     <>
-                        <span className="text-muted-foreground/30 text-[10px]">/</span>
-                        <span className="text-xs font-medium text-foreground/80 truncate">{tag.name}</span>
+                        <span className="text-muted-foreground/30 type-meta">/</span>
+                        <span className="type-secondary font-medium text-foreground/80 truncate">{tag.name}</span>
                     </>
                 )}
                 <div className="flex-1" />
@@ -141,7 +141,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                 <div className="rounded-xl border border-primary/30 bg-card/60 overflow-hidden">
                     <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
                         <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-                        <span className="text-xs font-medium text-primary">Consolidating {tag ? `“${tag.name}”` : 'tag'}…</span>
+                        <span className="type-secondary font-medium text-primary">Consolidating {tag ? `“${tag.name}”` : 'tag'}…</span>
                     </div>
                     <div className="px-3 py-3">
                         <RichContent level="full" imagePolicy="ai" source={streamingText} isStreaming />
@@ -181,13 +181,13 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             <AnswerValueView value={consolidation.result_structured} />
                         </div>
                     ) : consolidation && consolidation.error ? (
-                        <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">
+                        <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 type-secondary text-destructive">
                             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                             {consolidation.error}
                           <ErrorAlchemyMenu error={consolidation.error} />
                         </div>
                     ) : consolidation ? (
-                        <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">
+                        <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 type-secondary text-amber-700 dark:text-amber-400">
                             <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                             <span>This consolidation completed but produced no text output. Re-consolidate to regenerate it.</span>
                         </div>
@@ -197,8 +197,8 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                                 <Layers className="h-5 w-5 text-primary/40" />
                             </div>
                             <div>
-                                <p className="text-xs font-medium text-foreground/70">No consolidation yet</p>
-                                <p className="text-[11px] text-muted-foreground mt-1 max-w-[280px]">
+                                <p className="type-secondary font-medium text-foreground/70">No consolidation yet</p>
+                                <p className="type-meta text-muted-foreground mt-1 max-w-[280px]">
                                     Consolidation synthesizes every source assigned to{' '}
                                     {tag ? `“${tag.name}”` : 'this tag'} into one cohesive view. Run it to generate.
                                 </p>

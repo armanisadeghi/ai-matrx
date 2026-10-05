@@ -151,8 +151,8 @@ export default function MediaGallery() {
   return (
     <div className="p-3 sm:p-4 space-y-4">
       <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
-        <span className="text-xs font-medium text-foreground/80">Media</span>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+        <span className="type-secondary font-medium text-foreground/80">Media</span>
+        <span className="type-meta text-muted-foreground tabular-nums">
           <UntrustedCount
             read={readOf({ isLoading: mediaLoading, error: mediaError })}
             value={`${filtered.length}/${mediaList.length}`}
@@ -262,7 +262,7 @@ export default function MediaGallery() {
       ) : mediaLoading && mediaList.length === 0 ? (
         <div
           role="status"
-          className="flex min-h-[280px] items-center justify-center text-xs text-muted-foreground"
+          className="flex min-h-[280px] items-center justify-center type-secondary text-muted-foreground"
         >
           Loading media…
         </div>
@@ -272,10 +272,10 @@ export default function MediaGallery() {
             <ImageIcon className="h-6 w-6 text-primary/40" />
           </div>
           <div>
-            <p className="text-xs font-medium text-foreground/70">
+            <p className="type-secondary font-medium text-foreground/70">
               {mediaList.length === 0 ? "No media yet" : "No matches"}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
+            <p className="type-meta text-muted-foreground mt-1 max-w-[240px]">
               {mediaList.length === 0
                 ? "Images, videos, and other media are automatically extracted when you read sources."
                 : "Try adjusting your search or filters to find what you're looking for."}
@@ -361,7 +361,7 @@ export default function MediaGallery() {
             buckets.youtubeChannels.length === 0 &&
             buckets.documents.length === 0 &&
             buckets.audio.length === 0 && (
-              <div className="text-[10px] text-muted-foreground px-1">
+              <div className="type-meta text-muted-foreground px-1">
                 No items matched the current filters.
               </div>
             )}
@@ -406,15 +406,15 @@ function SectionHeader({
     <div className="flex items-baseline gap-2 px-1">
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-foreground/60" />
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/70">
+        <h3 className="type-meta font-semibold uppercase tracking-wider text-foreground/70">
           {title}
         </h3>
       </div>
-      <span className="text-[10px] tabular-nums text-muted-foreground">
+      <span className="type-meta tabular-nums text-muted-foreground">
         {count}
       </span>
       {description && (
-        <span className="text-[10px] text-muted-foreground/70 hidden sm:inline">
+        <span className="type-meta text-muted-foreground/70 hidden sm:inline">
           · {description}
         </span>
       )}
@@ -566,7 +566,7 @@ function PhotoCard({
         )}
       </div>
       <div className="p-1.5 flex items-center justify-between gap-1">
-        <p className="text-[10px] truncate text-muted-foreground flex-1">
+        <p className="type-meta truncate text-muted-foreground flex-1">
           {item.alt_text || item.caption || item.url}
         </p>
         {dims && (
@@ -743,7 +743,7 @@ function ResourceCard({
           </span>
         </div>
         <div className="p-1.5">
-          <p className="text-[10px] truncate text-foreground/80">{label}</p>
+          <p className="type-meta truncate text-foreground/80">{label}</p>
           {kind && (
             <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">
               {kind}
@@ -843,7 +843,7 @@ function YouTubeVideoCard({
       </div>
       <div className="p-1.5 flex items-center justify-between gap-1">
         <p
-          className="text-[10px] truncate text-foreground/80 flex-1"
+          className="type-meta truncate text-foreground/80 flex-1"
           title={label}
         >
           {label}
@@ -914,7 +914,7 @@ function YouTubeChannelCard({
         </div>
         <div className="flex flex-1 flex-col gap-0.5 p-2.5 pt-2">
           <p
-            className="text-[11px] font-medium text-foreground/90 line-clamp-2 leading-snug"
+            className="type-meta font-medium text-foreground/90 line-clamp-2 leading-snug"
             title={title}
           >
             {title}
@@ -932,7 +932,7 @@ function YouTubeChannelCard({
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 type-meta text-muted-foreground hover:text-foreground transition-colors"
         >
           <ExternalLink className="h-3 w-3" />
           Open on YouTube
@@ -1086,7 +1086,7 @@ function VideoCard({
       </div>
       <div className="p-1.5 flex items-center justify-between gap-1">
         <p
-          className="text-[10px] truncate text-foreground/80 flex-1"
+          className="type-meta truncate text-foreground/80 flex-1"
           title={label}
         >
           {label}
@@ -1258,7 +1258,7 @@ function DocumentCard({
         </div>
         <div className="min-w-0 flex-1">
           <p
-            className="text-[11px] font-medium text-foreground/90 line-clamp-2 break-words"
+            className="type-meta font-medium text-foreground/90 line-clamp-2 break-words"
             title={name}
           >
             {name}
@@ -1271,7 +1271,7 @@ function DocumentCard({
       <div className="mt-auto flex items-center gap-3 border-t border-border/40 px-2.5 py-1.5">
         <ResearchMediaOpen
           item={item}
-          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 type-meta text-muted-foreground hover:text-foreground transition-colors"
         >
           <ExternalLink className="h-3 w-3" /> Open
         </ResearchMediaOpen>

@@ -39,14 +39,14 @@ function LegendStrip({
   const overflow = values.length - visible.length;
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
+      <span className="type-meta uppercase tracking-wider text-muted-foreground shrink-0">
         {label}
       </span>
       {visible.map((v) => (
         <span key={v}>{badgeFn(v)}</span>
       ))}
       {overflow > 0 && (
-        <span className="text-[10px] text-muted-foreground">
+        <span className="type-meta text-muted-foreground">
           +{overflow} more
         </span>
       )}
@@ -112,7 +112,7 @@ export function AnalyzeStageView({
       }
       trailing={
         derived.rate > 0.1 && (
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 type-meta text-muted-foreground">
             <Sparkline
               timestamps={stage.recentCompletions}
               className="text-purple-500"
@@ -142,7 +142,7 @@ export function AnalyzeStageView({
       {derived.dedupLabel && (
         <div className="mt-2 flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2.5 py-1.5">
           <Star className="h-3 w-3 text-emerald-500 shrink-0" />
-          <span className="text-[11px] text-emerald-700 dark:text-emerald-400">
+          <span className="type-meta text-emerald-700 dark:text-emerald-400">
             <span className="font-semibold">8-for-1 dedup:</span>{" "}
             {derived.dedupLabel}
           </span>
@@ -168,7 +168,7 @@ export function AnalyzeStageView({
       {/* In-flight grid */}
       {active.length > 0 && (
         <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground mb-1">
             In flight ({active.length})
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
@@ -186,7 +186,7 @@ export function AnalyzeStageView({
             open={completedOpen}
             onOpenChange={setCompletedOpen}
             summary={
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
                 Recently completed ({completed.length})
               </span>
             }

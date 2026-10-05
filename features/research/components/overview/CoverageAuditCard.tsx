@@ -76,10 +76,10 @@ export function CoverageAuditCard({
       <div className="flex items-start gap-2 px-3 py-2.5 border-b border-border/50">
         <ScanSearch className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
         <div className="min-w-0">
-          <div className="text-xs font-medium text-foreground">
+          <div className="type-secondary font-medium text-foreground">
             Coverage audit
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="type-meta text-muted-foreground">
             After reading, the pipeline judges whether the captured evidence
             covers what this research needs — and names what is missing.
           </div>
@@ -100,7 +100,7 @@ export function CoverageAuditCard({
       {/* Bespoke action rail — the promised per-gap recovery click. */}
       {audit.gaps.length > 0 && (
         <div className="border-t border-border/50 px-3 py-2.5 space-y-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Close the gaps — add a suggested search as a keyword
           </div>
           {audit.gaps.map((gap, i) => (
@@ -114,7 +114,7 @@ export function CoverageAuditCard({
                 >
                   {gap.severity}
                 </span>
-                <span className="truncate text-[11px] text-foreground/85">
+                <span className="truncate type-meta text-foreground/85">
                   {gap.missing}
                 </span>
               </div>

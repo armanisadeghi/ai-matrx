@@ -48,7 +48,7 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
           <TextCell value={row.name} className="font-medium" />
           {row.description?.trim() ? (
             <span
-              className="line-clamp-2 whitespace-normal break-words text-xs text-muted-foreground"
+              className="line-clamp-2 whitespace-normal break-words type-secondary text-muted-foreground"
               title={row.description}
             >
               {row.description}
@@ -91,7 +91,7 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
           // its text and printed long project names over the Updated column;
           // `w-full` instead squeezed the phone card's "Project" label onto
           // two lines (both live looks, 2026-09-27).
-          <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex max-w-full min-w-0 items-center gap-1.5 type-secondary text-muted-foreground">
             <FolderKanban className="h-3.5 w-3.5 shrink-0" />
             <TextCell value={row.project_name} className="min-w-0" />
           </span>
@@ -113,7 +113,7 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
       header: "Organization",
       filter: "select",
       width: 180,
-      cell: (row) => <TextCell value={row.organization_name} className="text-xs" muted />,
+      cell: (row) => <TextCell value={row.organization_name} className="type-secondary" muted />,
     },
   },
   {
@@ -130,7 +130,7 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
       filter: "select",
       width: 150,
       cell: (row) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="type-secondary text-muted-foreground">
           {formatAutonomy(row.autonomy_level)}
         </span>
       ),
@@ -147,7 +147,7 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
       filter: "select",
       filterOptions: DATE_FILTER_OPTIONS,
       width: 120,
-      cell: (row) => <span className="text-xs">{timeCell(row.updated_at)}</span>,
+      cell: (row) => <span className="type-secondary">{timeCell(row.updated_at)}</span>,
     },
   },
   {
@@ -162,7 +162,7 @@ export const RESEARCH_TOPIC_COLUMNS: EntityColumnSpec<ResearchTopicListRow>[] = 
       filter: "select",
       filterOptions: DATE_FILTER_OPTIONS,
       width: 120,
-      cell: (row) => <span className="text-xs">{timeCell(row.created_at)}</span>,
+      cell: (row) => <span className="type-secondary">{timeCell(row.created_at)}</span>,
     },
   },
 ];

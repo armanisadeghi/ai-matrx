@@ -172,7 +172,7 @@ export const RESEARCH_TEMPLATE_COLUMNS: MatrxColumnDef<ResearchTemplate>[] = [
     width: 280,
     cell: (template) => (
       <span
-        className="block truncate text-xs text-muted-foreground"
+        className="block truncate type-secondary text-muted-foreground"
         title={template.description ?? ""}
       >
         {template.description || "No description"}
@@ -329,7 +329,7 @@ function TemplateConfiguration({
     <div className="space-y-3">
       {keywords.length > 0 && (
         <div>
-          <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+          <span className="type-meta font-semibold uppercase text-muted-foreground">
             Keywords
           </span>
           <div className="mt-1 flex flex-wrap gap-1">
@@ -343,7 +343,7 @@ function TemplateConfiguration({
       )}
       {defaultTags.length > 0 && (
         <div>
-          <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+          <span className="type-meta font-semibold uppercase text-muted-foreground">
             Default tags
           </span>
           <div className="mt-1 flex flex-wrap gap-1">
@@ -356,7 +356,7 @@ function TemplateConfiguration({
         </div>
       )}
       <div>
-        <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+        <span className="type-meta font-semibold uppercase text-muted-foreground">
           Agent wiring
         </span>
         <div className="mt-1 grid grid-cols-1 gap-1">
@@ -368,7 +368,7 @@ function TemplateConfiguration({
             return (
               <div
                 key={key}
-                className="flex min-w-0 items-center gap-2 text-[11px]"
+                className="flex min-w-0 items-center gap-2 type-meta"
               >
                 <div
                   className={cn(
@@ -398,10 +398,10 @@ function TemplateConfiguration({
       {template.metadata != null &&
         Object.keys(template.metadata).length > 0 && (
           <div>
-            <span className="text-[10px] font-semibold uppercase text-muted-foreground">
+            <span className="type-meta font-semibold uppercase text-muted-foreground">
               Metadata
             </span>
-            <pre className="mt-1 overflow-x-auto rounded bg-muted/50 p-2 text-[10px]">
+            <pre className="mt-1 overflow-x-auto rounded bg-muted/50 p-2 type-meta">
               {JSON.stringify(template.metadata, null, 2)}
             </pre>
           </div>
@@ -795,7 +795,7 @@ export function TemplatesManager() {
 
       <div className="space-y-3">
         <label className="text-sm font-medium">Agent Configuration</label>
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Select a prompt builtin for each agent role. Leave empty to use system
           defaults.
         </p>
@@ -806,15 +806,15 @@ export function TemplatesManager() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-xs font-medium cursor-help">
+                      <span className="type-secondary font-medium cursor-help">
                         {AGENT_CONFIG_META[key].label}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="left" className="max-w-xs">
-                      <p className="text-xs">
+                      <p className="type-secondary">
                         {AGENT_CONFIG_META[key].description}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="type-secondary text-muted-foreground mt-1">
                         {AGENT_CONFIG_META[key].usedBy}
                       </p>
                     </TooltipContent>
@@ -835,7 +835,7 @@ export function TemplatesManager() {
                   visibleTabs={SYSTEM_AGENT_TAB}
                   systemTabLabel="System"
                   showPinnedAgent={Boolean(formData.agent_config[key])}
-                  className="h-8 w-full justify-between text-xs"
+                  className="h-8 w-full justify-between type-secondary"
                 />
                 {formData.agent_config[key] && (
                   <Button

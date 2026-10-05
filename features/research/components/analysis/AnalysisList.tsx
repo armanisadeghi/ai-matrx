@@ -64,10 +64,10 @@ function StatsBar({
           <Hammer className="h-3.5 w-3.5 text-primary" />
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground leading-none">
+          <p className="type-meta text-muted-foreground leading-none">
             Analyses
           </p>
-          <p className="text-sm font-bold tabular-nums mt-0.5 leading-none">
+          <p className="type-body font-bold tabular-nums mt-0.5 leading-none">
             {total}
           </p>
         </div>
@@ -77,18 +77,18 @@ function StatsBar({
           <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground leading-none">
+          <p className="type-meta text-muted-foreground leading-none">
             With content
           </p>
-          <p className="text-sm font-bold tabular-nums text-green-600 dark:text-green-400 mt-0.5 leading-none">
+          <p className="type-body font-bold tabular-nums text-green-600 dark:text-green-400 mt-0.5 leading-none">
             {withContent}
             {empty > 0 && (
-              <span className="text-amber-600/70 dark:text-amber-400/70 text-[10px] font-medium ml-1">
+              <span className="text-amber-600/70 dark:text-amber-400/70 type-meta font-medium ml-1">
                 ({empty} empty)
               </span>
             )}
             {failed > 0 && (
-              <span className="text-destructive/60 text-[10px] font-medium ml-1">
+              <span className="text-destructive/60 type-meta font-medium ml-1">
                 ({failed} failed)
                 <ErrorAlchemyMenu />
               </span>
@@ -101,8 +101,8 @@ function StatsBar({
           <Gauge className="h-3.5 w-3.5 text-amber-500" />
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground leading-none">Cost</p>
-          <p className="text-sm font-bold tabular-nums text-amber-600 dark:text-amber-400 mt-0.5 leading-none">
+          <p className="type-meta text-muted-foreground leading-none">Cost</p>
+          <p className="type-body font-bold tabular-nums text-amber-600 dark:text-amber-400 mt-0.5 leading-none">
             <Cost usd={totalCost} short />
           </p>
         </div>
@@ -112,10 +112,10 @@ function StatsBar({
           <Coins className="h-3.5 w-3.5 text-blue-500" />
         </div>
         <div>
-          <p className="text-[10px] text-muted-foreground leading-none">
+          <p className="type-meta text-muted-foreground leading-none">
             Tokens
           </p>
-          <p className="text-sm font-bold tabular-nums mt-0.5 leading-none">
+          <p className="type-body font-bold tabular-nums mt-0.5 leading-none">
             {totalTokens > 1_000_000
               ? `${(totalTokens / 1_000_000).toFixed(1)}M`
               : totalTokens > 1000
@@ -184,7 +184,7 @@ function ListItem({
         )}
         {importance?.bestRank != null && (
           <span
-            className="text-[10px] font-mono tabular-nums text-primary/70 shrink-0"
+            className="type-meta font-mono tabular-nums text-primary/70 shrink-0"
             title={`importance ${importance.score} · ranks for ${importance.keywordCount} keyword${importance.keywordCount === 1 ? "" : "s"}`}
           >
             #{importance.bestRank}
@@ -192,7 +192,7 @@ function ListItem({
         )}
         <span
           className={cn(
-            "text-[11px] font-medium truncate flex-1",
+            "type-meta font-medium truncate flex-1",
             isFailed
               ? "text-destructive/80"
               : isSelected
@@ -287,17 +287,17 @@ function DetailPanel({
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate">
+            <p className="type-secondary font-semibold truncate">
               {source?.title ?? source?.hostname ?? "Unknown Source"}
             </p>
             <div className="flex items-center gap-2 mt-px">
               {source?.hostname && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="type-meta text-muted-foreground">
                   {source.hostname}
                 </span>
               )}
               {createdAt && (
-                <span className="text-[10px] text-muted-foreground tabular-nums">
+                <span className="type-meta text-muted-foreground tabular-nums">
                   {createdAt.toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
@@ -333,7 +333,7 @@ function DetailPanel({
             {source && (
               <Link
                 href={`/research/topics/${topicId}/sources/${source.id}`}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium matrx-glass-card text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full type-meta font-medium matrx-glass-card text-muted-foreground hover:text-foreground transition-colors"
               >
                 Source
                 <ArrowUpRight className="h-3 w-3" />
@@ -348,7 +348,7 @@ function DetailPanel({
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-muted-foreground hover:text-primary truncate transition-colors"
+              className="type-meta text-muted-foreground hover:text-primary truncate transition-colors"
             >
               {source.url}
             </a>
@@ -374,12 +374,12 @@ function DetailPanel({
               <XCircle className="h-7 w-7 text-destructive/60" />
             </div>
             <div className="space-y-1 max-w-md">
-              <p className="text-sm font-medium text-destructive">
+              <p className="type-title text-destructive">
                 Analysis Failed
                 <ErrorAlchemyMenu />
               </p>
               {analysis.error && (
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="type-secondary text-muted-foreground leading-relaxed">
                   {analysis.error}
                   <ErrorAlchemyMenu error={analysis.error} />
                 </p>
@@ -390,10 +390,10 @@ function DetailPanel({
           // Terminal success but no text — be honest rather than blank.
           <div className="px-6 py-10 flex flex-col items-center justify-center gap-2 text-center">
             <AlertCircle className="h-6 w-6 text-amber-500/60" />
-            <p className="text-sm font-medium text-foreground/70">
+            <p className="type-title text-foreground/70">
               No analysis content
             </p>
-            <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
+            <p className="type-secondary text-muted-foreground max-w-sm leading-relaxed">
               This source was processed but produced no summary — usually the
               page had too little usable text. Re-read it or retry the analysis.
             </p>
@@ -404,24 +404,24 @@ function DetailPanel({
       {/* Token usage footer */}
       {usage && (
         <div className="flex-shrink-0 flex items-center gap-4 px-4 py-2 border-t border-border/30 bg-muted/5">
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             Input: {usage.inputTokens.toLocaleString()}
           </span>
           {cachedTokens > 0 && (
-            <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+            <span className="type-meta text-muted-foreground/60 tabular-nums">
               Cached: {cachedTokens.toLocaleString()}
             </span>
           )}
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="type-meta text-muted-foreground tabular-nums">
             Output: {usage.outputTokens.toLocaleString()}
           </span>
           {totalTokens > 0 && (
-            <span className="text-[10px] text-muted-foreground tabular-nums">
+            <span className="type-meta text-muted-foreground tabular-nums">
               Total: {totalTokens.toLocaleString()}
             </span>
           )}
           {usage.models.length > 0 && (
-            <span className="text-[10px] text-muted-foreground/40">
+            <span className="type-meta text-muted-foreground/40">
               {usage.models.map((m) => m.model).join(", ")}
             </span>
           )}
@@ -429,7 +429,7 @@ function DetailPanel({
             <Cost
               usd={tokenCost}
               short
-              className="text-[10px] font-medium text-amber-600 dark:text-amber-400 ml-auto"
+              className="type-meta font-medium text-amber-600 dark:text-amber-400 ml-auto"
             />
           )}
         </div>
@@ -707,10 +707,10 @@ export default function AnalysisList() {
               <Brain className="h-6 w-6 text-primary/40" />
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-foreground/70">
+              <p className="type-secondary font-medium text-foreground/70">
                 {analysisList.length === 0 ? "No analyses yet" : "No matches"}
               </p>
-              <p className="text-[10px] text-muted-foreground max-w-[240px]">
+              <p className="type-meta text-muted-foreground max-w-[240px]">
                 {analysisList.length === 0
                   ? "Run AI analysis to extract insights and structured summaries from your sources."
                   : "Try adjusting your search or filters."}
@@ -749,7 +749,7 @@ export default function AnalysisList() {
             )}
             {incompleteItems.length > 0 && (
               <div className="mt-3 pt-2 border-t border-dashed border-amber-500/30">
-                <div className="flex items-center gap-1 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600/70 dark:text-amber-400/70">
+                <div className="flex items-center gap-1 px-2 pb-1 type-meta font-semibold uppercase tracking-wider text-amber-600/70 dark:text-amber-400/70">
                   <AlertCircle className="h-3 w-3" />
                   No content / failed ({incompleteItems.length})
                 </div>
@@ -810,10 +810,10 @@ export default function AnalysisList() {
                 <Brain className="h-8 w-8 text-primary/20" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground/50">
+                <p className="type-title text-foreground/50">
                   Select an analysis
                 </p>
-                <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
+                <p className="type-secondary text-muted-foreground max-w-[280px] leading-relaxed">
                   Choose an analysis from the list to read the full AI-generated
                   insights for that source.
                 </p>

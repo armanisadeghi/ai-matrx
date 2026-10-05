@@ -142,7 +142,7 @@ export function AgentWiringDashboard() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-bold">Agent Wiring Dashboard</h2>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="type-body text-muted-foreground mt-1">
                             View and manage agent assignments across all templates. Each agent role can use a different prompt builtin per template.
                         </p>
                     </div>
@@ -154,9 +154,9 @@ export function AgentWiringDashboard() {
                 {/* System Constants */}
                 <div className="rounded-xl border border-border bg-card">
                     <div className="px-4 py-3 border-b border-border">
-                        <h3 className="text-sm font-semibold">System-Wide Fallback Constants</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            These are hardcoded in the Python backend as last-resort fallbacks. They cannot be changed from the UI — update <code className="text-[10px] bg-muted px-1 rounded">analysis.py</code> directly.
+                        <h3 className="type-title">System-Wide Fallback Constants</h3>
+                        <p className="type-secondary text-muted-foreground mt-0.5">
+                            These are hardcoded in the Python backend as last-resort fallbacks. They cannot be changed from the UI — update <code className="type-meta bg-muted px-1 rounded">analysis.py</code> directly.
                         </p>
                     </div>
                     <div className="divide-y divide-border">
@@ -164,18 +164,18 @@ export function AgentWiringDashboard() {
                             <div key={constant.key} className="flex items-center gap-4 px-4 py-3">
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{constant.key}</code>
+                                        <code className="type-secondary font-mono bg-muted px-1.5 py-0.5 rounded">{constant.key}</code>
                                         <Badge variant="outline" className="text-[10px]">{constant.module}</Badge>
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1">{constant.description}</p>
+                                    <p className="type-secondary text-muted-foreground mt-1">{constant.description}</p>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                     <div className="text-right">
-                                        <div className="text-xs font-medium">
+                                        <div className="type-secondary font-medium">
                                             {builtinNames[constant.defaultValue] ?? 'Unknown builtin'}
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <code className="text-[10px] text-muted-foreground">{constant.defaultValue.slice(0, 12)}...</code>
+                                            <code className="type-meta text-muted-foreground">{constant.defaultValue.slice(0, 12)}...</code>
                                             <button onClick={() => copyId(constant.defaultValue)} className="p-0.5 hover:bg-muted rounded">
                                                 {copiedId === constant.defaultValue
                                                     ? <Check className="h-3 w-3 text-green-500" />
@@ -194,8 +194,8 @@ export function AgentWiringDashboard() {
                 {/* Agent Role Overview */}
                 <div className="rounded-xl border border-border bg-card">
                     <div className="px-4 py-3 border-b border-border">
-                        <h3 className="text-sm font-semibold">Agent Roles</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <h3 className="type-title">Agent Roles</h3>
+                        <p className="type-secondary text-muted-foreground mt-0.5">
                             The 7 agent config keys that each template can customize. Hover for details.
                         </p>
                     </div>
@@ -210,8 +210,8 @@ export function AgentWiringDashboard() {
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <div className="rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors cursor-help">
-                                                <div className="text-xs font-medium">{AGENT_CONFIG_META[key].label}</div>
-                                                <div className="text-[10px] text-muted-foreground mt-1">{AGENT_CONFIG_META[key].usedBy}</div>
+                                                <div className="type-secondary font-medium">{AGENT_CONFIG_META[key].label}</div>
+                                                <div className="type-meta text-muted-foreground mt-1">{AGENT_CONFIG_META[key].usedBy}</div>
                                                 <div className="mt-2 flex items-center gap-1.5">
                                                     <Badge
                                                         variant="secondary"
@@ -231,8 +231,8 @@ export function AgentWiringDashboard() {
                                             </div>
                                         </TooltipTrigger>
                                         <TooltipContent className="max-w-xs">
-                                            <p className="text-xs font-medium">{AGENT_CONFIG_META[key].label}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">{AGENT_CONFIG_META[key].description}</p>
+                                            <p className="type-secondary font-medium">{AGENT_CONFIG_META[key].label}</p>
+                                            <p className="type-secondary text-muted-foreground mt-1">{AGENT_CONFIG_META[key].description}</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
@@ -243,7 +243,7 @@ export function AgentWiringDashboard() {
 
                 {/* Per-Template Wiring */}
                 <div className="space-y-3">
-                    <h3 className="text-sm font-semibold">Per-Template Agent Configuration</h3>
+                    <h3 className="type-title">Per-Template Agent Configuration</h3>
                     {loadError != null && templates.length > 0 && (
                         <StaleDataNotice hasData what="the research templates" onRetry={() => void loadData()} retrying={loading} />
                     )}
@@ -264,7 +264,7 @@ export function AgentWiringDashboard() {
                                             'h-3 w-3 rounded-full shrink-0',
                                             status === 'full' ? 'bg-green-500' : status === 'partial' ? 'bg-yellow-500' : 'bg-zinc-300 dark:bg-zinc-600',
                                         )} />
-                                        <span className="font-medium text-sm">{template.name}</span>
+                                        <span className="type-title">{template.name}</span>
                                         {template.is_system && (
                                             <Badge variant="default" className="text-[10px]">System</Badge>
                                         )}
@@ -289,7 +289,7 @@ export function AgentWiringDashboard() {
                                                             val ? 'bg-green-500' : 'bg-zinc-300 dark:bg-zinc-600',
                                                         )} />
                                                         <div className="w-44 shrink-0">
-                                                            <span className="text-xs font-medium">{AGENT_CONFIG_META[key].label}</span>
+                                                            <span className="type-secondary font-medium">{AGENT_CONFIG_META[key].label}</span>
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             {isEditing ? (
@@ -329,7 +329,7 @@ export function AgentWiringDashboard() {
                                                             ) : (
                                                                 <div className="flex items-center gap-2">
                                                                     <span className={cn(
-                                                                        'text-xs truncate',
+                                                                        'type-secondary truncate',
                                                                         val ? 'text-foreground' : 'text-muted-foreground',
                                                                     )}>
                                                                         {val ? (builtinNames[val] ?? val.slice(0, 12) + '...') : 'Using system default'}
@@ -368,7 +368,7 @@ export function AgentWiringDashboard() {
                     )}
 
                     {loadError == null && templates.length === 0 && (
-                        <div className="text-center text-muted-foreground py-12 text-sm">
+                        <div className="text-center text-muted-foreground py-12 type-body">
                             No templates found. Create templates in the Templates tab first.
                         </div>
                     )}

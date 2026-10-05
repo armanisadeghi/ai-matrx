@@ -257,13 +257,13 @@ export function LivePipelineActivity({
       {isStreaming ? (
         <>
           <Loader2 className="h-3 w-3 animate-spin text-primary" />
-          <span className="text-[11px] font-medium text-foreground">
+          <span className="type-meta font-medium text-foreground">
             {state.activeStage
               ? `${state.activeStage[0].toUpperCase()}${state.activeStage.slice(1)}…`
               : "Working…"}
           </span>
           {derived.etaSeconds != null && (
-            <span className="text-[10px] text-muted-foreground tabular-nums">
+            <span className="type-meta text-muted-foreground tabular-nums">
               ~{derived.etaSeconds}s remaining
             </span>
           )}
@@ -277,14 +277,14 @@ export function LivePipelineActivity({
       ) : (
         <>
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-          <span className="text-[11px] font-medium text-foreground">
+          <span className="type-meta font-medium text-foreground">
             This run
           </span>
-          <span className="hidden sm:inline text-[10px] text-muted-foreground">
+          <span className="hidden sm:inline type-meta text-muted-foreground">
             session only — not topic totals
           </span>
           {state.startedAt && state.completedAt && (
-            <span className="text-[10px] text-muted-foreground tabular-nums">
+            <span className="type-meta text-muted-foreground tabular-nums">
               {formatDurationMs(state.completedAt - state.startedAt, {
                 style: "compact",
               })}{" "}
@@ -350,7 +350,7 @@ export function LivePipelineActivity({
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
             <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-            <span className="text-xs text-destructive">{error}</span>
+            <span className="type-secondary text-destructive">{error}</span>
             <ErrorAlchemyMenu error={error} />
           </div>
         )}
@@ -366,7 +366,7 @@ export function LivePipelineActivity({
                   className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5"
                 >
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-amber-700 dark:text-amber-400 min-w-0">
+                  <div className="type-secondary text-amber-700 dark:text-amber-400 min-w-0">
                     <span className="font-semibold">{info.code}:</span>{" "}
                     {info.message}
                   </div>
@@ -394,7 +394,7 @@ export function LivePipelineActivity({
             {activeStages.length === 0 &&
               completedStages.length === 0 &&
               isStreaming && (
-                <div className="rounded-lg border border-dashed border-border/60 bg-card/30 px-4 py-6 text-center text-xs text-muted-foreground">
+                <div className="rounded-lg border border-dashed border-border/60 bg-card/30 px-4 py-6 text-center type-secondary text-muted-foreground">
                   Connecting to backend… first events arriving shortly.
                 </div>
               )}
@@ -412,15 +412,15 @@ export function LivePipelineActivity({
               <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/[0.06] p-4">
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
                 <div className="min-w-0">
-                  <div className="text-sm font-semibold">Run complete</div>
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="type-title">Run complete</div>
+                  <div className="type-meta text-muted-foreground">
                     Tap a stage square above to revisit any step, or open the
                     document.
                   </div>
                 </div>
                 <Link
                   href={`${base}/document`}
-                  className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="ml-auto inline-flex shrink-0 items-center gap-1 type-secondary font-medium text-primary hover:underline"
                 >
                   Document
                   <ArrowRight className="h-3 w-3" />

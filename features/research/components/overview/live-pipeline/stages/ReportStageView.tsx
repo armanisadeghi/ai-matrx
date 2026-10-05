@@ -36,7 +36,7 @@ function ReportItem({ item }: { item: WorkItem }) {
       ) : (
         <FileText className="h-3 w-3 text-primary" />
       )}
-      <span className="text-xs font-medium truncate">{item.label}</span>
+      <span className="type-secondary font-medium truncate">{item.label}</span>
     </div>
   );
 }
@@ -71,7 +71,7 @@ export function ReportStageView({
 
       {tagItems.length > 0 && (
         <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground mb-1">
             Tag consolidations ({tagItems.length})
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
@@ -88,10 +88,10 @@ export function ReportStageView({
             <StatusDot status={docItem.status} size="md" />
             <FileText className="h-4 w-4 text-primary shrink-0" />
             <div className="min-w-0">
-              <div className="text-sm font-semibold truncate">
+              <div className="type-title truncate">
                 Document generated
               </div>
-              <div className="text-[11px] text-muted-foreground">
+              <div className="type-meta text-muted-foreground">
                 Final assembled research output
               </div>
             </div>
@@ -99,7 +99,7 @@ export function ReportStageView({
           {docItem.status === "success" && (
             <Link
               href={`/research/topics/${topicId}/document`}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline shrink-0"
+              className="inline-flex items-center gap-1 type-secondary font-medium text-primary hover:underline shrink-0"
             >
               View
               <ArrowRight className="h-3 w-3" />

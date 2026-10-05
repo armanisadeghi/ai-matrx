@@ -268,7 +268,7 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
         className="flex-1 min-h-0 max-h-[55dvh] lg:max-h-none overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
       >
         {visible.length === 0 && (
-          <div className="text-muted-foreground italic text-[11px] py-4 text-center">
+          <div className="text-muted-foreground italic type-meta py-4 text-center">
             Awaiting events…
           </div>
         )}
@@ -294,7 +294,7 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
                 e.level === "info" && "text-foreground/70",
               )}
             >
-              <span className="tabular-nums text-muted-foreground/70 shrink-0 text-[10px]">
+              <span className="tabular-nums text-muted-foreground/70 shrink-0 type-meta">
                 {formatTime(e.timestamp)}
               </span>
               <Icon

@@ -45,7 +45,7 @@ export function TopicsListPage() {
     <>
       <PageHeader>
         <div className="flex w-full min-w-0 items-center justify-between gap-2">
-          <h1 className="truncate text-sm font-medium">Research topics</h1>
+          <h1 className="truncate type-title">Research topics</h1>
           {/* THE DOOR LAW — every stage of research (report, condensers,
               coverage audit, tagging, page summaries) is a Mandate the person
               may re-point at their own agent; this is the door to the domain. */}

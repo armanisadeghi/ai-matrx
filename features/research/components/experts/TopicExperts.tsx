@@ -91,17 +91,17 @@ function CandidateRow({
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground">
+          <span className="type-title text-foreground">
             {candidate.display_name}
           </span>
           {candidate.credentials.length > 0 && (
-            <span className="text-[11px] font-medium text-muted-foreground">
+            <span className="type-meta font-medium text-muted-foreground">
               {candidate.credentials.join(", ")}
             </span>
           )}
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] font-medium leading-none",
+              "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 type-meta font-medium leading-none",
               TIER_STYLE[candidate.tier],
             )}
           >
@@ -125,7 +125,7 @@ function CandidateRow({
           )}
         </div>
         {candidate.why.length > 0 && (
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 type-secondary text-muted-foreground">
             {candidate.why.join(" · ")}
           </p>
         )}
@@ -137,7 +137,7 @@ function CandidateRow({
                 href={evidence.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block truncate text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                className="block truncate type-meta text-muted-foreground hover:text-foreground hover:underline"
               >
                 {evidence.detail || evidence.title || evidence.url}
               </a>
@@ -254,10 +254,10 @@ export default function TopicExperts() {
         <section className="rounded-md border border-border bg-card">
           <header className="flex h-9 items-center gap-1.5 border-b border-border px-2.5">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+            <h2 className="type-secondary font-semibold uppercase tracking-wider text-foreground">
               Experts from this research
             </h2>
-            <span className="text-xs tabular-nums text-muted-foreground">
+            <span className="type-secondary tabular-nums text-muted-foreground">
               <UntrustedCount value={roster.length} trustworthy={rosterError == null || roster.length > 0} label="Experts" />
             </span>
           </header>
@@ -270,7 +270,7 @@ export default function TopicExperts() {
             ) : rosterError != null && roster.length === 0 ? (
               <ReadFailure error={rosterError} what="the experts from this research" onRetry={() => void loadRoster()} className="m-0" />
             ) : roster.length === 0 ? (
-              <p className="py-2 text-center text-xs text-muted-foreground">
+              <p className="py-2 text-center type-secondary text-muted-foreground">
                 Nobody promoted yet. Scan below to see who this research names.
               </p>
             ) : (
@@ -293,7 +293,7 @@ export default function TopicExperts() {
                         {party.display_name}
                       </span>
                       {statusLabel(party.expert_status) && (
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="type-meta text-muted-foreground">
                           {statusLabel(party.expert_status)}
                         </span>
                       )}
@@ -309,11 +309,11 @@ export default function TopicExperts() {
         <section className="rounded-md border border-border bg-card">
           <header className="flex h-9 flex-wrap items-center gap-2 border-b border-border px-2.5">
             <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+            <h2 className="type-secondary font-semibold uppercase tracking-wider text-foreground">
               Candidates
             </h2>
             {extraction && (
-              <span className="text-xs text-muted-foreground">
+              <span className="type-secondary text-muted-foreground">
                 {/* read-gate-exempt: candidates from the scan the person just ran; extraction is set only when that scan returned */}
                 {extraction.candidates.length} found across{" "}
                 {extraction.sources_with_signals} analyzed page
@@ -346,7 +346,7 @@ export default function TopicExperts() {
 
           <div>
             {!extraction && !scanning && (
-              <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+              <p className="px-2 py-6 text-center type-secondary text-muted-foreground">
                 Scanning reads the analyses this topic already paid for — the
                 quotes, findings and credited authors on every page it read. It
                 costs nothing and writes nothing.
@@ -376,7 +376,7 @@ export default function TopicExperts() {
                   </label>
                 </div>
                 {candidates.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+                  <p className="px-2 py-6 text-center type-secondary text-muted-foreground">
                     No candidates at this confidence. Analyze more pages, or
                     show weak candidates.
                   </p>

@@ -110,9 +110,9 @@ const ANALYSIS_TONE_DOT: Record<AnalysisTone, string> = {
 function AnalysisCell({ state }: { state: CurationAnalysisState }) {
   const { label, tone } = ANALYSIS_OUTCOME[state];
   if (state === "none")
-    return <span className="text-[11px] text-muted-foreground/40">—</span>;
+    return <span className="type-meta text-muted-foreground/40">—</span>;
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 type-meta font-medium whitespace-nowrap text-muted-foreground">
       <span
         className={cn(
           "h-1.5 w-1.5 shrink-0 rounded-full",
@@ -604,7 +604,7 @@ export default function CurationTable() {
           onSearchChange={setSearch}
           searchPlaceholder="Search title, host, url…"
         />
-        <p className="mt-1 text-[10px] text-muted-foreground">
+        <p className="mt-1 type-meta text-muted-foreground">
           Clean up the set — exclude the junk, keep the best — then run the
           final synthesis on what remains.
         </p>
@@ -624,7 +624,7 @@ export default function CurationTable() {
             <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
               <ListChecks className="h-6 w-6 text-primary/40" />
             </div>
-            <p className="text-xs font-medium text-foreground/70">
+            <p className="type-secondary font-medium text-foreground/70">
               No sources yet — run search to populate the workbench.
             </p>
           </div>
@@ -846,7 +846,7 @@ function GroupRows({
         <tr>
           <td
             colSpan={colCount}
-            className="bg-muted/40 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-y border-border/40"
+            className="bg-muted/40 px-2 py-1 type-meta font-semibold uppercase tracking-wider text-muted-foreground border-y border-border/40"
           >
             {group.label}{" "}
             <span className="text-muted-foreground/60">
@@ -885,7 +885,7 @@ function GroupRows({
             >
               {r.importance?.bestRank != null ? (
                 <>
-                  <div className="text-sm font-semibold tabular-nums leading-none">
+                  <div className="type-title tabular-nums leading-none">
                     #{r.importance.bestRank}
                   </div>
                   {r.importance.keywordCount > 1 && (
@@ -895,7 +895,7 @@ function GroupRows({
                   )}
                 </>
               ) : (
-                <span className="text-[11px] text-muted-foreground">—</span>
+                <span className="type-meta text-muted-foreground">—</span>
               )}
             </td>
             <td className="py-1.5 px-1 align-middle">
@@ -904,11 +904,11 @@ function GroupRows({
                 <div className="min-w-0">
                   <Link
                     href={`/research/topics/${topicId}/sources/${s.id}`}
-                    className="text-xs font-medium truncate max-w-[22rem] block hover:text-primary "
+                    className="type-secondary font-medium truncate max-w-[22rem] block hover:text-primary "
                   >
                     {s.title || s.hostname || s.url}
                   </Link>
-                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1 type-meta text-muted-foreground">
                     <span className="truncate max-w-[16rem]">{s.hostname}</span>
                     <a
                       href={s.url}
@@ -938,7 +938,7 @@ function GroupRows({
             <td className="py-1.5 px-2 align-middle text-right">
               <ScoreCell value={scores.quality} />
             </td>
-            <td className="py-1.5 px-2 align-middle text-right text-[11px] tabular-nums whitespace-nowrap text-muted-foreground">
+            <td className="py-1.5 px-2 align-middle text-right type-meta tabular-nums whitespace-nowrap text-muted-foreground">
               {fmtInt(r.charCount)}
             </td>
             <td className="py-1.5 px-2 align-middle">
@@ -949,7 +949,7 @@ function GroupRows({
                 {r.tags.map((t) => (
                   <span
                     key={t.id}
-                    className="inline-flex rounded border border-border/60 bg-muted/30 px-1.5 py-px text-[10px] text-muted-foreground truncate max-w-[8rem]"
+                    className="inline-flex rounded border border-border/60 bg-muted/30 px-1.5 py-px type-meta text-muted-foreground truncate max-w-[8rem]"
                   >
                     {t.name}
                   </span>

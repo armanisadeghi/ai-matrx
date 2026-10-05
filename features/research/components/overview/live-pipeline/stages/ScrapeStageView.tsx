@@ -90,7 +90,7 @@ function VerdictMenu({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs"
+                className="flex items-center gap-2 type-secondary"
               >
                 <ExternalLink className="h-3 w-3" />
                 Open URL
@@ -254,7 +254,7 @@ export function ScrapeStageView({
 
       {active.length > 0 && (
         <div className="mt-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground mb-1">
             In flight ({active.length})
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
@@ -276,7 +276,7 @@ export function ScrapeStageView({
             open={completedOpen}
             onOpenChange={setCompletedOpen}
             summary={
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
                 Recently completed ({completed.length})
               </span>
             }

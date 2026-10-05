@@ -68,7 +68,7 @@ function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium tracking-tight",
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 type-meta font-medium tracking-tight",
         TONE_CLASSES[tone],
       )}
     >
@@ -200,10 +200,10 @@ export function AgentRoleCard({
             </h3>
             {headerPill}
           </div>
-          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 type-body leading-relaxed text-muted-foreground">
             {role.description}
           </p>
-          <p className="mt-1 font-mono text-[11px] text-muted-foreground/70">
+          <p className="mt-1 font-mono type-meta text-muted-foreground/70">
             {role.usedBy}
           </p>
         </div>
@@ -214,7 +214,7 @@ export function AgentRoleCard({
         {/* Required contract */}
         <section className="bg-card px-5 py-4">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h4 className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <h4 className="type-meta font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               Required contract
             </h4>
             <span className="font-mono text-[10.5px] text-muted-foreground/60">
@@ -274,7 +274,7 @@ export function AgentRoleCard({
         {/* Override */}
         <section className="bg-card px-5 py-4">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h4 className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <h4 className="type-meta font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               {role.systemOnly ? "Configuration" : "Override"}
             </h4>
             {overrideActive && currentOverrideId ? (
@@ -296,8 +296,8 @@ export function AgentRoleCard({
             <>
               <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2">
                 <div className="min-w-0">
-                  <div className="text-[11px] font-medium">Make it your own</div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="type-meta font-medium">Make it your own</div>
+                  <div className="type-meta text-muted-foreground">
                     Copy this agent to an editable version, tweak it, and we
                     connect it here for you.
                   </div>
@@ -335,7 +335,7 @@ export function AgentRoleCard({
                   overrideActive && "mt-3",
                 )}
               >
-                <span className="text-[11px] font-medium text-muted-foreground">
+                <span className="type-meta font-medium text-muted-foreground">
                   {overrideActive
                     ? "Replace with another agent"
                     : "Choose one of your agents"}
@@ -448,7 +448,7 @@ function CurrentOverridePanel({
             Currently overridden
           </p>
           <p
-            className="mt-0.5 truncate text-[13px] font-medium text-foreground"
+            className="mt-0.5 truncate type-title text-foreground"
             title={agentName ?? agentId}
           >
             {agentName ?? "Custom agent"}

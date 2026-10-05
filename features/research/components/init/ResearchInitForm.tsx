@@ -268,7 +268,7 @@ function StepDots({ step }: { step: 1 | 2 }) {
           )}
         />
       </div>
-      <span className="text-xs text-muted-foreground tabular-nums">
+      <span className="type-secondary text-muted-foreground tabular-nums">
         {step} / 2
       </span>
     </div>
@@ -847,7 +847,7 @@ function AiCanvas({
             isReview ? "bg-violet-500" : "bg-violet-500 animate-pulse",
           )}
         />
-        <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-[0.18em]">
+        <span className="type-meta font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-[0.18em]">
           {variant === "creating"
             ? "Initialising"
             : variant === "streaming"
@@ -933,14 +933,14 @@ function AiCanvas({
           )}
         >
           {hasQuotaConflict && (
-            <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+            <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 type-body text-destructive">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="space-y-1 min-w-0">
                 <p className="font-medium leading-snug">
                   {overQuotaCount} keyword{overQuotaCount !== 1 ? "s" : ""}{" "}
                   exceed your pipeline limit ({maxKeywords} max)
                 </p>
-                <p className="text-xs text-destructive/90 leading-relaxed">
+                <p className="type-secondary text-destructive/90 leading-relaxed">
                   All {keywordCount} suggested keywords were saved. Raise the
                   limit in Pipeline settings or remove the highlighted keywords
                   before starting research — only the first {maxKeywords} run in
@@ -963,13 +963,13 @@ function AiCanvas({
 
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div className="flex items-baseline gap-2">
-              <span className="text-[11px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-[0.18em]">
+              <span className="type-meta font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-[0.18em]">
                 Keywords
               </span>
               {reviewKeywordRows && (
                 <span
                   className={cn(
-                    "text-[11px] tabular-nums",
+                    "type-meta tabular-nums",
                     hasQuotaConflict
                       ? "text-destructive font-semibold"
                       : "text-muted-foreground/70",
@@ -990,7 +990,7 @@ function AiCanvas({
                   Pipeline settings
                 </Button>
               )}
-              <span className="text-[11px] text-muted-foreground/60">
+              <span className="type-meta text-muted-foreground/60">
                 Click to edit · drag to reorder · use the remove button to
                 delete
               </span>
@@ -1024,7 +1024,7 @@ function AiCanvas({
         hasKeywords && (
           <div className="space-y-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.18em]">
+              <span className="type-meta font-semibold text-muted-foreground uppercase tracking-[0.18em]">
                 Keywords
               </span>
             </div>
@@ -1034,7 +1034,7 @@ function AiCanvas({
                   key={kw}
                   style={{ animationDelay: `${i * 70}ms` }}
                   className={cn(
-                    "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium",
+                    "inline-flex items-center rounded-full px-3 py-1 type-title",
                     "animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-300 fill-mode-both",
                     "bg-primary text-primary-foreground",
                   )}
@@ -1074,7 +1074,7 @@ function AiCanvas({
             Start Research
           </Button>
           {!canStart && (
-            <p className="text-xs text-destructive sm:max-w-xs leading-snug">
+            <p className="type-secondary text-destructive sm:max-w-xs leading-snug">
               Resolve keyword limits before starting — remove extras or raise
               the cap in Pipeline settings.
             </p>
@@ -2069,7 +2069,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <h2 className="text-base font-semibold text-foreground">
                   I&apos;ll build it myself
                 </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="type-body text-muted-foreground leading-relaxed">
                   Define your topic name and keywords precisely.
                 </p>
               </div>
@@ -2088,7 +2088,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <h2 className="text-base font-semibold text-foreground">
                   I&apos;ll use a template
                 </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="type-body text-muted-foreground leading-relaxed">
                   Pre-built keyword sets for common research types.
                 </p>
               </div>
@@ -2107,7 +2107,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <h2 className="text-base font-semibold text-foreground">
                   Help me shape this
                 </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="type-body text-muted-foreground leading-relaxed">
                   Describe your subject. AI structures the research.
                 </p>
               </div>
@@ -2127,7 +2127,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
                   <Hand className="h-3.5 w-3.5 text-blue-500" />
                 </div>
-                <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                <span className="type-secondary font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                   Manual
                 </span>
               </div>
@@ -2163,7 +2163,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <label className="text-sm font-medium text-foreground">
                   Keywords
                 </label>
-                <p className="text-xs text-muted-foreground">
+                <p className="type-secondary text-muted-foreground">
                   Add at least one. Press Enter or use commas to add multiple.
                 </p>
                 <TextArrayInput
@@ -2180,7 +2180,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
                   Description{" "}
-                  <span className="font-normal text-xs">(optional)</span>
+                  <span className="font-normal type-secondary">(optional)</span>
                 </label>
                 <ProTextarea
                   value={description}
@@ -2214,7 +2214,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
                   <LayoutTemplate className="h-3.5 w-3.5 text-amber-500" />
                 </div>
-                <span className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                <span className="type-secondary font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                   Template
                 </span>
               </div>
@@ -2248,14 +2248,14 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 </div>
                 {selectedKeywords.length > 0 && (
                   <div className="rounded-xl bg-muted/50 border border-border p-4">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">
+                    <p className="type-secondary font-medium text-muted-foreground mb-2">
                       Keywords from template
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedKeywords.map((kw) => (
                         <span
                           key={kw}
-                          className="inline-flex items-center rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 text-xs font-medium"
+                          className="inline-flex items-center rounded-full bg-primary text-primary-foreground px-2.5 py-0.5 type-secondary font-medium"
                         >
                           {kw}
                         </span>
@@ -2266,7 +2266,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground">
                     Add more keywords{" "}
-                    <span className="font-normal text-xs">(optional)</span>
+                    <span className="font-normal type-secondary">(optional)</span>
                   </label>
                   <TextArrayInput
                     value={selectedKeywords}
@@ -2353,7 +2353,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 <p className="font-semibold text-destructive">
                   Something went wrong
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="type-body text-muted-foreground">
                   {aiPhase.message}
                 </p>
               </div>
@@ -2383,7 +2383,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                   <div className="h-6 w-6 rounded-lg bg-violet-500/10 flex items-center justify-center">
                     <Atom className="h-3.5 w-3.5 text-violet-500" />
                   </div>
-                  <span className="text-xs font-medium text-violet-600 dark:text-violet-400 uppercase tracking-wider">
+                  <span className="type-secondary font-medium text-violet-600 dark:text-violet-400 uppercase tracking-wider">
                     AI-Assisted
                   </span>
                 </div>
@@ -2431,10 +2431,10 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                 </div>
 
                 <div className="rounded-xl bg-violet-500/5 border border-violet-500/15 p-4 space-y-2">
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="type-title text-foreground">
                     AI will handle:
                   </p>
-                  <ul className="space-y-1 text-sm text-muted-foreground">
+                  <ul className="space-y-1 type-body text-muted-foreground">
                     {[
                       "Polish the topic name and write a description",
                       "Generate and save relevant search keywords",
@@ -2461,7 +2461,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                       )}
                     />
                     Additional instructions
-                    <span className="text-xs">(optional)</span>
+                    <span className="type-secondary">(optional)</span>
                   </button>
                   {showAdditionalInstructions && (
                     <div className="mt-3">
@@ -2490,11 +2490,11 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                   <div>
                     <label className="text-sm font-medium text-foreground">
                       Project{" "}
-                      <span className="font-normal text-xs text-muted-foreground">
+                      <span className="font-normal type-secondary text-muted-foreground">
                         (optional)
                       </span>
                     </label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="type-secondary text-muted-foreground mt-0.5">
                       Optionally link this topic to a project.
                     </p>
                   </div>
@@ -2531,13 +2531,13 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
 
               {/* Topic summary */}
               <div className="rounded-xl bg-muted/40 border border-border/60 p-4 space-y-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
+                <p className="type-meta text-muted-foreground uppercase tracking-wider font-medium">
                   Creating topic
                 </p>
                 <p className="font-semibold text-foreground">
                   {topicName || "Untitled"}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="type-secondary text-muted-foreground">
                   {selectedKeywords.length} keyword
                   {selectedKeywords.length !== 1 ? "s" : ""}
                   {selectedTemplate ? ` · ${selectedTemplate.name}` : ""} ·
@@ -2557,7 +2557,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
 
       {/* ── Error ── */}
       {error && (
-        <div className="w-full max-w-2xl mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+        <div className="w-full max-w-2xl mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 type-body text-destructive">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

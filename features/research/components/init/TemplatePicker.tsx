@@ -49,12 +49,12 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
           <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
             <FileText className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="font-semibold text-sm text-foreground">
+          <span className="type-title text-foreground">
             {/* read-gate-exempt: the "start from scratch" option's label, not an empty list; a failed template read shows ReadFailure above */}
             No Template
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="type-secondary text-muted-foreground">
           Start from scratch with your own keywords and settings.
         </p>
       </button>
@@ -76,12 +76,12 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <FileText className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-semibold text-sm text-foreground">
+              <span className="type-title text-foreground">
                 {template.name}
               </span>
             </div>
             {template.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2">
+              <p className="type-secondary text-muted-foreground line-clamp-2">
                 {template.description}
               </p>
             )}
@@ -90,13 +90,13 @@ export function TemplatePicker({ selected, onSelect }: TemplatePickerProps) {
                 {previewKws.slice(0, 3).map((kw) => (
                   <span
                     key={kw}
-                    className="text-[10px] bg-muted text-foreground rounded-full px-2 py-0.5"
+                    className="type-meta bg-muted text-foreground rounded-full px-2 py-0.5"
                   >
                     {kw}
                   </span>
                 ))}
                 {previewKws.length > 3 && (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="type-meta text-muted-foreground">
                     +{previewKws.length - 3}
                   </span>
                 )}

@@ -168,7 +168,7 @@ export const RESEARCH_PROJECT_COLUMNS: MatrxColumnDef<ResearchProjectTableRow>[]
             label="Project"
           />
         ) : (
-          <span className="text-[10px] text-muted-foreground">No project</span>
+          <span className="type-meta text-muted-foreground">No project</span>
         ),
     },
     {
@@ -212,7 +212,7 @@ export const RESEARCH_PROJECT_COLUMNS: MatrxColumnDef<ResearchProjectTableRow>[]
             name={row.template_name}
           />
         ) : (
-          <span className="text-xs text-muted-foreground">None</span>
+          <span className="type-secondary text-muted-foreground">None</span>
         ),
     },
     {
@@ -236,7 +236,7 @@ export const RESEARCH_PROJECT_COLUMNS: MatrxColumnDef<ResearchProjectTableRow>[]
             </Badge>
           </Link>
         ) : (
-          <span className="text-xs text-muted-foreground">None</span>
+          <span className="type-secondary text-muted-foreground">None</span>
         ),
     },
     {
@@ -247,7 +247,7 @@ export const RESEARCH_PROJECT_COLUMNS: MatrxColumnDef<ResearchProjectTableRow>[]
       width: 124,
       className: "tabular-nums",
       cell: (row) => (
-        <span className="text-xs text-muted-foreground">
+        <span className="type-secondary text-muted-foreground">
           {researchProjectCreatedAt(row.created_at)}
         </span>
       ),

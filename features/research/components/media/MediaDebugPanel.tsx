@@ -63,10 +63,10 @@ export default function MediaDebugPanel({
     <div className={cn("flex flex-col gap-3 min-h-0", className)}>
       <div className="flex flex-wrap items-center gap-2 px-1">
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-medium text-foreground/80">
+          <p className="type-meta font-medium text-foreground/80">
             Categorization debug
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             Slim export — only fields used for sorting.{" "}
             {scope === "filtered"
               ? `${payload.counts.shown} filtered of ${payload.counts.total}`
@@ -116,33 +116,33 @@ export default function MediaDebugPanel({
 
       <div className="rounded-xl matrx-glass-card border border-border/40 overflow-hidden flex flex-col min-h-[280px] max-h-[calc(100dvh-16rem)]">
         <div className="px-3 py-2 border-b border-border/40 bg-muted/20 space-y-1">
-          <p className="text-[10px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             Tiers: icon ≤{ICON_MAX_DIM} · graphic &lt;{GRAPHIC_MAX_DIM} · photo
             ≥{GRAPHIC_MAX_DIM} · square ±
             {Math.round(SQUARE_ASPECT_TOLERANCE * 100)}%
           </p>
-          <p className="text-[10px] text-foreground/70">
+          <p className="type-meta text-foreground/70">
             Summary — tier: {JSON.stringify(payload.summary.tier)} · aspect:{" "}
             {JSON.stringify(payload.summary.aspect)}
           </p>
           {q.dbDimensions === 0 && (
-            <p className="text-[10px] text-warning">
+            <p className="type-meta text-warning">
               rs_media.width/height are null for this topic — aspect splits use
               URL parsing (?w=&amp;h=, 384x256 paths, etc.) until reads store
               dims.
             </p>
           )}
         </div>
-        <pre className="flex-1 overflow-auto p-3 text-[10px] leading-relaxed font-mono text-foreground/90 whitespace-pre-wrap break-all">
+        <pre className="flex-1 overflow-auto p-3 type-meta leading-relaxed font-mono text-foreground/90 whitespace-pre-wrap break-all">
           {json}
         </pre>
       </div>
 
       <details className="rounded-lg matrx-glass-thin-border px-3 py-2">
-        <summary className="text-[10px] font-medium text-muted-foreground cursor-pointer">
+        <summary className="type-meta font-medium text-muted-foreground cursor-pointer">
           Rules reference
         </summary>
-        <pre className="mt-2 text-[10px] font-mono text-muted-foreground whitespace-pre-wrap">
+        <pre className="mt-2 type-meta font-mono text-muted-foreground whitespace-pre-wrap">
           {JSON.stringify(CATEGORIZATION_RULES, null, 2)}
         </pre>
       </details>
@@ -166,7 +166,7 @@ function Stat({
       </p>
       <p
         className={cn(
-          "text-sm font-semibold tabular-nums",
+          "type-title tabular-nums",
           warn ? "text-warning" : "text-foreground",
         )}
       >

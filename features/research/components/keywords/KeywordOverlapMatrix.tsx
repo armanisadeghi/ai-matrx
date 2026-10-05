@@ -342,12 +342,12 @@ export default function KeywordOverlapMatrix({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               Keyword overlap
             </span>
             <span
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[10px] font-medium",
+                "inline-flex items-center gap-1 rounded-full border px-1.5 py-px type-meta font-medium",
                 style.chip,
               )}
             >
@@ -355,7 +355,7 @@ export default function KeywordOverlapMatrix({
               {verdict.title}
             </span>
           </div>
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+          <p className="mt-0.5 line-clamp-2 type-meta leading-snug text-muted-foreground">
             {verdict.detail}
           </p>
         </div>
@@ -403,7 +403,7 @@ export default function KeywordOverlapMatrix({
           {showMatrix ? (
             <OverlapGrid model={model} ordered={ordered} />
           ) : (
-            <p className="rounded-lg border border-dashed border-border/50 bg-muted/20 px-3 py-4 text-center text-[11px] text-muted-foreground">
+            <p className="rounded-lg border border-dashed border-border/50 bg-muted/20 px-3 py-4 text-center type-meta text-muted-foreground">
               Search a second keyword to compare how much their sources overlap.
             </p>
           )}
@@ -412,7 +412,7 @@ export default function KeywordOverlapMatrix({
           {isolatedLabels.length > 0 && showMatrix && (
             <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-2.5 py-2">
               <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-300/90">
+              <p className="type-meta leading-snug text-amber-700 dark:text-amber-300/90">
                 <span className="font-medium">
                   {isolatedLabels.length === 1
                     ? "1 keyword shares no sources"
@@ -486,7 +486,7 @@ function OverlapGrid({
                     <TooltipTrigger asChild>
                       <div
                         className={cn(
-                          "m-px flex h-8 w-8 shrink-0 items-center justify-center rounded-[5px] border text-[10px] tabular-nums transition-transform hover:scale-[1.12] hover:ring-1 hover:ring-primary/40",
+                          "m-px flex h-8 w-8 shrink-0 items-center justify-center rounded-[5px] border type-meta tabular-nums transition-transform hover:scale-[1.12] hover:ring-1 hover:ring-primary/40",
                           className,
                         )}
                         style={style}
@@ -526,7 +526,7 @@ function OverlapGrid({
                 );
               })}
               <div
-                className="ml-3 min-w-24 flex-1 truncate text-left text-[10px] font-medium text-foreground/80"
+                className="ml-3 min-w-24 flex-1 truncate text-left type-meta font-medium text-foreground/80"
                 title={rowNode.label}
               >
                 {rowNode.label}
@@ -587,7 +587,7 @@ function MetricTile({
           </p>
         </div>
       </TooltipTrigger>
-      <TooltipContent side="bottom" className="max-w-[200px] text-[11px]">
+      <TooltipContent side="bottom" className="max-w-[200px] type-meta">
         {hint}
       </TooltipContent>
     </Tooltip>

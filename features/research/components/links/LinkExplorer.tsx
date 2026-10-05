@@ -71,8 +71,8 @@ export default function LinkExplorer() {
     return (
         <div className="p-3 sm:p-4 space-y-3">
             <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
-                <span className="text-xs font-medium text-foreground/80">Links</span>
-                <span className="text-[10px] text-muted-foreground tabular-nums">
+                <span className="type-secondary font-medium text-foreground/80">Links</span>
+                <span className="type-meta text-muted-foreground tabular-nums">
                     <UntrustedCount read={linksRead} value={`${filtered.length}/${linkList.length}`} label="Links" />
                 </span>
                 <div className="flex-1 relative">
@@ -100,7 +100,7 @@ export default function LinkExplorer() {
             {isLoading ? (
                 <div className="flex items-center justify-center py-12 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    <span className="text-xs">Loading links...</span>
+                    <span className="type-secondary">Loading links...</span>
                 </div>
             ) : linksRead.isError && linkList.length === 0 ? (
                 <ReadFailure error={linksRead.error} what="this topic's links" onRetry={refetch} />
@@ -110,10 +110,10 @@ export default function LinkExplorer() {
                         <Link2 className="h-6 w-6 text-primary/40" />
                     </div>
                     <div>
-                        <p className="text-xs font-medium text-foreground/70">
+                        <p className="type-secondary font-medium text-foreground/70">
                             {linkList.length === 0 ? 'No links yet' : 'No matches'}
                         </p>
-                        <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
+                        <p className="type-meta text-muted-foreground mt-1 max-w-[240px]">
                             {linkList.length === 0
                                 ? 'Links are automatically extracted from pages when you read your sources.'
                                 : 'Try adjusting your search to find what you\'re looking for.'}
@@ -134,17 +134,17 @@ export default function LinkExplorer() {
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xs font-medium text-primary hover:underline flex items-center gap-1 break-all"
+                                    className="type-secondary font-medium text-primary hover:underline flex items-center gap-1 break-all"
                                     onClick={e => e.stopPropagation()}
                                 >
                                     {link.link_text || link.url}
                                     <ExternalLink className="h-2.5 w-2.5 shrink-0" />
                                 </a>
                                 {link.link_text && (
-                                    <div className="text-[10px] text-muted-foreground truncate mt-px">{link.url}</div>
+                                    <div className="type-meta text-muted-foreground truncate mt-px">{link.url}</div>
                                 )}
                                 {link.found_on_title && (
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    <div className="type-meta text-muted-foreground mt-0.5">
                                         from: {link.found_on_title}
                                     </div>
                                 )}

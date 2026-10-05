@@ -33,20 +33,20 @@ export function VersionHistory({ open, onOpenChange, topicId, currentVersion, on
                 (error ? (
                     <ReadFailure error={error} what="this document's versions" onRetry={refresh} />
                 ) : isLoading ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Loading versions…</p>
+                    <p className="type-body text-muted-foreground text-center py-4">Loading versions…</p>
                 ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">No version history available.</p>
+                    <p className="type-body text-muted-foreground text-center py-4">No version history available.</p>
                 ))}
             {versionList.map((doc, i) => (
                 <div key={doc.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Version {doc.capture_version ?? "—"}</span>
+                            <span className="type-title">Version {doc.capture_version ?? "—"}</span>
                             {doc.capture_version === currentVersion && (
                                 <Badge variant="default" className="text-[10px]">Current</Badge>
                             )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="type-secondary text-muted-foreground">
                             {doc.created_at
                                 ? new Date(doc.created_at).toLocaleString()
                                 : "Unknown date"}

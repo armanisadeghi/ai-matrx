@@ -124,10 +124,10 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
     <section className="mb-4 rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <h2 className="flex items-center gap-2 type-title">
             <Telescope className="h-4 w-4 text-primary" /> Deep research
           </h2>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-1 max-w-2xl type-secondary leading-relaxed text-muted-foreground">
             Ask one question about this topic. A research agent reads the web
             for several minutes and returns a report where every claim links to
             its source.
@@ -165,7 +165,7 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
       </div>
 
       {error ? (
-        <p className="mt-3 text-xs text-destructive">
+        <p className="mt-3 type-secondary text-destructive">
           {error} <ErrorAlchemyMenu error={error} />
         </p>
       ) : null}

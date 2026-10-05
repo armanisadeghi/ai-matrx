@@ -75,7 +75,7 @@ function StatTile({
         <Icon
           className={cn("h-3 w-3 shrink-0", accent ?? "text-muted-foreground")}
         />
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+        <span className="type-meta text-muted-foreground uppercase tracking-wide">
           {label}
         </span>
       </div>
@@ -83,7 +83,7 @@ function StatTile({
         {children}
       </div>
       {hint && (
-        <div className="text-[10px] text-muted-foreground mt-1 leading-none">
+        <div className="type-meta text-muted-foreground mt-1 leading-none">
           {hint}
         </div>
       )}
@@ -109,7 +109,7 @@ const PHASE_COLUMNS: MatrxColumnDef<PhaseRollup>[] = [
           )}
           <span className="font-medium">{phase.label}</span>
           {phase.failed_calls > 0 && (
-            <span className="text-[10px] text-destructive/80">
+            <span className="type-meta text-destructive/80">
               {phase.failed_calls} failed
               <ErrorAlchemyMenu />
             </span>
@@ -271,7 +271,7 @@ const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
     frozen: true,
     width: 144,
     cell: (entry) => (
-      <span className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+      <span className="whitespace-nowrap type-meta tabular-nums text-muted-foreground">
         {formatTime(entry.createdAt)}
       </span>
     ),
@@ -358,11 +358,11 @@ const LEDGER_COLUMNS: MatrxColumnDef<CostLedgerEntry>[] = [
     width: 96,
     cell: (entry) =>
       entry.succeeded ? (
-        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">
+        <span className="type-meta text-emerald-600 dark:text-emerald-400">
           ok
         </span>
       ) : (
-        <span className="text-[10px] text-destructive">{entry.status}</span>
+        <span className="type-meta text-destructive">{entry.status}</span>
       ),
   },
   {
@@ -459,11 +459,11 @@ export default function CostDashboard() {
           <Gauge className="h-6 w-6 text-destructive/60" />
         </div>
         <div>
-          <p className="text-xs font-medium text-foreground/70">
+          <p className="type-secondary font-medium text-foreground/70">
             Couldn&apos;t load costs
             <ErrorAlchemyMenu />
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
+          <p className="type-meta text-muted-foreground mt-1 max-w-[280px]">
             {error}
             <ErrorAlchemyMenu error={error} />
           </p>
@@ -479,10 +479,10 @@ export default function CostDashboard() {
           <Gauge className="h-6 w-6 text-primary/40" />
         </div>
         <div>
-          <p className="text-xs font-medium text-foreground/70">
+          <p className="type-secondary font-medium text-foreground/70">
             No AI activity yet
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
+          <p className="type-meta text-muted-foreground mt-1 max-w-[280px]">
             Costs are tracked automatically as you run analysis, synthesis, and
             document generation.
           </p>
@@ -547,7 +547,7 @@ export default function CostDashboard() {
       {!totals.costIsComplete && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2">
           <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-amber-700 dark:text-amber-400">
+          <p className="type-meta text-amber-700 dark:text-amber-400">
             {totals.unpricedCalls} call{totals.unpricedCalls === 1 ? "" : "s"}{" "}
             could not be priced — the model is missing from the pricing catalog.
             The totals above understate the real cost.

@@ -155,7 +155,7 @@ export function KeywordDetailView({
             tint="text-blue-600 dark:text-blue-400"
           />
         </div>
-        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
+        <div className="mt-1.5 flex items-center gap-2 flex-wrap type-meta text-muted-foreground">
           {keyword?.search_provider && <span>{keyword.search_provider}</span>}
           {keyword?.last_searched_at && (
             <span>
@@ -171,10 +171,10 @@ export function KeywordDetailView({
         {keyword && !keyword.last_searched_at && (
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-3">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground">
+              <p className="type-secondary font-medium text-foreground">
                 This keyword has not been researched yet
               </p>
-              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+              <p className="mt-0.5 type-meta leading-snug text-muted-foreground">
                 Running searches it, reads what is missing, and writes its
                 synthesis. Sources this topic already holds are reused — pages
                 already read are not fetched again and existing analyses are
@@ -195,7 +195,7 @@ export function KeywordDetailView({
               {runPipeline.isRunning ? "Researching…" : "Research this keyword"}
             </button>
             {runPipeline.isRunning && runPipeline.message && (
-              <p className="w-full truncate text-[10px] text-muted-foreground">
+              <p className="w-full truncate type-meta text-muted-foreground">
                 {runPipeline.message}
               </p>
             )}
@@ -206,12 +206,12 @@ export function KeywordDetailView({
         <section className="space-y-2">
           <div className="flex items-center gap-1.5">
             <Layers className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               Synthesis
             </span>
           </div>
           {synthList.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               No synthesis for this keyword yet — run synthesis to distill its
               sources.
             </p>
@@ -224,7 +224,7 @@ export function KeywordDetailView({
                 {s.result ? (
                   <RichContent level="full" imagePolicy="ai" source={s.result} />
                 ) : (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="type-meta text-muted-foreground">
                     Completed with no text output.
                   </p>
                 )}
@@ -237,7 +237,7 @@ export function KeywordDetailView({
         <section className="space-y-2">
           <div className="flex items-center gap-1.5">
             <Search className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wider text-muted-foreground">
               Search results
             </span>
             <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
@@ -252,7 +252,7 @@ export function KeywordDetailView({
               ))}
             </div>
           ) : srcList.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="type-meta text-muted-foreground">
               No sources found for this keyword yet.
             </p>
           ) : (
@@ -322,7 +322,7 @@ function HeaderStat({
           {value}
         </span>
       </div>
-      <p className="mt-1 text-[10px] leading-none text-muted-foreground truncate">
+      <p className="mt-1 type-meta leading-none text-muted-foreground truncate">
         {label}
       </p>
     </div>

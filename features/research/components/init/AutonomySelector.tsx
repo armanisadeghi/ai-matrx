@@ -47,10 +47,10 @@ export function AutonomySelector({ value, onChange }: AutonomySelectorProps) {
                 {Icon && <Icon className="h-3.5 w-3.5" />}
               </div>
               <div className="min-w-0">
-                <div className="font-medium text-xs text-foreground">
+                <div className="font-medium type-secondary text-foreground">
                   {config.label}
                 </div>
-                <div className="text-[10px] text-muted-foreground mt-px leading-snug line-clamp-1">
+                <div className="type-meta text-muted-foreground mt-px leading-snug line-clamp-1">
                   {config.description}
                 </div>
               </div>

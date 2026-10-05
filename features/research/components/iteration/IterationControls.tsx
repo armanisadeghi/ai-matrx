@@ -32,7 +32,7 @@ export function IterationControls({ onRebuild, onUpdate, onAddKeywords, isLoadin
                         <span className="hidden sm:inline">Rebuild</span>
                     </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">{ITERATION_MODE_INFO.rebuild.description}</TooltipContent>
+                <TooltipContent className="max-w-xs type-secondary">{ITERATION_MODE_INFO.rebuild.description}</TooltipContent>
             </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
@@ -41,7 +41,7 @@ export function IterationControls({ onRebuild, onUpdate, onAddKeywords, isLoadin
                         <span className="hidden sm:inline">Update</span>
                     </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">{ITERATION_MODE_INFO.update.description}</TooltipContent>
+                <TooltipContent className="max-w-xs type-secondary">{ITERATION_MODE_INFO.update.description}</TooltipContent>
             </Tooltip>
         </div>
     );

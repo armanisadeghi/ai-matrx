@@ -50,7 +50,7 @@ export default function ResearchLanding() {
             <section className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
                 <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-20 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 type-title text-primary mb-6">
                         <Zap className="h-3.5 w-3.5" />
                         AI-Powered Research
                     </div>
@@ -106,7 +106,7 @@ export default function ResearchLanding() {
                                 <feature.icon className="h-5 w-5" />
                             </div>
                             <h3 className="text-base font-semibold mb-2">{feature.title}</h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                            <p className="type-body text-muted-foreground leading-relaxed">{feature.description}</p>
                         </div>
                     ))}
                 </div>
@@ -131,7 +131,7 @@ export default function ResearchLanding() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-base mb-1">{step.title}</h3>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                                    <p className="type-body text-muted-foreground leading-relaxed">{step.description}</p>
                                 </div>
                             </div>
                         ))}
@@ -159,10 +159,10 @@ export default function ResearchLanding() {
                         { title: 'Custom Research', items: ['Your own keywords', 'Custom agents', 'Specialized templates', 'Any topic imaginable'] },
                     ].map((template) => (
                         <div key={template.title} className="rounded-xl border border-border bg-card p-5">
-                            <h3 className="font-semibold text-sm mb-3">{template.title}</h3>
+                            <h3 className="type-title mb-3">{template.title}</h3>
                             <ul className="space-y-2">
                                 {template.items.map((item) => (
-                                    <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <li key={item} className="flex items-center gap-2 type-body text-muted-foreground">
                                         <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
                                         {item}
                                     </li>

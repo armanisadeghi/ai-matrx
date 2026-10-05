@@ -248,10 +248,10 @@ export default function OutputsStudio() {
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 space-y-4">
         <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5">
           <PackageOpen className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-medium text-foreground/80">
+          <span className="type-secondary font-medium text-foreground/80">
             Outputs Studio
           </span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             Turn this research into publishable formats
           </span>
         </div>
@@ -259,7 +259,7 @@ export default function OutputsStudio() {
         <DomainReportsCard topicId={topicId} outputs={outputs} />
 
         {bundleFallback && (
-          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+          <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 type-secondary text-amber-700 dark:text-amber-400">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
               The <code>{REPORT_ONLY_BUNDLE_SLUG}</code> system bundle is
@@ -272,7 +272,7 @@ export default function OutputsStudio() {
         )}
 
         {reportLoading && (
-          <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2.5 type-secondary text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin shrink-0" />
             <span>Loading the research report…</span>
           </div>
@@ -288,7 +288,7 @@ export default function OutputsStudio() {
         ) : (
           !hasReport &&
           !reportLoading && (
-            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 type-secondary text-amber-700 dark:text-amber-400">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 No report yet. Run the{" "}
@@ -396,10 +396,10 @@ function DomainReportsCard({
       <div className="flex items-start gap-2 px-3 py-2.5 border-b border-border/50">
         <ListTree className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
         <div className="min-w-0">
-          <div className="text-xs font-medium text-foreground">
+          <div className="type-secondary font-medium text-foreground">
             Domain reports
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="type-meta text-muted-foreground">
             Built from the research itself — search results, pages read,
             analyses and syntheses — not from the finished report. Each opens
             with its inputs already selected so you can see the cost before
@@ -423,17 +423,17 @@ function DomainReportsCard({
                   rel="noopener noreferrer"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-foreground">
+                    <div className="type-secondary font-medium text-foreground">
                       {def.label}
                     </div>
-                    <div className="text-[11px] text-muted-foreground line-clamp-2">
+                    <div className="type-meta text-muted-foreground line-clamp-2">
                       {def.description}
                     </div>
                   </div>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 </Link>
                 {existing.length > 0 && (
-                  <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                  <span className="type-meta text-muted-foreground tabular-nums shrink-0">
                     {existing.length} generated
                   </span>
                 )}
@@ -455,10 +455,10 @@ function DomainReportsCard({
                       className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
                     >
                       <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="text-[11px] font-medium truncate flex-1">
+                      <span className="type-meta font-medium truncate flex-1">
                         {a.title}
                       </span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                      <span className="type-meta text-muted-foreground tabular-nums shrink-0">
                         {new Date(a.created_at).toLocaleDateString()}
                       </span>
                     </button>
@@ -473,7 +473,7 @@ function DomainReportsCard({
         <div className="border-t border-border/50">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
-            <span className="text-xs font-medium flex-1 truncate">
+            <span className="type-secondary font-medium flex-1 truncate">
               {viewing.title}
             </span>
             <button
@@ -621,18 +621,18 @@ function PodcastOutputCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold">Podcast</span>
+            <span className="type-title">Podcast</span>
             <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
               Live
             </Badge>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             A two-voice episode from this research — audio, cover art, show
             notes.
           </p>
         </div>
         {existing.length > 0 && (
-          <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+          <span className="type-meta text-muted-foreground tabular-nums shrink-0">
             {existing.length} generated
           </span>
         )}
@@ -642,7 +642,7 @@ function PodcastOutputCard({
         {/* Options */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">Hosts</span>
+            <span className="type-meta text-muted-foreground">Hosts</span>
             <div className="flex rounded-lg border border-border/60 overflow-hidden">
               {HOST_COUNTS.map((n) => (
                 <button
@@ -664,7 +664,7 @@ function PodcastOutputCard({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-muted-foreground">Style</span>
+            <span className="type-meta text-muted-foreground">Style</span>
             <div className="flex rounded-lg border border-border/60 overflow-hidden">
               {PODCAST_TYPES.map((t) => (
                 <button
@@ -708,7 +708,7 @@ function PodcastOutputCard({
               Generate podcast
             </Button>
             {state.status === "error" && state.error && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+              <span className="inline-flex items-center gap-1 type-meta text-destructive">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {state.error}
                 <ErrorAlchemyMenu error={state.error} />
@@ -720,7 +720,7 @@ function PodcastOutputCard({
         {isRunning && (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[11px] text-muted-foreground">
+              <p className="type-meta text-muted-foreground">
                 This takes about 8–12 minutes. Watch the cover art, clips, and
                 script come together below — you can leave and come back.
               </p>
@@ -757,7 +757,7 @@ function PodcastOutputCard({
           <div className="rounded-lg border border-green-500/30 bg-green-500/[0.06] px-3 py-2.5 space-y-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
-              <span className="text-xs font-medium text-foreground/90 flex-1 truncate">
+              <span className="type-secondary font-medium text-foreground/90 flex-1 truncate">
                 {state.title || "Episode ready"}
               </span>
               <button
@@ -774,7 +774,7 @@ function PodcastOutputCard({
               <Link
                 href={`/podcast/${state.episodeSlug}`}
                 target="_blank"
-                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                className="inline-flex items-center gap-1 type-meta text-primary hover:underline"
               >
                 Open episode page
                 <ExternalLink className="h-3 w-3" />
@@ -788,7 +788,7 @@ function PodcastOutputCard({
             persisted index, so a refresh shows everything it produced. */}
         {existing.length > 0 && (
           <div className="space-y-2 pt-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
               Generated episodes
             </span>
             <div className="space-y-2">
@@ -838,8 +838,8 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-medium truncate">{asset.title}</div>
-          <div className="text-[10px] text-muted-foreground tabular-nums">
+          <div className="type-meta font-medium truncate">{asset.title}</div>
+          <div className="type-meta text-muted-foreground tabular-nums">
             {new Date(asset.created_at).toLocaleDateString()}
             {mediaCount > 0 && (
               <span className="ml-1.5">
@@ -892,7 +892,7 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
         <div className="border-t border-border/40 px-2.5 py-2.5 space-y-3">
           {media.official_video_url && (
             <div className="space-y-1.5">
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                 <Film className="h-3 w-3" />
                 Composed video
               </span>
@@ -909,7 +909,7 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
 
           {clips.length > 0 && (
             <div className="space-y-1.5">
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                 <Clapperboard className="h-3 w-3" />
                 Clips ({clips.length})
               </span>
@@ -930,7 +930,7 @@ function PersistedEpisode({ asset }: { asset: OutputAsset }) {
 
           {extraStills.length > 0 && (
             <div className="space-y-1.5">
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="inline-flex items-center gap-1 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                 <ImageIcon className="h-3 w-3" />
                 Cover art &amp; stills ({images.length})
               </span>
@@ -1071,7 +1071,7 @@ function BlogOutputCard({
           </Button>
         )}
         {error && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+          <span className="inline-flex items-center gap-1 type-meta text-destructive">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
             <ErrorAlchemyMenu error={error} />
@@ -1089,7 +1089,7 @@ function BlogOutputCard({
           />
         )}
         {blogRun.isRunning && (
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
+          <span className="inline-flex items-center gap-1.5 type-meta text-primary">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
             Writing the article — watch it stream in the run window.
           </span>
@@ -1099,7 +1099,7 @@ function BlogOutputCard({
           <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
-              <span className="text-xs font-medium flex-1 truncate">
+              <span className="type-secondary font-medium flex-1 truncate">
                 {viewing.title}
               </span>
               <button
@@ -1123,7 +1123,7 @@ function BlogOutputCard({
 
         {existing.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
               Generated articles
             </span>
             <div className="space-y-1">
@@ -1137,10 +1137,10 @@ function BlogOutputCard({
                   className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
                 >
                   <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-[11px] font-medium truncate flex-1">
+                  <span className="type-meta font-medium truncate flex-1">
                     {a.title}
                   </span>
-                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                  <span className="type-meta text-muted-foreground tabular-nums shrink-0">
                     {new Date(a.created_at).toLocaleDateString()}
                   </span>
                 </button>
@@ -1181,15 +1181,15 @@ function OutputCardShell({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold">{title}</span>
+            <span className="type-title">{title}</span>
             <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
               Live
             </Badge>
           </div>
-          <p className="text-[11px] text-muted-foreground">{blurb}</p>
+          <p className="type-meta text-muted-foreground">{blurb}</p>
         </div>
         {count > 0 && (
-          <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+          <span className="type-meta text-muted-foreground tabular-nums shrink-0">
             {count} generated
           </span>
         )}
@@ -1207,10 +1207,10 @@ function MandateUnavailableNote({ message }: { message: string }) {
     <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.04] px-3 py-2.5">
       <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
       <div className="min-w-0">
-        <p className="text-xs font-medium text-destructive">
+        <p className="type-secondary font-medium text-destructive">
           This generator has no agent bound
         </p>
-        <p className="text-[11px] text-muted-foreground break-words">
+        <p className="type-meta text-muted-foreground break-words">
           {message}
         </p>
       </div>
@@ -1338,7 +1338,7 @@ function SlidesOutputCard({
         </Button>
       )}
       {error && (
-        <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+        <span className="inline-flex items-center gap-1 type-meta text-destructive">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
           <ErrorAlchemyMenu error={error} />
@@ -1355,7 +1355,7 @@ function SlidesOutputCard({
         />
       ) : null}
       {slidesRun.isRunning && (
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
+        <span className="inline-flex items-center gap-1.5 type-meta text-primary">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Designing the deck — watch it build in the run window.
         </span>
@@ -1365,10 +1365,10 @@ function SlidesOutputCard({
         <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
-            <span className="text-xs font-medium flex-1 truncate">
+            <span className="type-secondary font-medium flex-1 truncate">
               {viewing.title}
             </span>
-            <span className="text-[10px] text-muted-foreground tabular-nums">
+            <span className="type-meta text-muted-foreground tabular-nums">
               {/* read-gate-exempt: slide count of the deck asset the person opened or this run produced; viewing is only set to a delivered asset */}
               {deck.slides?.length ?? 0} slides
             </span>
@@ -1394,7 +1394,7 @@ function SlidesOutputCard({
 
       {existing.length > 0 && (
         <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Generated decks
           </span>
           <div className="space-y-1">
@@ -1408,10 +1408,10 @@ function SlidesOutputCard({
                 className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
               >
                 <Presentation className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <span className="text-[11px] font-medium truncate flex-1">
+                <span className="type-meta font-medium truncate flex-1">
                   {a.title}
                 </span>
-                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                <span className="type-meta text-muted-foreground tabular-nums shrink-0">
                   {new Date(a.created_at).toLocaleDateString()}
                 </span>
               </button>
@@ -1538,7 +1538,7 @@ function SeoOutputCard({
         </Button>
       )}
       {error && (
-        <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+        <span className="inline-flex items-center gap-1 type-meta text-destructive">
           <AlertCircle className="h-3.5 w-3.5" />
           {error}
           <ErrorAlchemyMenu error={error} />
@@ -1563,7 +1563,7 @@ function SeoOutputCard({
       {seoRun.isRunning && (
         <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5">
           <SearchIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
-          <span className="text-xs font-medium text-primary">
+          <span className="type-secondary font-medium text-primary">
             Writing the package — it is streaming in the run window.
           </span>
         </div>
@@ -1573,7 +1573,7 @@ function SeoOutputCard({
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
-            <span className="flex-1 truncate text-xs font-medium">
+            <span className="flex-1 truncate type-secondary font-medium">
               {viewing.title}
             </span>
             <button
@@ -1594,7 +1594,7 @@ function SeoOutputCard({
 
       {existing.length > 0 && (
         <div className="space-y-1.5 pt-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Generated packages
           </span>
           <div className="space-y-1">
@@ -1608,10 +1608,10 @@ function SeoOutputCard({
                 className="flex w-full items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left transition-colors hover:bg-accent/40"
               >
                 <SearchIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="flex-1 truncate text-[11px] font-medium">
+                <span className="flex-1 truncate type-meta font-medium">
                   {a.title}
                 </span>
-                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                <span className="shrink-0 type-meta tabular-nums text-muted-foreground">
                   {new Date(a.created_at).toLocaleDateString()}
                 </span>
               </button>

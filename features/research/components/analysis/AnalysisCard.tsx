@@ -83,8 +83,8 @@ export function AnalysisCard({
       <div className="rounded-xl border border-primary/30 bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
           <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
-          <span className="text-xs font-medium text-primary">Analyzing…</span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="type-secondary font-medium text-primary">Analyzing…</span>
+          <span className="type-meta text-muted-foreground">
             tokens streaming
           </span>
         </div>
@@ -102,10 +102,10 @@ export function AnalysisCard({
           <Brain className="h-5 w-5 text-primary/60" />
         </div>
         <div>
-          <p className="text-xs font-medium text-foreground/70">
+          <p className="type-secondary font-medium text-foreground/70">
             No analysis yet
           </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[200px]">
+          <p className="type-meta text-muted-foreground mt-0.5 max-w-[200px]">
             Run AI analysis to extract insights, key topics, and a summary from
             this content.
           </p>
@@ -140,21 +140,21 @@ export function AnalysisCard({
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-destructive">
+                <span className="type-title text-destructive">
                   Analysis failed
                   <ErrorAlchemyMenu />
                 </span>
                 <Badge variant="secondary" className="text-[10px]">
                   {humanizeAgentType(analysis.agent_type)}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   {analysis.created_at
                     ? new Date(analysis.created_at).toLocaleDateString()
                     : ""}
                 </span>
               </div>
               {analysis.error && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="type-secondary text-muted-foreground mt-1 line-clamp-2">
                   {analysis.error}
                   <ErrorAlchemyMenu error={analysis.error} />
                 </p>
@@ -191,19 +191,19 @@ export function AnalysisCard({
             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                <span className="type-title text-amber-700 dark:text-amber-400">
                   No content produced
                 </span>
                 <Badge variant="secondary" className="text-[10px]">
                   {humanizeAgentType(analysis.agent_type)}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="type-secondary text-muted-foreground">
                   {analysis.created_at
                     ? new Date(analysis.created_at).toLocaleDateString()
                     : ""}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="type-secondary text-muted-foreground mt-1">
                 The last analysis returned nothing — run it again (curate the
                 content first for a better result).
               </p>
@@ -258,16 +258,16 @@ export function AnalysisCard({
               modelId={analysis.model_id}
               showIcon={false}
               disableNavigation
-              className="max-w-48 text-xs text-muted-foreground"
+              className="max-w-48 type-secondary text-muted-foreground"
             />
           )}
           <span
-            className="text-xs text-muted-foreground tabular-nums"
+            className="type-secondary text-muted-foreground tabular-nums"
             title={`${formattedDate} at ${formattedTime}`}
           >
             {formattedDate}
           </span>
-          <span className="text-[10px] text-muted-foreground tabular-nums hidden sm:inline">
+          <span className="type-meta text-muted-foreground tabular-nums hidden sm:inline">
             {formattedTime}
           </span>
         </div>
@@ -285,7 +285,7 @@ export function AnalysisCard({
         <RichContent
           level="inline"
           source={analysis.result}
-          className="mx-4 mb-3 line-clamp-2 text-xs text-muted-foreground"
+          className="mx-4 mb-3 line-clamp-2 type-secondary text-muted-foreground"
         />
       )}
 
@@ -299,7 +299,7 @@ export function AnalysisCard({
           <RichContent level="full" imagePolicy="ai" source={analysis.result ?? ""} />
 
           {tokenUsage && (
-            <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-2">
+            <div className="flex items-center gap-4 type-meta text-muted-foreground border-t border-border pt-2">
               <span>In: {tokenUsage.inputTokens.toLocaleString()}</span>
               {tokenUsage.cachedInputTokens > 0 && (
                 <span className="text-muted-foreground/60">

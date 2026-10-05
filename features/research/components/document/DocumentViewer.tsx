@@ -170,11 +170,11 @@ export default function DocumentViewer() {
       <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4">
         <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5 mb-4">
           <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
-          <span className="text-xs font-medium text-primary">
+          <span className="type-secondary font-medium text-primary">
             {stream.isStreaming ? "Generating document…" : "Finalizing…"}
           </span>
           {stream.messages.length > 0 && (
-            <span className="text-[10px] text-muted-foreground truncate">
+            <span className="type-meta text-muted-foreground truncate">
               {stream.messages[stream.messages.length - 1].message}
             </span>
           )}
@@ -211,10 +211,10 @@ export default function DocumentViewer() {
           <FileText className="h-6 w-6 text-primary/40" />
         </div>
         <div>
-          <p className="text-xs font-medium text-foreground/70">
+          <p className="type-secondary font-medium text-foreground/70">
             No document yet
           </p>
-          <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
+          <p className="type-meta text-muted-foreground mt-1 max-w-[280px]">
             {reportReady
               ? "Assembles your topic report and every analysis into one long-form document. This is a single large AI call — it runs only when you ask for it."
               : "A document is assembled from your topic report. Run the pipeline far enough to produce one first."}
@@ -243,12 +243,12 @@ export default function DocumentViewer() {
           <AlertTriangle className="h-6 w-6 text-destructive/50" />
         </div>
         <div>
-          <p className="text-xs font-medium text-destructive/80">
+          <p className="type-secondary font-medium text-destructive/80">
             Generation failed
             <ErrorAlchemyMenu />
           </p>
           {document.error && (
-            <p className="text-[10px] text-muted-foreground mt-1 max-w-[280px]">
+            <p className="type-meta text-muted-foreground mt-1 max-w-[280px]">
               {document.error}
               <ErrorAlchemyMenu error={document.error} />
             </p>
@@ -315,7 +315,7 @@ export default function DocumentViewer() {
       {/* TOC Sidebar — Desktop Only */}
       {!isMobile && headings.length > 2 && (
         <aside className="hidden lg:block w-48 shrink-0 border-r border-border overflow-y-auto py-4 px-3">
-          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+          <div className="type-secondary font-medium text-muted-foreground uppercase tracking-wide mb-3">
             Contents
           </div>
           <nav className="space-y-1">
@@ -323,7 +323,7 @@ export default function DocumentViewer() {
               <a
                 key={i}
                 href={`#${h.id}`}
-                className="block text-xs text-muted-foreground hover:text-foreground transition-colors truncate"
+                className="block type-secondary text-muted-foreground hover:text-foreground transition-colors truncate"
                 style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
               >
                 {h.text}
@@ -350,7 +350,7 @@ export default function DocumentViewer() {
         {documentStale && (
           <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-            <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground">
+            <p className="min-w-0 flex-1 type-meta leading-snug text-muted-foreground">
               <span className="font-medium text-foreground">
                 This document is out of date.
               </span>{" "}
@@ -372,7 +372,7 @@ export default function DocumentViewer() {
           </div>
         )}
         <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5 mb-4">
-          <span className="text-xs font-medium text-foreground/80 truncate">
+          <span className="type-secondary font-medium text-foreground/80 truncate">
             {document.title ?? "Document"}
           </span>
           {document.capture_version != null && (
@@ -380,7 +380,7 @@ export default function DocumentViewer() {
               v{document.capture_version}
             </Badge>
           )}
-          <span className="text-[10px] text-muted-foreground">
+          <span className="type-meta text-muted-foreground">
             {document.created_at
               ? new Date(document.created_at).toLocaleDateString()
               : ""}
@@ -430,7 +430,7 @@ export default function DocumentViewer() {
 
         {/* Token usage */}
         {docTokenUsage && (
-          <div className="flex items-center gap-4 text-[10px] text-muted-foreground mb-4 pb-4 border-b border-border">
+          <div className="flex items-center gap-4 type-meta text-muted-foreground mb-4 pb-4 border-b border-border">
             <span>
               Input: {docTokenUsage.inputTokens.toLocaleString()} tokens
             </span>

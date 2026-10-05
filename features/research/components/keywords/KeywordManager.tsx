@@ -376,12 +376,12 @@ export default function KeywordManager() {
       {!keywordsError && unresearched.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/35 bg-amber-500/[0.05] p-2.5">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-foreground">
+            <p className="type-secondary font-medium text-foreground">
               {unresearched.length === 1
                 ? `“${unresearched[0].keyword}” has not been researched`
                 : `${unresearched.length} keywords have not been researched`}
             </p>
-            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+            <p className="mt-0.5 type-meta leading-snug text-muted-foreground">
               Running picks these up and reuses everything already captured —
               pages already read are not fetched again, and existing analyses
               are not re-run.
@@ -401,7 +401,7 @@ export default function KeywordManager() {
             {runPipeline.isRunning ? "Researching…" : "Research now"}
           </button>
           {runPipeline.isRunning && runPipeline.message && (
-            <p className="w-full text-[10px] text-muted-foreground truncate">
+            <p className="w-full type-meta text-muted-foreground truncate">
               {runPipeline.message}
             </p>
           )}
@@ -506,10 +506,10 @@ export default function KeywordManager() {
             <Search className="h-6 w-6 text-primary/40" />
           </div>
           <div>
-            <p className="text-xs font-medium text-foreground/70">
+            <p className="type-secondary font-medium text-foreground/70">
               {items.length === 0 ? "No keywords yet" : "No matches"}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1 max-w-[240px]">
+            <p className="type-meta text-muted-foreground mt-1 max-w-[240px]">
               {items.length === 0
                 ? "Add keywords to define what topics to research. Each keyword drives source discovery."
                 : "Try adjusting your search or filters to find what you're looking for."}
@@ -540,14 +540,14 @@ export default function KeywordManager() {
                     className="min-w-0 flex-1"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm leading-tight truncate">
+                      <span className="type-title leading-tight truncate">
                         {kw.keyword}
                       </span>
                       {/* The signal that used to be invisible. A keyword with
                           no `last_searched_at` has never been researched and
                           never will be until a run picks it up — say so. */}
                       {!kw.last_searched_at && (
-                        <span className="shrink-0 rounded-full bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                        <span className="shrink-0 rounded-full bg-amber-500/12 px-1.5 py-0.5 type-meta font-medium text-amber-600 dark:text-amber-400">
                           Not researched
                         </span>
                       )}
@@ -555,7 +555,7 @@ export default function KeywordManager() {
                     {stat ? (
                       <KeywordStatTiles stat={stat} />
                     ) : (
-                      <div className="mt-1 flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
+                      <div className="mt-1 flex items-center gap-2 flex-wrap type-meta text-muted-foreground">
                         <span>{kw.search_provider}</span>
                         {kw.result_count !== null && (
                           <span>{kw.result_count} results</span>
@@ -593,7 +593,7 @@ export default function KeywordManager() {
                             href={`/research/topics/${topicId}/sources/${source.id}`}
                             className="flex min-w-0 items-start gap-1.5 rounded-lg p-1.5 transition-colors hover:bg-muted/40"
                           >
-                            <span className="w-5 shrink-0 text-right font-mono text-[10px] tabular-nums text-muted-foreground">
+                            <span className="w-5 shrink-0 text-right font-mono type-meta tabular-nums text-muted-foreground">
                               #{rank ?? "—"}
                             </span>
                             <Favicon
@@ -602,11 +602,11 @@ export default function KeywordManager() {
                               className="mt-0.5 shrink-0"
                             />
                             <div className="min-w-0">
-                              <div className="truncate text-xs font-medium">
+                              <div className="truncate type-secondary font-medium">
                                 {source.title || source.hostname || source.url}
                               </div>
                               {source.description && (
-                                <div className="line-clamp-2 text-[10px] text-muted-foreground">
+                                <div className="line-clamp-2 type-meta text-muted-foreground">
                                   {source.description}
                                 </div>
                               )}
@@ -733,7 +733,7 @@ function KeywordStatTiles({ stat }: { stat: KeywordStat }) {
               {value}
             </span>
           </div>
-          <p className="mt-1 text-[10px] leading-none text-muted-foreground truncate">
+          <p className="mt-1 type-meta leading-none text-muted-foreground truncate">
             {label}
           </p>
         </div>

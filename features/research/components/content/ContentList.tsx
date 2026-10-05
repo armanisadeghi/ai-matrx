@@ -253,7 +253,7 @@ export default function ContentList() {
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             {sources?.length === 200 && (
-              <p className="mb-2 text-[11px] text-muted-foreground">
+              <p className="mb-2 type-meta text-muted-foreground">
                 This view loaded its first 200 sources; more sources may exist.
               </p>
             )}

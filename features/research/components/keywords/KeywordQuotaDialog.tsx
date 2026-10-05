@@ -74,11 +74,11 @@ export function KeywordQuotaDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
+          <DialogTitle className="flex items-center gap-2 type-body">
             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
             This keyword would not run
           </DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="type-secondary">
             {keywords.length === 1 ? (
               <>
                 Adding{" "}
@@ -103,14 +103,14 @@ export function KeywordQuotaDialog({
               className="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-2.5"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium text-foreground">
+                <span className="type-secondary font-medium text-foreground">
                   {s.label}
                 </span>
-                <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
+                <span className="type-meta font-mono tabular-nums text-muted-foreground">
                   {s.current} → {s.required}
                 </span>
               </div>
-              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+              <p className="mt-1 type-meta leading-snug text-muted-foreground">
                 {s.consequence}
               </p>
             </div>

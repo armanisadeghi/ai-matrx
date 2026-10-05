@@ -32,7 +32,7 @@ function MetricChip({
   warn?: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px]">
+    <span className="inline-flex items-center gap-1.5 type-meta">
       <Icon className={cn("h-3 w-3 shrink-0", iconColor ?? "text-muted-foreground")} />
       <span
         className={cn(

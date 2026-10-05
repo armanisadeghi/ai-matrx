@@ -26,11 +26,11 @@ function Bar({ label, current, cap, unit }: BarProps) {
   const atCap = current >= cap;
   return (
     <div className="flex items-center gap-1.5 min-w-0">
-      <span className="text-[10px] text-muted-foreground shrink-0">{label}</span>
+      <span className="type-meta text-muted-foreground shrink-0">{label}</span>
       <div className="flex items-center gap-1 min-w-[80px]">
         <span
           className={cn(
-            "text-[10px] tabular-nums shrink-0",
+            "type-meta tabular-nums shrink-0",
             atCap ? "text-amber-600 dark:text-amber-400 font-medium" : "text-foreground/80",
           )}
         >
@@ -112,7 +112,7 @@ export function QuotaStrip({ topic, state, derived }: Props) {
         />
       </div>
       {derived.dedupLabel && (
-        <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400">
+        <div className="flex items-center gap-1.5 type-meta text-emerald-700 dark:text-emerald-400">
           <Star className="h-2.5 w-2.5 shrink-0" />
           <span>
             <span className="font-semibold">8-for-1 dedup:</span>{" "}

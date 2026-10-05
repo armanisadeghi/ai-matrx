@@ -73,7 +73,7 @@ export function AiReviewQuotaDialog({
   const body = (
     <div className="space-y-4 p-4 sm:p-0 sm:pt-2">
       {overKeywordLimit && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 type-body text-destructive">
           You have {keywordCount} keywords but the limit is {draft.max_keywords}
           . Raise the keyword cap or remove extras before starting research.
         </div>
@@ -84,7 +84,7 @@ export function AiReviewQuotaDialog({
         disabled={saving}
       />
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>
