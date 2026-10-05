@@ -889,28 +889,42 @@ export async function countStoreOutputs(landing: Landing): Promise<RecordResult<
   }
 }
 
+/** What door 5 did: new rows, rows that already held the output, or the plain reason it did not. */
+export interface SaveOutputAnswer {
+  landed: string[];
+  alreadySaved: string[];
+  notSaved: string | null;
+}
+
 /**
  * DOOR 5 — the person's Save of one output this message carries but no table holds
  * (`POST /kind-outputs/save`). The server re-derives the block from the message's own text and
  * lands it through the one lander, so a Save and the automatic landing never disagree.
- * An empty answer means nothing new was written: the output was already saved, or the store
- * refused it (the refusal is recorded server-side) — the caller re-reads to tell which.
  */
 export async function saveKindOutput(args: {
   messageId: string;
   fingerprint: string;
   ordinal?: number;
   kind: string;
-}): Promise<RecordResult<string[]>> {
+}): Promise<RecordResult<SaveOutputAnswer>> {
   try {
     const { data } = await apiPost("/kind-outputs/save", {
       message_id: args.messageId,
       fingerprint: args.fingerprint,
       ordinal: args.ordinal ?? 0,
     });
+    // aidream 3da63bb0ac adds `already_saved` + `not_saved`; read them before the API types regenerate.
+    const answer = data as typeof data & { already_saved?: string[]; not_saved?: string | null };
     forgetMessageLandings();
     notifyKindRecordsChanged(args.kind);
-    return { ok: true, value: data.landed };
+    return {
+      ok: true,
+      value: {
+        landed: answer.landed,
+        alreadySaved: answer.already_saved ?? [],
+        notSaved: answer.not_saved ?? null,
+      },
+    };
   } catch (error) {
     fail(`saveKindOutput(${args.messageId})`, error);
     return { ok: false, message: getUserMessage(error) };

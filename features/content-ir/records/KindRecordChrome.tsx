@@ -22,8 +22,8 @@
  *  - an OLD kind-store row keeps its old card and its old doors until wave 5.
  *  - neither: the strip says it was not saved and offers Save — door 5,
  *    `POST /kind-outputs/save`, which lands it in its kind's outputs table through
- *    the server's one lander. A Save that writes nothing new re-reads; if still
- *    nothing landed, the strip says the store did not take it.
+ *    the server's one lander, and answers whether it saved, was already saved
+ *    (an earlier version of the block holds it) or why it was not.
  *
  * ## Never absent, never dead, never a false sentence
  *
@@ -174,6 +174,8 @@ export function KindRecordChrome({
 
   const reload = () => setReloadKey((n) => n + 1);
   const [saveRefused, setSaveRefused] = useState<string | null>(null);
+  /** The record that already holds this output (door 5 answered `already_saved`). */
+  const [savedElsewhere, setSavedElsewhere] = useState<string | null>(null);
 
   /** THE SIBLING-COUNT RULE (V-42 §3.1): every strip re-reads on every record write. */
   useEffect(() => {
@@ -244,10 +246,14 @@ export function KindRecordChrome({
       toast.error(`Could not save this ${label}`, { description: result.message });
       return;
     }
-    if (result.value.length === 0) {
-      setSaveRefused(`Your tables did not take this ${label}. The reason was recorded.`);
-    } else {
+    const answer = result.value;
+    if (answer.landed.length > 0) {
       toast.success(`${label} saved`);
+    } else if (answer.alreadySaved.length > 0) {
+      // An earlier version of this block is the saved row (e.g. the answer was edited after it landed).
+      setSavedElsewhere(answer.alreadySaved[0]);
+    } else {
+      setSaveRefused(answer.notSaved ?? `Your tables did not take this ${label}.`);
     }
     reload();
   };
@@ -363,9 +369,11 @@ export function KindRecordChrome({
 
       {state.status === "ready" && outcome.state === "none" && (
         <>
-          <span className="text-muted-foreground">{saveRefused ?? "Not saved"}</span>
+          <span className="text-muted-foreground">
+            {savedElsewhere ? "Already saved from an earlier version of this answer" : (saveRefused ?? "Not saved")}
+          </span>
           {countLink}
-          {canSave && (
+          {canSave && !savedElsewhere && (
             <span className="ml-auto flex items-center gap-1">
               <button type="button" onClick={onSave} disabled={busy} className={doorButton}>
                 <Save className="h-3 w-3" aria-hidden />

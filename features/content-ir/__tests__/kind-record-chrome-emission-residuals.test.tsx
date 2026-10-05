@@ -221,7 +221,7 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     }));
     serviceMock.saveKindOutput.mockImplementation(async () => {
       landed = true;
-      return { ok: true, value: ["rec-saved"] };
+      return { ok: true, value: { landed: ["rec-saved"], alreadySaved: [], notSaved: null } };
     });
 
     mount(<KindRecordChrome kind="wine_tasting" durableMessageId={MSG} fingerprint="fp-1" value={{}} />);
@@ -243,7 +243,10 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
       ok: true,
       value: { messageId, landings: [] },
     }));
-    serviceMock.saveKindOutput.mockResolvedValue({ ok: true, value: [] });
+    serviceMock.saveKindOutput.mockResolvedValue({
+      ok: true,
+      value: { landed: [], alreadySaved: [], notSaved: "Your tables did not take this wine tasting: vintage must be a number" },
+    });
 
     mount(<KindRecordChrome kind="wine_tasting" durableMessageId={MSG} fingerprint="fp-1" value={{}} />);
     await flush();
@@ -251,6 +254,27 @@ describe("DD-131 slice 1 residuals (V-45)", () => {
     await flush();
     await flush();
 
-    expect(container.textContent).toContain("did not take this Wine Tasting");
+    expect(container.textContent).toContain("vintage must be a number");
+  });
+
+  it("door 5: a Save of an output an earlier version already saved says so and offers no second Save", async () => {
+    serviceMock.countKindRecords.mockResolvedValue({ ok: true, value: 0 });
+    serviceMock.fetchMessageLandings.mockImplementation(async (messageId: string) => ({
+      ok: true,
+      value: { messageId, landings: [] },
+    }));
+    serviceMock.saveKindOutput.mockResolvedValue({
+      ok: true,
+      value: { landed: [], alreadySaved: ["rec-old"], notSaved: null },
+    });
+
+    mount(<KindRecordChrome kind="wine_tasting" durableMessageId={MSG} fingerprint="fp-1" value={{}} />);
+    await flush();
+    await click("Save");
+    await flush();
+    await flush();
+
+    expect(container.textContent).toContain("Already saved");
+    expect(Array.from(container.querySelectorAll("button")).some((b) => b.textContent?.includes("Save"))).toBe(false);
   });
 });
