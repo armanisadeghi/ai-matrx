@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { randomUUID } from "node:crypto";
 
 export class ScheduledChangeError extends Error {
   constructor(
@@ -236,7 +237,9 @@ export async function createScheduledPersonalChange(input: {
   const schedule = await input.stripe.subscriptionSchedules.create(
     { from_subscription: input.subscription.id },
     {
-      idempotencyKey: `matrx-scheduled-change-${input.subscription.id}-${input.preview.targetPriceId}-${subscriptionItem.current_period_end}`,
+      // The retry-safe path is the active owned schedule lookup in the route.
+      // A released schedule must never poison a later, new change request.
+      idempotencyKey: `matrx-scheduled-change-${input.subscription.id}-${randomUUID()}`,
     },
   );
   const phase =

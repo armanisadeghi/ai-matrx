@@ -5,7 +5,13 @@ const claims = jest.fn();
 jest.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({}),
 }));
+jest.mock("@/utils/supabase/adminClient", () => ({
+  createAdminClient: jest.fn(),
+}));
 jest.mock("@/utils/supabase/resolveUser", () => ({ getClaimsUser: claims }));
+jest.mock("@/features/account-lifecycle/accountClosure", () => ({
+  readClosureJournal: jest.fn(),
+}));
 jest.mock("@/lib/stripe/server", () => ({
   isStripeConfigured: () => true,
   requiredStripeMode: () => "test",

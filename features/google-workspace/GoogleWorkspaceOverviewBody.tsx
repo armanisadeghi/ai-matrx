@@ -60,6 +60,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ChatMessagesReview } from "@/features/google-workspace/chat/ChatMessagesReview";
+import { BusinessProfileReviewBody } from "@/features/google-workspace/business-profile/BusinessProfileReview";
 
 export interface GoogleWorkspaceOverviewBodyProps {
   initialConnectionId?: string | null;
@@ -331,6 +332,25 @@ function GoogleWorkspaceOverviewBodyContent({
             connection={selectedConnection}
             actorId={userId}
             organizationId={organizationContextId}
+          />
+        ) : null}
+        {!capabilities.isLoading &&
+        !capabilities.isError &&
+        organizationContextId &&
+        userId &&
+        capabilities.data?.some(
+          (capability) =>
+            capability.key === "business_profile" &&
+            capability.rollout_phase === "internal_test" &&
+            capability.eligible,
+        ) ? (
+          <BusinessProfileReviewBody
+            key={`business-profile:${organizationContextId}:${userId}:${JSON.stringify(connections.map((connection) => [connection.id, connection.owner_type, connection.owner_user_id, connection.health, connection.scopes]))}`}
+            context={{
+              organizationId: organizationContextId,
+              actorId: userId,
+              connections,
+            }}
           />
         ) : null}
         <GoogleAgentToolsSection />

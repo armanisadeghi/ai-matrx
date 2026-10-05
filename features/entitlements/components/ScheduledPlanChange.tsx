@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Select } from "@ai-matrx/design-system/controls";
+import {
+  Button,
+  RegionSkeleton,
+  Select,
+} from "@ai-matrx/design-system/controls";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { formatCents } from "../catalog/format";
@@ -83,6 +87,7 @@ export function ScheduledPlanChange({
   const [preview, setPreview] = useState<Preview | null>(null);
   const [scheduled, setScheduled] = useState<Scheduled | null>(null);
   const [managedElsewhere, setManagedElsewhere] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
   const [busy, setBusy] = useState<"preview" | "confirm" | "undo" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const candidates = plans.filter(
@@ -116,6 +121,9 @@ export function ScheduledPlanChange({
               ? reason.message
               : "Scheduled billing changes could not be loaded.",
           );
+      })
+      .finally(() => {
+        if (active) setScheduleLoading(false);
       });
     return () => {
       active = false;
@@ -250,6 +258,8 @@ export function ScheduledPlanChange({
   }
 
   if (!current || !currentInterval) return null;
+  if (scheduleLoading)
+    return <RegionSkeleton label="Loading scheduled plan changes" count={2} />;
   if (managedElsewhere)
     return (
       <p className="mt-3 text-sm text-muted-foreground">

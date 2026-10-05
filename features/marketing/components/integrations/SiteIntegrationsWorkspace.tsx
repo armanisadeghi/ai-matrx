@@ -1,5 +1,8 @@
 "use client";
 
+import { DomainConnections } from "@/features/marketing/connections/DomainConnections";
+import { SitemapControls } from "@/features/marketing/connections/SitemapControls";
+
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -1229,6 +1232,9 @@ function SiteIntegrationsEditor({
               />
             ))}
           </div>
+
+          <SitemapControls site={site} />
+          <DomainConnections />
 
           {reviewMode ? <SiteAnalyticsCard site={site} /> : null}
 

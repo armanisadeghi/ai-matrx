@@ -7,15 +7,42 @@
 import type { FeedbackSubject } from "@/features/overlays/openers/feedbackDialog";
 import type { Json } from "@/types/database.types";
 
-/** The passage as the first lines of the description (what a triager reads first). */
+/** The selected passage or billing record as the first lines a triager reads. */
 export function describeSubject(subject: FeedbackSubject): string {
-  const quote = subject.quote.length > 1200 ? `${subject.quote.slice(0, 1200)}…` : subject.quote;
-  const quoted = quote.split("\n").map((l) => `> ${l}`).join("\n");
+  if (subject.kind === "billing_subscription") {
+    const invoice = subject.invoiceId
+      ? `\nInvoice: ${subject.invoiceId}${subject.invoiceStatus ? ` (${subject.invoiceStatus})` : ""}`
+      : subject.invoiceStatus
+        ? `\nLatest invoice status: ${subject.invoiceStatus}`
+        : "";
+    return `Billing support request\nAccount: ${subject.billingScope}\nSubscription: ${subject.subscriptionId ?? "Not available"}\nPlan: ${subject.planKey ?? "Not available"}\nSubscription status: ${subject.subscriptionStatus ?? "Not available"}${invoice}`;
+  }
+  const quote =
+    subject.quote.length > 1200
+      ? `${subject.quote.slice(0, 1200)}…`
+      : subject.quote;
+  const quoted = quote
+    .split("\n")
+    .map((l) => `> ${l}`)
+    .join("\n");
   return `Reported passage in "${subject.sourceTitle}" (${subject.sourceToken} ${subject.sourceId}):\n${quoted}`;
 }
 
 /** The passage as filed provenance (users.user_feedback.metadata.report_subject). */
-export function subjectMetadata(subject: FeedbackSubject): Record<string, Json> {
+export function subjectMetadata(
+  subject: FeedbackSubject,
+): Record<string, Json> {
+  if (subject.kind === "billing_subscription") {
+    return {
+      kind: subject.kind,
+      billing_scope: subject.billingScope,
+      subscription_id: subject.subscriptionId,
+      plan_key: subject.planKey,
+      subscription_status: subject.subscriptionStatus,
+      invoice_id: subject.invoiceId ?? null,
+      invoice_status: subject.invoiceStatus ?? null,
+    };
+  }
   return {
     kind: subject.kind,
     source_token: subject.sourceToken,
@@ -26,4 +53,3 @@ export function subjectMetadata(subject: FeedbackSubject): Record<string, Json> 
     href: subject.href ?? null,
   };
 }
-

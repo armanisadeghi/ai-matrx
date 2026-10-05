@@ -1,5 +1,7 @@
 "use client";
 
+import { SitemapControls } from "@/features/marketing/connections/SitemapControls";
+
 /**
  * `/marketing/search-console` — the Search Console data dashboard.
  *
@@ -865,6 +867,7 @@ export function SearchConsoleWorkspace() {
               </div>
             ) : state.tab === "overview" ? (
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5">
+                {site ? <SitemapControls site={site} /> : null}
                 <KpiBand
                   siteId={state.siteId}
                   siteName={siteName}

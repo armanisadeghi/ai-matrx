@@ -3,21 +3,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
-import { getStripe, isStripeConfigured, requiredStripeMode } from "@/lib/stripe/server";
-import { ownerEq, billingOwnerRef, readRequestOrganizationState } from "@/features/entitlements/stripe/billingOwner";
-import { billingOrganizationRequiredResponse, isBillingOrganizationRequiredError } from "@/features/entitlements/stripe/billingOwnerRoute";
-import { billingSubscriptionSelectionPasses, terminalBillingSubscriptionStatuses } from "@/features/entitlements/billing-subscription-selection";
+import {
+  getStripe,
+  isStripeConfigured,
+  requiredStripeMode,
+} from "@/lib/stripe/server";
+import {
+  ownerEq,
+  billingOwnerRef,
+  readRequestOrganizationState,
+} from "@/features/entitlements/stripe/billingOwner";
+import {
+  billingOrganizationRequiredResponse,
+  isBillingOrganizationRequiredError,
+} from "@/features/entitlements/stripe/billingOwnerRoute";
+import {
+  billingSubscriptionSelectionPasses,
+  terminalBillingSubscriptionStatuses,
+} from "@/features/entitlements/billing-subscription-selection";
 
 export async function GET() {
   return NextResponse.json({ livemode: requiredStripeMode() === "live" });
 }
 
-function invoiceRecovery(invoice: Stripe.Invoice | null): { url: string | null; status: string | null; requiresAction: boolean } {
+function invoiceRecovery(invoice: Stripe.Invoice | null): {
+  id: string | null;
+  url: string | null;
+  status: string | null;
+  requiresAction: boolean;
+} {
   const paymentIntent = invoice?.payments?.data
     .map(({ payment }) => payment)
     .find((payment) => payment.type === "payment_intent")?.payment_intent;
-  const paymentStatus = typeof paymentIntent === "string" ? null : paymentIntent?.status ?? null;
+  const paymentStatus =
+    typeof paymentIntent === "string" ? null : (paymentIntent?.status ?? null);
   return {
+    id: invoice?.id ?? null,
     url: invoice?.hosted_invoice_url ?? null,
     status: invoice?.status ?? null,
     requiresAction: paymentStatus === "requires_action",
@@ -26,40 +47,80 @@ function invoiceRecovery(invoice: Stripe.Invoice | null): { url: string | null; 
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isStripeConfigured()) return NextResponse.json({ error: "Billing is unavailable." }, { status: 503 });
+    if (!isStripeConfigured())
+      return NextResponse.json(
+        { error: "Billing is unavailable." },
+        { status: 503 },
+      );
     const body: unknown = await request.json().catch(() => null);
-    const scope = body && typeof body === "object" && "scope" in body ? body.scope : null;
-    if (scope !== "personal" && scope !== "organization") return NextResponse.json({ error: "Choose a billing account." }, { status: 400 });
+    const scope =
+      body && typeof body === "object" && "scope" in body ? body.scope : null;
+    if (scope !== "personal" && scope !== "organization")
+      return NextResponse.json(
+        { error: "Choose a billing account." },
+        { status: 400 },
+      );
     const client = await createClient();
-    const { data: { user } } = await getClaimsUser(client);
-    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const {
+      data: { user },
+    } = await getClaimsUser(client);
+    if (!user)
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     const admin = createAdminClient();
     const livemode = requiredStripeMode() === "live";
     let subscriptionQuery = () => {
-      let query = admin.schema("billing").from("subscription").select("stripe_subscription_id").eq("livemode", livemode);
-      return scope === "personal" ? query.eq("beneficiary_user_id", user.id) : query;
+      let query = admin
+        .schema("billing")
+        .from("subscription")
+        .select("stripe_subscription_id")
+        .eq("livemode", livemode);
+      return scope === "personal"
+        ? query.eq("beneficiary_user_id", user.id)
+        : query;
     };
 
     if (scope === "personal") {
     } else {
       let owner;
       try {
-        owner = await billingOwnerRef({ userId: user.id, organization: readRequestOrganizationState(request) });
+        owner = await billingOwnerRef({
+          userId: user.id,
+          organization: readRequestOrganizationState(request),
+        });
       } catch (error) {
-        if (isBillingOrganizationRequiredError(error)) return billingOrganizationRequiredResponse(client, error);
+        if (isBillingOrganizationRequiredError(error))
+          return billingOrganizationRequiredResponse(client, error);
         throw error;
       }
-      const { data: membership, error: membershipError } = await client.schema("iam").from("organization_member").select("role").eq("organization_id", owner.value).eq("user_id", user.id).maybeSingle();
+      const { data: membership, error: membershipError } = await client
+        .schema("iam")
+        .from("organization_member")
+        .select("role")
+        .eq("organization_id", owner.value)
+        .eq("user_id", user.id)
+        .maybeSingle();
       if (membershipError) throw membershipError;
-      if (!membership || !["owner", "admin"].includes(membership.role ?? "")) return NextResponse.json({ error: "An organization owner or admin must manage its subscription." }, { status: 403 });
+      if (!membership || !["owner", "admin"].includes(membership.role ?? ""))
+        return NextResponse.json(
+          {
+            error:
+              "An organization owner or admin must manage its subscription.",
+          },
+          { status: 403 },
+        );
       const query = subscriptionQuery;
-      subscriptionQuery = () => ownerEq(query(), owner).is("beneficiary_user_id", null);
+      subscriptionQuery = () =>
+        ownerEq(query(), owner).is("beneficiary_user_id", null);
     }
     let subscription: { stripe_subscription_id: string | null } | null = null;
     for (const pass of billingSubscriptionSelectionPasses) {
       const candidateQuery = pass.terminal
-        ? subscriptionQuery().in("status", [...terminalBillingSubscriptionStatuses])
-        : subscriptionQuery().neq("status", terminalBillingSubscriptionStatuses[0]).neq("status", terminalBillingSubscriptionStatuses[1]);
+        ? subscriptionQuery().in("status", [
+            ...terminalBillingSubscriptionStatuses,
+          ])
+        : subscriptionQuery()
+            .neq("status", terminalBillingSubscriptionStatuses[0])
+            .neq("status", terminalBillingSubscriptionStatuses[1]);
       const { data, error } = await candidateQuery
         .order("current_period_end", { ascending: false, nullsFirst: false })
         .order("updated_at", { ascending: false })
@@ -72,14 +133,36 @@ export async function POST(request: NextRequest) {
         break;
       }
     }
-    if (!subscription?.stripe_subscription_id) return NextResponse.json({ invoice: null });
-    const stripeSubscription = await getStripe().subscriptions.retrieve(subscription.stripe_subscription_id, {
-      expand: ["latest_invoice.payments.data.payment.payment_intent"],
+    if (!subscription?.stripe_subscription_id)
+      return NextResponse.json({ invoice: null });
+    const stripeSubscription = await getStripe().subscriptions.retrieve(
+      subscription.stripe_subscription_id,
+      {
+        expand: ["latest_invoice.payments.data.payment.payment_intent"],
+      },
+    );
+    const latestInvoice =
+      typeof stripeSubscription.latest_invoice === "string"
+        ? null
+        : stripeSubscription.latest_invoice;
+    const invoices = await getStripe().invoices.list({
+      subscription: stripeSubscription.id,
+      limit: 20,
     });
-    const latestInvoice = typeof stripeSubscription.latest_invoice === "string" ? null : stripeSubscription.latest_invoice;
-    return NextResponse.json({ invoice: invoiceRecovery(latestInvoice) });
+    return NextResponse.json({
+      invoice: invoiceRecovery(latestInvoice),
+      supportInvoices: invoices.data.map(item => ({
+        id: item.id,
+        status: item.status,
+        number: item.number,
+        created: item.created,
+      })),
+    });
   } catch (error) {
     console.error("[stripe/billing-summary]", error);
-    return NextResponse.json({ error: "Billing recovery could not be loaded." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Billing recovery could not be loaded." },
+      { status: 500 },
+    );
   }
 }

@@ -1,7 +1,12 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { BillingSummary } from "./BillingSummary";
-import { readBillingSummary, type BillingSummaryRead } from "../billing-summary";
+import {
+  readBillingSummary,
+  type BillingSummaryRead,
+} from "../billing-summary";
+
+const mockOpenFeedback = jest.fn();
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -20,6 +25,10 @@ jest.mock("../catalog/usePlanCatalog", () => ({
 
 jest.mock("@/features/pricing/components/SubscriptionControls", () => ({
   SubscriptionControls: () => <button type="button">Manage billing</button>,
+}));
+
+jest.mock("@/features/overlays/openers/feedbackDialog", () => ({
+  useOpenFeedbackWindow: () => mockOpenFeedback,
 }));
 
 type Deferred<T> = {
@@ -60,7 +69,9 @@ const paymentDueRead = {
 describe("BillingSummary account switching", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const mockRead = readBillingSummary as jest.MockedFunction<typeof readBillingSummary>;
+  const mockRead = readBillingSummary as jest.MockedFunction<
+    typeof readBillingSummary
+  >;
   const mockFetch = jest.fn();
 
   beforeEach(() => {
@@ -69,7 +80,11 @@ describe("BillingSummary account switching", () => {
     root = createRoot(host);
     mockRead.mockReset();
     mockFetch.mockReset();
-    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ livemode: true }) });
+    mockOpenFeedback.mockReset();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ livemode: true }),
+    });
     global.fetch = mockFetch;
   });
 
@@ -80,24 +95,57 @@ describe("BillingSummary account switching", () => {
 
   it("clears a prior account invoice immediately while a new account is loading", async () => {
     const organizationRead = deferred<BillingSummaryRead>();
-    const recovery = deferred<{ invoice: { url: string; status: string; requiresAction: boolean } }>();
-    mockRead.mockResolvedValueOnce(paymentDueRead).mockReturnValueOnce(organizationRead.promise);
-    mockFetch.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === "POST") return recovery.promise.then((body) => ({ ok: true, json: async () => body }));
-      return Promise.resolve({ ok: true, json: async () => ({ livemode: true }) });
-    });
+    const recovery = deferred<{
+      invoice: {
+        id: string;
+        url: string;
+        status: string;
+        requiresAction: boolean;
+      };
+    }>();
+    mockRead
+      .mockResolvedValueOnce(paymentDueRead)
+      .mockReturnValueOnce(organizationRead.promise);
+    mockFetch.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST")
+          return recovery.promise.then((body) => ({
+            ok: true,
+            json: async () => body,
+          }));
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ livemode: true }),
+        });
+      },
+    );
 
     await act(async () => {
-      root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />);
+      root.render(
+        <BillingSummary
+          scope={{ kind: "personal", userId: "member-harbor" }}
+        />,
+      );
     });
-    recovery.resolve({ invoice: { url: "https://stripe.test/invoices/harbor", status: "open", requiresAction: false } });
+    recovery.resolve({
+      invoice: {
+        id: "in_harbor_due",
+        url: "https://stripe.test/invoices/harbor",
+        status: "open",
+        requiresAction: false,
+      },
+    });
     await act(async () => {});
     expect(host.textContent).toContain("Pay invoice");
 
     await act(async () => {
-      root.render(<BillingSummary scope={{ kind: "organization", organizationId: "org-river" }} />);
+      root.render(
+        <BillingSummary
+          scope={{ kind: "organization", organizationId: "org-river" }}
+        />,
+      );
     });
-    expect(host.textContent).toContain("Loading organization billing");
+    expect(host.querySelector('[aria-label="Loading organization billing"]')).not.toBeNull();
     expect(host.textContent).not.toContain("Pay invoice");
 
     organizationRead.reject(new Error("Organization billing read failed"));
@@ -106,18 +154,122 @@ describe("BillingSummary account switching", () => {
   });
 
   it("hides a completed recovery invoice when the same account becomes active", async () => {
-    mockRead.mockResolvedValueOnce(paymentDueRead).mockResolvedValueOnce(activeRead);
-    mockFetch.mockImplementation((_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === "POST") return Promise.resolve({ ok: true, json: async () => ({ invoice: { url: "https://stripe.test/invoices/harbor", status: "open", requiresAction: false } }) });
-      return Promise.resolve({ ok: true, json: async () => ({ livemode: true }) });
+    mockRead
+      .mockResolvedValueOnce(paymentDueRead)
+      .mockResolvedValueOnce(activeRead);
+    mockFetch.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST")
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              invoice: {
+                id: "in_harbor_due",
+                url: "https://stripe.test/invoices/harbor",
+                status: "open",
+                requiresAction: false,
+              },
+            }),
+          });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ livemode: true }),
+        });
+      },
+    );
+    await act(async () => {
+      root.render(
+        <BillingSummary
+          scope={{ kind: "personal", userId: "member-harbor" }}
+        />,
+      );
     });
-    await act(async () => { root.render(<BillingSummary scope={{ kind: "personal", userId: "member-harbor" }} />); });
     await act(async () => {});
     expect(host.textContent).toContain("Pay invoice");
-    const refresh = Array.from(host.querySelectorAll("button")).find((button) => button.textContent === "Refresh billing");
+    const refresh = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === "Refresh billing",
+    );
     expect(refresh).toBeDefined();
-    await act(async () => { refresh?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await act(async () => {
+      refresh?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
     expect(host.textContent).not.toContain("Pay invoice");
     expect(host.textContent).toContain("Active");
+  });
+
+  it("opens the canonical feedback intake with the authorized subscription and invoice context", async () => {
+    mockRead.mockResolvedValue(paymentDueRead);
+    mockFetch.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST")
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              invoice: {
+                id: "in_harbor_due",
+                url: "https://stripe.test/invoices/harbor",
+                status: "open",
+                requiresAction: false,
+              },
+            }),
+          });
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ livemode: true }),
+        });
+      },
+    );
+
+    await act(async () => {
+      root.render(
+        <BillingSummary
+          scope={{ kind: "personal", userId: "member-harbor" }}
+        />,
+      );
+    });
+    await act(async () => {});
+    const support = Array.from(host.querySelectorAll("button")).find(
+      (button) => button.textContent === "Billing support",
+    );
+    expect(support).toBeDefined();
+    await act(async () => {
+      support?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(mockOpenFeedback).toHaveBeenCalledWith({
+      title: "Billing support",
+      subject: {
+        kind: "billing_subscription",
+        billingScope: "personal",
+        subscriptionId: "sub_harbor_monthly",
+        planKey: "personal-entry",
+        subscriptionStatus: "past_due",
+        invoiceId: "in_harbor_due",
+        invoiceStatus: "open",
+      },
+    });
+  });
+
+  it("keeps support reachable after a failed billing read without inventing subscription context", async () => {
+    mockRead.mockResolvedValue({
+      ok: false,
+      reason: "Billing access was rejected.",
+    });
+    await act(async () => {
+      root.render(
+        <BillingSummary
+          scope={{ kind: "personal", userId: "member-harbor" }}
+        />,
+      );
+    });
+    await act(async () => {});
+    expect(host.textContent).toContain("Billing access was rejected.");
+    const support = Array.from(host.querySelectorAll("button")).find(button => button.textContent === "Billing support");
+    expect(support).toBeDefined();
+    await act(async () => support?.click());
+    expect(mockOpenFeedback).toHaveBeenCalledWith({ title: "Billing support", subject: {
+      kind: "billing_subscription", billingScope: "personal", subscriptionId: null,
+      planKey: null, subscriptionStatus: null, invoiceId: null, invoiceStatus: null,
+    } });
   });
 });

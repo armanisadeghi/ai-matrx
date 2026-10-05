@@ -24,7 +24,7 @@ import {
   Upload,
   Settings2,
   X,
-    KeyRound,
+  KeyRound,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -110,7 +110,13 @@ type AttachmentSlot =
       previewUrl: string | null;
       filename: string;
     }
-  | { status: "pending"; id: string; file: File; previewUrl: string | null; filename: string }
+  | {
+      status: "pending";
+      id: string;
+      file: File;
+      previewUrl: string | null;
+      filename: string;
+    }
   | { status: "ready"; id: string; fileId: string; filename?: string };
 
 /**
@@ -134,13 +140,16 @@ function localSlot(file: File): AttachmentSlot {
     status: "local",
     id: newSlotId(),
     file,
-    previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+    previewUrl: file.type.startsWith("image/")
+      ? URL.createObjectURL(file)
+      : null,
     filename: file.name,
   };
 }
 
 function releaseSlot(slot: AttachmentSlot): void {
-  if (slot.status !== "ready" && slot.previewUrl) URL.revokeObjectURL(slot.previewUrl);
+  if (slot.status !== "ready" && slot.previewUrl)
+    URL.revokeObjectURL(slot.previewUrl);
 }
 
 interface FeedbackStats {
@@ -371,10 +380,18 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
 
 type FeedbackFormState = ReturnType<typeof useFeedbackForm>;
 
-function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () => void; subject?: FeedbackSubject }) {
+function useFeedbackForm({
+  onClose: closeOverlayNow,
+  subject,
+}: {
+  onClose: () => void;
+  subject?: FeedbackSubject;
+}) {
   const pathname = usePathname();
   const draftKey = subject
-    ? `feedback:${subject.sourceToken}:${subject.sourceId}`
+    ? subject.kind === "text_passage"
+      ? `feedback:${subject.sourceToken}:${subject.sourceId}`
+      : `feedback:billing:${subject.billingScope}:${subject.subscriptionId}:${subject.invoiceId ?? "none"}`
     : "feedback";
   // The workspace question this window asked, if it is still open: a window
   // that closes withdraws it, so the picker never outlives the window.
@@ -428,11 +445,14 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       ),
   );
   const [restoredExtras] = useState(
-    () => !!stashed && (stashed.attachments.length > 0 || stashed.feedbackType !== "bug"),
+    () =>
+      !!stashed &&
+      (stashed.attachments.length > 0 || stashed.feedbackType !== "bug"),
   );
   // Keep the stash current: type + attachments survive Cancel / close.
   useEffect(() => {
-    if (feedbackType === "bug" && attachments.length === 0) draftStash.delete(draftKey);
+    if (feedbackType === "bug" && attachments.length === 0)
+      draftStash.delete(draftKey);
     else draftStash.set(draftKey, { feedbackType, attachments });
   }, [draftKey, feedbackType, attachments]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -462,7 +482,9 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
   const [isLoadingAdminOptions, setIsLoadingAdminOptions] = useState(true);
   // A failed load is SAID, with a retry — it used to become an empty list,
   // indistinguishable from "no categories exist".
-  const [adminOptionsError, setAdminOptionsError] = useState<string | null>(null);
+  const [adminOptionsError, setAdminOptionsError] = useState<string | null>(
+    null,
+  );
   const [adminOptionsAttempt, setAdminOptionsAttempt] = useState(0);
   const retryAdminOptions = () => setAdminOptionsAttempt((n) => n + 1);
 
@@ -487,7 +509,9 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       })
       .catch((err: unknown) => {
         if (!cancelled)
-          setAdminOptionsError(err instanceof Error ? err.message : "Could not load");
+          setAdminOptionsError(
+            err instanceof Error ? err.message : "Could not load",
+          );
       })
       .finally(() => {
         if (!cancelled) setIsLoadingAdminOptions(false);
@@ -655,7 +679,9 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       }
       toast.info("No image found in the clipboard");
     } catch {
-      toast.warning(`Couldn't read the clipboard — copy an image first, then click Paste or press ${modifierKeyLabel()}+V`);
+      toast.warning(
+        `Couldn't read the clipboard — copy an image first, then click Paste or press ${modifierKeyLabel()}+V`,
+      );
     }
   }, [addFiles]);
 
@@ -664,7 +690,9 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
    * turning each into a `ready` slot. Returns every file id, or throws with
    * the name of the file that failed (the rest stay attached).
    */
-  const uploadAttachments = async (organizationId: string): Promise<string[]> => {
+  const uploadAttachments = async (
+    organizationId: string,
+  ): Promise<string[]> => {
     const ids: string[] = [];
     for (const slot of attachments) {
       if (slot.status === "ready") {
@@ -719,12 +747,17 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
     let organizationId: string;
     askingOrgRef.current = true;
     try {
-      organizationId = await ensureOrganizationForWrite(selectedOrganizationId, {
-        interactive: true,
-      });
+      organizationId = await ensureOrganizationForWrite(
+        selectedOrganizationId,
+        {
+          interactive: true,
+        },
+      );
     } catch (err) {
       if (isOrganizationSelectionCancelled(err)) return;
-      setError("Choose a workspace to send feedback — your report is still here.");
+      setError(
+        "Choose a workspace to send feedback — your report is still here.",
+      );
       return;
     } finally {
       askingOrgRef.current = false;
@@ -788,8 +821,12 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
         organization_id: organizationId,
         // A report about a passage carries it twice: readable at the top of the
         // description for whoever triages it, and structured for tools.
-        description: subject ? `${describeSubject(subject)}\n\n${description.trim()}` : description.trim(),
-        ...(subject ? { metadata: { report_subject: subjectMetadata(subject) } } : {}),
+        description: subject
+          ? `${describeSubject(subject)}\n\n${description.trim()}`
+          : description.trim(),
+        ...(subject
+          ? { metadata: { report_subject: subjectMetadata(subject) } }
+          : {}),
         image_file_ids: imageFileIds.length > 0 ? imageFileIds : undefined,
         // Admin-only fields. Server silently drops these for non-admins, but we
         // also skip sending them entirely when the caller isn't an admin so
@@ -875,7 +912,12 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
         content: description,
         attachments: attachments.map((a) =>
           a.status === "ready"
-            ? { name: a.filename ?? "file", type: "file", state: "attached", file_id: a.fileId }
+            ? {
+                name: a.filename ?? "file",
+                type: "file",
+                state: "attached",
+                file_id: a.fileId,
+              }
             : {
                 name: a.filename,
                 type: a.file.type || "file",
@@ -935,16 +977,25 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       // person's screenshots, filed when they press Submit.
       feedback_attachment: (value: unknown) => {
         if (submittedRef.current)
-          throw new Error("This feedback has already been submitted — nothing to attach to.");
+          throw new Error(
+            "This feedback has already been submitted — nothing to attach to.",
+          );
         if (isSubmittingRef.current)
-          throw new Error("This feedback is being submitted right now — refused.");
+          throw new Error(
+            "This feedback is being submitted right now — refused.",
+          );
         const patch = parseFeedbackAttachment(value);
         setAttachments((prev) =>
           prev.some((a) => a.status === "ready" && a.fileId === patch.fileId)
             ? prev
             : [
                 ...prev,
-                { status: "ready", id: newSlotId(), fileId: patch.fileId, filename: patch.name },
+                {
+                  status: "ready",
+                  id: newSlotId(),
+                  fileId: patch.fileId,
+                  filename: patch.name,
+                },
               ],
         );
       },
@@ -970,7 +1021,9 @@ function useFeedbackForm({ onClose: closeOverlayNow, subject }: { onClose: () =>
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Couldn't copy — your browser blocked the clipboard. Try again, or open the report from View all and copy it there.");
+      toast.error(
+        "Couldn't copy — your browser blocked the clipboard. Try again, or open the report from View all and copy it there.",
+      );
     }
   }, [submittedItem]);
 
@@ -1159,7 +1212,9 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
           id,
           rect: {
             height,
-            ...(anchoredToBottom ? { y: Math.max(TOP_CLEAR, bottom - height) } : {}),
+            ...(anchoredToBottom
+              ? { y: Math.max(TOP_CLEAR, bottom - height) }
+              : {}),
           },
         }),
       );
@@ -1184,9 +1239,26 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         {/* Your reports — each count opens the list behind it. */}
         {stats && (
           <div className="flex items-center gap-6 rounded-lg border border-border px-6 py-2">
-            <StatPill label="Submitted" value={stats.total} onNavigate={onClose} crossApp={isAdmin} />
-            <StatPill label="Pending" value={stats.pending} group="pending" onNavigate={onClose} crossApp={isAdmin} />
-            <StatPill label="Resolved" value={stats.resolved} group="resolved" onNavigate={onClose} crossApp={isAdmin} />
+            <StatPill
+              label="Submitted"
+              value={stats.total}
+              onNavigate={onClose}
+              crossApp={isAdmin}
+            />
+            <StatPill
+              label="Pending"
+              value={stats.pending}
+              group="pending"
+              onNavigate={onClose}
+              crossApp={isAdmin}
+            />
+            <StatPill
+              label="Resolved"
+              value={stats.resolved}
+              group="resolved"
+              onNavigate={onClose}
+              crossApp={isAdmin}
+            />
           </div>
         )}
         {!stats && statsFailed ? (
@@ -1214,16 +1286,30 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         )}
 
         <div className="grid grid-cols-3 gap-2 w-full max-w-[340px]">
-          <Button icon={<Plus />} type="button" variant="outline" onClick={handleReset}>
+          <Button
+            icon={<Plus />}
+            type="button"
+            variant="outline"
+            onClick={handleReset}
+          >
             New report
           </Button>
           <Button asChild variant="outline">
-            <FeedbackListLink href={feedbackListHref()} onClick={onClose} crossApp={isAdmin}>
+            <FeedbackListLink
+              href={feedbackListHref()}
+              onClick={onClose}
+              crossApp={isAdmin}
+            >
               <List />
               View all
             </FeedbackListLink>
           </Button>
-          <Button icon={<X />} type="button" variant="outline" onClick={onClose}>
+          <Button
+            icon={<X />}
+            type="button"
+            variant="outline"
+            onClick={onClose}
+          >
             Close
           </Button>
         </div>
@@ -1237,299 +1323,347 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
   return (
     <div className="matrx-touch-targets flex-1 overflow-auto min-h-0 px-4 py-3">
       <div ref={contentRef} className="space-y-3">
-      {/* Type selector — one standard single-choice group. */}
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        value={feedbackType}
-        onValueChange={(value) => {
-          // A single-choice group reports "" when the active item is pressed
-          // again; a report always has a type, so that press changes nothing.
-          if (value) setFeedbackType(value as FeedbackType);
-        }}
-        className="flex-wrap justify-start"
-        aria-label="Feedback type"
-      >
-        {FEEDBACK_TYPES.map((value) => {
-          const { label, icon: Icon } = FEEDBACK_TYPE_CHIPS[value];
-          return (
-            <ToggleGroupItem
-              key={value}
-              value={value}
-              aria-label={label}
-              className="gap-1.5 px-2.5 text-xs pointer-coarse:min-h-11 [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
-            >
-              <Icon />
-              {label}
-            </ToggleGroupItem>
-          );
-        })}
-      </ToggleGroup>
+        {/* Type selector — one standard single-choice group. */}
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          value={feedbackType}
+          onValueChange={(value) => {
+            // A single-choice group reports "" when the active item is pressed
+            // again; a report always has a type, so that press changes nothing.
+            if (value) setFeedbackType(value as FeedbackType);
+          }}
+          className="flex-wrap justify-start"
+          aria-label="Feedback type"
+        >
+          {FEEDBACK_TYPES.map((value) => {
+            const { label, icon: Icon } = FEEDBACK_TYPE_CHIPS[value];
+            return (
+              <ToggleGroupItem
+                key={value}
+                value={value}
+                aria-label={label}
+                className="gap-1.5 px-2.5 text-xs pointer-coarse:min-h-11 [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+              >
+                <Icon />
+                {label}
+              </ToggleGroupItem>
+            );
+          })}
+        </ToggleGroup>
 
-      {/* Where the report is filed from — sent with it. */}
-      <p className="text-xs text-muted-foreground">
-        Filed from{" "}
-        <span className="text-foreground" title={where.address}>
-          {where.page || where.address}
-        </span>
-      </p>
+        {/* Where the report is filed from — sent with it. */}
+        <p className="text-xs text-muted-foreground">
+          Filed from{" "}
+          <span className="text-foreground" title={where.address}>
+            {where.page || where.address}
+          </span>
+        </p>
 
-      {form.subject ? (
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs" data-feedback-subject="">
-          <p className="font-medium text-foreground">About this passage in “{form.subject.sourceTitle}”</p>
-          <blockquote className="mt-1 line-clamp-4 border-l-2 border-primary/50 pl-2 text-muted-foreground">
-            {form.subject.quote}
-          </blockquote>
-          <p className="mt-1 text-xs text-muted-foreground">The passage and its position are sent with your report.</p>
-        </div>
-      ) : null}
+        {form.subject?.kind === "text_passage" ? (
+          <div
+            className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs"
+            data-feedback-subject=""
+          >
+            <p className="font-medium text-foreground">
+              About this passage in “{form.subject.sourceTitle}”
+            </p>
+            <blockquote className="mt-1 line-clamp-4 border-l-2 border-primary/50 pl-2 text-muted-foreground">
+              {form.subject.quote}
+            </blockquote>
+            <p className="mt-1 text-xs text-muted-foreground">
+              The passage and its position are sent with your report.
+            </p>
+          </div>
+        ) : null}
 
-      {/* Description */}
-      <div className="space-y-1">
-        {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
+        {form.subject?.kind === "billing_subscription" ? (
+          <div
+            className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs"
+            data-feedback-subject=""
+          >
+            <p className="font-medium text-foreground">Billing support</p>
+            <p className="mt-1 text-muted-foreground">
+              {form.subject.billingScope === "personal"
+                ? "Personal"
+                : "Organization"}{" "}
+              subscription · {form.subject.subscriptionStatus}
+            </p>
+            {form.subject.invoiceStatus ? (
+              <p className="mt-1 text-muted-foreground">
+                Latest invoice · {form.subject.invoiceStatus}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* Description */}
+        <div className="space-y-1">
+          {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
             this, a right-click here is answered by whatever page sits
             underneath. Editable — this textarea is the feedback description
             itself, so it gets `EditableContextMenu` (auto-registers the
             WidgetHandle too). */}
-        <EditableContextMenu
-          sourceFeature="system"
-          surfaceName={FEEDBACK_SURFACE_NAME}
-          getApplicationScope={getApplicationScope}
-          contentSource={{ type: "raw" }}
-          getTextarea={() => textareaRef.current}
-          onTextReplace={setDescription}
-          onTextInsertBefore={(text) => setDescription(text + description)}
-          onTextInsertAfter={(text) => setDescription(description + text)}
-        >
-          <ProTextarea
-            ref={attachTextarea}
+          <EditableContextMenu
+            sourceFeature="system"
             surfaceName={FEEDBACK_SURFACE_NAME}
             getApplicationScope={getApplicationScope}
-            className="w-full h-28 px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
-            placeholder={FEEDBACK_TYPE_CHIPS[feedbackType].placeholder}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isSubmitting}
-          />
-        </EditableContextMenu>
-        {draftRestored ? (
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            Your unsent report was restored.
-            <Button
-              type="button"
-              variant="quiet"
-              onClick={acknowledgeRestore}
-            >
-              OK
-            </Button>
-          </p>
-        ) : null}
-        {!draft.available ? (
-          <p className="text-xs text-muted-foreground">
-            Drafts aren&apos;t saved here — closing loses your text
-          </p>
-        ) : null}
-        <p className="text-xs text-muted-foreground pointer-coarse:hidden">
-          {modifierKeyLabel()}+Enter to submit · {modifierKeyLabel()}+V to paste
-          a screenshot
-        </p>
-      </div>
-
-      {/* Admin-only: Category + Assignee (admin lane only). */}
-      {isAdmin && (
-        <Collapsible
-          open={adminOptionsOpen}
-          onOpenChange={setAdminOptionsOpen}
-          className="rounded-lg border border-border"
-        >
-          <CollapsibleTrigger asChild>
-            <Button
-              icon={<Settings2 />} iconEnd={<ChevronDown
-                className={`ml-auto transition-transform ${adminOptionsOpen ? "rotate-180" : ""}`}
-              />}
-              type="button"
-              variant="quiet"
-              className="w-full justify-start"
-            >
-              Admin options
-              {(categoryId !== "none" || assigneeId !== "none") && (
-                <span className="ml-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
-                  {(categoryId !== "none" ? 1 : 0) + (assigneeId !== "none" ? 1 : 0)} set
-                </span>
-              )}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-2 border-t border-border/60 px-2.5 pb-2.5 pt-2">
-            {adminOptionsError ? (
-              <p className="flex items-center gap-2 text-xs text-destructive">
-                {asClause(adminOptionsError)}.
-                <ErrorAlchemyMenu error={adminOptionsError} size="xs" />
-                <Button type="button" variant="outline" onClick={retryAdminOptions}>
-                  Retry
-                </Button>
-              </p>
-            ) : null}
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                Category
-              </label>
-              <Select
-                value={categoryId}
-                onValueChange={setCategoryId}
-                disabled={isSubmitting || isLoadingAdminOptions || !!adminOptionsError}
+            contentSource={{ type: "raw" }}
+            getTextarea={() => textareaRef.current}
+            onTextReplace={setDescription}
+            onTextInsertBefore={(text) => setDescription(text + description)}
+            onTextInsertAfter={(text) => setDescription(description + text)}
+          >
+            <ProTextarea
+              ref={attachTextarea}
+              surfaceName={FEEDBACK_SURFACE_NAME}
+              getApplicationScope={getApplicationScope}
+              className="w-full h-28 px-3 py-2 text-base leading-relaxed text-foreground bg-muted/40 border border-border rounded-lg outline-none resize-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:bg-background"
+              placeholder={FEEDBACK_TYPE_CHIPS[feedbackType].placeholder}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isSubmitting}
+            />
+          </EditableContextMenu>
+          {draftRestored ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              Your unsent report was restored.
+              <Button
+                type="button"
+                variant="quiet"
+                onClick={acknowledgeRestore}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                Assign to
-              </label>
-              <Select
-                value={assigneeId}
-                onValueChange={setAssigneeId}
-                disabled={isSubmitting || isLoadingAdminOptions || !!adminOptionsError}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {assignableAdmins.map((a) => (
-                    <SelectItem key={a.user_id} value={a.user_id}>
-                      {a.display_name || a.email || a.user_id.slice(0, 8)}
-                      {reduxUser?.id === a.user_id ? " (you)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
-                <p className="text-xs text-muted-foreground leading-snug">
-                  The assignee will get an in-app message and an email.
-                </p>
-              )}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {/* Attachments — upload, paste, capture, or drop files here. They stay
-          on this device until Submit. */}
-      <div
-        className="space-y-1.5"
-        onDragOver={(e) => {
-          if (e.dataTransfer.types.includes("Files")) e.preventDefault();
-        }}
-        onDrop={(e) => {
-          if (!e.dataTransfer.files.length) return;
-          e.preventDefault();
-          handleFilesChosen(e.dataTransfer.files);
-        }}
-      >
-        <p className="text-xs font-medium text-muted-foreground">
-          Attachments <span className="font-normal opacity-60">(optional)</span>
-        </p>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*,application/pdf"
-          className="hidden"
-          aria-hidden="true"
-          tabIndex={-1}
-          onChange={(e) => {
-            handleFilesChosen(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        {/* One row of four on desktop, two even rows on a phone. */}
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 [&>button]:min-w-0">
-          <Button
-            icon={<Upload />}
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isSubmitting}
-          >
-            Upload
-          </Button>
-          <Button
-            icon={<Clipboard />}
-            type="button"
-            variant="outline"
-            onClick={handlePasteButton}
-            disabled={isSubmitting}
-          >
-            Paste
-          </Button>
-          <Button
-            icon={<Camera />}
-            type="button"
-            variant="outline"
-            onClick={handleTabCapture}
-            disabled={isSubmitting || isCapturing}
-            title="Capture this tab — the page behind this window"
-          >
-            This tab
-          </Button>
-          {canCaptureScreen ? (
-            <Button
-              icon={<Monitor />}
-              type="button"
-              variant="outline"
-              onClick={handleScreenCapture}
-              disabled={isSubmitting || isCapturing}
-              title="Capture another window or screen (your browser asks which)"
-            >
-              Screen
-            </Button>
+                OK
+              </Button>
+            </p>
           ) : null}
+          {!draft.available ? (
+            <p className="text-xs text-muted-foreground">
+              Drafts aren&apos;t saved here — closing loses your text
+            </p>
+          ) : null}
+          <p className="text-xs text-muted-foreground pointer-coarse:hidden">
+            {modifierKeyLabel()}+Enter to submit · {modifierKeyLabel()}+V to
+            paste a screenshot
+          </p>
         </div>
 
-        {attachments.some((a) => a.status === "ready" || a.previewUrl) && (
-          <p className="text-xs text-muted-foreground">
-            <span className="pointer-coarse:hidden">Click</span>
-            <span className="hidden pointer-coarse:inline">Tap</span> an image
-            to draw, circle, or write on it.
+        {/* Admin-only: Category + Assignee (admin lane only). */}
+        {isAdmin && (
+          <Collapsible
+            open={adminOptionsOpen}
+            onOpenChange={setAdminOptionsOpen}
+            className="rounded-lg border border-border"
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                icon={<Settings2 />}
+                iconEnd={
+                  <ChevronDown
+                    className={`ml-auto transition-transform ${adminOptionsOpen ? "rotate-180" : ""}`}
+                  />
+                }
+                type="button"
+                variant="quiet"
+                className="w-full justify-start"
+              >
+                Admin options
+                {(categoryId !== "none" || assigneeId !== "none") && (
+                  <span className="ml-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                    {(categoryId !== "none" ? 1 : 0) +
+                      (assigneeId !== "none" ? 1 : 0)}{" "}
+                    set
+                  </span>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 border-t border-border/60 px-2.5 pb-2.5 pt-2">
+              {adminOptionsError ? (
+                <p className="flex items-center gap-2 text-xs text-destructive">
+                  {asClause(adminOptionsError)}.
+                  <ErrorAlchemyMenu error={adminOptionsError} size="xs" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={retryAdminOptions}
+                  >
+                    Retry
+                  </Button>
+                </p>
+              ) : null}
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Category
+                </label>
+                <Select
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  disabled={
+                    isSubmitting || isLoadingAdminOptions || !!adminOptionsError
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                  Assign to
+                </label>
+                <Select
+                  value={assigneeId}
+                  onValueChange={setAssigneeId}
+                  disabled={
+                    isSubmitting || isLoadingAdminOptions || !!adminOptionsError
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {assignableAdmins.map((a) => (
+                      <SelectItem key={a.user_id} value={a.user_id}>
+                        {a.display_name || a.email || a.user_id.slice(0, 8)}
+                        {reduxUser?.id === a.user_id ? " (you)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {assigneeId !== "none" && reduxUser?.id !== assigneeId && (
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    The assignee will get an in-app message and an email.
+                  </p>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Attachments — upload, paste, capture, or drop files here. They stay
+          on this device until Submit. */}
+        <div
+          className="space-y-1.5"
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+          }}
+          onDrop={(e) => {
+            if (!e.dataTransfer.files.length) return;
+            e.preventDefault();
+            handleFilesChosen(e.dataTransfer.files);
+          }}
+        >
+          <p className="text-xs font-medium text-muted-foreground">
+            Attachments{" "}
+            <span className="font-normal opacity-60">(optional)</span>
+          </p>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*,application/pdf"
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={(e) => {
+              handleFilesChosen(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {/* One row of four on desktop, two even rows on a phone. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 [&>button]:min-w-0">
+            <Button
+              icon={<Upload />}
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isSubmitting}
+            >
+              Upload
+            </Button>
+            <Button
+              icon={<Clipboard />}
+              type="button"
+              variant="outline"
+              onClick={handlePasteButton}
+              disabled={isSubmitting}
+            >
+              Paste
+            </Button>
+            <Button
+              icon={<Camera />}
+              type="button"
+              variant="outline"
+              onClick={handleTabCapture}
+              disabled={isSubmitting || isCapturing}
+              title="Capture this tab — the page behind this window"
+            >
+              This tab
+            </Button>
+            {canCaptureScreen ? (
+              <Button
+                icon={<Monitor />}
+                type="button"
+                variant="outline"
+                onClick={handleScreenCapture}
+                disabled={isSubmitting || isCapturing}
+                title="Capture another window or screen (your browser asks which)"
+              >
+                Screen
+              </Button>
+            ) : null}
+          </div>
+
+          {attachments.some((a) => a.status === "ready" || a.previewUrl) && (
+            <p className="text-xs text-muted-foreground">
+              <span className="pointer-coarse:hidden">Click</span>
+              <span className="hidden pointer-coarse:inline">Tap</span> an image
+              to draw, circle, or write on it.
+            </p>
+          )}
+          {attachments.length > 0 && (
+            <div
+              ref={tilesRef}
+              className="flex flex-wrap gap-2 pt-1 scroll-mb-3"
+            >
+              {attachments.map((slot) => (
+                <MediaAttachmentThumbnail
+                  key={slot.id}
+                  mediaRef={
+                    slot.status === "ready" ? slot.fileId : slot.previewUrl
+                  }
+                  status={slot.status === "pending" ? "pending" : "ready"}
+                  title={slot.filename ?? "Attachment"}
+                  openLabel={`Mark up ${slot.filename ?? "attachment"}`}
+                  removeLabel={`Remove ${slot.filename ?? "attachment"}`}
+                  readyIcon={
+                    <PenLine className="h-4 w-4 text-white drop-shadow" />
+                  }
+                  onOpen={() => annotateAttachment(slot)}
+                  onRemove={() => removeAttachment(slot.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <p className="text-xs text-destructive leading-snug">
+            {error} <ErrorAlchemyMenu error={error} />
           </p>
         )}
-        {attachments.length > 0 && (
-          <div ref={tilesRef} className="flex flex-wrap gap-2 pt-1 scroll-mb-3">
-            {attachments.map((slot) => (
-              <MediaAttachmentThumbnail
-                key={slot.id}
-                mediaRef={slot.status === "ready" ? slot.fileId : slot.previewUrl}
-                status={slot.status === "pending" ? "pending" : "ready"}
-                title={slot.filename ?? "Attachment"}
-                openLabel={`Mark up ${slot.filename ?? "attachment"}`}
-                removeLabel={`Remove ${slot.filename ?? "attachment"}`}
-                readyIcon={
-                  <PenLine className="h-4 w-4 text-white drop-shadow" />
-                }
-                onOpen={() => annotateAttachment(slot)}
-                onRemove={() => removeAttachment(slot.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <p className="text-xs text-destructive leading-snug">{error} <ErrorAlchemyMenu error={error} /></p>
-      )}
       </div>
     </div>
   );
@@ -1548,8 +1682,19 @@ function FeedbackListLink({
   ...props
 }: React.ComponentProps<typeof Link> & { crossApp: boolean }) {
   if (!crossApp) return <Link {...props} />;
-  const { href, prefetch: _prefetch, replace: _replace, scroll: _scroll, ...rest } = props;
-  return <a {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)} href={String(href)} />;
+  const {
+    href,
+    prefetch: _prefetch,
+    replace: _replace,
+    scroll: _scroll,
+    ...rest
+  } = props;
+  return (
+    <a
+      {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+      href={String(href)}
+    />
+  );
 }
 
 function StatPill({

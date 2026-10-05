@@ -139,11 +139,13 @@ export function MobilePanelShell({
   main,
   panels,
   mainClassName,
-  menuIcon: MenuIcon = MoreHorizontal,
-  menuLabel = "Panels",
+  menuIcon: menuIconProp,
+  menuLabel: menuLabelProp,
   collapseBelow = "md",
   presentation = "drawers",
 }: MobilePanelShellProps) {
+  const MenuIcon = menuIconProp ?? MoreHorizontal;
+  const menuLabel = menuLabelProp ?? "Panels";
   const isMobile = useIsMobile();
   const compactWorkspace = useMediaQuery(
     `(max-width: ${COLLAPSE_MAX_WIDTH[collapseBelow]}px)`,
@@ -225,19 +227,36 @@ export function MobilePanelShell({
     );
   }
 
+  // ONE sheet for the picker AND the opened panel. Two sibling sheets (picker
+  // closes, panel opens in the same tap) never worked: the closing sheet hands
+  // focus back to its trigger, which sits outside the opening sheet, and the
+  // new sheet dismissed itself on that focus-outside — so "Panels → Sessions"
+  // closed everything and showed nothing (found 2026-10-05 on
+  // /transcripts/studio). Swapping the content of one open sheet cannot race.
+  // A single panel skips the picker: the trigger IS that panel's door.
+  const singlePanel = panels?.length === 1 ? panels[0] : null;
+  // A route that named its own trigger keeps it; otherwise the lone panel's
+  // own name and icon stand in for the generic "Panels" "…".
+  const TriggerIcon = (singlePanel && !menuIconProp && singlePanel.icon) || MenuIcon;
+  const triggerLabel = (singlePanel && !menuLabelProp && singlePanel.label) || menuLabel;
+  const openTrigger = () =>
+    singlePanel ? show(singlePanel.id) : setMenuOpen(true);
+  const sheetOpen = menuOpen || Boolean(openPanel);
+  const sheetTitle = openPanel?.label ?? menuLabel;
+
   return (
     <>
       {hasPanels && (
         <PageHeaderRightPortal>
           <span className="relative inline-flex">
             <TapTargetButtonTransparent
-              icon={<MenuIcon className="h-4 w-4" />}
+              icon={<TriggerIcon className="h-4 w-4" />}
               ariaLabel={
                 pendingTotal > 0
-                  ? `${menuLabel} — ${pendingTotal} waiting on you`
-                  : menuLabel
+                  ? `${triggerLabel} — ${pendingTotal} waiting on you`
+                  : triggerLabel
               }
-              onClick={() => setMenuOpen(true)}
+              onClick={openTrigger}
             />
             {pendingTotal > 0 && (
               <span
@@ -268,18 +287,17 @@ export function MobilePanelShell({
           ))}
       </MobilePanelCloseContext.Provider>
 
-      {/* Panel picker */}
       {hasPanels && (
         <BottomSheet
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          title={menuLabel}
+          open={sheetOpen}
+          onOpenChange={(next) => !next && closeAll()}
+          title={sheetTitle}
         >
           <BottomSheetHeader
-            title={menuLabel}
+            title={sheetTitle}
             trailing={
               <button
-                onClick={() => setMenuOpen(false)}
+                onClick={closeAll}
                 className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
               >
                 Done
@@ -287,64 +305,44 @@ export function MobilePanelShell({
             }
           />
           <BottomSheetBody>
-            {panels?.map((p) => {
-              const Icon = p.icon;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => show(p.id)}
-                  className="flex min-h-[52px] w-full items-center border-b border-glass-edge px-5 text-left transition-colors last:border-0 active:bg-glass-active"
-                >
-                  {Icon && (
-                    <Icon className="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="flex-1 text-[15px]">{p.label}</span>
-                  {(p.badge ?? 0) > 0 && (
-                    <Badge tone="primary" className="ml-3">
-                      {p.badge}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
+            {!openPanel &&
+              panels?.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => show(p.id)}
+                    className="flex min-h-[52px] w-full items-center border-b border-glass-edge px-5 text-left transition-colors last:border-0 active:bg-glass-active"
+                  >
+                    {Icon && (
+                      <Icon className="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="flex-1 text-[15px]">{p.label}</span>
+                    {(p.badge ?? 0) > 0 && (
+                      <Badge tone="primary" className="ml-3">
+                        {p.badge}
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })}
+            <div className={cn("max-h-[70dvh] overflow-auto", !openPanel && "hidden")}>
+              <MobilePanelCloseContext.Provider value={closeAll}>
+                {panels
+                  ?.filter((p) => p.alwaysMount || everOpened.has(p.id))
+                  .map((p) => (
+                    <div
+                      key={p.id}
+                      className={cn(p.id !== openPanelId && "hidden")}
+                    >
+                      {p.content}
+                    </div>
+                  ))}
+              </MobilePanelCloseContext.Provider>
+            </div>
           </BottomSheetBody>
         </BottomSheet>
       )}
-
-      {/* The opened panel itself */}
-      <BottomSheet
-        open={Boolean(openPanel)}
-        onOpenChange={(next) => !next && setOpenPanelId(null)}
-        title={openPanel?.label ?? "Panel"}
-      >
-        <BottomSheetHeader
-          title={openPanel?.label ?? ""}
-          trailing={
-            <button
-              onClick={() => setOpenPanelId(null)}
-              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
-            >
-              Done
-            </button>
-          }
-        />
-        <BottomSheetBody>
-          <div className="max-h-[70dvh] overflow-auto">
-            <MobilePanelCloseContext.Provider value={closeAll}>
-              {panels
-                ?.filter((p) => p.alwaysMount || everOpened.has(p.id))
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className={cn(p.id !== openPanelId && "hidden")}
-                  >
-                    {p.content}
-                  </div>
-                ))}
-            </MobilePanelCloseContext.Provider>
-          </div>
-        </BottomSheetBody>
-      </BottomSheet>
     </>
   );
 }

@@ -36,21 +36,26 @@ import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 
 const ARTIFACT_ENTITY = "artifact";
 
+/** The checklist markdown the task_list legacy bridge emits (`{ content }`), or null. */
+export function bridgedChecklistContent(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) return null;
+  const content = (value as { content?: unknown }).content;
+  return typeof content === "string" && content !== "" ? content : null;
+}
+
 export default function TasksArtifact({
   raw,
   data,
+  serverData,
   artifactId,
   conversationId,
 }: ArtifactRendererProps) {
   // Kind-routed blocks (task_list) deliver the checklist markdown as
-  // serverData `{ content }` — a JSON __kind arrival has JSON in `raw`, so the
-  // bridge output is the only renderable text for that path.
-  const bridgedContent =
-    typeof data === "object" &&
-    data !== null &&
-    typeof (data as { content?: unknown }).content === "string"
-      ? (data as { content: string }).content
-      : null;
+  // `serverData` `{ content }` (ArtifactRender passes the routed block's
+  // serverData under that name) — a JSON __kind arrival has JSON in `raw`, so
+  // the bridge output is the only renderable text for that path. `data` carries
+  // the same shape when a canvas/stored caller hands it pre-bridged.
+  const bridgedContent = bridgedChecklistContent(serverData) ?? bridgedChecklistContent(data);
   const content = bridgedContent ?? (typeof data === "string" ? data : raw);
   const materialized = isMaterializedArtifactId(artifactId);
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@ai-matrx/design-system/controls";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export function RestoreAccountForm({ userId, requestId, token }: { userId: string; requestId: string; token: string }) {
   const [error, setError] = useState<string | null>(null);
@@ -19,5 +20,5 @@ export function RestoreAccountForm({ userId, requestId, token }: { userId: strin
       setPending(false);
     }
   };
-  return <div className="space-y-4"><p className="text-sm text-muted-foreground">Retained data stays intact; subscriptions stay canceled.</p>{error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}<Button type="button" variant="danger" onClick={() => void restore()} disabled={pending}>{pending ? "Restoring…" : "Restore account"}</Button></div>;
+  return <div className="space-y-4"><p className="text-sm text-muted-foreground">Retained data stays intact; subscriptions stay canceled.</p>{error ? <ErrorNotice message={error} size="inline" /> : null}<Button type="button" variant="danger" onClick={() => void restore()} disabled={pending}>{pending ? "Restoring…" : "Restore account"}</Button></div>;
 }

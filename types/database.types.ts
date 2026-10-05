@@ -531,6 +531,7 @@ export type Database = {
           context_policies: Json
           created_at: string
           created_by: string | null
+          created_via: string
           custom_fields: Json
           custom_tools: Json
           default_rag_boost: number
@@ -588,6 +589,7 @@ export type Database = {
           context_policies?: Json
           created_at?: string
           created_by?: string | null
+          created_via: string
           custom_fields?: Json
           custom_tools?: Json
           default_rag_boost?: number
@@ -645,6 +647,7 @@ export type Database = {
           context_policies?: Json
           created_at?: string
           created_by?: string | null
+          created_via?: string
           custom_fields?: Json
           custom_tools?: Json
           default_rag_boost?: number
@@ -2235,6 +2238,10 @@ export type Database = {
       }
     }
     Functions: {
+      _created_via_from: {
+        Args: { meta?: Json; sys: string; tier: string }
+        Returns: string
+      }
       canonical_message_flags: { Args: { p_messages: Json }; Returns: Json }
       default_tool_ids_for_organization: {
         Args: { p_organization_id: string }
@@ -2266,6 +2273,7 @@ export type Database = {
           context_policies: Json
           created_at: string
           created_by: string | null
+          created_via: string
           custom_fields: Json
           custom_tools: Json
           default_rag_boost: number
@@ -81973,6 +81981,7 @@ export type Database = {
           created_by: string | null
           display_name: string
           disposition: string
+          evidence_kind: string | null
           feature_key: string
           id: string
           match_kind: string
@@ -82002,6 +82011,7 @@ export type Database = {
           created_by?: string | null
           display_name: string
           disposition?: string
+          evidence_kind?: string | null
           feature_key: string
           id?: string
           match_kind?: string
@@ -82031,6 +82041,7 @@ export type Database = {
           created_by?: string | null
           display_name?: string
           disposition?: string
+          evidence_kind?: string | null
           feature_key?: string
           id?: string
           match_kind?: string
@@ -82107,6 +82118,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string | null
           evidence: Json | null
+          evidence_kind: string | null
           expires_at: string | null
           first_seen_at: string | null
           id: string
@@ -82151,6 +82163,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           evidence?: Json | null
+          evidence_kind?: string | null
           expires_at?: string | null
           first_seen_at?: string | null
           id?: string
@@ -82195,6 +82208,7 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           evidence?: Json | null
+          evidence_kind?: string | null
           expires_at?: string | null
           first_seen_at?: string | null
           id?: string
@@ -91098,6 +91112,7 @@ export type Database = {
           entity_id: string | null
           entity_type: string | null
           evidence: Json | null
+          evidence_kind: string | null
           expires_at: string | null
           first_seen_at: string | null
           id: string
@@ -91759,6 +91774,7 @@ export type Database = {
           created_by: string | null
           display_name: string
           disposition: string
+          evidence_kind: string | null
           feature_key: string
           id: string
           match_kind: string
@@ -95541,6 +95557,18 @@ export type Database = {
         Returns: Json
       }
       access_request_withdraw: { Args: { p_request_id: string }; Returns: Json }
+      account_closure_claim: {
+        Args: { p_initial_journal?: Json; p_token: string; p_user_id: string }
+        Returns: Json
+      }
+      account_closure_release: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: boolean
+      }
+      account_closure_write: {
+        Args: { p_journal: Json; p_token: string; p_user_id: string }
+        Returns: boolean
+      }
       add_enum_values: {
         Args: { p_new_values: string[]; p_type_name: string }
         Returns: string[]
@@ -128575,6 +128603,7 @@ export type Database = {
           default_provider_id: string | null
           deleted_at: string | null
           description: string | null
+          evidence_kind: string
           id: string
           is_builtin: boolean
           key: string
@@ -128590,6 +128619,7 @@ export type Database = {
           severity_map: Json
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           subcategory: string
+          tier: string | null
           updated_at: string
           updated_by: string | null
           version: number
@@ -128603,6 +128633,7 @@ export type Database = {
           default_provider_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          evidence_kind?: string
           id?: string
           is_builtin?: boolean
           key: string
@@ -128618,6 +128649,7 @@ export type Database = {
           severity_map?: Json
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           subcategory: string
+          tier?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -128631,6 +128663,7 @@ export type Database = {
           default_provider_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          evidence_kind?: string
           id?: string
           is_builtin?: boolean
           key?: string
@@ -128646,6 +128679,7 @@ export type Database = {
           severity_map?: Json
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           subcategory?: string
+          tier?: string | null
           updated_at?: string
           updated_by?: string | null
           version?: number

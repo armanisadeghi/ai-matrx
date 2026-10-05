@@ -542,6 +542,7 @@ export type ChatDatabase = {
           context_policies: Json
           created_at: string
           created_by: string | null
+          created_via: string
           custom_fields: Json
           custom_tools: Json
           default_rag_boost: number
@@ -599,6 +600,7 @@ export type ChatDatabase = {
           context_policies?: Json
           created_at?: string
           created_by?: string | null
+          created_via: string
           custom_fields?: Json
           custom_tools?: Json
           default_rag_boost?: number
@@ -656,6 +658,7 @@ export type ChatDatabase = {
           context_policies?: Json
           created_at?: string
           created_by?: string | null
+          created_via?: string
           custom_fields?: Json
           custom_tools?: Json
           default_rag_boost?: number
@@ -2246,6 +2249,10 @@ export type ChatDatabase = {
       }
     }
     Functions: {
+      _created_via_from: {
+        Args: { meta?: Json; sys: string; tier: string }
+        Returns: string
+      }
       canonical_message_flags: { Args: { p_messages: Json }; Returns: Json }
       default_tool_ids_for_organization: {
         Args: { p_organization_id: string }
@@ -2277,6 +2284,7 @@ export type ChatDatabase = {
           context_policies: Json
           created_at: string
           created_by: string | null
+          created_via: string
           custom_fields: Json
           custom_tools: Json
           default_rag_boost: number
@@ -17874,6 +17882,7 @@ export type ChatDatabase = {
           created_by: string | null
           display_name: string
           disposition: string
+          evidence_kind: string | null
           feature_key: string
           id: string
           match_kind: string
@@ -17903,6 +17912,7 @@ export type ChatDatabase = {
           created_by?: string | null
           display_name: string
           disposition?: string
+          evidence_kind?: string | null
           feature_key: string
           id?: string
           match_kind?: string
@@ -17932,6 +17942,7 @@ export type ChatDatabase = {
           created_by?: string | null
           display_name?: string
           disposition?: string
+          evidence_kind?: string | null
           feature_key?: string
           id?: string
           match_kind?: string
@@ -18008,6 +18019,7 @@ export type ChatDatabase = {
           entity_id: string | null
           entity_type: string | null
           evidence: Json | null
+          evidence_kind: string | null
           expires_at: string | null
           first_seen_at: string | null
           id: string
@@ -18052,6 +18064,7 @@ export type ChatDatabase = {
           entity_id?: string | null
           entity_type?: string | null
           evidence?: Json | null
+          evidence_kind?: string | null
           expires_at?: string | null
           first_seen_at?: string | null
           id?: string
@@ -18096,6 +18109,7 @@ export type ChatDatabase = {
           entity_id?: string | null
           entity_type?: string | null
           evidence?: Json | null
+          evidence_kind?: string | null
           expires_at?: string | null
           first_seen_at?: string | null
           id?: string
@@ -26999,6 +27013,7 @@ export type ChatDatabase = {
           entity_id: string | null
           entity_type: string | null
           evidence: Json | null
+          evidence_kind: string | null
           expires_at: string | null
           first_seen_at: string | null
           id: string
@@ -27660,6 +27675,7 @@ export type ChatDatabase = {
           created_by: string | null
           display_name: string
           disposition: string
+          evidence_kind: string | null
           feature_key: string
           id: string
           match_kind: string
@@ -30085,6 +30101,18 @@ export type ChatDatabase = {
         Returns: Json
       }
       access_request_withdraw: { Args: { p_request_id: string }; Returns: Json }
+      account_closure_claim: {
+        Args: { p_initial_journal?: Json; p_token: string; p_user_id: string }
+        Returns: Json
+      }
+      account_closure_release: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: boolean
+      }
+      account_closure_write: {
+        Args: { p_journal: Json; p_token: string; p_user_id: string }
+        Returns: boolean
+      }
       add_enum_values: {
         Args: { p_new_values: string[]; p_type_name: string }
         Returns: string[]

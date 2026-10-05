@@ -253,6 +253,125 @@ describe("GoogleWorkspaceOverviewBody", () => {
     expect(mockOpenConsent).not.toHaveBeenCalled();
   });
 
+  it("mounts the read-only Business Profile reviewer for an admitted internal tester", () => {
+    mockInventory.mockReturnValue({
+      data: {
+        ...inventory,
+        connections: [
+          {
+            ...first,
+            owner_user_id: "user-1",
+            scopes: [GOOGLE_SCOPE.businessManage],
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+    mockCapabilities.mockReturnValue({
+      data: [
+        ...capabilities,
+        {
+          ...capabilities[0],
+          key: "business_profile",
+          title: "Business Profile reviews",
+          rollout_phase: "internal_test",
+          eligible: true,
+          required_scopes: [
+            {
+              scope: GOOGLE_SCOPE.businessManage,
+              provider_classification: "restricted",
+            },
+          ],
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    renderOverview();
+
+    expect(
+      host.querySelector('[aria-label="Business Profile reviewer"]'),
+    ).not.toBeNull();
+    expect(host.textContent).toContain("Read only");
+  });
+
+  it.each([
+    ["is outside internal testing", { rollout_phase: "available" as const }],
+    ["is ineligible", { eligible: false }],
+  ])("does not mount the Business Profile reviewer when its descriptor %s", (_, override) => {
+    mockCapabilities.mockReturnValue({
+      data: [
+        ...capabilities,
+        {
+          ...capabilities[0],
+          key: "business_profile",
+          title: "Business Profile reviews",
+          rollout_phase: "internal_test",
+          eligible: true,
+          ...override,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    renderOverview();
+
+    expect(
+      host.querySelector('[aria-label="Business Profile reviewer"]'),
+    ).toBeNull();
+  });
+
+  it.each([
+    ["loading", { isLoading: true, isError: false }],
+    ["failed", { isLoading: false, isError: true }],
+  ])("does not mount the Business Profile reviewer while capability data is %s", (_, state) => {
+    mockCapabilities.mockReturnValue({
+      data: undefined,
+      refetch: jest.fn(),
+      ...state,
+    });
+
+    renderOverview();
+
+    expect(
+      host.querySelector('[aria-label="Business Profile reviewer"]'),
+    ).toBeNull();
+  });
+
+  it.each([
+    ["organization", { organizationId: null }],
+    ["actor", { userId: null }],
+  ])("does not mount the Business Profile reviewer without an active %s", (_, context) => {
+    Object.assign(mockReduxState, context);
+    mockCapabilities.mockReturnValue({
+      data: [
+        ...capabilities,
+        {
+          ...capabilities[0],
+          key: "business_profile",
+          title: "Business Profile reviews",
+          rollout_phase: "internal_test",
+          eligible: true,
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      refetch: jest.fn(),
+    });
+
+    renderOverview();
+
+    expect(
+      host.querySelector('[aria-label="Business Profile reviewer"]'),
+    ).toBeNull();
+  });
+
   it("opens Gmail reading consent for the account selected in the overview", () => {
     renderOverview();
     const account = host.querySelector<HTMLSelectElement>(

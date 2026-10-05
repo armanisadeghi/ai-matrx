@@ -185,7 +185,11 @@ export function ErrorAlchemyMenu({
         // MISUSE — adds 4px around a tap button" box beside every inline
         // error (reviewer, 2026-10-02, the directive builder's result line).
         // Same line footprint as before.
-        "inline-flex h-[1lh] w-[calc(1lh+0.25rem)] shrink-0 items-center justify-center overflow-visible align-top",
+        // 🚨 WIDTH = the tap box + its two 3px half-gaps (2026-10-05): a
+        // narrower slot let the 38px box overhang onto the words beside it
+        // (the sign-in error card's copy menu covered "Try again"). Height
+        // stays one line; the box still overhangs vertically, centred.
+        "inline-flex h-[1lh] w-[calc(var(--matrx-tap-box,2.375rem)+var(--matrx-tap-gap,0.375rem))] shrink-0 items-center justify-center overflow-visible align-top",
         // A truncating line hides anything in its text flow behind the "…",
         // so there the menu leaves the flow and holds the line's right end.
         placement.truncated && "absolute right-0 top-0",

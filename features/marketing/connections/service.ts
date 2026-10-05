@@ -1,0 +1,186 @@
+import { z } from "zod";
+import { createClient } from "@/utils/supabase/client";
+import { postGoogleBackend } from "@/features/marketing/google/service";
+import { consumeStream } from "@/lib/api/stream-parser";
+import { updateSiteIntegrations } from "@/features/marketing/data/integrations-service";
+import type { MarketingSite } from "@/features/marketing/types";
+
+export const domainProviders = [
+  "vercel",
+  "cloudflare",
+  "name_com",
+  "godaddy",
+  "namecheap",
+] as const;
+export const providerLabels = {
+  vercel: "Vercel",
+  cloudflare: "Cloudflare",
+  name_com: "Name.com",
+  godaddy: "GoDaddy",
+  namecheap: "Namecheap",
+};
+export const requiredFields = {
+  vercel: ["api_token"],
+  cloudflare: ["api_token"],
+  name_com: ["username", "api_token"],
+  godaddy: ["api_key", "api_secret"],
+  namecheap: ["api_user", "api_key", "username", "client_ip"],
+};
+export const sourceSchema = z.object({
+  provider: z.string(),
+  connection_id: z.string().nullable(),
+  resource_ref: z.string(),
+  observed_at: z.string(),
+  basis: z.string(),
+  state: z.enum(["current", "stale"]),
+  nameservers: z.array(z.string()),
+  dns_records: z.array(
+    z.object({ type: z.string(), name: z.string(), value: z.string() }),
+  ),
+  details_complete: z.boolean(),
+});
+export const inventorySchema = z.object({
+  provider: z.enum(domainProviders),
+  domains: z.array(
+    z.object({ domain: z.string(), sources: z.array(sourceSchema) }),
+  ),
+  complete: z.boolean(),
+  pages: z.number(),
+  observed_at: z.string(),
+  warnings: z.array(z.string()),
+});
+export const connectedSchema = z.object({
+  id: z.string(),
+  provider: z.enum(domainProviders),
+  account_name: z.string(),
+  inventory: inventorySchema,
+});
+export const reportSchema = z.object({
+  canonical: z.string(),
+  observed_at: z.string(),
+  status: z.string(),
+  variants: z.array(
+    z.object({
+      url: z.string(),
+      outcome: z.string(),
+      reason: z.string(),
+      duplicate: z.boolean().nullable(),
+      similarity: z.number().nullable(),
+      hops: z.array(
+        z.object({
+          url: z.string(),
+          status: z.number(),
+          location: z.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+});
+export const sitemapSchema = z.object({
+  request_id: z.string(),
+  connection_id: z.string(),
+  property: z.string(),
+  action: z.string(),
+  observed_at: z.string(),
+  state: z.string(),
+  message: z.string().nullable(),
+  write_available: z.boolean(),
+  write_reason: z.string().nullable(),
+  sitemaps: z.array(
+    z.object({
+      path: z.string(),
+      lastSubmitted: z.string().nullable().optional(),
+      lastDownloaded: z.string().nullable().optional(),
+      isPending: z.boolean().nullable().optional(),
+      errors: z.union([z.string(), z.number()]).nullable().optional(),
+      warnings: z.union([z.string(), z.number()]).nullable().optional(),
+    }),
+  ),
+});
+export const configSchema = z.object({
+  connection_ids: z.array(z.string()).default([]),
+  selected_domains: z.array(z.string()).default([]),
+  manual_domains: z.array(z.string()).default([]),
+});
+const integrationsSchema = z
+  .object({
+    marketing: z
+      .object({ owned_domains: configSchema.optional() })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+export function domainConfig(site: MarketingSite) {
+  return (
+    integrationsSchema.parse(site.integrations).marketing?.owned_domains ??
+    configSchema.parse({})
+  );
+}
+export async function saveDomainConfig(
+  site: MarketingSite,
+  config: z.infer<typeof configSchema>,
+) {
+  const current = integrationsSchema.parse(site.integrations);
+  const updated = {
+    ...current,
+    marketing: { ...current.marketing, owned_domains: config },
+  };
+  // Parse through the database JSON contract rather than assert arbitrary JSON.
+  const json = z.json().parse(updated);
+  return updateSiteIntegrations({
+    siteId: site.id,
+    expectedVersion: site.version,
+    integrations: json,
+  });
+}
+export async function listDomainConnections() {
+  const result = await createClient()
+    .schema("users")
+    .from("integration_connections")
+    .select("id,provider,account_name,status,metadata,last_verified_at")
+    .in("provider", [...domainProviders])
+    .is("deleted_at", null);
+  if (result.error) throw result.error;
+  return result.data;
+}
+export async function siteConnectionOperation<T>(
+  site: Pick<MarketingSite, "id" | "organization_id">,
+  path: string,
+  body: Record<string, unknown>,
+  schema: z.ZodType<T>,
+  progress?: (message: string) => void,
+): Promise<T> {
+  const response = await postGoogleBackend(
+    `/seo/sites/${site.id}/${path}`,
+    body,
+    "Site connection operation failed.",
+    site.organization_id,
+  );
+  let output: unknown;
+  let error: string | null = null;
+  await consumeStream(response, {
+    onEvent(event) {
+      const data = z
+        .object({
+          kind: z.string().optional(),
+          result: z.unknown().optional(),
+          message: z.string().optional(),
+          error: z.unknown().optional(),
+        })
+        .passthrough()
+        .safeParse(event.data);
+      if (!data.success) return;
+      if (data.data.message) progress?.(data.data.message);
+      if (data.data.kind === "seo.site_connection_completed")
+        output = data.data.result;
+      if (event.event === "error")
+        error = data.data.message ?? "Connection operation failed.";
+    },
+  });
+  if (error) throw new Error(error);
+  if (output === undefined)
+    throw new Error(
+      "The operation did not return a completion receipt. Refresh to check its saved state.",
+    );
+  return schema.parse(output);
+}

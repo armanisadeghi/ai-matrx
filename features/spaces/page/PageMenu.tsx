@@ -1,0 +1,100 @@
+"use client";
+
+// features/spaces/page/PageMenu.tsx — the ••• page menu (A7): style, small text, full width, lock,
+// copy link, duplicate, move to, delete (= move to Trash), undo.
+
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Switch } from "@ai-matrx/design-system/controls";
+import { Copy, CornerUpRight, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
+import { useState, type ReactNode } from "react";
+
+import type { SpaceDoc } from "../contract";
+
+type Settings = SpaceDoc["settings"];
+
+function Row({ icon, label, onClick, end, danger }: { icon: ReactNode; label: string; onClick?: () => void; end?: ReactNode; danger?: boolean }) {
+  return (
+    <button type="button" className="spaces-menu-row" data-danger={danger ? "true" : undefined} onClick={onClick}>
+      <span className="spaces-menu-row-icon">{icon}</span>
+      <span className="flex-1 truncate text-left">{label}</span>
+      {end}
+    </button>
+  );
+}
+
+const FONTS: Array<{ value: Settings["font"]; label: string; family: string }> = [
+  { value: "default", label: "Default", family: "var(--spaces-font-default)" },
+  { value: "serif", label: "Serif", family: "var(--spaces-font-serif)" },
+  { value: "mono", label: "Mono", family: "var(--spaces-font-mono)" },
+];
+
+export function PageMenu({
+  settings,
+  onSettings,
+  onCopyLink,
+  onDuplicate,
+  onMove,
+  onDelete,
+  onUndo,
+  updatedLabel,
+}: {
+  settings: Settings;
+  onSettings: (patch: Partial<Settings>) => void;
+  onCopyLink: () => void;
+  onDuplicate: () => void;
+  onMove: () => void;
+  onDelete: () => void;
+  onUndo: () => void;
+  updatedLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const act = (fn: () => void) => () => {
+    setOpen(false);
+    fn();
+  };
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" className="spaces-topbar-button" aria-label="Page options">
+          <MoreHorizontal size={18} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[260px] p-1">
+        <p className="px-2 pb-1 pt-1.5 text-xs text-muted-foreground">Style</p>
+        <div className="grid grid-cols-3 gap-1 px-1 pb-1">
+          {FONTS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              className="spaces-font-choice"
+              data-selected={settings.font === f.value ? "true" : undefined}
+              onClick={() => onSettings({ font: f.value })}
+            >
+              <span style={{ fontFamily: f.family }} className="text-2xl">
+                Ag
+              </span>
+              <span className="text-xs text-muted-foreground">{f.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="my-1 border-t border-border" />
+        <Row icon={<Type size={16} />} label="Small text" onClick={() => onSettings({ smallText: !settings.smallText })} end={<Switch checked={settings.smallText} tabIndex={-1} aria-hidden />} />
+        <Row
+          icon={<MoveHorizontal size={16} />}
+          label="Full width"
+          onClick={() => onSettings({ fullWidth: !settings.fullWidth })}
+          end={<Switch checked={settings.fullWidth} tabIndex={-1} aria-hidden />}
+        />
+        <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />
+        <div className="my-1 border-t border-border" />
+        <Row icon={<Link size={16} />} label="Copy link" onClick={act(onCopyLink)} />
+        <Row icon={<Copy size={16} />} label="Duplicate" onClick={act(onDuplicate)} />
+        <Row icon={<CornerUpRight size={16} />} label="Move to" onClick={act(onMove)} />
+        <Row icon={<Trash2 size={16} />} label="Move to Trash" onClick={act(onDelete)} danger />
+        <div className="my-1 border-t border-border" />
+        <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
+        <p className="px-2 pb-1.5 pt-2 text-xs text-muted-foreground">{updatedLabel}</p>
+      </PopoverContent>
+    </Popover>
+  );
+}

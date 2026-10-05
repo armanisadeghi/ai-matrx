@@ -22,7 +22,7 @@ const OVERLAY_ID = "feedbackDialog" as const;
  * e.g. a selected passage of a document ("Report an issue" in the annotation
  * toolbar). Shown read-only in the window and filed as `metadata.report_subject`.
  */
-export interface FeedbackSubject {
+export interface TextPassageFeedbackSubject {
   kind: "text_passage";
   /** Registered token + id of the record the passage belongs to. */
   sourceToken: string;
@@ -35,6 +35,24 @@ export interface FeedbackSubject {
   /** In-app path back to the source. */
   href?: string;
 }
+
+/**
+ * A support request opened from a Stripe-mirrored subscription. The values are
+ * read from the already-authorized billing surface; the feedback flow never
+ * changes financial records or decides a refund.
+ */
+export interface BillingSubscriptionFeedbackSubject {
+  kind: "billing_subscription";
+  billingScope: "personal" | "organization";
+  subscriptionId: string | null;
+  planKey: string | null;
+  subscriptionStatus: string | null;
+  invoiceId?: string | null;
+  invoiceStatus?: string | null;
+}
+
+export type FeedbackSubject =
+  TextPassageFeedbackSubject | BillingSubscriptionFeedbackSubject;
 
 export interface OpenFeedbackWindowOptions {
   title?: string;
@@ -71,7 +89,9 @@ export function useOpenFeedbackWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function FeedbackWindowController(props: OpenFeedbackWindowOptions): null {
+export function FeedbackWindowController(
+  props: OpenFeedbackWindowOptions,
+): null {
   const open = useOpenFeedbackWindow();
   useEffect(() => {
     const handle = open(props);
