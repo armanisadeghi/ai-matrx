@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1335,
+  "routeCount": 1337,
   "routes": [
     {
       "pattern": "/",
@@ -92,6 +92,16 @@
       "pattern": "/administration/agents/executor-surfaces",
       "status": "live",
       "source": "app/(admin)/administration/agents/executor-surfaces/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/factory",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/factory/page.tsx"
+    },
+    {
+      "pattern": "/administration/agents/factory/[buildId]",
+      "status": "live",
+      "source": "app/(admin)/administration/agents/factory/[buildId]/page.tsx"
     },
     {
       "pattern": "/administration/agents/hindsight",

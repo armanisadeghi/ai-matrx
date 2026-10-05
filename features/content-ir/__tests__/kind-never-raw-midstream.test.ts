@@ -20,7 +20,7 @@
  */
 
 // G2: the DOM judge first — its mocks must register before BlockRenderer loads.
-import { domFrameVerdict, sampleKindFrames } from "../render-paths/__tests__/dom-frame-judge";
+import { domFrameVerdict, everyKindFrame } from "../render-paths/__tests__/dom-frame-judge";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
@@ -330,12 +330,15 @@ describe("never raw: a kind in a TABLE mid-stream (P7, round 4)", () => {
     frames.forEach((frame, i) => {
       frame.live = i < liveCount;
     });
-    const sampled = sampleKindFrames(frames, 3);
+    const sampled = everyKindFrame(frames);
     expect(sampled.length).toBeGreaterThan(0);
     const leaks: string[] = [];
     for (const frame of sampled) {
       const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.live });
-      if (verdict.raw) leaks.push(`${frame.live ? "live" : "final"} ${frame.block.type}: ${verdict.text.slice(0, 80)}`);
+      if (verdict.failed)
+        leaks.push(
+          `${frame.live ? "live" : "final"} ${frame.block.type}${verdict.empty ? ` (EMPTY ${verdict.html})` : ""}: ${verdict.text.slice(0, 80)} <<${(frame.block.content ?? "").slice(-60)}>>`,
+        );
     }
     expect(leaks).toEqual([]);
   }, 300_000);
@@ -804,9 +807,9 @@ describe("never raw ON SCREEN: every stream above, drawn through BlockRenderer (
       frames.forEach((frame, i) => {
         frame.live = i < liveCount;
       });
-      for (const frame of sampleKindFrames(frames)) {
+      for (const frame of everyKindFrame(frames)) {
         const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.live });
-        if (verdict.raw) {
+        if (verdict.failed) {
           leaks.push(
             `${JSON.stringify(stream.slice(0, 60))} ${frame.live ? "live" : "final"} ${frame.block.type}: ${JSON.stringify(verdict.text.replace(/\s+/g, " ").slice(0, 100))}`,
           );

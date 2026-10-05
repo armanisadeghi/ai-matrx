@@ -24,6 +24,36 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   } as unknown as typeof ResizeObserver;
 }
 
+// jsdom has no IntersectionObserver; CodeBlock's sticky buttons observe its
+// edges. Without it a ```json card THREW in the judge and drew nothing — so a
+// raw card passed (H3d). An inert stand-in that never reports an intersection.
+if (typeof globalThis.IntersectionObserver === "undefined") {
+  globalThis.IntersectionObserver = class {
+    readonly root = null;
+    readonly rootMargin = "0px";
+    readonly scrollMargin = "0px";
+    readonly thresholds: ReadonlyArray<number> = [0];
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  } as unknown as typeof IntersectionObserver;
+}
+if (typeof window !== "undefined" && typeof window.matchMedia === "undefined") {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
 jest.mock("next/dynamic", () => {
   const react = jest.requireActual("react") as typeof React;
   return (loader: () => Promise<{ default?: React.ComponentType } | React.ComponentType>) => {
@@ -62,14 +92,22 @@ import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-
 // eslint-disable-next-line import/first
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 // eslint-disable-next-line import/first
+import { TooltipProvider } from "@/components/ui/tooltip";
+// eslint-disable-next-line import/first
 import { hasKindKey, isJson5Language } from "@/features/content-ir/surfaces/json-kind-signal";
 // eslint-disable-next-line import/first
 import { textLeaksKind, visibleKindText } from "@/features/content-ir/surfaces/kind-leak-scan";
 
 export interface DomFrameVerdict {
   raw: boolean;
+  /** Nothing was drawn: no visible text and no loader / kind element (H3a). */
+  empty: boolean;
+  /** The frame fails the law: a raw kind on screen, or an empty frame. */
+  failed: boolean;
   /** The rendered text outside source containers (for failure messages). */
   text: string;
+  /** The drawn markup, truncated (for failure messages on an empty frame). */
+  html: string;
 }
 
 async function flush(container: HTMLElement): Promise<void> {
@@ -92,35 +130,87 @@ export async function domFrameVerdict(
   block: RenderBlockPayload,
   options: { isStreamActive?: boolean } = {},
 ): Promise<DomFrameVerdict> {
+  const isStreamActive = options.isStreamActive ?? block.status === "streaming";
+  return domElementVerdict(
+    React.createElement(BlockRenderer, {
+      block: renderBlockToContentBlock(block) as never,
+      index: block.blockIndex ?? 0,
+      isStreamActive,
+      replaceBlockContent: () => undefined,
+      handleOpenEditor: () => undefined,
+    }),
+  );
+}
+
+/**
+ * Draw any element in the judge's jsdom (the self-test plants frames with
+ * it) and read the DOM: raw when a kind key shows outside a source container,
+ * empty when nothing at all was drawn.
+ */
+export async function domElementVerdict(element: React.ReactElement): Promise<DomFrameVerdict> {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  const isStreamActive = options.isStreamActive ?? block.status === "streaming";
   try {
     await act(async () => {
-      root.render(
-        React.createElement(BlockRenderer, {
-          block: renderBlockToContentBlock(block) as never,
-          index: block.blockIndex ?? 0,
-          isStreamActive,
-          replaceBlockContent: () => undefined,
-          handleOpenEditor: () => undefined,
-        }),
-      );
+      // The app's providers a leaf needs to draw at all (CodeBlock's tooltips).
+      root.render(React.createElement(TooltipProvider, null, element));
     });
     await flush(container);
-    return { raw: textLeaksKind(container), text: visibleKindText(container, 4000) };
+    const raw = textLeaksKind(container);
+    const empty = !drewSomething(container);
+    return {
+      raw,
+      empty,
+      failed: raw || empty,
+      text: visibleKindText(container, 4000),
+      html: container.innerHTML.slice(0, 600),
+    };
   } finally {
     act(() => root.unmount());
     container.remove();
   }
 }
 
-/** Whether a frame's SOURCE holds a `__kind` key (only those frames can leak). */
+/**
+ * What counts as drawn without text: a loader, a skeleton, a kind's own
+ * element, an image or a media/graphic element.
+ */
+const DRAWN_WITHOUT_TEXT = [
+  '[role="status"]',
+  '[role="progressbar"]',
+  "[aria-busy]",
+  "[data-kind]",
+  "[data-kind-route]",
+  "[data-kind-loader]",
+  "[data-kind-loading]",
+  "[data-kind-slot]",
+  "[data-kind-renderer]",
+  "img",
+  "svg",
+  "canvas",
+  "video",
+  "audio",
+  "iframe",
+  "hr",
+].join(",");
+
+/** Whether anything reached the screen: visible text (source panes included) or a loader / kind element. */
+function drewSomething(container: HTMLElement): boolean {
+  if ((container.textContent ?? "").trim()) return true;
+  return container.querySelector(DRAWN_WITHOUT_TEXT) !== null;
+}
+
+/**
+ * Whether a frame's SOURCE holds a `__kind` key (only those frames can leak) —
+ * as JSON spells it, as JSON5 does in a ```json5 fence, and as markdown
+ * escapes it (`"\_\_kind"`, which the renderer un-escapes on screen — H3b).
+ */
 export function frameHoldsKind(block: RenderBlockPayload): boolean {
   const language = (block.data as { language?: unknown } | null | undefined)?.language;
   return hasKindKey(block.content ?? "", {
     json5: isJson5Language(typeof language === "string" ? language : null),
+    markdown: true,
   });
 }
 
@@ -147,4 +237,9 @@ export function sampleKindFrames<T extends { block: RenderBlockPayload }>(frames
   });
   for (const i of lastIndex.values()) if (frameHoldsKind(frames[i].block)) picked.add(i);
   return [...picked].sort((a, b) => a - b).map((i) => frames[i]);
+}
+
+/** Every frame whose source holds a `__kind` key, in order (H3c: nothing sampled away). */
+export function everyKindFrame<T extends { block: RenderBlockPayload }>(frames: T[]): T[] {
+  return frames.filter((frame) => frameHoldsKind(frame.block));
 }

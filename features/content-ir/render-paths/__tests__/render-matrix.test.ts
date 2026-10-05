@@ -252,7 +252,9 @@ function register(a: Archetype): string {
       source: "db",
       config: {},
       isActive: true,
-      componentSource: "export default function V() { return null; }",
+      // Draws something: the DOM judge fails an EMPTY frame (H3a), so the
+      // stand-in component must put its kind on screen like a real one.
+      componentSource: 'export default function V() { return <div data-matrix-kind="drawn">Drawn as its kind</div>; }',
       propsTransform: null,
       pinnedKindVersion: null,
       updatedAt: "2026-08-29T00:00:00.000Z",
@@ -314,7 +316,7 @@ describe("THE RENDER MATRIX — a valid payload always reaches its component", (
           const leaks: string[] = [];
           for (const frame of sampleKindFrames(run.frames)) {
             const verdict = await domFrameVerdict(frame.block, { isStreamActive: frame.isStreamActive });
-            if (verdict.raw) leaks.push(`${frame.block.type}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}`);
+            if (verdict.failed) leaks.push(`${frame.block.type}${verdict.empty ? " (EMPTY)" : ""}: ${verdict.text.replace(/\s+/g, " ").slice(0, 100)}${verdict.empty ? ` ${verdict.html} <<${(frame.block.content ?? "").slice(0, 120)}>> ${frame.isStreamActive}` : ""}`);
           }
           expect(leaks).toEqual([]);
         }, 120_000);
