@@ -2,18 +2,18 @@
 // (packages/chat/src/context-menu/types.ts `ContextMenuHostTypes`). Imported for its side effect
 // by the menu's types shim so the augmentation is always part of the program.
 import type {
-  ContentSource,
-  RichDocumentAction,
-  RichDocumentActionContext,
+  ContentSource as HostContentSource,
+  RichDocumentAction as HostRichDocumentAction,
+  RichDocumentActionContext as HostRichDocumentActionContext,
 } from "@/features/rich-document/types";
-import type { ResourceType } from "@/utils/permissions/types";
+import type { ResourceType as HostResourceType } from "@/utils/permissions/types";
 
 declare module "@ai-matrx/chat/context-menu/types" {
   interface ContextMenuHostTypes {
-    contentSource: ContentSource;
-    richDocumentAction: RichDocumentAction;
-    richDocumentActionContext: RichDocumentActionContext;
-    resourceType: ResourceType;
+    contentSource: HostContentSource;
+    richDocumentAction: HostRichDocumentAction;
+    richDocumentActionContext: HostRichDocumentActionContext;
+    resourceType: HostResourceType;
   }
 }
 

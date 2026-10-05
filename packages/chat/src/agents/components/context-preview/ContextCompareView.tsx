@@ -55,7 +55,7 @@ import { resolveRunWait } from "../../../host/server/run-wait";
 import { peekSelectedOrganizationId } from "../../../host/server/organization-admission";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { components } from "@ai-matrx/agents/generated/api-types";
-import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
+import { usePageCaptureContribution } from "../../../host/ui-slots";
 import { useContextPreview, type ContextSelection } from "./useContextPreview";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 import { AGENT_ICON } from "@host/components/icons/domain-icons";

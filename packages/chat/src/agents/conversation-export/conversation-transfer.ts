@@ -27,7 +27,7 @@ import { extractFlatText } from "../redux/execution-system/messages/messages.sel
 import { selectConversationTitle } from "../redux/execution-system/conversations/conversations.selectors";
 import { isMessagePinned } from "../message-pins/pinned-messages-store";
 import { stripTurnTrust } from "@host/features/education/tutor/turnTrust";
-import { openAlchemySession } from "@host/components/agent-copy/alchemy-session";
+import { openAlchemySession } from "../../agent-copy/alchemy-session";
 import { buildConversationMarkdown } from "./conversation-markdown";
 import { documentMarkdown } from "./document-markdown";
 import { loadFullConversationHistory } from "./load-full-history";

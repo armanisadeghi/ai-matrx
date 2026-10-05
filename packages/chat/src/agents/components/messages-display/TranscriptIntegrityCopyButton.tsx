@@ -13,7 +13,7 @@ import { Stethoscope } from "lucide-react";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
-import { writeClipboard } from "@host/components/agent-copy/clipboard";
+import { writeClipboard } from "../../../agent-copy/clipboard";
 import { toast } from "../../../host/notify";
 import { useDebugContext } from "../../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";

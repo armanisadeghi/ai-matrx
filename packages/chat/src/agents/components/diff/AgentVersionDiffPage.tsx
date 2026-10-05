@@ -49,7 +49,7 @@ import { DefaultFieldAdapter } from "@ai-matrx/diff/react";
 import { formatChangeType } from "@ai-matrx/diff/structural";
 import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
-import { csvExportItem, jsonExportItem } from "@host/components/agent-copy/export";
+import { csvExportItem, jsonExportItem } from "../../../agent-copy/export";
 import {
   agentVersionDiffKpis,
   agentVersionDiffReviewPrompt,
@@ -61,7 +61,7 @@ import {
   type AgentDiffFieldRenderer,
   type AgentVersionDiffSides,
 } from "../../format";
-import { buildAgentPayload } from "@host/components/agent-copy/buildAgentPayload";
+import { buildAgentPayload } from "../../../agent-copy/buildAgentPayload";
 import { pushAddressWithoutNavigating } from "@host/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 

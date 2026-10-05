@@ -84,6 +84,12 @@ export interface ChatUiSlots {
   notesCreate: AnyFn;
   useKnowledgeAttachSearch: AnyFn;
   useConversationAttachments: AnyFn;
+  /** A surface's declaration by name (the host's manifest registry); a host with none declares nothing. */
+  getSurfaceManifest: AnyFn;
+  /** Registers this page's capture for the "copy this page" control (the host's page-capture registry). */
+  usePageCapture: AnyFn;
+  /** A descendant's sections for the page capture. */
+  usePageCaptureContribution: AnyFn;
   /** The NAME of the table a held write is about (`string | null`); a host that cannot name it leaves the table out. */
   useHeldWriteTableName: AnyFn;
   /** The platform-owned organization's id (`iam.system_orgs`); only a global-scope write needs it. */
@@ -273,6 +279,11 @@ export const notesCreate = slotFn("notesCreate");
 export const useKnowledgeAttachSearch = slotFn("useKnowledgeAttachSearch");
 export const useConversationAttachments = slotFn("useConversationAttachments");
 export const useHeldWriteTableName = slotFn("useHeldWriteTableName", () => null);
+/** A host with no manifest registry has declared no surface: the bridge's handle reports it by name when asked for scope. */
+export const getSurfaceManifest = slotFn("getSurfaceManifest", () => undefined);
+/** A host with no page-capture control captures nothing; the hooks are reported no-ops. */
+export const usePageCapture = slotFn("usePageCapture", () => undefined);
+export const usePageCaptureContribution = slotFn("usePageCaptureContribution", () => undefined);
 export const resolveSystemOrgId = slotFn("resolveSystemOrgId");
 export const readProjectScopeOrganizationId = slotFn("readProjectScopeOrganizationId");
 export const summarizeContextCell = slotFn("summarizeContextCell", (cell: unknown) =>

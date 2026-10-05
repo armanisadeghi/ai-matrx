@@ -42,8 +42,8 @@ import { summarizeContextCell } from "../../../../host/ui-slots";
 import { scopesService } from "../../../../context/sources/scopes";
 import { isScopesRpcErr } from "../../../../context/sources/scopes";
 import type { ContextItemRow, ContextItemValue, ScopesRpcResult } from "../../../../context/sources/scopes";
-import { usePageCapture } from "@host/components/agent-copy/page-capture/usePageCapture";
-import { adminPageCapture } from "@host/components/agent-copy/page-capture/pageCapture";
+import { usePageCapture } from "../../../../host/ui-slots";
+import { adminPageCapture } from "../../../../agent-copy/page-capture/pageCapture";
 import { ContextCompareView, type CompareTab } from "../ContextCompareView";
 import { previewRequest, type InspectorSelection } from "./selection";
 

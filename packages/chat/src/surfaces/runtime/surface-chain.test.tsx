@@ -37,7 +37,7 @@ import {
 } from "./window-forms";
 import { assertNoPlatformReservedNames } from "@host/features/surfaces/manifests/registry";
 
-jest.mock("@host/components/agent-copy/AlchemySurfaceBridge", () => ({
+jest.mock("../../agent-copy/AlchemySurfaceBridge", () => ({
   AlchemySurfaceBridge: ({ children }: { children: ReactNode }) => children,
 }));
 

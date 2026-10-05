@@ -44,6 +44,8 @@ import { useKnowledgeAttachSearch } from "@/features/resource-manager/resource-p
 import { useConversationAttachments } from "@/features/connectors/useConversationAttachments";
 import { useHeldWriteTableName } from "@/features/record-change-approvals/useHeldWriteTableName";
 import { WebpageSnapshotView } from "@/features/resource-manager/webpage/WebpageSnapshotView";
+import { getManifest as getSurfaceManifest } from "@/features/surfaces/manifests/registry";
+import { usePageCapture, usePageCaptureContribution } from "@/components/agent-copy/page-capture/usePageCapture";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { createClient as createAppClient } from "@/utils/supabase/client";
 import { projectsDb } from "@/utils/supabase/projectsDb";
@@ -171,6 +173,9 @@ registerChatUi({
   useKnowledgeAttachSearch,
   useConversationAttachments,
   resolveSystemOrgId,
+  getSurfaceManifest,
+  usePageCapture,
+  usePageCaptureContribution,
   useHeldWriteTableName,
   WebpageSnapshotView,
   readProjectScopeOrganizationId: (tier: "project" | "task", id: string) => {

@@ -33,7 +33,7 @@ jest.mock("../../../agents/redux/execution-system/thunks/refresh-surface-scope.t
 jest.mock("../useActivePageSurface", () => ({
   useActivePageSurface: () => ({ surfaceName: "matrx-user/chat" }),
 }));
-jest.mock("@host/components/agent-copy/AlchemySurfaceBridge", () => ({
+jest.mock("../../../agent-copy/AlchemySurfaceBridge", () => ({
   AlchemySurfaceBridge: ({ children }: { children: unknown }) => children,
   useAlchemySurfaceHandle: () => null,
 }));

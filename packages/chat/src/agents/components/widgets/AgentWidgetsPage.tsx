@@ -49,7 +49,7 @@ import {
   type WidgetLaunchState,
 } from "./build-widget-launch";
 import { CopyButtons } from "@ai-matrx/chat/host/ui-slots";
-import { csvExportItem, jsonExportItem } from "@host/components/agent-copy/export";
+import { csvExportItem, jsonExportItem } from "../../../agent-copy/export";
 import {
   agentWidgetTesterKpis,
   agentWidgetTesterSummary,

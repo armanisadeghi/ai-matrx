@@ -45,7 +45,7 @@ jest.mock("../load-full-history", () => ({
 jest.mock("../../message-pins/pinned-messages-store", () => ({
   isMessagePinned: (id: string) => id === "m2",
 }));
-jest.mock("@host/components/agent-copy/alchemy-session", () => ({ openAlchemySession: jest.fn(() => true) }));
+jest.mock("../../../agent-copy/alchemy-session", () => ({ openAlchemySession: jest.fn(() => true) }));
 
 const MESSAGES = [
   { id: "m1", role: "user", text: "Plan Tuesday's pool route for the Irvine crew.", createdAt: "2026-09-25T09:00:00Z" },

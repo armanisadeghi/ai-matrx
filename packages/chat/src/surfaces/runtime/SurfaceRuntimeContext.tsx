@@ -39,7 +39,7 @@ import type { InstanceContextEntry } from "../../agents/types/instance.types";
 import {
   AlchemySurfaceBridge,
   useAlchemySurfaceHandle,
-} from "@host/components/agent-copy/AlchemySurfaceBridge";
+} from "../../agent-copy/AlchemySurfaceBridge";
 import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
 import type { ApplySurfaceWriteOptions } from "./surface-writeback";
 

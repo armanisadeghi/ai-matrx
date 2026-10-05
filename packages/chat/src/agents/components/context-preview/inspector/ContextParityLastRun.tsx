@@ -17,7 +17,7 @@
 
 import { Link } from "../../../../host/navigation";
 import { useEffect, useState } from "react";
-import { usePageCaptureContribution } from "@host/components/agent-copy/page-capture/usePageCapture";
+import { usePageCaptureContribution } from "../../../../host/ui-slots";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 
 import { supabase } from "../../../../host/db";
