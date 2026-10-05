@@ -150,7 +150,7 @@ function InlineTextEdit({
       autoFocus
       placeholder={placeholder}
       aria-label={ariaLabel}
-      className={cn("h-7 flex-1 px-1.5 text-base sm:text-sm", className)}
+      className={cn("flex-1", className)}
     />
   );
 }

@@ -253,11 +253,7 @@ export function DangerZone({ organization }: DangerZoneProps) {
                       value={confirmName}
                       onChange={(e) => setConfirmName(e.target.value)}
                       placeholder={organization.name}
-                      className={
-                        confirmName && !isConfirmationValid
-                          ? "border-red-500"
-                          : ""
-                      }
+                      
                       disabled={isArchiving}
                       autoComplete="off"
                     />

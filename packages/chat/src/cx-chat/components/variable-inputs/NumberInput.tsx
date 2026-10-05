@@ -85,7 +85,7 @@ export function NumberInput({
           type="text"
           value={value}
           onChange={handleInputChange}
-          className={compact ? "text-center text-sm font-medium h-7" : "text-center text-lg font-medium"}
+          numeric align="center"
           placeholder="0"
         />
         

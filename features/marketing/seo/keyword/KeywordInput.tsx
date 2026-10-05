@@ -151,7 +151,7 @@ export function KeywordInput({
           disabled={disabled}
           placeholder={placeholder}
           autoComplete="off"
-          className={cn("h-11 text-base", showIntelButton && "pr-12")}
+          adornment={showIntelButton ? "end" : undefined}
           onChange={(event) => {
             onChange(event.target.value);
             setHighlight(-1);

@@ -512,7 +512,7 @@ export function SurfaceAdminDetailPage({
               value={newName}
               onChange={(e) => setNewName(e.target.value.toLowerCase())}
               placeholder={surface.name}
-              className={cn("font-mono text-sm h-8 max-w-md", ACTIVE_FIELD)}
+              className="max-w-md" mono
               autoFocus
               disabled={busy}
             />
@@ -794,7 +794,7 @@ function IdentitySection({
             value={urlPattern}
             onChange={(e) => setUrlPattern(e.target.value)}
             placeholder="e.g. /transcripts/cleanup"
-            className={cn("font-mono text-sm", ACTIVE_FIELD)}
+            mono
             disabled={busy}
           />
           <p className="text-[11px] text-muted-foreground">
@@ -933,7 +933,7 @@ function ClassificationSection({
             onKeyDown={(e) => {
               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             }}
-            className={cn("h-8 text-xs tabular-nums", ACTIVE_FIELD)}
+            numeric align="start"
             disabled={busy}
           />
         </div>
@@ -1750,7 +1750,7 @@ function JsonRecordEditor({
           onKeyDown={(e) => {
             if (e.key === "Enter") addKey();
           }}
-          className={cn("h-7 max-w-[240px] font-mono text-xs", ACTIVE_FIELD)}
+          className="max-w-[240px]" mono
           data-identifier
           placeholder="tool_name"
           disabled={busy}

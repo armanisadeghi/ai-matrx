@@ -105,11 +105,7 @@ export function OverrideCombobox({
           value={value}
           disabled={disabled}
           placeholder={placeholder}
-          className={cn(
-            "h-8 pr-7 text-base",
-            monospace && "font-mono",
-            inputClassName,
-          )}
+          className={inputClassName} adornment="end" mono={monospace}
           onChange={(e) => {
             onChange(e.target.value);
             setOpen(true);

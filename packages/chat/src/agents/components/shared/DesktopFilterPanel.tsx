@@ -192,7 +192,8 @@ function MultiSelectChips({
         </button>
       )}
 
-      <ChipSet className="max-h-[180px] overflow-y-auto">
+      <div className="max-h-[180px] overflow-y-auto">
+      <ChipSet>
         {!searchQ && (
           <Chip asChild pressed={includesNone} label={noneLabel}>
             <button type="button" onClick={() => toggle(NONE_SENTINEL)} />
@@ -207,6 +208,7 @@ function MultiSelectChips({
           );
         })}
       </ChipSet>
+      </div>
       {filtered.length === 0 && searchQ && (
         <p className="text-xs text-muted-foreground">No matches</p>
       )}

@@ -118,7 +118,7 @@ function CountInput({
         if (e.key === "Enter") commit();
         if (e.key === "Escape") setDraft(null);
       }}
-      className={cn("h-7 px-1.5 text-xs tabular-nums", className)}
+      className={className} numeric align="start"
     />
   );
 }

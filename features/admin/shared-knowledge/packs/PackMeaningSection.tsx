@@ -191,7 +191,7 @@ function MeaningEditor({
               onChange={(e) => setD({ ...d, worth_amount: e.target.value })}
               placeholder={d.worth_effect === "add" ? "e.g. 120 or -90" : "0.05 – 5"}
               inputMode="decimal"
-              className={cn("h-8 text-sm tabular-nums", !amountOk && "border-destructive")}
+              numeric align="start" aria-invalid={!amountOk}
             />
           ) : null}
         </div>

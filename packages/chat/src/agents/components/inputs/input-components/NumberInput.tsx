@@ -97,11 +97,7 @@ export function NumberInput({
           onChange={handleInputChange}
           onBlur={handleBlur}
           inputMode="decimal"
-          className={
-            compact
-              ? "text-center bg-transparent text-sm font-medium h-7 border border-border rounded-full"
-              : "text-center bg-transparent text-lg font-medium border border-border rounded-full"
-          }
+          numeric align="center"
           placeholder="0"
         />
         {unit && (

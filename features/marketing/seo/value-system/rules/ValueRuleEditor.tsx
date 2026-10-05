@@ -548,13 +548,7 @@ export function ValueRuleEditor({
                 onChange={(e) => set("multiplier", e.target.value)}
                 inputMode="decimal"
                 placeholder="0.2"
-                className={cn(
-                  "h-8 w-28 text-sm tabular-nums",
-                  Number(form.multiplier) > 1 && "text-success",
-                  Number(form.multiplier) > 0 &&
-                    Number(form.multiplier) < 1 &&
-                    "text-warning",
-                )}
+                className="w-28" numeric align="start"
               />
             </Field>
 

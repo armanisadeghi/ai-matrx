@@ -447,7 +447,7 @@ function ThemeSection({ site, onSaved }: SectionProps) {
                   )
                 }
                 placeholder="value (#0f766e, 1.5rem, 'Inter', sans-serif)"
-                className={` ${COLOR_VALUE.test(row.value.trim()) ? "pl-8" : ""}`}
+                adornment={COLOR_VALUE.test(row.value.trim()) ? "start" : undefined}
               />
               {COLOR_VALUE.test(row.value.trim()) && (
                 <span

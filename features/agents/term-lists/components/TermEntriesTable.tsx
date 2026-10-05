@@ -70,7 +70,7 @@ export function TermEntriesTable({
                 aria-label={`Term ${index + 1}`}
                 value={entry.term}
                 onChange={(e) => update(index, { term: e.target.value })}
-                className={flagged && !entry.term.trim() ? "border-destructive" : undefined}
+                aria-invalid={flagged && !entry.term.trim()}
                 placeholder="Term"
               />
               <Input
@@ -78,11 +78,7 @@ export function TermEntriesTable({
                 value={needsValue ? (entry.value ?? "") : ""}
                 disabled={!needsValue}
                 onChange={(e) => update(index, { value: e.target.value })}
-                className={
-                  flagged && needsValue && !(entry.value ?? "").trim()
-                    ? "border-destructive"
-                    : undefined
-                }
+                aria-invalid={flagged && needsValue && !(entry.value ?? "").trim()}
                 placeholder={needsValue ? KIND_VALUE_HINT[entry.kind] : "Not used"}
               />
               <Select

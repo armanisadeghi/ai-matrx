@@ -9,7 +9,6 @@
 
 import { useEffect, useState } from "react";
 import { Input } from "@ai-matrx/design-system/controls";
-import { cn } from "@/lib/utils";
 
 type ClampedNumberInputProps = {
   id?: string;
@@ -110,7 +109,7 @@ export function ClampedNumberInput({
       aria-label={ariaLabel}
       data-testid={testId}
       title={title}
-      className={cn("h-8", className)}
+      className={className}
       value={draft}
       onChange={(event) => {
         const raw = event.target.value;

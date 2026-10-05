@@ -230,7 +230,7 @@ export function ScopeMappingEditor({
                 cancelCustomKey();
               }
             }}
-            className={compact ? "h-7 text-[16px] font-mono" : "h-8 text-[16px] font-mono"}
+            mono
             data-identifier
             placeholder="custom_key"
           />

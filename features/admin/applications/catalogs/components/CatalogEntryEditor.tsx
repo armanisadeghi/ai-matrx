@@ -613,10 +613,7 @@ export function CatalogEntryEditor({
             onChange={(e) => setEntryKey(e.target.value)}
             disabled={!isNew}
             placeholder="org/model-name"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.key && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.key}
             spellCheck={false}
             autoComplete="off"
           />
@@ -631,10 +628,7 @@ export function CatalogEntryEditor({
             value={schemaVersion}
             onChange={(e) => setSchemaVersion(e.target.value)}
             inputMode="numeric"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.schema_version && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.schema_version}
             autoComplete="off"
           />
           {fieldErrors.schema_version ? (
@@ -659,10 +653,7 @@ export function CatalogEntryEditor({
             value={minAppVersion}
             onChange={(e) => setMinAppVersion(e.target.value)}
             placeholder="none (all versions)"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.min_app_version && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.min_app_version}
             spellCheck={false}
             autoComplete="off"
           />
@@ -680,10 +671,7 @@ export function CatalogEntryEditor({
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
             inputMode="numeric"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.sort_order && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.sort_order}
             autoComplete="off"
           />
           {fieldErrors.sort_order ? (
@@ -726,10 +714,7 @@ export function CatalogEntryEditor({
               value={artifactSha256}
               onChange={(e) => setArtifactSha256(e.target.value)}
               placeholder="64 hex chars — pin whenever the source provides one"
-              className={cn(
-                "font-mono text-sm",
-                fieldErrors.artifact_sha256 && "border-destructive",
-              )}
+              mono aria-invalid={!!fieldErrors.artifact_sha256}
               spellCheck={false}
               autoComplete="off"
             />
@@ -748,10 +733,7 @@ export function CatalogEntryEditor({
               onChange={(e) => setArtifactSizeBytes(e.target.value)}
               inputMode="numeric"
               placeholder="optional"
-              className={cn(
-                "font-mono text-sm",
-                fieldErrors.artifact_size_bytes && "border-destructive",
-              )}
+              mono aria-invalid={!!fieldErrors.artifact_size_bytes}
               autoComplete="off"
             />
             {fieldErrors.artifact_size_bytes ? (

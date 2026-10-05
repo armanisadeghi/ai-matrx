@@ -84,7 +84,7 @@ export function NoticeEditor({ notice, onChange, errors }: NoticeEditorProps) {
               value={notice.title}
               onChange={(e) => onChange({ ...notice, title: e.target.value })}
               placeholder="Update required"
-              className={cn(errors["notice.title"] && "border-destructive")}
+              aria-invalid={!!errors["notice.title"]}
             />
             {errors["notice.title"] ? (
               <p className="text-xs text-destructive">
@@ -119,10 +119,7 @@ export function NoticeEditor({ notice, onChange, errors }: NoticeEditorProps) {
               value={notice.url}
               onChange={(e) => onChange({ ...notice, url: e.target.value })}
               placeholder="https://…"
-              className={cn(
-                "font-mono text-sm",
-                errors["notice.url"] && "border-destructive",
-              )}
+              mono aria-invalid={!!errors["notice.url"]}
               spellCheck={false}
               autoComplete="off"
             />

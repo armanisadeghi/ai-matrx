@@ -434,9 +434,7 @@ export function InvitationsPanel({
                       : "colleague@example.com"
                 }
                 disabled={operationLoading}
-                className={` ${
-                  email && !emailValidation.valid ? "border-red-500" : ""
-                }`}
+                aria-invalid={!!email && !emailValidation.valid}
               />
               {email && !emailValidation.valid && (
                 <p className="text-xs text-red-600 dark:text-red-400 mt-1">

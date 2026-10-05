@@ -4,7 +4,6 @@ import { Link } from "../../../host/navigation";
 import { useEffect } from "react";
 import { FileChartColumn, Webhook } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
-import { cn } from "@ai-matrx/design-system";
 import { useDriftAlerts } from "../../hooks/useDriftAlerts";
 import { DriftSeverityBadge } from "@host/features/agents/components/usages/DriftSeverityBadge";
 import {
@@ -48,12 +47,7 @@ export function AgentsListHeader() {
         asChild
         variant="quiet"
         aria-label={worstSev ? `Agent drift report — ${totals[worstSev]} ${worstSev.replace("_", " ")}` : "Agent drift report"}
-        className={cn(meta ? cn(
-                meta.textClass,
-                meta.bgClass,
-                "border hover:opacity-90",
-                meta.borderClass,
-              ) : "")}
+        tone={worstSev === "warning" ? "warning" : worstSev ? "destructive" : undefined}
       >
         <Link
           href="/reports/agent-drift"

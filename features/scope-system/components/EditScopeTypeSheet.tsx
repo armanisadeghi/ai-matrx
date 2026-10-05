@@ -424,13 +424,7 @@ export function EditScopeTypeSheet({
                       }
                       onKeyDown={(e) => handleRowKeyDown(e, row, idx)}
                       disabled={busy || removed}
-                      className={
-                        removed
-                          ? "line-through text-muted-foreground bg-rose-50/40 dark:bg-rose-950/20"
-                          : isNew
-                            ? "border-emerald-400/60 dark:border-emerald-600/50"
-                            : ""
-                      }
+                      mark={!removed && isNew ? "changed" : undefined}
                     />
                     {!isNew && (
                       <Button

@@ -438,15 +438,7 @@ export function ProjectFormCore({
               placeholder="website-redesign"
               maxLength={50}
               disabled={isSubmitting}
-              className={cn(
-                "text-base",
-                !slugValidation.valid ||
-                  (!checkingSlug && slug && slugAvailable === false)
-                  ? "border-destructive"
-                  : slug && slugAvailable && slugValidation.valid
-                    ? "border-green-500"
-                    : "",
-              )}
+              aria-invalid={!slugValidation.valid || (!checkingSlug && !!slug && slugAvailable === false)}
             />
             <div className="flex items-center justify-between">
               <SlugIndicator
@@ -594,15 +586,7 @@ export function ProjectFormCore({
               placeholder="website-redesign"
               maxLength={50}
               disabled={isSubmitting}
-              className={cn(
-                "flex-1",
-                !slugValidation.valid ||
-                  (!checkingSlug && slug && slugAvailable === false)
-                  ? "border-destructive"
-                  : slug && slugAvailable && slugValidation.valid
-                    ? "border-green-500"
-                    : "",
-              )}
+              className="flex-1" aria-invalid={!slugValidation.valid || (!checkingSlug && !!slug && slugAvailable === false)}
             />
           </div>
           <div className="flex items-center justify-between">

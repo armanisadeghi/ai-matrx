@@ -104,13 +104,7 @@ export function SearchInput({
           placeholder={placeholder}
           disabled={disabled}
           aria-label={ariaLabel}
-          className={cn(
-            // The component draws its own clear button; hide the browser's
-            // native search "x" so there are never two.
-            "h-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none",
-            showClearButton && searchValue && "pr-9",
-            inputClassName,
-          )}
+          className={inputClassName} adornment={showClearButton && searchValue ? "both" : "start"}
         />
         {showClearButton && searchValue ? (
           <button

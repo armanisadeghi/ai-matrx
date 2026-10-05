@@ -115,9 +115,7 @@ export function DefaultVariableValuesEditor({
                 onChange={(e) => setValue(v.name, e.target.value)}
                 placeholder={defaultPlaceholder}
                 disabled={disabled}
-                className={
-                  compact ? "h-8 text-[13px] font-mono" : "h-9 text-[16px]"
-                }
+                mono={compact}
               />
             )}
           </div>

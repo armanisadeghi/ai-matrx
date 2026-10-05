@@ -209,7 +209,7 @@ export function TextInputDialog({
           placeholder={placeholder}
           disabled={busy}
           // text-base = 16px, prevents iOS Safari zoom-on-focus
-          className={cn("text-base", error && "border-destructive")}
+          
           aria-invalid={!!error}
           aria-describedby={error ? "text-input-dialog-error" : undefined}
         />

@@ -219,7 +219,7 @@ export function GeneralSettings({
                 autoComplete="organization"
                 maxLength={50}
                 disabled={isSaving}
-                className={!nameValidation.valid ? "border-red-500" : ""}
+                
               />
               {!nameValidation.valid && (
                 <p

@@ -110,9 +110,7 @@ export function DefaultContextPolicyValuesEditor({
                 onChange={(e) => setValue(slot.key, e.target.value)}
                 placeholder={placeholderForSlotType(slot.type)}
                 disabled={disabled}
-                className={
-                  compact ? "h-8 text-[13px] font-mono" : "h-9 text-[16px]"
-                }
+                mono={compact}
               />
             )}
           </div>

@@ -139,7 +139,7 @@ export default function LSIKeywordGenerator({
                     }
                     placeholder="e.g., Computer Repair Shop, Bike Shop, Breast Augmentation..."
                     disabled={isExecuting}
-                    className={`${hasResults ? "h-11" : "h-12"} `}
+                    
                     autoFocus={!hasResults}
                   />
                   <Button

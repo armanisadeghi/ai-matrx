@@ -90,11 +90,7 @@ export const SearchBar: React.FC<SearchBarProps> = (
                     onFocus={handleFocus}
                     onBlur={handleBlur}
                     placeholder={placeholder}
-                    className={cn(
-                        "pr-10",
-                        isFocused && "ring-2 ring-primary",
-                        inputClassName
-                    )}
+                    className={inputClassName} adornment="end"
                 />
                 {showClearButton && query && (
                     <button

@@ -230,13 +230,7 @@ function LimitCell({
           </span>
         )}
         <Input
-          className={cn(
-            "h-8 w-full min-w-24 text-right tabular-nums text-sm",
-            isMicroUsd(column.capability) && "pl-5",
-            !existing && "border-dashed",
-            isZero && "text-muted-foreground line-through",
-            dirty && "border-primary",
-          )}
+          className="w-full min-w-24" numeric adornment={isMicroUsd(column.capability) ? "start" : undefined} mark={dirty ? "changed" : !existing ? "inherited" : undefined}
           placeholder={existing ? "unlimited" : "—"}
           title={existing ? undefined : "This window does not apply to the plan"}
           aria-label={`${plan.name} ${column.capability} ${periodLabel(column.period)}`}

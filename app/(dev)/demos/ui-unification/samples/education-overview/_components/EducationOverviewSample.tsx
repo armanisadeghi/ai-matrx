@@ -360,7 +360,8 @@ function KitCard({ kit }: { kit: StudyKit }) {
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Link>
-      <ChipSet layout="grid" className="px-3 pb-3">
+      <div className="px-3 pb-3">
+      <ChipSet layout="grid">
         {present.map(({ artifact, visual }) => {
           const Icon = visual.icon;
           return (
@@ -370,6 +371,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
           );
         })}
       </ChipSet>
+      </div>
       {missing.length > 0 ? (
         <div className="mt-auto border-t border-border px-3 pb-3 pt-2">
           <p className="mb-1.5 text-[0.6875rem] text-muted-foreground">Not in this kit yet</p>

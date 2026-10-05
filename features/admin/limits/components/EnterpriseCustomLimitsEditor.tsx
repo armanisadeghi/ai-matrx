@@ -120,11 +120,7 @@ function CustomCell({
       <span className="block text-[11px] font-medium text-muted-foreground">{label}</span>
       <div className="relative">
         <Input
-          className={cn(
-            "h-8 w-full text-right text-sm tabular-nums",
-            saved === undefined && draft === null && "border-dashed",
-            draft !== null && draft.trim() !== savedText && "border-primary",
-          )}
+          className="w-full" numeric mark={draft !== null && draft.trim() !== savedText ? "changed" : saved === undefined && draft === null ? "inherited" : undefined}
           placeholder="Not set"
           aria-label={`${orgName} ${label} AI points`}
           value={value}

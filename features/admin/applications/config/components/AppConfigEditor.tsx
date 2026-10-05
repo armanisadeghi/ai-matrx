@@ -20,7 +20,6 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
 import { operationFailed } from "@/utils/errors";
 import { createClient } from "@/utils/supabase/client";
 import JsonFieldEditor from "@/features/ai-models/components/JsonFieldEditor";
@@ -339,10 +338,7 @@ export function AppConfigEditor({
             onChange={(e) => setAppSlug(e.target.value)}
             disabled={!isNew}
             placeholder="matrx-local"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.app && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.app}
             spellCheck={false}
             autoComplete="off"
           />
@@ -357,10 +353,7 @@ export function AppConfigEditor({
             value={schemaVersion}
             onChange={(e) => setSchemaVersion(e.target.value)}
             inputMode="numeric"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.schema_version && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.schema_version}
             autoComplete="off"
           />
           {fieldErrors.schema_version ? (
@@ -384,10 +377,7 @@ export function AppConfigEditor({
             value={minVersion}
             onChange={(e) => setMinVersion(e.target.value)}
             placeholder="0.1.0"
-            className={cn(
-              "font-mono text-sm",
-              fieldErrors.min_supported_app_version && "border-destructive",
-            )}
+            mono aria-invalid={!!fieldErrors.min_supported_app_version}
             spellCheck={false}
             autoComplete="off"
           />

@@ -479,7 +479,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
                 onChange={(e) => setOwnerEmail(e.target.value)}
                 placeholder="you@example.com"
                 aria-invalid={emailInvalid}
-                className={emailInvalid ? "border-destructive focus-visible:ring-destructive" : ""}
+                
               />
               {emailInvalid ? (
                 <p className="text-xs text-destructive">Enter a valid email address.</p>

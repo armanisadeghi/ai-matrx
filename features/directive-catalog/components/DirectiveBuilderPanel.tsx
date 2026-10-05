@@ -708,10 +708,7 @@ export function DirectiveBuilderPanel({
                         ? `Choose ${picker.label.toLowerCase()} or paste its id`
                         : "Paste the record's id"
                     }
-                    className={cn(
-                      "h-11 min-w-0 flex-1 font-mono text-base lg:h-8 lg:text-sm",
-                      invalid && "border-red-500 focus-visible:ring-red-500",
-                    )}
+                    className="min-w-0 flex-1" mono aria-invalid={invalid}
                   />
                   {picker ? (
                     <Button

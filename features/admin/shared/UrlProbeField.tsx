@@ -22,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -129,7 +128,7 @@ export function UrlProbeField({
             setProbe({ status: "idle" });
           }}
           placeholder={placeholder ?? "https://…"}
-          className={cn("font-mono text-sm", error && "border-destructive")}
+          mono aria-invalid={!!error}
           spellCheck={false}
           autoComplete="off"
         />

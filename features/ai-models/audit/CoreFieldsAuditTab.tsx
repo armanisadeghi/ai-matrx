@@ -165,7 +165,7 @@ export default function CoreFieldsAuditTab({
           onChange={(event) =>
             setVal(r.model, "common_name", event.target.value)
           }
-          className={` ${!r.model.common_name && !editValues[r.model.id]?.common_name ? "border-destructive/50" : ""}`}
+          aria-invalid={!r.model.common_name && !editValues[r.model.id]?.common_name}
           placeholder="Common name…"
         />
       ),

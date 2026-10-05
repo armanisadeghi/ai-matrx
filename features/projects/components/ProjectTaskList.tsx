@@ -576,7 +576,7 @@ function InlineTitle({
           onCommit(draft);
           setEditing(false);
         }}
-        className={cn("h-7 flex-1 min-w-0", isSub ? "text-[13px]" : "text-sm")}
+        className="min-w-0 flex-1"
       />
     );
   }

@@ -375,10 +375,7 @@ export function SurfacesListColumn({
             placeholder="Search or paste a URL"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className={cn(
-              "h-9 pl-8 text-sm bg-background",
-              isUrlSearch && "border-primary/40",
-            )}
+            adornment="start"
           />
         </div>
       </div>

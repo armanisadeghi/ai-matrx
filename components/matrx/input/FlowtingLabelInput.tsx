@@ -71,12 +71,7 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
                 value={value}
                 onChange={handleChange}
                 disabled={disabled}
-                className={cn(
-                    "text-md",
-                    variantStyles,
-                    disabled ? "cursor-not-allowed opacity-50 bg-muted" : "",
-                    className
-                )}
+                className={className}
                 {...props}
             />
         </>

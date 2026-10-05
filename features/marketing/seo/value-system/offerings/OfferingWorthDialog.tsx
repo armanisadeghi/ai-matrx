@@ -122,10 +122,7 @@ export function OfferingWorthDialog({
               value={points}
               onChange={(event) => setPoints(event.target.value)}
               placeholder={inherited ? String(inherited.worthPoints) : "0"}
-              className={cn(
-                "h-9 w-32 text-base sm:text-sm",
-                trimmed !== "" && invalid && "border-destructive",
-              )}
+              className="w-32" aria-invalid={trimmed !== "" && invalid}
             />
             <p className="text-[11px] text-muted-foreground">
               Every keyword placed on this offering, or beneath it, starts at

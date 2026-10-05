@@ -77,7 +77,7 @@ export function SheetSearchBox({ searchTerm, onSearchTermChange, onSubmit, onCle
           data-surface-value="search_term"
           // The clear button's room is kept only while there is something to clear: at 390 an
           // always-reserved 40px cut "Search rows" to "Search row" (DATA-V2-BASICS-2).
-          className={` w-full ${searchTerm || open ? "pr-10 md:pr-7" : "pr-2 md:pr-2"}`}
+          className="w-full" adornment={searchTerm || open ? "end" : undefined}
         />
         {(searchTerm || open) && (
           <button

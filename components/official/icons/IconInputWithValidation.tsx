@@ -189,7 +189,7 @@ export default function IconInputWithValidation({
             onChange={handleInputChange}
             placeholder={placeholder}
             disabled={disabled}
-            className={cn("pr-10 text-base", className)}
+            className={className} adornment="end"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();

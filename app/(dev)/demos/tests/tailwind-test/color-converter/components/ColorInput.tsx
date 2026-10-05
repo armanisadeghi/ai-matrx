@@ -133,7 +133,7 @@ export default function ColorInput(
                         placeholder={`Enter ${format} color`}
                         value={inputValue}
                         onChange={(e) => handleInputChange(e.target.value)}
-                        className={`w-[200px] ${isInputValid ? '' : 'border-red-500'}`}
+                        className="w-[200px]" aria-invalid={!isInputValid}
                     />
 
                     {detectedType && (

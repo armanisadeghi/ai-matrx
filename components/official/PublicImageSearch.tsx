@@ -519,7 +519,7 @@ export function PublicImageSearch({
               value={inputValue}
               onChange={handleInputChange}
               placeholder={placeholder}
-              className={cn("pr-7 h-8 text-xs w-full", inputClassName)}
+              className={cn("w-full", inputClassName)} adornment="end"
               disabled={disabled}
             />
             {inputValue && (

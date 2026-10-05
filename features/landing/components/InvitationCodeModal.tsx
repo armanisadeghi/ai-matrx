@@ -8,7 +8,6 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from '@/components/ui/label';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
 import { validateInvitationCode } from '../actions';
-import { cn } from '@/lib/utils';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface InvitationCodeModalProps {
@@ -94,10 +93,7 @@ export function InvitationCodeModal({ open, onOpenChange }: InvitationCodeModalP
               value={code}
               onChange={handleCodeChange}
               placeholder="XXXX-XXXX-XXXX"
-              className={cn(
-                'text-center text-lg font-mono tracking-wider',
-                error && 'border-destructive focus-visible:ring-destructive'
-              )}
+              mono align="center" aria-invalid={!!error}
               disabled={isValidating || isPending}
               autoComplete="off"
               spellCheck={false}

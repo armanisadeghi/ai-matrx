@@ -246,7 +246,7 @@ export function ContextPolicyMappingEditor({
               addCustomScope();
             }
           }}
-          className={compact ? "h-8 text-[16px]" : "h-9 text-[16px]"}
+          
         />
         <Button
           icon={<Plus />}

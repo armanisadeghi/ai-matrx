@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
-import { cn } from "@/lib/utils";
 
 const UNSET_SENTINEL = "__unset__";
 
@@ -135,7 +134,7 @@ export default function RuleValueInput({
     jsonDraft ?? (value === undefined ? "" : JSON.stringify(value));
   return (
     <Input
-      className={cn("h-7 w-56 text-xs font-mono", jsonError && "border-destructive")}
+      className="w-56" mono aria-invalid={!!jsonError}
       value={display}
       placeholder={placeholder ?? "JSON value"}
       disabled={disabled}

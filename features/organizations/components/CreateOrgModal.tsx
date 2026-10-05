@@ -14,7 +14,6 @@ import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { createOrganization } from "../service";
 import type { Organization } from "../types";
@@ -266,7 +265,7 @@ export function CreateOrgModal({
               autoComplete="organization"
               maxLength={50}
               disabled={isSubmitting}
-              className={!nameValidation.valid ? "border-red-500" : ""}
+              
             />
             {!nameValidation.valid && (
               <p
@@ -359,17 +358,7 @@ export function CreateOrgModal({
                 required
                 maxLength={50}
                 disabled={isSubmitting}
-                className={cn(
-                  "flex-1",
-                  slug &&
-                    (!slugValidation.valid ||
-                      (!checkingSlug && slugAvailable === false))
-                    ? "border-red-500"
-                    : "",
-                  slug && slugAvailable && slugValidation.valid
-                    ? "border-green-500"
-                    : "",
-                )}
+                className="flex-1"
               />
             </div>
             <div

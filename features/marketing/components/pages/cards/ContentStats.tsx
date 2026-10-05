@@ -11,7 +11,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
-import { cn } from "@/lib/utils";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -232,10 +231,7 @@ function SnapshotImageList({
                   placeholder={
                     missingAlt ? "Desired alt text" : "Desired alt (override)"
                   }
-                  className={cn(
-                    "h-6 text-[11px]",
-                    missingAlt && !draft[src] && "border-amber-500/40",
-                  )}
+                  aria-invalid={missingAlt && !draft[src]}
                 />
               ) : null}
               </div>

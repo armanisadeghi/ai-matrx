@@ -577,16 +577,7 @@ export function ValueComboEditor({
                   onChange={(e) => set("amount", e.target.value)}
                   inputMode="decimal"
                   placeholder={form.effect === "scale" ? "0.3" : "10"}
-                  className={cn(
-                    "h-8 w-28 text-sm tabular-nums",
-                    form.effect === "scale" &&
-                      Number(form.amount) > 1 &&
-                      "text-success",
-                    form.effect === "scale" &&
-                      Number(form.amount) > 0 &&
-                      Number(form.amount) < 1 &&
-                      "text-warning",
-                  )}
+                  className="w-28" numeric align="start"
                 />
               </Field>
             ) : null}
