@@ -285,16 +285,18 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   const saveError = blockSaveError ? blockSaveError.message : null;
 
   // Put the saved session back ONCE, after the quiz itself has been set up.
-  const restoredRef = useRef(false);
+  // State, not a ref: the save effect must wake only AFTER the restored session has rendered,
+  // never in the same pass (it would write the pre-restore session over the saved one).
+  const [restored, setRestored] = useState(false);
   useEffect(() => {
-    if (restoredRef.current || !savedLoaded || !parsedQuiz || !quizState) return;
-    restoredRef.current = true;
+    if (restored || !savedLoaded || !parsedQuiz || !quizState) return;
+    setRestored(true);
     const saved = savedBlock?.quizState;
     if (saved && Array.isArray(saved.randomizedQuestions) && saved.progress) {
       setQuizState(saved);
       if (saved.results) setShowResults(true);
     }
-  }, [savedLoaded, savedBlock, parsedQuiz, quizState]);
+  }, [restored, savedLoaded, savedBlock, parsedQuiz, quizState]);
 
   // ESC key handler to exit fullscreen
   useEffect(() => {
@@ -322,9 +324,9 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
 
   // Every answer and the finished score are saved server-side; the chip is derived from `results`.
   useEffect(() => {
-    if (!quizState || !restoredRef.current) return;
+    if (!quizState || !restored) return;
     saveBlock({ quizState, results: showResults && results ? results : null });
-  }, [quizState, results, showResults, saveBlock]);
+  }, [quizState, results, showResults, saveBlock, restored]);
 
   // Show loading only if quiz data not parsed yet (never block for saves/duplicate checks)
   if (!parsedQuiz || !quizState) {

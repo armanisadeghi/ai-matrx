@@ -163,7 +163,7 @@ describe("the ledger is what a reload reads", () => {
     view.unmount();
   });
 
-  it("a comment reply keeps its door to the thread after a reload (the ledger's receipt.thread)", async () => {
+  it("a comment reply keeps its thread link in the ledger after a reload, and the foot zone does not repeat it", async () => {
     rows.push({
       key: "act:ef8bae1cac559b52847450f54fa4513819383329",
       kind: "action",
@@ -180,8 +180,9 @@ describe("the ledger is what a reload reads", () => {
     expect(receipts[0]).not.toHaveProperty("thread");
     const view = mountZone();
     await settle();
-    const line = view.host.querySelector('[data-directive="directive_v1_action_comment_reply"]');
-    expect(line?.textContent).toBe("Replied in the thread on c4.Open thread");
+    // The reply's ONE cue is the line on the answer (its door comes from this thread link —
+    // see a-comment-reply-is-a-line-not-the-reply); the foot zone does not repeat it.
+    expect(view.host.querySelector('[data-directive="directive_v1_action_comment_reply"]')).toBeNull();
     view.unmount();
   });
 

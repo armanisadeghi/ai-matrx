@@ -153,6 +153,15 @@ describe("one cue per reply", () => {
     expect(lines[0].tagName).toBe("BUTTON");
   });
 
+  it("after a reload (remark gone) the ledger's thread link is the line's working door", () => {
+    render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, [], [replyReceipt("c3")]);
+    const line = host.querySelector<HTMLButtonElement>('button[data-comment-reply="c3"]')!;
+    expect(line).not.toBeNull();
+    act(() => line.click());
+    const tab = items()["comment-thread::message:answer-1" as never] as unknown as { data: { focus: string | null } } | undefined;
+    expect(tab?.data.focus).toBe("root-7");
+  });
+
   it("another handle's receipt does not hide this reply's line", () => {
     render(<Fence streaming={false} items={[{ to: "c3", body: REPLY_TEXT }]} />, undefined, [replyReceipt("c4")]);
     expect(host.querySelector('[data-comment-reply="c3"]')).not.toBeNull();

@@ -303,8 +303,8 @@ describe.each(DURABLE)("$kind: what the person does is written through the door"
     expect(shown()).toBe(afterAction);
     // Putting it back never loses or changes what the door holds.
     expect(JSON.stringify(mockDoor.rows[kind])).toBe(rowAfterAction);
-    // ...and is reading, not writing (the quiz re-saves its identical session on mount: a known extra write).
-    if (kind !== "quiz") expect(mockDoor.writes.length).toBe(writesAtUnmount);
+    // ...and is reading, not writing (every kind, the quiz included).
+    expect(mockDoor.writes.length).toBe(writesAtUnmount);
     await unmount();
   });
 });

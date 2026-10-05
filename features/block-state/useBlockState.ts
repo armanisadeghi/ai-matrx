@@ -239,7 +239,9 @@ export function useBlockState<T extends State = State>(options: UseBlockStateOpt
       // A write that changes nothing is never sent (it would bump the version and re-raise a chip).
       const current = { ...(rowStateRef.current ?? {}), ...overlayRef.current };
       for (const key of Object.keys(durable)) {
-        if (JSON.stringify(current[key]) === JSON.stringify(durable[key])) delete durable[key];
+        // null means "remove the key", so it equals an absent key.
+        const have = current[key] === undefined ? null : current[key];
+        if (JSON.stringify(have) === JSON.stringify(durable[key])) delete durable[key];
       }
       if (Object.keys(durable).length === 0) return;
       overlayRef.current = { ...overlayRef.current, ...durable };
