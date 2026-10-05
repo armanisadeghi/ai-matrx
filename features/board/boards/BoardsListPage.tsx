@@ -10,7 +10,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Plus } from "lucide-react";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAccessToken, selectAuthReady, selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -47,14 +47,7 @@ function BoardsList() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-semibold text-foreground">Boards</h1>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Open spaces for your chats, notes, files and tasks
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Boards" }} />
       {mayLoad ? (
         <EntityListPage config={boardListConfig} headerActions={newButton} emptyAction={newButton} />
       ) : (

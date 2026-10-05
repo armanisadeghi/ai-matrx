@@ -8,9 +8,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, FlaskConical, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { supabase } from "@/utils/supabase/client";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import type { Tables } from "@/types/database.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
@@ -81,12 +81,7 @@ export default function BakeoffPickerPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center gap-2">
-          <FlaskConical className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Run-page bake-off — pick a workflow, pick a design</span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Run-page bake-off — pick a workflow, pick a design" }} />
       <div className="h-full overflow-hidden flex flex-col">
         <div className="mx-auto w-full max-w-5xl px-4 pb-2 pt-[calc(var(--shell-header-h)+1rem)]">
           <div className="relative">

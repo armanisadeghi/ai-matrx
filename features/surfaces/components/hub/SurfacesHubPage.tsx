@@ -16,7 +16,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Loader2, SlidersHorizontal } from "lucide-react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 import { getSurfaceDisplayLabel } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import { listSurfaceOptions } from "@ai-matrx/chat/surfaces/services/surfaces.service";
@@ -99,16 +99,7 @@ export function SurfacesHubPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2 p-0">
-          <h1 className="text-sm font-medium text-foreground truncate">
-            Surfaces
-          </h1>
-          <span className="text-xs text-muted-foreground truncate">
-            Per-page agents &amp; settings
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Surfaces" }} />
       <div className="h-full overflow-hidden">
         <div
           className="h-full overflow-y-auto"

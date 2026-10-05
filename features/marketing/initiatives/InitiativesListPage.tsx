@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
@@ -55,14 +55,7 @@ export function InitiativesListPage({
       surfaceName="matrx-user/marketing-initiatives"
       getScope={() => createMarketingInitiativesScope({ page_kind: "list" })}
     >
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-semibold">Initiatives</h1>
-          <span className="hidden text-xs text-muted-foreground sm:inline">
-            Goals, timelines, and budgets across channels
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Initiatives" }} />
       <EntityListPage
         config={scopedConfig}
         headerActions={action}

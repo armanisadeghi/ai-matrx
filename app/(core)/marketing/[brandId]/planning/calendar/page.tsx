@@ -9,7 +9,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { PrCalendarPage } from "@/features/marketing/pr/calendar/PrCalendarPage";
 
@@ -22,14 +22,7 @@ export const metadata: Metadata = {
 export default function BrandCalendarPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-medium text-foreground">PR Calendar</h1>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Pitch-ready · watch · avoid, with the dates that matter
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "PR Calendar" }} />
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <Suspense fallback={<LoadingSurface label="Loading the PR calendar…" />}>
           <PrCalendarPage />

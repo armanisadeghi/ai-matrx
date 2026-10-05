@@ -17,7 +17,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import { BrandScopedPressRoom } from "@/features/marketing/pr/BrandScopedPressRoom";
 import { PressRoomDoors } from "@/features/marketing/pr/PressRoomDoors";
@@ -36,17 +36,7 @@ export default async function BrandPressRoomPage({
   const { brandId } = await params;
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Press Room
-          </h1>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Find the story · prove it · pitch it · prove it landed
-          </span>
-          <PressRoomDoors brandId={brandId} />
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Press Room" }} />
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <Suspense fallback={<LoadingSurface label="Loading the press room…" />}>
           <BrandScopedPressRoom />

@@ -14,7 +14,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListController } from "@/lib/entity-list/config";
@@ -43,15 +43,8 @@ function NewTopicButton({ name }: { name?: string }) {
 export function TopicsListPage() {
   return (
     <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center justify-between gap-2">
-          <h1 className="truncate type-title">Research topics</h1>
-          {/* THE DOOR LAW — every stage of research (report, condensers,
-              coverage audit, tagging, page summaries) is a Mandate the person
-              may re-point at their own agent; this is the door to the domain. */}
-          <MandateDoorLink feature="research" label="Research agents" />
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Research topics" }} />
+      <MandateDoorLink feature="research" label="Research agents" />
       <EntityListPage
         config={RESEARCH_TOPIC_LIST_CONFIG}
         surface={RESEARCH_TOPICS_SURFACE}

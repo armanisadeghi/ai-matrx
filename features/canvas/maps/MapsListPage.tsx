@@ -8,7 +8,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -42,14 +42,7 @@ export function MapsListPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-sm font-semibold text-foreground">Maps</h1>
-          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
-            Pictures of how things work
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Maps" }} />
       {mayLoad ? (
         <>
           <EntityListPage

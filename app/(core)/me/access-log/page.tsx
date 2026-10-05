@@ -17,11 +17,10 @@
 
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
 
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import {
   AccessLogFeed,
   AccessLogFeedSkeleton,
@@ -35,17 +34,7 @@ export default async function MyAccessLogPage() {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <ShieldCheck
-            className="h-4 w-4 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span className="truncate text-sm font-medium">
-            Who opened my data
-          </span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Who opened my data" }} />
       <div className="h-full overflow-y-auto">
         <div className="mx-auto w-full max-w-3xl space-y-4 p-4 pt-[var(--shell-header-h)] sm:p-6 sm:pt-[var(--shell-header-h)]">
           <div className="space-y-1">

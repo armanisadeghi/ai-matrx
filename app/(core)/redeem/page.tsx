@@ -7,12 +7,11 @@
 // this address kept as the destination. With no code it is the entry field.
 
 import { redirect } from "next/navigation";
-import { Gift } from "lucide-react";
 import Link from "next/link";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { REDEEM_CODE_PARAM } from "@/utils/auth/coupon-links";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { RedeemCodeField } from "@/features/entitlements/coupons/RedeemCodeField";
 
 interface RedeemPageProps {
@@ -30,12 +29,7 @@ export default async function RedeemPage({ searchParams }: RedeemPageProps) {
 
   return (
     <>
-      <PageHeader>
-        <div className="flex min-w-0 items-center gap-2">
-          <Gift className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate text-sm font-medium">Redeem code</span>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Redeem code" }} />
       <div className="h-full overflow-y-auto">
         <div className="mx-auto w-full max-w-lg space-y-4 p-4 pt-[var(--shell-header-h)] sm:p-6 sm:pt-[var(--shell-header-h)]">
           <h1 className="text-lg font-semibold">Redeem a free-time code</h1>

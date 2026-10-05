@@ -11,7 +11,7 @@ import { KnowledgeGraphClient } from "./KnowledgeGraphClient";
 import KnowledgeGraphLanding from "@/features/auth/components/module-landing/landings/KnowledgeGraphLanding";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 export default async function KnowledgeGraphPage({
   searchParams,
@@ -30,21 +30,7 @@ export default async function KnowledgeGraphPage({
 
   return (
     <>
-      <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 p-0">
-          <h1 className="text-sm font-medium text-foreground truncate">
-            Knowledge graph
-          </h1>
-          <div className="ml-auto shrink-0 flex items-center">
-            {/* Working context — filtering today; direct scope↔node assignment
-                is the next (and biggest) step for this surface. */}
-            <ActiveContextLensChip
-              align="end"
-              className="max-w-[200px] sm:max-w-[360px]"
-            />
-          </div>
-        </div>
-      </PageHeader>
+      <RecordPageHeader record={{ name: "Knowledge graph" }} />
       <div
         className="h-full overflow-hidden bg-textured"
         style={{ paddingTop: "var(--shell-header-h)" }}
