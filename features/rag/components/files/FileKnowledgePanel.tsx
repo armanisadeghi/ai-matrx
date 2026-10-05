@@ -66,14 +66,14 @@ export function FileKnowledgePanel({
   const body = (() => {
     if (state.status === "idle" || state.status === "loading") {
       return (
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-2 type-meta text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> Checking knowledge index…
         </div>
       );
     }
     if (state.status === "unavailable") {
       return (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           Knowledge status unavailable: {state.reason}
         </p>
       );
@@ -81,7 +81,7 @@ export function FileKnowledgePanel({
     if (state.status === "absent") {
       return (
         <div className="space-y-1.5">
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             Not in the knowledge index yet. Indexing extracts the text, segments
             it, embeds it, and runs entity recognition (NER) so agents and
             search can use this document.
@@ -105,7 +105,7 @@ export function FileKnowledgePanel({
     const doc = state.doc;
     return (
       <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+        <div className="flex flex-wrap items-center gap-1.5 type-meta">
           <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-medium text-emerald-700 dark:text-emerald-300">
             Indexed
           </span>
@@ -151,7 +151,7 @@ export function FileKnowledgePanel({
         className,
       )}
     >
-      <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="mb-1.5 flex items-center gap-1.5 type-meta uppercase tracking-wider text-muted-foreground">
         <Database className="h-3 w-3" /> Knowledge index (Knowledge + NER)
       </div>
       {body}

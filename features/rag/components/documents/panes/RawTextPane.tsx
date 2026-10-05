@@ -31,7 +31,7 @@ export function RawTextPane({ page, loading, error }: RawTextPaneProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
-      <header className="flex items-center justify-between px-3 py-2 border-b border-border text-xs text-muted-foreground">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border type-secondary text-muted-foreground">
         <span className="font-medium">Raw text</span>
         {stats && (
           <span>
@@ -43,13 +43,13 @@ export function RawTextPane({ page, loading, error }: RawTextPaneProps) {
       </header>
       <div className="flex-1 overflow-auto p-3">
         {loading && (
-          <div className="text-sm text-muted-foreground">Loading…</div>
+          <div className="type-body text-muted-foreground">Loading…</div>
         )}
         {error && (
-          <div className="text-sm text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
+          <div className="type-body text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {!loading && !error && page && (
-          <pre className="text-xs leading-relaxed whitespace-pre-wrap font-mono text-foreground">
+          <pre className="type-secondary leading-relaxed whitespace-pre-wrap font-mono text-foreground">
             {page.raw_text || (
               <span className="italic text-muted-foreground">(empty page)</span>
             )}

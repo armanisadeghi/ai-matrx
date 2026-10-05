@@ -279,7 +279,7 @@ function FullOverlay({
         <div className="min-w-0">
           <h2 className="text-base font-semibold truncate">{title}</h2>
           {subtitle && (
-            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+            <p className="type-secondary text-muted-foreground truncate">{subtitle}</p>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -366,10 +366,10 @@ function Stepper({
                 )}
               </span>
               <div className="min-w-0">
-                <div className="text-xs font-semibold uppercase tracking-wide">
+                <div className="type-secondary font-semibold uppercase tracking-wide">
                   {s.label}
                 </div>
-                <div className="text-[11px] opacity-80 truncate">
+                <div className="type-meta opacity-80 truncate">
                   {s.description}
                 </div>
               </div>
@@ -390,18 +390,18 @@ function StagePreviewPanel({ preview }: { preview: StagePreview }) {
     return (
       <div className="rounded-xl border bg-card p-4 space-y-2">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold">{preview.label}</h4>
+          <h4 className="type-title">{preview.label}</h4>
           <Badge variant="outline" className="text-[10px]">
             page {preview.page_number}
           </Badge>
         </div>
-        <pre className="whitespace-pre-wrap break-words font-sans text-xs leading-relaxed text-foreground/90 max-h-72 overflow-auto bg-muted/30 rounded p-3">
+        <pre className="whitespace-pre-wrap break-words font-sans type-secondary leading-relaxed text-foreground/90 max-h-72 overflow-auto bg-muted/30 rounded p-3">
           {preview.text || (
             <span className="italic text-muted-foreground">(empty page)</span>
           )}
         </pre>
         {preview.more && (
-          <p className="text-[10px] text-muted-foreground italic">
+          <p className="type-meta text-muted-foreground italic">
             Truncated for preview — full text in the library.
           </p>
         )}
@@ -412,7 +412,7 @@ function StagePreviewPanel({ preview }: { preview: StagePreview }) {
     return (
       <div className="rounded-xl border bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold">{preview.label}</h4>
+          <h4 className="type-title">{preview.label}</h4>
           <div className="flex items-center gap-1">
             {preview.section_kind && (
               <Badge variant="info" className="text-[10px]">
@@ -425,24 +425,24 @@ function StagePreviewPanel({ preview }: { preview: StagePreview }) {
           </div>
         </div>
         {preview.section_title && (
-          <p className="text-sm font-medium">{preview.section_title}</p>
+          <p className="type-title">{preview.section_title}</p>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <div className="type-meta uppercase tracking-wide text-muted-foreground">
               Raw
             </div>
-            <pre className="whitespace-pre-wrap break-words font-sans text-xs leading-relaxed bg-muted/30 rounded p-3 max-h-56 overflow-auto">
+            <pre className="whitespace-pre-wrap break-words font-sans type-secondary leading-relaxed bg-muted/30 rounded p-3 max-h-56 overflow-auto">
               {preview.raw_text || (
                 <span className="italic text-muted-foreground">(empty)</span>
               )}
             </pre>
           </div>
           <div className="space-y-1">
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <div className="type-meta uppercase tracking-wide text-muted-foreground">
               Cleaned
             </div>
-            <pre className="whitespace-pre-wrap break-words font-sans text-xs leading-relaxed bg-green-500/5 border border-green-500/20 rounded p-3 max-h-56 overflow-auto">
+            <pre className="whitespace-pre-wrap break-words font-sans type-secondary leading-relaxed bg-green-500/5 border border-green-500/20 rounded p-3 max-h-56 overflow-auto">
               {preview.cleaned_text || (
                 <span className="italic text-muted-foreground">(empty)</span>
               )}
@@ -455,14 +455,14 @@ function StagePreviewPanel({ preview }: { preview: StagePreview }) {
   if (preview.kind === "chunks_sample") {
     return (
       <div className="rounded-xl border bg-card p-4 space-y-3">
-        <h4 className="text-sm font-semibold">{preview.label}</h4>
+        <h4 className="type-title">{preview.label}</h4>
         <div className="space-y-2">
           {preview.samples.map((c, i) => (
             <div
               key={c.chunk_index ?? i}
               className="rounded-md border bg-muted/20 p-3 space-y-1.5"
             >
-              <div className="flex items-center gap-1 text-[10px] flex-wrap">
+              <div className="flex items-center gap-1 type-meta flex-wrap">
                 <Badge variant="outline" className="text-[10px]">
                   #{c.chunk_index ?? i + 1}
                 </Badge>
@@ -485,7 +485,7 @@ function StagePreviewPanel({ preview }: { preview: StagePreview }) {
                   </Badge>
                 )}
               </div>
-              <pre className="whitespace-pre-wrap break-words font-sans text-xs leading-relaxed max-h-32 overflow-auto">
+              <pre className="whitespace-pre-wrap break-words font-sans type-secondary leading-relaxed max-h-32 overflow-auto">
                 {c.content_text}
               </pre>
             </div>
@@ -532,7 +532,7 @@ function RunningView({ frame }: { frame: ProcessingFrame | null }) {
                 in progress
               </Badge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground break-words">
+            <p className="mt-1 type-body text-muted-foreground break-words">
               {frame?.message ??
                 "Connecting to the server and queuing the work…"}
             </p>
@@ -546,7 +546,7 @@ function RunningView({ frame }: { frame: ProcessingFrame | null }) {
           ) : (
             <Progress value={undefined} className="h-3" />
           )}
-          <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
+          <div className="flex items-center justify-between type-secondary text-muted-foreground tabular-nums">
             <span>
               {(frame?.current ?? 0).toLocaleString()}
               {(frame?.total ?? 0) > 0
@@ -566,7 +566,7 @@ function RunningView({ frame }: { frame: ProcessingFrame | null }) {
           first chunks). The user explicitly asked to stop hiding this. */}
       {frame?.latestPreview && (
         <div className="space-y-2">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             Latest output
           </div>
           <StagePreviewPanel preview={frame.latestPreview} />
@@ -578,7 +578,7 @@ function RunningView({ frame }: { frame: ProcessingFrame | null }) {
 
 function NavigateAwayCard() {
   return (
-    <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 text-sm">
+    <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 type-body">
       <div className="flex items-start gap-3">
         <div className="rounded-full bg-blue-500/15 p-1.5">
           <Maximize2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
@@ -588,7 +588,7 @@ function NavigateAwayCard() {
             You can safely close or minimize this — processing continues on the
             server.
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="type-secondary text-muted-foreground">
             Use <strong>Minimize</strong> to keep an eye on progress in the
             corner while you work, or close it and check back from the library
             row's status pills any time.
@@ -614,7 +614,7 @@ function ResultView({ result }: { result: ProcessingResultSummary }) {
           <div className="min-w-0 flex-1">
             <h3 className="text-lg font-semibold">Done</h3>
             {result.headline && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="type-body text-muted-foreground mt-1">
                 {result.headline}
               </p>
             )}
@@ -624,7 +624,7 @@ function ResultView({ result }: { result: ProcessingResultSummary }) {
               href={`/knowledge/library/${result.processedDocumentId}/preview`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 type-title text-primary-foreground hover:bg-primary/90 shrink-0"
             >
               Open in Library
               <Maximize2 className="h-3.5 w-3.5" />
@@ -644,10 +644,10 @@ function ResultView({ result }: { result: ProcessingResultSummary }) {
               >
                 <Icon className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <div className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
                     {s.label}
                   </div>
-                  <div className="text-sm">{summary}</div>
+                  <div className="type-body">{summary}</div>
                 </div>
               </div>
             );
@@ -673,8 +673,8 @@ function ErrorView({ error }: { error: string }) {
           <h3 className="text-lg font-semibold text-destructive">
             Processing failed
           </h3>
-          <p className="text-sm break-words mt-1">{error}</p>
-          <p className="text-xs text-muted-foreground mt-3">
+          <p className="type-body break-words mt-1">{error}</p>
+          <p className="type-secondary text-muted-foreground mt-3">
             You can retry the run from the library — re-running is safe and
             replaces any partial output.
           </p>
@@ -726,8 +726,8 @@ function MinimizedWidget({
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold truncate">{title}</div>
-          <div className="text-[10px] text-muted-foreground truncate">
+          <div className="type-secondary font-semibold truncate">{title}</div>
+          <div className="type-meta text-muted-foreground truncate">
             {finished
               ? error
                 ? "Failed"
@@ -757,7 +757,7 @@ function MinimizedWidget({
       {!finished && (
         <div className="px-3 pb-3 pt-2 space-y-1">
           <Progress value={pct ?? undefined} className="h-1.5" />
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground tabular-nums">
+          <div className="flex items-center justify-between type-meta text-muted-foreground tabular-nums">
             <span>
               {(frame?.current ?? 0).toLocaleString()}
               {(frame?.total ?? 0) > 0
@@ -774,7 +774,7 @@ function MinimizedWidget({
             href={openInLibraryHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1 type-meta font-medium text-primary-foreground hover:bg-primary/90"
           >
             Open in Library
             <Maximize2 className="h-3 w-3" />

@@ -180,11 +180,11 @@ export function DocumentViewer({
     <div className="flex flex-col h-full bg-background">
       <header className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border sm:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <h1 className="truncate text-sm font-semibold">
+          <h1 className="truncate type-title">
             {doc.data?.name ?? "Loading…"}
           </h1>
           {doc.data && !doc.error && (
-            <span className="hidden whitespace-nowrap text-xs text-muted-foreground sm:inline">
+            <span className="hidden whitespace-nowrap type-secondary text-muted-foreground sm:inline">
               {doc.data.derivation_kind} · {totalPages || 0} pages ·{" "}
               {doc.data.chunk_count} {RAG_VOCAB.segmentsShort.toLowerCase()}
             </span>
@@ -294,7 +294,7 @@ function BindButton({
         onInteractOutside={(event) => event.preventDefault()}
       >
         <DialogHeader className="px-4 pt-4 pb-2 border-b">
-          <DialogTitle className="text-sm flex items-center gap-2">
+          <DialogTitle className="type-body flex items-center gap-2">
             <Database className="h-4 w-4" />
             Bind document to data stores
           </DialogTitle>
@@ -305,7 +305,7 @@ function BindButton({
             documentName={documentName}
           />
         </div>
-        <div className="px-4 py-2 border-t text-[10px] text-muted-foreground flex items-center justify-between">
+        <div className="px-4 py-2 border-t type-meta text-muted-foreground flex items-center justify-between">
           <span>
             Manage all stores at{" "}
             <a
@@ -337,7 +337,7 @@ function PageNav({
   const safeNext = (delta: number) =>
     onChange(Math.max(0, Math.min(total - 1, current + delta)));
   return (
-    <div className="flex items-center gap-1 text-xs">
+    <div className="flex items-center gap-1 type-secondary">
       <button
         onClick={() => safeNext(-1)}
         disabled={current <= 0}

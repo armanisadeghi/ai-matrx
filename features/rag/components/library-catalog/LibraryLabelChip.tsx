@@ -66,7 +66,7 @@ export function LibraryLabelChip({
     <span className={cn("inline-flex items-center gap-1", className)}>
       {sourceAuthorityLabel ? (
         <span
-          className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+          className="rounded border border-border bg-card px-1.5 py-0.5 type-meta font-medium text-muted-foreground"
           title={`Source: ${sourceAuthorityLabel} — where this came from, before we touched it.`}
         >
           {sourceAuthorityLabel}
@@ -75,7 +75,7 @@ export function LibraryLabelChip({
       {assuranceLevelLabel ? (
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium",
+            "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 type-meta font-medium",
             tone,
           )}
           title={

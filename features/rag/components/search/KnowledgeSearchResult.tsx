@@ -60,19 +60,19 @@ export function KnowledgeSearchResult({
         <div className="min-w-0 flex-1 space-y-1">
           <Link
             href={href}
-            className="block truncate text-sm font-semibold text-foreground hover:text-primary hover:underline"
+            className="block truncate type-title text-foreground hover:text-primary hover:underline"
             title={source.title}
           >
             {source.title}
           </Link>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="truncate type-secondary text-muted-foreground">
             {meta.join(" · ")}
           </p>
           {/* The passage is markdown: rendered by the shared renderer (images and links stay
               inert-safe via the "other" policy), the query's words drawn as marks, and the
               height capped so one long passage never pushes the list around. */}
           <div
-            className="max-h-28 overflow-hidden text-sm leading-relaxed text-foreground/85 [&_*]:!my-0 [&_p]:!mb-1 [&_h1]:!text-sm [&_h2]:!text-sm [&_h3]:!text-sm [&_h4]:!text-sm [&_mark]:rounded-sm [&_mark]:bg-primary/15 [&_mark]:px-0.5 [&_mark]:text-foreground [&>div]:!p-0"
+            className="max-h-28 overflow-hidden type-body leading-relaxed text-foreground/85 [&_*]:!my-0 [&_p]:!mb-1 [&_h1]:!text-sm [&_h2]:!text-sm [&_h3]:!text-sm [&_h4]:!text-sm [&_mark]:rounded-sm [&_mark]:bg-primary/15 [&_mark]:px-0.5 [&_mark]:text-foreground [&>div]:!p-0"
             style={{ maskImage: "linear-gradient(to bottom, black 70%, transparent)" }}
             data-testid="knowledge-search-passage"
           >

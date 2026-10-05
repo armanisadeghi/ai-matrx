@@ -174,7 +174,7 @@ export function LibraryTrashSheet({
               ))}
             </div>
           ) : rows.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-10 text-center">
+            <div className="type-body text-muted-foreground py-10 text-center">
               Trash is empty.
             </div>
           ) : (
@@ -190,10 +190,10 @@ export function LibraryTrashSheet({
                   >
                     <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-foreground">
+                      <div className="truncate type-body text-foreground">
                         {row.name ?? row.file_name ?? row.id}
                       </div>
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-1.5 type-meta text-muted-foreground">
                         <span>
                           {new Date(row.deleted_at).toLocaleString()}
                         </span>

@@ -325,7 +325,7 @@ export function LibraryPreviewPage({
         >
           {version.versions?.edited && (
             <div
-              className="border-b px-4 py-1 flex items-center gap-2 min-w-0 shrink-0 text-xs"
+              className="border-b px-4 py-1 flex items-center gap-2 min-w-0 shrink-0 type-secondary"
               data-testid="source-version-switch"
             >
               <span className="text-muted-foreground truncate">
@@ -344,7 +344,7 @@ export function LibraryPreviewPage({
             </div>
           )}
           {version.error && (
-            <div className="border-b px-4 py-1 text-xs text-warning shrink-0">
+            <div className="border-b px-4 py-1 type-secondary text-warning shrink-0">
               {version.error}
               <ErrorAlchemyMenu error={version.error} />
             </div>
@@ -355,14 +355,14 @@ export function LibraryPreviewPage({
               <StatusBadge status={(doc.status as DocStatus) ?? "unknown"} />
               {provenanceLabel && (
                 <span
-                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary"
                   title="You can read this document through a shared-knowledge grant"
                 >
                   <BookMarked className="h-3 w-3" />
                   {provenanceLabel}
                 </span>
               )}
-              <span className="text-xs text-muted-foreground whitespace-nowrap truncate">
+              <span className="type-secondary text-muted-foreground whitespace-nowrap truncate">
                 {doc.pagesPersisted} pages · {doc.chunks}{" "}
                 {RAG_VOCAB.segmentsShort.toLowerCase()} · {doc.embeddingsOai}{" "}
                 embeds
@@ -557,7 +557,7 @@ function PagesNav({
       <div
         className={cn(
           COLUMN_HEADER,
-          "px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground",
+          "px-3 type-secondary font-semibold uppercase tracking-wide text-muted-foreground",
         )}
       >
         {docLoading && totalPages === 0
@@ -586,7 +586,7 @@ function PagesNav({
           ))}
         </ul>
         {pages.length < totalPages && (
-          <p className="px-3 py-2 text-xs text-muted-foreground italic">
+          <p className="px-3 py-2 type-secondary text-muted-foreground italic">
             Showing index of first {pages.length}; use ⏵ to navigate beyond.
           </p>
         )}
@@ -644,7 +644,7 @@ function PortionNavLabel({
         )}
       </div>
       {page.sectionTitle && (
-        <div className="text-xs text-muted-foreground break-words mt-0.5">
+        <div className="type-secondary text-muted-foreground break-words mt-0.5">
           {page.sectionTitle}
         </div>
       )}
@@ -804,7 +804,7 @@ function PageContent({
     return (
       <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
         <Loader2 className="h-6 w-6 mb-2 animate-spin" />
-        <p className="text-sm">Loading this document…</p>
+        <p className="type-body">Loading this document…</p>
       </div>
     );
   }
@@ -813,7 +813,7 @@ function PageContent({
     return (
       <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
         <AlertCircle className="h-8 w-8 mb-2" />
-        <p className="text-sm">
+        <p className="type-body">
           No pages persisted yet. This usually means ingestion failed before
           extracting any pages — re-process to retry.
         </p>
@@ -847,20 +847,20 @@ function PageContent({
 
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto p-4">
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 type-body text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading page…
           </div>
         )}
         {orgRequired && <OrganizationRequiredNotice />}
         {error && (
-          <div className="text-sm text-destructive">
+          <div className="type-body text-destructive">
             <strong>Error:</strong> {error}
             <ErrorAlchemyMenu error={error} />
           </div>
         )}
         {!loading && !error && page && (
-          <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed">
+          <pre className="whitespace-pre-wrap break-words font-sans type-body leading-relaxed">
             {shownText ? (
               query ? (
                 <HighlightedText

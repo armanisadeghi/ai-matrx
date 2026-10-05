@@ -108,7 +108,7 @@ function memberColumns(): MatrxColumnDef<RichMember>[] {
         member.mimeType ? (
           <TruncatedMemberText
             value={member.mimeType}
-            className="block max-w-40 truncate text-xs text-muted-foreground"
+            className="block max-w-40 truncate type-secondary text-muted-foreground"
           />
         ) : (
           "—"
@@ -208,7 +208,7 @@ function memberColumns(): MatrxColumnDef<RichMember>[] {
       align: "right",
       filter: "number",
       cell: (member) => (
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span className="type-secondary tabular-nums text-muted-foreground">
           {formatFileSize(member.fileSize)}
         </span>
       ),
@@ -221,7 +221,7 @@ function memberColumns(): MatrxColumnDef<RichMember>[] {
       width: 175,
       filter: "date",
       cell: (member) => (
-        <span className="text-[10px] tabular-nums text-muted-foreground">
+        <span className="type-meta tabular-nums text-muted-foreground">
           {new Date(member.addedAt).toLocaleString()}
         </span>
       ),

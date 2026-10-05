@@ -170,7 +170,7 @@ function ScoreBadge({ view, tier }: { view: RagHitView; tier: RelevanceTier }) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset",
+        "shrink-0 rounded-md px-1.5 py-0.5 type-secondary font-semibold tabular-nums ring-1 ring-inset",
         tier.badge,
       )}
       title={`${tier.label} · score ${view.score.toFixed(3)}`}
@@ -183,7 +183,7 @@ function ScoreBadge({ view, tier }: { view: RagHitView; tier: RelevanceTier }) {
 function EntityOnlyBadge() {
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-500/12 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-500/20 dark:text-amber-300"
+      className="inline-flex shrink-0 items-center gap-1 rounded-md bg-amber-500/12 px-1.5 py-0.5 type-meta font-medium text-amber-700 ring-1 ring-inset ring-amber-500/20 dark:text-amber-300"
       title="Surfaced only because its source mentions a matched entity — no semantic (vector) or keyword (lexical) match. Treat with care."
     >
       <TriangleAlert className="h-3 w-3" />
@@ -218,7 +218,7 @@ function HitBreakdown({
     <div className="space-y-2">
       {/* Relevance — tier label, relative bar, absolute score */}
       <div className="flex items-center gap-2">
-        <span className={cn("text-[11px] font-semibold", tier.text)}>
+        <span className={cn("type-meta font-semibold", tier.text)}>
           {tier.label}
         </span>
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
@@ -227,13 +227,13 @@ function HitBreakdown({
             style={{ width: `${Math.round(rel * 100)}%` }}
           />
         </div>
-        <span className={cn("text-xs font-semibold tabular-nums", tier.text)}>
+        <span className={cn("type-secondary font-semibold tabular-nums", tier.text)}>
           {view.score.toFixed(2)}
         </span>
       </div>
 
       {/* Rank breakdown */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] tabular-nums text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-meta tabular-nums text-muted-foreground">
         {view.vectorRank != null ? (
           <RankChip label="vector" value={`#${view.vectorRank}`} />
         ) : null}
@@ -253,7 +253,7 @@ function HitBreakdown({
 
       {/* Why it ranked — KG entity mentions */}
       {entities.length ? (
-        <div className="line-clamp-2 text-[10px] leading-relaxed text-muted-foreground">
+        <div className="line-clamp-2 type-meta leading-relaxed text-muted-foreground">
           <span className="font-medium text-foreground">Mentions</span>{" "}
           {entities.join(", ")}
         </div>
@@ -261,7 +261,7 @@ function HitBreakdown({
 
       {/* Result identity stays at the bottom of the expanded card. */}
       {showChunkId ? (
-        <div className="flex items-center gap-2 border-t border-border/70 pt-2 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-2 border-t border-border/70 pt-2 type-meta text-muted-foreground">
           <span className="font-medium text-foreground/80">Result:</span>
           <MatrxUuidCell
             value={view.chunkId}
@@ -329,13 +329,13 @@ function SourceIdentity({
       )}
     >
       <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-        <span className="shrink-0 text-xs font-medium text-muted-foreground">
+        <span className="shrink-0 type-secondary font-medium text-muted-foreground">
           Source:
         </span>
         <span
           className={cn(
             "min-w-0 truncate font-medium text-foreground",
-            compact ? "max-w-52 text-xs" : "max-w-[min(36rem,55vw)] text-sm",
+            compact ? "max-w-52 type-secondary" : "max-w-[min(36rem,55vw)] type-body",
           )}
           title={title}
         >
@@ -352,7 +352,7 @@ function SourceIdentity({
           }
         />
       </div>
-      <div className="flex flex-wrap items-center gap-x-1.5 text-xs leading-tight text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-1.5 type-secondary leading-tight text-muted-foreground">
         <span>
           <span className="font-medium text-foreground/80">Type:</span>{" "}
           {typeLabel}
@@ -388,7 +388,7 @@ function SourceIdentity({
         ) : null}
         {view.libraryProvenance ? (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary"
             title="You can read this source through a shared-knowledge grant"
           >
             <BookMarked className="h-3 w-3" />
@@ -582,7 +582,7 @@ export function RagHitCard({
           onClick={() => setExpanded(!expanded)}
         >
           {rank != null ? (
-            <span className="w-6 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
+            <span className="w-6 shrink-0 text-right font-mono type-secondary tabular-nums text-muted-foreground">
               {rank}
             </span>
           ) : null}
@@ -661,7 +661,7 @@ export function RagHitCard({
           <div id={contentId}>
             {expandedContent ? (
               expandedContent(
-                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                <div className="whitespace-pre-wrap break-words type-body leading-relaxed text-foreground">
                   <HighlightedSnippet
                     text={view.snippet}
                     query={highlightQuery}
@@ -683,7 +683,7 @@ export function RagHitCard({
                     initialSections={["retrieved"]}
                   />
                 </div>
-                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                <div className="whitespace-pre-wrap break-words type-body leading-relaxed text-foreground">
                   <HighlightedSnippet
                     text={view.snippet}
                     query={highlightQuery}
@@ -735,7 +735,7 @@ export function RagHitCard({
           <div className="border-t border-border" />
           <div>
             <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                 Retrieved content
               </span>
               <RagContentActions
@@ -745,7 +745,7 @@ export function RagHitCard({
                 initialSections={["retrieved"]}
               />
             </div>
-            <div className="max-h-56 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+            <div className="max-h-56 overflow-y-auto whitespace-pre-wrap type-secondary leading-relaxed text-foreground">
               {view.snippet}
             </div>
           </div>
@@ -767,7 +767,7 @@ export function RagHitCard({
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 type-meta font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Open source

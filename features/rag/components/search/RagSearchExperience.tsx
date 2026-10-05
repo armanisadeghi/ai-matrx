@@ -427,7 +427,7 @@ function JsonInspector({
         </button>
       </div>
       {open && (
-        <pre className="px-3 py-2 text-[11px] font-mono whitespace-pre-wrap break-all max-h-96 overflow-auto text-foreground/90">
+        <pre className="px-3 py-2 type-meta font-mono whitespace-pre-wrap break-all max-h-96 overflow-auto text-foreground/90">
           {pretty}
         </pre>
       )}
@@ -467,11 +467,11 @@ function ScopeSidebar({
         )}
       >
         <Database className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold flex-1">Search scope</h2>
+        <h2 className="type-title flex-1">Search scope</h2>
       </div>
 
       <div className="border-b px-2 py-2">
-        <div className="mb-2 flex items-center gap-2 px-1 text-xs">
+        <div className="mb-2 flex items-center gap-2 px-1 type-secondary">
           <Layers className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">Scopes</span>
         </div>
@@ -492,7 +492,7 @@ function ScopeSidebar({
             onClick={() => scope.setStoreId(null)}
           />
           {scope.stores.loading && (
-            <div className="px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="px-3 py-2 flex items-center gap-2 type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading stores…
             </div>
           )}
@@ -511,7 +511,7 @@ function ScopeSidebar({
       <Separator />
 
       <div className="px-3 py-2 space-y-2 border-t">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 type-secondary">
           <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">Pipeline</span>
           <IntelligenceIndicator
@@ -591,8 +591,8 @@ function ScopeRow({
         selected && "bg-muted/60",
       )}
     >
-      <div className="text-xs font-medium truncate">{label}</div>
-      <div className="text-[10px] text-muted-foreground truncate">
+      <div className="type-secondary font-medium truncate">{label}</div>
+      <div className="type-meta text-muted-foreground truncate">
         {sublabel}
       </div>
     </button>
@@ -609,7 +609,7 @@ function KindToggle({
   // Rendered from the shared vocabulary, so the positions the user can click
   // are exactly the ones the `retrieval_source_kinds` write target accepts.
   return (
-    <div className="flex flex-wrap items-center gap-0.5 rounded-md border p-0.5 text-[11px]">
+    <div className="flex flex-wrap items-center gap-0.5 rounded-md border p-0.5 type-meta">
       {SEARCH_SOURCE_KIND_FILTERS.map((o) => (
         <button
           key={o.value}
@@ -661,8 +661,8 @@ function SearchScopeSummary({
       : kindSpec.label.toLowerCase();
 
   return (
-    <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
-      <span className="uppercase tracking-wide text-[10px] font-medium">
+    <div className="mt-2 flex items-center gap-1.5 flex-wrap type-meta text-muted-foreground">
+      <span className="uppercase tracking-wide type-meta font-medium">
         Searching
       </span>
       <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
@@ -1166,14 +1166,14 @@ function SearchTab({
 
       <ScrollArea className="flex-1" viewportClassName="[&>div]:!block">
         {error && (
-          <div className="m-4 flex items-center gap-2 text-sm text-destructive">
+          <div className="m-4 flex items-center gap-2 type-body text-destructive">
             <AlertCircle className="h-4 w-4" /> {error}
             <ErrorAlchemyMenu error={error} />
           </div>
         )}
 
         {!response && !running && !error && (
-          <div className="m-6 max-w-2xl rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
+          <div className="m-6 max-w-2xl rounded-md border bg-muted/20 p-6 type-body text-muted-foreground">
             <p className="font-medium text-foreground mb-2">
               Search your indexed content
             </p>
@@ -1223,7 +1223,7 @@ function SearchTab({
               transition={{ duration: 0.18, ease: "easeOut" }}
               className="p-4 space-y-3"
             >
-              <div className="text-xs text-muted-foreground tabular-nums">
+              <div className="type-secondary text-muted-foreground tabular-nums">
                 {/* read-gate-exempt: figures of the search that just returned; response is null until a search succeeds */}
                 <SearchSummaryText
                   summary={{
@@ -1255,7 +1255,7 @@ function SearchTab({
               </div>
               <QueryTermCoverage query={response.query} hits={response.hits} />
               {response.hits.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
+                <div className="type-body text-muted-foreground">
                   {/* read-gate-exempt: a finished search's real answer; response is cleared when a search starts and set only when it returned */}
                   No hits for{" "}
                   <strong className="text-foreground">
@@ -1267,14 +1267,14 @@ function SearchTab({
               ) : (
                 <>
                   {hitSources.error ? (
-                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                    <p className="type-secondary text-amber-600 dark:text-amber-500">
                       Couldn&apos;t read the Sources behind these results (
                       {hitSources.error}); titles show what each result carries.
                       <ErrorAlchemyMenu error={hitSources.error} size="xs" />
                     </p>
                   ) : null}
                   {resultOrigins.length > 1 ? (
-                    <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-1.5 type-meta">
                       <span className="text-muted-foreground">
                         Narrow these results by where they came from:
                       </span>
@@ -1423,12 +1423,12 @@ function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & Agent
   if (!sections.length && !errors.length && !result.relevance_note) return null;
   return (
     <div className="px-3 py-2 border-t space-y-1.5" data-testid="agent-sim-sections">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="type-meta uppercase tracking-wide text-muted-foreground">
         Everything else the agent sees (same search as the hub)
       </div>
-      {result.relevance_note ? <p className="text-[11px] text-muted-foreground">{result.relevance_note}</p> : null}
+      {result.relevance_note ? <p className="type-meta text-muted-foreground">{result.relevance_note}</p> : null}
       {sections.map((sec) => (
-        <div key={sec.section} className="text-xs">
+        <div key={sec.section} className="type-secondary">
           <span className="font-medium">{humanizeIdentifier(sec.section) || sec.section}</span>{" "}
           <span className="text-muted-foreground tabular-nums">
             {sec.withheld
@@ -1437,7 +1437,7 @@ function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & Agent
           </span>
           {sec.note ? <span className="text-muted-foreground"> · {sec.note}</span> : null}
           {(sec.items ?? []).length ? (
-            <ul className="ml-4 list-disc text-[11px] text-foreground/80">
+            <ul className="ml-4 list-disc type-meta text-foreground/80">
               {(sec.items ?? []).slice(0, 5).map((it) => (
                 <li key={`${it.entity}-${it.id}`}>
                   {it.title || "Untitled"} <span className="text-muted-foreground">{it.entity}</span>
@@ -1448,7 +1448,7 @@ function AgentToolSectionsBlock({ result }: { result: AgentToolSearchOne & Agent
         </div>
       ))}
       {errors.map((e) => (
-        <p key={e.section} className="text-xs text-destructive">
+        <p key={e.section} className="type-secondary text-destructive">
           {e.section.replace(/_/g, " ")} could not be searched — {e.message}
         </p>
       ))}
@@ -1498,7 +1498,7 @@ function AgentToolResultBlock({
 
   return (
     <div className="rounded-md border bg-card overflow-hidden">
-      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
+      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 type-secondary flex-wrap">
         <SearchIcon className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="font-mono font-medium">{result.query}</span>
         <Badge variant="secondary" className="text-[10px] ml-auto">
@@ -1516,7 +1516,7 @@ function AgentToolResultBlock({
       </div>
 
       {result.error && (
-        <div className="px-3 py-2 text-xs text-destructive flex items-center gap-2">
+        <div className="px-3 py-2 type-secondary text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" /> {result.error}
           <ErrorAlchemyMenu error={result.error} />
         </div>
@@ -1552,7 +1552,7 @@ function AgentToolResultBlock({
 
       <div className="divide-y">
         {result.hits.length === 0 && !result.error && (
-          <div className="px-3 py-4 text-xs text-muted-foreground">
+          <div className="px-3 py-4 type-secondary text-muted-foreground">
             No hits — the agent would receive an empty result set for this
             query.
           </div>
@@ -1565,7 +1565,7 @@ function AgentToolResultBlock({
           } | null;
           return (
             <div key={h.chunk_id ?? i} className="px-3 py-2 space-y-1">
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-2 type-meta text-muted-foreground flex-wrap">
                 <span className="font-mono w-6 text-right">#{i + 1}</span>
                 {h.file_name && (
                   <span className="font-medium text-foreground truncate max-w-[260px]">
@@ -1581,7 +1581,7 @@ function AgentToolResultBlock({
                     score {h.score.toFixed(3)}
                   </span>
                 )}
-                <code className="font-mono text-[10px] truncate">
+                <code className="font-mono type-meta truncate">
                   {h.chunk_id}
                 </code>
                 {h.chunk_id && (
@@ -1603,7 +1603,7 @@ function AgentToolResultBlock({
                   </Button>
                 )}
               </div>
-              <p className="text-xs whitespace-pre-wrap text-foreground/90">
+              <p className="type-secondary whitespace-pre-wrap text-foreground/90">
                 {h.snippet || (
                   <span className="text-destructive">
                     (empty snippet — the agent would get no readable text here)
@@ -1612,7 +1612,7 @@ function AgentToolResultBlock({
               </p>
 
               {out && (
-                <div className="mt-1 rounded border bg-muted/30 p-2 text-xs">
+                <div className="mt-1 rounded border bg-muted/30 p-2 type-secondary">
                   {out.loading && (
                     <span className="text-muted-foreground">
                       Loading full chunk…
@@ -1628,13 +1628,13 @@ function AgentToolResultBlock({
                   )}
                   {out.data && out.data.status === "ok" && chunk && (
                     <div className="space-y-2">
-                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      <div className="type-meta uppercase tracking-wide text-muted-foreground">
                         knowledge_browse(chunk) → full chunk content
                       </div>
                       <div className=""><RichContent source={chunk.content_text ?? ""} level="standard" /></div>
                       {chunk.parent?.content_text && (
                         <>
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          <div className="type-meta uppercase tracking-wide text-muted-foreground">
                             parent passage
                           </div>
                           <div className="text-foreground/80"><RichContent source={chunk.parent.content_text ?? ""} level="standard" /></div>
@@ -1662,7 +1662,7 @@ function AgentToolResultBlock({
           receives)
         </button>
         {rawOpen && (
-          <pre className="mt-2 max-h-72 overflow-auto rounded bg-muted/40 p-2 text-[10px] font-mono whitespace-pre-wrap break-all">
+          <pre className="mt-2 max-h-72 overflow-auto rounded bg-muted/40 p-2 type-meta font-mono whitespace-pre-wrap break-all">
             {result.tool_result_text}
             {(result as AgentToolSearchOne & AgentToolSections).sections_text
               ? `\n\n--- the model also reads ---\n${(result as AgentToolSearchOne & AgentToolSections).sections_text}`
@@ -1723,7 +1723,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
 
   return (
     <div className="rounded-md border bg-card overflow-hidden">
-      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
+      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 type-secondary">
         <Brain className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="font-semibold">
           Agent&apos;s actual tool · knowledge_search
@@ -1733,7 +1733,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         </Badge>
       </div>
       <div className="px-3 py-3 space-y-2">
-        <p className="text-[11px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           Runs the exact tool the agent calls and shows exactly what it gets
           back. Add several queries — a real agent fires more than one.
         </p>
@@ -1798,7 +1798,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 text-xs text-destructive">
+          <div className="flex items-center gap-2 type-secondary text-destructive">
             <AlertCircle className="h-4 w-4" /> {error}
             <ErrorAlchemyMenu error={error} />
           </div>
@@ -1806,7 +1806,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         {resp?.notes.map((n, i) => (
           <div
             key={i}
-            className="text-[11px] text-amber-600 dark:text-amber-400"
+            className="type-meta text-amber-600 dark:text-amber-400"
           >
             {n}
           </div>
@@ -2022,7 +2022,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
             )}
           </Button>
         </form>
-        <p className="mt-2 text-[11px] text-muted-foreground">
+        <p className="mt-2 type-meta text-muted-foreground">
           The panel below runs the agent&apos;s ACTUAL knowledge_search tool (with
           play-out into knowledge_browse). Underneath, the full retrieval pipeline
           is exposed layer by layer: query rewrites, HyDE passage, embedding
@@ -2035,14 +2035,14 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
           <AgentToolPanel scope={scope} />
 
           {error && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
+            <div className="flex items-center gap-2 type-body text-destructive">
               <AlertCircle className="h-4 w-4" /> {error}
               <ErrorAlchemyMenu error={error} />
             </div>
           )}
 
           {!diag && !running && !error && (
-            <div className="rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
+            <div className="rounded-md border bg-muted/20 p-6 type-body text-muted-foreground">
               <p className="font-medium text-foreground mb-1">
                 Run a diagnostic query
               </p>
@@ -2095,7 +2095,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
               {...FADE_IN_UP}
               className="rounded-md border bg-card overflow-hidden"
             >
-              <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
+              <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 type-secondary">
                 <GitMerge className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-semibold">Query expansion</span>
                 <Badge variant="outline" className="text-[10px]">
@@ -2107,21 +2107,21 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
               </div>
               <div className="px-3 py-2 space-y-2">
                 <div>
-                  <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
+                  <div className="type-meta font-mono uppercase tracking-wide text-muted-foreground mb-1">
                     Original
                   </div>
-                  <div className="text-sm font-medium">{expand.query}</div>
+                  <div className="type-title">{expand.query}</div>
                 </div>
                 {expand.variants.length > 1 && (
                   <div>
-                    <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
+                    <div className="type-meta font-mono uppercase tracking-wide text-muted-foreground mb-1">
                       Variants ({expand.variants.length})
                     </div>
                     <ul className="space-y-0.5">
                       {expand.variants.map((v, i) => (
                         <li
                           key={i}
-                          className="text-sm pl-3 border-l-2 border-primary/30"
+                          className="type-body pl-3 border-l-2 border-primary/30"
                         >
                           {v}
                         </li>
@@ -2131,10 +2131,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 )}
                 {expand.hyde_passage && (
                   <div>
-                    <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
+                    <div className="type-meta font-mono uppercase tracking-wide text-muted-foreground mb-1">
                       HyDE passage (hypothetical answer)
                     </div>
-                    <div className="text-xs bg-muted/40 p-2 rounded"><RichContent source={expand.hyde_passage ?? ""} level="standard" /></div>
+                    <div className="type-secondary bg-muted/40 p-2 rounded"><RichContent source={expand.hyde_passage ?? ""} level="standard" /></div>
                   </div>
                 )}
                 {/* Contract-optional — the server may omit the preview; skip
@@ -2142,10 +2142,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                 {expand.query_vector_preview &&
                   expand.query_vector_preview.length > 0 && (
                     <div>
-                      <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1">
+                      <div className="type-meta font-mono uppercase tracking-wide text-muted-foreground mb-1">
                         Query embedding (first 8 of 1536 dims)
                       </div>
-                      <code className="text-[10px] font-mono text-muted-foreground break-all">
+                      <code className="type-meta font-mono text-muted-foreground break-all">
                         [
                         {expand.query_vector_preview
                           .map((v) => v.toFixed(4))
@@ -2161,7 +2161,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
           {diag && (
             <motion.div {...FADE_IN_UP} className="space-y-4">
               <div className="rounded-md border bg-card overflow-hidden">
-                <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
+                <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 type-secondary flex-wrap">
                   <Beaker className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="font-semibold">Pipeline counts</span>
                   {diag.elapsed_ms > 0 ? (
@@ -2233,7 +2233,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                     {diag.notes.map((n, i) => (
                       <div
                         key={i}
-                        className="flex items-start gap-1.5 text-xs text-amber-900 dark:text-amber-200"
+                        className="flex items-start gap-1.5 type-secondary text-amber-900 dark:text-amber-200"
                       >
                         <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                         <span>{n}</span>
@@ -2245,7 +2245,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
 
               {diag.hits.length > 0 && (
                 <div>
-                  <div className="text-xs font-semibold mb-2">
+                  <div className="type-secondary font-semibold mb-2">
                     Hits with full score breakdown ({diag.hits.length})
                   </div>
                   <div className="space-y-3">
@@ -2276,7 +2276,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
 
               {assembledPrompt && (
                 <div className="rounded-md border bg-card overflow-hidden">
-                  <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
+                  <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 type-secondary">
                     <FlaskConical className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="font-semibold">
                       Assembled prompt (what the LLM receives)
@@ -2295,7 +2295,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                       <Copy className="h-3 w-3" />
                     </button>
                   </div>
-                  <pre /* rich-content-exempt: raw tool result, JSON or assembled prompt shown verbatim */ className="px-3 py-2 text-[11px] font-mono whitespace-pre-wrap break-words max-h-96 overflow-auto text-foreground/90">
+                  <pre /* rich-content-exempt: raw tool result, JSON or assembled prompt shown verbatim */ className="px-3 py-2 type-meta font-mono whitespace-pre-wrap break-words max-h-96 overflow-auto text-foreground/90">
                     {assembledPrompt}
                   </pre>
                 </div>
@@ -2326,10 +2326,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="type-meta uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
-      <div className="text-sm font-mono tabular-nums">{value}</div>
+      <div className="type-body font-mono tabular-nums">{value}</div>
     </div>
   );
 }
@@ -2374,10 +2374,10 @@ function AgentChatTab({ scope }: { scope: Scope }) {
   if (error || !mandate) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-        <p className="text-sm font-medium text-foreground">
+        <p className="type-title text-foreground">
           Agent chat is unavailable right now.
         </p>
-        <p className="max-w-sm text-xs text-muted-foreground">
+        <p className="max-w-sm type-secondary text-muted-foreground">
           The default chat agent could not be resolved
           {asClause(error ? ` — ${error}` : "")}. Check your override on the Mandates
           page, or try again shortly.
@@ -2514,8 +2514,8 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
       <header className="border-b p-3 flex items-center gap-2">
         <Stethoscope className="h-4 w-4 text-primary" />
         <div className="flex-1">
-          <div className="text-sm font-semibold">Diagnostics</div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="type-title">Diagnostics</div>
+          <div className="type-meta text-muted-foreground">
             See what {RAG_VOCAB.segmentsShort.toLowerCase()} are visible to you,
             and via which ACL route.
             {scope.canBypassAcl &&
@@ -2538,7 +2538,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
           {error && inv ? (
             <StaleDataNotice hasData what="the search inventory" detail={error} onRetry={() => void refresh()} />
           ) : error ? (
-            <div className="flex items-center gap-2 text-sm text-destructive">
+            <div className="flex items-center gap-2 type-body text-destructive">
               <AlertCircle className="h-4 w-4" /> {error}
               <ErrorAlchemyMenu error={error} />
             </div>
@@ -2551,13 +2551,13 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
               aria-live="polite"
               data-testid="diagnostics-loading"
             >
-              <div className="flex items-center gap-2 rounded-md border bg-muted/20 p-4 text-sm">
+              <div className="flex items-center gap-2 rounded-md border bg-muted/20 p-4 type-body">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 <div>
                   <p className="font-medium text-foreground">
                     Counting what you can search…
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="type-secondary text-muted-foreground">
                     This reads your whole search index and can take 10–15 seconds.
                   </p>
                 </div>
@@ -2580,7 +2580,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
           )}
 
           {!inv && !loading && !error && (
-            <div className="rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground">
+            <div className="rounded-md border bg-muted/20 p-6 type-body text-muted-foreground">
               <p className="font-medium text-foreground mb-1">
                 Inventory not loaded yet
               </p>
@@ -2589,7 +2589,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                 {RAG_VOCAB.segmentShort.toLowerCase()} visible to you, grouped
                 by source kind and access route.
               </p>
-              <p className="mt-2 text-xs">
+              <p className="mt-2 type-secondary">
                 If you're not finding your PDFs in search, this is the fastest
                 way to confirm whether they were ingested and whether ACL is
                 filtering them out.
@@ -2601,7 +2601,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
           {inv && (
             <>
               <div className="rounded-md border bg-card overflow-hidden">
-                <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
+                <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 type-secondary">
                   <Database className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="font-semibold">Scope</span>
                   {inv.scope.admin_bypass_acl && (
@@ -2613,7 +2613,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                     </Badge>
                   )}
                 </div>
-                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                <div className="px-3 py-2 grid grid-cols-2 md:grid-cols-3 gap-3 type-secondary">
                   <Stat
                     label={`Total ${RAG_VOCAB.segmentsShort.toLowerCase()}`}
                     value={inv.total_visible_chunks.toLocaleString()}
@@ -2631,19 +2631,19 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="rounded-md border bg-card overflow-hidden">
-                  <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold">
+                  <div className="px-3 py-2 border-b bg-muted/30 type-secondary font-semibold">
                     By source kind
                   </div>
                   <div className="divide-y">
                     {inv.by_source_kind.length === 0 ? (
-                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                      <div className="px-3 py-2 type-secondary text-muted-foreground">
                         No {RAG_VOCAB.segmentsShort.toLowerCase()} visible.
                       </div>
                     ) : (
                       inv.by_source_kind.map((b) => (
                         <div
                           key={b.source_kind}
-                          className="px-3 py-1.5 flex items-center gap-2 text-xs"
+                          className="px-3 py-1.5 flex items-center gap-2 type-secondary"
                         >
                           <code className="min-w-0 flex-1 truncate font-mono uppercase tracking-wide" title={b.source_kind}>
                             {b.source_kind}
@@ -2662,13 +2662,13 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                 </div>
 
                 <div className="rounded-md border bg-card overflow-hidden">
-                  <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold">
+                  <div className="px-3 py-2 border-b bg-muted/30 type-secondary font-semibold">
                     By access route (why is each{" "}
                     {RAG_VOCAB.segmentShort.toLowerCase()} visible?)
                   </div>
                   <div className="divide-y">
                     {visibilityRoutes.length === 0 ? (
-                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                      <div className="px-3 py-2 type-secondary text-muted-foreground">
                         {/* read-gate-exempt: part of the last SUCCESSFUL inventory, shown under the stale notice when a refresh failed */}
                         No breakdown available.
                       </div>
@@ -2676,7 +2676,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                       visibilityRoutes.map(([k, v]) => (
                         <div
                           key={k}
-                          className="px-3 py-1.5 flex items-center gap-2 text-xs"
+                          className="px-3 py-1.5 flex items-center gap-2 type-secondary"
                         >
                           <code className="font-mono">{k}</code>
                           <span className="ml-auto tabular-nums">
@@ -2690,12 +2690,12 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
               </div>
 
               <div className="rounded-md border bg-card overflow-hidden">
-                <div className="px-3 py-2 border-b bg-muted/30 text-xs font-semibold">
+                <div className="px-3 py-2 border-b bg-muted/30 type-secondary font-semibold">
                   Top sources by {RAG_VOCAB.segmentShort.toLowerCase()} count
                 </div>
                 <div className="divide-y">
                   {inv.top_sources.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                    <div className="px-3 py-2 type-secondary text-muted-foreground">
                       {/* read-gate-exempt: part of the last SUCCESSFUL inventory, shown under the stale notice when a refresh failed */}
                       No sources.
                     </div>
@@ -2703,7 +2703,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                     inv.top_sources.map((t) => (
                       <div
                         key={`${t.source_kind}:${t.source_id}`}
-                        className="px-3 py-1.5 flex items-center gap-2 text-xs"
+                        className="px-3 py-1.5 flex items-center gap-2 type-secondary"
                       >
                         <code className="font-mono uppercase tracking-wide text-muted-foreground">
                           {t.source_kind}
@@ -2822,7 +2822,7 @@ export function RagSearchExperience() {
             <div className="hidden lg:flex min-w-0 flex-1 max-w-[min(42rem,40vw)] items-center overflow-hidden">
               <ActiveScopeChips className="min-w-0" />
             </div>
-            <div className="hidden xl:block ml-auto text-[11px] text-muted-foreground shrink-0">
+            <div className="hidden xl:block ml-auto type-meta text-muted-foreground shrink-0">
               Knowledge search
             </div>
           </div>

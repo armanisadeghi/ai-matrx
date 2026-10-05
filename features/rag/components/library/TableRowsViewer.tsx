@@ -199,7 +199,7 @@ export function TableRowsViewer({
             placeholder="Search cells across all tables…"
           />
         </div>
-        <span className="ml-auto whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+        <span className="ml-auto whitespace-nowrap type-meta tabular-nums text-muted-foreground">
           {/* A failed read shows no counts (the body says why). */}
           {error
             ? "—"
@@ -214,28 +214,28 @@ export function TableRowsViewer({
       {/* Body */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto p-3">
         {error ? (
-          <p className="px-1 py-2 text-xs text-destructive">
+          <p className="px-1 py-2 type-secondary text-destructive">
             Couldn&apos;t load tables: {error}
             <ErrorAlchemyMenu error={error} />
           </p>
         ) : loading && rows.length === 0 ? (
-          <div className="flex items-center gap-2 px-1 py-6 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 px-1 py-6 type-secondary text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading all rows…
           </div>
         ) : tables.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-center text-muted-foreground">
             <FileSpreadsheet className="h-8 w-8 opacity-40" />
-            <p className="text-sm">No tables found for this representation.</p>
+            <p className="type-body">No tables found for this representation.</p>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="px-1 py-6 text-center text-xs text-muted-foreground">
+          <p className="px-1 py-6 text-center type-secondary text-muted-foreground">
             No rows match &ldquo;{query}&rdquo;.
           </p>
         ) : (
           <div className="space-y-4">
             {capped && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 type-meta text-amber-700 dark:text-amber-400">
                 Showing the first {MAX_ROWS.toLocaleString()} rows of{" "}
                 {total.toLocaleString()} — use search to find specific rows.
               </div>
@@ -245,7 +245,7 @@ export function TableRowsViewer({
                 key={t.key}
                 className="overflow-hidden rounded-lg border border-border/60 bg-card"
               >
-                <div className="flex items-center justify-between bg-muted/40 px-3 py-1.5 text-[11px]">
+                <div className="flex items-center justify-between bg-muted/40 px-3 py-1.5 type-meta">
                   <span className="font-medium text-foreground/80">
                     Table {t.tableIndex + 1}{" "}
                     <span className="font-normal text-muted-foreground">
@@ -258,7 +258,7 @@ export function TableRowsViewer({
                   </span>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
+                  <table className={cn("border-collapse type-secondary", MOBILE_TABLE)}>
                     {t.header && (
                       <thead>
                         <tr className="bg-muted/20">

@@ -105,7 +105,7 @@ export function AnimatedKpiCard({
       />
       <div className="relative flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-medium text-muted-foreground tracking-wide truncate">
+          <div className="type-meta font-medium text-muted-foreground tracking-wide truncate">
             {label}
           </div>
           <div className="mt-1 text-xl font-semibold leading-tight tabular-nums">
@@ -118,7 +118,7 @@ export function AnimatedKpiCard({
             )}
           </div>
           {detail && (
-            <div className="mt-0.5 text-[10px] text-muted-foreground truncate">
+            <div className="mt-0.5 type-meta text-muted-foreground truncate">
               {detail}
             </div>
           )}

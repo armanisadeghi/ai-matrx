@@ -54,7 +54,7 @@ export function PdfPane({
     if (document.source_kind === "cld_file") return null;
     return (
       <div className="flex flex-col h-full overflow-hidden bg-background">
-        <header className="px-3 py-2 border-b border-border text-xs text-muted-foreground font-medium">
+        <header className="px-3 py-2 border-b border-border type-secondary text-muted-foreground font-medium">
           Page {activePageIndex + 1}
         </header>
         <div className="flex-1 overflow-auto p-3 grid place-items-center">
@@ -73,7 +73,7 @@ export function PdfPane({
 
   if (!document) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full items-center justify-center type-body text-muted-foreground">
         No document
       </div>
     );

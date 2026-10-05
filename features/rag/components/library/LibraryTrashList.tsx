@@ -82,12 +82,12 @@ export function LibraryTrashList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2" data-testid="hub-trash">
-      <p className="px-2 text-xs text-muted-foreground">
+      <p className="px-2 type-secondary text-muted-foreground">
         Sources you moved to the trash stay restorable. Documents trashed with their file
         come back together with the file.
       </p>
       {error ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 type-secondary">
           <span className="min-w-0 flex-1 text-destructive">
             {error}
             <ErrorAlchemyMenu error={error} size="xs" />
@@ -104,7 +104,7 @@ export function LibraryTrashList({
           ))}
         </div>
       ) : !error && groups.length === 0 ? (
-        <p className="px-2 py-6 text-sm text-muted-foreground">
+        <p className="px-2 py-6 type-body text-muted-foreground">
           {words ? `Nothing in the trash matches "${filterText?.trim()}".` : "The trash is empty."}
         </p>
       ) : (
@@ -117,8 +117,8 @@ export function LibraryTrashList({
               <li key={group.key} className="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-2" data-trash-row={row.id}>
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm">{row.name ?? row.file_name ?? row.id}</div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <div className="truncate type-body">{row.name ?? row.file_name ?? row.id}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 type-meta text-muted-foreground">
                     <span>Trashed {new Date(row.deleted_at).toLocaleString()}</span>
                     <span>·</span>
                     {group.versions > 1 ? (

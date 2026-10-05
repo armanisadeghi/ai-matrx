@@ -248,10 +248,10 @@ function JobCard({
         <StatusOrb job={job} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold truncate">{job.title}</h3>
+            <h3 className="type-title truncate">{job.title}</h3>
             <JobStatusBadge job={job} />
           </div>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="type-secondary text-muted-foreground truncate">
             {isRunning
               ? (job.frame?.message ?? "Working…")
               : isFailed
@@ -333,7 +333,7 @@ function MiniProgress({ job }: { job: ProcessingJob }) {
           />
         )}
       </div>
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground tabular-nums">
+      <div className="flex items-center justify-between type-meta text-muted-foreground tabular-nums">
         <span className="truncate">
           {(job.frame?.current ?? 0).toLocaleString()}
           {(job.frame?.total ?? 0) > 0
@@ -415,8 +415,8 @@ function EmptyState() {
       <div className="relative mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Zap className="h-5 w-5 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-semibold">Nothing processing yet</h3>
-      <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+      <h3 className="type-title">Nothing processing yet</h3>
+      <p className="type-secondary text-muted-foreground mt-1 max-w-xs">
         Upload a file or re-run a stage to watch live extraction, cleaning,
         segmentation, and embedding stream in here.
       </p>

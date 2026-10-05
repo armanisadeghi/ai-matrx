@@ -186,12 +186,12 @@ export function DataStoresPage() {
       {creating ? null : <CreateStoreInline onCreated={(id) => select(id)} />}
       <div className="flex-1 overflow-auto">
         {list.loading && list.stores.length === 0 && (
-          <div className="px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="px-3 py-2 flex items-center gap-2 type-secondary text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
           </div>
         )}
         {list.error && (
-          <div className="px-3 py-2 flex items-center gap-2 text-xs text-destructive">
+          <div className="px-3 py-2 flex items-center gap-2 type-secondary text-destructive">
             <AlertCircle className="h-3.5 w-3.5" /> {list.error}
             <ErrorAlchemyMenu error={list.error} />
           </div>
@@ -204,7 +204,7 @@ export function DataStoresPage() {
           nothing — the same sentence a genuinely empty account gets.
         */}
         {!list.loading && list.stores.length === 0 && (
-          <div className="px-3 py-3 text-xs text-muted-foreground">
+          <div className="px-3 py-3 type-secondary text-muted-foreground">
             {list.error
               ? "Nothing was listed, because the read above failed — this is not an empty list."
               : "No data stores yet. Create your first one above."}
@@ -227,11 +227,11 @@ export function DataStoresPage() {
       <CreateStoreInline initialOpen onCreated={(id) => select(id)} />
     </div>
   ) : !storeId ? (
-    <div className="m-6 rounded-md border bg-muted/20 p-6 text-sm text-muted-foreground max-w-2xl">
+    <div className="m-6 rounded-md border bg-muted/20 p-6 type-body text-muted-foreground max-w-2xl">
       <p className="font-medium text-foreground mb-2">What is a data store?</p>
       <p className="mb-2">
         A named, curated bucket of documents. Agents can search inside one with{" "}
-        <code className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
+        <code className="font-mono type-meta bg-muted px-1 py-0.5 rounded">
           knowledge_search(query, data_store_id)
         </code>
         . Bind any indexed PDF, note, code file, or library doc; the agent then
@@ -274,7 +274,7 @@ export function DataStoresPage() {
     >
       <RagHubHeader
         right={
-          <span className="text-xs text-muted-foreground tabular-nums px-2">
+          <span className="type-secondary text-muted-foreground tabular-nums px-2">
             <UntrustedCount
               value={list.stores.length}
               trustworthy={!list.error}
@@ -358,24 +358,24 @@ function StoreListRow({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-medium truncate flex-1">
+        <span className="type-secondary font-medium truncate flex-1">
           {store.name}
         </span>
         {!store.isActive && (
-          <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
+          <span className="type-meta px-1 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
             archived
           </span>
         )}
-        <span className="text-[10px] text-muted-foreground tabular-nums">
+        <span className="type-meta text-muted-foreground tabular-nums">
           {store.memberCount}
         </span>
       </div>
-      <div className="text-[10px] text-muted-foreground truncate">
+      <div className="type-meta text-muted-foreground truncate">
         {(store.kind ?? "general") +
           (store.shortCode ? ` · ${store.shortCode}` : "")}
       </div>
       {store.description && (
-        <div className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+        <div className="type-meta text-muted-foreground/70 truncate mt-0.5">
           {store.description}
         </div>
       )}
@@ -561,7 +561,7 @@ function CreateStoreInline({
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
-      {err && <div className="text-[10px] text-destructive">{err} <ErrorAlchemyMenu error={err} /></div>}
+      {err && <div className="type-meta text-destructive">{err} <ErrorAlchemyMenu error={err} /></div>}
     </form>
   );
 }
@@ -807,7 +807,7 @@ function StoreDetailPanel({
 
   if (detail.loading && !detail.store) {
     return (
-      <div className="m-6 flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="m-6 flex items-center gap-2 type-body text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading…
       </div>
     );
@@ -844,14 +844,14 @@ function StoreDetailPanel({
     >
       {dragActive && (
         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none rounded-md border-2 border-dashed border-primary bg-primary/10">
-          <div className="text-sm font-medium text-primary flex items-center gap-2">
+          <div className="type-title text-primary flex items-center gap-2">
             <CloudUpload className="h-5 w-5" />
             Drop files to upload + bind to {s.name}
           </div>
         </div>
       )}
       {dropPending && (
-        <div className="absolute top-2 right-2 z-30 rounded-md bg-card border px-2 py-1 text-xs flex items-center gap-1.5 shadow">
+        <div className="absolute top-2 right-2 z-30 rounded-md bg-card border px-2 py-1 type-secondary flex items-center gap-1.5 shadow">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…
         </div>
       )}
@@ -859,17 +859,17 @@ function StoreDetailPanel({
       <header className="border-b px-4 py-3 space-y-2 shrink-0">
         <div className="flex items-center gap-2 flex-wrap">
           <Database className="h-4 w-4 text-muted-foreground" />
-          <h1 className="text-sm font-semibold">{s.name}</h1>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground uppercase tracking-wide">
+          <h1 className="type-title">{s.name}</h1>
+          <span className="type-meta px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground uppercase tracking-wide">
             {s.kind ?? "general"}
           </span>
           {!s.isActive && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
+            <span className="type-meta px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300">
               archived
             </span>
           )}
           {readOnly && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
+            <span className="type-meta px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
               <Lock className="h-3 w-3" /> Shared library ·{" "}
               {grantProvenanceLabel ?? "read-only"}
             </span>
@@ -918,9 +918,9 @@ function StoreDetailPanel({
           </div>
         </div>
         {s.description && (
-          <p className="text-xs text-muted-foreground">{s.description}</p>
+          <p className="type-secondary text-muted-foreground">{s.description}</p>
         )}
-        <div className="text-[10px] text-muted-foreground font-mono select-all">
+        <div className="type-meta text-muted-foreground font-mono select-all">
           {s.id}
         </div>
         {/*
@@ -981,7 +981,7 @@ function StoreDetailPanel({
 
         {/* Hint about drag-drop */}
         {detail.members.length === 0 && (
-          <div className="rounded-md border-2 border-dashed border-border bg-muted/20 p-6 text-xs text-muted-foreground text-center">
+          <div className="rounded-md border-2 border-dashed border-border bg-muted/20 p-6 type-secondary text-muted-foreground text-center">
             <CloudUpload className="h-6 w-6 mx-auto mb-2 text-muted-foreground/60" />
             <p className="font-medium text-foreground/80 mb-1">
               No members yet
@@ -1013,7 +1013,7 @@ function StoreDetailPanel({
         )}
 
         {!readOnly && detail.members.length > 0 && (
-          <div className="text-[11px] text-muted-foreground/70 pt-1">
+          <div className="type-meta text-muted-foreground/70 pt-1">
             Tip: drag files from your computer onto this panel to upload + bind
             + queue for Knowledge in one step.
           </div>
@@ -1061,10 +1061,10 @@ function StoreDetailPanel({
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-sm">
+            <DialogTitle className="type-body">
               Bind by source_kind + UUID (advanced)
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="type-secondary">
               For non-cld_file sources (notes, code files, library docs,
               processed documents). The cld_file picker handles the common case.
             </DialogDescription>
@@ -1096,19 +1096,19 @@ function MemberTable({
 }) {
   return (
     <div className="overflow-hidden rounded-md border">
-      <table className={cn("text-sm", MOBILE_TABLE)}>
+      <table className={cn("type-body", MOBILE_TABLE)}>
         <thead>
           <tr className="border-b bg-muted/40">
-            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
+            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Kind
             </th>
-            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
+            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
               Document
             </th>
-            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
+            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Notes
             </th>
-            <th className={cn("px-3 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
+            <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_CELL)}>
               Added
             </th>
             <th className="w-10" />
@@ -1120,19 +1120,19 @@ function MemberTable({
               key={`${m.sourceKind}/${m.sourceId}`}
               className="hover:bg-muted/20"
             >
-              <td className={cn("px-3 py-1.5 text-xs", MOBILE_TABLE_CELL)}>
+              <td className={cn("px-3 py-1.5 type-secondary", MOBILE_TABLE_CELL)}>
                 {m.sourceKind}
               </td>
               <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
-                <div className="text-xs">{m.label ?? "—"}</div>
-                <div className="font-mono text-[10px] text-muted-foreground select-all truncate">
+                <div className="type-secondary">{m.label ?? "—"}</div>
+                <div className="font-mono type-meta text-muted-foreground select-all truncate">
                   {m.sourceId}
                 </div>
               </td>
-              <td className={cn("px-3 py-1.5 text-xs text-muted-foreground", MOBILE_TABLE_CELL)}>
+              <td className={cn("px-3 py-1.5 type-secondary text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {m.notes ?? "—"}
               </td>
-              <td className={cn("px-3 py-1.5 text-[10px] text-muted-foreground tabular-nums", MOBILE_TABLE_CELL)}>
+              <td className={cn("px-3 py-1.5 type-meta text-muted-foreground tabular-nums", MOBILE_TABLE_CELL)}>
                 {new Date(m.addedAt).toLocaleString()}
               </td>
               <td className="px-3 py-1.5 text-right">

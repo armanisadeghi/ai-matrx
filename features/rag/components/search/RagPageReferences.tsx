@@ -803,7 +803,7 @@ export function RagPageReferences({
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/25 px-3 py-2">
         <div className="flex min-w-0 items-center gap-1.5">
           <FileScan className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-semibold text-foreground">
+          <span className="type-secondary font-semibold text-foreground">
             {pageNumber != null
               ? `Page ${pageNumber} references`
               : "Document references"}
@@ -818,18 +818,18 @@ export function RagPageReferences({
           />
         </div>
         {busy ? (
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 type-meta text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             Resolving page assets…
           </span>
         ) : null}
         {page?.sectionTitle ? (
-          <span className="truncate text-[10px] text-muted-foreground">
+          <span className="truncate type-meta text-muted-foreground">
             {page.sectionTitle}
           </span>
         ) : null}
         {loaded?.partialFailures ? (
-          <span className="text-[10px] text-amber-700 dark:text-amber-400">
+          <span className="type-meta text-amber-700 dark:text-amber-400">
             {loaded.partialFailures} reference source
             {loaded.partialFailures === 1 ? "" : "s"} unavailable
             <ErrorAlchemyMenu error={loaded.partialFailures} />
@@ -863,10 +863,10 @@ export function RagPageReferences({
         <section className="min-w-0 bg-background">
           <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
             <SelectedPreviewIcon className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-semibold text-foreground">
+            <span className="type-secondary font-semibold text-foreground">
               {selectedPreview.label}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="type-meta text-muted-foreground">
               {selectedPreview.detail}
             </span>
             {selectedCopy ? (
@@ -892,7 +892,7 @@ export function RagPageReferences({
         <div className="grid min-w-0 md:grid-cols-2 md:divide-x md:divide-border">
           <section className="min-w-0 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                 Retrieved chunk
               </span>
               <RagContentActions
@@ -909,10 +909,10 @@ export function RagPageReferences({
               {selectedPreview ? (
                 <>
                   <SelectedPreviewIcon className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-foreground">
+                  <span className="type-secondary font-semibold text-foreground">
                     {selectedPreview.label}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="type-meta text-muted-foreground">
                     {selectedPreview.detail}
                   </span>
                   {selectedCopy ? (
@@ -926,14 +926,14 @@ export function RagPageReferences({
                   ) : null}
                 </>
               ) : (
-                <span className="text-xs font-semibold text-foreground">
+                <span className="type-secondary font-semibold text-foreground">
                   Page reference preview
                 </span>
               )}
             </div>
             <div className="max-h-[34rem] min-h-44 overflow-auto p-3">
               {busy && !selectedPreview ? (
-                <div className="flex h-36 items-center justify-center gap-2 text-xs text-muted-foreground">
+                <div className="flex h-36 items-center justify-center gap-2 type-secondary text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Choosing the best page reference…
                 </div>
@@ -948,7 +948,7 @@ export function RagPageReferences({
                 <BasicMarkdownContent imagePolicy="other" content={page.cleanedText} />
               ) : null}
               {selectedPreview?.key === "raw" && page?.rawText ? (
-                <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground">
+                <pre className="whitespace-pre-wrap break-words font-mono type-secondary leading-relaxed text-foreground">
                   {page.rawText}
                 </pre>
               ) : null}
@@ -971,7 +971,7 @@ export function RagPageReferences({
                 />
               ) : null}
               {pageNumber == null ? (
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <p className="type-secondary leading-relaxed text-muted-foreground">
                   This result has no page provenance, so page-specific enriched
                   assets cannot be resolved without guessing. The PDF source is
                   still available on demand.
@@ -982,13 +982,13 @@ export function RagPageReferences({
               !error &&
               !pageError &&
               !hasAnyEnrichment ? (
-                <p className="text-xs leading-relaxed text-muted-foreground">
+                <p className="type-secondary leading-relaxed text-muted-foreground">
                   No enriched page assets have been produced yet. The PDF page
                   remains available on demand.
                 </p>
               ) : null}
               {error || pageError ? (
-                <p className="text-xs text-destructive">{error ?? pageError} <ErrorAlchemyMenu error={error} /></p>
+                <p className="type-secondary text-destructive">{error ?? pageError} <ErrorAlchemyMenu error={error} /></p>
               ) : null}
             </div>
           </section>
@@ -1047,8 +1047,8 @@ function ResourceButton({
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />
-      <span className="text-[11px] font-medium">{label}</span>
-      <span className="text-[10px] text-muted-foreground">{detail}</span>
+      <span className="type-meta font-medium">{label}</span>
+      <span className="type-meta text-muted-foreground">{detail}</span>
     </button>
   );
 }
@@ -1060,23 +1060,23 @@ function DerivativeDetail({ group }: { group: DerivativePageGroup }) {
   return (
     <div className="space-y-2">
       <div>
-        <div className="text-xs font-semibold text-foreground">
+        <div className="type-secondary font-semibold text-foreground">
           {group.label}
         </div>
-        <div className="text-[10px] text-muted-foreground">
+        <div className="type-meta text-muted-foreground">
           {group.description} · showing {group.chunks.length} of {group.total}
         </div>
       </div>
       {group.chunks.slice(0, 12).map((chunk) => (
         <div
           key={chunk.id}
-          className="rounded-md border border-border/70 bg-muted/10 px-2.5 py-2 text-xs leading-relaxed"
+          className="rounded-md border border-border/70 bg-muted/10 px-2.5 py-2 type-secondary leading-relaxed"
         >
           <BasicMarkdownContent imagePolicy="other" content={chunk.content_text} />
         </div>
       ))}
       {group.total > 12 ? (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           Showing the first 12 references for this page.
         </p>
       ) : null}
@@ -1105,12 +1105,12 @@ function TableRowsPreview({
 
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold text-foreground">
+      <div className="type-secondary font-semibold text-foreground">
         Table rows on this page
       </div>
       {header.length ? (
         <div className="overflow-x-auto rounded-md border border-border">
-          <table className={cn("border-collapse text-xs", MOBILE_TABLE)}>
+          <table className={cn("border-collapse type-secondary", MOBILE_TABLE)}>
             <thead className="bg-muted/50">
               <tr>
                 {header.map((cell, index) => (
@@ -1150,14 +1150,14 @@ function TableRowsPreview({
       ) : (
         <div className="space-y-1.5">
           {rows.map((row) => (
-            <div key={row.id} className="rounded-md bg-muted/30 p-2 text-xs">
+            <div key={row.id} className="rounded-md bg-muted/30 p-2 type-secondary">
               {row.fallback}
             </div>
           ))}
         </div>
       )}
       {total > rows.length ? (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           Showing {rows.length} of {total} rows on this page.
         </p>
       ) : null}
@@ -1174,19 +1174,19 @@ function ExtractionDetail({
 }) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold text-foreground">
+      <div className="type-secondary font-semibold text-foreground">
         Custom extraction rows
       </div>
       {rows.slice(0, 12).map((row) => (
         <pre
           key={row.id}
-          className="whitespace-pre-wrap break-words rounded-md border border-border/70 bg-muted/20 p-2 font-mono text-[11px] leading-relaxed"
+          className="whitespace-pre-wrap break-words rounded-md border border-border/70 bg-muted/20 p-2 font-mono type-meta leading-relaxed"
         >
           {JSON.stringify(row.payload, null, 2)}
         </pre>
       ))}
       {total > 12 ? (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           Showing the first 12 of {total} rows for this page.
         </p>
       ) : null}
@@ -1208,7 +1208,7 @@ function VerificationDetail({
   usedOcr: boolean;
 }) {
   return (
-    <div className="space-y-1 text-xs">
+    <div className="space-y-1 type-secondary">
       <div className="font-semibold text-foreground">Page verification</div>
       <div className="text-muted-foreground">
         Verified {new Date(verifiedAt).toLocaleString()}

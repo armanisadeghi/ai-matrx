@@ -125,13 +125,13 @@ export function QuickSearchDialog({
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-4 space-y-2">
             {error && (
-              <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 text-sm text-destructive">
+              <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 type-body text-destructive">
                 <strong>Error:</strong> {error}
                 <ErrorAlchemyMenu error={error} />
               </div>
             )}
             {!loading && hits === null && !error && (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="type-body text-muted-foreground text-center py-8">
                 Type a query above and hit Search to keyword-search this
                 document's text. This is a literal keyword (lexical) match — not
                 the semantic AI retrieval an agent performs; use AI search for
@@ -139,7 +139,7 @@ export function QuickSearchDialog({
               </p>
             )}
             {hits && hits.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8 italic">
+              <p className="type-body text-muted-foreground text-center py-8 italic">
                 No matches. Try simpler keywords.
               </p>
             )}
@@ -148,7 +148,7 @@ export function QuickSearchDialog({
                 key={h.chunk_id}
                 className="border rounded-md p-3 space-y-2 bg-card"
               >
-                <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-1 type-secondary text-muted-foreground flex-wrap">
                   <Badge variant="outline" className="text-[10px]">
                     #{i + 1}
                   </Badge>
@@ -175,13 +175,13 @@ export function QuickSearchDialog({
                         href={`/knowledge/library/${processedDocumentId}/preview?page=${h.page_numbers[0]}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-auto inline-flex items-center gap-1 text-primary text-[11px] hover:underline"
+                        className="ml-auto inline-flex items-center gap-1 text-primary type-meta hover:underline"
                       >
                         Open in preview <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
                 </div>
-                <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed font-sans max-h-40 overflow-auto">
+                <pre className="whitespace-pre-wrap break-words type-secondary leading-relaxed font-sans max-h-40 overflow-auto">
                   {h.content_text}
                 </pre>
               </div>

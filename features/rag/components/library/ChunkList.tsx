@@ -147,7 +147,7 @@ export function ChunkCard({
           : "border border-border",
       )}
     >
-      <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+      <div className="flex items-center gap-1 type-secondary text-muted-foreground flex-wrap">
         {highlighted && (
           <Badge
             variant="default"
@@ -237,7 +237,7 @@ export function ChunkCard({
           </button>
         )}
       </div>
-      <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed font-sans overflow-x-auto">
+      <pre className="whitespace-pre-wrap break-words type-secondary leading-relaxed font-sans overflow-x-auto">
         {chunk.content_text}
       </pre>
     </div>
@@ -480,9 +480,9 @@ export function ChunksOnPage({
           />
         )}
         {loading && <ChunkListSkeleton rows={3} />}
-        {error && <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
+        {error && <p className="type-body text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>}
         {!loading && !error && chunks.length === 0 && (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="type-body text-muted-foreground italic">
             No {RAG_VOCAB.segmentsShort.toLowerCase()} for page {pageNumber}.
           </p>
         )}
@@ -507,7 +507,7 @@ export function ChunksOnPage({
         {/* A failed page load keeps the known total and Load more (its retry) — stale-while-error. */}
         {total > chunks.length && (
           <div className="flex items-center gap-2">
-            <p className="text-xs text-muted-foreground italic">
+            <p className="type-secondary text-muted-foreground italic">
               {/* read-gate-exempt: both numbers come from pages that DID load; a failed next page keeps them (stale-while-error) and says the failure above */}
               Showing first {chunks.length} of {total}.
             </p>
@@ -597,7 +597,7 @@ export function DerivativeChunkList({
   }
   if (error) {
     return (
-      <p className="text-[11px] text-destructive px-0.5 py-1">
+      <p className="type-meta text-destructive px-0.5 py-1">
         Couldn&apos;t load results: {error}
         <ErrorAlchemyMenu error={error} />
       </p>
@@ -605,7 +605,7 @@ export function DerivativeChunkList({
   }
   if (rows.length === 0) {
     return (
-      <p className="text-[11px] text-muted-foreground italic px-0.5 py-1">
+      <p className="type-meta text-muted-foreground italic px-0.5 py-1">
         No content rows found for this representation.
       </p>
     );
@@ -632,7 +632,7 @@ export function DerivativeChunkList({
         <ChunkCard key={c.id} chunk={c} scope={scope} />
       ))}
       {shownTotal > rows.length && (
-        <p className="text-[10px] text-muted-foreground italic">
+        <p className="type-meta text-muted-foreground italic">
           Showing first {rows.length} of {shownTotal}.
         </p>
       )}

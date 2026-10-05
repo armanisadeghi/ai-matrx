@@ -48,28 +48,28 @@ export function LibraryCatalogPane() {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Library className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-semibold">Shared libraries</h2>
+        <h2 className="type-title">Shared libraries</h2>
         <Link
           href="/knowledge/library-catalog"
-          className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="ml-auto inline-flex items-center gap-1 type-secondary font-medium text-primary hover:underline"
         >
           Browse the full catalog
           <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="type-secondary text-muted-foreground">
         Curated knowledge resources you can add to your workspace. Subscribed
         libraries are read-only — searchable alongside your own content.
       </p>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 type-body text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
         </div>
       ) : error ? (
-        <div className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
+        <div className="type-body text-destructive">{error} <ErrorAlchemyMenu error={error} /></div>
       ) : items.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border border-dashed border-border px-3 py-6 text-center type-body text-muted-foreground">
           No shared libraries available yet.
         </div>
       ) : (
@@ -84,12 +84,12 @@ export function LibraryCatalogPane() {
                   <div className="min-w-0">
                     <Link
                       href={`/knowledge/library-catalog?type=data_store&id=${it.id}`}
-                      className="block truncate text-sm font-medium text-foreground hover:underline"
+                      className="block truncate type-title text-foreground hover:underline"
                     >
                       {it.name}
                     </Link>
                     {it.description && (
-                      <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                      <div className="mt-0.5 line-clamp-2 type-secondary text-muted-foreground">
                         {it.description}
                       </div>
                     )}
@@ -100,7 +100,7 @@ export function LibraryCatalogPane() {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="type-meta text-muted-foreground">
                     {it.memberCount} document{it.memberCount === 1 ? "" : "s"}
                   </span>
                   {it.subscribed ? (
@@ -125,7 +125,7 @@ export function LibraryCatalogPane() {
           {items.length > TEASER_LIMIT && (
             <Link
               href="/knowledge/library-catalog"
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 type-secondary font-medium text-primary hover:underline"
             >
               +{items.length - TEASER_LIMIT} more in the catalog
               <ArrowRight className="h-3 w-3" />

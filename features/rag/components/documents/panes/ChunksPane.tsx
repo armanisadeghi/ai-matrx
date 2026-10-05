@@ -58,19 +58,19 @@ export function ChunksPane({
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
-      <header className="flex items-center justify-between px-3 py-2 border-b border-border text-xs text-muted-foreground">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border type-secondary text-muted-foreground">
         <span className="font-medium">{RAG_VOCAB.segmentsShort}</span>
         <span>{chunks.length.toLocaleString()} total</span>
       </header>
       <div ref={parentRef} className="flex-1 overflow-auto">
         {loading && (
-          <div className="p-3 text-sm text-muted-foreground">Loading…</div>
+          <div className="p-3 type-body text-muted-foreground">Loading…</div>
         )}
         {error && (
-          <div className="p-3 text-sm text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
+          <div className="p-3 type-body text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {!loading && !error && chunks.length === 0 && (
-          <div className="p-3 text-sm text-muted-foreground">
+          <div className="p-3 type-body text-muted-foreground">
             No segments for this document yet — re-process through Knowledge
             ingestion.
           </div>
@@ -102,7 +102,7 @@ export function ChunksPane({
                   }}
                 >
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <span className="font-mono type-meta uppercase tracking-wide text-muted-foreground">
                       #{c.chunk_index} ·{" "}
                       {c.parent_chunk_id ? "child" : "parent"}
                       {c.page_numbers && c.page_numbers.length
@@ -110,12 +110,12 @@ export function ChunksPane({
                         : ""}
                     </span>
                     {c.section_kind && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/60">
+                      <span className="type-meta px-1.5 py-0.5 rounded bg-secondary/60">
                         {c.section_kind}
                       </span>
                     )}
                   </div>
-                  <div className="text-xs line-clamp-3 text-foreground">
+                  <div className="type-secondary line-clamp-3 text-foreground">
                     {c.content_text}
                   </div>
                 </button>

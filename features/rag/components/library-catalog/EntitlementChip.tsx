@@ -78,7 +78,7 @@ export function EntitlementChip({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+        "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 type-meta font-medium",
         entitled
           ? "bg-primary/10 text-primary"
           : "bg-muted text-muted-foreground",

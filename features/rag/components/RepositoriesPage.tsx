@@ -111,7 +111,7 @@ const repositoryColumns = (
     cell: (repo) =>
       repo.git_url ? (
         <span
-          className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+          className="flex min-w-0 items-center gap-1 type-secondary text-muted-foreground"
           title={repo.git_url}
         >
           <ExternalLink className="h-3 w-3 shrink-0" />
@@ -132,7 +132,7 @@ const repositoryColumns = (
     cell: (repo) =>
       repo.git_branch ? (
         <code
-          className="block whitespace-nowrap rounded bg-muted/50 px-1.5 py-0.5 text-xs"
+          className="block whitespace-nowrap rounded bg-muted/50 px-1.5 py-0.5 type-secondary"
           title={repo.git_branch}
         >
           {repo.git_branch}
@@ -193,7 +193,7 @@ const repositoryColumns = (
     width: 180,
     cell: (repo) => (
       <span
-        className="block truncate text-xs text-muted-foreground"
+        className="block truncate type-secondary text-muted-foreground"
         title={
           repo.last_synced_at
             ? new Date(repo.last_synced_at).toLocaleString()
@@ -321,7 +321,7 @@ export function RepositoriesPage() {
       <RagHubHeader />
       <div className="flex flex-col h-full overflow-hidden bg-background pt-[var(--shell-header-h)]">
         {focusMissing && (
-          <div className="mx-6 mb-2 shrink-0 rounded-md border border-warning/50 bg-warning/5 p-3 text-sm">
+          <div className="mx-6 mb-2 shrink-0 rounded-md border border-warning/50 bg-warning/5 p-3 type-body">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
               <span className="text-muted-foreground">
@@ -334,7 +334,7 @@ export function RepositoriesPage() {
         )}
 
         {unattached > 0 && (
-          <div className="px-6 pb-2 text-xs text-muted-foreground shrink-0">
+          <div className="px-6 pb-2 type-secondary text-muted-foreground shrink-0">
             <Badge variant="warning" className="mr-2">
               {unattached}
             </Badge>
@@ -423,7 +423,7 @@ export function RepositoriesPage() {
                 description:
                   "Repositories live in code.code_repositories. Once you create one and bind code files to it (via code_files.metadata.repository_id), it will appear here ready to index.",
                 action: (
-                  <Link href="/sandbox" className="text-sm underline">
+                  <Link href="/sandbox" className="type-body underline">
                     Open a sandbox to create one
                   </Link>
                 ),

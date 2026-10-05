@@ -371,11 +371,11 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <Library className="h-4 w-4 text-primary shrink-0" />
-            <h3 className="text-sm font-semibold leading-tight truncate">
+            <h3 className="type-title leading-tight truncate">
               Knowledge Asset Builder
             </h3>
           </div>
-          <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+          <p className="mt-0.5 type-meta text-muted-foreground leading-snug">
             Build premium representations from{" "}
             <span className="font-medium text-foreground">{doc.name}</span>.
             {!loadError && builtCount > 0 && (
@@ -391,7 +391,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           {totalBuildUnits != null && totalBuildUnits > 0 && (
             <div className="mt-1 flex items-center gap-1.5">
               <CostBadge usd={totalBuildUnits} />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="type-meta text-muted-foreground">
                 full build estimate
               </span>
             </div>
@@ -425,7 +425,7 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
 
       {/* Load error (non-blocking) */}
       {loadError && (
-        <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px]">
+        <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 type-meta">
           <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <span className="flex-1 text-amber-700 dark:text-amber-400">
             Couldn&apos;t verify existing work ({loadError}). Processing actions
@@ -636,7 +636,7 @@ function RepresentationCard({
             </span>
             <span
               className={cn(
-                "text-[11px] font-medium leading-tight truncate",
+                "type-meta font-medium leading-tight truncate",
                 built || running ? "text-foreground" : "text-muted-foreground",
               )}
               title={meta.label}
@@ -663,7 +663,7 @@ function RepresentationCard({
       </div>
 
       {/* Blurb / status line */}
-      <p className="mt-1.5 text-[10px] leading-snug text-muted-foreground line-clamp-2 min-h-[26px]">
+      <p className="mt-1.5 type-meta leading-snug text-muted-foreground line-clamp-2 min-h-[26px]">
         {running
           ? op.message || "Working…"
           : failed
@@ -675,7 +675,7 @@ function RepresentationCard({
 
       {/* Verification breakdown — the honest "why some pages are empty". */}
       {isVerif && built && (
-        <div className="text-[10px] leading-snug">
+        <div className="type-meta leading-snug">
           {verification.flagged > 0 ? (
             <span className="text-amber-700 dark:text-amber-400">
               {verification.flagged.toLocaleString()} flagged —{" "}
@@ -849,7 +849,7 @@ function RealityLine({
   const { format: costText } = useCostDisplay();
   if (loading && !estimate) {
     return (
-      <div className="mt-1.5 flex items-center gap-1 text-[10px] leading-snug text-muted-foreground">
+      <div className="mt-1.5 flex items-center gap-1 type-meta leading-snug text-muted-foreground">
         <Loader2 className="h-2.5 w-2.5 shrink-0 animate-spin text-primary/70" />
         <span>Scanning document to estimate processing…</span>
       </div>
@@ -864,7 +864,7 @@ function RealityLine({
   const units = estimate.cost_usd ?? 0;
 
   return (
-    <div className="mt-1.5 flex items-start gap-1 text-[10px] leading-snug text-muted-foreground">
+    <div className="mt-1.5 flex items-start gap-1 type-meta leading-snug text-muted-foreground">
       <Library className="mt-[1px] h-2.5 w-2.5 shrink-0 text-primary/70" />
       <span className="min-w-0">
         <span className="font-medium text-foreground/80">
@@ -938,21 +938,21 @@ function LiveActivityRow({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold leading-tight truncate">
+            <span className="type-secondary font-semibold leading-tight truncate">
               {meta.label}
             </span>
-            <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
+            <span className="type-meta tabular-nums text-muted-foreground shrink-0">
               {op.total > 0
                 ? `${op.current.toLocaleString()} / ${op.total.toLocaleString()} ${meta.unit}`
                 : `${op.current.toLocaleString()} ${meta.unit}`}
             </span>
           </div>
-          <p className="text-[11px] text-foreground/80 truncate">
+          <p className="type-meta text-foreground/80 truncate">
             {op.message || "Working…"}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] tabular-nums text-muted-foreground">
+          <span className="type-meta tabular-nums text-muted-foreground">
             {elapsed}
           </span>
           <Button
@@ -1009,7 +1009,7 @@ function BuildAllProgress({
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/[0.03] p-2.5">
-      <div className="mb-1.5 flex items-center justify-between text-[11px]">
+      <div className="mb-1.5 flex items-center justify-between type-meta">
         <span className="font-medium">Building all representations</span>
         <span className="tabular-nums text-muted-foreground">
           {done + failed} / {total}
@@ -1029,7 +1029,7 @@ function BuildAllProgress({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <div className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
       {children}
     </div>
   );
@@ -1098,7 +1098,7 @@ function DocSummaryLine({
     // Estimate failed — still show what we know (pages) so the line isn't blank.
     if (fallbackPages && fallbackPages > 0) {
       return (
-        <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+        <p className="mt-1 type-meta tabular-nums text-muted-foreground">
           {fallbackPages.toLocaleString()} pages
           {estimate.error && (
             <span className="text-amber-600 dark:text-amber-400">
@@ -1121,7 +1121,7 @@ function DocSummaryLine({
     parts.push(`${d.figure_pages.toLocaleString()} figure pages`);
 
   return (
-    <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+    <p className="mt-1 type-meta tabular-nums text-muted-foreground">
       {parts.join(" · ")}
     </p>
   );

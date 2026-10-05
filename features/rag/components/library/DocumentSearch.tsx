@@ -102,7 +102,7 @@ export function DocumentSearchBar({
       />
 
       {resultLabel && (
-        <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+        <span className="type-secondary text-muted-foreground tabular-nums whitespace-nowrap">
           {resultLabel}
         </span>
       )}
@@ -114,7 +114,7 @@ export function DocumentSearchBar({
         href={fullSearchHref}
         target="_blank"
         rel="noreferrer"
-        className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+        className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 type-secondary font-medium text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
         title="Open AI semantic search across all your documents, notes, and code"
       >
         <Telescope className="h-3.5 w-3.5" />
@@ -146,7 +146,7 @@ export function DocumentSearchSummary({
 }) {
   if (loading) {
     return (
-      <div className="border-b bg-muted/10 px-3 py-2 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="border-b bg-muted/10 px-3 py-2 flex items-center gap-2 type-secondary text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
         Searching “{activeQuery}” across the document…
       </div>
@@ -155,7 +155,7 @@ export function DocumentSearchSummary({
 
   if (error) {
     return (
-      <div className="border-b bg-destructive/5 px-3 py-2 text-xs text-destructive">
+      <div className="border-b bg-destructive/5 px-3 py-2 type-secondary text-destructive">
         <strong>Search failed:</strong> {error}
         <ErrorAlchemyMenu error={error} />
       </div>
@@ -166,7 +166,7 @@ export function DocumentSearchSummary({
 
   if (summary.segmentCount === 0) {
     return (
-      <div className="border-b bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+      <div className="border-b bg-muted/10 px-3 py-2 type-secondary text-muted-foreground">
         No matches for{" "}
         <strong className="text-foreground">“{activeQuery}”</strong> in this
         document. Try simpler keywords, or use{" "}
@@ -178,7 +178,7 @@ export function DocumentSearchSummary({
 
   return (
     <div className="border-b bg-muted/10 px-3 py-2 space-y-1.5">
-      <div className="flex items-center gap-2 flex-wrap text-xs">
+      <div className="flex items-center gap-2 flex-wrap type-secondary">
         <span className="font-medium text-foreground">“{activeQuery}”</span>
         <span className="text-muted-foreground tabular-nums">
           {summary.segmentCount}{" "}
@@ -222,7 +222,7 @@ export function DocumentSearchSummary({
           }}
           className="group w-full text-left rounded-md border bg-card px-2.5 py-1.5 hover:bg-accent/40 transition-colors"
         >
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-0.5">
+          <div className="flex items-center gap-1.5 type-meta text-muted-foreground mb-0.5">
             <FileText className="h-3 w-3" />
             <span className="uppercase tracking-wide">Best match</span>
             {summary.topHit.page_numbers?.[0] != null && (
@@ -234,7 +234,7 @@ export function DocumentSearchSummary({
               score {summary.topHit.score.toFixed(3)}
             </Badge>
           </div>
-          <p className="text-xs leading-relaxed text-foreground/90 line-clamp-2">
+          <p className="type-secondary leading-relaxed text-foreground/90 line-clamp-2">
             <HighlightedText
               text={summary.topHit.content_text}
               query={activeQuery}
@@ -270,25 +270,25 @@ export function DocumentSearchResultsList({
     <ScrollArea className="h-full">
       <div className="p-3 space-y-2">
         {!hasSearched && !loading && (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="type-body text-muted-foreground italic">
             Search this document to see ranked matches here. Each result links
             to the page it’s on.
           </p>
         )}
         {loading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 type-body text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             Searching…
           </div>
         )}
         {error && (
-          <p className="text-sm text-destructive">
+          <p className="type-body text-destructive">
             <strong>Error:</strong> {error}
             <ErrorAlchemyMenu error={error} />
           </p>
         )}
         {!loading && !error && hits && hits.length === 0 && (
-          <p className="text-sm text-muted-foreground italic">
+          <p className="type-body text-muted-foreground italic">
             No matches. Try simpler keywords, or AI search for meaning-based
             results.
           </p>
@@ -302,7 +302,7 @@ export function DocumentSearchResultsList({
               onClick={() => page != null && onJumpToPage(page)}
               className="w-full text-left border rounded-md p-2 space-y-1 bg-card hover:bg-accent/40 transition-colors"
             >
-              <div className="flex items-center gap-1 text-xs text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-1 type-secondary text-muted-foreground flex-wrap">
                 <Badge variant="outline" className="text-[10px] px-1 py-0">
                   #{i + 1}
                 </Badge>
@@ -323,7 +323,7 @@ export function DocumentSearchResultsList({
                   </Badge>
                 )}
               </div>
-              <p className="whitespace-pre-wrap break-words text-xs leading-relaxed line-clamp-4">
+              <p className="whitespace-pre-wrap break-words type-secondary leading-relaxed line-clamp-4">
                 <HighlightedText text={h.content_text} query={activeQuery} />
               </p>
             </button>

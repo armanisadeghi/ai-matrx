@@ -115,7 +115,7 @@ function MatchStepper({
           >
             <ChevronUp className="h-3 w-3" />
           </button>
-          <span className="px-0.5 text-[10px] tabular-nums leading-none text-muted-foreground">
+          <span className="px-0.5 type-meta tabular-nums leading-none text-muted-foreground">
             {activeMatch + 1}/{matchesCount}
           </span>
           <button
@@ -128,7 +128,7 @@ function MatchStepper({
           </button>
         </>
       ) : (
-        <span className="whitespace-nowrap px-1.5 text-[10px] leading-none text-muted-foreground">
+        <span className="whitespace-nowrap px-1.5 type-meta leading-none text-muted-foreground">
           0 on page
         </span>
       )}
@@ -358,7 +358,7 @@ export function PageContentHeader({
     >
       <span
         ref={titleRef}
-        className="min-w-0 flex-1 truncate text-[10px] font-medium leading-none text-foreground"
+        className="min-w-0 flex-1 truncate type-meta font-medium leading-none text-foreground"
         title={pageLabel}
       >
         {loading ? "Loading…" : pageLabel}

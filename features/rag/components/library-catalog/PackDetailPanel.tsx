@@ -87,7 +87,7 @@ function Stat({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground">
+    <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 type-meta text-muted-foreground">
       <Icon className="h-3 w-3" aria-hidden />
       <span className="font-medium tabular-nums text-foreground">{count}</span>
       {label}
@@ -106,7 +106,7 @@ function UseOnSite({ packId }: { packId: string }) {
 
   if (sites.isPending) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1.5 type-secondary text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading your sites…
       </span>
     );
@@ -118,7 +118,7 @@ function UseOnSite({ packId }: { packId: string }) {
     // their first one is the same class of lie `features/access-gate/` exists
     // to kill. Say what we do know, and offer the read again.
     return (
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 type-secondary text-muted-foreground">
         <span>
           We couldn&apos;t load your websites, so there is nothing to choose
           from yet.
@@ -140,7 +140,7 @@ function UseOnSite({ packId }: { packId: string }) {
     return (
       <Link
         href={marketingRoutes.newSite()}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:border-primary/50 hover:bg-accent"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 type-secondary font-medium hover:border-primary/50 hover:bg-accent"
       >
         <Globe2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
         Add a website to use this pack
@@ -219,14 +219,14 @@ export function PackDetailPanel({
             <ArrowLeft className="h-4 w-4" />
           </button>
           <Boxes className="h-4 w-4 text-muted-foreground" />
-          <h1 className="text-sm font-semibold">{item.name}</h1>
-          <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-secondary-foreground">
+          <h1 className="type-title">{item.name}</h1>
+          <span className="rounded bg-secondary px-1.5 py-0.5 type-meta uppercase tracking-wide text-secondary-foreground">
             Starter pack
           </span>
           {status ? (
             <span
               className={cn(
-                "rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                "rounded border px-1.5 py-0.5 type-meta font-medium",
                 status.tone,
               )}
               title={status.hint}
@@ -243,9 +243,9 @@ export function PackDetailPanel({
           </div>
         </div>
         {item.description ? (
-          <p className="text-xs text-muted-foreground">{item.description}</p>
+          <p className="type-secondary text-muted-foreground">{item.description}</p>
         ) : null}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-muted-foreground">
           {item.entitledIndustryName ? (
             <span className="inline-flex items-center gap-1">
               <Building2 className="h-3 w-3" />
@@ -257,10 +257,10 @@ export function PackDetailPanel({
             {item.subscriberCount === 1 ? "" : "s"} using it
           </span>
           {item.slug ? <code className="font-mono">{item.slug}</code> : null}
-          <span className="select-all font-mono text-[10px]">{item.id}</span>
+          <span className="select-all font-mono type-meta">{item.id}</span>
         </div>
         {item.entitledVia === "industry" && organizationId ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             You have this because your organization is in{" "}
             <Link
               href={`/organizations/${organizationId}/settings`}
@@ -275,15 +275,15 @@ export function PackDetailPanel({
 
       <div className="flex-1 space-y-4 overflow-auto p-4">
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             What it carries
           </h2>
           {detail.isPending ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading the pack…
             </div>
           ) : detail.isError ? (
-            <div className="text-xs text-destructive">
+            <div className="type-secondary text-destructive">
               {detail.error instanceof Error
                 ? detail.error.message
                 : "Could not load this pack."}
@@ -320,7 +320,7 @@ export function PackDetailPanel({
               </div>
               {pack?.guidelines ? (
                 <div>
-                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-foreground">
+                  <p className="mb-1 flex items-center gap-1.5 type-meta font-medium text-foreground">
                     <BookOpenCheck className="h-3.5 w-3.5 text-muted-foreground" />
                     Business guidelines
                   </p>
@@ -328,7 +328,7 @@ export function PackDetailPanel({
                       review screen shows it — a guidelines document is pages of
                       prose, and printing it as one paragraph made the previous
                       pack UI unreadable. */}
-                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-2 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin">
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-2 type-meta leading-relaxed text-muted-foreground scrollbar-thin">
                     {pack.guidelines}
                   </pre>
                 </div>
@@ -338,7 +338,7 @@ export function PackDetailPanel({
           )}
         </section>
 
-        <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground/80">
+        <p className="flex items-start gap-1.5 type-meta text-muted-foreground/80">
           <BadgeCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           A starter pack is COPIED onto the site you choose — additive and
           idempotent, never over a ruling that site already made. Every row stays
@@ -360,7 +360,7 @@ function PackPreviewLists({
   const meanings = detail.meaning.slice(0, 8);
   if (topics.length === 0 && meanings.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground">
+      <p className="type-secondary text-muted-foreground">
         This pack has no rows yet.
       </p>
     );
@@ -369,17 +369,17 @@ function PackPreviewLists({
     <div className="grid gap-3 md:grid-cols-2">
       {topics.length > 0 ? (
         <div className="rounded-md border">
-          <div className="border-b bg-muted/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="border-b bg-muted/40 px-3 py-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Topics
           </div>
           <ul className="divide-y">
             {topics.map((t) => (
-              <li key={t.item_id} className="px-3 py-1.5 text-xs">
+              <li key={t.item_id} className="px-3 py-1.5 type-secondary">
                 {t.name}
               </li>
             ))}
             {detail.topics.length > topics.length ? (
-              <li className="px-3 py-1.5 text-[11px] text-muted-foreground">
+              <li className="px-3 py-1.5 type-meta text-muted-foreground">
                 +{detail.topics.length - topics.length} more
               </li>
             ) : null}
@@ -388,17 +388,17 @@ function PackPreviewLists({
       ) : null}
       {meanings.length > 0 ? (
         <div className="rounded-md border">
-          <div className="border-b bg-muted/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="border-b bg-muted/40 px-3 py-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
             Meanings
           </div>
           <ul className="divide-y">
             {meanings.map((item) => (
-              <li key={item.item_id} className="px-3 py-1.5 text-xs">
+              <li key={item.item_id} className="px-3 py-1.5 type-secondary">
                 {item.label}
               </li>
             ))}
             {detail.meaning.length > meanings.length ? (
-              <li className="px-3 py-1.5 text-[11px] text-muted-foreground">
+              <li className="px-3 py-1.5 type-meta text-muted-foreground">
                 +{detail.meaning.length - meanings.length} more
               </li>
             ) : null}

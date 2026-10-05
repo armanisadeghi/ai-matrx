@@ -179,7 +179,7 @@ function Stepper({
                 )}
               </span>
               <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wide leading-tight">
+                <div className="type-meta font-semibold uppercase tracking-wide leading-tight">
                   {meta.label}
                 </div>
               </div>
@@ -212,7 +212,7 @@ function LiveOutputPanel({ job }: { job: ProcessingJob }) {
           <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground font-semibold">
             Live output · {meta.label}
           </div>
           <AnimatePresence mode="wait" initial={false}>
@@ -222,7 +222,7 @@ function LiveOutputPanel({ job }: { job: ProcessingJob }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -2 }}
               transition={{ duration: 0.2 }}
-              className="text-xs text-foreground/80 truncate"
+              className="type-secondary text-foreground/80 truncate"
             >
               {message}
             </motion.div>
@@ -282,7 +282,7 @@ function PreviewMetaBadges({ preview }: { preview: StagePreview }) {
 function LivePreviewBody({ preview }: { preview: StagePreview }) {
   if (preview.kind === "page_text") {
     return (
-      <pre className="whitespace-pre-wrap break-words font-sans text-xs leading-relaxed text-foreground/90">
+      <pre className="whitespace-pre-wrap break-words font-sans type-secondary leading-relaxed text-foreground/90">
         {preview.text || (
           <span className="italic text-muted-foreground">(empty page)</span>
         )}
@@ -293,14 +293,14 @@ function LivePreviewBody({ preview }: { preview: StagePreview }) {
     return (
       <div className="space-y-3">
         {preview.section_title && (
-          <div className="text-sm font-semibold">{preview.section_title}</div>
+          <div className="type-title">{preview.section_title}</div>
         )}
         <div className="grid grid-cols-2 gap-2">
           <div>
             <div className="text-[9px] uppercase tracking-wide text-muted-foreground mb-1">
               Raw
             </div>
-            <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed bg-muted/40 rounded p-2 max-h-44 overflow-auto">
+            <pre className="whitespace-pre-wrap break-words font-mono type-meta leading-relaxed bg-muted/40 rounded p-2 max-h-44 overflow-auto">
               {preview.raw_text || (
                 <span className="italic text-muted-foreground">(empty)</span>
               )}
@@ -310,7 +310,7 @@ function LivePreviewBody({ preview }: { preview: StagePreview }) {
             <div className="text-[9px] uppercase tracking-wide text-emerald-700 dark:text-emerald-400 mb-1">
               Cleaned
             </div>
-            <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed bg-emerald-500/5 border border-emerald-500/15 rounded p-2 max-h-44 overflow-auto">
+            <pre className="whitespace-pre-wrap break-words font-mono type-meta leading-relaxed bg-emerald-500/5 border border-emerald-500/15 rounded p-2 max-h-44 overflow-auto">
               {preview.cleaned_text || (
                 <span className="italic text-muted-foreground">(empty)</span>
               )}
@@ -328,7 +328,7 @@ function LivePreviewBody({ preview }: { preview: StagePreview }) {
             key={c.chunk_index ?? i}
             className="rounded-md border bg-muted/30 p-2 space-y-1"
           >
-            <div className="flex items-center gap-1 text-[10px] flex-wrap">
+            <div className="flex items-center gap-1 type-meta flex-wrap">
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
                 #{c.chunk_index ?? i + 1}
               </Badge>
@@ -349,7 +349,7 @@ function LivePreviewBody({ preview }: { preview: StagePreview }) {
                 </Badge>
               )}
             </div>
-            <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed line-clamp-4">
+            <pre className="whitespace-pre-wrap break-words font-mono type-meta leading-relaxed line-clamp-4">
               {c.content_text}
             </pre>
           </div>
@@ -373,7 +373,7 @@ function WaitingState({ stage }: { stage: ProcessingStageId }) {
       >
         <meta.Icon className={cn("h-4 w-4", meta.iconClass)} />
       </div>
-      <div className="text-xs text-muted-foreground max-w-xs">
+      <div className="type-secondary text-muted-foreground max-w-xs">
         Waiting for the first {meta.unit.toLowerCase()} from the server. The
         animation on the left runs at the real pace as updates stream in.
       </div>
@@ -512,14 +512,14 @@ function MetricsRail({
             m.accent && "border-primary/30 bg-primary/5",
           )}
         >
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground font-semibold">
             {m.label}
           </div>
-          <div className="text-sm font-semibold tabular-nums leading-tight">
+          <div className="type-title tabular-nums leading-tight">
             {m.value}
           </div>
           {m.sub && (
-            <div className="text-[10px] text-muted-foreground truncate">
+            <div className="type-meta text-muted-foreground truncate">
               {m.sub}
             </div>
           )}
@@ -544,7 +544,7 @@ function PersistedStagesColumn({ job }: { job: ProcessingJob }) {
   if (persisted.length === 0) return null;
   return (
     <div className="space-y-2">
-      <div className="text-[10px] uppercase tracking-wide font-semibold text-muted-foreground">
+      <div className="type-meta uppercase tracking-wide font-semibold text-muted-foreground">
         Stage outputs
       </div>
       <div className="space-y-2">
@@ -565,7 +565,7 @@ function PersistedStagesColumn({ job }: { job: ProcessingJob }) {
                   className="group"
                   open={Boolean(job.stagePreviews[id])}
                 >
-                  <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-xs">
+                  <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 type-secondary">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 shrink-0">
                       <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                     </span>
@@ -608,9 +608,9 @@ function ResultPanel({
       <div className="flex items-start gap-3">
         <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold">Done</div>
+          <div className="type-title">Done</div>
           {result.headline && (
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="type-secondary text-muted-foreground mt-0.5">
               {result.headline}
             </p>
           )}
@@ -620,7 +620,7 @@ function ResultPanel({
             href={`/knowledge/library/${result.processedDocumentId}/preview`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 shrink-0"
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 type-secondary font-medium text-primary-foreground hover:bg-primary/90 shrink-0"
           >
             Open
             <ExternalLink className="h-3 w-3" />
@@ -639,10 +639,10 @@ function ResultPanel({
             >
               <meta.Icon className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
               <div className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <div className="type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                   {meta.label}
                 </div>
-                <div className="text-xs">{summary}</div>
+                <div className="type-secondary">{summary}</div>
               </div>
             </div>
           );
@@ -659,7 +659,7 @@ function ErrorPanel({ error }: { error: string }) {
       message={error}
       operation="Process this document for search"
     >
-      <p className="mt-2 text-[10px] text-muted-foreground">
+      <p className="mt-2 type-meta text-muted-foreground">
         Re-run the stage from the document detail panel — it's idempotent and
         will replace partial output.
       </p>
@@ -683,7 +683,7 @@ function JobActions({
   if (job.status === "running") {
     return (
       <div className="flex items-center justify-between gap-2 pt-1">
-        <p className="text-[10px] text-muted-foreground">
+        <p className="type-meta text-muted-foreground">
           Safe to close — processing continues on the server.
         </p>
         {onCancel && (

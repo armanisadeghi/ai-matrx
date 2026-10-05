@@ -27,12 +27,12 @@ export function CleanedMarkdownPane({
 }: CleanedMarkdownPaneProps) {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
-      <header className="flex items-center justify-between px-3 py-2 border-b border-border text-xs text-muted-foreground">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border type-secondary text-muted-foreground">
         <span className="font-medium">Cleaned markdown</span>
         {page && (
           <span className="flex items-center gap-2">
             {page.section_kind && (
-              <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground text-[10px] uppercase tracking-wide">
+              <span className="px-2 py-0.5 rounded bg-secondary text-secondary-foreground type-meta uppercase tracking-wide">
                 {page.section_kind}
               </span>
             )}
@@ -44,10 +44,10 @@ export function CleanedMarkdownPane({
       </header>
       <div className="flex-1 overflow-auto p-3 prose prose-sm dark:prose-invert max-w-none">
         {loading && (
-          <div className="text-sm text-muted-foreground">Loading…</div>
+          <div className="type-body text-muted-foreground">Loading…</div>
         )}
         {error && (
-          <div className="text-sm text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
+          <div className="type-body text-destructive">Error: {error} <ErrorAlchemyMenu error={error} /></div>
         )}
         {!loading &&
           !error &&

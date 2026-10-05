@@ -151,13 +151,13 @@ export function LibraryPublishPanel({
         </DialogHeader>
 
         <div className="space-y-1.5">
-          <div className="text-xs font-medium text-muted-foreground">Published to</div>
+          <div className="type-secondary font-medium text-muted-foreground">Published to</div>
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 type-body text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
             </div>
           ) : grants.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed border-border px-3 py-2 type-body text-muted-foreground">
               Not published yet — private to the library.
             </div>
           ) : (
@@ -165,7 +165,7 @@ export function LibraryPublishPanel({
               {grants.map((g) => (
                 <li
                   key={g.id}
-                  className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-2 px-3 py-2 type-body"
                 >
                   <span className="flex items-center gap-2 text-foreground">
                     {g.audience === "global" ? (
@@ -181,7 +181,7 @@ export function LibraryPublishPanel({
                         ? (g.industryName ?? "Industry")
                         : (g.organizationName ?? "Organization")}
                     {g.audience === "organization" && entityType === "seo_starter_pack" ? (
-                      <span className="text-[11px] text-muted-foreground">· subscribed / pilot</span>
+                      <span className="type-meta text-muted-foreground">· subscribed / pilot</span>
                     ) : null}
                   </span>
                   <Button
@@ -211,7 +211,7 @@ export function LibraryPublishPanel({
           </TabsList>
 
           <TabsContent value="industry" className="space-y-3 pt-3">
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               Every organization that has opted into the chosen industry gets it automatically.
             </p>
             <Select value={industryId} onValueChange={setIndustryId}>
@@ -243,7 +243,7 @@ export function LibraryPublishPanel({
           </TabsContent>
 
           <TabsContent value="organization" className="space-y-3 pt-3">
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               One specific organization — no industry membership required.
               {entityType === "seo_starter_pack"
                 ? " This is how a proposed pack is piloted with one customer before ratification."
@@ -261,7 +261,7 @@ export function LibraryPublishPanel({
                     <SelectItem key={o.id} value={o.id}>
                       {o.name}
                       {distinguisher ? (
-                        <span className="ml-1.5 text-xs text-muted-foreground">{distinguisher}</span>
+                        <span className="ml-1.5 type-secondary text-muted-foreground">{distinguisher}</span>
                       ) : null}
                     </SelectItem>
                   );
@@ -286,7 +286,7 @@ export function LibraryPublishPanel({
           </TabsContent>
 
           <TabsContent value="global" className="space-y-3 pt-3">
-            <p className="text-sm text-muted-foreground">
+            <p className="type-body text-muted-foreground">
               Every organization on the platform. Use only for truly universal resources.
             </p>
             <Button

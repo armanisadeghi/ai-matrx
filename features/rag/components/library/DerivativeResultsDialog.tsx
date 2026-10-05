@@ -41,10 +41,10 @@ export function DerivativeResultsDialog({
         className="flex h-[90dvh] w-[96vw] max-w-[1500px] flex-col gap-0 overflow-hidden p-0"
       >
         <DialogHeader className="border-b border-border/60 px-4 py-2.5">
-          <DialogTitle className="flex items-center gap-2 text-sm">
+          <DialogTitle className="flex items-center gap-2 type-body">
             {title}
             {total ? (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-normal tabular-nums text-muted-foreground">
+              <span className="rounded-full bg-muted px-2 py-0.5 type-meta font-normal tabular-nums text-muted-foreground">
                 {total.toLocaleString()}
               </span>
             ) : null}

@@ -66,11 +66,11 @@ export function RagHomePage() {
             personal content of their own. */}
           {showEntitledHero && (
             <section className="rounded-md border border-primary/30 bg-primary/5 p-4 space-y-3">
-              <h2 className="text-sm font-semibold flex items-center gap-2">
+              <h2 className="type-title flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 Shared libraries you can read right now
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="type-secondary text-muted-foreground">
                 You haven&apos;t added any documents of your own yet, but your
                 organization is entitled to these curated knowledge libraries —
                 open one, or search across them from the Search tab.
@@ -83,7 +83,7 @@ export function RagHomePage() {
                     className="group flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 transition-colors hover:border-primary/50"
                   >
                     <FileText className="h-4 w-4 shrink-0 text-primary" />
-                    <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                    <span className="min-w-0 truncate type-title text-foreground">
                       {it.name}
                     </span>
                     <EntitlementChip
@@ -98,7 +98,7 @@ export function RagHomePage() {
           )}
           {/* Live numbers — the Sources page's own counts */}
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <h2 className="type-title text-muted-foreground uppercase tracking-wide">
               Your Sources right now
             </h2>
             {failed && (
@@ -135,7 +135,7 @@ export function RagHomePage() {
 
           {/* Quick links */}
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <h2 className="type-title text-muted-foreground uppercase tracking-wide">
               Surfaces
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -165,11 +165,11 @@ export function RagHomePage() {
 
           {/* Help block — what to do when */}
           <section className="border rounded-md bg-muted/20 p-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2 mb-2">
+            <h3 className="type-title flex items-center gap-2 mb-2">
               <Eye className="h-4 w-4" />
               Common workflows
             </h3>
-            <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal pl-5">
+            <ol className="type-body text-muted-foreground space-y-1.5 list-decimal pl-5">
               <li>
                 <strong className="text-foreground">Add a Source:</strong> open{" "}
                 <Link href="/knowledge/library" className="underline">
@@ -242,7 +242,7 @@ function StatCard({
       href={href}
       className="group rounded-md border bg-muted/30 p-3 flex flex-col gap-1 transition-colors hover:border-primary/50 hover:bg-accent/40"
     >
-      <span className="flex items-center gap-1 text-[11px] text-muted-foreground uppercase tracking-wide">
+      <span className="flex items-center gap-1 type-meta text-muted-foreground uppercase tracking-wide">
         {icon}
         {label}
       </span>
@@ -257,7 +257,7 @@ function StatCard({
           />
         )}
       </span>
-      <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+      <span className="type-secondary text-muted-foreground inline-flex items-center gap-1">
         {hint}
         <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -287,8 +287,8 @@ function NavCard({
         <span className="text-primary">{icon}</span>
         <span className="font-medium">{title}</span>
       </div>
-      <p className="text-sm text-muted-foreground flex-1">{description}</p>
-      <span className="text-xs font-medium text-primary inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+      <p className="type-body text-muted-foreground flex-1">{description}</p>
+      <span className="type-secondary font-medium text-primary inline-flex items-center gap-1 group-hover:gap-2 transition-all">
         {cta}
         <ArrowRight className="h-3 w-3" />
       </span>

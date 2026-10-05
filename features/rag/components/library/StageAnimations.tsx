@@ -81,12 +81,12 @@ export function StageHero({ frame, className }: StageHeroProps) {
           <stageMeta.Icon className={cn("h-3.5 w-3.5", stageMeta.iconClass)} />
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="type-meta uppercase tracking-wider text-muted-foreground font-semibold">
             Stage
           </div>
           <div
             className={cn(
-              "text-sm font-semibold leading-tight",
+              "type-title leading-tight",
               stageMeta.titleClass,
             )}
           >
@@ -208,10 +208,10 @@ function ExtractAnimation({ frame }: { frame: ProcessingFrame }) {
           transition={{ duration: 0.35 }}
           className="ml-6 hidden sm:block flex-1 max-w-[300px]"
         >
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5 font-semibold">
+          <div className="type-meta uppercase tracking-wide text-muted-foreground mb-1.5 font-semibold">
             Just extracted
           </div>
-          <div className="text-xs leading-relaxed text-foreground/85 line-clamp-6 font-mono">
+          <div className="type-secondary leading-relaxed text-foreground/85 line-clamp-6 font-mono">
             {pagePreview.text.slice(0, 320)}
             {pagePreview.text.length > 320 && "…"}
           </div>
@@ -245,7 +245,7 @@ function CleanAnimation({ frame }: { frame: ProcessingFrame }) {
           Raw
         </div>
         <div className="relative h-[170px] rounded-md border border-violet-500/20 bg-background/70 backdrop-blur-sm overflow-hidden">
-          <pre className="absolute inset-0 p-2 text-[10px] leading-snug font-mono whitespace-pre-wrap break-words text-muted-foreground/80 overflow-hidden">
+          <pre className="absolute inset-0 p-2 type-meta leading-snug font-mono whitespace-pre-wrap break-words text-muted-foreground/80 overflow-hidden">
             {rawSample.slice(0, 280)}
           </pre>
         </div>
@@ -294,7 +294,7 @@ function CleanAnimation({ frame }: { frame: ProcessingFrame }) {
           <CheckCircle2 className="h-3 w-3" />
         </div>
         <div className="relative h-[170px] rounded-md border border-emerald-500/30 bg-emerald-500/5 backdrop-blur-sm overflow-hidden">
-          <pre className="absolute inset-0 p-2 text-[10px] leading-snug font-mono whitespace-pre-wrap break-words text-foreground/90 overflow-hidden">
+          <pre className="absolute inset-0 p-2 type-meta leading-snug font-mono whitespace-pre-wrap break-words text-foreground/90 overflow-hidden">
             {cleanedSample.slice(0, 280)}
           </pre>
           {/* Shimmer sweep over the cleaned panel */}
@@ -532,7 +532,7 @@ function BigCount({
   const total = frame.total ?? 0;
   return (
     <div className="flex flex-col items-end">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+      <div className="type-meta uppercase tracking-wider text-muted-foreground font-semibold">
         {unit}
       </div>
       <div className="text-2xl sm:text-3xl font-bold tabular-nums leading-none">
@@ -563,7 +563,7 @@ function Heartbeat({ lastUpdate }: { lastUpdate: number }) {
     : 0;
   const stale = sinceUpdate > 10;
   return (
-    <div className="absolute bottom-2 right-3 z-10 flex items-center gap-1.5 text-[10px] text-muted-foreground pointer-events-none">
+    <div className="absolute bottom-2 right-3 z-10 flex items-center gap-1.5 type-meta text-muted-foreground pointer-events-none">
       <span className="relative inline-flex h-2 w-2">
         <span
           className={cn(

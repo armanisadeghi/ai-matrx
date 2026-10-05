@@ -156,10 +156,10 @@ function PaneTitle({
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="type-meta font-medium uppercase tracking-wide text-muted-foreground">
           {eyebrow}
         </p>
-        <p className="truncate text-sm font-semibold">{title}</p>
+        <p className="truncate type-title">{title}</p>
       </div>
       {trailing}
     </div>
@@ -211,10 +211,10 @@ function RetrievedPane({
         <div className="rounded-lg border border-border/70 bg-background/70 p-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium" title={sourceName}>
+              <p className="truncate type-title" title={sourceName}>
                 {sourceName}
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 type-secondary text-muted-foreground">
                 {hit.chunk_kind.replaceAll("_", " ")} · hit page
                 {hitPages.length === 1 ? "" : "s"} {hitPages.join(", ")}
               </p>
@@ -226,7 +226,7 @@ function RetrievedPane({
               initialSections={["retrieved"]}
             />
           </div>
-          <div className="mt-3 space-y-1.5 text-[10px] text-muted-foreground">
+          <div className="mt-3 space-y-1.5 type-meta text-muted-foreground">
             <div className="flex items-center gap-2">
               <span className="w-12 shrink-0">Source</span>
               <MatrxUuidCell value={hit.source_id} label="Knowledge source ID" />
@@ -237,10 +237,10 @@ function RetrievedPane({
             </div>
           </div>
         </div>
-        <div className="select-text whitespace-pre-wrap break-words rounded-lg border border-border/70 bg-background p-3 text-sm leading-relaxed">
+        <div className="select-text whitespace-pre-wrap break-words rounded-lg border border-border/70 bg-background p-3 type-body leading-relaxed">
           {hit.snippet}
         </div>
-        <div className="rounded-lg bg-amber-500/8 p-3 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+        <div className="rounded-lg bg-amber-500/8 p-3 type-secondary leading-relaxed text-amber-800 dark:text-amber-200">
           This is what retrieval supplied to the agent. Compare it with the
           physical pages before creating a correction.
         </div>
@@ -380,7 +380,7 @@ function RepairPane({
       />
       <PaneBody scrollable={scrollable} className="space-y-4 px-3 pb-5">
         <section className="space-y-2">
-          <p className="text-xs font-medium">1. What needs attention?</p>
+          <p className="type-secondary font-medium">1. What needs attention?</p>
           <div className="grid grid-cols-2 gap-1.5">
             {REPAIR_KINDS.map((option) => {
               const Icon = option.icon;
@@ -411,7 +411,7 @@ function RepairPane({
 
         <section className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium">2. Direct the repair</p>
+            <p className="type-secondary font-medium">2. Direct the repair</p>
             <Badge variant="outline" className="text-[10px] font-normal">
               pages {reviewPages.join(", ")}
             </Badge>
@@ -425,26 +425,26 @@ function RepairPane({
         </section>
 
         <section className="space-y-2">
-          <p className="text-xs font-medium">3. Choose a PDF-capable agent</p>
+          <p className="type-secondary font-medium">3. Choose a PDF-capable agent</p>
           <AgentListDropdown
             onSelect={(next) => void selectAgent(next)}
             label={agent?.name ?? "Select an agent"}
             className="w-full"
           />
           {agentId && !agent ? (
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <p className="flex items-center gap-1.5 type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading agent
               inputs…
             </p>
           ) : null}
           {wiring.documentVariable ? (
-            <p className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300">
+            <p className="flex items-center gap-1.5 type-secondary text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="h-3.5 w-3.5" /> Native PDF pages will be
               attached to <strong>{wiring.documentVariable.name}</strong>.
             </p>
           ) : null}
           {incompatible ? (
-            <div className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 text-xs text-amber-800 dark:text-amber-200">
+            <div className="flex gap-2 rounded-lg bg-amber-500/10 p-2.5 type-secondary text-amber-800 dark:text-amber-200">
               <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 This agent has no Document input, so it cannot inspect the
@@ -476,7 +476,7 @@ function RepairPane({
           {busy ? "Reviewing physical pages…" : "Generate correction"}
         </Button>
         {!organizationId ? (
-          <p role="status" className="text-xs text-muted-foreground">
+          <p role="status" className="type-secondary text-muted-foreground">
             No organization is selected, so a repair cannot be filed anywhere —
             choose one from the organization picker in the header and this
             button turns on.
@@ -486,7 +486,7 @@ function RepairPane({
         {activeRun ? (
           <section className="space-y-2 rounded-lg border border-border/70 bg-background/70 p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-semibold">Agent output</p>
+              <p className="type-secondary font-semibold">Agent output</p>
               <Badge
                 variant={
                   activeRun.status === "failed" ? "destructive" : "secondary"
@@ -497,11 +497,11 @@ function RepairPane({
               </Badge>
             </div>
             {rawOutput ? (
-              <div className="max-h-72 overflow-y-auto select-text text-xs">
+              <div className="max-h-72 overflow-y-auto select-text type-secondary">
                 <BasicMarkdownContent imagePolicy="ai" content={rawOutput} />
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">
+              <p className="type-secondary text-muted-foreground">
                 The agent is reading the selected native PDF pages.
               </p>
             )}
@@ -520,7 +520,7 @@ function RepairPane({
           </section>
         ) : null}
 
-        <p className="text-[10px] leading-relaxed text-muted-foreground">
+        <p className="type-meta leading-relaxed text-muted-foreground">
           This creates a durable page-extraction dataset anchored to the
           physical source pages. The existing extraction pipeline indexes
           completed output for Knowledge; use the review workspace to edit or manage
@@ -558,8 +558,8 @@ export function RagReviewRepairWorkspace({
         Results
       </Button>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{sourceName}</p>
-        <p className="truncate text-[10px] text-muted-foreground">
+        <p className="truncate type-title">{sourceName}</p>
+        <p className="truncate type-meta text-muted-foreground">
           Review packet · physical pages {reviewPages.join(", ")}
         </p>
       </div>

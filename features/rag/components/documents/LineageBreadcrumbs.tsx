@@ -46,11 +46,11 @@ export function LineageBreadcrumbs({
 
   if (!document) return null;
   if (!hasAny) {
-    return <span className="text-xs text-muted-foreground">No parents</span>;
+    return <span className="type-secondary text-muted-foreground">No parents</span>;
   }
 
   return (
-    <div className="flex items-center gap-3 text-xs">
+    <div className="flex items-center gap-3 type-secondary">
       {compact?.binary_parent_file_id && (
         <BreadcrumbChip
           icon={<ArrowLeft className="h-3 w-3" />}
@@ -111,7 +111,7 @@ function BreadcrumbChip({
     >
       {icon}
       <span className="text-muted-foreground">{label}:</span>
-      <span className="font-mono text-[10px] uppercase tracking-wide">
+      <span className="font-mono type-meta uppercase tracking-wide">
         {kindLabel}
       </span>
     </Tag>

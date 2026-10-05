@@ -203,14 +203,14 @@ export function RulebookDetailPanel({
             <ArrowLeft className="h-4 w-4" />
           </button>
           <ScrollText className="h-4 w-4 text-muted-foreground" />
-          <h1 className="text-sm font-semibold">{item.name}</h1>
-          <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-secondary-foreground">
+          <h1 className="type-title">{item.name}</h1>
+          <span className="rounded bg-secondary px-1.5 py-0.5 type-meta uppercase tracking-wide text-secondary-foreground">
             Rulebook
           </span>
           {status ? (
             <span
               className={cn(
-                "rounded border px-1.5 py-0.5 text-[10px] font-medium",
+                "rounded border px-1.5 py-0.5 type-meta font-medium",
                 status.tone,
               )}
               title={status.hint}
@@ -233,7 +233,7 @@ export function RulebookDetailPanel({
             {copy ? (
               <Link
                 href={`/masterwork/${copy.id}`}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs font-medium hover:border-primary/50 hover:bg-accent"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 type-secondary font-medium hover:border-primary/50 hover:bg-accent"
               >
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
                 Open your copy
@@ -259,9 +259,9 @@ export function RulebookDetailPanel({
           />
         ) : null}
         {item.description ? (
-          <p className="text-xs text-muted-foreground">{item.description}</p>
+          <p className="type-secondary text-muted-foreground">{item.description}</p>
         ) : null}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-muted-foreground">
           {item.entitledIndustryName ? (
             <span className="inline-flex items-center gap-1">
               <Building2 className="h-3 w-3" />
@@ -276,10 +276,10 @@ export function RulebookDetailPanel({
             {item.subscriberCount === 1 ? "" : "s"} using it
           </span>
           {item.slug ? <code className="font-mono">{item.slug}</code> : null}
-          <span className="select-all font-mono text-[10px]">{item.id}</span>
+          <span className="select-all font-mono type-meta">{item.id}</span>
         </div>
         {item.entitledVia === "industry" && organizationId ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             You have this because your organization is in{" "}
             <Link
               href={`/organizations/${organizationId}/settings`}
@@ -291,7 +291,7 @@ export function RulebookDetailPanel({
           </p>
         ) : null}
         {copy ? (
-          <p className="text-[11px] text-muted-foreground">
+          <p className="type-meta text-muted-foreground">
             Your organization has this as{" "}
             <Link
               href={`/masterwork/${copy.id}`}
@@ -308,11 +308,11 @@ export function RulebookDetailPanel({
       <div className="flex-1 space-y-4 overflow-auto p-4">
         {item.sourceAuthorityLabel || item.assuranceLevelLabel ? (
           <section className="space-y-1.5 rounded-md border border-border bg-muted/20 p-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
               What this is
             </h2>
             {item.sourceAuthorityLabel ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="type-meta text-muted-foreground">
                 <span className="font-medium text-foreground">
                   Source · {item.sourceAuthorityLabel}
                 </span>{" "}
@@ -320,7 +320,7 @@ export function RulebookDetailPanel({
               </p>
             ) : null}
             {item.assuranceLevelLabel ? (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="type-meta text-muted-foreground">
                 <span className="font-medium text-foreground">
                   {item.assuranceLevelLabel}
                 </span>{" "}
@@ -331,37 +331,37 @@ export function RulebookDetailPanel({
         ) : null}
 
         <section className="space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="type-secondary font-semibold uppercase tracking-wide text-muted-foreground">
             What it carries
           </h2>
           {rulesError ? (
-            <div className="text-xs text-destructive">{rulesError} <ErrorAlchemyMenu error={rulesError} /></div>
+            <div className="type-secondary text-destructive">{rulesError} <ErrorAlchemyMenu error={rulesError} /></div>
           ) : rules == null ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 type-secondary text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading the rules…
             </div>
           ) : preview.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="type-secondary text-muted-foreground">
               This Rulebook has no rules yet.
             </p>
           ) : (
             <div className="rounded-md border">
-              <div className="border-b bg-muted/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="border-b bg-muted/40 px-3 py-1.5 type-meta font-semibold uppercase tracking-wide text-muted-foreground">
                 Rules
               </div>
               <ul className="divide-y">
                 {preview.map((rule, i) => (
                   <li key={rule.id ?? `rule-${i}`} className="px-3 py-1.5">
-                    <p className="text-xs font-medium">{rule.name}</p>
+                    <p className="type-secondary font-medium">{rule.name}</p>
                     {rule.statement ? (
-                      <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+                      <p className="mt-0.5 line-clamp-2 type-meta text-muted-foreground">
                         {rule.statement}
                       </p>
                     ) : null}
                   </li>
                 ))}
                 {rules.length > preview.length ? (
-                  <li className="px-3 py-1.5 text-[11px] text-muted-foreground">
+                  <li className="px-3 py-1.5 type-meta text-muted-foreground">
                     +{rules.length - preview.length} more
                   </li>
                 ) : null}
@@ -370,14 +370,14 @@ export function RulebookDetailPanel({
           )}
         </section>
 
-        <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground/80">
+        <p className="flex items-start gap-1.5 type-meta text-muted-foreground/80">
           <BadgeCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           A Rulebook is COPIED into your organization — you get your own, and
           every rule stays yours to edit, retire, or build on. Taking it again
           later brings only the rules the Library has ADDED since; it never
           touches a rule you changed.
         </p>
-        <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground/80">
+        <p className="flex items-start gap-1.5 type-meta text-muted-foreground/80">
           <BookOpenCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Point a Masterwork at your copy to turn these rules into work that
           runs.

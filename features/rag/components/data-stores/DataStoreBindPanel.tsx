@@ -79,10 +79,10 @@ export function DataStoreBindPanel({
     <div className="p-3 space-y-2.5">
       <div className="flex items-center gap-1.5 mb-1">
         <Database className="w-3.5 h-3.5 text-primary" />
-        <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+        <span className="type-meta font-semibold text-primary uppercase tracking-wider">
           Data Stores
         </span>
-        <span className="text-[10px] text-muted-foreground truncate ml-1">
+        <span className="type-meta text-muted-foreground truncate ml-1">
           · binding for <span className="font-medium">{documentName}</span>
         </span>
         <Button
@@ -124,21 +124,21 @@ export function DataStoreBindPanel({
       )}
 
       {error && (
-        <div className="text-[10px] text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
+        <div className="type-meta text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>
       )}
 
       {loading && stores.length === 0 ? (
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70 p-2">
+        <div className="flex items-center gap-2 type-meta text-muted-foreground/70 p-2">
           <Loader2 className="w-3 h-3 animate-spin" />
           Loading data stores…
         </div>
       ) : error ? (
 <ReadFailure error={error} what="the data stores" />
 ) : stores.length === 0 ? (
-        <div className="px-3 py-3 border border-dashed border-border rounded-md bg-muted/20 text-[11px] text-muted-foreground leading-snug">
+        <div className="px-3 py-3 border border-dashed border-border rounded-md bg-muted/20 type-meta text-muted-foreground leading-snug">
           No data stores yet. Create one to bind this document — agent retrieval
           (<code>knowledge_search</code>) requires an explicit store id.
         </div>
@@ -173,16 +173,16 @@ export function DataStoreBindPanel({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium leading-tight truncate">
+                  <p className="type-secondary font-medium leading-tight truncate">
                     {s.name}
                   </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
+                  <p className="type-meta text-muted-foreground truncate">
                     {s.memberCount.toLocaleString()} members
                     {s.shortCode && ` · ${s.shortCode}`}
                     {s.organizationId && " · org"}
                   </p>
                   {s.description && (
-                    <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                    <p className="type-meta text-muted-foreground/70 truncate mt-0.5">
                       {s.description}
                     </p>
                   )}
@@ -196,7 +196,7 @@ export function DataStoreBindPanel({
         </div>
       )}
 
-      <p className="text-[10px] text-muted-foreground/70 pt-1 leading-snug">
+      <p className="type-meta text-muted-foreground/70 pt-1 leading-snug">
         Members are written to <code>rag.data_store_members</code> with{" "}
         <code>source_kind = 'processed_document'</code>. Agents call
         <code className="mx-1">rag.search_data_store(store_id, query)</code>— no

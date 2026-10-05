@@ -213,7 +213,7 @@ function StagePill({
     <div
       className={cn(
         "inline-flex items-center gap-1 rounded-md border whitespace-nowrap select-none",
-        compact ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs",
+        compact ? "px-1.5 py-0.5 type-meta" : "px-2 py-1 type-secondary",
         tone.cls,
         def.action ? "cursor-pointer hover:brightness-105" : "cursor-default",
       )}
@@ -303,8 +303,8 @@ function StageActionPanel({
     <div className="space-y-3 p-3">
       <header className="flex items-center justify-between">
         <div>
-          <div className="text-sm font-semibold">{def.actionLabel}</div>
-          <div className="text-xs text-muted-foreground">
+          <div className="type-title">{def.actionLabel}</div>
+          <div className="type-secondary text-muted-foreground">
             {actionDescription(def)}
           </div>
         </div>
@@ -316,7 +316,7 @@ function StageActionPanel({
       </header>
 
       {/* Current state line */}
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex items-center gap-2 type-secondary">
         <Badge variant="outline">
           {status
             ? `${status.current.toLocaleString()} / ${status.total.toLocaleString()} ${def.unit ?? ""}`
@@ -350,14 +350,14 @@ function StageActionPanel({
 
       {action.running && (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 type-secondary">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
             <span className="font-medium">
               {action.progress?.message ?? "Working…"}
             </span>
           </div>
           {pct !== null && <Progress value={pct} className="h-2" />}
-          <div className="flex justify-between text-[10px] text-muted-foreground">
+          <div className="flex justify-between type-meta text-muted-foreground">
             <span>
               {action.progress?.current.toLocaleString() ?? 0} /{" "}
               {/* read-gate-exempt: live progress of the action the person started, pushed by its own stream, not a fetched count */}
@@ -372,7 +372,7 @@ function StageActionPanel({
       )}
 
       {action.error && !closed && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-2 text-xs text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-2 type-secondary text-destructive">
           <div className="font-medium">Action failed</div>
           <div className="break-words">{action.error}</div>
           <Button
@@ -390,7 +390,7 @@ function StageActionPanel({
       )}
 
       {action.result && !action.running && (
-        <div className="rounded-md border border-green-500/40 bg-green-500/5 p-2 text-xs">
+        <div className="rounded-md border border-green-500/40 bg-green-500/5 p-2 type-secondary">
           <div className="flex items-center gap-1 font-medium text-green-700 dark:text-green-400">
             <CheckCircle2 className="h-3.5 w-3.5" />
             Done
