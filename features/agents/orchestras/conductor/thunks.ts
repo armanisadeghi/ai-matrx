@@ -235,9 +235,14 @@ export function syncConductorPrompt(args: {
             },
             runtime: {
               variables: {
-                // `orchestras.member_roster` mapped-only offers — dropped by
-                // the mandate door unless a binding maps them.
-                ...buildMemberRosterOffer(getState().orchestras, args.conductorId),
+                // `orchestras.member_roster` offers: `members` is guaranteed
+                // (the door refuses the run without it); the rest are
+                // mapped-only and dropped unless a binding maps them.
+                ...buildMemberRosterOffer(
+                  getState().orchestras,
+                  args.conductorId,
+                  dump,
+                ),
                 [ROLE_DESCRIBER_INPUT_VAR]: JSON.stringify(dump, null, 2),
               },
             },
