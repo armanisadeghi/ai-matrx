@@ -216,16 +216,18 @@ export function SkillsBrowser({
                   >
                     <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
-                        {s.label}
-                        <ScopeBadge skill={s} />
+                      <div className="text-sm font-medium text-foreground flex min-w-0 items-center gap-1.5">
+                        <span className="min-w-0 truncate">{s.label}</span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <ScopeBadge skill={s} />
+                        </span>
                       </div>
                       <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                         {catalogProseText(s.description)}
                       </div>
                       <SkillAttributionLine skill={s} className="mt-0.5" />
                     </div>
-                    <span className="text-xs text-muted-foreground/70 font-mono pt-0.5 truncate max-w-[160px]">
+                    <span className="hidden sm:block text-xs text-muted-foreground/70 font-mono pt-0.5 truncate max-w-[160px]">
                       {s.skillId}
                     </span>
                   </button>
