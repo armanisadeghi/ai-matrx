@@ -1,6 +1,6 @@
 "use client";
 
-// The 404 boundary for /data/[id].
+// The 404 boundary for /data/[tableId].
 //
 // It used to say "The table you're looking for doesn't exist or you don't have
 // permission to view it" — a hedge written because the code genuinely could
@@ -14,7 +14,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 export default function DataTableUnavailable() {
   const params = useParams();
-  const id = typeof params?.id === "string" ? params.id : "";
+  const id = typeof params?.tableId === "string" ? params.tableId : "";
 
   return (
     <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">

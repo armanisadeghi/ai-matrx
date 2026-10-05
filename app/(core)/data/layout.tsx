@@ -6,17 +6,17 @@ import TablesLanding from "@/features/auth/components/module-landing/landings/Ta
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { ScrollAssistantLauncher } from "@ai-matrx/chat/agents/components/ambient-assistant/ScrollAssistantLauncher";
 
-// Generate metadata with automatic favicon for the Data/Tables route
+// The Data home and every table/record page under it (moved from /data-v2, 2026-10-04).
 export const metadata = createRouteMetadata("/data", {
-  title: "Tables",
-  description: "Manage your data tables",
+  title: "Data",
+  description: "Work with your organization's shared records, tables, and assigned actions.",
   letter: "DA",
 });
 
 /**
  * Server-side auth branch — guests get the marketing landing without
  * the `"use client"` table-editor bundle loading; authed users get the
- * existing background-styled workspace wrapper.
+ * record-store pages exactly as they mount (no wrapper of their own).
  */
 export default async function DataLayout({
   children,
@@ -27,12 +27,10 @@ export default async function DataLayout({
   if (!isAuthenticated) return <TablesLanding />;
   return (
     <>
-      <div className="h-full w-full overflow-hidden bg-muted/40 text-foreground">
-        {children}
-      </div>
+      {children}
       <ScrollAssistantLauncher
         inputVariant="single-line"
-        includePathnames={["/data", "/data/create"]}
+        includePathnames={["/data"]}
       />
     </>
   );
