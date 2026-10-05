@@ -636,7 +636,6 @@ export function CreateTranscriptModal({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Transcript Title"
-                  style={{ fontSize: "16px" }}
                 />
               </div>
 
@@ -680,7 +679,6 @@ export function CreateTranscriptModal({
                     value={folder}
                     onChange={(e) => setFolder(e.target.value)}
                     placeholder="Folder Name"
-                    style={{ fontSize: "16px" }}
                   />
                 </div>
               </div>
@@ -739,7 +737,6 @@ export function CreateTranscriptModal({
                     value={folder}
                     onChange={(e) => setFolder(e.target.value)}
                     placeholder="Folder Name"
-                    style={{ fontSize: "16px" }}
                   />
                 </div>
               </div>

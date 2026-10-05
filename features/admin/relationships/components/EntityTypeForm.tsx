@@ -107,7 +107,6 @@ export function EntityTypeForm({
           disabled={!createMode}
           onChange={(e) => onChange({ ...editor, token: e.target.value })}
           placeholder="e.g. picklist"
-          style={{ fontSize: "16px" }}
         />
         {tokenInvalid ? (
           <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">
@@ -136,7 +135,6 @@ export function EntityTypeForm({
               onChange({ ...editor, schemaName: e.target.value })
             }
             placeholder="e.g. workbench"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -145,7 +143,6 @@ export function EntityTypeForm({
             value={editor.tableName}
             onChange={(e) => onChange({ ...editor, tableName: e.target.value })}
             placeholder="e.g. notes"
-            style={{ fontSize: "16px" }}
           />
         </div>
         {/* Save is rejected for a missing table so a typo cannot register a phantom entity. */}
@@ -161,7 +158,6 @@ export function EntityTypeForm({
             value={editor.label}
             onChange={(e) => onChange({ ...editor, label: e.target.value })}
             placeholder="e.g. Picklist"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -170,7 +166,6 @@ export function EntityTypeForm({
             value={editor.category}
             onChange={(e) => onChange({ ...editor, category: e.target.value })}
             placeholder="optional"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -179,7 +174,6 @@ export function EntityTypeForm({
             type="number"
             value={editor.baseTier}
             onChange={(e) => onChange({ ...editor, baseTier: e.target.value })}
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -219,7 +213,6 @@ export function EntityTypeForm({
             onChange={(e) =>
               onChange({ ...editor, rlsVariant: e.target.value })
             }
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>
@@ -281,7 +274,6 @@ export function EntityTypeForm({
                 onChange({ ...editor, titleColumn: e.target.value })
               }
               placeholder="e.g. name / title / label"
-              style={{ fontSize: "16px" }}
             />
             <p className="text-[10px] text-muted-foreground">
               Column used as the title; must exist on the table
@@ -328,7 +320,6 @@ export function EntityTypeForm({
               }
               list={categoryListId}
               placeholder="empty = bucket by schema"
-              style={{ fontSize: "16px" }}
             />
             <datalist id={categoryListId}>
               {Object.entries(REFERENCE_CATEGORY_DISPLAY).map(([slug, c]) => (

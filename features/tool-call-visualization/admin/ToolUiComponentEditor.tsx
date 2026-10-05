@@ -451,7 +451,6 @@ export function ToolUiComponentEditor({
                   inline_code: e.target.value,
                 }))
               }
-              style={{ fontSize: "16px" }}
               placeholder="Write your inline component code here..."
             />
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -489,7 +488,6 @@ export function ToolUiComponentEditor({
                   overlay_code: e.target.value,
                 }))
               }
-              style={{ fontSize: "16px" }}
               placeholder="Write overlay component code (shown in the full-screen modal)..."
             />
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -527,7 +525,6 @@ export function ToolUiComponentEditor({
                   header_subtitle_code: e.target.value,
                 }))
               }
-              style={{ fontSize: "16px" }}
               placeholder="Function that receives entry and returns a subtitle string or null..."
             />
           </div>
@@ -552,7 +549,6 @@ export function ToolUiComponentEditor({
                   header_extras_code: e.target.value,
                 }))
               }
-              style={{ fontSize: "16px" }}
               placeholder="Function that receives entry and returns a ReactNode for the header..."
             />
           </div>
@@ -575,7 +571,6 @@ export function ToolUiComponentEditor({
                   utility_code: e.target.value,
                 }))
               }
-              style={{ fontSize: "16px" }}
               placeholder="Shared helper functions, parsers, constants available to all components..."
             />
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
@@ -608,7 +603,6 @@ export function ToolUiComponentEditor({
                 }
                 data-identifier
                 placeholder="e.g. web_search_v1"
-                style={{ fontSize: "16px" }}
                 disabled={!!toolName}
               />
             </div>
@@ -624,7 +618,6 @@ export function ToolUiComponentEditor({
                   }))
                 }
                 placeholder="e.g. Web Search"
-                style={{ fontSize: "16px" }}
               />
             </div>
           </div>
@@ -642,7 +635,6 @@ export function ToolUiComponentEditor({
                   }))
                 }
                 placeholder="e.g. Search Results"
-                style={{ fontSize: "16px" }}
               />
             </div>
             <div>
@@ -654,7 +646,6 @@ export function ToolUiComponentEditor({
                   setFormData((prev) => ({ ...prev, version: e.target.value }))
                 }
                 placeholder="1.0.0"
-                style={{ fontSize: "16px" }}
               />
             </div>
           </div>
@@ -672,7 +663,6 @@ export function ToolUiComponentEditor({
             >
               <SelectTrigger
                 id="language"
-                style={{ fontSize: "16px" }}
               >
                 <SelectValue />
               </SelectTrigger>

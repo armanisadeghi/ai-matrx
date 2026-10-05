@@ -337,7 +337,6 @@ export function EditScopeTypeSheet({
                 autoFocus
                 value={labelSingular}
                 onChange={(e) => setLabelSingular(e.target.value)}
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -349,7 +348,6 @@ export function EditScopeTypeSheet({
                 id={ids.plural}
                 value={labelPlural}
                 onChange={(e) => setLabelPlural(e.target.value)}
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -426,7 +424,6 @@ export function EditScopeTypeSheet({
                       }
                       onKeyDown={(e) => handleRowKeyDown(e, row, idx)}
                       disabled={busy || removed}
-                      style={{ fontSize: "16px" }}
                       className={
                         removed
                           ? "line-through text-muted-foreground bg-rose-50/40 dark:bg-rose-950/20"
@@ -512,7 +509,6 @@ export function EditScopeTypeSheet({
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
                     placeholder={toSlug(labelPlural) || "url-slug"}
-                    style={{ fontSize: "16px" }}
                     disabled={busy}
                     className="flex-1"
                   />
@@ -558,7 +554,6 @@ export function EditScopeTypeSheet({
                     onChange={(e) => setMaxAssignments(e.target.value)}
                     placeholder="Unlimited"
                     min={1}
-                    style={{ fontSize: "16px" }}
                     disabled={busy}
                   />
                 </div>

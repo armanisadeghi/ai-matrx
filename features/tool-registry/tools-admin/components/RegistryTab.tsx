@@ -727,7 +727,6 @@ function GatingSection({
                     )
                   }
                   rows={3}
-                  style={{ fontSize: "13px" }}
                 />
               </div>
             </div>

@@ -234,7 +234,6 @@ export function ReferenceConfigFields({
               onChange={(e) => setTypeSearch(e.target.value)}
               placeholder="Search all types…"
               disabled={pickerDisabled}
-              style={{ fontSize: "16px" }}
             />
           </div>
 
@@ -358,7 +357,6 @@ export function ReferenceConfigFields({
           min={1}
           value={maxItems}
           onChange={(e) => onMaxItemsChange(e.target.value)}
-          style={{ fontSize: "16px" }}
           disabled={disabled || !!datasetTemplateId}
           className="w-28"
         />

@@ -292,7 +292,6 @@ export function AdvancedSection({
               }
               placeholder="None"
               disabled={disabled}
-              style={{ fontSize: "16px" }}
             />
           </FieldRow>
 
@@ -589,7 +588,6 @@ function JsonFieldRow({
         placeholder={placeholder}
         disabled={disabled}
         className="resize-y"
-        style={{ fontSize: "16px" }}
       />
       {error && <p className="text-[11px] text-destructive mt-1">{error} <ErrorAlchemyMenu error={error} /></p>}
     </FieldRow>

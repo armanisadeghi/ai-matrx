@@ -1292,7 +1292,6 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search scopes…"
-                  style={{ fontSize: "16px" }}
                 />
               </div>
               <div className="h-[260px] space-y-2 overflow-y-auto">

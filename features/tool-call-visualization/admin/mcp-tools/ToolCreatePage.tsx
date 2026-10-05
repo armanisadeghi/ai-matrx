@@ -224,7 +224,6 @@ export function ToolCreatePage() {
             onChange={(e) => setField("name", e.target.value)}
             data-identifier
             placeholder="e.g., core_web_search"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="space-y-1.5">
@@ -233,7 +232,6 @@ export function ToolCreatePage() {
             value={tool.category}
             onChange={(e) => setField("category", e.target.value)}
             placeholder="e.g., core, web, data"
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>
@@ -318,7 +316,6 @@ export function ToolCreatePage() {
             value={tool.semver}
             onChange={(e) => setField("semver", e.target.value)}
             placeholder="1.0.0"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="space-y-1.5">
@@ -335,7 +332,6 @@ export function ToolCreatePage() {
               }
             }}
             placeholder="1"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex items-center gap-3 pt-6">
@@ -359,7 +355,6 @@ export function ToolCreatePage() {
                 .filter(Boolean),
             )
           }
-          style={{ fontSize: "16px" }}
         />
       </div>
     </div>
@@ -380,7 +375,6 @@ export function ToolCreatePage() {
         value={JSON.stringify(tool.parameters, null, 2)}
         onChange={(e) => setJsonField("parameters", e.target.value)}
         className={` flex-1 min-h-[60dvh] resize-none ${jsonErrors.parameters ? "border-destructive" : ""}`}
-        style={{ fontSize: "13px" }}
       />
     </div>
   );
@@ -400,7 +394,6 @@ export function ToolCreatePage() {
         value={JSON.stringify(tool.output_schema, null, 2)}
         onChange={(e) => setJsonField("output_schema", e.target.value)}
         className={` flex-1 min-h-[60dvh] resize-none ${jsonErrors.output_schema ? "border-destructive" : ""}`}
-        style={{ fontSize: "13px" }}
       />
     </div>
   );

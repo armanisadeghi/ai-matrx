@@ -1363,7 +1363,6 @@ function PortionTextPane({
           value={editing.text}
           onChange={(e) => onEditChange(e.target.value)}
           className="flex-1"
-          style={{ fontSize: "16px" }}
           autoFocus
         />
         <div className="flex gap-2">

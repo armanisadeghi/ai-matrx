@@ -82,7 +82,6 @@ export default function TestNewScraperPage() {
               onKeyDown={handleKeyDown}
               disabled={isLoading}
               className="flex-1"
-              style={{ fontSize: "16px" }}
             />
             {data ? (
               <Button onClick={handleReset} variant="outline">

@@ -172,7 +172,6 @@ export function SettingsSection({
                       !value.autoRun ||
                       !value.showPreExecutionGate
                     }
-                    style={{ fontSize: "16px" }}
                   />
                 </ShortcutFieldRow>
               </Indent>

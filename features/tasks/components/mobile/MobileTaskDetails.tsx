@@ -654,7 +654,6 @@ export default function MobileTaskDetails({
                     setDueDate(e.target.value);
                     setIsDirty(true);
                   }}
-                  style={{ fontSize: "16px" }}
                 />
               </div>
 
@@ -685,7 +684,6 @@ export default function MobileTaskDetails({
                     setStartDate(e.target.value);
                     setIsDirty(true);
                   }}
-                  style={{ fontSize: "16px" }}
                 />
               </div>
 

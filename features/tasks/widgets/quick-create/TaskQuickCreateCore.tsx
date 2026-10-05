@@ -580,7 +580,6 @@ export function TaskQuickCreateCore({
               }
             }}
             placeholder="What do you want to do?"
-            style={{ fontSize: "16px" }}
           />
         </div>
       )}

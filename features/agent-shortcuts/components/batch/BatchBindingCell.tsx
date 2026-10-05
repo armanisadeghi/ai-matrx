@@ -281,7 +281,6 @@ export function InlineBindingEditor({
             }
             placeholder="Literal value"
             disabled={disabled}
-            style={{ fontSize: "13px" }}
           />
         )}
 
@@ -302,7 +301,6 @@ export function InlineBindingEditor({
             }
             placeholder="Prompt text"
             disabled={disabled}
-            style={{ fontSize: "13px" }}
           />
         )}
       </div>

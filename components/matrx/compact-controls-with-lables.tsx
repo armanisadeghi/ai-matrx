@@ -176,7 +176,7 @@ interface CompactNumberProps {
 
 export const CompactNumber: React.FC<CompactNumberProps> = ({ label, icon, value, onChange, min, max, step = 1, className, focusRingColor }) => (
     <BaseControl label={label} icon={icon} interactive={false} className={className} focusRingColor={focusRingColor}>
-        <Input variant="bare"
+        <Input
             type="number"
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
@@ -203,7 +203,7 @@ export const CompactText: React.FC<CompactTextProps> = ({ label, icon, value, on
 
     return (
         <BaseControl label={label} icon={icon} onClick={() => inputRef.current?.focus()} className={className} focusRingColor={focusRingColor}>
-            <Input variant="bare"
+            <Input
                 ref={inputRef}
                 type="text"
                 value={value}
@@ -325,7 +325,7 @@ export const CompactTime: React.FC<CompactTimeProps> = ({ label, icon, value, on
 
     return (
         <BaseControl label={label} icon={icon} onClick={() => inputRef.current?.focus()} className={className} focusRingColor={focusRingColor}>
-            <Input variant="bare"
+            <Input
                 ref={inputRef}
                 type="time"
                 value={value}

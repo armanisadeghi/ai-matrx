@@ -573,7 +573,6 @@ function UrlTabContent({
           placeholder="https://example.com/image.jpg"
           disabled={state === "processing"}
           className="flex-1"
-          style={{ fontSize: "16px" }}
           aria-label="Image URL"
         />
         <Button
@@ -735,7 +734,6 @@ function GenerateTabContent({
           placeholder="Style (optional)"
           disabled={busy}
           className="flex-[2]"
-          style={{ fontSize: "16px" }}
         />
       </div>
 

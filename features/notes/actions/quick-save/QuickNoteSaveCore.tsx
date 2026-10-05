@@ -476,7 +476,6 @@ export function QuickNoteSaveCore({
                   onChange={(e) => setNoteName(e.target.value)}
                   placeholder="Note name..."
                   className="w-full"
-                  style={{ fontSize: "16px" }}
                 />
               </div>
             ) : (

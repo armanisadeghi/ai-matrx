@@ -299,7 +299,6 @@ export function ContextItemAddForm({
           placeholder="e.g. Website URL"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          style={{ fontSize: "16px" }}
           disabled={busy}
           className={CONTROL_CLASS}
           onKeyDown={(e) => {
@@ -373,7 +372,6 @@ export function ContextItemAddForm({
           placeholder="What is this field for?"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          style={{ fontSize: "16px" }}
           disabled={busy}
           className={CONTROL_CLASS}
         />
@@ -502,7 +500,6 @@ export function ContextItemAddForm({
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
               placeholder="Auto (end)"
-              style={{ fontSize: "16px" }}
               disabled={busy}
               className={CONTROL_CLASS}
             />

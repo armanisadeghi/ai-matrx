@@ -200,7 +200,6 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${entries.length} term${entries.length === 1 ? "" : "s"}…`}
-            style={{ fontSize: "16px" }}
           />
         </div>
         {canEdit && (
@@ -510,7 +509,6 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                   value={editing.draft.term}
                   onChange={(e) => setEditing({ ...editing, draft: { ...editing.draft, term: e.target.value } })}
                   placeholder="Rejuvina"
-                  style={{ fontSize: "16px" }}
                 />
               </Field>
               <Field label="Pronunciation (respelling)">
@@ -518,7 +516,6 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                   value={editing.draft.pronunciation ?? ""}
                   onChange={(e) => setEditing({ ...editing, draft: { ...editing.draft, pronunciation: e.target.value } })}
                   placeholder="reh-juh-VEE-nah"
-                  style={{ fontSize: "16px" }}
                 />
               </Field>
               <Field label="IPA (optional)">
@@ -526,7 +523,6 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                   value={editing.draft.ipa ?? ""}
                   onChange={(e) => setEditing({ ...editing, draft: { ...editing.draft, ipa: e.target.value } })}
                   placeholder="ɹɛdʒəˈvinə"
-                  style={{ fontSize: "16px" }}
                 />
               </Field>
               <Field label="Sounds like (comma-separated mishearings)">
@@ -534,7 +530,6 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                   value={editing.soundsLikeText}
                   onChange={(e) => setEditing({ ...editing, soundsLikeText: e.target.value })}
                   placeholder="rejuvena, rejuvinah"
-                  style={{ fontSize: "16px" }}
                 />
               </Field>
               <Field label="Definition (helps the AI know when it applies)">
@@ -550,7 +545,6 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                   value={editing.draft.category ?? ""}
                   onChange={(e) => setEditing({ ...editing, draft: { ...editing.draft, category: e.target.value } })}
                   placeholder="Products"
-                  style={{ fontSize: "16px" }}
                 />
               </Field>
               <label className="flex items-center gap-2 text-sm">

@@ -432,7 +432,6 @@ export function ContextValueInput({
         maxHeight={maxHeight}
         autoGrow
         disabled={disabled}
-        style={{ fontSize: "16px" }}
         className={cn(isJsonType && "font-mono", className)}
       />
     );

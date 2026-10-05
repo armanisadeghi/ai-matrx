@@ -220,7 +220,6 @@ function BundlesAdminPageInner() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search bundles…"
-                  style={{ fontSize: "16px" }}
                 />
               </div>
               <div className="flex gap-1.5">
@@ -415,7 +414,6 @@ function NewBundleDialog({
               value={name}
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g. browser-tools, search-pack, my-favorites"
-              style={{ fontSize: "16px" }}
               disabled={busy}
               autoFocus
             />
@@ -620,7 +618,6 @@ function BundleDetail({
             <Input mono
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="space-y-1">
@@ -687,7 +684,6 @@ function BundleDetail({
           value={metadataJson}
           onChange={(e) => setMetadataJson(e.target.value)}
           rows={5}
-          style={{ fontSize: "13px" }}
         />
       </section>
 
@@ -749,7 +745,6 @@ function MemberAliasCell({
           setAlias(e.target.value);
           setDirty(e.target.value !== item.member.local_alias);
         }}
-        style={{ fontSize: "13px" }}
       />
       {dirty && (
         <Button
@@ -903,7 +898,6 @@ function AddMemberDialog({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search tools by canonical name…"
-                  style={{ fontSize: "16px" }}
                   autoFocus
                 />
               </div>
@@ -984,7 +978,6 @@ function AddMemberDialog({
                   <Input mono
                     value={alias}
                     onChange={(e) => setAlias(e.target.value)}
-                    style={{ fontSize: "16px" }}
                   />
                 </div>
                 <div className="space-y-1">

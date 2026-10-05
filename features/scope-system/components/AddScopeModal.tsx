@@ -264,7 +264,6 @@ export function AddScopeModal({
               value={labelSingular}
               onChange={(e) => handleSingularChange(e.target.value)}
               placeholder="Client"
-              style={{ fontSize: "16px" }}
               disabled={busy}
             />
           </div>
@@ -280,7 +279,6 @@ export function AddScopeModal({
                 setLabelPlural(e.target.value);
               }}
               placeholder="Clients"
-              style={{ fontSize: "16px" }}
               disabled={busy}
             />
           </div>
@@ -361,7 +359,6 @@ export function AddScopeModal({
                   onChange={(e) => updateItemRow(row.id, e.target.value)}
                   onKeyDown={(e) => handleItemRowKeyDown(e, idx)}
                   disabled={busy}
-                  style={{ fontSize: "16px" }}
                 />
                 <Button
                   icon={<X />}
@@ -434,7 +431,6 @@ export function AddScopeModal({
                   onChange={(e) => setMaxAssignments(e.target.value)}
                   placeholder="Unlimited"
                   min={1}
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
                 <p className="text-[10px] text-muted-foreground">
@@ -486,7 +482,6 @@ export function AddScopeModal({
                       addVariableKey();
                     }
                   }}
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
                 <Button

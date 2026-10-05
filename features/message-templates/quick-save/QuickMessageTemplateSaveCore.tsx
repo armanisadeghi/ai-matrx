@@ -348,7 +348,6 @@ export function QuickMessageTemplateSaveCore({
                 id="qmts-name"
                 value={label}
                 onChange={(event) => setLabel(event.target.value)}
-                style={{ fontSize: "16px" }}
               />
             </div>
             <div className="grid gap-1">
@@ -382,7 +381,6 @@ export function QuickMessageTemplateSaveCore({
                 value={tagsText}
                 onChange={(event) => setTagsText(event.target.value)}
                 placeholder="sales, follow-up"
-                style={{ fontSize: "16px" }}
               />
             </div>
             <div className="flex items-end gap-2 pb-1">

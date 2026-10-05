@@ -227,7 +227,6 @@ function FieldInput({
       <Input
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
-        style={{ fontSize: "16px" }}
         placeholder={placeholder}
       />
     </div>
@@ -290,7 +289,6 @@ function StringListField({
               value={item}
               onChange={(e) => updateItem(idx, e.target.value)}
               className="flex-1"
-              style={{ fontSize: "16px" }}
               placeholder={placeholder}
             />
             <button

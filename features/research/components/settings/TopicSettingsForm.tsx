@@ -284,7 +284,6 @@ export function TopicSettingsForm({
             >
               <SelectTrigger
                 className="w-full"
-                style={{ fontSize: "16px" }}
               >
                 <SelectValue placeholder="No project" />
               </SelectTrigger>
@@ -373,7 +372,7 @@ export function TopicSettingsForm({
               onValueChange={(v) => setStatus(v as TopicStatus)}
               disabled={saving}
             >
-              <SelectTrigger className="w-40" style={{ fontSize: "16px" }}>
+              <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -436,7 +435,7 @@ export function TopicSettingsForm({
             onValueChange={(v) => setSearchProvider(v as SearchProvider)}
             disabled={saving}
           >
-            <SelectTrigger className="w-48" style={{ fontSize: "16px" }}>
+            <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -462,7 +461,6 @@ export function TopicSettingsForm({
             step={100}
             value={goodScrapeThreshold}
             onChange={(e) => setGoodScrapeThreshold(Number(e.target.value))}
-            style={{ fontSize: "16px" }}
             disabled={saving}
           />
         </div>

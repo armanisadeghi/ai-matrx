@@ -232,7 +232,6 @@ export function NewSurfaceDialog({
               value={local}
               onChange={(e) => setLocal(e.target.value.toLowerCase())}
               placeholder="e.g. notes or debug/state-analyzer"
-              style={{ fontSize: "16px" }}
               disabled={busy}
               autoFocus
             />

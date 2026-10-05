@@ -1117,7 +1117,6 @@ export function McpToolsManager() {
                 placeholder="Search name, description, path, tags…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ fontSize: "16px" }}
               />
               {searchQuery && (
                 <button
@@ -1842,7 +1841,6 @@ function ColumnFilterControl({
             onChange={(e) =>
               onChange({ ...(value ?? {}), text: e.target.value })
             }
-            style={{ fontSize: "16px" }}
           />
         )}
         {column.type === "enum" && (
@@ -1949,7 +1947,6 @@ function ColumnFilterControl({
                   numMin: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
-              style={{ fontSize: "16px" }}
             />
             <span className="text-xs text-muted-foreground">–</span>
             <Input
@@ -1962,7 +1959,6 @@ function ColumnFilterControl({
                   numMax: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
-              style={{ fontSize: "16px" }}
             />
           </div>
         )}
@@ -1977,7 +1973,6 @@ function ColumnFilterControl({
                   onChange({ ...(value ?? {}), dateFrom: e.target.value })
                 }
                 className="mt-0.5"
-                style={{ fontSize: "16px" }}
               />
             </label>
             <label className="block text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -1989,7 +1984,6 @@ function ColumnFilterControl({
                   onChange({ ...(value ?? {}), dateTo: e.target.value })
                 }
                 className="mt-0.5"
-                style={{ fontSize: "16px" }}
               />
             </label>
           </div>

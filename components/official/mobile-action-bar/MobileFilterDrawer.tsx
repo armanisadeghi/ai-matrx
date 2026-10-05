@@ -163,7 +163,6 @@ export function MobileFilterDrawer({
                   onValueChange={(value) => handleFilterChange(field.id, value)}
                 >
                   <SelectTrigger
-                    style={{ fontSize: "16px" }}
                   >
                     <SelectValue />
                   </SelectTrigger>

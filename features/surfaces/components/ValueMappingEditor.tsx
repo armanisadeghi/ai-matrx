@@ -679,7 +679,6 @@ function OfferedValueInput({
                 onChange({ ...mapping, default: e.target.value })
               }
               placeholder="Default value"
-              style={{ fontSize: "13px" }}
               disabled={disabled}
             />
           )}
@@ -743,7 +742,6 @@ function DirectValueInput({
           onChange={(e) => onRawChange(e.target.value)}
           rows={3}
           placeholder={targetType === "array" ? "[]" : "{}"}
-          style={{ fontSize: "13px" }}
           disabled={disabled}
         />
       ) : (
@@ -751,7 +749,6 @@ function DirectValueInput({
           value={raw}
           onChange={(e) => onRawChange(e.target.value)}
           placeholder={targetType === "number" ? "0" : "Direct value…"}
-          style={{ fontSize: "13px" }}
           disabled={disabled}
         />
       )}
@@ -789,7 +786,6 @@ function PromptUserInput({
           value={mapping.prompt}
           onChange={(e) => onChange({ ...mapping, prompt: e.target.value })}
           placeholder="What do you want to ask the user?"
-          style={{ fontSize: "13px" }}
           disabled={disabled}
         />
       </div>
@@ -807,7 +803,6 @@ function PromptUserInput({
               })
             }
             placeholder="Pre-filled input value"
-            style={{ fontSize: "13px" }}
             disabled={disabled}
           />
         </div>

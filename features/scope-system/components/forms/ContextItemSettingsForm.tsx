@@ -313,7 +313,6 @@ export function ContextItemSettingsForm({
           autoFocus={autoFocus}
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          style={{ fontSize: "16px" }}
           disabled={busy}
         />
         <p className="text-[10px] font-mono text-muted-foreground">
@@ -422,7 +421,6 @@ export function ContextItemSettingsForm({
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           placeholder="e.g. Brand & Identity"
-          style={{ fontSize: "16px" }}
           disabled={busy}
           list={ids.categoryList}
         />
@@ -501,7 +499,6 @@ export function ContextItemSettingsForm({
                 addTag();
               }
             }}
-            style={{ fontSize: "16px" }}
             disabled={busy}
             className="flex-1"
           />
@@ -549,7 +546,6 @@ export function ContextItemSettingsForm({
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value)}
             placeholder="0"
-            style={{ fontSize: "16px" }}
             disabled={busy}
           />
           <p className="text-[10px] text-muted-foreground">Lower shows first</p>
@@ -565,7 +561,6 @@ export function ContextItemSettingsForm({
             onChange={(e) => setReviewIntervalDays(e.target.value)}
             placeholder="No schedule"
             min={1}
-            style={{ fontSize: "16px" }}
             disabled={busy}
           />
           <p className="text-[10px] text-muted-foreground">

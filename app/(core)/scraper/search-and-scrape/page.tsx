@@ -156,7 +156,6 @@ export default function ScraperSearchAndScrapePage() {
                 onChange={(e) => setKeyword(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
-                style={{ fontSize: "16px" }}
               />
             </div>
             <div className="flex items-end gap-2 flex-wrap">
@@ -175,7 +174,6 @@ export default function ScraperSearchAndScrapePage() {
                   value={maxPages}
                   onChange={(e) => setMaxPages(e.target.value)}
                   disabled={isLoading}
-                  style={{ fontSize: "16px" }}
                 />
               </div>
               <div className="flex items-center gap-1.5 pb-1.5">

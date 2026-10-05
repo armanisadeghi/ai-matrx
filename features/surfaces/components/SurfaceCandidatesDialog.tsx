@@ -146,7 +146,6 @@ export function SurfaceCandidatesDialog({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search…"
             className="max-w-xs"
-            style={{ fontSize: "16px" }}
           />
           <Select value={client} onValueChange={setClient}>
             <SelectTrigger className="w-[180px]">

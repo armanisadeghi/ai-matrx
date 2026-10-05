@@ -227,7 +227,6 @@ export function BulkRowActions({
                 value={setColumnValue}
                 onChange={(e) => setSetColumnValue(e.target.value)}
                 placeholder="New value"
-                style={{ fontSize: "16px" }}
               />
               <div className="flex gap-1.5">
                 <Button

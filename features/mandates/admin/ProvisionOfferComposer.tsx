@@ -261,7 +261,6 @@ function ScaffoldForm({
                 setDrafts((prev) => ({ ...prev, [value.name]: e.target.value }))
               }
               placeholder={value.description || value.name}
-              style={{ fontSize: "13px" }}
             />
           ) : value.kind === "markdown" ? (
             <ProTextarea
@@ -282,7 +281,6 @@ function ScaffoldForm({
               }
               placeholder={`JSON for ${value.kind}`}
               rows={3}
-              style={{ fontSize: "13px" }}
             />
           )}
         </div>

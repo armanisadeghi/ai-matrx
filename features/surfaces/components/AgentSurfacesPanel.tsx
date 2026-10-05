@@ -400,7 +400,6 @@ export function AgentSurfacesPanel({ agent }: Props) {
             placeholder="Search surfaces…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>
@@ -1154,7 +1153,6 @@ function SurfacePicker({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
-              style={{ fontSize: "16px" }}
             />
           </div>
         </div>

@@ -216,7 +216,6 @@ export function RuleEditorForm({
                 });
               }}
               placeholder="e.g. attachment"
-              style={{ fontSize: "16px" }}
             />
           ) : (
             <span className="text-sm text-muted-foreground">

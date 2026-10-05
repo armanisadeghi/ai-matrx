@@ -308,7 +308,6 @@ export function QuickSaveCodeCore({
                     }}
                     placeholder="Folder name"
                     className="w-full"
-                    style={{ fontSize: "16px" }}
                     disabled={folderCreateBusy}
                   />
                   <Button
@@ -373,7 +372,6 @@ export function QuickSaveCodeCore({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="my-file.ts"
                   className="w-full"
-                  style={{ fontSize: "16px" }}
                 />
               </div>
             ) : (

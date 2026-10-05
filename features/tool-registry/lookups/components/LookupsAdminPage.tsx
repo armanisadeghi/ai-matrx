@@ -471,7 +471,6 @@ function UiClientDialog({
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g., matrx-mobile"
               disabled={isEdit}
-              style={{ fontSize: "16px" }}
             />
             {!isEdit && !nameValid && name.length > 0 && (
               <p className="text-[11px] text-destructive">
@@ -754,7 +753,6 @@ function UiSurfaceDialog({
               onChange={(e) => setLocalPart(e.target.value.toLowerCase())}
               placeholder="e.g., notes"
               disabled={isEdit}
-              style={{ fontSize: "16px" }}
             />
             <p className="text-[11px] text-muted-foreground">
               Full name will be{" "}
@@ -992,7 +990,6 @@ function ToolExecutorDialog({
               onChange={(e) => setName(e.target.value.toLowerCase())}
               placeholder="e.g., mcp.my-server"
               disabled={isEdit}
-              style={{ fontSize: "16px" }}
             />
             <p className="text-[11px] text-muted-foreground">
               Convention: <code className="font-mono">mcp.&lt;slug&gt;</code>{" "}
@@ -1046,7 +1043,6 @@ function ToolExecutorDialog({
               value={configJson}
               onChange={(e) => setConfigJson(e.target.value)}
               rows={6}
-              style={{ fontSize: "13px" }}
             />
           </div>
           {row?.mcp_server_id && (

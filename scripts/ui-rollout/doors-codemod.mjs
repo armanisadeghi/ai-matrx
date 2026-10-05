@@ -167,7 +167,8 @@ function transform(file, srcOverride) {
     const mod = st.moduleSpecifier.text;
     for (const door of ACTIVE) {
       // `@host/…` is the same door seen from an in-repo package (packages/chat).
-      if (DOORS[door].module !== mod && DOORS[door].module.replace(/^@\//, "@host/") !== mod) continue;
+      const moved = DOORS[door].movesTo === mod; // already on the controls import (an earlier run)
+      if (!moved && DOORS[door].module !== mod && DOORS[door].module.replace(/^@\//, "@host/") !== mod) continue;
       for (const spec of st.importClause.namedBindings.elements) {
         let imported = (spec.propertyName ?? spec.name).text;
         let legacy = false;
@@ -179,7 +180,7 @@ function transform(file, srcOverride) {
         }
         if (!(imported in DOORS[door].parts) || spec.isTypeOnly) continue;
         bindings.set(spec.name.text, { door, part: imported, spec, decl: st });
-        (imports[door] ??= []).push({ spec, decl: st, imported, legacy });
+        (imports[door] ??= []).push({ spec, decl: st, imported, legacy, moved });
       }
     }
   }
@@ -265,7 +266,7 @@ function transform(file, srcOverride) {
     }
     if (door === "input") {
       // Move Input to the controls import.
-      for (const { spec, decl } of imports.input) {
+      for (const { spec, decl } of imports.input.filter((i) => !i.moved)) {
         const named = decl.importClause.namedBindings.elements;
         const local = spec.name.text;
         const clause = local === "Input" ? "Input" : `Input as ${local}`;
@@ -306,6 +307,18 @@ function convertElement(sf, el, door, part, edits) {
   for (const a of attrs) if (DOORS[door].dropProps.includes(attrName(a))) {
     if (door === "input" && attrName(a) === "variant" && attrStatic(a) === "ghost") addProps.push('variant="bare"');
     removeAttr(a);
+  }
+  // style={{ fontSize: … }} was the iOS-zoom workaround; the lock owns the coarse-pointer 16px.
+  const style = attrs.find((a) => attrName(a) === "style");
+  const obj = style?.initializer && ts.isJsxExpression(style.initializer) && style.initializer.expression;
+  if (obj && ts.isObjectLiteralExpression(obj)) {
+    const visual = obj.properties.filter((p) => ts.isPropertyAssignment(p) && /^(fontSize|lineHeight|height|minHeight|padding\w*|borderRadius)$/.test(p.name.getText()) && !(door === "textarea" && /Height$/.test(p.name.getText())));
+    if (visual.length && visual.length === obj.properties.length) removeAttr(style);
+    else for (const p of visual) {
+      const i = obj.properties.indexOf(p);
+      const end = i < obj.properties.length - 1 ? obj.properties[i + 1].getStart() : p.getEnd();
+      edits.push({ start: p.getStart(), end, text: "" });
+    }
   }
   const cls = attrs.find((a) => attrName(a) === "className");
   if (cls && cls.initializer) {

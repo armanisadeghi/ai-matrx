@@ -108,7 +108,6 @@ export function ShareableResourceForm({
                 onChange({ ...editor, schemaName: e.target.value })
               }
               placeholder="e.g. workspace"
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -119,7 +118,6 @@ export function ShareableResourceForm({
                 onChange({ ...editor, tableName: e.target.value })
               }
               placeholder="e.g. projects"
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -129,7 +127,6 @@ export function ShareableResourceForm({
               onChange={(e) =>
                 onChange({ ...editor, idColumn: e.target.value })
               }
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -139,7 +136,6 @@ export function ShareableResourceForm({
               onChange={(e) =>
                 onChange({ ...editor, ownerColumn: e.target.value })
               }
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="col-span-2 flex flex-col gap-1.5">
@@ -155,7 +151,6 @@ export function ShareableResourceForm({
                 onChange({ ...editor, isPublicColumn: e.target.value })
               }
               placeholder="e.g. visibility"
-              style={{ fontSize: "16px" }}
             />
           </div>
         </div>
@@ -169,7 +164,6 @@ export function ShareableResourceForm({
             onChange({ ...editor, displayLabel: e.target.value })
           }
           placeholder="e.g. Project"
-          style={{ fontSize: "16px" }}
         />
       </div>
 
@@ -184,7 +178,6 @@ export function ShareableResourceForm({
             onChange({ ...editor, urlPathTemplate: e.target.value })
           }
           placeholder="e.g. /projects/{id}"
-          style={{ fontSize: "16px" }}
         />
         {urlMissingId ? (
           <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500">

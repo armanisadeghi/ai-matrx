@@ -164,7 +164,6 @@ export function BatchSurfaceSelector({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search surfaces & shortcuts…"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <Button

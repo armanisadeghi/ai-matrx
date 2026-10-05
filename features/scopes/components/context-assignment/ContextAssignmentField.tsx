@@ -456,7 +456,6 @@ function InlineAdd({
           if (e.key === "Escape") onCancel();
         }}
         placeholder={placeholder}
-        style={{ fontSize: "16px" }}
       />
       <Button size="sm" className="h-8" onClick={() => onCommit(v)}>
         Add
@@ -1537,7 +1536,6 @@ export function ContextAssignmentField({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchPlaceholderForDimensions(dims)}
-              style={{ fontSize: "16px" }}
             />
           </div>
         </div>

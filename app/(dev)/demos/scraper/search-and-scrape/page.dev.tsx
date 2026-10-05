@@ -451,7 +451,6 @@ export default function SearchAndScrapeDemoPage() {
           value={maxPages}
           onChange={(e) => setMaxPages(e.target.value)}
           disabled={isLoading}
-          style={{ fontSize: "16px" }}
         />
       </div>
       <div className="flex items-center gap-2 h-10">

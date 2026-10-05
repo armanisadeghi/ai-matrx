@@ -181,7 +181,6 @@ export function ScopeTypeFormSheet({
               value={labelSingular}
               onChange={(e) => handleSingularChange(e.target.value)}
               placeholder="Department"
-              style={{ fontSize: "16px" }}
             />
           </div>
           <div className="space-y-1.5">
@@ -190,7 +189,6 @@ export function ScopeTypeFormSheet({
               value={labelPlural}
               onChange={(e) => setLabelPlural(e.target.value)}
               placeholder="Departments"
-              style={{ fontSize: "16px" }}
             />
           </div>
         </div>
@@ -244,7 +242,6 @@ export function ScopeTypeFormSheet({
               onChange={(e) => setMaxAssignments(e.target.value)}
               placeholder="Unlimited"
               min={1}
-              style={{ fontSize: "16px" }}
             />
             <p className="text-[10px] text-muted-foreground">
               Leave blank for unlimited
@@ -283,7 +280,6 @@ export function ScopeTypeFormSheet({
               onKeyDown={(e) =>
                 e.key === "Enter" && (e.preventDefault(), addVariableKey())
               }
-              style={{ fontSize: "16px" }}
             />
             <Button
               type="button"

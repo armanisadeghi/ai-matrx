@@ -419,7 +419,6 @@ export function McpServersAdminPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search servers…"
-                  style={{ fontSize: "16px" }}
                   data-surface-value="mcp_search"
                 />
               </div>
@@ -1294,7 +1293,6 @@ function ConfigDialog({
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="e.g. stdio-default, http-prod"
-                style={{ fontSize: "16px" }}
                 disabled={busy}
                 autoFocus
               />
@@ -1324,7 +1322,6 @@ function ConfigDialog({
                 value={command}
                 onChange={(e) => setCommand(e.target.value)}
                 placeholder="e.g. npx"
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -1334,7 +1331,6 @@ function ConfigDialog({
                 value={argsText}
                 onChange={(e) => setArgsText(e.target.value)}
                 placeholder="e.g. -y @scope/mcp-server"
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -1346,7 +1342,6 @@ function ConfigDialog({
                 value={npmPackage}
                 onChange={(e) => setNpmPackage(e.target.value)}
                 placeholder="@vendor/mcp-server"
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -1356,7 +1351,6 @@ function ConfigDialog({
                 value={pipPackage}
                 onChange={(e) => setPipPackage(e.target.value)}
                 placeholder="vendor-mcp-server"
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -1368,7 +1362,6 @@ function ConfigDialog({
                 value={minNode}
                 onChange={(e) => setMinNode(e.target.value)}
                 placeholder="e.g. 20"
-                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
@@ -1402,7 +1395,6 @@ function ConfigDialog({
               value={envSchemaJson}
               onChange={(e) => setEnvSchemaJson(e.target.value)}
               rows={5}
-              style={{ fontSize: "13px" }}
               disabled={busy}
             />
             <p className="text-[11px] text-muted-foreground">

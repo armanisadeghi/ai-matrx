@@ -176,7 +176,6 @@ export function UnifiedFilterModal<T extends BaseListItem>({
             }
           >
             <SelectTrigger
-              style={{ fontSize: "16px" }}
             >
               <SelectValue />
             </SelectTrigger>
@@ -299,7 +298,6 @@ export function UnifiedFilterModal<T extends BaseListItem>({
               </label>
               <Select value={localSortBy} onValueChange={setLocalSortBy}>
                 <SelectTrigger
-                  style={{ fontSize: "16px" }}
                 >
                   <SelectValue />
                 </SelectTrigger>

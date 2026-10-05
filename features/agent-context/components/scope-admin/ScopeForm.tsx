@@ -137,7 +137,6 @@ export function ScopeForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Engineering, West Coast, Q1 2025..."
-            style={{ fontSize: "16px" }}
             autoFocus={autoFocus}
           />
         </div>

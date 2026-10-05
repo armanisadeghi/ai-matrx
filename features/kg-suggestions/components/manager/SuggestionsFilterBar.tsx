@@ -145,7 +145,6 @@ export function SuggestionsFilterBar({
             value={query.search ?? ""}
             onChange={(e) => patchQuery({ search: e.target.value || null })}
             placeholder="Search value, scope, field…"
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>

@@ -698,7 +698,6 @@ export default function BatchScrapePage() {
             }
             disabled={isLoading}
             className="resize-y"
-            style={{ fontSize: "16px" }}
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">

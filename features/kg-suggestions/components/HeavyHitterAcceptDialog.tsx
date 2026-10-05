@@ -189,7 +189,6 @@ export function HeavyHitterAcceptDialog({
           onChange={(e) => setName(e.target.value)}
           placeholder="Scope name"
           disabled={busy}
-          style={{ fontSize: "16px" }}
         />
       </div>
 

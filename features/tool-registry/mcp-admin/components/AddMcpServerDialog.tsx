@@ -283,7 +283,6 @@ export function AddMcpServerDialog({
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase())}
                   placeholder="e.g. notion, linear, custom-search"
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                   autoFocus
                 />
@@ -304,7 +303,6 @@ export function AddMcpServerDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Notion, Linear, Custom Search"
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
               </div>
@@ -316,7 +314,6 @@ export function AddMcpServerDialog({
                   value={vendor}
                   onChange={(e) => setVendor(e.target.value)}
                   placeholder="e.g. Notion Labs, Inc."
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
               </div>
@@ -394,7 +391,6 @@ export function AddMcpServerDialog({
                   value={endpointUrl}
                   onChange={(e) => setEndpointUrl(e.target.value)}
                   placeholder="https://mcp.example.com/v1"
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
                 <p className="text-[11px] text-muted-foreground">
@@ -437,7 +433,6 @@ export function AddMcpServerDialog({
                 <Input
                   value={docsUrl}
                   onChange={(e) => setDocsUrl(e.target.value)}
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
               </div>
@@ -446,7 +441,6 @@ export function AddMcpServerDialog({
                 <Input
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
-                  style={{ fontSize: "16px" }}
                   disabled={busy}
                 />
               </div>

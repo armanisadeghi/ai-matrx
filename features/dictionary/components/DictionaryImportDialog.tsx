@@ -147,7 +147,6 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
               ? "term,sounds_like,pronunciation,ipa,definition,category,is_active"
               : '[{"term":"Rejuvina","pronunciation":"reh-juh-VEE-nah"}]'
           }
-          style={{ fontSize: "16px" }}
         />
 
         {parseError && (

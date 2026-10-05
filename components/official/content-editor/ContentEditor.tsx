@@ -450,7 +450,6 @@ export function ContentEditor({
                 placeholder={placeholder}
                 className="w-full resize-none"
                 style={{
-                  height: "auto",
                   minHeight: "300px",
                   maxHeight: "none",
                 }}

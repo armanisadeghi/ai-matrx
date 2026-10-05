@@ -95,7 +95,6 @@ export function ScalarValueControl({
           onChange(raw === "" ? 0 : Number(raw));
         }}
         className={cn(h, "w-full")}
-        style={{ fontSize: compact ? "13px" : "16px" }}
         disabled={disabled}
       />
     );
@@ -128,7 +127,6 @@ export function ScalarValueControl({
       onChange={(e) => onChange(e.target.value || null)}
       placeholder={c.placeholder}
       className={cn(h, "w-full")}
-      style={{ fontSize: compact ? "13px" : "16px" }}
       disabled={disabled}
     />
   );
@@ -174,7 +172,6 @@ function JsonControl({
         rows={compact ? 2 : 3}
         placeholder="{ }"
         className="resize-none"
-        style={{ fontSize: "13px" }}
         disabled={disabled}
       />
       {error && (

@@ -247,7 +247,6 @@ export default function QuickScrapePage() {
               onKeyDown={handleKeyDown}
               disabled={isAnyLoading}
               className="flex-1"
-              style={{ fontSize: "16px" }}
             />
             {data || fullResult ? (
               <Button

@@ -199,7 +199,6 @@ export function ToolEditPage({ tool }: Props) {
           <Input mono
             value={editedTool.name}
             disabled
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="space-y-1.5">
@@ -208,7 +207,6 @@ export function ToolEditPage({ tool }: Props) {
             value={editedTool.category || ""}
             onChange={(e) => setField("category", e.target.value)}
             placeholder="e.g., core, web, data"
-            style={{ fontSize: "16px" }}
           />
         </div>
       </div>
@@ -292,7 +290,6 @@ export function ToolEditPage({ tool }: Props) {
             value={editedTool.semver ?? ""}
             onChange={(e) => setField("semver", e.target.value)}
             placeholder="1.0.0"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="space-y-1.5">
@@ -311,7 +308,6 @@ export function ToolEditPage({ tool }: Props) {
               }));
             }}
             placeholder="1"
-            style={{ fontSize: "16px" }}
           />
         </div>
         <div className="flex items-center gap-3 pt-6">
@@ -337,7 +333,6 @@ export function ToolEditPage({ tool }: Props) {
             )
           }
           placeholder="tag1, tag2, tag3"
-          style={{ fontSize: "16px" }}
         />
       </div>
     </div>
@@ -358,7 +353,6 @@ export function ToolEditPage({ tool }: Props) {
         value={JSON.stringify(editedTool.parameters, null, 2)}
         onChange={(e) => setJsonField("parameters", e.target.value)}
         className={` flex-1 min-h-[60dvh] resize-none ${jsonErrors.parameters ? "border-destructive" : ""}`}
-        style={{ fontSize: "13px" }}
       />
     </div>
   );
@@ -378,7 +372,6 @@ export function ToolEditPage({ tool }: Props) {
         value={JSON.stringify(editedTool.output_schema ?? {}, null, 2)}
         onChange={(e) => setJsonField("output_schema", e.target.value)}
         className={` flex-1 min-h-[60dvh] resize-none ${jsonErrors.output_schema ? "border-destructive" : ""}`}
-        style={{ fontSize: "13px" }}
       />
     </div>
   );
@@ -398,7 +391,6 @@ export function ToolEditPage({ tool }: Props) {
         value={JSON.stringify(editedTool.annotations ?? [], null, 2)}
         onChange={(e) => setJsonField("annotations", e.target.value)}
         className={` flex-1 min-h-[40dvh] resize-none ${jsonErrors.annotations ? "border-destructive" : ""}`}
-        style={{ fontSize: "13px" }}
       />
 
       <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground pt-4 border-t border-border mt-2">

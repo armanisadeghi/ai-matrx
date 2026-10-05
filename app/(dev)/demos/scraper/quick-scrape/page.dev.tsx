@@ -496,7 +496,6 @@ export default function QuickScrapeDemoPage() {
         onKeyDown={handleKeyDown}
         disabled={isLoading}
         className="flex-1"
-        style={{ fontSize: "16px" }}
       />
       <Button
         variant="primary"

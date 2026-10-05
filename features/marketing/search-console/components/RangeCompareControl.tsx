@@ -115,7 +115,7 @@ export function RangeCompareControl({
 
       {customOpen ? (
         <div className="flex items-center gap-1 rounded-md border border-border bg-card p-0.5">
-          <Input variant="bare"
+          <Input
             type="date"
             value={draftFrom}
             onChange={(e) => setDraftFrom(e.target.value)}
@@ -123,7 +123,7 @@ export function RangeCompareControl({
             aria-label="Start date"
           />
           <span className="text-xs text-muted-foreground">→</span>
-          <Input variant="bare"
+          <Input
             type="date"
             value={draftTo}
             onChange={(e) => setDraftTo(e.target.value)}

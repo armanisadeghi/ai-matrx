@@ -513,7 +513,6 @@ export function SurfaceAdminDetailPage({
               onChange={(e) => setNewName(e.target.value.toLowerCase())}
               placeholder={surface.name}
               className={cn("font-mono text-sm h-8 max-w-md", ACTIVE_FIELD)}
-              style={{ fontSize: "16px" }}
               autoFocus
               disabled={busy}
             />
@@ -796,7 +795,6 @@ function IdentitySection({
             onChange={(e) => setUrlPattern(e.target.value)}
             placeholder="e.g. /transcripts/cleanup"
             className={cn("font-mono text-sm", ACTIVE_FIELD)}
-            style={{ fontSize: "16px" }}
             disabled={busy}
           />
           <p className="text-[11px] text-muted-foreground">
@@ -936,7 +934,6 @@ function ClassificationSection({
               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             }}
             className={cn("h-8 text-xs tabular-nums", ACTIVE_FIELD)}
-            style={{ fontSize: "16px" }}
             disabled={busy}
           />
         </div>
@@ -1448,7 +1445,6 @@ function ToolDefaultsSection({
               }}
               placeholder="Admin-facing notes about this surface's tool policy"
               className={ACTIVE_FIELD}
-              style={{ fontSize: "16px" }}
               disabled={busy}
             />
           </div>
@@ -1742,7 +1738,6 @@ function JsonRecordEditor({
                 ACTIVE_FIELD,
                 errors[key] ? "border-destructive" : "",
               )}
-              style={{ fontSize: "13px" }}
               disabled={busy}
             />
           </div>
@@ -1758,7 +1753,6 @@ function JsonRecordEditor({
           className={cn("h-7 max-w-[240px] font-mono text-xs", ACTIVE_FIELD)}
           data-identifier
           placeholder="tool_name"
-          style={{ fontSize: "16px" }}
           disabled={busy}
         />
         <Button
@@ -2354,7 +2348,6 @@ function NamespaceConfigEditorRow({
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             className={cn("min-h-20 flex-1 font-mono text-xs", ACTIVE_FIELD)}
-            style={{ fontSize: "16px" }}
             aria-label={`${namespace} global configuration JSON`}
           />
           <Button
