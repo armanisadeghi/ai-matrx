@@ -1,0 +1,133 @@
+// GUARD: every long-form editing host is wired to THE formatting command layer
+// (components/rich-editor/format — ⌘B/⌘I/⌘K/⌘⇧X/⌘E/⌘⇧7/8 and the selection
+// toolbar's formatting buttons in Visual, Source and every textarea).
+// Arman, 2026-10-04: "The formatting buttons need to work even when we are
+// just showing plain text."
+//
+// A host is wired when its file calls `useTextareaFormatting` (textareas),
+// registers `markdownFormatHost` (CodeMirror) or `RICH_EDITOR_HOST_KEY`
+// (Tiptap), or renders the canonical `ProTextarea` (wired inside, long-form by
+// default) or `RichEditor`. A raw <textarea> in a long-form host directory that
+// is none of these fails — unless listed below with its reason.
+
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+const ROOT = path.resolve(__dirname, "../../..");
+
+/** The hosts the brief names, each with the wiring it must carry. */
+const REQUIRED: Record<string, RegExp> = {
+  "components/official/ProTextarea.tsx": /useTextareaFormatting\(/,
+  "components/matrx/MatrxSplit.tsx": /useTextareaFormatting\(/,
+  "features/notes/components/NoteEditorCore.tsx": /useTextareaFormatting\(/,
+  "features/notes/components/mobile/MobileNoteEditor.tsx": /useTextareaFormatting\(/,
+  "components/rich-editor/source/SourceEditor.tsx": /markdownFormatHost\(/,
+  "components/rich-editor/visual/VisualEditor.tsx": /RICH_EDITOR_HOST_KEY/,
+  "packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx": /useTextareaFormatting\(/,
+};
+
+/** Directories where text is long-form markdown a person writes. */
+const LONG_FORM_DIRS = [
+  "features/notes",
+  "components/matrx",
+  "components/rich-editor",
+  "components/official/content-editor",
+  "components/mardown-display/chat-markdown",
+  "features/agents/components/builder/message-builders",
+  "features/message-templates",
+  "features/skills",
+  "features/html-pages/components",
+  "packages/chat/src/agents/components/inputs",
+];
+
+/** Raw textareas that are not long-form markdown — or are owned by a named follow-up. */
+const EXEMPT: Record<string, string> = {
+  "features/notes/components/FindMatchOverlay.tsx": "a measuring mirror, never edited",
+  "components/mardown-display/chat-markdown/analyzer/analyzer-options/JsonComparator.tsx": "JSON input (admin analyzer)",
+  "features/html-pages/components/HtmlPreviewModal.tsx": "HTML source",
+  "features/html-pages/components/tabs/CompleteHtmlTab.tsx": "HTML source",
+  "features/html-pages/components/tabs/HtmlCodeTab.tsx": "HTML source",
+  "features/html-pages/components/tabs/WordPressCSSTab.tsx": "CSS source",
+  "features/html-pages/components/tabs/SavePageTab.tsx": "page metadata fields",
+  "packages/chat/src/agents/components/inputs/smart-input/UninitializedShell.tsx": "the composer's loading shell (disabled)",
+  // FOLLOW-UP LANE (chair, 2026-10-04: consistency census items 7–9 — bare
+  // textareas in the full-screen editor, HTML-page tabs and prompt / template /
+  // skill editors move onto the canonical editor there). Shrink-only.
+  "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": "follow-up lane: Plain tab bare textarea",
+  "features/html-pages/components/tabs/MarkdownPlainTextTab.tsx": "follow-up lane: Plain tab bare textarea",
+  "features/agents/components/builder/message-builders/MessageItem.tsx": "follow-up lane: prompt message editor",
+  "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": "follow-up lane: system instructions editor",
+  "features/message-templates/admin/MessageTemplateManager.tsx": "follow-up lane: template editor",
+  "features/message-templates/components/SaveTemplateModal.tsx": "follow-up lane: template editor",
+  "features/message-templates/components/TemplateEditor.tsx": "follow-up lane: template editor",
+};
+
+const WIRED = /useTextareaFormatting\(|markdownFormatHost\(|RICH_EDITOR_HOST_KEY/;
+const RAW_TEXTAREA = /<textarea[\s>]/;
+
+function walk(dir: string, out: string[] = []): string[] {
+  if (!fs.existsSync(dir)) return out;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "__tests__" || entry.name === "node_modules") continue;
+      walk(full, out);
+    } else if (entry.name.endsWith(".tsx") && !/\.test\.|\.spec\./.test(entry.name)) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+export function unwiredHosts(root: string, dirs: readonly string[], exempt: Record<string, string>): string[] {
+  const out: string[] = [];
+  for (const dir of dirs) {
+    for (const file of walk(path.join(root, dir))) {
+      const rel = path.relative(root, file).split(path.sep).join("/");
+      if (exempt[rel]) continue;
+      const src = fs.readFileSync(file, "utf8");
+      if (RAW_TEXTAREA.test(src) && !WIRED.test(src)) out.push(rel);
+    }
+  }
+  return out.sort();
+}
+
+describe("every long-form editing host is wired to the formatting command layer", () => {
+  test.each(Object.entries(REQUIRED))("%s carries its wiring", (rel, wiring) => {
+    expect(wiring.test(fs.readFileSync(path.join(ROOT, rel), "utf8"))).toBe(true);
+  });
+
+  test("no raw long-form textarea is left unwired", () => {
+    const offenders = unwiredHosts(ROOT, LONG_FORM_DIRS, EXEMPT);
+    if (offenders.length) {
+      throw new Error(
+        "A long-form textarea has no formatting. Call useTextareaFormatting(element) " +
+          "(components/rich-editor/format/useTextareaFormatting.ts), render ProTextarea / RichEditor, " +
+          `or list it in EXEMPT with the reason:\n  ${offenders.join("\n  ")}`,
+      );
+    }
+  });
+
+  test("no stale exemption (the file exists and still has an unwired raw textarea)", () => {
+    const stale = Object.keys(EXEMPT).filter((rel) => {
+      const file = path.join(ROOT, rel);
+      if (!fs.existsSync(file)) return true;
+      const src = fs.readFileSync(file, "utf8");
+      return !RAW_TEXTAREA.test(src) || WIRED.test(src);
+    });
+    expect(stale).toEqual([]);
+  });
+
+  test("the detector goes red on a planted unwired textarea and green once wired (self-proof)", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "format-hosts-"));
+    const dir = path.join(tmp, "features/notes/components");
+    fs.mkdirSync(dir, { recursive: true });
+    const planted = path.join(dir, "Pad.tsx");
+    fs.writeFileSync(planted, "export const Pad = () => <textarea rows={8} />;\n");
+    expect(unwiredHosts(tmp, ["features/notes"], {})).toEqual(["features/notes/components/Pad.tsx"]);
+    fs.writeFileSync(planted, "useTextareaFormatting(el);\nexport const Pad = () => <textarea rows={8} />;\n");
+    expect(unwiredHosts(tmp, ["features/notes"], {})).toEqual([]);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});

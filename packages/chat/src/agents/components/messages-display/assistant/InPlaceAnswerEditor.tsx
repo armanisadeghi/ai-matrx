@@ -31,6 +31,7 @@ import {
 } from "../../../redux/execution-system/message-crud/save-answer-edit.thunk";
 import { toast } from "../../../../host/notify";
 import { rebaseEdit } from "../../../redux/execution-system/message-crud/answer-text-splice";
+import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
 
 interface InPlaceAnswerEditorProps {
   conversationId: string;
@@ -153,7 +154,7 @@ function LoadedAnswerEditor({
         action: {
           label: "Copy my edit",
           onClick: () => {
-            void navigator.clipboard?.writeText(text);
+            void copyRichContent(text, "markdown");
           },
         },
       });

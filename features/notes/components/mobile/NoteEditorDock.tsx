@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
 import { useRouter } from "next/navigation";
-import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { noteActions, openNotePrintStudio } from "../note-actions/noteActionSet";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
@@ -39,6 +38,7 @@ import { useToastManager } from "@/hooks/useToastManager";
 import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledgeKind";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
+import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,7 +98,6 @@ export function NoteEditorDock({
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [shareOpen, setShareOpen] = useState(false);
-  const [clipboardFallbackOpen, setClipboardFallbackOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const router = useRouter();
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
@@ -149,12 +148,9 @@ export function NoteEditorDock({
       tooltip: "Copy the note's text",
       Icon: Copy,
       onPress: () => {
-        navigator.clipboard
-          .writeText(content)
-          .then(() => toast.success("Copied to clipboard"))
-          // The browser refused: hand the text over in a dialog to copy by
-          // hand, never a dead-end error.
-          .catch(() => setClipboardFallbackOpen(true));
+        // THE one copy (formatted + markdown). A refused write opens the
+        // module's own copy-by-hand dialog — never a dead end.
+        void copyRichContent(content, "default");
       },
     },
     // Export lives in the More sheet (Export as Markdown) — the dock copy
@@ -428,14 +424,6 @@ export function NoteEditorDock({
           </div>
         </BottomSheetBody>
       </BottomSheet>
-
-      <ClipboardFallbackDialog
-        open={clipboardFallbackOpen}
-        onOpenChange={setClipboardFallbackOpen}
-        url={content}
-        title="Copy the note"
-        description="Your browser blocked copying. Select the text below and copy it."
-      />
 
       <TextInputDialog
         open={renameOpen}

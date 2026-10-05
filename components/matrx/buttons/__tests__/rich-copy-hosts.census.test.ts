@@ -43,13 +43,15 @@ const RAW_ALLOWED: Record<string, string> = {
   "components/markdown-studio/AnalysisView.tsx": "studio analysis: metrics and finding lists",
   "components/markdown-studio/lab/ServerEventInspector.tsx": "lab: raw server events",
   "features/rich-document/actions/handlers/share.ts": "a share link (URL)",
+  "features/notes/components/NoteInfoPanel.tsx": "a note's id / metadata value",
+  "features/notes/components/NoteTabItem.tsx": "a note's record-reference fence (an id), not its text",
   "packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx": "a tool's raw arguments / result JSON",
   "packages/chat/src/tool-call-visualization/result-fields/ShortId.tsx": "an id",
   "packages/chat/src/tool-call-visualization/renderers/note/NoteToolParts.tsx": "a note id",
   "packages/chat/src/tool-call-visualization/renderers/get-user-lists/UserListsOverlay.tsx": "a list id",
 };
 
-const RAW_WRITE = /navigator\.clipboard\.(?:write|writeText)\s*\(/;
+const RAW_WRITE = /navigator\.clipboard\s*\??\.\s*(?:write|writeText)\s*\(/;
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!fs.existsSync(dir)) return out;

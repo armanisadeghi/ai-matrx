@@ -26,6 +26,7 @@ import type {
 } from "@/features/rich-document/types";
 import type { ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 
 // Lazy — only pulled into the bundle when a caller opts into actions by
@@ -339,9 +340,16 @@ export function MatrxSplit({
     [onChange],
   );
 
+  // The editor side is markdown text: the ONE formatting command layer
+  // (chords + the selection toolbar's buttons) owns it, whichever textarea
+  // this split renders (the ProTextarea below opts out so it never runs twice).
+  const [formatElement, setFormatElement] = useState<HTMLTextAreaElement | null>(null);
+  useTextareaFormatting(formatElement, !readOnly);
+
   const mergedTextareaRef = useCallback(
     (node: HTMLTextAreaElement | null) => {
       internalTextareaRef.current = node;
+      setFormatElement(node);
       setRef(textareaRef, node);
     },
     [textareaRef],
@@ -474,6 +482,7 @@ export function MatrxSplit({
             // as typed; nothing formats it.
             <ProTextarea
               ref={mergedTextareaRef}
+              markdownFormatting={false}
               surfaceName={surfaceName}
               getApplicationScope={getApplicationScope}
               value={localValue}

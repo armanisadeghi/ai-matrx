@@ -51,6 +51,7 @@ import { ComposerDraftNotice } from "./ComposerDraftNotice";
 import { ComposerToolsNotice } from "./ComposerToolsNotice";
 // Lightweight shell (static); the menu body lazy-loads on first open.
 import { EditableContextMenu } from "@host/features/context-menu-v3/EditableContextMenu";
+import { useTextareaFormatting } from "@host/components/rich-editor/format/useTextareaFormatting";
 import type { ComposerTextMenu } from "./composer/composer-types";
 import {
   smartExecute,
@@ -140,6 +141,13 @@ export function AgentTextarea({
   const unexpandedCapPx = maxHeightPx ?? 200;
   const dispatch = useAppDispatch();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // The composer is long-form markdown: the ONE formatting command layer
+  // (⌘B / ⌘I / ⌘K … and the selection toolbar's formatting buttons).
+  const [formatElement, setFormatElement] = useState<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    if (textareaRef.current !== formatElement) setFormatElement(textareaRef.current);
+  });
+  useTextareaFormatting(formatElement);
 
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded && !singleRow);
   // When collapsing back from expanded mode (e.g. after submit) we want a

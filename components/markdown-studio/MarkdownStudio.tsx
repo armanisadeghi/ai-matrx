@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { recordToast, toast } from "@/lib/toast";
+import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
 import { detectRenderBlocks } from "@/components/admin/markdown-tester/utils/detect-render-blocks";
 import { useMarkdownAutosave } from "@/components/admin/markdown-tester/useMarkdownAutosave";
 import { SampleEditor } from "@/components/admin/markdown-tester/SampleEditor";

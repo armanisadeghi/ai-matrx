@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import { Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
@@ -121,6 +122,13 @@ export default function MobileNoteEditor({
   const localContentRef = useRef(localContent);
   const noteIdRef = useRef(noteId);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // The phone's Plain textarea joins the ONE formatting command layer
+  // (chords + the docked selection toolbar's formatting buttons).
+  const [formatElement, setFormatElement] = useState<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    if (textareaRef.current !== formatElement) setFormatElement(textareaRef.current);
+  });
+  useTextareaFormatting(formatElement, !readOnly);
   // THE ONE EDITOR (Write / Source).
   const richRef = useRef<RichEditorController | null>(null);
 

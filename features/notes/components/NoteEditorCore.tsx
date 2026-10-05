@@ -27,7 +27,8 @@
 // - Context menus (wrapped externally)
 // - Conflict resolution UI
 
-import React, { useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
@@ -289,6 +290,15 @@ export function NoteEditorCore({
 
   // Use external refs if provided, otherwise internal
   const textareaRef = externalTextareaRef || internalTextareaRef;
+  // Plain mode's bare Textarea (no agent surface) joins the ONE formatting
+  // command layer here; the agent-wired ProTextarea and Split's editor carry
+  // it themselves.
+  const [plainFormatElement, setPlainFormatElement] = useState<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const next = editorMode === "plain" && !surfaceName ? textareaRef.current : null;
+    if (next !== plainFormatElement) setPlainFormatElement(next);
+  });
+  useTextareaFormatting(plainFormatElement, !readOnly);
 
   useScrollEdgeIntent(
     scrollIntent,
