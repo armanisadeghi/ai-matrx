@@ -14,11 +14,25 @@ type Settings = SpaceDoc["settings"];
 
 function Row({ icon, label, onClick, end, danger }: { icon: ReactNode; label: string; onClick?: () => void; end?: ReactNode; danger?: boolean }) {
   return (
-    <button type="button" className="spaces-menu-row" data-danger={danger ? "true" : undefined} onClick={onClick}>
+    // A div, not a button: a toggle row carries a Switch (itself a button) at its end.
+    <div
+      role="menuitem"
+      tabIndex={0}
+      data-clickable=""
+      className="spaces-menu-row"
+      data-danger={danger ? "true" : undefined}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+    >
       <span className="spaces-menu-row-icon">{icon}</span>
       <span className="flex-1 truncate text-left">{label}</span>
       {end}
-    </button>
+    </div>
   );
 }
 
