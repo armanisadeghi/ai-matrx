@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { getClaimsUser } from "@/utils/supabase/resolveUser";
@@ -21,6 +22,44 @@ import {
 import { readClosureJournal } from "@/features/account-lifecycle/accountClosure";
 
 type ChangeRequest = { planKey?: string; cycle?: "monthly" | "annual" };
+
+function stripeId(value: string | { id: string } | null | undefined) {
+  return typeof value === "string" ? value : (value?.id ?? null);
+}
+
+async function ownedMatchingSchedule(input: {
+  stripe: Stripe;
+  subscription: Stripe.Subscription;
+  customerId: string;
+  targetPriceId: string;
+  effectiveAt: number;
+}) {
+  const scheduleId = stripeId(input.subscription.schedule);
+  if (!scheduleId) return null;
+  const schedule =
+    await input.stripe.subscriptionSchedules.retrieve(scheduleId);
+  if (
+    schedule.metadata?.purpose !== "matrx_personal_plan_change" ||
+    stripeId(schedule.customer) !== input.customerId ||
+    stripeId(schedule.subscription) !== input.subscription.id
+  )
+    throw new ScheduledChangeError(
+      "A plan change is already managed in billing. Manage it there instead.",
+      409,
+    );
+  const future = schedule.phases.find(
+    (phase) => phase.start_date >= input.effectiveAt,
+  );
+  if (
+    future?.start_date !== input.effectiveAt ||
+    stripeId(future.items[0]?.price) !== input.targetPriceId
+  )
+    throw new ScheduledChangeError(
+      "A different plan change is already scheduled. Undo it before choosing another plan.",
+      409,
+    );
+  return { scheduleId, effectiveAt: input.effectiveAt };
+}
 
 function responseError(error: unknown) {
   if (error instanceof ScheduledChangeError)
@@ -236,44 +275,20 @@ async function previewFor(input: ChangeRequest) {
     effectiveAt: item.current_period_end,
     quantity: item.quantity ?? 1,
   };
-  if (!subscription.schedule)
-    return { stripe, subscription, customerId, userId, preview };
-  const scheduleId =
-    typeof subscription.schedule === "string"
-      ? subscription.schedule
-      : subscription.schedule.id;
-  const schedule = await stripe.subscriptionSchedules.retrieve(scheduleId);
-  const scheduleCustomer =
-    typeof schedule.customer === "string"
-      ? schedule.customer
-      : schedule.customer.id;
-  if (
-    schedule.metadata?.purpose !== "matrx_personal_plan_change" ||
-    scheduleCustomer !== customerId ||
-    schedule.subscription !== subscription.id
-  )
-    throw new ScheduledChangeError(
-      "A plan change is already managed in billing. Manage it there instead.",
-      409,
-    );
-  const future = schedule.phases.find(
-    (phase) => phase.start_date >= item.current_period_end,
-  );
-  const scheduledPrice = future?.items[0]?.price;
-  const scheduledPriceId =
-    typeof scheduledPrice === "string" ? scheduledPrice : scheduledPrice?.id;
-  if (scheduledPriceId !== exactPrice.id)
-    throw new ScheduledChangeError(
-      "A different plan change is already scheduled. Undo it before choosing another plan.",
-      409,
-    );
+  const existingSchedule = await ownedMatchingSchedule({
+    stripe,
+    subscription,
+    customerId,
+    targetPriceId: exactPrice.id,
+    effectiveAt: item.current_period_end,
+  });
   return {
     stripe,
     subscription,
     customerId,
     userId,
     preview,
-    existingSchedule: { scheduleId, effectiveAt: item.current_period_end },
+    ...(existingSchedule ? { existingSchedule } : {}),
   };
 }
 
@@ -312,6 +327,14 @@ export async function POST(request: NextRequest) {
         const fresh = await context.stripe.subscriptions.retrieve(
           context.subscription.id,
         );
+        const existingSchedule = await ownedMatchingSchedule({
+          stripe: context.stripe,
+          subscription: fresh,
+          customerId: context.customerId,
+          targetPriceId: context.preview.targetPriceId,
+          effectiveAt: context.preview.effectiveAt,
+        });
+        if (existingSchedule) return existingSchedule;
         const created = await createScheduledPersonalChange({
           ...context,
           subscription: fresh,
