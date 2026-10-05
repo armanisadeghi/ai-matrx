@@ -2,6 +2,8 @@
 
 import { ListChecks, Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate";
 import { useScribeDraftTasks } from "../../hooks/useScribeDraftTasks";
@@ -12,6 +14,8 @@ interface AssistantScreenProps {
 
 export function AssistantScreen({ sessionId }: AssistantScreenProps) {
   const assistant = useStudioAssistant(sessionId);
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const conversationId = assistant.conversationId;
   const draftTasks = useScribeDraftTasks(conversationId, assistant.send);
 
@@ -26,7 +30,7 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div ref={measureRef} className="flex h-full flex-col overflow-hidden">
       {/* Draft-tasks action — asks the agent to extract reviewed draft tasks
           from this session's transcript. The proposal lands as an Approve/Reject
           ask-card below (PendingAsksZone); nothing is written until approved. */}
@@ -51,7 +55,7 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
           surfaceKey={`studio-assistant:${sessionId}`}
           constrainWidth
           edgeToEdgeScroll
-          smartInputProps={{ sendButtonVariant: "blue" }}
+          smartInputProps={{ sendButtonVariant: "blue", composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
         />
       </div>
     </div>

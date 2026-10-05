@@ -63,6 +63,7 @@ import { useCodeEditorWidgetHandle } from "@/features/code-editor/agent-code-edi
 import { useIdeContextSync } from "@/features/code-editor/agent-code-editor/hooks/useIdeContextSync";
 import { SMART_CODE_EDITOR_SURFACE_KEY } from "@/features/code-editor/agent-code-editor/constants";
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
 import { setInputPlaceholder } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 
 import { useMultiFileSmartCodeEditorEmitter } from "./useMultiFileSmartCodeEditorEmitter";
@@ -116,6 +117,7 @@ export function MultiFileSmartCodeEditorWindow({
 }: MultiFileSmartCodeEditorWindowProps) {
   const dispatch = useAppDispatch();
   const mode = useThemeMode();
+  const { mode: composerMode } = useComposerMode();
 
   // ── Multi-file state ─────────────────────────────────────────────────────
   const {
@@ -460,6 +462,7 @@ export function MultiFileSmartCodeEditorWindow({
             enablePasteImages={true}
             surfaceKey={SMART_CODE_EDITOR_SURFACE_KEY}
             disableSend={!currentFile}
+            composer={{ size: "compact", mode: composerMode }}
           />
         </div>
       }

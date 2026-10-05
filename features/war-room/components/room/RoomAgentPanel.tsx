@@ -25,6 +25,8 @@
 import { Loader2, MessageCircle, Plus } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { AssociationEntitySelect } from "@ai-matrx/associations/react";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
@@ -37,6 +39,8 @@ import { WorkspaceGate } from "@/features/organizations/components/WorkspaceGate
 
 export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const { conversationId, loaded, ready, blockedOnWorkspace } = useRoomAgent(sessionId);
   const adapter = useRoomConversationSelectAdapter(sessionId);
   // The persona a NEW room chat starts with. Unresolved ⇒ Start chat is
@@ -47,7 +51,7 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
   const roomAgentId = roomMandate?.agentId ?? null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    <div ref={measureRef} className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Header — identical chrome to the thread tabs: icon + the canonical
           chat select. shrink-0 so the column below owns the remaining height. */}
       <header className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
@@ -86,6 +90,7 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
             conversationId={conversationId}
             surfaceKey="war-room-room-agent"
             constrainWidth
+            smartInputProps={{ composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
           />
         ) : loaded && adapter.items.length === 0 ? (
           <div className="grid h-full place-items-center">

@@ -30,6 +30,8 @@ import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import MarkdownStream from "@/components/MarkdownStream";
 import { DiffView } from "./DiffView";
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { cn } from "@/lib/utils";
 import {
@@ -122,8 +124,11 @@ export function AICodeEditor({
     [currentCode, language],
   );
 
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
+
   return (
-    <div className={cn("h-full flex flex-col overflow-hidden", className)}>
+    <div ref={measureRef} className={cn("h-full flex flex-col overflow-hidden", className)}>
       {/* Compact Header - Only show when needed */}
       {showHeader && (allowPromptSelection || title !== "AI Code Editor") && (
         <div className="px-3 py-2 border-b shrink-0 bg-muted/30">
@@ -529,6 +534,7 @@ export function AICodeEditor({
                   <SmartAgentInput
                     conversationId={conversationId}
                     compact={false}
+                    composer={{ size: "compact", mode: composerMode, maxInputHeightPx }}
                   />
                 </div>
               ) : null}

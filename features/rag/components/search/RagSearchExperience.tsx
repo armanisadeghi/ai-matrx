@@ -99,6 +99,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
@@ -2395,6 +2396,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
 
 function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string }) {
   const surfaceKey = `${RAG_SEARCH_SOURCE_FEATURE}:${agentId}`;
+  const { mode: composerMode } = useComposerMode();
   const searchContext = useRagSearchContext();
   const activeOrganizationId = searchContext.filters?.organization_id ?? null;
   const activeScopeIds =
@@ -2480,6 +2482,7 @@ function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string })
         surfaceKey={surfaceKey}
         constrainWidth
         edgeToEdgeScroll
+        smartInputProps={{ composer: { size: "page", mode: composerMode } }}
       />
     </div>
   );

@@ -17,6 +17,8 @@
 
 import { Radar, Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { useMasterAgent } from "@/features/war-room/hooks/useMasterAgent";
 import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
 import { MandateAgentPicker } from "@/features/mandates/components/MandateAgentPicker";
@@ -25,9 +27,11 @@ import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/
 
 export default function MasterAgentPanel() {
   const { conversationId, agentId, ready, switchAgent } = useMasterAgent();
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    <div ref={measureRef} className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Header — the active agent (visible + swappable) + its scope. shrink-0
           so the column below owns the remaining height. */}
       <header className="shrink-0 flex items-center gap-2 border-b border-border px-3 py-2">
@@ -65,6 +69,7 @@ export default function MasterAgentPanel() {
             conversationId={conversationId}
             surfaceKey="war-room-master"
             constrainWidth
+            smartInputProps={{ composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
           />
         ) : (
           <div className="flex h-full items-center justify-center">

@@ -19,6 +19,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Megaphone } from "lucide-react";
 
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { setContextEntries } from "@ai-matrx/chat/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -120,6 +122,8 @@ export function PrDirectorPanel({
   className,
 }: PrDirectorPanelProps) {
   const dispatch = useAppDispatch();
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const { launchMandate } = useAgentLauncher();
   const surfaceKey = `pr-director:${brandId}`;
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -303,6 +307,7 @@ export function PrDirectorPanel({
 
   return (
     <section
+      ref={measureRef}
       aria-label="PR director"
       className={cn("flex min-h-0 flex-1 flex-col bg-background", className)}
       data-testid="pr-director-panel"
@@ -355,6 +360,9 @@ export function PrDirectorPanel({
             conversationId={conversationId}
             surfaceKey={surfaceKey}
             aboveInput={landing}
+            smartInputProps={{
+              composer: { size: "compact", mode: composerMode, maxInputHeightPx },
+            }}
           />
         </div>
       )}

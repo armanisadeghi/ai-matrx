@@ -26,6 +26,7 @@
  */
 
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
 import { ResponseFeedbackBar } from "../components/ResponseFeedbackBar";
 
 export interface BoundColumnProps {
@@ -51,6 +52,7 @@ export function BoundColumn({
   hideInput = false,
   hideCreatorPanel = false,
 }: BoundColumnProps) {
+  const { mode: composerMode } = useComposerMode();
   return (
     <AgentConversationColumn
       conversationId={conversationId}
@@ -60,6 +62,7 @@ export function BoundColumn({
       hideCreatorPanel={hideCreatorPanel}
       afterMessages={<ResponseFeedbackBar conversationId={conversationId} />}
       smartInputProps={{
+        composer: { size: "compact", mode: composerMode },
         // A column's conversation id is its own stable key; never share its
         // unsent draft with other columns or other battles on this surface.
         draftAlias: `${surfaceKey}:${conversationId}`,

@@ -26,6 +26,8 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@ai-matrx/chat/agents/components/shared/AgentConversationColumn";
+import { useComposerMode } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useComposerMode";
+import { useCompactInputMaxHeight } from "@ai-matrx/chat/agents/components/inputs/smart-input/composer/useCompactInputMaxHeight";
 import { setUserInputText } from "@ai-matrx/chat/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
@@ -79,6 +81,8 @@ export function ExperimentalAgentScreen({
 }: ExperimentalAgentScreenProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const { mode: composerMode } = useComposerMode();
+  const { measureRef, maxInputHeightPx } = useCompactInputMaxHeight();
   const assistant = useStudioAssistant(sessionId);
   const conversationId = assistant.conversationId;
   const recording = useGlobalRecording();
@@ -323,7 +327,7 @@ export function ExperimentalAgentScreen({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div ref={measureRef} className="flex h-full flex-col overflow-hidden">
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}
@@ -331,7 +335,7 @@ export function ExperimentalAgentScreen({
           constrainWidth
           edgeToEdgeScroll
           hideInput={!inputOpen && !revealInput}
-          smartInputProps={{ sendButtonVariant: "blue" }}
+          smartInputProps={{ sendButtonVariant: "blue", composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
         />
       </div>
 
