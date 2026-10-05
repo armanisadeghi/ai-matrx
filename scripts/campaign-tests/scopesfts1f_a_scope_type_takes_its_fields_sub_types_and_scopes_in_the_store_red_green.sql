@@ -42,7 +42,7 @@ begin
                       case when x.deleted_at = t_type then 'type' when x.deleted_at = t_annex then 'own'
                            when x.deleted_at is null then 'live' else 'other' end, ',' order by coalesce(x.data ->> 'name', x.data ->> 'label_singular', x.data ->> 'key'))
       into got from custom.record x where x.id in (sub, site, room, fld, annex);
-    if t_type is null or got is distinct from 'Downtown=type,Old Annex=own,Room 4=type,Treatment Room=type,parking_notes=type' then
+    if t_type is null or got is distinct from 'Downtown=type,Old Annex=own,parking_notes=type,Room 4=type,Treatment Room=type' then
       red := red || (r.who || ' T1: ' || coalesce(got, '<none>'));
     end if;
     perform set_config('role', 'authenticated', true);
@@ -51,7 +51,7 @@ begin
     select string_agg(coalesce(x.data ->> 'name', x.data ->> 'label_singular', x.data ->> 'key') || '=' ||
                       case when x.deleted_at is null then 'live' when x.deleted_at = t_annex then 'own' else 'other' end, ',' order by coalesce(x.data ->> 'name', x.data ->> 'label_singular', x.data ->> 'key'))
       into got from custom.record x where x.id in (t1, sub, site, room, fld, annex);
-    if got is distinct from 'Clinic Site=live,Downtown=live,Old Annex=own,Room 4=live,Treatment Room=live,parking_notes=live' then
+    if got is distinct from 'Clinic Site=live,Downtown=live,Old Annex=own,parking_notes=live,Room 4=live,Treatment Room=live' then
       red := red || (r.who || ' T2: ' || coalesce(got, '<none>'));
     end if;
   end loop;
