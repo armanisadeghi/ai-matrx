@@ -6,8 +6,12 @@
 // opens the assignment popover. Built on TapTargetButton so it sits flush in
 // shell headers next to other tap buttons (zero gap / padding around it).
 //
-// Two appearances:
-//   • glass (default) — glass pill + status-colored icon (header chrome)
+// Three appearances:
+//   • transparent (default) — plain pill + status-colored icon; right on any
+//     solid surface (a table row, a page header, a panel)
+//   • glass — ONLY inside a bar floating over moving content ("glass only
+//     floats", tap placement rule 1; the /files Context column drew glass on
+//     solid table rows, 2026-10-05)
 //   • solid — filled amber/green pill when you want the status to pop
 //
 // Data: by default it reads the entity's scope assignments via the canonical
@@ -39,10 +43,11 @@ export interface ContextStatusButtonProps extends Omit<
   hasOtherContext?: boolean;
   /**
    * Tap-button appearance.
-   * - `glass` (default) — shell chrome; status via icon color
+   * - `transparent` (default) — any solid surface; status via icon color
+   * - `glass` — only inside a floating bar; status via icon color
    * - `solid` — filled amber (unset) / green (set) when status should pop
    */
-  variant?: "glass" | "solid";
+  variant?: "transparent" | "glass" | "solid";
   /** Render scope-count text inside the tap pill (`None` / `N scopes`). */
   showScopeLabel?: boolean;
 }
@@ -72,7 +77,7 @@ export function ContextStatusButton({
   subject,
   knownScopeCount,
   hasOtherContext = false,
-  variant = "glass",
+  variant = "transparent",
   showScopeLabel = false,
   ...popoverProps
 }: ContextStatusButtonProps) {
