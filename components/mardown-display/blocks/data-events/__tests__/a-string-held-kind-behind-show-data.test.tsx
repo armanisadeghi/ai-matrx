@@ -102,7 +102,7 @@ describe("K1: every card behind the toggle, every shape", () => {
   });
 
   it.each(SHAPES)("workflow step: %s", (_name, value) => {
-    act(() => root.render(<WorkflowStepBlock stepName="Cards" status="complete" data={value} />));
+    act(() => root.render(<WorkflowStepBlock stepName="Cards" status="complete" data={value as Record<string, unknown>} />));
     clickAll();
     expectNoRaw();
   });
