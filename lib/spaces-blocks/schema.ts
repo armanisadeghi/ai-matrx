@@ -150,7 +150,7 @@ const SPECS: BlockSpec[] = [
         }
       }
       if (p.columnWidths !== undefined) {
-        if (!Array.isArray(p.columnWidths) || p.columnWidths.some((w) => w !== null && (typeof w !== "number" || !(w > 0)))) return "props.columnWidths must be a list of positive px widths or null";
+        if (!Array.isArray(p.columnWidths) || Array.from(p.columnWidths).some((w) => w !== null && (typeof w !== "number" || !(w > 0)))) return "props.columnWidths must be a list of positive px widths or null";
       }
       return null;
     },
@@ -247,9 +247,9 @@ function viewProblem(v: unknown): string | null {
   if (!(DATABASE_VIEW_LAYOUTS as readonly string[]).includes(String(v.layout))) return `layout must be one of ${DATABASE_VIEW_LAYOUTS.join(", ")}`;
   for (const k of ["icon"]) if (v[k] !== undefined && !str(v[k])) return `${k} must be text`;
   for (const k of ["groupField", "dateField"]) if (v[k] !== undefined && v[k] !== null && !str(v[k])) return `${k} must be text or null`;
-  if (v.sorts !== undefined && (!Array.isArray(v.sorts) || v.sorts.some((x) => !isObj(x) || !str(x.field) || (x.direction !== "asc" && x.direction !== "desc")))) return "sorts must be [{ field, direction: asc|desc }]";
+  if (v.sorts !== undefined && (!Array.isArray(v.sorts) || Array.from(v.sorts).some((x) => !isObj(x) || !str(x.field) || (x.direction !== "asc" && x.direction !== "desc")))) return "sorts must be [{ field, direction: asc|desc }]";
   if (v.filters !== undefined && !isObj(v.filters)) return "filters must be an object";
-  if (v.hiddenFields !== undefined && (!Array.isArray(v.hiddenFields) || v.hiddenFields.some((x) => !str(x)))) return "hiddenFields must be a list of text";
+  if (v.hiddenFields !== undefined && (!Array.isArray(v.hiddenFields) || Array.from(v.hiddenFields).some((x) => !str(x)))) return "hiddenFields must be a list of text";
   if (v.chart !== undefined) {
     const c = v.chart;
     if (!isObj(c)) return "chart must be an object";
