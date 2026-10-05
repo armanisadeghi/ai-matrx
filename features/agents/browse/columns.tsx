@@ -173,20 +173,15 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
         row.tags?.length ? (
           // nowrap: wrapping tags made one row three times the height of its
           // neighbours and broke the scan line down the table.
-          <div className="flex flex-nowrap items-center gap-1 overflow-hidden">
+          // THE canonical Chip per tag (one line, ellipsis + full-text tooltip, its own
+          // half-gap), never a hand-sized Badge — the pill guard outlined eleven of those.
+          <div className="flex min-w-0 flex-nowrap items-center overflow-hidden">
             {row.tags.slice(0, 2).map((tag) => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className="max-w-[84px] shrink-0 truncate py-0 text-[10px] font-normal"
-                title={tag}
-              >
-                {tag}
-              </Badge>
+              <Chip key={tag} label={tag} />
             ))}
             {row.tags.length > 2 && (
               <span
-                className="shrink-0 text-[10px] text-muted-foreground"
+                className="shrink-0 pl-1 text-[11px] text-muted-foreground"
                 title={row.tags.join(", ")}
               >
                 +{row.tags.length - 2}
