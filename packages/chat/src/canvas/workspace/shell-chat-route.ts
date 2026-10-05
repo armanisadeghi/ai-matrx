@@ -81,6 +81,13 @@ const BOARD_PAGE = /^\/board\/(?!all(?:\/|$))([^/]+)\/?$/;
 const EDUCATION_PAGES = /^\/education(?:\/|$)/;
 
 /**
+ * Pages whose own layout needs the width: the shell chat stays CLOSED here
+ * until the person opens it (the header toggle, Cmd+\); a remembered choice
+ * still wins. Add a route here to opt it out of the wide-screen auto-open.
+ */
+export const SHELL_CHAT_CLOSED_BY_DEFAULT_PAGES: readonly RegExp[] = [/^\/spaces(?:\/|$)/];
+
+/**
  * A page with a chat of its OWN keeps it inside the shell chat: each board
  * has its conversation, signed-in Education has one. The ids, params and
  * defaults are exactly the ones those pages used when they drew their own chat
@@ -102,7 +109,7 @@ export function shellChatHome(pathname: string, signedIn: boolean): ShellChatHom
     surfaceKey: SHELL_CHAT_SURFACE_KEY,
     // `pageChat`, not `chat`: /code keeps its own `?chat=`.
     addressParam: "pageChat",
-    defaultOpen: null,
+    defaultOpen: SHELL_CHAT_CLOSED_BY_DEFAULT_PAGES.some((p) => p.test(pathname)) ? false : null,
   };
 }
 

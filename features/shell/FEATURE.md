@@ -107,6 +107,21 @@ A page picks a template; it never hand-builds its top. Named options only — a 
 
 **Guard:** `pnpm check:page-top` (findings row `page-top`, `--self-test`): `raw-page-header` (a file outside the header module importing `PageHeader`) and `sentence-under-title` (the interface-text `page-description` scanner). Baseline `scripts/page-top/baseline.json` only shrinks (`--shrink`).
 
+## A ROUTE CAN OWN CMD+K / CMD+P (2026-10-05)
+
+Cmd/Ctrl+K opens the shell's global search (`CommandBarHotkey`); a route with its own quick-find claims the key
+instead of racing it: `useClaimSearchKeys(["k", "p"], (key, e) => { ...open my palette... })` from
+`features/shell/hooks/useClaimSearchKeys.ts`. While the route is mounted the global bar stays closed and the
+browser's print dialog (Cmd+P) is suppressed; return `false` from the handler to decline a press (it then falls
+through to the global handler). Claims are counted (`searchKeyClaim.ts`), released on unmount. Test:
+`features/shell/hooks/__tests__/searchKeyClaim.test.tsx`.
+
+## THE CHAT COLUMN CAN START CLOSED PER ROUTE (2026-10-05)
+
+The shell chat opens by default at >= 1440px. A route whose own layout needs the width is listed in
+`SHELL_CHAT_CLOSED_BY_DEFAULT_PAGES` (`packages/chat/src/canvas/workspace/shell-chat-route.ts`; `/spaces` is on it):
+the chat starts closed, the person opens it by hand (header toggle, Cmd+\), and a remembered choice still wins.
+
 ## Change log
 
 - `2026-10-05` — claude: **One chat.** The shell chat (`ShellChatDock`) now shows on the Board, signed-in Education and the canvas demos too — they no longer draw their own chat column; it stands aside only on /chat and /code. The shell header hides by `visibility` in canvas chrome so `ShellChatToggle` stays at its pixel (the canvas header pads for it, `.canvas-workspace-header`); full screen hides the chat button. AppShell reads the chat cookie for the page's HOME (`shellChatHome`: each board, Education, else the family) and stamps `data-shell-chat-available` at SSR. Mechanics: `packages/chat/src/canvas/workspace/FEATURE.md`.

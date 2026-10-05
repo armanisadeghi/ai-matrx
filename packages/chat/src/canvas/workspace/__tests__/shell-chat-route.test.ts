@@ -65,6 +65,18 @@ describe("the shell chat's routes", () => {
     expect(shellChatHome("/tasks", true).surfaceKey).toBe(SHELL_CHAT_SURFACE_KEY);
   });
 
+  it("keeps the chat closed by default on /spaces only, still the shared conversation", () => {
+    for (const path of ["/spaces", "/spaces/abc", "/spaces/abc/page-1"]) {
+      expect(shellChatHome(path, true)).toEqual({
+        layoutId: "page:spaces",
+        surfaceKey: SHELL_CHAT_SURFACE_KEY,
+        addressParam: "pageChat",
+        defaultOpen: false,
+      });
+    }
+    expect(shellChatHome("/spacesship", true).defaultOpen).toBeNull();
+  });
+
   // Between 1440 and 1599px the chat opens by default; folding the domain
   // panel for that default landed /user-settings with no menu.
   it("folds a domain panel only beside a chat the person opened", () => {
