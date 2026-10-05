@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import MarkdownStream from "@/components/markdown";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
@@ -370,7 +370,7 @@ function RenderBlockDetail({
           value="preview"
           className="flex-1 min-h-0 overflow-auto scrollbar-thin p-4"
         >
-          <MarkdownStream imagePolicy="ai" content={def.template} />
+          <RichContent level="full" imagePolicy="ai" source={def.template} />
         </TabsContent>
         <TabsContent
           value="template"
