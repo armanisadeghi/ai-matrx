@@ -14,7 +14,6 @@ import {
   BookA,
   BookOpen,
   Boxes,
-  BriefcaseBusiness,
   CalendarDays,
   Camera,
   ClipboardCheck,
@@ -90,7 +89,7 @@ const FEATURE_ICONS: Readonly<Record<string, LucideIcon>> = {
   // Clients
   desktop: Laptop,
   extension: AppWindow,
-  // Coding
+  // Code
   "code-workspace": Code2,
   "coding-session-bridge": SquareTerminal,
   // Communications
@@ -165,7 +164,7 @@ const FEATURE_ICONS: Readonly<Record<string, LucideIcon>> = {
   "plan-nodes": Workflow,
   "workflow-authoring": Workflow,
   "workflow-runtime": Workflow,
-  // Workspace
+  // Content, Data, Board, Projects
   "lists-and-workbooks": Table,
   notes: NotepadText,
   "tasks-and-projects": FolderKanban,
@@ -177,7 +176,16 @@ const DOMAIN_ICONS: Readonly<Record<string, LucideIcon>> = {
   agents: AGENT_ICON,
   chat: MessageCircle,
   clients: Laptop,
-  coding: Code2,
+  code: Code2,
+  files: FileText,
+  audio: AudioLines,
+  content: NotepadText,
+  data: Table,
+  board: Swords,
+  projects: FolderKanban,
+  web: Globe,
+  publish: Newspaper,
+  commerce: Camera,
   communications: MessagesSquare,
   "content-ir": Shapes,
   crm: Handshake,
@@ -197,7 +205,6 @@ const DOMAIN_ICONS: Readonly<Record<string, LucideIcon>> = {
   "scopes-context": Layers,
   "website-platform": Newspaper,
   workflows: Workflow,
-  workspace: BriefcaseBusiness,
 };
 
 /**

@@ -104,7 +104,7 @@
       ]
     },
     "extensibility": {
-      "owner": "platform/custom-data",
+      "owner": "data/custom-data",
       "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
       "keys": [
         "custom_fields.multi_select_max_values",
@@ -304,7 +304,7 @@
       ]
     },
     "records": {
-      "owner": "platform/custom-data",
+      "owner": "data/custom-data",
       "program": "seeded ahead of its consumer — the lane that wrote the row owes the read",
       "keys": [
         "confirmation.agent_context",

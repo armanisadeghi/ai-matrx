@@ -82,12 +82,14 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     ],
   },
   {
-    id: "coding",
-    name: "Coding",
+    id: "code",
+    name: "Code",
     features: [
       { id: "agent-fs", name: "Agent FS" },
+      { id: "code-editor", name: "Code Editor" },
       { id: "code-workspace", name: "Code Workspace" },
       { id: "coding-session-bridge", name: "Coding Session Bridge" },
+      { id: "desktop-apps", name: "Desktop Apps", proposed: true },
       { id: "ide-plugins", name: "IDE Plugins" },
       { id: "vscode-extension", name: "Vscode Extension" },
     ],
@@ -200,7 +202,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       { id: "compute-targets", name: "Compute Targets" },
       { id: "deploy-control-plane", name: "Deploy Control Plane" },
       { id: "mcp-hosting", name: "Generated MCP Hosting", proposed: true },
-      { id: "persistent-cloud-browser", name: "Persistent Cloud Browser" },
       { id: "production-infra", name: "Production Infra" },
       { id: "sandboxes", name: "Sandboxes" },
     ],
@@ -220,7 +221,10 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
   {
     id: "intelligence",
     name: "Intelligence",
-    features: [{ id: "mandates", name: "Mandates" }],
+    features: [
+      { id: "mandates", name: "Mandates" },
+      { id: "reports", name: "Reports" },
+    ],
   },
   {
     id: "knowledge",
@@ -231,8 +235,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       { id: "knowledge-graph", name: "Knowledge Graph" },
       { id: "rag", name: "RAG" },
       { id: "research", name: "Research" },
-      { id: "scraper", name: "Scraper" },
-      { id: "web-search", name: "Web Search", proposed: true },
     ],
   },
   {
@@ -290,21 +292,13 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     id: "media",
     name: "Media",
     features: [
-      { id: "audio-tts", name: "Audio TTS" },
-      { id: "file-service", name: "File Service" },
       { id: "images", name: "Images" },
       { id: "media-capture", name: "Media Capture" },
-      { id: "media-durability", name: "Media Durability", proposed: true },
       {
         id: "media-source-catalog",
         name: "Media Source Catalog",
         proposed: true,
       },
-      { id: "pdf", name: "PDF" },
-      { id: "podcasts", name: "Podcasts" },
-      { id: "printing", name: "Printing" },
-      { id: "product-capture", name: "Product Capture", proposed: true },
-      { id: "transcription", name: "Transcription" },
     ],
   },
   {
@@ -335,7 +329,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
         proposed: true,
       },
       { id: "continued-access", name: "Continued Access", proposed: true },
-      { id: "custom-data", name: "Custom Data", proposed: true },
       { id: "data-lifecycle", name: "Data Lifecycle" },
       { id: "db-rules", name: "DB Rules", proposed: true },
       { id: "dictionary", name: "Custom Dictionary" },
@@ -346,7 +339,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
         name: "Entity Content Role",
         proposed: true,
       },
-      { id: "esign", name: "E-signature", proposed: true },
       { id: "feature-knobs", name: "Feature Knobs", proposed: true },
       {
         id: "frontend-federation",
@@ -372,11 +364,6 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
       {
         id: "request-attribution",
         name: "Request Attribution",
-        proposed: true,
-      },
-      {
-        id: "residential-egress",
-        name: "Residential egress (Home connections)",
         proposed: true,
       },
       { id: "route-liveness", name: "Route Liveness" },
@@ -439,17 +426,87 @@ export const REGISTRY_DOMAINS: readonly RegistryDomain[] = [
     ],
   },
   {
-    id: "workspace",
-    name: "Workspace",
+    id: "audio",
+    name: "Audio",
     features: [
-      { id: "artifacts-canvas", name: "Artifacts Canvas" },
+      { id: "audio-tts", name: "Audio TTS" },
+      { id: "transcription", name: "Transcription" },
+    ],
+  },
+  {
+    id: "board",
+    name: "Board",
+    features: [
+      { id: "boards", name: "Boards" },
       { id: "dashboard", name: "Dashboard" },
-      { id: "documents", name: "Documents" },
-      { id: "lists-and-workbooks", name: "Lists And Workbooks" },
-      { id: "notes", name: "Notes" },
-      { id: "tasks-and-projects", name: "Tasks And Projects" },
-      { id: "visual-maps", name: "Visual Maps" },
+      { id: "launchpad", name: "Launchpad" },
       { id: "war-room", name: "War Room" },
+    ],
+  },
+  {
+    id: "commerce",
+    name: "Commerce",
+    features: [
+      { id: "product-capture", name: "Product Capture", proposed: true },
+    ],
+  },
+  {
+    id: "content",
+    name: "Content",
+    features: [
+      { id: "content-store", name: "Content Store" },
+      { id: "documents", name: "Documents" },
+      { id: "esign", name: "E-signature", proposed: true },
+      { id: "notes", name: "Notes" },
+      { id: "utilities", name: "Utilities" },
+      { id: "visual-maps", name: "Visual Maps" },
+      { id: "workbooks", name: "Workbooks" },
+    ],
+  },
+  {
+    id: "data",
+    name: "Data",
+    features: [
+      { id: "custom-data", name: "Custom Data", proposed: true },
+      { id: "data-tables", name: "Data Tables" },
+      { id: "drill-down", name: "Drill-down", proposed: true },
+      { id: "forms", name: "Forms" },
+      { id: "scopes-context", name: "Scopes & Context" },
+    ],
+  },
+  {
+    id: "files",
+    name: "Files",
+    features: [
+      { id: "file-service", name: "File Service" },
+      { id: "media-durability", name: "Media Durability", proposed: true },
+      { id: "pdf", name: "PDF" },
+      { id: "storage-sources", name: "Storage Sources" },
+    ],
+  },
+  {
+    id: "projects",
+    name: "Projects",
+    features: [
+      { id: "tasks-and-projects", name: "Tasks And Projects" },
+    ],
+  },
+  {
+    id: "publish",
+    name: "Publish",
+    features: [
+      { id: "podcasts", name: "Podcasts" },
+      { id: "printing", name: "Printing" },
+    ],
+  },
+  {
+    id: "web",
+    name: "Web",
+    features: [
+      { id: "persistent-cloud-browser", name: "Persistent Cloud Browser" },
+      { id: "residential-egress", name: "Residential egress (Home connections)", proposed: true },
+      { id: "scraper", name: "Scraper" },
+      { id: "web-search", name: "Web Search", proposed: true },
     ],
   },
 ];

@@ -240,7 +240,7 @@ describe("feature intelligence — registry pages and old ids", () => {
       unassigned: true,
       jobs: 1,
     });
-    expect(row("podcasts")).toMatchObject({ domain: "media", jobs: 1 });
+    expect(row("podcasts")).toMatchObject({ domain: "publish", jobs: 1 });
     const orphans = rows.filter(
       (entry: { domain: string | null }) => entry.domain === null,
     );

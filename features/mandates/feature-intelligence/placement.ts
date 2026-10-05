@@ -83,16 +83,16 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
   ...rule("clients", "desktop", "local.*"),
   ...rule("clients", "extension", "extend.*"),
 
-  // ── Coding ────────────────────────────────────────────────────────────────
+  // ── Code ────────────────────────────────────────────────────────────────
   ...rule(
-    "coding",
+    "code",
     "code-workspace",
     "code_editor.*",
     "shortcut.dynamic_context_code_editor",
     "shortcut.master_code_editor",
     "shortcut.quick_code_explanation",
   ),
-  ...rule("coding", "coding-session-bridge", "coding_session.*"),
+  ...rule("code", "coding-session-bridge", "coding_session.*"),
 
   // ── Communications ────────────────────────────────────────────────────────
   ...rule("communications", "meet", "meet.*"),
@@ -206,7 +206,7 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
   ...rule("knowledge", "rag", "rag.*", "rag_kinds.*"),
   ...rule("knowledge", "research", "research.*", "research_client.*"),
   ...rule(
-    "knowledge",
+    "web",
     "scraper",
     "scraper.*",
     "shortcut.clean_up_webpage_content",
@@ -281,7 +281,7 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
   ),
 
   // ── Media ─────────────────────────────────────────────────────────────────
-  ...rule("media", "audio-tts", "audio.*"),
+  ...rule("audio", "audio-tts", "audio.*"),
   ...rule(
     "media",
     "images",
@@ -292,11 +292,11 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
     "shortcut.get_image_metadata",
   ),
   ...rule("media", "media-source-catalog", "media_catalog.*"),
-  ...rule("media", "pdf", "pdf.*", "shortcut.clean_pdf_extraction"),
-  ...rule("media", "podcasts", "podcast.*", "podcast_client.*"),
-  ...rule("media", "product-capture", "product_capture.*"),
+  ...rule("files", "pdf", "pdf.*", "shortcut.clean_pdf_extraction"),
+  ...rule("publish", "podcasts", "podcast.*", "podcast_client.*"),
+  ...rule("commerce", "product-capture", "product_capture.*"),
   ...rule(
-    "media",
+    "audio",
     "transcription",
     "transcripts.*",
     "transcript_studio.*",
@@ -342,13 +342,13 @@ export const PLACEMENT_RULES: readonly PlacementRule[] = [
   // The built-in research workflows' own steps: no registry Feature yet.
   ...rule("workflows", null, "workflow.*"),
 
-  // ── Workspace ─────────────────────────────────────────────────────────────
-  ...rule("workspace", "lists-and-workbooks", "data.*", "records.*"),
-  ...rule("workspace", "notes", "notes.*"),
-  ...rule("workspace", "tasks-and-projects", "tasks.*", "projects.*"),
-  ...rule("workspace", "war-room", "war_room.*"),
+  // ── Content, Data, Board, Projects (the dissolved Workspace, 2026-10-04) ─────────────────────────────────────────────────────────────
+  ...rule("data", "data-tables", "data.*", "records.*"),
+  ...rule("content", "notes", "notes.*"),
+  ...rule("projects", "tasks-and-projects", "tasks.*", "projects.*"),
+  ...rule("board", "war-room", "war_room.*"),
   // The Mermaid diagram editor has no registry Feature yet.
-  ...rule("workspace", null, "mermaid.*"),
+  ...rule("content", null, "mermaid.*"),
 ];
 
 /** Key prefixes that exist only for tests and parity fixtures. */
