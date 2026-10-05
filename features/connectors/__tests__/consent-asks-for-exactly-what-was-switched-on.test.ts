@@ -229,6 +229,42 @@ describe("buildConsentPlan", () => {
     expect(plan.blocked[0]?.reason).toContain("separately");
   });
 
+  it("renews a dead credential holding YouTube plus Gmail in ONE press (YouTube-separate applies to new grants only)", () => {
+    const dead = {
+      ...account([OPENID, GMAIL_SEND, GMAIL_READONLY, YOUTUBE, YOUTUBE_ANALYTICS]),
+      usable: false,
+    };
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["youtube", "gmail_read"],
+      account: dead,
+      rollout: rollout(),
+    });
+    expect(plan.empty).toBe(false);
+    expect(plan.request?.connectionPurpose).toBe("google_products");
+    expect(plan.request?.targetAccountId).toBe("conn-1");
+    expect(plan.request?.addedScopes).toEqual([]);
+    expect(plan.request?.products.map(({ key }) => key).sort()).toEqual(
+      ["gmail_read", "youtube"],
+    );
+    expect(plan.request?.renewals).toHaveLength(2);
+  });
+
+  it("when a dead credential's renewal also needs a NEW YouTube grant, renews the rest first and labels YouTube as its own step", () => {
+    const dead = { ...account([OPENID, GMAIL_READONLY]), usable: false };
+    const plan = buildConsentPlan({
+      provider,
+      selectedProductKeys: ["youtube", "gmail_read"],
+      account: dead,
+      rollout: rollout(),
+    });
+    expect(plan.request?.products.map(({ key }) => key)).toEqual(["gmail_read"]);
+    expect(plan.request?.connectionPurpose).toBe("google_products");
+    expect(plan.request?.scopes).not.toContain(YOUTUBE);
+    const step = plan.blocked.find(({ productKey }) => productKey === "youtube");
+    expect(step?.reason).toContain("Step 2 of 2");
+  });
+
   it("asks for nothing when the selection is already granted", () => {
     const plan = buildConsentPlan({
       provider,

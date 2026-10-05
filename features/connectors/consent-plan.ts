@@ -231,16 +231,47 @@ export function buildConsentPlan({
   // that would replace the credential backing the person's picked files.
   // Use a separate canonical connection for YouTube, even for the same Google
   // identity. Never silently discard another product selected in this press.
-  const isolatedProduct = wanted.find(({ product }) => product.key === "youtube")?.product;
-  const youtubeWanted = isolatedProduct !== undefined;
-  if (youtubeWanted && wanted.length > 1) {
+  //
+  // A RENEWAL IS NOT A NEW GRANT. When YouTube's scopes are all already held
+  // (a dead/revoked credential that holds YouTube beside other products) the
+  // request asks for exactly what the credential already holds — it widens
+  // nothing, so there is no new combination for Google to reject, and a
+  // separate connection would leave the dead one dead. Only a YouTube row that
+  // ADDS scopes is isolated; a renewal rides with the rest, in ONE press.
+  const youtubeEntry = wanted.find(({ product }) => product.key === "youtube");
+  const youtubeAdds = youtubeEntry !== undefined && !youtubeEntry.renewal;
+  const isolatedProduct = youtubeAdds ? youtubeEntry.product : undefined;
+  if (isolatedProduct !== undefined && wanted.length > 1) {
+    const others = wanted.filter(({ product }) => product.key !== "youtube");
+    const separately = `Connect ${isolatedProduct.name} separately from the other selected Google products. Your existing connections are unchanged.`;
+    if (others.some(({ renewal }) => renewal)) {
+      // Something here is a dead grant that only a reconnect can clear: never
+      // leave the person with nothing to press. Step one renews/adds the
+      // others; YouTube is its own labeled step after it.
+      const rest = buildConsentPlan({
+        provider,
+        selectedProductKeys: others.map(({ product }) => product.key),
+        account,
+        rollout,
+      });
+      return {
+        ...rest,
+        blocked: [
+          ...rest.blocked,
+          {
+            productKey: isolatedProduct.key,
+            productName: isolatedProduct.name,
+            reason: `Step 2 of 2 — ${separately} Press again once this step has finished and ${isolatedProduct.name} is all that is left.`,
+          },
+        ],
+      };
+    }
     return {
       request: null,
       blocked: wanted.map(({ product }) => ({
         productKey: product.key,
         productName: product.name,
-        reason:
-          `Connect ${isolatedProduct.name} separately from the other selected Google products. Your existing connections are unchanged.`,
+        reason: separately,
       })),
       alreadyGranted,
       empty: true,
@@ -248,7 +279,7 @@ export function buildConsentPlan({
   }
 
   const added = [...new Set(wanted.flatMap(({ missing }) => missing))];
-  const isolatedYouTube = youtubeWanted;
+  const isolatedYouTube = youtubeAdds;
   return {
     request: {
       connectionPurpose: isolatedYouTube
