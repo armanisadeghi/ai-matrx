@@ -74,7 +74,18 @@ export async function signIn(page, origin, email, password, who = email) {
       if (!(await page.locator("#email").count())) break;
     }
     await page.fill("#email", email);
-    await page.fill("#password", password);
+    // Playwright's timeout error echoes the filled value in its call log ("fill(\"…\")"), which
+    // printed the test admin's password into agent transcripts (2026-10-05). Never let it out.
+    try {
+      await page.fill("#password", password);
+    } catch (err) {
+      const scrub = (s) => (typeof s === "string" && password ? s.split(password).join("[redacted]") : s);
+      if (err && typeof err === "object") {
+        err.message = scrub(err.message);
+        err.stack = scrub(err.stack);
+      }
+      throw err;
+    }
     await page.click('button:has-text("Sign in")');
     ({ v } = await until(`${who} sign-in`, whoami, attempt === 1 ? 45000 : 90000));
   }
