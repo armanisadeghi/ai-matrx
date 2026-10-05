@@ -371,6 +371,13 @@ export interface RichDocumentActionContextCallbacks {
    * so the host can narrow to that part; null or [] means "nothing to offer".
    */
   tableRows?: (selection: string | null) => ReadonlyArray<Record<string, unknown>> | null;
+  /**
+   * The rendered table the right-click landed on, as table text with its shape kept (header +
+   * rows) — set by the context-menu shell from the clicked element, so "Save to a table" opens on
+   * THAT table, not on the first list or table in the whole answer. Null when the click was not
+   * inside a table.
+   */
+  tableAtTarget?: () => string | null;
 }
 
 /** What a chat-answer save actually wrote (RC-B5) — the source of any "saved" sentence. */

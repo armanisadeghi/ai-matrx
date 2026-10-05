@@ -62,6 +62,7 @@ import { resolveTableRowMenuDescriptor } from "./table-row-context-registry";
 import { recordMenusRevision, resolveRecordMenu, subscribeRecordMenus } from "./record-menu-registry";
 import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
+import { tableTextAtTarget } from "./utils/table-at-target";
 
 /**
  * Text-entry targets whose NATIVE menu we must never steal.
@@ -783,7 +784,15 @@ export function ContextMenuV3({
     // The hook adds it only where the source can be saved and no host supplied one.
     requestTextAgentReview,
     extraRichActions,
-    richDocCtxExtras,
+    // The table the click landed on rides to "Save to a table" beside the host's own extras.
+    richDocCtxExtras: {
+      ...richDocCtxExtras,
+      callbacks: {
+        ...richDocCtxExtras?.callbacks,
+        tableAtTarget: () => tableTextAtTarget(openTarget),
+      },
+      // Spreading an optional bag leaves its Pick'd keys optional; the hook spreads it over defaults.
+    } as NonNullable<MenuContentProps["richDocCtxExtras"]>,
     selectedText,
     selectionRange,
     fallbackContent,

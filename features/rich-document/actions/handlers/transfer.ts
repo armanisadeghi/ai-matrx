@@ -223,6 +223,10 @@ const tableSource = (
   if (rendered && hasTableShape(rendered)) return { text: rendered };
   const selected = ctx.applicationScope?.selection;
   if (typeof selected === "string" && hasTableShape(selected)) return { text: selected };
+  // A right-click ON a rendered table is about that table — not the first list or table the
+  // whole answer holds (a bullet list above it would otherwise win shape 0).
+  const clicked = ctx.callbacks?.tableAtTarget?.();
+  if (clicked && hasTableShape(clicked)) return { text: clicked };
   const words = typeof selected === "string" && selected.trim() ? selected : null;
   const rows = ctx.callbacks?.tableRows?.(words);
   if (rows && rows.length > 0) return { rows };
