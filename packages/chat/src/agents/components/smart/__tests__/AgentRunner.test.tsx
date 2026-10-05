@@ -46,6 +46,10 @@ jest.mock(
   () => ({ executeInstance: jest.fn() }),
 );
 
+// The runner reads the tab-wide composer mode; this double has no chatRoute slice.
+jest.mock("../../inputs/smart-input/composer/useComposerMode", () => ({
+  useComposerMode: () => ({ mode: "chat", setMode: () => undefined }),
+}));
 jest.mock("../../inputs/smart-input/SmartAgentInput", () => ({
   SmartAgentInput: () => <div data-testid="smart-input" />,
 }));
