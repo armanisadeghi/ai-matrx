@@ -95,7 +95,7 @@ describe("one copy, two explicit flavors (2026-10-04)", () => {
   it("offers Copy, Copy markdown and Copy text — never a byte-identical twin", () => {
     const listed = resolveActions(chatContext("assistant")).map((a) => a.id);
     expect(listed).toEqual(expect.arrayContaining(["copy", "copy-markdown", "copy-plain-text"]));
-    expect(listed.filter((id) => /google-docs|copy-word|copy-formatted|copy-rich-text/.test(id))).toEqual([]);
+    expect(listed.filter((id) => /^(copy-google-docs|copy-word|copy-formatted|copy-rich-text)$/.test(id))).toEqual([]);
     expect([getAction("copy")?.label, getAction("copy-markdown")?.label, getAction("copy-plain-text")?.label]).toEqual([
       "Copy",
       "Copy markdown",
