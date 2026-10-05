@@ -60,7 +60,7 @@ const WATCHED_ACTION_TYPES = new Set<string>([
   "agentDefinition/updateFromSource/fulfilled",
   "agentDefinition/purgeVersions/fulfilled",
   // Second agent-save path, living in a DIFFERENT slice: `saveAgentSettings`
-  // (`lib/redux/slices/agent-settings/agentSettingsSlice.ts`) writes `settings`
+  // (`packages/chat/src/agents/redux/agent-settings/agentSettingsSlice.ts`) writes `settings`
   // + `variable_definitions` straight to `agent.definition` and never dispatches
   // an `agentDefinition/*` action. `settings` is where model choice, reasoning
   // effort and GROUNDING live — so this was the client write that made D159's

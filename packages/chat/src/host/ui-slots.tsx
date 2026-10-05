@@ -289,7 +289,8 @@ export const SmartInputMessageTemplatePicker = slotComponent(
 /** A host with no resource picker offers no items. */
 export const flattenResourcePickerItems = slotFn("flattenResourcePickerItems", () => []);
 export const useRunControlCounts = slotFn("useRunControlCounts", () => ({}));
-export const useAttachResourcePicker = slotFn("useAttachResourcePicker", () => ({ open: () => undefined }));
+/** Same shape as the host door (`features/connectors/useAttachResourcePicker`): the hook returns the open function. A host with no picker opens nothing. */
+export const useAttachResourcePicker = slotFn("useAttachResourcePicker", () => (_options: unknown) => undefined);
 /** A host with no popout windows portals into the page body (Radix default). */
 export const usePopoutContainer = slotFn("usePopoutContainer", () => undefined);
 /** A host with no window address (`panels=`) publishes nothing. */

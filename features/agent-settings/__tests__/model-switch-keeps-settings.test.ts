@@ -12,7 +12,7 @@ import agentSettingsReducer, {
   initializeAgent,
   requestModelSwitch,
   confirmModelSwitch,
-} from "../agentSettingsSlice";
+} from "@ai-matrx/chat/agents/redux/agent-settings/agentSettingsSlice";
 import modelRegistryReducer from "@/features/ai-models/redux/modelRegistrySlice";
 import { normalizeModel } from "@ai-matrx/agents/models";
 import {

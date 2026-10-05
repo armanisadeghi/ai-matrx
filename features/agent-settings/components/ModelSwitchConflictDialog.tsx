@@ -33,17 +33,17 @@ import {
   selectConflictActions,
   selectConflictSummary,
   selectPreviewedResolution,
-} from "@/lib/redux/slices/agent-settings/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
 import {
   setResolutionMode,
   setCustomConflictAction,
   confirmModelSwitch,
   cancelModelSwitch,
-} from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
+} from "@ai-matrx/chat/agents/redux/agent-settings/agentSettingsSlice";
 import type {
   ConflictItem,
   ResolutionMode,
-} from "@/lib/redux/slices/agent-settings/types";
+} from "@ai-matrx/chat/agents/redux/agent-settings/types";
 
 // ── Resolution mode tabs ───────────────────────────────────────────────────────
 

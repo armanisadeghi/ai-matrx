@@ -49,6 +49,7 @@ import { agentSurfaceBindingsReducer } from "../surfaces/redux/agentSurfaceBindi
 import { surfaceConfigReducer } from "../surfaces/redux/surfaceConfigSlice";
 import agentAssistantMarkdownDraftReducer from "../agents/redux/agent-assistant-markdown-draft.slice";
 import proposedDirectivesReducer from "../agents/redux/proposed-directives/proposedDirectivesSlice";
+import agentSettingsReducer from "../agents/redux/agent-settings/agentSettingsSlice";
 import { chatHostReducer } from "./chat-host.slice";
 
 export const chatReducers = {
@@ -94,6 +95,8 @@ export const chatReducers = {
   mcp: mcpReducer,
   // Agent-proposed actions awaiting approval (the `ask` apply policy); package-owned since P17b.
   proposedDirectives: proposedDirectivesReducer,
+  // Agent/prompt settings (builder defaults, chat overrides); package-owned since P17.
+  agentSettings: agentSettingsReducer,
   // Host state the package reads (identity, active org, server, prefs), synced by <ChatProvider> (P3).
   chatHost: chatHostReducer,
 };

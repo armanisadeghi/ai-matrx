@@ -4,7 +4,7 @@
 // when it is NOT overridden. The editor (`SettingControlInput`) only appears
 // once the person chooses to override that row.
 
-import type { ControlDefinition } from "@/lib/redux/slices/agent-settings/types";
+import type { ControlDefinition } from "@ai-matrx/chat/agents/redux/agent-settings/types";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 /** `{ type: "json_object" }` → `"json_object"` (the response_format shape). */

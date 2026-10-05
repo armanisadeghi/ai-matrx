@@ -92,7 +92,7 @@ import {
 import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { selectActiveAgentId } from "@/lib/redux/slices/agent-settings/selectors";
+import { selectActiveAgentId } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
 import { selectOwnedAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";

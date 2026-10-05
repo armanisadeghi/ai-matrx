@@ -12,7 +12,7 @@ import {
   UI_GATE_KEYS,
   parseUiGates,
   type UiGates,
-} from "@host/lib/redux/slices/agent-settings/ui-gates";
+} from "../../agent-settings/ui-gates";
 import { hasBrowserSession } from "../../../../host/identity";
 
 type ConversationMetadataRow = Pick<

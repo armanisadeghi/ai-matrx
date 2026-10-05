@@ -30,7 +30,7 @@ import type {
 } from "../../types/agent-definition.types";
 import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
 import type { SkillConfig } from "@host/features/skills/types";
-import { parseUiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import { parseUiGates } from "../agent-settings/ui-gates";
 import { parseCustomTools } from "./parse-custom-tools";
 import {
   parseAgentMessages,

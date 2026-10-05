@@ -128,7 +128,7 @@ import {
   isOrgKnobGatedTool,
   toolsWithheldInOrganization,
 } from "@/lib/knobs/toolKnobGating";
-import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
+import { selectNormalizedControls } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supportsTools } from "@ai-matrx/chat/agents/hooks/useModelControls";

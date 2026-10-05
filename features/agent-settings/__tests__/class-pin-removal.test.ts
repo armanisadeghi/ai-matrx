@@ -10,16 +10,16 @@ import { configureStore } from "@reduxjs/toolkit";
 import agentSettingsReducer, {
   applySettingsFromDialog,
   initializeAgent,
-} from "../agentSettingsSlice";
+} from "@ai-matrx/chat/agents/redux/agent-settings/agentSettingsSlice";
 import {
   selectApiPayload,
   selectEffectiveSettings,
-} from "../selectors";
+} from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
 import {
   computeOverrideDiff,
   effectiveOfferingPinOf,
   mergeEffectiveSettings,
-} from "../internal-utils";
+} from "@ai-matrx/chat/agents/redux/agent-settings/internal-utils";
 import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import type { RootState } from "@/lib/redux/store";
 

@@ -98,7 +98,7 @@ import { validateOutputSchema } from "./output-schema/validateOutputSchema";
 import {
   buildSettingsRows,
   type SettingsRow,
-} from "@/lib/redux/slices/agent-settings/settings-catalogue";
+} from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import {
   bindControlToVariable,
@@ -2051,7 +2051,7 @@ export function AgentSettingsCore({
 
   // Every catalogue setting renders, for every model. The model's controls
   // only decorate each row (supported vs. caution) — they never decide whether
-  // a row appears. See lib/redux/slices/agent-settings/settings-catalogue.ts.
+  // a row appears. See packages/chat/src/agents/redux/agent-settings/settings-catalogue.ts.
   const settingGroups = buildSettingsRows(
     // NormalizedControls has no string index signature (typed optional keys
     // alongside two required `Record<string, any>` escape-hatch fields), so

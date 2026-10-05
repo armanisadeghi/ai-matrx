@@ -8,12 +8,8 @@
  */
 
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
-import {
-  classConfigKey,
-  selectModelById,
-  type AIModel,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+import type { ChatRootState as RootState } from "../../../store/root-state";
+import { classConfigKey, selectModelById, type AIModel } from "../model-registry";
 import type {
   AgentSettings,
   AgentSettingsEntry,
@@ -22,7 +18,7 @@ import type {
   ConflictItem,
   NormalizedControls,
   PendingModelSwitch,
-} from "@/lib/redux/slices/agent-settings/types";
+} from "./types";
 import {
   buildApiPayload,
   effectiveOfferingPinOf,
@@ -31,7 +27,7 @@ import {
   mergeVariableValues,
   parseModelControls,
   resolveConflicts,
-} from "@/lib/redux/slices/agent-settings/internal-utils";
+} from "./internal-utils";
 
 // ── Stable empty references — prevents reference churn in memoized selectors ──
 

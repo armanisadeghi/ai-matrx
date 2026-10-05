@@ -15,7 +15,7 @@
  * visible, greyed, with the reason (the same law as the Questions part).
  */
 
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "../redux/model-registry";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { estimateTokensForText } from "@ai-matrx/kit/tokens";
 

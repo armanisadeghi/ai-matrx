@@ -17,15 +17,15 @@ import {
   selectError,
   selectIsLoading,
   selectVariableDefaults,
-} from "@/lib/redux/slices/agent-settings/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import {
   addVariable,
   loadAgentSettings,
   updateVariable,
   removeVariable,
-} from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
-import type { AgentVariable } from "@/lib/redux/slices/agent-settings/types";
+} from "@ai-matrx/chat/agents/redux/agent-settings/agentSettingsSlice";
+import type { AgentVariable } from "@ai-matrx/chat/agents/redux/agent-settings/types";
 import { variableRunLabel } from "@ai-matrx/agents";
 
 interface VariableFormState {

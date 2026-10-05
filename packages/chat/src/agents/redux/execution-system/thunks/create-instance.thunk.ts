@@ -51,7 +51,7 @@ import { selectDisplayConversation } from "../conversation-focus/conversation-fo
 import { initInstanceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
-import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "../../agent-settings/ui-gates";
 import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
 import {
   initInstanceVariables,

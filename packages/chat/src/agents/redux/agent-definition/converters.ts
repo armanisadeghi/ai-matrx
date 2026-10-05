@@ -38,7 +38,7 @@ import { sanitizeAgentToolIds } from "./sanitize-tool-ids";
 import { stripNullish } from "@host/utils/supabase/payload";
 import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { SkillConfig } from "@host/features/skills/types";
-import { parseUiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import { parseUiGates } from "../agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
 import { isJsonObject } from "@host/types/json";
 import type {

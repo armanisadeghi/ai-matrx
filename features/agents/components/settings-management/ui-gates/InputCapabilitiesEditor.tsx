@@ -10,7 +10,7 @@ import {
   UI_GATE_EDITABLE_KEYS,
   type UiGateEditableKey,
   type UiGates,
-} from "@/lib/redux/slices/agent-settings/ui-gates";
+} from "@ai-matrx/chat/agents/redux/agent-settings/ui-gates";
 
 interface InputCapabilitiesEditorProps {
   values: UiGates;

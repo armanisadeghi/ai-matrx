@@ -8,8 +8,8 @@
  *   - Test (multiple agents simultaneously, all in memory)
  */
 
-import type { VariableCustomComponent } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
+import type { VariableCustomComponent } from "../../types/agent-definition.types";
+import type { LLMParams } from "../../types/agent-api-types";
 
 // ── Core Settings Shape ────────────────────────────────────────────────────────
 

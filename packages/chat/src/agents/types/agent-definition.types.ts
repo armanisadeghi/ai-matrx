@@ -9,7 +9,7 @@ import type { OutputSchema } from "./json-schema";
 import type { DbRpcRow } from "@host/types/supabase-rpc";
 import type { FieldFlags } from "@ai-matrx/agents/field-flags";
 import type { SkillConfig } from "@host/features/skills/types";
-import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "../redux/agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "./matrx-directives.types";
 
 export type AgentType = "user" | "builtin";
@@ -423,7 +423,7 @@ export interface AgentDefinition {
    * Model-gated UI flags (FE-only; persisted in `agx_agent.ui_gates`). Gate what
    * the chat / builder UI exposes for the selected model (image/file/youtube
    * attachment inputs, tool affordance). NEVER sent to the server — see
-   * `@/lib/redux/slices/agent-settings/ui-gates`. Defaults to `{}`.
+   * `packages/chat/src/agents/redux/agent-settings/ui-gates`. Defaults to `{}`.
    */
   uiGates: UiGates;
 

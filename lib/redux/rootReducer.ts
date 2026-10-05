@@ -102,7 +102,6 @@ import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
 import modelRegistryReducer from "../../features/ai-models/redux/modelRegistrySlice";
-import agentSettingsReducer from "./slices/agent-settings/agentSettingsSlice";
 
 import artifactsReducer from "./slices/artifactsSlice";
 import htmlPagesReducer from "./slices/htmlPagesSlice";
@@ -236,7 +235,6 @@ export const slimReducerMap = {
 
   adminPreferences: adminPreferencesReducer,
 
-  agentSettings: agentSettingsReducer,
 
   modelRegistry: modelRegistryReducer,
 

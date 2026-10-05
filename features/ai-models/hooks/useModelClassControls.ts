@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { effectiveOfferingPinOf } from "@/lib/redux/slices/agent-settings/internal-utils";
+import { effectiveOfferingPinOf } from "@ai-matrx/chat/agents/redux/agent-settings/internal-utils";
 import {
   classConfigKey,
   fetchModelClassConfig,

@@ -7,8 +7,8 @@
 
 import type { ModelClassControls } from "../../host/model-class";
 import { LLM_PARAMS_KEYS } from "@ai-matrx/agents/generated/llm-enums";
-import { UI_GATE_KEYS } from "@host/lib/redux/slices/agent-settings/ui-gates";
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import { UI_GATE_KEYS } from "../redux/agent-settings/ui-gates";
+import type { AIModelRecord } from "../redux/model-registry";
 import { isJsonObject } from "@host/types/json";
 import { outputFormatControlKey } from "@ai-matrx/agents/models";
 
@@ -202,7 +202,7 @@ type NormalizedControlKey = Exclude<
  * backfill), exactly matching server behaviour.
  *
  * Accepts either NormalizedControls shape — the hook's (this file) or the
- * agent-settings parser's (`lib/redux/slices/agent-settings/types.ts`) — since
+ * agent-settings parser's (`packages/chat/src/agents/redux/agent-settings/types.ts`) — since
  * both expose `tools?: { default?: unknown }`. Reuse this everywhere; never
  * inline the `tools?.default !== false` check.
  */

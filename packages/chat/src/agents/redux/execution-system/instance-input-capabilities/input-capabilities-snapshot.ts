@@ -2,7 +2,7 @@ import { supabase } from "../../../../host/db";
 import {
   parseUiGates,
   type UiGates,
-} from "@host/lib/redux/slices/agent-settings/ui-gates";
+} from "../../agent-settings/ui-gates";
 
 interface InputCapabilitiesSnapshotRef {
   agentId: string;

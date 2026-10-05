@@ -53,7 +53,7 @@ test("model defaults never turn an image file format into a response format", ()
 // and in the agent-settings parser — the live registry never sees a renamed
 // image output_format.
 import { normalizeModel, normalizePromptSettings } from "@ai-matrx/agents/models";
-import { parseModelControls } from "@host/lib/redux/slices/agent-settings/internal-utils";
+import { parseModelControls } from "../../redux/agent-settings/internal-utils";
 
 test("the registry boundary keeps an image model's output_format", () => {
   const normalized = normalizeModel(gptImage2) as unknown as {

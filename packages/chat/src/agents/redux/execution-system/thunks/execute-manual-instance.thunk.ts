@@ -196,7 +196,7 @@ import { buildToolInjection } from "../utils/build-tool-injection";
 import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachOutputKindsFromState, attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "../../../types/tool-injection.types";
-import { isUiGateKey } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import { isUiGateKey } from "../../agent-settings/ui-gates";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { getUserId } from "../../../../host/identity";
 

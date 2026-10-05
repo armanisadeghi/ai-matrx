@@ -190,4 +190,10 @@ describe("composer chips: chosen resources are Advanced-only chips", () => {
 import { registerChatUi as registerChatUiForPanel } from "@ai-matrx/chat/host/ui-slots";
 import { ConnectorMark as HostConnectorMark } from "@/features/connectors/ConnectorMark";
 import { connectorDefinitionFromMcp as hostConnectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
-registerChatUiForPanel({ ConnectorMark: HostConnectorMark, connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp });
+import { useAttachResourcePicker as hostUseAttachResourcePicker } from "@/features/connectors/useAttachResourcePicker";
+// The app registers its attach-picker door (providers/chatUiRegistration.ts); the mock above stands in for it.
+registerChatUiForPanel({
+  ConnectorMark: HostConnectorMark,
+  connectorDefinitionFromMcp: hostConnectorDefinitionFromMcp,
+  useAttachResourcePicker: hostUseAttachResourcePicker,
+});

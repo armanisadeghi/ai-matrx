@@ -11,7 +11,7 @@ import { persistInputCapabilities } from "../../redux/execution-system/instance-
 import {
   UI_GATE_EDITABLE_KEYS,
   type UiGateEditableKey,
-} from "@host/lib/redux/slices/agent-settings/ui-gates";
+} from "../../redux/agent-settings/ui-gates";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 interface RunInputCapabilitiesProps {

@@ -12,13 +12,10 @@
  */
 
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
-import { createClient } from "@/utils/supabase/client";
-import { tryWriteOne } from "@/utils/supabase/writeOne";
-import { recordUnavailable } from "@/lib/records/recordUnavailable";
-import {
-  selectModelById,
-  type AIModel,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+import { tryWriteOne } from "@ai-matrx/data/db";
+import { createClient } from "../../../host/db";
+import { recordUnavailable } from "../../../host/diagnostics";
+import { selectModelById, type AIModel } from "../model-registry";
 import type {
   AgentContext,
   AgentSettings,
@@ -40,8 +37,8 @@ import {
   resolveConflicts,
   sanitizeSettings,
 } from "./internal-utils";
-import { isJsonArray, isJsonObject } from "@/types/json";
-import { VARIABLE_COMPONENT_TYPES } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import { isJsonArray, isJsonObject } from "@ai-matrx/kit/json-format";
+import { VARIABLE_COMPONENT_TYPES } from "../../types/agent-definition.types";
 
 // ── Initial State ──────────────────────────────────────────────────────────────
 

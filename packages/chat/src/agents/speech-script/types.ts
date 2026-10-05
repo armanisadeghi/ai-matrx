@@ -9,7 +9,7 @@
  * the compatibility verdict the editor shows.
  */
 
-import type { AIModelRecord } from "@host/features/ai-models/redux/modelRegistrySlice";
+import type { AIModelRecord } from "../redux/model-registry";
 import type { UserInputPart } from "../types/request.types";
 import { parseCapabilities } from "@host/features/ai-models/capabilities/parse";
 import { partKind } from "@host/features/agents/decision-questions/types";

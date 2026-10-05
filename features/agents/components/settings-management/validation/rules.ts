@@ -13,7 +13,7 @@
 import type { ValidationRule, ValidationIssue, ResolvedConfig } from "./types";
 import { getControlForKey } from "./resolve-config";
 import { evaluateAllConstraints } from "./constraints";
-import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
+import { isUiGateKey } from "@ai-matrx/chat/agents/redux/agent-settings/ui-gates";
 
 // =============================================================================
 // Rule: Unrecognized Keys

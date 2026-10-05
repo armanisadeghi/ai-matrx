@@ -3,10 +3,10 @@ import type { ResolvedConfig } from "./types";
 import {
   ControlDefinition,
   NormalizedControls,
-} from "@/lib/redux/slices/agent-settings/types";
+} from "@ai-matrx/chat/agents/redux/agent-settings/types";
 import type { FeLlmParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type { ModelConstraint } from "@/features/ai-models/types";
-import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
+import { UI_GATE_KEYS } from "@ai-matrx/chat/agents/redux/agent-settings/ui-gates";
 
 // The model-gated UI flags moved OUT of settings into agent.uiGates, so they
 // should no longer appear in `settings`. We still register them as recognized

@@ -1880,7 +1880,7 @@ export default [
   {
     // ─── Model Settings: one place decides the standard list ───────────
     // The STANDARD settings list is selected in exactly ONE place —
-    // buildSettingsRows() (lib/redux/slices/agent-settings/
+    // buildSettingsRows() (packages/chat/src/agents/redux/agent-settings/
     // settings-catalogue.ts), which returns the model's supported keys.
     // Set-but-unsupported keys are surfaced separately by the validation /
     // caution layer (the IssueTable). Components must NOT re-filter the

@@ -56,7 +56,7 @@ import {
 } from "../instance-model-overrides/instance-model-overrides.slice";
 import { initInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.slice";
 import { fetchInputCapabilitiesSnapshot } from "../instance-input-capabilities/input-capabilities-snapshot";
-import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "../../agent-settings/ui-gates";
 import { parsePersistedInputCapabilities } from "../instance-input-capabilities/instance-input-capabilities.persistence";
 import {
   initInstanceUIState,

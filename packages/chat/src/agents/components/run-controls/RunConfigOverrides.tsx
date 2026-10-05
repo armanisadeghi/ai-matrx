@@ -68,8 +68,8 @@ import {
 import {
   buildSettingsRows,
   type SettingsRow,
-} from "@host/lib/redux/slices/agent-settings/settings-catalogue";
-import type { ControlDefinition } from "@host/lib/redux/slices/agent-settings/types";
+} from "../../redux/agent-settings/settings-catalogue";
+import type { ControlDefinition } from "../../redux/agent-settings/types";
 import { SettingControlInput } from "@host/features/agents/components/settings-management/controls/SettingControlInput";
 import { Label } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";

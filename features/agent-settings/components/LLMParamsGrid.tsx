@@ -28,14 +28,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectEffectiveSettings,
   selectNormalizedControls,
-} from "@/lib/redux/slices/agent-settings/selectors";
+} from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
 import { useAgentSettingsClassControls } from "@/features/ai-models/hooks/useModelClassControls";
-import { applySettingsFromDialog } from "@/lib/redux/slices/agent-settings/agentSettingsSlice";
+import { applySettingsFromDialog } from "@ai-matrx/chat/agents/redux/agent-settings/agentSettingsSlice";
 import type {
   AgentSettings,
   ControlDefinition,
-} from "@/lib/redux/slices/agent-settings/types";
-import { buildSettingsRows } from "@/lib/redux/slices/agent-settings/settings-catalogue";
+} from "@ai-matrx/chat/agents/redux/agent-settings/types";
+import { buildSettingsRows } from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
 import { NumberInput } from "@/features/agents/components/settings-management/controls/NumberInput";
 
 // ── ControlRow ────────────────────────────────────────────────────────────────

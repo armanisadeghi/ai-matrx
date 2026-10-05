@@ -90,10 +90,10 @@ const CHAT_KEYS_BEFORE_P2 = [
 const CHAT_KEYS_ADDED = ["chatHost"];
 
 /**
- * Host keys whose slice moved INTO the package since P2 (P17b), under the SAME key: the host
+ * Host keys whose slice moved INTO the package since P2 (P17b, P17), under the SAME key: the host
  * no longer imports these reducers itself, it mounts them through `...chatReducers`.
  */
-const CHAT_KEYS_MOVED_IN = ["proposedDirectives"];
+const CHAT_KEYS_MOVED_IN = ["proposedDirectives", "agentSettings"];
 
 const ALL_CHAT_KEYS = [...CHAT_KEYS_BEFORE_P2, ...CHAT_KEYS_ADDED, ...CHAT_KEYS_MOVED_IN];
 

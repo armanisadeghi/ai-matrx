@@ -26,7 +26,7 @@ import type {
   VariableDefinition,
 } from "../../types/agent-definition.types";
 import type { FeLlmParams } from "../../types/agent-api-types";
-import type { UiGates } from "@host/lib/redux/slices/agent-settings/ui-gates";
+import type { UiGates } from "../agent-settings/ui-gates";
 import type {
   ApiEndpointMode,
   ContextAnchor,
