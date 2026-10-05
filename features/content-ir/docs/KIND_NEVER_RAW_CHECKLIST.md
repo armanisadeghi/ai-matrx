@@ -431,3 +431,14 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
       (4 failed before) + `list-change-proposals/__tests__/proposed-value-kind-never-raw.test.tsx` (failed before). The
       approval card's `formatPlain` only receives values the detector cleared — closed by H1; guard: a prose-before-fence
       context string in `interrupt-context-kind-door.test.tsx` (failed with the pre-H1 check).
+- [x] H6. `<artifact type="flashcards" …>` + one-line kind body, streamed live: the accumulator keeps the tag lines in an
+      artifact block's `content` (rawXml round-trip) while the reload splitter hands ArtifactBlock only the body, so live
+      drew the raw `__kind` JSON mid-stream and "No flashcards available yet" settled (UUID id with a by-id miss and the
+      model's own id alike) while reload drew the cards. `artifactBodyOf` in the live hop (`renderBlockToContentBlock`)
+      gives the renderer the same body as the splitter. Guard `artifact-one-line-kind-live-equals-reload.test.tsx`
+      (4 failed before: char-by-char + chunks × UUID / model id; every artifact frame DOM-judged, settled = reload).
+      Render matrix judges every `chat_artifact` kind frame too (its fake kind types route to the html canvas, so that
+      check passed before the fix — the flashcards guard is the forcing one). NOT reproduced: the reported prose-as-code
+      card and generic flashcard grid (conversation 32eaa687 actually streamed a ```json fence — `content_history`
+      shows the `<artifact>` text is the post-stream materialization rewrite); two live localhost runs at HEAD rendered
+      prose + cards throughout.

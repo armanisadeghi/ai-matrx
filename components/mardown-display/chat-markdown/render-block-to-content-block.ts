@@ -51,7 +51,7 @@ export function renderBlockToContentBlock(rb: RenderBlockPayload): RenderBlock {
   return {
     type: rb.type,
     content:
-      rb.type === "__off__" ? artifactBodyOf(rb.content ?? "") : (rb.content ?? ""),
+      rb.type === "artifact" ? artifactBodyOf(rb.content ?? "") : (rb.content ?? ""),
     serverData: (rb.data as Record<string, unknown>) ?? undefined,
     metadata: rb.metadata,
     language: (rb.data as Record<string, unknown>)?.language as
