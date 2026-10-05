@@ -92,7 +92,7 @@ export function AgentAppEditor({ app, onSave }: AgentAppEditorProps) {
           <Label htmlFor="component-code" className="sr-only">
             Component code
           </Label>
-          <Textarea mono minHeight={0}
+          <Textarea mono
             id="component-code"
             value={componentCode}
             onChange={(e) => setComponentCode(e.target.value)}

@@ -544,7 +544,7 @@ export default function ConversationDemoClient() {
                 <Label className="text-xs font-semibold flex-shrink-0">
                   User Input
                 </Label>
-                <Textarea mono minHeight={0}
+                <Textarea mono
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   placeholder="Your message to continue the conversation…"

@@ -539,7 +539,7 @@ export function NewCrawlWorkspace() {
                     <Label htmlFor={item.id} className="text-[11px]">
                       {item.label}
                     </Label>
-                    <Textarea mono minHeight={0}
+                    <Textarea mono
                       id={item.id}
                       rows={2}
                       spellCheck={false}

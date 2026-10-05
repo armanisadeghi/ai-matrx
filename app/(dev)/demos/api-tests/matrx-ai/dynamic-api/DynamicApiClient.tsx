@@ -802,7 +802,7 @@ export default function DynamicApiClient() {
                       </Button>
                     </div>
                   </div>
-                  <Textarea mono minHeight={0}
+                  <Textarea mono
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     placeholder={'{\n  "key": "value"\n}'}

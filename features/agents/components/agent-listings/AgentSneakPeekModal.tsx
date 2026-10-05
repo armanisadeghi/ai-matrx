@@ -14,8 +14,8 @@ import {
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTriggerCore,
+  TabsListLegacy as TabsList,
+  TabsTriggerCoreLegacy as TabsTriggerCore,
 } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

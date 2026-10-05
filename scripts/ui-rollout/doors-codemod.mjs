@@ -166,12 +166,20 @@ function transform(file, srcOverride) {
     if (!ts.isImportDeclaration(st) || !st.importClause?.namedBindings || !ts.isNamedImports(st.importClause.namedBindings)) continue;
     const mod = st.moduleSpecifier.text;
     for (const door of ACTIVE) {
-      if (DOORS[door].module !== mod) continue;
+      // `@host/…` is the same door seen from an in-repo package (packages/chat).
+      if (DOORS[door].module !== mod && DOORS[door].module.replace(/^@\//, "@host/") !== mod) continue;
       for (const spec of st.importClause.namedBindings.elements) {
-        const imported = (spec.propertyName ?? spec.name).text;
+        let imported = (spec.propertyName ?? spec.name).text;
+        let legacy = false;
+        const fromLegacy = Object.entries(DOORS[door].parts).find(([, l]) => l === imported);
+        if (fromLegacy) {
+          // Already repointed by an earlier run: keep it in the census (re-runnable).
+          imported = fromLegacy[0];
+          legacy = true;
+        }
         if (!(imported in DOORS[door].parts) || spec.isTypeOnly) continue;
         bindings.set(spec.name.text, { door, part: imported, spec, decl: st });
-        (imports[door] ??= []).push({ spec, decl: st, imported });
+        (imports[door] ??= []).push({ spec, decl: st, imported, legacy });
       }
     }
   }
@@ -227,6 +235,11 @@ function transform(file, srcOverride) {
       }
     }
     if (!unsafe && reasons.length) unsafe = "unsafe";
+    if (imports[door].every((i) => i.legacy)) {
+      if (excludedWhy) census.legacy.push(`${file} — ${door}: ${excludedWhy}`);
+      else for (const r of reasons.length ? reasons : [`${file} — on ${door} Legacy`]) census.legacy.push(reasons.length ? `${r} — whole file stays on ${door} Legacy` : r);
+      continue;
+    }
     if (unsafe) {
       const legacyMap = DOORS[door].parts;
       if (door === "input") {
@@ -326,6 +339,8 @@ function convertElement(sf, el, door, part, edits) {
         const h = heightPx(b, "h");
         if (h != null) min ??= h, max ??= h;
       }
+      if (min === 0) min = null; // `min-h-0` is a flex fill, kept as placement
+      if (max === 0) max = null;
       if (min != null && !attrs.some((a) => attrName(a) === "minHeight")) addProps.push(`minHeight={${min}}`);
       if (max != null && !attrs.some((a) => attrName(a) === "maxHeight")) addProps.push(`maxHeight={${max}}`);
     }

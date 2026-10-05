@@ -6,20 +6,20 @@
       "sites": 773
     },
     "tabs": {
-      "files": 124,
-      "sites": 532
+      "files": 127,
+      "sites": 543
     },
     "switch": {
-      "files": 215,
-      "sites": 337
+      "files": 231,
+      "sites": 364
     },
     "textarea": {
       "files": 125,
       "sites": 157
     },
     "input": {
-      "files": 782,
-      "sites": 1703
+      "files": 2,
+      "sites": 7
     }
   },
   "legacy": [
@@ -76,7 +76,7 @@
     "features/agent-apps/sample-code/apps/lsi-generator.tsx:344 display-size input (`text-lg h-12`) — a heading editor, not a control — stays on the package-root Input",
     "features/agents/agent-creators/interactive-builder/ComprehensiveBuilder.tsx:110 vertical/wrapping tab rail (TabsList `flex flex-wrap h-auto justify-start bg-transparent`) — whole file stays on tabs Legacy",
     "features/agents/agent-creators/tabbed-builder/MainPromptBuilder.tsx:88 vertical/wrapping tab rail (TabsList `flex flex-wrap h-auto justify-start bg-transparent`) — whole file stays on tabs Legacy",
-    "features/agents/components/agent-listings/AgentSneakPeekModal.tsx:398 vertical/wrapping tab rail (TabsList `h-auto bg-transparent p-0 gap-0 rounded-none border-b border-border justify-start w-full shrink-0 sticky top-0 z-10 backdrop-blur`) — whole file stays on tabs Legacy",
+    "features/agents/components/agent-listings/AgentSneakPeekModal.tsx:399 vertical/wrapping tab rail (TabsList `h-auto bg-transparent p-0 gap-0 rounded-none border-b border-border justify-start w-full shrink-0 sticky top-0 z-10 backdrop-blur`) — whole file stays on tabs Legacy",
     "features/agents/components/builder/message-builders/MessageItem.tsx — select: agent builder (frozen)",
     "features/agents/components/builder/message-builders/SpeechScriptEditor.tsx — select: agent builder (frozen)",
     "features/agents/components/context-policies-management/AgentContextPoliciesManager.tsx — select: agent builder (frozen)",
@@ -104,7 +104,7 @@
     "features/canvas/custom-components/CodePreviewCanvas.tsx:147 vertical/wrapping tab rail (TabsList `w-full justify-start border-b rounded-none bg-transparent p-0 h-auto shrink-0 gap-0`) — whole file stays on tabs Legacy",
     "features/canvas/discovery/CanvasDiscovery.tsx:135 display-size input (`pl-10 py-6 text-lg`) — a heading editor, not a control — stays on the package-root Input",
     "features/cloud-browser/components/CredentialCaptureCard.tsx:175 dynamic Input type — stays on the package-root Input",
-    "features/cms/components/collections/CollectionItemEditorDialog.tsx:349 dynamic Input type — stays on the package-root Input",
+    "features/cms/components/collections/CollectionItemEditorDialog.tsx:348 dynamic Input type — stays on the package-root Input",
     "features/code-editor/agent-code-editor/components/parts/ReviewStage.tsx:88 vertical/wrapping tab rail (TabsList `w-full justify-start border-b rounded-none bg-transparent p-0 h-auto shrink-0 gap-0`) — whole file stays on tabs Legacy",
     "features/code-editor/components/AICodeEditor.tsx:258 vertical/wrapping tab rail (TabsList `w-full justify-start border-b rounded-none bg-transparent p-0 h-auto shrink-0 gap-0`) — whole file stays on tabs Legacy",
     "features/code/views/sandboxes/CreateSandboxFormFields.tsx:109 multi-line SelectTrigger (`h-auto min-h-9 py-1.5`) — whole file stays on select Legacy",
@@ -115,7 +115,7 @@
     "features/data-tables/components/FormatAwareInput.tsx:120 dynamic Input type — stays on the package-root Input",
     "features/data-tables/components/FormatAwareInput.tsx:132 Input type=\"color\" is not a field — stays on the package-root Input",
     "features/data-tables/components/RowActionsEditor.tsx:624 dynamic Input type — stays on the package-root Input",
-    "features/directive-catalog/components/SchemaFieldsForm.tsx:462 dynamic Input type — stays on the package-root Input",
+    "features/directive-catalog/components/SchemaFieldsForm.tsx:461 dynamic Input type — stays on the package-root Input",
     "features/education/classes/components/JoinClassView.tsx:99 display-size input (`text-center font-mono text-lg tracking-[0.25em] uppercase`) — a heading editor, not a control — stays on the package-root Input",
     "features/education/engage/components/lobby/JoinRoomImpl.tsx:73 display-size input (`text-center text-2xl font-bold uppercase tracking-[0.4em]`) — a heading editor, not a control — stays on the package-root Input",
     "features/hr/time/kiosk/KioskPairingSurface.tsx:118 display-size input (`min-h-[80px] text-center text-3xl tracking-[0.3em] tabular-nums`) — a heading editor, not a control — stays on the package-root Input",
@@ -132,9 +132,9 @@
     "features/scraper/parts/core/ContentTabs.tsx:58 vertical/wrapping tab rail (TabsList `flex h-auto justify-start gap-1 overflow-x-auto scrollbar-hide py-1 px-11 md:px-0 rounded-t-none rounded-b-lg shadow-md border-b border-border bg-muted`) — whole file stays on tabs Legacy",
     "features/secrets/components/VaultBackupDialog.tsx:730 Input type=\"file\" is not a field — stays on the package-root Input",
     "features/secrets/components/VaultCreateDialog.tsx:1276 Input type=\"file\" is not a field — stays on the package-root Input",
-    "features/secrets/components/VaultCreateDialog.tsx:1708 Input type=\"file\" is not a field — stays on the package-root Input",
-    "features/secrets/components/VaultCreateDialog.tsx:1824 dynamic Input type — stays on the package-root Input",
-    "features/secrets/components/VaultCreateDialog.tsx:2259 dynamic Input type — stays on the package-root Input",
+    "features/secrets/components/VaultCreateDialog.tsx:1705 Input type=\"file\" is not a field — stays on the package-root Input",
+    "features/secrets/components/VaultCreateDialog.tsx:1821 dynamic Input type — stays on the package-root Input",
+    "features/secrets/components/VaultCreateDialog.tsx:2255 dynamic Input type — stays on the package-root Input",
     "features/secrets/components/VaultItemDetail.tsx:1214 dynamic Input type — stays on the package-root Input",
     "features/secrets/components/VaultItemDetail.tsx:1517 dynamic Input type — stays on the package-root Input",
     "features/secrets/components/VaultItemDetail.tsx:800 Input type=\"file\" is not a field — stays on the package-root Input",

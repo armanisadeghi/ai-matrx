@@ -20,16 +20,16 @@ import {
   Unlink,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { SwitchLegacy as Switch } from "@/components/ui/switch";
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaLegacy as Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
+  SelectTriggerLegacy as SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import {

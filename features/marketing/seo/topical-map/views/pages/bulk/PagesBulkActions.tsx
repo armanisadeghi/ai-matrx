@@ -219,7 +219,7 @@ function BulkActionPopover({
             >
               Note (optional)
             </label>
-            <Textarea minHeight={0}
+            <Textarea
               id={`bulk-intent-note-${action.id}`}
               value={draft.note}
               maxLength={300}

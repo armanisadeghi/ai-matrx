@@ -839,7 +839,7 @@ function RawModelJsonTab({
         </div>
       </div>
 
-      <Textarea mono minHeight={0}
+      <Textarea mono
         value={jsonText}
         onChange={(e) => onJsonChange(e.target.value)}
         spellCheck={false}

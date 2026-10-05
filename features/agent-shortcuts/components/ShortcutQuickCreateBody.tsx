@@ -635,7 +635,7 @@ function JsonTab({ state }: { state: ShortcutQuickCreateState }) {
       </div>
 
       <div className="flex-1 min-h-0 px-4 pb-2">
-        <Textarea mono minHeight={0}
+        <Textarea mono
           value={jsonDraft}
           onChange={(e) => setJsonDraft(e.target.value)}
           spellCheck={false}
