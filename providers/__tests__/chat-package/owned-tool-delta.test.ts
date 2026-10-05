@@ -3,7 +3,9 @@ import { seedAgentFromTemplate, setAgentField } from "@ai-matrx/chat/agents/redu
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
 import { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import { setOrganization } from "@/lib/redux/slices/appContextSlice";
-import { applyOwnedAgentToolDelta } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  applyOwnedAgentToolDelta,
+} from "@/features/agents/redux/builder-tier.thunks";
 import { supabase } from "@ai-matrx/chat/host/db";
 import { selectModelById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import {

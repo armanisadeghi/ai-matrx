@@ -19,10 +19,12 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 import {
-  applyOwnedAgentToolDelta,
   isAvailableToolModel,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
+import {
+  applyOwnedAgentToolDelta,
+  fetchAgentExecutionFull,
+} from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentById,
   selectAgentReadyForCustomExecution,

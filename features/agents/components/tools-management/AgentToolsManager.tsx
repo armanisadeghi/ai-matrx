@@ -76,7 +76,9 @@ import {
   setAgentCustomTools,
   setAgentMcpServers,
 } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
-import { setAgentAutoToolsDisabled } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  setAgentAutoToolsDisabled,
+} from "@/features/agents/redux/builder-tier.thunks";
 import { AutoInjectionSwitch } from "@ai-matrx/chat/agents/components/shared/AutoInjectionSwitch";
 import {
   selectMcpCatalog,

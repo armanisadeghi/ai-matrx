@@ -60,19 +60,11 @@ jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => ({
 }));
 jest.mock("@/features/agents/redux/builder-tier.thunks", () => ({
   fetchAgentExecutionFull: jest.fn((id: string) => ({ type: "agent", id })),
+  applyOwnedAgentToolDelta: jest.fn((input: unknown) => ({
+    type: "assignment",
+    input,
+  })),
 }));
-jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => {
-  const actual = jest.requireActual(
-    "@ai-matrx/chat/agents/redux/agent-definition/thunks",
-  );
-  return {
-    ...actual,
-    applyOwnedAgentToolDelta: jest.fn((input: unknown) => ({
-      type: "assignment",
-      input,
-    })),
-  };
-});
 jest.mock("@ai-matrx/chat/agents/redux/tools/tools.thunks", () => ({
   fetchAvailableTools: jest.fn(() => ({ type: "tools" })),
 }));

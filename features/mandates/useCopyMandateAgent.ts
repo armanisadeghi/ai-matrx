@@ -30,8 +30,10 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/organizatio
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import {
   duplicateAgent,
-  duplicateAgentVersion,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  duplicateAgentVersion,
+} from "@/features/agents/redux/builder-tier.thunks";
 
 export interface CopyMandateAgentSource {
   /** The caller's current override agent (fork THIS master when set). */

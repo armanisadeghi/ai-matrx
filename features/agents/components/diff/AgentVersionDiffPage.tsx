@@ -6,8 +6,10 @@ import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
-  promoteAgentVersion,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  promoteAgentVersion,
+} from "@/features/agents/redux/builder-tier.thunks";
 import type { AgentVersionHistoryItem } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,

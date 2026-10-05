@@ -40,7 +40,9 @@ import {
   selectAgentAutoContextDisabled,
   selectAgentContextPolicies,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { setAgentAutoContextDisabled } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  setAgentAutoContextDisabled,
+} from "@/features/agents/redux/builder-tier.thunks";
 import { AutoInjectionSwitch } from "@ai-matrx/chat/agents/components/shared/AutoInjectionSwitch";
 
 interface AgentContextInjectionSwitchProps {

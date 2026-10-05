@@ -25,7 +25,7 @@ import {
   fetchLinkedCounterpart,
   syncLinkedAgents,
   createPersonalCopy,
-} from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+} from "@/features/agents/redux/builder-tier.thunks";
 import type {
   AgentDefinition,
   LinkedAgentRef,

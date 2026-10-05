@@ -21,8 +21,10 @@ import {
 import {
   fetchAgentVersionHistory,
   fetchFullAgent,
-  resetAgentToSource,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import {
+  resetAgentToSource,
+} from "@/features/agents/redux/builder-tier.thunks";
 import { confirm } from "@ai-matrx/chat/host/ui-slots";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { selectCategoryById } from "@ai-matrx/chat/agents/redux/agent-shortcut-categories/selectors";
