@@ -14,7 +14,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { extractFlatText } from "../../messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "../save-answer-edit.thunk";
@@ -132,7 +132,7 @@ function record(content: unknown = STORED): MessageRecord {
 function store(content?: unknown) {
   reduxContent = structuredClone(content ?? STORED);
   const s = configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (getDefault) => getDefault({ serializableCheck: false }),
   });
   s.dispatch(hydrateMessages({ conversationId: CONVERSATION_ID, messages: [record(content)] }));

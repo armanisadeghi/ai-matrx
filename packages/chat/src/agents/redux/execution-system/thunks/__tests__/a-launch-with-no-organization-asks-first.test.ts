@@ -115,11 +115,6 @@ import instanceUserInputReducer from "../../instance-user-input/instance-user-in
 import instanceClientToolsReducer from "../../instance-client-tools/instance-client-tools.slice";
 import instanceUIStateReducer from "../../instance-ui-state/instance-ui-state.slice";
 import messagesReducer from "../../messages/messages.slice";
-import creatorDebugReducer from "@host/lib/redux/preferences/creatorDebugSlice";
-import adminPreferencesReducer from "@host/lib/redux/preferences/adminPreferencesSlice";
-import userPreferencesReducer from "@host/lib/redux/preferences/userPreferencesSlice";
-import { editorStateReducer } from "@host/features/code-editor/redux/editor-state.slice";
-import appContextReducer from "@host/lib/redux/slices/appContextSlice";
 import { configureRecordingWindows, type RecordingWindows } from "../../../../../host/__tests__/recording-windows";
 import { CHAT_WINDOWS } from "../../../../../host/windows";
 import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
@@ -150,17 +145,14 @@ const agentRecord = {
   _error: null,
 };
 
-const selectedAppContext: ReturnType<typeof appContextReducer> = {
-  ...appContextReducer(undefined, { type: "@@INIT" }),
+const selectedAppContext = {
   organization_id: "org-selected-for-test",
   organization_name: "Selected Test Org",
 };
 
-function selectedAppContextReducer(
-  state = selectedAppContext,
-  action: UnknownAction,
-) {
-  return appContextReducer(state, action);
+// Read-only in this flow: the package reads only the selected organization.
+function selectedAppContextReducer(state = selectedAppContext) {
+  return state;
 }
 
 function makeStore() {
@@ -179,10 +171,6 @@ function makeStore() {
       instanceClientTools: instanceClientToolsReducer,
       instanceUIState: instanceUIStateReducer,
       messages: messagesReducer,
-      creatorDebug: creatorDebugReducer,
-      adminPreferences: adminPreferencesReducer,
-      userPreferences: userPreferencesReducer,
-      editorState: editorStateReducer,
       appContext: selectedAppContextReducer,
     },
   });

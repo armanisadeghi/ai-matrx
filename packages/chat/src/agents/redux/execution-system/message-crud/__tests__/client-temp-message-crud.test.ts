@@ -13,7 +13,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import {
   hydrateMessages,
@@ -75,7 +75,7 @@ function answer(id: string, position: number): MessageRecord {
 
 function storeWith(isEphemeral: boolean, ...messages: MessageRecord[]) {
   const store = configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ serializableCheck: false }),
   });

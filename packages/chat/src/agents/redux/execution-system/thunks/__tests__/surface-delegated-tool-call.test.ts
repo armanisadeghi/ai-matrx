@@ -78,7 +78,7 @@ jest.mock("../dispatch-matrx-extend-tool.thunk", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import {
@@ -104,7 +104,7 @@ const ONLINE_DESKTOP = {
 function makeStore() {
   // Same dev-check posture as the production makeStore (lib/redux/store.ts).
   const store = configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ serializableCheck: false, immutableCheck: false }),
   });

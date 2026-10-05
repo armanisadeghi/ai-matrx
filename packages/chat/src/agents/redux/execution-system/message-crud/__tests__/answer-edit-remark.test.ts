@@ -25,7 +25,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { saveAnswerEdit } from "../save-answer-edit.thunk";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";
@@ -115,7 +115,7 @@ function record(text: string): MessageRecord {
 function makeStore(text = ORIGINAL) {
   dbContent = [{ type: "text", text }];
   const s = configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (getDefault) => getDefault({ serializableCheck: false }),
   });
   s.dispatch(hydrateMessages({ conversationId: CID, messages: [record(text)] }));

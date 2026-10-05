@@ -97,7 +97,7 @@ jest.mock("../../../../../host/notify", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import {
   createInstance,
   destroyInstance,
@@ -186,7 +186,7 @@ function resolvedToolCall(callId: string): CxToolCallRecord {
 function makeStore(status: InstanceStatus = "paused") {
   // Same dev-check posture as the production makeStore (lib/redux/store.ts).
   const store = configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ serializableCheck: false, immutableCheck: false }),
   });

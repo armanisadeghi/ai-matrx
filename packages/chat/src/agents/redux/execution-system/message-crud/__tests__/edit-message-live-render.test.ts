@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import {
   hydrateMessages,
@@ -61,7 +61,7 @@ describe("editMessage retained-stream synchronization", () => {
     );
 
     const store = configureStore({
-      reducer: createSlimRootReducer(),
+      reducer: createChatTestReducer(),
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({ serializableCheck: false }),
     });
@@ -115,7 +115,7 @@ describe("editMessage retained-stream synchronization", () => {
       );
 
       const store = configureStore({
-        reducer: createSlimRootReducer(),
+        reducer: createChatTestReducer(),
         middleware: (getDefaultMiddleware) =>
           getDefaultMiddleware({ serializableCheck: false }),
       });

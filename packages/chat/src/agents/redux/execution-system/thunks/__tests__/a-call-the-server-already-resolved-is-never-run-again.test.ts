@@ -25,7 +25,7 @@ jest.mock("../../../../api/submit-tool-results", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import { upsertToolCall } from "../../observability/observability.slice";
@@ -41,7 +41,7 @@ const REQUEST_ID = "req-after-reload";
 
 function makeStore(recordStatus: string | null) {
   const store = configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (d) => d({ serializableCheck: false, immutableCheck: false }),
   });
   store.dispatch(

@@ -12,7 +12,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createSlimRootReducer } from "@host/lib/redux/rootReducer";
+import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import {
   createRequest,
@@ -33,7 +33,7 @@ const SIGNED_URL =
 
 function makeStore() {
   return configureStore({
-    reducer: createSlimRootReducer(),
+    reducer: createChatTestReducer(),
     middleware: (gDM) =>
       gDM({ serializableCheck: false, immutableCheck: false }),
   });
