@@ -65,7 +65,9 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 1,
-  run: (ctx) => copyRichContent(contentForDestination(ctx), "markdown"),
+  run: async (ctx) => {
+    await copyRichContent(contentForDestination(ctx), "markdown");
+  },
 });
 
 registerAction({
@@ -77,7 +79,9 @@ registerAction({
   supportedSources: "*",
   renderSlot: "overflow",
   order: 2,
-  run: (ctx) => copyRichContent(contentForDestination(ctx), "text"),
+  run: async (ctx) => {
+    await copyRichContent(contentForDestination(ctx), "text");
+  },
 });
 
 registerAction({
