@@ -17,6 +17,8 @@
  * Plan: common-docs/projects/rich-content-unification/PLAN.md decisions 1, 2, 9.
  */
 
+import type { MarkdownStreamProps } from "@/components/MarkdownStream";
+
 export type RichContentLevel = "inline" | "standard" | "full";
 
 /**
@@ -80,4 +82,17 @@ export interface RichContentProps {
    * cell's source text as stored. verify-RC-B4 R6-1.
    */
   gfmCell?: boolean;
+  /**
+   * Full level only — the engine's host hooks, forwarded as given to the chat
+   * pipeline (MarkdownStream). `onContentChange` receives an in-block edit
+   * (JSON reformat, code edit, table edit) so the host can persist it;
+   * `applyLocalEdits={false}` keeps the shown text tied to `source`.
+   */
+  onContentChange?: MarkdownStreamProps["onContentChange"];
+  applyLocalEdits?: boolean;
+  analysisData?: unknown;
+  messageId?: string;
+  conversationId?: string;
+  allowFullScreenEditor?: boolean;
+  hideCopyButton?: boolean;
 }

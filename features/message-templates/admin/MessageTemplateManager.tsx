@@ -71,6 +71,7 @@ import {
   getAllTags,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
+import { RichContent } from "@/components/rich-content/RichContent";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { requestRaw } from "@/lib/python-client";
@@ -1025,7 +1026,7 @@ export function MessageTemplateManager({
                             PREVIEW
                           </div>
                           <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <MarkdownStream imagePolicy="other" content={editData.content || ""} />
+                            <RichContent level="full" imagePolicy="other" source={editData.content || ""} />
                           </div>
                         </div>
                       </div>

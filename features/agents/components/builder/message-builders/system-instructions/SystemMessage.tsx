@@ -28,7 +28,7 @@ import {
   MessageViewModeMenu,
   type MessageViewMode,
 } from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import {
@@ -728,8 +728,10 @@ export function SystemMessage({
               title="Click to edit"
             >
               {developerMessage ? (
-                <MarkdownStream imagePolicy="other"
-                  content={developerMessage}
+                <RichContent
+                  level="full"
+                  imagePolicy="other"
+                  source={developerMessage}
                   hideCopyButton
                   className="text-sm"
                   // Persist in-block edits (JSON reformat, code edits, etc.)

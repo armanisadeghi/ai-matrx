@@ -72,7 +72,8 @@ function selectionShapeText(): string | null {
 // The frame (the package's selection layout, the portal, positioning) loads
 // the first time a toolbar opens — this shell is on every route; the frame is
 // not (code-splitting skill: one boundary, gated on `open`).
-const SelectionToolbarFrame = dynamic(() => import("./SelectionToolbarFrame"), { ssr: false, loading: () => null });
+const loadFrame = () => import("./SelectionToolbarFrame");
+const SelectionToolbarFrame = dynamic(loadFrame, { ssr: false, loading: () => null });
 
 interface OpenState {
   /** Bumped per selection: a new target, a fresh resolve. */
@@ -121,6 +122,20 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
     sync();
     return subscribeDeclaredSelectionProviders(sync);
   }, [registry]);
+  // Fetch the frame once the page is idle, so the FIRST selection on a page shows
+  // its toolbar at once instead of waiting on the chunk (seconds on a cold route).
+  React.useEffect(() => {
+    const warm = () => {
+      loadFrame().catch(() => undefined); // a failed warm-up is retried by the real open
+    };
+    const idle = (window as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (idle) {
+      idle(warm);
+      return undefined;
+    }
+    const t = setTimeout(warm, 300);
+    return () => clearTimeout(t);
+  }, []);
   const isMobile = useIsMobile();
   const zonesVersion = useSelectionZonesVersion();
   const userId = useAppSelector(selectUserId);

@@ -7,9 +7,8 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import MarkdownStream, {
-  type MarkdownStreamProps,
-} from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
+import type { MarkdownStreamProps } from "@/components/MarkdownStream";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Eye, PenLine } from "lucide-react";
@@ -246,10 +245,12 @@ export function MatrxSplit({
       );
     }
     return (
-      <MarkdownStream imagePolicy={imagePolicy}
+      <RichContent
+        level="full"
+        imagePolicy={imagePolicy}
         key={contentResetKey}
-        content={previewValue}
-        isStreamActive={false}
+        source={previewValue}
+        isStreaming={false}
         hideCopyButton={hideCopyButton}
         analysisData={analysisData}
         messageId={messageId}

@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X, Tag, PanelLeft, Columns2 } from "lucide-react";
 import { MessageRole } from "@/features/message-templates/types/message-templates-db";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { createTemplate, clearTemplateCache } from "@/features/message-templates/services/message-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
@@ -237,9 +237,7 @@ export function SaveTemplateModal({
                     {/* Preview */}
                     <div className="flex-1 p-3 bg-muted/30 overflow-y-auto">
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <MarkdownStream imagePolicy="self" 
-                                content={content || ''} 
-                            />
+                            <RichContent level="full" imagePolicy="self" source={content || ''} />
                         </div>
                     </div>
                 </div>

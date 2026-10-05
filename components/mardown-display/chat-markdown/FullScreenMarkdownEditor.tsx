@@ -24,7 +24,7 @@ import LinesViewer, {
   type LineItem,
 } from "./analyzer/analyzer-options/lines-viewer";
 import SectionViewerV2 from "./analyzer/analyzer-options/section-viewer-V2";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
@@ -1276,9 +1276,11 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
                   : "max-w-[750px] p-6 border-x-3 border-gray-500 dark:border-gray-500 shadow-sm",
               )}
             >
-              <MarkdownStream imagePolicy={imagePolicy}
-                content={editedContent}
-                isStreamActive={false}
+              <RichContent
+                level="full"
+                imagePolicy={imagePolicy}
+                source={editedContent}
+                isStreaming={false}
                 analysisData={analysisData}
                 messageId={messageId}
                 conversationId={conversationId}

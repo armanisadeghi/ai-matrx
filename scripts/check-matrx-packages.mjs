@@ -87,6 +87,8 @@ import { fileURLToPath } from 'node:url';
 export const PROPAGATION_WINDOW_MINUTES = 45;
 
 const DEPENDENCY_SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies'];
+// The sections of an INSTALLED package that a consumer actually installs.
+const UPSTREAM_PIN_SECTIONS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
 const SCOPE = '@ai-matrx/';
 
 /**
@@ -453,7 +455,10 @@ export function scanNodeModules(projectRoot, graph = emptyGraph()) {
             } else {
                 addInstalled(graph, name, manifest.version, evidence);
             }
-            for (const section of DEPENDENCY_SECTIONS) {
+            // An installed package's devDependencies are never installed for a
+            // consumer, so they can never pin anything (2026-10-05: an exact
+            // devDependency was reported as a pin no update could move).
+            for (const section of UPSTREAM_PIN_SECTIONS) {
                 for (const [dep, specifier] of Object.entries(manifest[section] ?? {})) {
                     if (!dep.startsWith(SCOPE)) continue;
                     graph.upstreamSpecs ??= [];
@@ -528,7 +533,7 @@ export function compareVersions(a, b) {
  */
 export function updateCommandFor({ pnpm }) {
     return pnpm
-        ? 'pnpm update -r "@ai-matrx/*" --latest   (the -r + glob is what moves TRANSITIVES; a per-package update does not)'
+        ? 'pnpm update -r "@ai-matrx/*" --latest && pnpm update -r "@ai-matrx/*" --depth Infinity   (the second pass is what moves TRANSITIVES; a per-package update does not)'
         : 'npm update   (bare, no package name — `npm update "<pkg>"` refuses to move a transitive)';
 }
 
@@ -624,24 +629,7 @@ export async function auditGraph({
         );
     }
 
-    // A package this repo declares ONLY as workspace:* / link: and that no lockfile
-    // copies from the registry is an in-repo workspace member (packages/*): it IS the
-    // local source, so npm has nothing to verify — and it may never have been
-    // published at all. Asking npm about it can only fail. A registry copy pulled in
-    // transitively still lands in graph.installed and is verified like any other.
-    const isWorkspaceOnly = (name) => {
-        if ((graph.installed.get(name)?.size ?? 0) > 0) return false;
-        const declared = graph.declared.filter((d) => d.name === name);
-        return (
-            declared.length > 0 &&
-            declared.every((d) => d.specifier === 'workspace:*' || d.specifier.startsWith('link:'))
-        );
-    };
-    const allNames = [...new Set([...graph.installed.keys(), ...graph.declared.map((d) => d.name)])].sort();
-    for (const name of allNames.filter(isWorkspaceOnly)) {
-        notes.push(`${name} resolves to workspace source (not a registry copy).`);
-    }
-    const names = allNames.filter((name) => !isWorkspaceOnly(name));
+    const names = [...new Set([...graph.installed.keys(), ...graph.declared.map((d) => d.name)])].sort();
     const registry = new Map(
         await Promise.all(names.map(async (name) => [name, await getRegistry(name)])),
     );
@@ -1127,6 +1115,59 @@ async function selfTest() {
         }
     }
 
+    // ── GREEN — an installed package's devDependencies are NOT pins ─────────
+    // 2026-10-05: associations@0.13.149 publishes `"@ai-matrx/kit": "latest"` in
+    // dependencies and the exact `0.22.1` only in devDependencies, which consumers
+    // never install. The guard read both and reported "STALE (upstream pin) ... no
+    // update command can move it" — false twice over.
+    {
+        const scratch = mkdtempSync(join(tmpdir(), 'matrx-devdep-'));
+        try {
+            const writePkg = (name, manifest) => {
+                const dir = join(scratch, 'node_modules', '@ai-matrx', name);
+                mkdirSync(dir, { recursive: true });
+                writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: `@ai-matrx/${name}`, ...manifest }));
+            };
+            writeFileSync(
+                join(scratch, 'package.json'),
+                JSON.stringify({ dependencies: { '@ai-matrx/agents': 'latest', '@ai-matrx/kit': 'latest' } }),
+            );
+            writePkg('kit', { version: '0.8.0' });
+            const stale = async (agentsManifest) => {
+                writePkg('agents', { version: '0.10.0', ...agentsManifest });
+                return auditGraph({ graph: collectGraph(scratch), getRegistry: fixtureRegistry, now });
+            };
+            const devOnly = await stale({
+                dependencies: { '@ai-matrx/kit': 'latest' },
+                devDependencies: { '@ai-matrx/kit': '0.8.0' },
+            });
+            expect(
+                'devDependencies exact version is not an upstream pin',
+                devOnly.failures.some((f) => f.includes('upstream pin')),
+                false,
+            );
+            expect(
+                'devDependencies-only stale transitive is plain STALE',
+                devOnly.failures.some((f) => f.startsWith('STALE: @ai-matrx/kit@0.8.0')),
+                true,
+            );
+            expect(
+                'plain STALE remedy runs the transitive pass',
+                devOnly.failures.some((f) => f.includes('--depth Infinity')),
+                true,
+            );
+            // Control: the same exact version in `dependencies` IS a real pin.
+            const realPin = await stale({ dependencies: { '@ai-matrx/kit': '0.8.0' } });
+            expect(
+                'dependencies exact version is still an upstream pin',
+                realPin.failures.some((f) => f.includes('STALE (upstream pin)')),
+                true,
+            );
+        } finally {
+            rmSync(scratch, { recursive: true, force: true });
+        }
+    }
+
     // ── GREEN — a clean graph passes ────────────────────────────────────────
     const clean = await auditGraph({
         graph: parsePnpmLock(PNPM_FIXTURE_CLEAN),
@@ -1134,21 +1175,6 @@ async function selfTest() {
         now,
     });
     expect('clean graph has no failures', clean.failures.length, 0);
-
-    // ── GREEN — an unpublished in-repo workspace member is never sent to npm ──
-    const workspaceGraph = emptyGraph();
-    addDeclared(workspaceGraph, '@ai-matrx/unpublished-local', 'dependencies', 'workspace:*', 'package.json');
-    const asked = [];
-    const workspaceOnly = await auditGraph({
-        graph: workspaceGraph,
-        getRegistry: async (name) => {
-            asked.push(name);
-            return { registryError: 'Command failed: npm view (E404)' };
-        },
-        now,
-    });
-    expect('workspace-only member has no failures', workspaceOnly.failures.length, 0);
-    expect('workspace-only member is not looked up on npm', asked.length, 0);
 
     // ── Whole-run exit codes through the real runCheck ──────────────────────
     const runWith = (graph, getRegistry = fixtureRegistry, getTarballReachable = async () => true) =>

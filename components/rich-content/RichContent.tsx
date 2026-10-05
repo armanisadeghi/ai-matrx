@@ -39,6 +39,13 @@ export function RichContent({
   headingAnchors = true,
   imagePolicy,
   gfmCell,
+  onContentChange,
+  applyLocalEdits,
+  analysisData,
+  messageId,
+  conversationId,
+  allowFullScreenEditor,
+  hideCopyButton,
 }: RichContentProps) {
   if (level === "inline") {
     return (
@@ -63,6 +70,13 @@ export function RichContent({
           depthCap={depthCap}
           variant={variant}
           imagePolicy={imagePolicy}
+          onContentChange={onContentChange}
+          applyLocalEdits={applyLocalEdits}
+          analysisData={analysisData}
+          messageId={messageId}
+          conversationId={conversationId}
+          allowFullScreenEditor={allowFullScreenEditor}
+          hideCopyButton={hideCopyButton}
         />
       </HeadingAnchorsProvider>
     );
@@ -85,6 +99,13 @@ export function RichContent({
       content={source}
       isStreamActive={isStreaming}
       className={className}
+      onContentChange={onContentChange}
+      applyLocalEdits={applyLocalEdits}
+      analysisData={analysisData}
+      messageId={messageId}
+      conversationId={conversationId}
+      allowFullScreenEditor={allowFullScreenEditor}
+      hideCopyButton={hideCopyButton}
     />
   );
   const rendered = (

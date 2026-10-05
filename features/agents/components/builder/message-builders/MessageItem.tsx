@@ -59,7 +59,7 @@ import type {
 } from "@ai-matrx/chat/agents/types/agent-message-types";
 import { useAgentUndoRedo } from "@ai-matrx/chat/agents/hooks/useAgentUndoRedo";
 import { useAgentBuilderSurfaceScope } from "@ai-matrx/chat/agents/hooks/useAgentBuilderSurfaceScope";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichContent } from "@/components/rich-content/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
 import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
 import { MessageFlagToggles } from "@ai-matrx/chat/agents/message-flags/MessageFlagToggles";
@@ -817,8 +817,10 @@ export function MessageItem({
             title="Click to edit"
           >
             {currentText ? (
-              <MarkdownStream imagePolicy="other"
-                content={currentText}
+              <RichContent
+                level="full"
+                imagePolicy="other"
+                source={currentText}
                 hideCopyButton
                 className="text-sm"
                 // Persist in-block edits (JSON reformat, code edits, etc.)
