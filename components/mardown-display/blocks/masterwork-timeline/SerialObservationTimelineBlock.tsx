@@ -192,6 +192,7 @@ export function SerialObservationTimelineBlock({
       ) : data.resolution ? (
         <div className="mt-2 border-t border-border pt-3">
           <DisclosureHeader
+            className="w-full"
             open={showResolution}
             onClick={() => setShowResolution((v) => !v)}
             icon={<Eye />}

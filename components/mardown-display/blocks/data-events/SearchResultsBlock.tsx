@@ -34,6 +34,7 @@ const SearchResultsBlock: React.FC<SearchResultsBlockProps> = ({
   return (
     <div className="rounded-lg border bg-card my-2 overflow-hidden">
       <DisclosureHeader
+        className="w-full"
         open={isExpanded}
         onClick={() => setIsExpanded((v) => !v)}
         icon={<Search />}

@@ -1430,6 +1430,7 @@ const PinnedChatsSection: React.FC<{
   return (
     <div className="mb-2">
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen((v) => !v)}
         variant="label"

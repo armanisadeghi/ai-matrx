@@ -314,6 +314,7 @@ function SharedChatsSection({
   return (
     <div className="px-1 py-1 border-t border-border/50 mt-1">
       <DisclosureHeader
+        className="w-full"
         open={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         variant="label"

@@ -80,6 +80,7 @@ export function ConversationTrashSection({
   return (
     <div className={cn("shrink-0 border-t border-border/60", className)}>
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen((v) => !v)}
         icon={<Trash2 />}

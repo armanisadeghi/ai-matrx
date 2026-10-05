@@ -201,6 +201,7 @@ export const Disclosure: React.FC<{
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-card">
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen((o) => !o)}
         icon={<Icon />}

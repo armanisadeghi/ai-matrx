@@ -57,6 +57,7 @@ export const DiffCollapsible: React.FC<DiffCollapsibleProps> = ({
       {/* Ultra-minimal header - VS Code style */}
       <div className="flex items-center bg-muted/30">
       <DisclosureHeader
+        className="w-full"
         open={isOpen}
         onClick={() => setIsOpen(!isOpen)}
         variant="label"

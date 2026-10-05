@@ -181,6 +181,7 @@ function JsonView({
   return (
     <div className="text-[10px]">
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen(!open)}
         title={label ?? "Value"}

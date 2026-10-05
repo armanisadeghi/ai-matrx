@@ -518,6 +518,7 @@ function ObservedMessageIds({ value }: { value: unknown }) {
   return (
     <div className="rounded border border-border/60 bg-background/50 overflow-hidden">
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen((v) => !v)}
         icon={<MessageSquare />}

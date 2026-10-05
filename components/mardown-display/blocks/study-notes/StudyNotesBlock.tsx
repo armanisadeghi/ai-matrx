@@ -119,6 +119,7 @@ export function StudyNotesGlossary({ terms }: { terms: GlossaryTerm[] }) {
   return (
     <div className="border-t border-border pt-3">
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen((value) => !value)}
         icon={<BookOpen />}

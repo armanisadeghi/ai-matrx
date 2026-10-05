@@ -463,6 +463,7 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                       className="rounded-lg border border-border bg-background/50 overflow-hidden"
                     >
                       <DisclosureHeader
+                        className="w-full"
                         open={isExpanded}
                         onClick={() => toggleCategory(category.id)}
                         title={category.name}

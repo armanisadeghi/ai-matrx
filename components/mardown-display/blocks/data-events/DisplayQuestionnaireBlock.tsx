@@ -70,6 +70,7 @@ const DisplayQuestionnaireBlock: React.FC<DisplayQuestionnaireBlockProps> = ({
   return (
     <div className="rounded-lg border bg-card my-2 overflow-hidden">
       <DisclosureHeader
+        className="w-full"
         open={isExpanded}
         onClick={() => setIsExpanded((v) => !v)}
         icon={<ClipboardList />}

@@ -91,6 +91,7 @@ export function PinnedAgentsSection({
   return (
     <div className="shrink-0 border-b border-border">
       <DisclosureHeader
+        className="w-full"
         open={open}
         onClick={() => setOpen((v) => !v)}
         variant="label"
