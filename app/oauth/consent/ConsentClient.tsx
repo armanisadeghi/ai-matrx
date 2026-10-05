@@ -28,6 +28,10 @@ import {
 // A caller with no name passes the email, whose single token yields its
 // first character: exactly what these copies did by hand.
 import { getInitials } from "@ai-matrx/kit/format";
+import { Select } from "@ai-matrx/design-system/controls";
+import { getUserOrganizations } from "@/features/organizations/service";
+import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
+import { setMcpConnectionOrganization } from "@/features/connectors/connectionOrganization";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -209,6 +213,10 @@ export default function ConsentClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [pageState, setPageState] = useState<PageState>({ kind: "loading" });
+  // THE CONNECTION'S ORGANIZATION (2026-10-04): the app's own selection, shown and changeable;
+  // approving files this AI app's work there, so the AI never has to ask.
+  const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
+  const [connectionOrgId, setConnectionOrgId] = useState("");
   const [actionLoading, setActionLoading] = useState<"approve" | "deny" | null>(
     null,
   );
@@ -324,12 +332,30 @@ export default function ConsentClient() {
   // -----------------------------------------------------------------------
   // Actions
   // -----------------------------------------------------------------------
+  useEffect(() => {
+    if (pageState.kind !== "consent") return;
+    const userId = pageState.user.sub;
+    void getUserOrganizations().then(
+      (list) => {
+        const rows = list.map((o) => ({ id: o.id, name: o.name }));
+        setOrgs(rows);
+        const stored = activeOrgCookie.read(userId);
+        const pick = rows.find((o) => o.id === stored)?.id ?? (rows.length === 1 ? rows[0].id : "");
+        setConnectionOrgId((current) => current || pick);
+      },
+      () => setOrgs([]),
+    );
+  }, [pageState]);
+
   async function handleApprove() {
     if (!authorizationId || actionLoading) return;
     setActionLoading("approve");
 
     try {
       const supabase = createClient();
+      if (connectionOrgId && pageState.kind === "consent") {
+        await setMcpConnectionOrganization(pageState.user.sub, connectionOrgId);
+      }
       const { data, error } =
         await supabase.auth.oauth.approveAuthorization(authorizationId);
 
@@ -459,6 +485,9 @@ export default function ConsentClient() {
               actionLoading={actionLoading}
               onApprove={handleApprove}
               onDeny={handleDeny}
+              orgs={orgs}
+              connectionOrgId={connectionOrgId}
+              onConnectionOrg={setConnectionOrgId}
             />
           )}
         </div>
@@ -586,12 +615,18 @@ function ConsentForm({
   actionLoading,
   onApprove,
   onDeny,
+  orgs,
+  connectionOrgId,
+  onConnectionOrg,
 }: {
   details: OAuthAuthorizationDetails;
   user: ApiClaimsUser;
   actionLoading: "approve" | "deny" | null;
   onApprove: () => void;
   onDeny: () => void;
+  orgs: { id: string; name: string }[];
+  connectionOrgId: string;
+  onConnectionOrg: (id: string) => void;
 }) {
   const scopes = parseScopes(details.scope);
   const clientDomain = getDomain(details.client.uri);
@@ -707,6 +742,22 @@ function ConsentForm({
           })}
         </ul>
       </div>
+
+      {/* Where this app works — the person's own selection, never asked again by the AI */}
+      {orgs.length > 1 ? (
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">Works in</span>
+          <Select
+            aria-label="Organization"
+            value={connectionOrgId}
+            onValueChange={onConnectionOrg}
+            options={[
+              ...(connectionOrgId ? [] : [{ value: "", label: "Pick an organization" }]),
+              ...orgs.map((o) => ({ value: o.id, label: o.name })),
+            ]}
+          />
+        </div>
+      ) : null}
 
       {/* Action buttons — always side by side */}
       <div className="flex gap-3">
