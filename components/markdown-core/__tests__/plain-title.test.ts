@@ -69,3 +69,27 @@ describe("stored titles display clean without rewriting storage", () => {
     expect(withDisplayTitle(clean, "name")).toBe(clean);
   });
 });
+
+describe("a kind in the content names the record by its label, never its JSON (KIND_NEVER_RAW)", () => {
+  const SET_JSON = JSON.stringify({
+    __kind: "flashcard_set",
+    title: "Cell biology",
+    cards: [{ __kind: "flashcard", front: "Powerhouse?", back: "Mitochondria" }],
+  });
+
+  it("a note holding a kind previews as the kind's label", () => {
+    const title = plainTitleFromMarkdown(SET_JSON);
+    expect(title).toContain("Cell biology");
+    expect(title).not.toContain("__kind");
+    expect(title).not.toContain("{");
+  });
+
+  it("a fenced kind and a cut-off kind are never printed raw either", () => {
+    expect(plainTitleFromMarkdown("```json\n" + SET_JSON + "\n```")).not.toContain("__kind");
+    expect(plainTitleFromMarkdown(SET_JSON.slice(0, 60))).not.toContain("__kind");
+  });
+
+  it("a stored title that is kind JSON displays as its label", () => {
+    expect(displayTitle(SET_JSON)).not.toContain("__kind");
+  });
+});
