@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T04:44:47.431Z",
+  "generated_at": "2026-10-05T05:09:17.443Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -49,6 +49,12 @@
       "filename": "agentsondata_c_a_chat_on_a_table_page_can_work_the_table.sql",
       "checksum": "a74d9b0f09d980c35d10d10e5b4bea42945b382c010bf875948883ad2be314e5",
       "applied_at": "2026-10-05 04:40:35.863395+00"
+    },
+    "migrations/campaign/agentsondata_d_link_a_record_is_not_a_relation_field.sql": {
+      "source": "matrx-frontend",
+      "filename": "agentsondata_d_link_a_record_is_not_a_relation_field.sql",
+      "checksum": "51bee300c8741322e141ea8e2bb5f2520beac28149264238242c77fa0e2a03b3",
+      "applied_at": "2026-10-05 05:08:47.052958+00"
     },
     "migrations/campaign/aggwithheld_a_withheld_measure_answers_as_withheld_never_an_error.sql": {
       "source": "matrx-frontend",
@@ -5486,11 +5492,23 @@
       "checksum": "120d58bb97996bf2c4fce6ffb583be90b6307dc7ef3d1c2a18cfd553ea9c7f14",
       "applied_at": "2026-10-05 04:31:43.425609+00"
     },
+    "migrations/campaign/scopesw2b_seven_old_scope_readers_nobody_calls_are_gone.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2b_seven_old_scope_readers_nobody_calls_are_gone.sql",
+      "checksum": "22e1792c72c2619a2bbca9f8921404bb542fc4df81ff8cd74a63284801c7a374",
+      "applied_at": "2026-10-05 04:50:17.031918+00"
+    },
     "migrations/campaign/scopesw2b_the_scope_lists_and_class_settings_read_the_store.sql": {
       "source": "matrx-frontend",
       "filename": "scopesw2b_the_scope_lists_and_class_settings_read_the_store.sql",
       "checksum": "d3fb4fb4d1f1788d4e0533e9ec9cde4ec160fef969bc52ad4681b4eb81bba5b2",
       "applied_at": "2026-10-05 04:31:50.175532+00"
+    },
+    "migrations/campaign/scopesw2c_two_old_scope_table_comments_are_reworded.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesw2c_two_old_scope_table_comments_are_reworded.sql",
+      "checksum": "5a0a0bf8a152aedafb8e65d222599226ed537430635721b32e607f521b3ebc4a",
+      "applied_at": "2026-10-05 05:09:15.576063+00"
     },
     "migrations/campaign/scopesw2w_a_scope_type_under_a_type_keeps_its_parent_in_the_store.sql": {
       "source": "matrx-frontend",
