@@ -60,8 +60,8 @@ it("names each delivered item, who named it, and that both sides delivered it", 
   });
   const rows = Array.from(view.querySelectorAll("[data-system-item]")).map((r) => r.textContent);
   expect(rows).toEqual([
-    "ai_models_guidance — named by the agent's variable model_selection_guidance · both sides",
-    "current_date — named by the platform's default list · both sides",
+    "AI Models Guidance — named by the agent's variable model_selection_guidance · both sides",
+    "Current Date — named by the platform's default list · both sides",
   ]);
   expect(view.textContent).toContain("1 unnamed System item was not fed and not evaluated: company_name.");
 });

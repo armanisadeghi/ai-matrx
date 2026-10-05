@@ -261,3 +261,21 @@ export function _resetDiagnosticsForTests(): void {
   early = [];
   localIds = 0;
 }
+
+/**
+ * A host registration (UI slot, usage gate, model-class hooks) was never made, so a stand-in
+ * is running: say so ONCE, to the console and the host's diagnostics port (Law 4).
+ */
+export function reportUnregisteredHostSlot(name: string, degraded: string): void {
+  const message = `The host registered no "${name}" for the chat package, so ${degraded}.`;
+  if (!announceOnce(`chat-host-slot:${name}`, message)) return;
+  captureError({
+    source: "surface-registration",
+    code: "chat-host-slot-unregistered",
+    message,
+    hint: "Register it before the first chat render (matrx-frontend: providers/chatUiRegistration.ts, imported by ChatHostAdapter).",
+    recoverable: true,
+    level: "high",
+    callSite: `chat-host-slot:${name}`,
+  });
+}

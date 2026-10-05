@@ -6,8 +6,9 @@
  *
  * The host registers once at startup with `registerChatUi({...})`; package code
  * imports the named wrappers below. A component the host did not register renders
- * nothing and announces itself once; a function or hook it did not register throws,
- * naming the slot. A test registers a stand-in the same way (`registerChatUi`).
+ * nothing (or its plain stand-in, marked `data-chat-slot-fallback`) and reports itself
+ * ONCE through the host diagnostics port (never silent: Law 4); a function or hook it
+ * did not register throws, naming the slot (or runs its declared stand-in, reported once). A test registers a stand-in the same way (`registerChatUi`).
  *
  * Slot shapes are the host component's own props — package call sites keep passing
  * exactly what they passed when they imported the component directly.
@@ -15,6 +16,7 @@
 
 import { createElement, type ComponentType, type ReactNode } from "react";
 import { announceOnce } from "./errors";
+import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyComponent = ComponentType<any>;
@@ -74,10 +76,10 @@ export function resetChatUiForTests(): void {
 
 function slotComponent<K extends keyof ChatUiSlots>(name: K, Fallback?: AnyComponent): ChatUiSlots[K] {
   const Wrapper = (props: object) => {
-    const Impl = (slots[name] as AnyComponent | undefined) ?? Fallback;
+    const Impl = slots[name] as AnyComponent | undefined;
     if (!Impl) {
-      announceOnce(`chat-ui-slot:${name}`, `The host registered no "${name}" component, so it renders nothing here.`);
-      return null;
+      reportUnregistered(name, Fallback ? "a plain stand-in is drawn" : "it renders nothing here");
+      return Fallback ? createElement(Fallback, props) : null;
     }
     return createElement(Impl, props);
   };
@@ -87,16 +89,18 @@ function slotComponent<K extends keyof ChatUiSlots>(name: K, Fallback?: AnyCompo
 
 function slotFn<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatUiSlots[K] {
   const fn = (...args: unknown[]) => {
-    const impl = (slots[name] as AnyFn | undefined) ?? fallback;
-    if (!impl) throw new Error(`The host registered no "${name}" for the chat package (registerChatUi).`);
-    return impl(...args);
+    const registered = slots[name] as AnyFn | undefined;
+    if (registered) return registered(...args);
+    if (!fallback) throw new Error(`The host registered no "${name}" for the chat package (registerChatUi).`);
+    reportUnregistered(name, "its plain stand-in runs");
+    return fallback(...args);
   };
   return fn as ChatUiSlots[K];
 }
 
 /** A host with no rich renderer shows the text as it is. */
 export const RichContent = slotComponent("RichContent", ({ source, className }: { source?: unknown; className?: string }) =>
-  createElement("div", { className }, typeof source === "string" ? source : ""),
+  createElement("div", { className, "data-chat-slot-fallback": "RichContent" }, typeof source === "string" ? source : ""),
 );
 export const CopyButtons = slotComponent("CopyButtons");
 export const InfoHint = slotComponent("InfoHint");

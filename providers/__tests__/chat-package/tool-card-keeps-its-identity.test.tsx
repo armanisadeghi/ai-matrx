@@ -69,10 +69,16 @@ jest.mock("next/dynamic", () => ({
   default: () => () => null,
 }));
 // The engine loads through next/dynamic in the app; render it directly here.
-jest.mock("@/components/MarkdownStream", () => ({
-  __esModule: true,
-  default: jest.requireActual("@/components/MarkdownStreamImpl").default,
-}));
+// Resolved at render, not at mock time: the registered app UI (chatUiRegistration, imported
+// first) loads this module while MarkdownStreamImpl is still mid-load, so an eager
+// requireActual here would capture `undefined`. The wrapper is one stable component type.
+jest.mock("@/components/MarkdownStream", () => {
+  const MarkdownStreamForTest = (props: Record<string, unknown>) => {
+    const Impl = jest.requireActual("@/components/MarkdownStreamImpl").default;
+    return <Impl {...props} />;
+  };
+  return { __esModule: true, default: MarkdownStreamForTest };
+});
 jest.mock("next/cache", () => ({
   revalidatePath: jest.fn(),
   revalidateTag: jest.fn(),

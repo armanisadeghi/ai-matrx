@@ -6,6 +6,7 @@
  * labels nothing. matrx-frontend registers its hooks (`providers/chatUiRegistration.ts`).
  */
 import type { Json } from "./db-types";
+import { reportUnregisteredHostSlot } from "./diagnostics";
 
 export type ModelClassControls =
   | undefined
@@ -34,6 +35,12 @@ export function registerChatModelClassHooks(next: ChatModelClassHooks | null): v
   hooks = next ?? NO_REGISTRY;
 }
 
+function current(): ChatModelClassHooks {
+  if (hooks === NO_REGISTRY)
+    reportUnregisteredHostSlot("modelClassHooks", "pinned model classes keep the model's own controls and show no class labels");
+  return hooks;
+}
+
 export const useModelClassControls: ChatModelClassHooks["useModelClassControls"] = (modelId, offeringId) =>
-  hooks.useModelClassControls(modelId, offeringId);
-export const useModelClassLabels: ChatModelClassHooks["useModelClassLabels"] = () => hooks.useModelClassLabels();
+  current().useModelClassControls(modelId, offeringId);
+export const useModelClassLabels: ChatModelClassHooks["useModelClassLabels"] = () => current().useModelClassLabels();

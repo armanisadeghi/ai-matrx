@@ -46,7 +46,11 @@ jest.mock("@ai-matrx/chat/host/server/run-wait", () => ({
 jest.mock("@ai-matrx/chat/host/server/organization-admission", () => ({
   peekSelectedOrganizationId: () => null,
 }));
-jest.mock("@/utils/auth/getUserId", () => ({ getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7" }));
+// The registered app UI (chatUiRegistration) loads the associations store, which needs `requireUserId` too.
+jest.mock("@/utils/auth/getUserId", () => ({
+  getUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7",
+  requireUserId: () => "a1e2c3d4-0000-4000-8000-00000000a1e7",
+}));
 jest.mock("@/components/matrx/buttons/InlineCopyButton", () => ({
   InlineCopyButton: () => null,
 }));
@@ -262,7 +266,7 @@ describe("ContextCompareView", () => {
       view.host.querySelector('[data-difference-class="old path delivered without a check"]'),
     ).not.toBeNull();
     expect(text).toContain("No defects");
-    expect(text).toContain("tech_stack");
+    expect(text).toContain("Tech Stack");
     // The values the two resolvers answered are diffed, not highlighted by hand.
     const values = view.host.querySelector('[data-diff-viewer="values"] [data-diff-stub]');
     expect(values?.getAttribute("data-original")).toBe(compare.old.block);

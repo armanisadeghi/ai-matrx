@@ -4,6 +4,7 @@
  * generic readable rendering (never a JSON dump, never the `__kind` key).
  */
 import { readObjectKind } from "@ai-matrx/content-ir";
+import { reportUnregisteredHostSlot } from "../../../host/diagnostics";
 import { genericKindMarkdown } from "./kind-markdown-utils";
 
 type KindValueToMarkdown = (value: Record<string, unknown>, fallbackKind?: string) => string;
@@ -20,6 +21,7 @@ export function kindValueToMarkdown(
   fallbackKind = "artifact",
 ): string {
   if (registered) return registered(value, fallbackKind);
+  reportUnregisteredHostSlot("kindValueMarkdown", "kind values render through the generic readable form, not the host's kind registry");
   const nested = (child: Record<string, unknown>) => kindValueToMarkdown(child);
   return genericKindMarkdown(readObjectKind(value) ?? fallbackKind, value, nested);
 }

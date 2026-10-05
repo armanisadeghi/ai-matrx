@@ -7,6 +7,8 @@
  * its entitlements gate (`providers/chatUiRegistration.ts`).
  */
 
+import { reportUnregisteredHostSlot } from "./diagnostics";
+
 export const USAGE_LIMIT_REACHED = "usage_limit_reached" as const;
 
 export type UsageRefusalKind = "person" | "guest";
@@ -39,16 +41,22 @@ const OPEN_GATE: ChatUsageGate = {
 
 let gate: ChatUsageGate = OPEN_GATE;
 
+/** The open gate answers for a host that registered none; it says so once. */
+function current(): ChatUsageGate {
+  if (gate === OPEN_GATE) reportUnregisteredHostSlot("usageGate", "every AI call is allowed and no usage refusal is recognised");
+  return gate;
+}
+
 export function registerChatUsageGate(next: ChatUsageGate | null): void {
   gate = next ?? OPEN_GATE;
 }
 
 export const checkUsageBeforeAiCall: ChatUsageGate["checkUsageBeforeAiCall"] = (...a) =>
-  gate.checkUsageBeforeAiCall(...a);
-export const noteAiCallEnded: ChatUsageGate["noteAiCallEnded"] = (...a) => gate.noteAiCallEnded(...a);
+  current().checkUsageBeforeAiCall(...a);
+export const noteAiCallEnded: ChatUsageGate["noteAiCallEnded"] = (...a) => current().noteAiCallEnded(...a);
 export const applyServerUsageState: ChatUsageGate["applyServerUsageState"] = (...a) =>
-  gate.applyServerUsageState(...a);
+  current().applyServerUsageState(...a);
 export const classifyUsageRefusal: ChatUsageGate["classifyUsageRefusal"] = (...a) =>
-  gate.classifyUsageRefusal(...a);
-export const applyUsageRefusal: ChatUsageGate["applyUsageRefusal"] = (...a) => gate.applyUsageRefusal(...a);
-export const usageRefusalCode: ChatUsageGate["usageRefusalCode"] = (...a) => gate.usageRefusalCode(...a);
+  current().classifyUsageRefusal(...a);
+export const applyUsageRefusal: ChatUsageGate["applyUsageRefusal"] = (...a) => current().applyUsageRefusal(...a);
+export const usageRefusalCode: ChatUsageGate["usageRefusalCode"] = (...a) => current().usageRefusalCode(...a);
