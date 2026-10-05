@@ -89,12 +89,16 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
   skill ids and keeps no resolver (`resolveKindSkillId` is gone; Quickset chips toggle the same `outputKinds`). Picks
   persist at `chat.conversation.metadata.run_configuration.outputKinds` / `.outputTypes` (camelCase — the server reads
   `outputKinds`), restored on load and fork; loading an old chat moves kind skills out of `addedSkills` into
-  `outputKinds` (`migrateKindSkills`). **Locked agent**: when the agent's output schema fixes the root `__kind`
-  (`const`/`enum`, read with `fetchAgentOutputSchemas`; mirror of the server's `locked_shapes`) the Shapes list is
-  replaced by the agent's shape(s) marked locked with a short reason, and any pick the agent would refuse is listed
-  with a remove row. The server refusal (`error_type: output_kind_locked`) renders as the normal assistant error with
-  the server's `user_message`; the typed message is already saved server-side. A `output_kind_without_skill` stream
-  warning renders inline in the turn. The Output TYPES "not sent" label stays (types are still not sent). Pure logic:
+  `outputKinds` (`migrateKindSkills`). **Locked agent** (rule 23, 2026-10-05): when the agent's output schema fixes the root `__kind`
+  (`const`/`enum`, read with `fetchAgentOutputSchemas`; mirror of the server's `locked_shapes`) the agent answers in its
+  own shape(s) and a different pick is NEVER an error. The Shapes panel stays fully usable (search, tabs, rows) with the
+  locked shape(s) listed first as locked rows. A pick outside the lock is allowed and shows an inline warning ("This
+  agent answers as Quiz Set only", `lockedPickWarning`, ≤60 chars) on its row and once in the panel — at pick time and
+  for an already-saved pick alike. The pill keeps naming the locked shape and shows a small warning mark while
+  conflicting picks exist. The server drops conflicting picks for that run (the saved picks are not rewritten, so
+  switching back to an unlocked agent keeps them), proceeds, and streams an `output_kind_locked` WARNING
+  (`metadata.agent_shapes` / `dropped_shapes`) that renders inline in the turn like `output_kind_without_skill`.
+  There is no error path for it (`friendlyStreamError` has no `output_kind_locked` entry). The Output TYPES "not sent" label stays (types are still not sent). Pure logic:
   `output-selection.ts` (test `__tests__/composer-output-selection.test.ts`).
 - `ComposerEffortPill` — **Auto = no override** (the agent's own setting runs, named in the Auto row); any other
   choice is sent as exactly that `reasoning_effort` override; the literal "auto" is never sent. `ComposerMenu` (the row primitives), `ComposerSplash`
@@ -249,3 +253,6 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 - **2026-10-04** — chat-shape-picks lane C: picks travel as `output_kinds` (every request) and persist on the chat;
   shape "no skill" labels removed; locked-agent state; shape descriptions in picker rows; unknown-shape notice
   promoted inline.
+- **2026-10-05** — rule 23 change: a locked agent no longer refuses a different shape pick; the picker stays usable,
+  conflicting picks warn in place (row, panel, pill mark), the server drops them for the run and warns
+  (`output_kind_locked` is an inline stream warning, not an error).
