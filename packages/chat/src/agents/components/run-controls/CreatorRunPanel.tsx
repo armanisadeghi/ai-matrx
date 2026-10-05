@@ -161,18 +161,7 @@ export function CreatorRunPanel({
         <div className="flex items-center border-b border-border min-w-0">
           <div className="flex items-center gap-0 overflow-x-auto min-w-0 flex-1 scrollbar-none">
             {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-2 py-1.5 text-[11px] font-medium transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${
-                  activeTab === tab.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
+              <Button variant="quiet" pressed={!!(activeTab === tab.id)} key={tab.id} onClick={() => setActiveTab(tab.id)} className="-mb-px shrink-0">{tab.label}</Button>
             ))}
           </div>
 

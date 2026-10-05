@@ -205,17 +205,7 @@ function ToggleMicroInput({
   return (
     <div className="flex gap-1">
       {labels.map((label) => (
-        <button
-          key={label}
-          className={`flex-1 h-7 text-[11px] rounded-lg border transition-colors ${
-            value === label
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-muted/50 text-foreground border-border hover:bg-muted"
-          }`}
-          onClick={() => onChange(label)}
-        >
-          {label}
-        </button>
+        <Button variant="outline" pressed={!!(value === label)} key={label} onClick={() => onChange(label)} className="flex-1">{label}</Button>
       ))}
     </div>
   );
@@ -249,17 +239,7 @@ function ChipsMicroInput({
   return (
     <div className="flex flex-wrap gap-1">
       {options.map((opt) => (
-        <button
-          key={opt}
-          className={`h-6 px-2 text-[10px] rounded-md border transition-colors ${
-            isSelected(opt)
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-muted/50 text-foreground border-border hover:bg-muted"
-          }`}
-          onClick={() => handleClick(opt)}
-        >
-          {opt}
-        </button>
+        <Button variant="outline" pressed={!!(isSelected(opt))} key={opt} onClick={() => handleClick(opt)}>{opt}</Button>
       ))}
     </div>
   );

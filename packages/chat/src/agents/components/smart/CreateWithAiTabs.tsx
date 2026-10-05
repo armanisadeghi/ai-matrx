@@ -34,6 +34,7 @@ import {
   logProjectCreateAiStage,
 } from "@ai-matrx/chat/ui/projectCreateAiDebug";
 import { AgentRunWrapper } from "./AgentRunWrapper";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export type CreateWithAiMode = string;
 
@@ -103,21 +104,7 @@ function ModeButton({
   isMobile: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
-        isMobile && "min-h-[40px]",
-        active
-          ? "bg-background text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-    >
-      <Icon className="h-4 w-4 shrink-0" />
-      {label}
-    </button>
+    <Button variant="quiet" pressed={!!(active)} icon={<Icon />} onClick={onClick} aria-pressed={active} className="flex-1">{label}</Button>
   );
 }
 

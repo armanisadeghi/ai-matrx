@@ -311,17 +311,6 @@ function ToolbarButton({
   active?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={tooltip}
-      className={`h-6 w-6 flex items-center justify-center rounded-md transition-colors ${
-        active
-          ? "text-primary bg-primary/10"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-      }`}
-    >
-      <Icon className="w-3 h-3" />
-    </button>
+    <Button variant="quiet" pressed={!!(active)} icon={<Icon />} onClick={onClick} title={tooltip} aria-label={tooltip} />
   );
 }

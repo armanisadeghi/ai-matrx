@@ -282,23 +282,7 @@ function BoundChip({
     <Popover open={open} onOpenChange={setOpen}>
       <span className="inline-flex max-w-[280px] items-center rounded-full border border-border bg-muted/60 text-xs text-foreground">
         <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "inline-flex min-w-0 items-center gap-1.5 rounded-l-full py-0.5 pl-2 pr-1 transition-colors hover:bg-muted",
-              !activeScopeId && "rounded-r-full pr-2",
-            )}
-            title={`${humanizeIdentifier(info.name)} — auto-filled from ${scopeLabel}. Click to override.`}
-          >
-            <Link2 className="h-3 w-3 shrink-0 opacity-70" />
-            <span className="font-medium shrink-0">
-              {humanizeIdentifier(info.name)}
-            </span>
-            <span className="text-muted-foreground truncate">
-              {displayValue || "—"}
-            </span>
-            <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-          </button>
+          <Button variant="quiet" icon={<Link2 />} iconEnd={<ChevronDown />} title={`${humanizeIdentifier(info.name)} — auto-filled from ${scopeLabel}. Click to override.`} className="min-w-0">{humanizeIdentifier(info.name)} {displayValue || "—"}</Button>
         </PopoverTrigger>
         {activeScopeId && (
           <Button variant="quiet" icon={<X />} onClick={handleRemoveScope} aria-label={`Stop using ${scopeLabel}`} title={`Stop using ${scopeLabel} — ${humanizeIdentifier(info.name)} goes back to a normal input`} className="shrink-0" />

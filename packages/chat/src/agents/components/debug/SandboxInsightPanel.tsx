@@ -20,6 +20,7 @@ import { resolveAgentSandboxRef } from "../../../compute/targets";
 import { SandboxDiagnosticsPanel } from "../../../compute/targets";
 import { SimpleTerminal } from "@ai-matrx/chat/host/ui-slots";
 import { SandboxFileViewer } from "./SandboxFileViewer";
+import { Button } from "@ai-matrx/design-system/controls";
 
 type View = "files" | "terminal" | "viewer";
 
@@ -78,39 +79,9 @@ export function SandboxInsightPanel({
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          <button
-            onClick={() => setView("files")}
-            className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
-              view === "files"
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent/50"
-            }`}
-          >
-            <FolderTree className="h-3.5 w-3.5" />
-            Files &amp; status
-          </button>
-          <button
-            onClick={() => setView("terminal")}
-            className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
-              view === "terminal"
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent/50"
-            }`}
-          >
-            <TerminalSquare className="h-3.5 w-3.5" />
-            Terminal
-          </button>
-          <button
-            onClick={() => setView("viewer")}
-            className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
-              view === "viewer"
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent/50"
-            }`}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            File
-          </button>
+          <Button variant="quiet" pressed={!!(view === "files")} icon={<FolderTree />} onClick={() => setView("files")}>Files &amp; status</Button>
+          <Button variant="quiet" pressed={!!(view === "terminal")} icon={<TerminalSquare />} onClick={() => setView("terminal")}>Terminal</Button>
+          <Button variant="quiet" pressed={!!(view === "viewer")} icon={<FileText />} onClick={() => setView("viewer")}>File</Button>
         </div>
       </div>
 

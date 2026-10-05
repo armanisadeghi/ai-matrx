@@ -1,5 +1,6 @@
 import React from "react";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface PillToggleInputProps {
   value: string;
@@ -37,24 +38,7 @@ export function PillToggleInput({
       {options.map((option) => {
         const isSelected = value === option;
         return (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={isSelected}
-            onClick={() => onChange(option)}
-            className={`
-              min-w-0 flex-1 ${height} ${px} ${textSize} whitespace-normal break-words rounded font-medium leading-tight transition-all duration-150
-              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring
-              ${
-                isSelected
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground"
-              }
-            `}
-          >
-            {option}
-          </button>
+          <Button variant="quiet" pressed={!!(isSelected)} key={option} role="radio" aria-checked={isSelected} onClick={() => onChange(option)} className="min-w-0 flex-1">{option}</Button>
         );
       })}
     </div>

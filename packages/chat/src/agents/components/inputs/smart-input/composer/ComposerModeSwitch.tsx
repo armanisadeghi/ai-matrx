@@ -34,6 +34,7 @@ import {
   type ComposerMode,
 } from "./composer-types";
 import { useComposerMode } from "./useComposerMode";
+import { Button } from "@ai-matrx/design-system/controls";
 
 interface ComposerModeSwitchProps {
   /** Server-read "last mode used" cookie, for a first paint with no flash. */
@@ -74,25 +75,7 @@ export function ComposerModeSwitch({
       {COMPOSER_MODES.map((value) => {
         const on = value === mode;
         return (
-          <button
-            key={value}
-            type="button"
-            role={interactive ? "tab" : undefined}
-            aria-selected={interactive ? on : undefined}
-            tabIndex={interactive ? undefined : -1}
-            onClick={interactive ? () => setMode(value) : undefined}
-            className={cn(
-              "whitespace-nowrap font-medium transition-colors",
-              panel
-                ? "h-[22px] rounded-md px-2 text-xs"
-                : "h-7 rounded-lg px-3.5 text-sm",
-              on
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {COMPOSER_MODE_LABELS[value]}
-          </button>
+          <Button variant="quiet" pressed={!!(on)} key={value} role={interactive ? "tab" : undefined} aria-selected={interactive ? on : undefined} tabIndex={interactive ? undefined : -1} onClick={interactive ? () => setMode(value) : undefined}>{COMPOSER_MODE_LABELS[value]}</Button>
         );
       })}
     </div>

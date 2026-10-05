@@ -28,6 +28,7 @@ import { usePathname, useSearchParams } from "../../host/navigation";
 import { ContextGaugeWidget } from "./ContextGaugeWidget";
 import { ConversationPageMenu } from "../../agents/components/chat/ConversationPageMenu";
 import { selectIsAuthenticated } from "../../host/identity";
+import { Button } from "@ai-matrx/design-system/controls";
 
 export default function ChatHeaderControls() {
   const dispatch = useAppDispatch();
@@ -63,36 +64,24 @@ export default function ChatHeaderControls() {
           )}
           {isAdmin && (
             <>
-              <button
-                onClick={() => dispatch(setUseBlockMode(!blockMode))}
-                title={
+              <Button variant="quiet" pressed={!!(blockMode)} icon={<Blocks />} onClick={() => dispatch(setUseBlockMode(!blockMode))} title={
                   blockMode
                     ? "Block mode ON — click to disable."
                     : "Block mode OFF — click to enable."
-                }
-                className={`p-1.5 rounded-md transition-colors ${
+                } aria-label={
                   blockMode
-                    ? "text-violet-600 dark:text-violet-400 bg-violet-500/15 border border-violet-500/30"
-                    : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-accent/50 border border-transparent"
-                }`}
-              >
-                <Blocks className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => dispatch(setUseSnapshot(!snapshot))}
-                title={
+                    ? "Block mode ON — click to disable."
+                    : "Block mode OFF — click to enable."
+                } />
+              <Button variant="quiet" pressed={!!(snapshot)} icon={<Camera />} onClick={() => dispatch(setUseSnapshot(!snapshot))} title={
                   snapshot
                     ? "Snapshot ON — every request stamps snapshot:true. Click to disable."
                     : "Snapshot OFF — click to capture full server-side snapshots per request."
-                }
-                className={`p-1.5 rounded-md transition-colors ${
+                } aria-label={
                   snapshot
-                    ? "text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/15 border border-fuchsia-500/30"
-                    : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-accent/50 border border-transparent"
-                }`}
-              >
-                <Camera className="h-3.5 w-3.5" />
-              </button>
+                    ? "Snapshot ON — every request stamps snapshot:true. Click to disable."
+                    : "Snapshot OFF — click to capture full server-side snapshots per request."
+                } />
             </>
           )}
 

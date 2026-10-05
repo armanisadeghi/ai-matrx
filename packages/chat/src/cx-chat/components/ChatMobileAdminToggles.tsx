@@ -4,7 +4,7 @@
 //
 // Migrated to pure Redux: no context dependencies.
 
-import { Chip } from "@ai-matrx/design-system/controls";
+import { Chip, Button } from "@ai-matrx/design-system/controls";
 import { Blocks, Camera } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import {
@@ -64,36 +64,24 @@ export default function ChatMobileAdminToggles() {
           <button type="button" onClick={handleToggleLocalhost} />
         </Chip>
       )}
-      <button
-        onClick={handleToggleBlockMode}
-        title={
+      <Button variant="quiet" pressed={!!(blockMode)} icon={<Blocks />} onClick={handleToggleBlockMode} title={
           blockMode
             ? "Block mode ON — using agents-blocks endpoint. Click to disable."
             : "Block mode OFF — using standard agents endpoint. Click to enable."
-        }
-        className={`p-1.5 rounded-md transition-colors ${
+        } aria-label={
           blockMode
-            ? "text-violet-600 dark:text-violet-400 bg-violet-500/15 border border-violet-500/30"
-            : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-accent/50 border border-transparent"
-        }`}
-      >
-        <Blocks className="h-3.5 w-3.5" />
-      </button>
-      <button
-        onClick={handleToggleSnapshot}
-        title={
+            ? "Block mode ON — using agents-blocks endpoint. Click to disable."
+            : "Block mode OFF — using standard agents endpoint. Click to enable."
+        } />
+      <Button variant="quiet" pressed={!!(snapshot)} icon={<Camera />} onClick={handleToggleSnapshot} title={
           snapshot
             ? "Snapshot ON — every request stamps snapshot:true. Click to disable."
             : "Snapshot OFF — click to capture full server-side snapshots per request."
-        }
-        className={`p-1.5 rounded-md transition-colors ${
+        } aria-label={
           snapshot
-            ? "text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-500/15 border border-fuchsia-500/30"
-            : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-accent/50 border border-transparent"
-        }`}
-      >
-        <Camera className="h-3.5 w-3.5" />
-      </button>
+            ? "Snapshot ON — every request stamps snapshot:true. Click to disable."
+            : "Snapshot OFF — click to capture full server-side snapshots per request."
+        } />
     </div>
   );
 }
