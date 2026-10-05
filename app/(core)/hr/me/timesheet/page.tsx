@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyTimesheetContext } from "@/features/hr/me/MyTimesheetContext";
 
 /**
@@ -41,9 +41,14 @@ export default async function MyTimesheetPage({
 
   return (
     <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">My timesheet</h1>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/hr/me"
+        parents={[
+          { label: "HR", href: "/hr" },
+          { label: "My info", href: "/hr/me" },
+        ]}
+        record={{ name: "My timesheet" }}
+      />
       {/* `(core)` body law: h-full overflow-hidden, with the scroll owned inside — and the
           route's own `pt-[var(--shell-header-h)]`, because `.shell-main` starts BEHIND the
           transparent shell header. Without it this page's first row was painted across the

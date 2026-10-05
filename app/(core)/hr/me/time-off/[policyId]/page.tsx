@@ -10,7 +10,7 @@
 // today for the signed-in person, and `hr.leave_ledger_view` re-checks the viewer
 // itself. A route that took an employment id here would be an access surface.
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyLeaveLedgerSurface } from "@/features/hr/leave/components/MyLeaveLedgerSurface";
 import { notFound } from "next/navigation";
 import { isFullUuid } from "@/utils/supabase-search";
@@ -33,9 +33,15 @@ export default async function HrMeTimeOffLedgerPage({
 
   return (
     <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">Time-off ledger</h1>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/hr/me/time-off"
+        parents={[
+          { label: "HR", href: "/hr" },
+          { label: "My info", href: "/hr/me" },
+          { label: "My time off", href: "/hr/me/time-off" },
+        ]}
+        record={{ name: "Time-off ledger" }}
+      />
       <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <MyLeaveLedgerSurface policyId={policyId} />

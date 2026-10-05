@@ -12,7 +12,7 @@
 // through `hr.employee.current_employment_id`. Replace the placeholder body;
 // keep the shell.
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MePillarSurface } from "@/features/hr/me/MeSurfaceShell";
 
 export const metadata = { title: "My documents" };
@@ -20,9 +20,14 @@ export const metadata = { title: "My documents" };
 export default function HrMeDocumentsPage() {
   return (
     <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">My documents</h1>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/hr/me"
+        parents={[
+          { label: "HR", href: "/hr" },
+          { label: "My info", href: "/hr/me" },
+        ]}
+        record={{ name: "My documents" }}
+      />
       <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/*

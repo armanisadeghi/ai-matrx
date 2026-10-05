@@ -6,7 +6,7 @@
 
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { MyInfoSurface } from "@/features/hr/me/MyInfoSurface";
 import { HrLoading } from "@/features/hr/shared/HrStates";
 
@@ -21,9 +21,13 @@ export default async function HrMePage({
 
   return (
     <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">My info</h1>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/hr"
+        parents={[
+          { label: "HR", href: "/hr" },
+        ]}
+        record={{ name: "My info" }}
+      />
       <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <Suspense fallback={<HrLoading variant="profile" />}>

@@ -6,7 +6,7 @@
 
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { CaseSurface } from "@/features/hr/people/relations/components/CaseSurface";
 import { HrLoading } from "@/features/hr/shared/HrStates";
 import type { HrCaseKind } from "@/features/hr/people/relations/types";
@@ -36,9 +36,14 @@ export default async function HrRelationsCasePage({
 
   return (
     <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">Case</h1>
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/hr/people/relations"
+        parents={[
+          { label: "HR", href: "/hr" },
+          { label: "Employee relations", href: "/hr/people/relations" },
+        ]}
+        record={{ name: "Case" }}
+      />
       <div className="flex h-full flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <Suspense fallback={<HrLoading variant="panel" />}>

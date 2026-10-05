@@ -9,8 +9,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ExternalLink, Link2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import {
   useResolvedOrganization,
@@ -129,15 +128,14 @@ export default function OrgMandatesPage() {
 
   return (
     <>
-      <PageHeader>
-        <CrumbTrailHeader
-          trail={[
-            { label: organization.name, href: `/organizations/${orgId}` },
-            { label: "Settings", href: `/organizations/${orgId}/settings` },
-            { label: "Mandates" },
-          ]}
-        />
-      </PageHeader>
+      <RecordPageHeader
+        backHref={`/organizations/${orgId}/settings`}
+        parents={[
+          { label: organization.name, href: `/organizations/${orgId}`},
+          { label: "Settings", href: `/organizations/${orgId}/settings`},
+        ]}
+        record={{ name: "Mandates" }}
+      />
       {/* The Home badge on every row: this page lists the caller's FULL
           corpus (an org's admins bind the platform's jobs here), so a row has
           to say whether the platform ships it or this organization added it. */}

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { HrDecisionPanel } from "@/features/hr/tasks/components/HrDecisionPanel";
 import { notFound } from "next/navigation";
 import { isFullUuid } from "@/utils/supabase-search";
@@ -31,9 +31,14 @@ export default async function HrTaskInstancePage({
 
     return (
         <>
-            <PageHeader>
-                <h1 className="text-sm font-semibold">HR request</h1>
-            </PageHeader>
+            <RecordPageHeader
+              backHref="/hr/tasks"
+              parents={[
+                { label: "HR", href: "/hr" },
+                { label: "HR tasks", href: "/hr/tasks" },
+              ]}
+              record={{ name: "HR request" }}
+            />
             {/*
               The shell-header offset every `(core)` route owns for itself. Without it the
               panel's own top row — the "← All HR tasks" link and the restricted-record

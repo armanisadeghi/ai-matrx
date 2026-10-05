@@ -2,8 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { useResolvedOrganization, useUserRole } from "@/features/organizations/hooks";
 import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
 import { hrSettingsHref } from "@/features/hr/routes";
@@ -44,11 +43,14 @@ export default function OrgConfigurationPage() {
   const canEdit = isOwner || isAdmin;
 
   return <>
-    <PageHeader><CrumbTrailHeader trail={[
-      { label: organization.name, href: `/organizations/${orgId}` },
-      { label: "Settings", href: `/organizations/${orgId}/settings` },
-      { label: "Configuration" },
-    ]} /></PageHeader>
+    <RecordPageHeader
+      backHref={`/organizations/${orgId}/settings`}
+      parents={[
+        { label: organization.name, href: `/organizations/${orgId}`},
+        { label: "Settings", href: `/organizations/${orgId}/settings`},
+      ]}
+      record={{ name: "Configuration" }}
+    />
     <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]"><div className="mx-auto max-w-4xl space-y-8 p-6">
       <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
         <p className="font-medium">{organization.name}&rsquo;s configuration, on top of the platform&rsquo;s.</p>

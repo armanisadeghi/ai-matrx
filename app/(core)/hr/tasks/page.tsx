@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { HrTaskInbox } from "@/features/hr/tasks/components/HrTaskInbox";
 import type { HrInboxScope } from "@/features/hr/tasks/types";
 
@@ -23,9 +23,13 @@ export default async function HrTasksPage({
 
     return (
         <>
-            <PageHeader>
-                <h1 className="text-sm font-semibold">HR tasks</h1>
-            </PageHeader>
+            <RecordPageHeader
+              backHref="/hr"
+              parents={[
+                { label: "HR", href: "/hr" },
+              ]}
+              record={{ name: "HR tasks" }}
+            />
             {/*
               🚨 `pt-[var(--shell-header-h)]` IS NOT DECORATION — IT IS WHAT MAKES THIS PAGE
               CLICKABLE. `.shell-main` is pulled up by the header's height so page content

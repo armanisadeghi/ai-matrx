@@ -7,8 +7,7 @@ import {
   Calculator,
 } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 
 const UTILITIES = [
   {
@@ -37,15 +36,14 @@ const UTILITIES = [
 export default function UtilitiesHubPage() {
   return (
     <>
-      <PageHeader>
-        <CrumbTrailHeader
-          trail={[
-            { label: "Legal", href: "/legal" },
-            { label: "CA WC", href: "/legal/ca-wc" },
-            { label: "Utilities" },
-          ]}
-        />
-      </PageHeader>
+      <RecordPageHeader
+        backHref="/legal/ca-wc"
+        parents={[
+          { label: "Legal", href: "/legal" },
+          { label: "CA WC", href: "/legal/ca-wc" },
+        ]}
+        record={{ name: "Utilities" }}
+      />
       <MarketingPageShell className="bg-background">
         <div
           className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8"

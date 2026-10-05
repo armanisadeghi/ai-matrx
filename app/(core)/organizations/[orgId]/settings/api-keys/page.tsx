@@ -13,8 +13,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, Copy, KeyRound, Loader2, Plus } from "lucide-react";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
+import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import {
   useResolvedOrganization,
   useUserRole,
@@ -131,17 +130,16 @@ export default function OrgApiKeysPage() {
   // Drawn in every state, so the title is in the server HTML; the org's name
   // is a sized placeholder until it loads.
   const header = (
-    <PageHeader>
-      <CrumbTrailHeader
-        trail={[
-          organization
-            ? { label: organization.name, href: `/organizations/${orgId}` }
-            : { label: "", pending: true },
-          { label: "Settings", href: `/organizations/${orgId}/settings` },
-          { label: "API Keys" },
-        ]}
-      />
-    </PageHeader>
+    <RecordPageHeader
+      backHref={`/organizations/${orgId}/settings`}
+      parents={[
+        organization
+          ? { label: organization.name, href: `/organizations/${orgId}` }
+          : { label: "", pending: true },
+        { label: "Settings", href: `/organizations/${orgId}/settings`},
+      ]}
+      record={{ name: "API Keys" }}
+    />
   );
 
   if (loading || roleLoading) {
