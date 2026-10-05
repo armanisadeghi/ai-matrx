@@ -257,7 +257,7 @@ function dedupeUnits(answer: string, before: string, after: string): string {
   if (next) {
     const re = /^[A-Za-z]/.test(next) ? new RegExp(`\\s${escapeRe(next)}$`, "i") : new RegExp(`${escapeRe(next)}$`);
     const cut = out.replace(re, "");
-    if (cut && cut !== out && !/[A-Za-z0-9]$/.test(next) === !/[A-Za-z]/.test(next)) out = cut;
+    if (cut && cut !== out) out = cut;
   }
   const prev = before.match(/(\S+)$/)?.[1];
   if (prev) {
