@@ -117,7 +117,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
   // The archive is re-read whenever the live types change: a type archived anywhere on this page (its settings
   // sheet drops it from the tree) shows in the panel without a reload, and a restored one leaves it.
-  const liveTypeIds = useMemo(() => scopeTypes.map((t) => t.id).join(","), [scopeTypes]);
+  const liveTypeIds = scopeTypes.map((t) => t.id).join(",");
   useEffect(() => {
     void loadArchived();
   }, [loadArchived, liveTypeIds]);
