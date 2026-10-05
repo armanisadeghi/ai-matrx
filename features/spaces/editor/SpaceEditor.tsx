@@ -111,6 +111,19 @@ export interface SpaceEditorProps {
   onReady?: (editor: SpacesEditor) => void;
 }
 
+/** Column widths as CSS keyed by block id (the flex items are BlockNote's own outer elements). */
+function columnCss(blocks: EngineBlock[]): string {
+  const rules: string[] = [];
+  const walk = (list: EngineBlock[]) => {
+    for (const b of list) {
+      if (b.type === "column") rules.push(`.spaces-editor .bn-block-outer[data-id="${CSS.escape(b.id)}"]{flex-grow:${Number(b.props?.width ?? 0.5)} !important}`);
+      if (b.children?.length) walk(b.children);
+    }
+  };
+  walk(blocks);
+  return rules.join("\n");
+}
+
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady }: SpaceEditorProps) {
   const dark = useDarkMode();
   const editor = useCreateBlockNote(
@@ -118,12 +131,13 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       schema: spacesSchema,
       initialContent: initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
       dictionary: { ...en, placeholders: PLACEHOLDERS },
-      extensions: [notionKeys],
+      extensions: [notionKeys()],
       tabBehavior: "prefer-indent",
     },
     [spaceId],
-  ) as SpacesEditor;
+  ) as unknown as SpacesEditor;
   const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu }));
+  const [widths, setWidths] = useState(() => columnCss(editor.document as unknown as EngineBlock[]));
 
   useEffect(() => {
     onReady?.(editor);
@@ -145,6 +159,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   }, [editor]);
 
   return (
+    <>
+    <style>{widths}</style>
     <BlockNoteView
       editor={editor}
       editable={editable}
@@ -152,7 +168,11 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       sideMenu={false}
       slashMenu={false}
       formattingToolbar={false}
-      onChange={() => onChange(fromEngine(editor.document as unknown as EngineBlock[]))}
+      onChange={() => {
+        const doc = editor.document as unknown as EngineBlock[];
+        setWidths(columnCss(doc));
+        onChange(fromEngine(doc));
+      }}
       className="spaces-editor"
     >
       <SuggestionMenuController triggerCharacter="/" getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
@@ -180,5 +200,6 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         )}
       />
     </BlockNoteView>
+    </>
   );
 }

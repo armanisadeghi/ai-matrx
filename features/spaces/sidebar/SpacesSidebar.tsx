@@ -3,7 +3,7 @@
 // features/spaces/sidebar/SpacesSidebar.tsx — the Notion sidebar (§D): header, Search, Favorites and
 // Private sections, the page tree (expand, hover + and •••, drag to reorder / nest), Trash.
 
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Badge, Button, Input, SearchField } from "@ai-matrx/design-system/controls";
 import {
   ChevronRight,
@@ -126,7 +126,7 @@ function RenamePopover({ space, open, onOpenChange, children }: { space: SpaceSu
         onOpenChange(o);
       }}
     >
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverAnchor asChild>{children}</PopoverAnchor>
       <PopoverContent align="start" className="w-[300px] p-1.5">
         <Input
           autoFocus
@@ -373,11 +373,6 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
       <div className="spaces-sidebar-head">
         <span className="spaces-workspace-mark">S</span>
         <span className="min-w-0 flex-1 truncate text-sm font-medium">Spaces</span>
-        {spaces.store.kind === "memory" ? (
-          <Badge tone="warning" title="Sample data — changes last until you reload">
-            Sample data — not saved
-          </Badge>
-        ) : null}
         {onCollapse ? (
           <button type="button" className="spaces-row-action spaces-collapse" aria-label="Close sidebar" title="Close sidebar (Cmd+\)" onClick={onCollapse}>
             <ChevronsLeft size={17} />
@@ -387,6 +382,13 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
           <SquarePen size={16} />
         </button>
       </div>
+      {spaces.store.kind === "memory" ? (
+        <div className="spaces-sample-marker">
+          <Badge tone="warning" title="Changes last until you reload">
+            Sample data — not saved
+          </Badge>
+        </div>
+      ) : null}
       <button type="button" className="spaces-nav-row" onClick={() => spaces.openQuickFind("jump")}>
         <Search size={17} />
         Search

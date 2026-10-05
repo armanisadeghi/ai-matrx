@@ -4,7 +4,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, ImageIcon, Lock, Menu, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, FileQuestion, ImageIcon, Lock, Menu, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -123,7 +123,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   if (doc === null) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <EmptyState title="No Space here" action={<Button asChild variant="primary"><Link href="/spaces">Open Spaces</Link></Button>} />
+        <EmptyState icon={<FileQuestion />} title="No Space here" action={<Button asChild variant="primary"><Link href="/spaces">Open Spaces</Link></Button>} />
       </div>
     );
   }

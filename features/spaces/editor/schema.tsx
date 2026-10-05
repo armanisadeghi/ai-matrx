@@ -10,7 +10,7 @@ import { BlockNoteSchema, defaultBlockSpecs, defaultProps } from "@blocknote/cor
 import { createReactBlockSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -28,7 +28,7 @@ const CalloutBlock = createReactBlockSpec(
   },
   {
     render: ({ block, editor, contentRef }) => (
-      <div className="spaces-callout" data-has-icon={block.props.icon ? "true" : "false"}>
+      <div className="spaces-callout" data-has-icon={block.props.icon ? "true" : "false"} data-empty={Array.isArray(block.content) && block.content.length === 0 ? "true" : undefined}>
         {block.props.icon ? (
           <IconPicker
             value={{ icon: block.props.icon }}
@@ -117,18 +117,24 @@ function ColumnResizer({ onResize }: { onResize: (deltaRatio: number, done: bool
   );
 }
 
-/** Applies the stored width to the column's outer block element, which is the flex item. */
-function ColumnBody({ width, children }: { width: number; children?: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const outer = ref.current?.closest<HTMLElement>(".bn-block-outer");
-    if (outer) outer.style.flexGrow = String(width);
-  }, [width]);
-  return (
-    <div className="spaces-column" ref={ref}>
-      {children}
-    </div>
-  );
+/** While a gutter drags, widths go to a <style> in <head> — never onto ProseMirror's own DOM, whose
+ *  mutation observer would re-render the node view on every write. */
+function setDragWidths(rules: Record<string, number> | null) {
+  let el = document.getElementById("spaces-column-drag") as HTMLStyleElement | null;
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "spaces-column-drag";
+    document.head.appendChild(el);
+  }
+  el.textContent = rules
+    ? Object.entries(rules)
+        .map(([id, w]) => `.spaces-editor .bn-block-outer[data-id="${CSS.escape(id)}"]{flex-grow:${w} !important}`)
+        .join("\n")
+    : "";
+}
+
+function ColumnBody({ children }: { children?: React.ReactNode }) {
+  return <div className="spaces-column">{children}</div>;
 }
 
 const ColumnBlock = createReactBlockSpec(
@@ -139,20 +145,16 @@ const ColumnBlock = createReactBlockSpec(
       const list = editor.getParentBlock(block);
       const siblings = list?.children ?? [];
       const next = siblings[siblings.findIndex((c) => c.id === block.id) + 1];
-      if (!next || !editor.isEditable) return <ColumnBody width={width} />;
+      if (!next || !editor.isEditable) return <ColumnBody />;
       const nextWidth = Number(next.props.width ?? 0.5);
-      const outerOf = (id: string) => document.querySelector<HTMLElement>(`.bn-block-outer[data-id="${id}"]`);
       return (
-        <ColumnBody width={width}>
+        <ColumnBody>
           <ColumnResizer
             onResize={(delta, done) => {
               const total = siblings.reduce((sum, c) => sum + Number(c.props.width ?? 0.5), 0) || 1;
               const pair = width + nextWidth;
               const mine = Math.min(pair - 0.08 * total, Math.max(0.08 * total, width + delta * total));
-              const a = outerOf(block.id);
-              const b = outerOf(next.id);
-              if (a) a.style.flexGrow = String(mine);
-              if (b) b.style.flexGrow = String(pair - mine);
+              setDragWidths(done ? null : { [block.id]: mine, [next.id]: pair - mine });
               if (!done) return;
               editor.transact(() => {
                 editor.updateBlock(block, { props: { width: mine } });
