@@ -185,8 +185,8 @@ registerAction({
   visible: (ctx) => {
     // Only show when the content actually has a code block. Saves users
     // from clicking a save-code action on plain prose and getting an error.
-    const { code } = extractFirstCodeBlock(ctx.content);
-    return code.trim().length > 0 && code !== ctx.content;
+    const { code, found } = extractFirstCodeBlock(ctx.content);
+    return found && code.trim().length > 0 && code !== ctx.content;
   },
   run: async (ctx) => {
     if (
@@ -198,8 +198,8 @@ registerAction({
       )
     )
       return;
-    const { code, language } = extractFirstCodeBlock(ctx.content);
-    if (!code.trim()) {
+    const { code, language, found } = extractFirstCodeBlock(ctx.content);
+    if (!found || !code.trim()) {
       toast.error("No code to save");
       return;
     }
@@ -247,13 +247,13 @@ registerAction({
       )
     )
       return;
-    const { code, language } = extractFirstCodeBlock(ctx.content);
+    const { code, language, found } = extractFirstCodeBlock(ctx.content);
     ctx.dispatch(
       openOverlay({
         overlayId: "saveToCode",
         instanceId: ctx.instanceKey("save-code"),
         data: {
-          initialContent: code.trim() ? code : contentForDestination(ctx),
+          initialContent: found && code.trim() ? code : contentForDestination(ctx),
           initialLanguage: language ?? "plaintext",
           suggestedName: undefined,
           defaultFolderId: null,

@@ -6,6 +6,7 @@
 
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
+import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
@@ -106,19 +107,29 @@ export function requireAuth(
 
 /**
  * Extract the first fenced code block from a markdown string. Returns the
- * raw code and the detected language. Falls back to the full content when
- * no fence is present.
+ * raw code and the detected language. Falls back to the full content (and
+ * `found: false`) when no fence is present.
+ *
+ * A fence whose body is a kind (`__kind`) is NOT code: the person saw it as
+ * the kind's component, so "save code" never picks it up (KIND_NEVER_RAW,
+ * round 4 — S-save). The next real code fence wins.
  */
 export function extractFirstCodeBlock(content: string): {
   code: string;
   language?: string;
+  found: boolean;
 } {
-  const match = content.match(/```([\w.+-]+)?\s*\n([\s\S]*?)```/);
-  if (!match) return { code: content };
-  return {
-    code: match[2] ?? "",
-    language: match[1]?.toLowerCase() || undefined,
-  };
+  const fences = content.matchAll(/```([\w.+-]+)?\s*\n([\s\S]*?)```/g);
+  for (const match of fences) {
+    const body = match[2] ?? "";
+    if (hasKindKey(body)) continue;
+    return {
+      code: body,
+      language: match[1]?.toLowerCase() || undefined,
+      found: true,
+    };
+  }
+  return { code: content, found: false };
 }
 
 /**

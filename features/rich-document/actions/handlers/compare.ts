@@ -11,6 +11,9 @@
 // they have). So text only in the clipboard reads as an addition; text only in
 // the current content reads as a removal. Users can flip this in the viewer.
 //
+// A diff is read by a person: it compares the readable text of both sides
+// (`contentForDestination`) — a kind answer is never a wall of `__kind` JSON.
+//
 // History comparison is handled by the enhanced Edit-history dialog
 // (per-version "Compare" buttons), not a separate menu item.
 
@@ -22,6 +25,7 @@ import {
   openCompareWithBase,
 } from "@/lib/redux/slices/diffCompareSlice";
 import { registerAction } from "../provider";
+import { contentForDestination } from "../utils";
 import type { ContentSource } from "../../types";
 
 function sourceLabel(source: ContentSource): string {
@@ -69,7 +73,7 @@ registerAction({
         instanceId,
         data: {
           windowInstanceId: instanceId,
-          original: ctx.content,
+          original: contentForDestination(ctx),
           modified: clipboardText,
           originalLabel: sourceLabel(ctx.source),
           modifiedLabel: "Clipboard",
@@ -95,7 +99,7 @@ registerAction({
   run: (ctx) => {
     ctx.dispatch(
       setCompareBase({
-        content: ctx.content,
+        content: contentForDestination(ctx),
         label: sourceLabel(ctx.source),
         language: null,
       }),
@@ -119,7 +123,7 @@ registerAction({
     const opened = await ctx
       .dispatch(
         openCompareWithBase({
-          current: ctx.content,
+          current: contentForDestination(ctx),
           currentLabel: sourceLabel(ctx.source),
         }),
       )

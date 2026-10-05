@@ -17,7 +17,6 @@ const ENVELOPED =
 describe("every outbound writer uses the one destination step", () => {
   // Write-back (the stored bytes ARE the envelopes) and faithful capture.
   const RAW_ALLOWED = new Set([
-    "compare.ts", // diffs the source against itself / a base
     "edit.ts", // edits the stored message
     "preparedEdit.ts", // the save adapter's authoritative bytes
     "fullscreen-editor.ts", // edits the source
