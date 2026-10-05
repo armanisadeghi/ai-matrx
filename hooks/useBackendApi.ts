@@ -27,7 +27,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { applyAiApiVersion } from "@/lib/api/ai-api-version";
 import { requestRaw } from "@/lib/python-client";
-import type { ApiService } from "@/lib/api/service-routing";
+import { serviceRequestBase, type ApiService } from "@/lib/api/service-routing";
 
 interface BackendRequestPolicy {
   /** Expected HTTP outcomes that must not enter the repair queue. */
@@ -36,8 +36,9 @@ interface BackendRequestPolicy {
 
 export function useBackendApi(service: ApiService = "aidream") {
   const { getHeaders, waitForAuth } = useApiAuth();
-  const backendUrl = useAppSelector((state) =>
-    selectResolvedServiceBaseUrl(state, service),
+  const backendUrl = serviceRequestBase(
+    service,
+    useAppSelector((state) => selectResolvedServiceBaseUrl(state, service)),
   );
   const aiApiVersion = useAppSelector(selectAiApiVersion);
 

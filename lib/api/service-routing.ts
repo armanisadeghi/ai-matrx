@@ -96,6 +96,31 @@ export const API_SERVICE_URLS: Record<
   },
 };
 
+/**
+ * The path prefix a service mounts EVERY route under, kept on the request
+ * base. 🚨 The shared URL builder (`buildMatrxRequestUrl`,
+ * @ai-matrx/agents/matrx) strips a leading `/api/` from every path because
+ * aidream's routes no longer live there — but the standalone scraper still
+ * mounts its whole router at `/api`, so without this every scrape went to a
+ * path the service does not serve (404, found 2026-10-05). Putting the prefix
+ * on the BASE survives the strip for every caller of the one request pipeline.
+ */
+export const SERVICE_ROUTE_PREFIX: Record<ApiService, string> = {
+  aidream: "",
+  scraper: "/api",
+  files: "",
+  seo: "",
+};
+
+/** The base a request to `service` is built on: its origin plus its route prefix. */
+export function serviceRequestBase(
+  service: ApiService,
+  origin: string | undefined,
+): string | undefined {
+  if (!origin) return origin;
+  return `${origin.replace(/\/+$/, "")}${SERVICE_ROUTE_PREFIX[service]}`;
+}
+
 export function configuredServiceUrl(
   service: ApiService,
   environment: ServiceEnvironment,
