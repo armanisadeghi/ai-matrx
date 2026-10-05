@@ -281,6 +281,9 @@ export function hrefForMade(m: MadeObject): string | null {
       return `/agents/${m.id}`;
     case "workflow":
       return `/workflows/${m.id}`;
+    case "stage_rules":
+      // A stage rule set is declared on its table (no record of its own): it opens the table.
+      return m.table_id ? `/data/${m.table_id}` : null;
     case "rule":
       // A digest or notification opens in its table's notifications rail; a stage rule set or row
       // action is a rule OF its table, so it opens the table (the card counts every one of them).

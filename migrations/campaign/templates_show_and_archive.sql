@@ -75,3 +75,11 @@ values ('custom', 'template_archive', 'p_template_id uuid, p_restore boolean',
   jsonb_build_object('version', 1, 'declared_by', 'templates_show_and_archive.sql', 'declared_at', '2026-10-05 lane KITS-MERGE-2',
     'arguments', jsonb_build_object(
       'p_template_id', jsonb_build_object('type','uuid','check','read for its scope and organization; then custom.assert_client_may_reach(organization) and declarer-or-organization-admin before any write.','entity','template','foreign',jsonb_build_object('sqlstate','42501','note','a template of an organization the caller cannot reach refuses at the reach check; a platform or invented id answers P0002.'),'position',1,'verified','2026-10-05 lane KITS-MERGE-2 — written with this body'))));
+
+-- 3. (same day) `show.unrecorded`: parts the card counts that leave no `made` entry — a stage rule set is
+--    declared ON a table (pipeline_declare, no save) — each with its table id, so the landing lists a row
+--    that opens. Applied as migration templates_show_unrecorded_parts: the `show` object above gains
+--      'unrecorded', (select jsonb_agg(jsonb_build_object('kind', x->>'kind', 'title', coalesce(x->>'name', x->>'token'),
+--                       'ref', (x->>'kind') || '.' || coalesce(x->>'token',''),
+--                       'table_id', p_install.ids ->> ('ref:tables.' || (x->>'table'))))
+--                     from jsonb_array_elements(coalesce(t.spec->'extras','[]'::jsonb)) x where x->>'kind' = 'stage_rules')

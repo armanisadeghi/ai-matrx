@@ -372,7 +372,13 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
   const installId =
     run.phase === "removed" ? null : ((run.phase !== "idle" ? run.answer?.install_id : null) ?? card.installed?.install_id ?? null);
   const isInstalled = run.phase === "installed" || (run.phase !== "removed" && card.installed?.state === "installed");
-  const made = ((run.phase !== "idle" ? run.answer?.made : null) ?? []) as MadeObject[];
+  const answerNow = run.phase !== "idle" ? run.answer : null;
+  // Parts the card counts that leave no `made` entry (a stage rule set lives on its table) join the
+  // landing as rows that open, so every count on the card has a row.
+  const unrecorded = (((answerNow?.["show"] as { unrecorded?: MadeObject[] } | undefined)?.unrecorded ?? []) as Array<Omit<MadeObject, "id">>).map(
+    (u) => ({ ...u, id: u.table_id }) as MadeObject,
+  );
+  const made = [...((answerNow?.made ?? []) as MadeObject[]), ...unrecorded];
 
   return (
     <div className="flex flex-col gap-6" data-make-template-preview={card.catalogue_id}>
@@ -485,10 +491,10 @@ function Progress({ run }: { run: Extract<Run, { phase: "running" }> }) {
           {made
             .filter((m) => m.kind !== "field")
             .map((m) => (
-              <li key={`${m.kind}:${m.ref}`} className="flex min-w-0 items-center gap-2" data-make-template-made={m.kind}>
+              <li key={`${m.kind}:${m.ref}:${m.id ?? ""}`} className="flex min-w-0 items-center gap-2" data-make-template-made={m.kind}>
                 <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
                 <span className="truncate">{m.title ?? m.ref}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{m.kind}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{madeWord(m)}</span>
               </li>
             ))}
           <li className="flex items-center gap-2 text-muted-foreground">
@@ -536,6 +542,13 @@ function ArchiveOrgTemplate({ templateId, name }: { templateId: string; name: st
       />
     </>
   );
+}
+
+/** The word a landing row says for what it is (the card's words). */
+function madeWord(m: MadeObject): string {
+  if (m.kind === "rule") return /^notifications\./.test(m.ref) ? "notification" : /^digests\./.test(m.ref) ? "digest" : "rule";
+  if (m.kind === "stage_rules") return "stage rule set";
+  return m.kind;
 }
 
 type AgentStep = { phase: "idle" | "copying" } | { phase: "failed"; why: string; retryAt?: string | null };
@@ -602,7 +615,7 @@ export function Landing({
       ) : null}
       <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
         {rows.map((m) => (
-          <li key={`${m.kind}:${m.ref}`}>
+          <li key={`${m.kind}:${m.ref}:${m.id ?? ""}`}>
             <Link
               href={hrefForMade(m) ?? "#"}
               target="_blank"
