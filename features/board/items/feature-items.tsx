@@ -106,6 +106,7 @@ import {
   titleToAdopt,
   type FeatureEntityKey,
 } from "./feature-items.logic";
+import { useMeetingStatus, useTaskStatus, useWorkflowRunStatus } from "./item-status";
 
 // ─── Shared pieces ───────────────────────────────────────────────────────────
 
@@ -1011,6 +1012,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     label: "Task",
     icon: ListTodo,
     group: "work",
+    accent: "orange",
+    status: { useStatus: useTaskStatus },
     defaultSize: { w: 520, h: 640 },
     matches: matchesEntity(FEATURE_ENTITY.task),
     Body: TaskBody,
@@ -1032,6 +1035,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     label: "War Room",
     icon: UsersRound,
     group: "features",
+    accent: "rose",
+    status: { none: "A room has no single state; each thread shows its own." },
     defaultSize: { w: 560, h: 620 },
     matches: matchesEntity(FEATURE_ENTITY.warRoom),
     Body: WarRoomBody,
@@ -1055,6 +1060,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     label: "Meeting",
     icon: Video,
     group: "features",
+    accent: "cyan",
+    status: { useStatus: useMeetingStatus },
     defaultSize: { w: 720, h: 680 },
     matches: matchesEntity(FEATURE_ENTITY.meeting),
     Body: MeetingBody,
@@ -1085,6 +1092,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     label: "Workflow run",
     icon: Workflow,
     group: "features",
+    accent: "violet",
+    status: { useStatus: useWorkflowRunStatus },
     defaultSize: { w: 960, h: 760 },
     matches: matchesEntity(FEATURE_ENTITY.workflowRun),
     Body: WorkflowRunBody,
@@ -1113,6 +1122,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     label: "Research",
     icon: FlaskConical,
     group: "features",
+    accent: "violet",
+    status: { none: "A topic has no single state; its runs show on its page." },
     defaultSize: { w: 820, h: 820 },
     matches: matchesEntity(FEATURE_ENTITY.research),
     Body: ResearchBody,
@@ -1131,6 +1142,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     label: "Project",
     icon: FolderKanban,
     group: "features",
+    accent: "lime",
+    status: { none: "A project has no single state; its tasks carry theirs." },
     defaultSize: { w: 620, h: 680 },
     matches: matchesEntity(FEATURE_ENTITY.project),
     Body: ProjectBody,

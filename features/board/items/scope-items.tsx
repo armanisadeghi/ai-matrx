@@ -188,6 +188,8 @@ export const SCOPE_ITEMS: readonly BoardItemType[] = [
     kindLabel: "scope",
     icon: Tag,
     group: "features",
+    accent: "lime",
+    status: { none: "A scope has no running state." },
     defaultSize: { w: 720, h: 760 },
     matches: (s) => s.kind === "entity" && s.entity === SCOPE_ITEM_KEY,
     Body: ScopeBody,

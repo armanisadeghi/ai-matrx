@@ -301,6 +301,10 @@ async function syncPortalConfigurations(
       default_return_url: "https://www.aimatrx.com/pricing",
       metadata: { purpose: "platform_subscription", audience },
       features: {
+        customer_update: {
+          enabled: true,
+          allowed_updates: ["address", "email", "name", "phone", "tax_id"],
+        },
         invoice_history: { enabled: true },
         payment_method_update: { enabled: true },
         subscription_cancel: { enabled: true, mode: "at_period_end" as const },

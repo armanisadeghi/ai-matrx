@@ -1,0 +1,92 @@
+/*
+ * Board — type colours and the far-zoom card (`TileFace.tsx`).
+ *
+ * One accent per item type (`BoardItemType.accent`), as HSL channels so a card
+ * can tint with alpha: `hsl(var(--board-accent-blue) / 0.12)`. Light values sit
+ * dark enough for a label on white; dark values light enough on the dark card.
+ */
+
+:root {
+  --board-accent-blue: 217 85% 50%;
+  --board-accent-amber: 32 92% 44%;
+  --board-accent-slate: 215 16% 42%;
+  --board-accent-indigo: 239 62% 56%;
+  --board-accent-emerald: 158 72% 32%;
+  --board-accent-teal: 178 70% 31%;
+  --board-accent-rose: 347 72% 50%;
+  --board-accent-cyan: 192 85% 38%;
+  --board-accent-violet: 262 62% 55%;
+  --board-accent-orange: 18 85% 50%;
+  --board-accent-pink: 322 65% 50%;
+  --board-accent-lime: 85 70% 32%;
+}
+
+.dark {
+  --board-accent-blue: 213 92% 68%;
+  --board-accent-amber: 40 92% 62%;
+  --board-accent-slate: 215 20% 68%;
+  --board-accent-indigo: 234 85% 75%;
+  --board-accent-emerald: 156 60% 55%;
+  --board-accent-teal: 174 58% 52%;
+  --board-accent-rose: 350 85% 72%;
+  --board-accent-cyan: 190 80% 60%;
+  --board-accent-violet: 263 85% 76%;
+  --board-accent-orange: 22 92% 66%;
+  --board-accent-pink: 325 80% 74%;
+  --board-accent-lime: 84 60% 56%;
+}
+
+/*
+ * The far-zoom card. Every size is a SCREEN size (`Npx / --board-z`) capped by
+ * the card's own box (container units), so text stays readable while there is
+ * room and shrinks with the tile once there is not — it never overflows.
+ */
+.board-face {
+  container-type: size;
+  contain: strict;
+  --face-pad: min(calc(10px / var(--board-z, 1)), 7cqmin);
+  --face-kind: min(calc(10.5px / var(--board-z, 1)), 11cqh, 8cqw);
+  --face-title: min(calc(14px / var(--board-z, 1)), 15cqh, 10cqw);
+  background:
+    linear-gradient(180deg, hsl(var(--tile-accent) / 0.16), hsl(var(--tile-accent) / 0.05) 70%),
+    hsl(var(--card));
+  box-shadow: inset 0 0 0 max(1px, calc(1px / var(--board-z, 1))) hsl(var(--tile-accent) / 0.32);
+}
+
+.board-face-band {
+  height: min(calc(3px / var(--board-z, 1)), 4cqh);
+  background: hsl(var(--tile-accent));
+}
+
+.board-face-body {
+  padding: var(--face-pad);
+  gap: calc(var(--face-pad) * 0.6);
+}
+
+.board-face-kind {
+  font-size: var(--face-kind);
+  gap: 0.4em;
+  color: hsl(var(--tile-accent));
+}
+
+.board-face-kind svg {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+}
+
+.board-face-title {
+  font-size: var(--face-title);
+}
+
+.board-face-foot {
+  font-size: var(--face-kind);
+}
+
+.board-face-bar {
+  height: max(0.35em, 2px);
+}
+
+.board-face[data-selected] {
+  box-shadow: inset 0 0 0 max(2px, calc(2.5px / var(--board-z, 1))) hsl(var(--primary));
+}

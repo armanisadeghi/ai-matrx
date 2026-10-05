@@ -10,24 +10,35 @@ import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /** A visible return path to invoices, payment methods and cancellation. */
-export function SubscriptionControls({ livemode }: { livemode: boolean }) {
+export type SubscriptionScope =
+  | { kind: "personal" }
+  | { kind: "organization"; organizationId: string };
+
+export function SubscriptionControls({
+  livemode,
+  scope = { kind: "personal" },
+  label = "Manage subscription",
+}: {
+  livemode: boolean;
+  scope?: SubscriptionScope;
+  label?: string;
+}) {
   const userId = useAppSelector(selectUserId);
   if (!userId) return null;
-  return <AccountSubscriptionControls key={`${userId}:${livemode}`} userId={userId} livemode={livemode} />;
+  return <AccountSubscriptionControls key={`${userId}:${livemode}:${scope.kind}:${scope.kind === "organization" ? scope.organizationId : ""}`} userId={userId} livemode={livemode} scope={scope} label={label} />;
 }
 
-function AccountSubscriptionControls({ userId, livemode }: { userId: string; livemode: boolean }) {
+function AccountSubscriptionControls({ userId, livemode, scope, label }: { userId: string; livemode: boolean; scope: SubscriptionScope; label: string }) {
   const [hasCustomer, setHasCustomer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   useEffect(() => {
     let active = true;
-    void createClient()
-      .schema("billing")
-      .from("customer")
-      .select("id")
-      .eq("beneficiary_user_id", userId)
-      .eq("livemode", livemode)
+    const customers = createClient().schema("billing").from("customer").select("id").eq("livemode", livemode);
+    const ownedCustomer = scope.kind === "personal"
+      ? customers.eq("beneficiary_user_id", userId)
+      : customers.eq("organization_id", scope.organizationId).is("beneficiary_user_id", null);
+    void ownedCustomer
       .maybeSingle()
       .then(({ data, error: readError }) => {
         if (active) {
@@ -38,14 +49,16 @@ function AccountSubscriptionControls({ userId, livemode }: { userId: string; liv
     return () => {
       active = false;
     };
-  }, [userId, livemode]);
+  }, [userId, livemode, scope]);
 
   async function manage() {
     setBusy(true);
     try {
       const response = await fetchWithOrganization("/api/stripe/portal", {
         method: "POST",
-      });
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scope: scope.kind }),
+      }, { organizationId: scope.kind === "organization" ? scope.organizationId : null });
       const body: unknown = await response.json();
       if (
         !response.ok ||
@@ -76,7 +89,7 @@ function AccountSubscriptionControls({ userId, livemode }: { userId: string; liv
   return (
     <div className="flex justify-center">
       <Button variant="outline" disabled={busy} onClick={manage}>
-        {busy ? "Opening billing…" : "Manage subscription"}
+        {busy ? "Opening billing…" : label}
       </Button>
     </div>
   );

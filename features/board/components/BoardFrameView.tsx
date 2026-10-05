@@ -35,6 +35,7 @@ export function BoardFrameView({ id, rect, title, note }: BoardFrameViewProps) {
 
   return (
     <div
+      data-board-frame={id}
       className="pointer-events-none absolute max-w-none rounded-2xl border border-dashed border-border/80 bg-background/40"
       style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
     >

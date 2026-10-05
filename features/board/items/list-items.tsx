@@ -189,6 +189,8 @@ export const LIST_ITEMS: readonly BoardItemType[] = [
     kindLabel: "picklist",
     icon: ListChecks,
     group: "work",
+    accent: "teal",
+    status: { none: "A list of choices has no running state." },
     // Wide enough for the table's Name column (~170 px, equal-share columns) to read a normal name beside five other columns and
     // the pinned Actions column (at 760 it was ~96 px: "Cigna ...").
     defaultSize: { w: 1240, h: 560 },

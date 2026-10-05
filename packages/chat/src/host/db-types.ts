@@ -547,6 +547,7 @@ export type ChatDatabase = {
           default_rag_boost: number
           deleted_at: string | null
           description: string | null
+          follows_source: boolean
           id: string
           input_contract: Json | null
           input_contract_hash: string | null
@@ -576,6 +577,7 @@ export type ChatDatabase = {
           skill_config: Json
           source_agent_id: string | null
           source_snapshot_at: string | null
+          source_version: number | null
           tags: string[]
           task_id: string | null
           tool_config: Json
@@ -602,6 +604,7 @@ export type ChatDatabase = {
           default_rag_boost?: number
           deleted_at?: string | null
           description?: string | null
+          follows_source?: boolean
           id?: string
           input_contract?: Json | null
           input_contract_hash?: string | null
@@ -631,6 +634,7 @@ export type ChatDatabase = {
           skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
+          source_version?: number | null
           tags?: string[]
           task_id?: string | null
           tool_config?: Json
@@ -657,6 +661,7 @@ export type ChatDatabase = {
           default_rag_boost?: number
           deleted_at?: string | null
           description?: string | null
+          follows_source?: boolean
           id?: string
           input_contract?: Json | null
           input_contract_hash?: string | null
@@ -686,6 +691,7 @@ export type ChatDatabase = {
           skill_config?: Json
           source_agent_id?: string | null
           source_snapshot_at?: string | null
+          source_version?: number | null
           tags?: string[]
           task_id?: string | null
           tool_config?: Json
@@ -2264,6 +2270,7 @@ export type ChatDatabase = {
           default_rag_boost: number
           deleted_at: string | null
           description: string | null
+          follows_source: boolean
           id: string
           input_contract: Json | null
           input_contract_hash: string | null
@@ -2293,6 +2300,7 @@ export type ChatDatabase = {
           skill_config: Json
           source_agent_id: string | null
           source_snapshot_at: string | null
+          source_version: number | null
           tags: string[]
           task_id: string | null
           tool_config: Json
@@ -8817,22 +8825,6 @@ export type ChatDatabase = {
           isSetofReturn: true
         }
       }
-      get_scope_context_from_the_image: {
-        Args: {
-          p_include_empty?: boolean
-          p_item_ids?: string[]
-          p_scope_id: string
-        }
-        Returns: Json
-      }
-      get_scope_tree_from_the_image: {
-        Args: { p_org_id: string; p_type_id?: string }
-        Returns: Json
-      }
-      get_user_full_context_from_the_image: {
-        Args: { p_user_id?: string }
-        Returns: Json
-      }
       index_reference_value: {
         Args: {
           p_item_id: string
@@ -8841,14 +8833,6 @@ export type ChatDatabase = {
           p_value_text: string
         }
         Returns: undefined
-      }
-      list_scope_type_items_from_the_image: {
-        Args: { p_scope_type_id: string }
-        Returns: Json
-      }
-      list_scope_types_from_the_image: {
-        Args: { p_org_id: string }
-        Returns: Json
       }
       named_system_context_items: {
         Args: { p_refs: string[] }
@@ -8897,16 +8881,6 @@ export type ChatDatabase = {
       reference_item_ref_key: {
         Args: { p_item: Json; p_type: string }
         Returns: string
-      }
-      resolve_full_context_from_the_image: {
-        Args: {
-          p_entity_id: string
-          p_entity_type: string
-          p_scope_ids?: string[]
-          p_system_item_refs?: string[]
-          p_user_id: string
-        }
-        Returns: Json
       }
       slugify: { Args: { p: string }; Returns: string }
       system_item_refs_or_defaults: {
@@ -23269,6 +23243,54 @@ export type ChatDatabase = {
         }
         Relationships: []
       }
+      tag: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       taxonomy_node: {
         Row: {
           anchors: Json
@@ -24233,6 +24255,10 @@ export type ChatDatabase = {
           p_question: Json
           p_source: Json
         }
+        Returns: Json
+      }
+      _drill_protect: {
+        Args: { p_def: Json; p_kind: string; p_question: Json }
         Returns: Json
       }
       _drill_question_problems: {
@@ -30222,6 +30248,7 @@ export type ChatDatabase = {
         Args: {
           p_agent_id: string
           p_as_system?: boolean
+          p_follows_source?: boolean
           p_organization_id?: string
         }
         Returns: string
@@ -30829,6 +30856,7 @@ export type ChatDatabase = {
         Args: { p_agent_id: string; p_keep_count?: number }
         Returns: Json
       }
+      agx_reset_agent_to_source: { Args: { p_agent_id: string }; Returns: Json }
       agx_resolve_agent_address: {
         Args: { p_ids: string[] }
         Returns: {
@@ -35751,7 +35779,6 @@ export type ChatDatabase = {
         Args: { p_suggestion_id: string }
         Returns: Json
       }
-      kg_simulated_scope_graph: { Args: { p_scope_id: string }; Returns: Json }
       league_add_result: {
         Args: { p_display_name?: string; p_mastery_gain: number }
         Returns: undefined
@@ -38045,6 +38072,7 @@ export type ChatDatabase = {
         Args: { p_description?: string; p_name?: string; p_team_id: string }
         Returns: undefined
       }
+      templates_public: { Args: { p_filter?: Json }; Returns: Json }
       thread_contents: {
         Args: { thread_id: string }
         Returns: {

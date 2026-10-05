@@ -1,4 +1,3 @@
--- draft: FTS-4 manager design, not yet rehearsed
 -- lane: FINISH-THE-SWITCH
 -- lock: platform
 -- based-on: platform._context_tag_follow_to_the_copy() 26c62a48faf9eab2b565e9efc601414a80bc190d6413486f8ab9fa11b55cbddd

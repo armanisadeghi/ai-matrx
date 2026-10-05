@@ -11,7 +11,21 @@
 
 import { type ReactNode, useState } from "react";
 import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignHorizontalDistributeCenter,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  AlignVerticalDistributeCenter,
   ArchiveRestore,
+  Columns3,
+  Frame,
+  Grid3x3,
+  LayoutGrid,
+  Rows3,
+  Shapes,
   Crosshair,
   Maximize,
   Maximize2,
@@ -20,12 +34,15 @@ import {
   Save,
   ScanSearch,
   Trash2,
+  type LucideIcon,
 } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { zoomAt } from "../engine/camera";
 import type { BoardCameraStore } from "../engine/camera-store";
 import { WHEEL_MODE_LABEL, type WheelMode } from "../engine/wheel-input";
+import type { ArrangeCommand } from "../engine/arrange";
+import { ARRANGE_SHORTCUT } from "../board/arrange-board";
 
 /** What the host can do to a tile. An action the host leaves out is not
  * shown (a War Room thread is already saved, so it has no "save & close"). */
@@ -55,6 +72,7 @@ export function BoardMenu({
   onUnpark,
   wheelMode,
   onWheelMode,
+  onArrange,
   children,
 }: {
   store: BoardCameraStore | null;
@@ -63,6 +81,8 @@ export function BoardMenu({
   onUnpark: (id: string) => void;
   wheelMode: WheelMode;
   onWheelMode: (mode: WheelMode) => void;
+  /** Arrange the board (frames move with their tiles). Omit on a board whose layout the host owns. */
+  onArrange?: (command: ArrangeCommand) => void;
   children: ReactNode;
 }) {
   const [target, setTarget] = useState<{ id: string; title: string } | null>(null);
@@ -94,6 +114,7 @@ export function BoardMenu({
     items: [
       { kind: "item", id: "fit", label: "Fit everything", icon: Maximize, hint: "⇧1", onSelect: () => store?.fitAll() },
       { kind: "item", id: "zoom-100", label: "Zoom to 100%", icon: ScanSearch, hint: "⇧0", onSelect: () => zoomTo(1) },
+      ...(onArrange ? [arrangeMenu(onArrange)] : []),
       {
         kind: "submenu",
         id: "wheel",
@@ -144,4 +165,55 @@ export function BoardMenu({
       <div className="h-full min-h-0">{children}</div>
     </NonEditableContextMenu>
   );
+}
+
+/** Board → Arrange: the arrange engine's commands, with their shortcuts. */
+function arrangeMenu(run: (command: ArrangeCommand) => void): ContextMenuExtraSection["items"][number] {
+  const item = (
+    id: string,
+    label: string,
+    icon: LucideIcon,
+    command: ArrangeCommand,
+    hint?: string,
+  ) => ({ kind: "item" as const, id: `arrange-${id}`, label, icon, hint, onSelect: () => run(command) });
+  return {
+    kind: "submenu",
+    id: "arrange",
+    label: "Arrange",
+    icon: LayoutGrid,
+    children: [
+      item("tidy", "Tidy up", LayoutGrid, { kind: "layout", layout: "tidy" }, ARRANGE_SHORTCUT.tidy),
+      item("by-type", "By type", Shapes, { kind: "by-type" }, ARRANGE_SHORTCUT.byType),
+      item("frames-by-type", "Into frames by type", Frame, { kind: "frames-by-type" }),
+      { kind: "separator", id: "arrange-sep-1" },
+      item("grid", "Grid", Grid3x3, { kind: "layout", layout: "grid" }),
+      item("row", "One row", Columns3, { kind: "layout", layout: "row" }),
+      item("column", "One column", Rows3, { kind: "layout", layout: "column" }),
+      { kind: "separator", id: "arrange-sep-2" },
+      {
+        kind: "submenu",
+        id: "arrange-align",
+        label: "Align",
+        icon: AlignStartVertical,
+        children: [
+          item("align-left", "Left", AlignStartVertical, { kind: "align", edge: "left" }, ARRANGE_SHORTCUT.alignLeft),
+          item("align-center", "Center", AlignCenterVertical, { kind: "align", edge: "center" }, ARRANGE_SHORTCUT.alignCenter),
+          item("align-right", "Right", AlignEndVertical, { kind: "align", edge: "right" }, ARRANGE_SHORTCUT.alignRight),
+          item("align-top", "Top", AlignStartHorizontal, { kind: "align", edge: "top" }, ARRANGE_SHORTCUT.alignTop),
+          item("align-middle", "Middle", AlignCenterHorizontal, { kind: "align", edge: "middle" }, ARRANGE_SHORTCUT.alignMiddle),
+          item("align-bottom", "Bottom", AlignEndHorizontal, { kind: "align", edge: "bottom" }, ARRANGE_SHORTCUT.alignBottom),
+        ],
+      },
+      {
+        kind: "submenu",
+        id: "arrange-distribute",
+        label: "Distribute",
+        icon: AlignHorizontalDistributeCenter,
+        children: [
+          item("distribute-h", "Horizontally", AlignHorizontalDistributeCenter, { kind: "distribute", axis: "horizontal" }, ARRANGE_SHORTCUT.distributeH),
+          item("distribute-v", "Vertically", AlignVerticalDistributeCenter, { kind: "distribute", axis: "vertical" }, ARRANGE_SHORTCUT.distributeV),
+        ],
+      },
+    ],
+  };
 }

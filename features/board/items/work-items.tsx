@@ -58,6 +58,7 @@ import {
   isEntity,
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
+import { useChatStatus, useFileStatus, useNoteStatus } from "./item-status";
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
@@ -344,6 +345,8 @@ export const WORK_ITEMS: BoardItemType[] = [
     label: "Chat",
     icon: MessagesSquare,
     group: "work",
+    accent: "blue",
+    status: { useStatus: useChatStatus },
     defaultSize: { w: 520, h: 760 },
     matches: (s) => isEntity(s, "chat"),
     Body: ChatBody,
@@ -374,6 +377,8 @@ export const WORK_ITEMS: BoardItemType[] = [
     label: "Note",
     icon: StickyNote,
     group: "work",
+    accent: "amber",
+    status: { useStatus: useNoteStatus },
     // Room for the notes core: modes + tools, the editor, metadata and save strip.
     defaultSize: { w: 560, h: 620 },
     matches: (s) => isEntity(s, "note"),
@@ -402,6 +407,8 @@ export const WORK_ITEMS: BoardItemType[] = [
     label: "File",
     icon: FileIcon,
     group: "work",
+    accent: "slate",
+    status: { useStatus: useFileStatus },
     defaultSize: { w: 800, h: 600 },
     matches: (s: NodeSource) => fileIdOf(s) !== null || isEntity(s, "file"),
     Body: FileBody,

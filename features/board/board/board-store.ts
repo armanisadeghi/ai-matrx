@@ -339,8 +339,9 @@ export class BoardStore<T extends BoardTileBase> {
    * one gesture is one undoable step. */
   resizeTile = (id: string, rect: Rect): void => this.gestureRect(id, () => ({ ...rect }));
 
-  /** Move many tiles (and/or frames) as ONE undoable step — an arrangement. */
-  moveMany = (moves: { id: string; x: number; y: number }[]): void =>
+  /** Move many tiles (and/or frames) as ONE undoable step — an arrangement.
+   * `addFrames` draws frames in the same step ("Tidy into frames by type"). */
+  moveMany = (moves: { id: string; x: number; y: number }[], opts: { addFrames?: BoardFrame[] } = {}): void =>
     this.change((s) => {
       const at = new Map(moves.map((m) => [m.id, m]));
       const byId = { ...s.byId };
@@ -352,7 +353,7 @@ export class BoardStore<T extends BoardTileBase> {
         const m = at.get(f.id);
         return m ? { ...f, rect: { ...f.rect, x: m.x, y: m.y } } : f;
       });
-      return { ...s, byId, frames };
+      return { ...s, byId, frames: opts.addFrames?.length ? [...frames, ...opts.addFrames] : frames };
     });
 
   connect = (c: BoardConnection): void =>

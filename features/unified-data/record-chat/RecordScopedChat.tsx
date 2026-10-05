@@ -115,13 +115,22 @@ export function RecordScopedChat({ ctx, organizationId, className }: RecordScope
       // A REGISTERED feature, never a new string: `SOURCE_FEATURES` is generated from the
       // database and this surface IS the chat, opened from a record.
       sourceFeature: "chat",
-    }).then((result) => {
-      if (!cancelled) setConversationId(result.conversationId);
-    });
+      // THE RECORD'S OWN ORGANIZATION, never the active one (v7 TABLE-EXPERIENCE): with no active
+      // organization the launch threw and the panel sat on "Opening a conversation…" forever.
+      ...(organizationId ? { organizationId } : {}),
+    }).then(
+      (result) => {
+        if (!cancelled) setConversationId(result.conversationId);
+      },
+      (thrown: unknown) => {
+        if (!cancelled) setLaunchRefused(thrown instanceof Error ? thrown.message : "The conversation could not be opened.");
+      },
+    );
     return () => {
       cancelled = true;
     };
-  }, [memberHere, ctx.surfaceKey, launchMandate]);
+  }, [memberHere, ctx.surfaceKey, launchMandate, organizationId]);
+  const [launchRefused, setLaunchRefused] = useState<string | null>(null);
 
   const [bound, setBound] = useState<"pending" | "bound" | { refused: string }>("pending");
   const boundFor = useRef<string | null>(null);

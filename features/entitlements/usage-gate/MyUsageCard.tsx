@@ -13,7 +13,6 @@ import { ArrowUpRight, Infinity as InfinityIcon, RotateCw } from "lucide-react";
 import { formatCost, pointsToUsd } from "@ai-matrx/kit/format";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { currentPointsRate } from "@/components/cost/pointsRate";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import {
   useAppDispatch,
@@ -68,8 +67,9 @@ const LEVEL_CHIP: Record<UsageGateLevel, { text: string; tone: string }> = {
 };
 
 function WindowRow({ w }: { w: UsageWindow }) {
-  const { unit } = useCostDisplay();
-  const rate = currentPointsRate();
+  // This is render-time formatting. `useCostDisplay` subscribes to the knob
+  // snapshot, so values re-render when the points rate answers after usage.
+  const { unit, rate } = useCostDisplay();
   const points = (v: number) => formatCost(pointsToUsd(v, { rate }), { rate, unit });
   const pct =
     w.limit !== null && w.limit > 0

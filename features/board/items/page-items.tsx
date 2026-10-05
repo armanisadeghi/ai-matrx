@@ -132,6 +132,8 @@ export const PAGE_ITEMS: BoardItemType[] = [
     label: "Page",
     icon: AppWindow,
     group: "content",
+    accent: "slate",
+    status: { none: "A framed app page has no state of its own." },
     defaultSize: { w: 1100, h: 760 },
     matches: (s) => pagePathOf(s) !== null,
     Body: PageBody,

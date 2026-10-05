@@ -1,15 +1,11 @@
--- draft: FTS-4 manager design, not yet rehearsed
 -- lane: FINISH-THE-SWITCH
 -- lock: platform
--- based-on: platform.tag_scope_id(uuid, text, uuid) 695449197971fb9428f2db51886c4441b27b622ebf4ce96f4fda1e9b3a447337  (already present — regenerate if stale)
--- based-on: platform.file_under_tag(text, uuid, text) 48624fcdc5e9b03e35f8ca0742226ec3f12a15f512a6cee4d7c58b6099f603f2  (already present — regenerate if stale)
--- based-on: custom.context_tags_set(text, uuid, uuid[]) 39a4f1a9906d37ca6aa6dfb3f02a2ae02723a052fa75d4d9853e55a7b96bb52a  (already present — regenerate if stale)
--- based-on: platform._tags_column_to_filing() e6cbc7c785425fc4e5946633b0439f23c38ef019552b106b13146453838d3613  (already present — regenerate if stale)
--- based-on: platform.tags_backfill(text, uuid, integer) 75db2c0a6483597d55c7c0bf2dc9e889cabfeac16cd0e1e6ffe1cecee30842af  (already present — regenerate if stale)
--- based-on: platform._search_item_filed_tags(text, uuid) f485b66d13d9759f8ca5750a2288d5712d445ce3140d1d2ed57395d752d96364  (already present — regenerate if stale)
--- based-on: public.list_entities_by_scopes(uuid[], text, boolean) 2576a229a8365afdf509c4f4ea98b87ed36133e2a20c6cb142ec984ec1600526
--- based-on: trigger _search_item_follow_filing on platform.associations 8efe15cb6e5696df2afd60f1afcb0b7d88ae7c7321a230f4c40e87caa883fb63  (already present — regenerate if stale)
--- based-on: trigger _search_item_follow_filing_delete on platform.associations 9224deeb3ec0483419f9f0e405e1f02446d3579ea63dc14dd8f29c56e6cf1e76  (already present — regenerate if stale)
+-- based-on: platform.tag_scope_id(uuid, text, uuid) 695449197971fb9428f2db51886c4441b27b622ebf4ce96f4fda1e9b3a447337
+-- based-on: platform.file_under_tag(text, uuid, text) 48624fcdc5e9b03e35f8ca0742226ec3f12a15f512a6cee4d7c58b6099f603f2
+-- based-on: custom.context_tags_set(text, uuid, uuid[]) 39a4f1a9906d37ca6aa6dfb3f02a2ae02723a052fa75d4d9853e55a7b96bb52a
+-- based-on: platform._tags_column_to_filing() e6cbc7c785425fc4e5946633b0439f23c38ef019552b106b13146453838d3613
+-- based-on: platform.tags_backfill(text, uuid, integer) 75db2c0a6483597d55c7c0bf2dc9e889cabfeac16cd0e1e6ffe1cecee30842af
+-- based-on: platform._search_item_filed_tags(text, uuid) f485b66d13d9759f8ca5750a2288d5712d445ce3140d1d2ed57395d752d96364
 --
 -- FTS-4 c/4 — THE TAG DOORS WRITE platform.tag. Signatures are kept, so every caller keeps working:
 --   platform.tag_scope_id(org, name, actor)  finds or creates the organization's tag by slug and answers its
@@ -25,6 +21,19 @@
 
 set local statement_timeout = '300s';
 
+-- A tag's slug: what context.slugify gave every tag scope the move carried over (so a name finds the same tag
+-- before and after), kept here so tags do not depend on the scopes' schema.
+create or replace function platform._tag_slug(p_name text)
+ returns text
+ language sql
+ immutable
+ set search_path to 'pg_catalog', 'public'
+as $function$
+  select coalesce(
+    nullif(trim(both '-' from regexp_replace(regexp_replace(lower(coalesce(platform.search_normalize(p_name), '')), '[^a-z0-9]+', '-', 'g'), '-{2,}', '-', 'g')), ''),
+    'tag-' || left(md5(lower(coalesce(p_name, ''))), 12))
+$function$;
+
 create or replace function platform.tag_scope_id(p_org uuid, p_name text, p_actor uuid)
  returns uuid
  language plpgsql
@@ -39,13 +48,12 @@ begin
   if v_name = '' then
     raise exception 'A tag needs a name.' using errcode = '22023';
   end if;
-  v_slug := coalesce(context.slugify(platform.search_normalize(v_name)),
-                     'tag-' || left(md5(lower(v_name)), 12));
+  v_slug := platform._tag_slug(v_name);
   select t.id into v_id from platform.tag t
    where t.organization_id = p_org and t.slug = v_slug and t.deleted_at is null;
   if v_id is null then
-    insert into platform.tag (organization_id, name, slug, created_by, visibility)
-    values (p_org, v_name, v_slug, p_actor, 'internal')
+    insert into platform.tag (organization_id, name, slug, created_by)
+    values (p_org, v_name, v_slug, p_actor)
     on conflict (organization_id, slug) where deleted_at is null do nothing
     returning id into v_id;
     if v_id is null then  -- a concurrent writer filed the same name first
@@ -179,8 +187,7 @@ begin
     update platform.associations a set deleted_at = now()
       from platform.tag g
      where g.organization_id = new.organization_id and g.deleted_at is null
-       and g.slug = coalesce(context.slugify(platform.search_normalize(btrim(regexp_replace(t, '^#+|\s+', ' ', 'g')))),
-                             'tag-' || left(md5(lower(btrim(regexp_replace(t, '^#+|\s+', ' ', 'g')))), 12))
+       and g.slug = platform._tag_slug(btrim(regexp_replace(t, '^#+|\s+', ' ', 'g')))
        and a.source_type = v_token and a.source_id = new.id and a.target_type = 'tag'
        and a.target_id = g.id and a.deleted_at is null;
   end loop;
@@ -264,16 +271,6 @@ as $function$
      and a.deleted_at is null
 $function$;
 
--- The projection follows the tag edges (it followed the scope edges until now).
-drop trigger if exists _search_item_follow_filing on platform.associations;
-drop trigger if exists _search_item_follow_filing_delete on platform.associations;
-create trigger _search_item_follow_filing
-  after insert or update of deleted_at, target_id on platform.associations
-  for each row when (new.target_type = 'tag') execute function platform._search_item_follow_filing();
-create trigger _search_item_follow_filing_delete
-  after delete on platform.associations
-  for each row when (old.target_type = 'tag') execute function platform._search_item_follow_filing();
-
 -- Bring the projection current: every item that carries a tag edge, and every item that carried the old record-store tags.
 update platform.search_item si
    set filed_tags = platform._search_item_filed_tags(si.entity_token, si.entity_id), projected_at = now()
@@ -296,38 +293,16 @@ as $function$
 $function$;
 grant execute on function platform.tags_in(uuid[]) to authenticated, service_role;
 
--- Items filed under these ids: a tag is filed under by the same edge as a scope, one token over.
-create or replace function public.list_entities_by_scopes(p_scope_ids uuid[], p_entity_type text DEFAULT NULL::text, p_match_all boolean DEFAULT true)
- returns jsonb
- language plpgsql
- stable security definer
-as $function$
-DECLARE
-    v_result jsonb;
-    v_required_count int := array_length(p_scope_ids, 1);
-BEGIN
-    IF p_match_all THEN
-        SELECT jsonb_agg(jsonb_build_object('entity_type', entity_type, 'entity_id', entity_id))
-        INTO v_result
-        FROM (
-            SELECT a.source_type AS entity_type, a.source_id AS entity_id
-            FROM platform.associations_live a
-            WHERE a.target_type in ('scope', 'tag') AND a.target_id = ANY(p_scope_ids)
-              AND (p_entity_type IS NULL OR a.source_type = p_entity_type)
-            GROUP BY a.source_type, a.source_id
-            HAVING count(DISTINCT a.target_id) = v_required_count
-        ) matched;
-    ELSE
-        SELECT jsonb_agg(DISTINCT jsonb_build_object('entity_type', a.source_type, 'entity_id', a.source_id))
-        INTO v_result
-        FROM platform.associations_live a
-        WHERE a.target_type in ('scope', 'tag') AND a.target_id = ANY(p_scope_ids)
-          AND (p_entity_type IS NULL OR a.source_type = p_entity_type);
-    END IF;
-    RETURN COALESCE(v_result, '[]'::jsonb);
-END;
-$function$;
-
 -- RETIRED: nothing calls it now (platform.tag_scope_id above was its only caller).
 delete from platform.client_callable_door where schema_name = 'platform' and function_name = 'tag_scope_type_id';
 drop function if exists platform.tag_scope_type_id(uuid, uuid);
+
+-- The projection follows the tag edges too (it followed the scope edges until now; those two triggers stay,
+-- untouched: dropping a trigger on platform.associations freezes sign-in, and they are harmless — their function
+-- reads the tag edges). CREATE TRIGGER blocks writes to the edges until commit, so these are the last statements.
+create trigger _search_item_follow_filing_tag
+  after insert or update of deleted_at, target_id on platform.associations
+  for each row when (new.target_type = 'tag') execute function platform._search_item_follow_filing();
+create trigger _search_item_follow_filing_tag_delete
+  after delete on platform.associations
+  for each row when (old.target_type = 'tag') execute function platform._search_item_follow_filing();

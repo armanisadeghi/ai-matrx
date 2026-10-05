@@ -63,8 +63,9 @@ export interface Board<T extends BoardTileBase> {
   /** Set a tile's whole rect (a resize handle drag). Coalesces like a move:
    * one gesture is one undoable step. */
   resizeTile: (id: string, rect: Rect) => void;
-  /** Move many tiles (and/or frames) as ONE undoable step — an arrangement. */
-  moveMany: (moves: { id: string; x: number; y: number }[]) => void;
+  /** Move many tiles (and/or frames) as ONE undoable step — an arrangement;
+   * `addFrames` draws frames in the same step. */
+  moveMany: (moves: { id: string; x: number; y: number }[], opts?: { addFrames?: BoardFrame[] }) => void;
   connections: BoardConnection[];
   connect: (connection: BoardConnection) => void;
   disconnect: (id: string) => void;

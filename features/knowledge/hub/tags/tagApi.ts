@@ -218,7 +218,7 @@ export async function listTagsForItems(items: { entity: string; id: string }[]):
 }
 
 /** Which of these ids are tags (the peek's Filed under leaves them to its Tags section). */
-export async function tagScopeIdsAmong(ids: string[]): Promise<Set<string>> {
+export async function tagIdsAmong(ids: string[]): Promise<Set<string>> {
   const out = new Set<string>();
   if (!ids.length) return out;
   for (const r of await tagsAmong(ids.slice(0, 200), "Reading which are tags")) out.add(r.id);

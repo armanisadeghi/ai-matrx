@@ -108,11 +108,23 @@ export type { AgentVersionSnapshot };
 type AgentRow = Database["agent"]["Tables"]["definition"]["Row"];
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],
-  "id" | "created_at" | "updated_at" | "source_agent_id" | "source_snapshot_at"
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "source_agent_id"
+  | "source_snapshot_at"
+  | "follows_source"
+  | "source_version"
 >;
 type AgentUpdate = Omit<
   Database["agent"]["Tables"]["definition"]["Update"],
-  "id" | "created_at" | "updated_at" | "source_agent_id" | "source_snapshot_at"
+  | "id"
+  | "created_at"
+  | "updated_at"
+  | "source_agent_id"
+  | "source_snapshot_at"
+  | "follows_source"
+  | "source_version"
 >;
 
 export type { AgentInsert, AgentUpdate };
@@ -381,6 +393,8 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
 
     sourceAgentId: row.source_agent_id,
     sourceSnapshotAt: row.source_snapshot_at,
+    followsSource: row.follows_source ?? false,
+    sourceVersion: row.source_version ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
 
@@ -616,6 +630,8 @@ export function versionSnapshotRowToAgentDefinition(
     taskId: null,
     sourceAgentId: null,
     sourceSnapshotAt: null,
+    followsSource: false,
+    sourceVersion: null,
     createdAt: row.changed_at,
     updatedAt: row.changed_at,
 

@@ -1,5 +1,12 @@
 # CHANGELOG — Board (`features/board`)
 
+## 2026-10-04 — Smart guides and snap to grid
+
+- Owner: "Snap to grid as an option, something that shows the edges of nodes when they align with others." Dragging or resizing a tile now snaps its left / centre / right and top / middle / bottom to the same stops of nearby tiles, draws a thin guide line across the aligned tiles, and snaps a gap to match a neighbouring gap (equal-spacing brackets, Figma-style). ON by default. Threshold 6 SCREEN px (`SNAP_THRESHOLD_PX / z`), so it feels the same at 10% and 400%. Candidates are collected once per gesture: tiles inside the viewport plus half a viewport of margin (frames are not targets).
+- Snap to grid is OFF by default: positions and the moving resize edge round to 24 board px (`GRID_SIZE`, the same cell as the dot grid). Grid wins over guides for position. Both live in the zoom menu (Smart guides, Snap to grid ⌘'), kept per viewer in `matrx.board.smartGuides` / `matrx.board.snapToGrid`. ⇧G was already Layout guides, so the grid shortcut is ⌘' / Ctrl+' (tldraw). Hold ⌘ / Ctrl / Alt while dragging to move without snapping. Shift (aspect lock) resizes are not snapped.
+- The snap happens before the store sees a move, so a snapped drag is still one undo step. The board has no multi-select and frames cannot be dragged yet; `snapMove` takes any rect, so a selection's bounds snap the same way when they arrive.
+- Guards: `__tests__/snapping.test.ts` (edge/centre snaps, scale-aware threshold, equal spacing, grid rounding, bypass, resize; 13 of 19 failed against a pass-through stub first), `__tests__/snap-wiring.test.ts` (candidate selection, session, preference keys, one undo step, 400-tile cost).
+
 ## 2026-10-04 — `board_find_records` finds meetings, workflow runs and study kits
 
 - Gap: topic-gathering missed these three (not in `platform.search_items`). Each type now has `record.find` over its bring-in picker's own list, every organization, never the active one: meetings (`readMyMeetings`, extracted from `useMeetingsDirectory` so hook and finder share one read; archived left out), workflow runs (`fetchRuns`, extracted from `useRunsList`; names from `fetchWorkflowFacts`), study kits (`listKits`; `record.place` added, non-file kit id = `<sourceType>:<anchorId>`). Data records and meeting notes remain unsearchable; the tool description says so.

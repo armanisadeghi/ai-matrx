@@ -11,18 +11,25 @@
 
 "use client";
 
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { Building2, Gauge } from "lucide-react";
+import { Building2, Gauge, UserRound } from "lucide-react";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { PlanUsagePanel } from "@/features/entitlements/components/PlanUsagePanel";
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 import { MyUsageCard } from "@/features/entitlements/usage-gate/MyUsageCard";
 import { RedeemCodeField } from "@/features/entitlements/coupons/RedeemCodeField";
+import { BillingSummary } from "@/features/entitlements/components/BillingSummary";
+import { useUserOrganizations } from "@/features/organizations/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export function PlanUsageTab() {
-  const organizationId = useAppSelector(selectOrganizationId);
+  const userId = useAppSelector(selectUserId);
+  const { organizations, loading: organizationsLoading } = useUserOrganizations();
+  const [billingOrganizationId, setBillingOrganizationId] = useState<string | null>(null);
+  const organizationId = billingOrganizationId;
 
   return (
     <div className="space-y-3">
@@ -30,6 +37,8 @@ export function PlanUsageTab() {
         title="Plan & usage"
         icon={Gauge}
       />
+      {userId ? <BillingSummary scope={{ kind: "personal", userId }} /> : null}
+      <SettingsSubHeader title="Effective usage" icon={UserRound} />
       <MyUsageCard />
       {/* Free-time coupons for this account (rule 18): POST /api/billing/coupons/redeem. */}
       <RedeemCodeField />
@@ -37,6 +46,26 @@ export function PlanUsageTab() {
         title="Organization"
         icon={Building2}
       />
+      <div className="rounded-md border border-border bg-card p-4">
+        <label className="text-sm font-medium text-foreground" htmlFor="billing-organization">
+          Organization billing account
+        </label>
+        <Select
+          value={billingOrganizationId ?? undefined}
+          onValueChange={setBillingOrganizationId}
+          disabled={organizationsLoading}
+        >
+          <SelectTrigger id="billing-organization" className="mt-2 w-full sm:max-w-sm">
+            <SelectValue placeholder={organizationsLoading ? "Loading organizations…" : "Choose an organization"} />
+          </SelectTrigger>
+          <SelectContent>
+            {organizations.map((organization) => (
+              <SelectItem key={organization.id} value={organization.id}>{organization.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {billingOrganizationId ? <BillingSummary scope={{ kind: "organization", organizationId: billingOrganizationId }} /> : null}
       <SettingsCallout tone="info">
         Limits marked Planning only help you plan ahead. They do not stop work.
       </SettingsCallout>

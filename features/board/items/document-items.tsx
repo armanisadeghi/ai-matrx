@@ -92,6 +92,8 @@ export const DOCUMENT_ITEMS: readonly BoardItemType[] = [
     kindLabel: "document",
     icon: FileText,
     group: "work",
+    accent: "indigo",
+    status: { none: "Its save status lives in the editor's own bar, not in a store the board can read." },
     // A page-width document (~794px) plus the title strip and the editor bar.
     defaultSize: { w: 840, h: 760 },
     matches: matchesDocument,

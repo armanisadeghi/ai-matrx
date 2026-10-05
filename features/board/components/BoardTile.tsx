@@ -63,6 +63,8 @@ import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWith
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Button } from "@/components/ui/button";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
+import type { BoardAccent } from "../items/types";
+import { OverviewCard } from "./TileFace";
 
 const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
 
@@ -89,6 +91,14 @@ export interface BoardTileProps {
   /** Small line under the title (kind, source, model…). */
   subtitle?: string;
   icon?: LucideIcon;
+  /** The item type's colour (its far-zoom card). Default `slate`. */
+  accent?: BoardAccent;
+  /** The item type's name on the far-zoom card ("Note", "War Room"). */
+  typeLabel?: string;
+  /** The item's own status chip (`BoardItemType.status`), drawn by the host in
+   * the header (`header`) and on the far-zoom card (`face`). A leaf: its reads
+   * never re-render the body. */
+  renderStatus?: (variant: "header" | "face", animate: boolean) => ReactNode;
   /** Where the status dot and overview card read from. Read in leaf
    * components only, so progress never re-renders the body. */
   statusFrom?: StatusFrom;
@@ -141,6 +151,9 @@ const INTERACTIVE_SELECTOR = [
   "[data-board-interactive]",
 ].join(", ");
 
+/** At far zoom a 12px world radius is a square corner on screen: keep it a soft screen-sized one. */
+const FACE_RADIUS = { borderRadius: "min(calc(7px / var(--board-z, 1)), 48px)" } as const;
+
 const FLY_DISTANCE_PX = 900;
 const FLY_MS = 220;
 const FOCUS_IN_MS = 260;
@@ -151,6 +164,9 @@ export function BoardTile({
   title,
   subtitle,
   icon: Icon,
+  accent = "slate",
+  typeLabel,
+  renderStatus,
   statusFrom = IDLE_STATUS,
   actions,
   onMove,
@@ -254,7 +270,8 @@ export function BoardTile({
       const target = e.target as HTMLElement;
       lastPressRef.current = target;
       if (target.closest("[data-board-resize]")) return; // the handle owns it
-      const inHeader = !!headerRef.current?.contains(target);
+      // The far-zoom card stands in for the whole tile: a press on it moves it, like the header.
+      const inHeader = !!headerRef.current?.contains(target) || !!target.closest("[data-board-overview]");
       const press = pressAction({
         pointerType: e.pointerType,
         inHeader,
@@ -394,8 +411,9 @@ export function BoardTile({
       ref={cardRef}
       data-board-card={id}
       data-board-title={title}
+      style={overview && !focused ? FACE_RADIUS : undefined}
       className={cn(
-        "flex h-full w-full flex-col overflow-hidden overscroll-contain rounded-xl border bg-card",
+        "relative flex h-full w-full flex-col overflow-hidden overscroll-contain rounded-xl border bg-card",
         focused ? "border-border shadow-2xl" : selected ? "border-primary" : "border-border",
       )}
     >
@@ -411,6 +429,7 @@ export function BoardTile({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-foreground">{title}</p>
         </div>
+        {!overview && renderStatus?.("header", tier === "read")}
         {subtitle && (
           <span className="hidden shrink-0 truncate text-[11px] text-muted-foreground sm:inline">
             {subtitle}
@@ -480,8 +499,18 @@ export function BoardTile({
             </Activity>
           )}
         </div>
-        {overview && <OverviewCard title={title} from={statusFrom} icon={Icon} />}
       </div>
+      {overview && (
+        <OverviewCard
+          title={title}
+          typeLabel={typeLabel}
+          icon={Icon}
+          accent={accent}
+          selected={selected}
+          from={statusFrom}
+          status={renderStatus?.("face", false)}
+        />
+      )}
     </div>
   );
 
@@ -500,7 +529,10 @@ export function BoardTile({
           focused,
           // The frame edge (a resize handle) is chrome, like the header — at
           // far zoom the edge handles cover most of a tiny header.
-          inHeader: !!headerRef.current?.contains(target) || !!target.closest("[data-board-resize]"),
+          inHeader:
+            !!headerRef.current?.contains(target) ||
+            !!target.closest("[data-board-resize]") ||
+            !!target.closest("[data-board-overview]"),
           onControl: !!target.closest(INTERACTIVE_SELECTOR),
           interacting,
         });
@@ -527,6 +559,7 @@ export function BoardTile({
         width: rect.w,
         height: rect.h,
         zIndex: selected ? 5 : undefined,
+        ...(overview && !focused ? FACE_RADIUS : null),
         contentVisibility: culled && !focused ? "hidden" : "visible",
       }}
     >
@@ -688,60 +721,6 @@ function StatusDot({ from, animate }: { from: StatusFrom; animate: boolean }) {
       )}
       title={STATUS_LABEL[status]}
     />
-  );
-}
-
-/** The far-zoom face of a tile: counter-scaled so it reads at any zoom. */
-function OverviewCard({
-  title,
-  from,
-  icon: Icon,
-}: {
-  title: string;
-  from: StatusFrom;
-  icon?: LucideIcon;
-}) {
-  const { status, progress } = useTileStatus(from, useBoardCameraStore().isInteracting);
-  return (
-    <div className="absolute inset-0 flex flex-col justify-between bg-card p-4">
-      <div className="flex items-start gap-2">
-        {Icon && (
-          <Icon
-            className="shrink-0 text-muted-foreground"
-            style={{ width: "calc(16px / var(--board-z))", height: "calc(16px / var(--board-z))" }}
-          />
-        )}
-        <p
-          className="line-clamp-3 font-semibold leading-tight text-foreground"
-          style={{ fontSize: "min(calc(15px / var(--board-z)), 72px)" }}
-        >
-          {title}
-        </p>
-      </div>
-      <div className="space-y-2">
-        <p
-          className="font-medium text-muted-foreground"
-          style={{ fontSize: "min(calc(11px / var(--board-z)), 48px)" }}
-        >
-          {/* One string, one text node: a conditional second node is an
-              insertion, and insertions are what the shell's :has() rules
-              turn into whole-tree restyles. */}
-          {`${STATUS_LABEL[status]}${progress !== null && status === "streaming" ? ` · ${Math.round(progress * 100)}%` : ""}`}
-        </p>
-        <div className="h-2 overflow-hidden rounded-full bg-muted">
-          {/* Steps, not a transition: at this zoom a 5% step needs no easing,
-              and 100 bars easing at once invalidate the moving world layer
-              every frame. scaleX, never width (width re-runs layout). */}
-          <div
-            className={cn(
-              "h-full w-full origin-left rounded-full",
-              status === "error" ? "bg-destructive" : "bg-primary",
-            )}
-            style={{ transform: `scaleX(${status === "complete" ? 1 : (progress ?? 0)})` }}
-          />
-        </div>
-      </div>
-    </div>
   );
 }
 

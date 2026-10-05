@@ -184,14 +184,14 @@ try {
   out.refused_tag_sentence = probeTag.error?.message ?? null;
   const entityId = process.env.TAG_ENTITY_ID;
   if (entityId) {
-    const { data: scopes, error: se } = await sb.schema("context").from("scopes").select("id").eq("slug", TAG_NAME).is("deleted_at", null);
+    const { data: scopes, error: se } = await sb.schema("platform").from("tag").select("id").eq("slug", TAG_NAME).is("deleted_at", null);
     if (se) throw se;
     out.tag_removed = [];
     for (const s of scopes ?? []) {
       const { error } = await sb.rpc("assoc_remove", {
         p_source_type: process.env.TAG_ENTITY_TOKEN ?? "processed_document",
         p_source_id: entityId,
-        p_target_type: "scope",
+        p_target_type: "tag",
         p_target_id: s.id,
       });
       out.tag_removed.push({ scope: s.id, ok: !error, ...(error ? { error: error.message } : {}) });

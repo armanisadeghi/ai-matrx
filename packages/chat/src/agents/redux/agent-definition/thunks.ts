@@ -1060,7 +1060,7 @@ export const saveAgentField = createAsyncThunk<
           agentDefinitionToUpdate({ [field]: value } as Partial<AgentDefinition>),
         )
         .eq("id", agentId)
-        .select("version, updated_at"),
+        .select("version, updated_at, follows_source"),
       { action: "update", noun: "definition" },
     );
 
@@ -1076,6 +1076,8 @@ export const saveAgentField = createAsyncThunk<
           id: agentId,
           version: data.version,
           updatedAt: data.updated_at,
+          // An edit to what a following copy follows turns it off in the database.
+          followsSource: data.follows_source,
         }),
       );
     }
@@ -1145,7 +1147,7 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
           } as Database["agent"]["Tables"]["definition"]["Update"]["tool_config"],
         })
         .eq("id", agentId)
-        .select("version, updated_at"),
+        .select("version, updated_at, follows_source"),
       { action: "update", noun: "definition" },
     );
 
@@ -1161,6 +1163,8 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
           id: agentId,
           version: data.version,
           updatedAt: data.updated_at,
+          // An edit to what a following copy follows turns it off in the database.
+          followsSource: data.follows_source,
         }),
       );
     }
@@ -1207,7 +1211,7 @@ export const setAgentAutoContextDisabled = createAsyncThunk<
         .from("definition")
         .update({ auto_context_disabled: disabled })
         .eq("id", agentId)
-        .select("version, updated_at"),
+        .select("version, updated_at, follows_source"),
       { action: "update", noun: "definition" },
     );
 
@@ -1225,6 +1229,8 @@ export const setAgentAutoContextDisabled = createAsyncThunk<
           id: agentId,
           version: data.version,
           updatedAt: data.updated_at,
+          // An edit to what a following copy follows turns it off in the database.
+          followsSource: data.follows_source,
         }),
       );
     }
@@ -1274,7 +1280,7 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
         .from("definition")
         .update(agentDefinitionToUpdate(dirtyPartial))
         .eq("id", agentId)
-        .select("version, updated_at"),
+        .select("version, updated_at, follows_source"),
       { action: "update", noun: "definition" },
     );
 
@@ -1292,6 +1298,8 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
           id: agentId,
           version: data.version,
           updatedAt: data.updated_at,
+          // An edit to what a following copy follows turns it off in the database.
+          followsSource: data.follows_source,
         }),
       );
     }
@@ -1371,6 +1379,8 @@ export const createAgent = createAsyncThunk<
     taskId: partial.taskId ?? null,
     sourceAgentId: null,
     sourceSnapshotAt: null,
+    followsSource: false,
+    sourceVersion: null,
     createdAt: "",
     updatedAt: "",
 
@@ -1462,6 +1472,11 @@ export interface DuplicateAgentOptions {
    * Omitted: the organization the person is working in now.
    */
   organizationId?: string;
+  /**
+   * The copy keeps running the source agent's current instructions, tools, model and
+   * settings until someone edits those (a template install). Default false: a fork.
+   */
+  followsSource?: boolean;
 }
 
 export const duplicateAgent = createAsyncThunk<
@@ -1469,9 +1484,19 @@ export const duplicateAgent = createAsyncThunk<
   string | DuplicateAgentOptions,
   ThunkApi
 >("agentDefinition/duplicate", async (input, { dispatch, getState }) => {
-  const { agentId, asSystem, organizationId: explicitOrganizationId } =
+  const {
+    agentId,
+    asSystem,
+    organizationId: explicitOrganizationId,
+    followsSource,
+  } =
     typeof input === "string"
-      ? { agentId: input, asSystem: false, organizationId: undefined }
+      ? {
+          agentId: input,
+          asSystem: false,
+          organizationId: undefined,
+          followsSource: false,
+        }
       : input;
 
   // A personal copy lives in the organization the caller named, else the one the
@@ -1486,6 +1511,7 @@ export const duplicateAgent = createAsyncThunk<
     p_agent_id: agentId,
     p_as_system: Boolean(asSystem),
     p_organization_id: organizationId,
+    p_follows_source: Boolean(followsSource),
   });
 
   if (error) throw pgErrorToError(error);
@@ -1494,6 +1520,22 @@ export const duplicateAgent = createAsyncThunk<
   await dispatch(fetchFullAgent(newAgentId));
   return newAgentId;
 });
+
+/**
+ * "Reset to latest": puts the source agent's current instructions, tools, model and
+ * settings back on a copy and turns following on again (`agx_reset_agent_to_source`,
+ * run as the person — row security decides). The copy's own variable bindings stay.
+ */
+export const resetAgentToSource = createAsyncThunk<void, string, ThunkApi>(
+  "agentDefinition/resetToSource",
+  async (agentId, { dispatch }) => {
+    const { error } = await supabase.rpc("agx_reset_agent_to_source", {
+      p_agent_id: agentId,
+    });
+    if (error) throw pgErrorToError(error);
+    await dispatch(fetchFullAgent(agentId));
+  },
+);
 
 /**
  * Duplicates the EXACT pinned `agx_version` snapshot a server uses — not the

@@ -444,6 +444,14 @@ export interface AgentDefinition {
   // null on version records
   sourceAgentId: string | null;
   sourceSnapshotAt: string | null;
+  /**
+   * True while a run uses the source agent's current instructions, tools, model and
+   * settings (a template install's copy). An edit to those turns it off in the database;
+   * `resetAgentToSource` turns it back on. False on version records.
+   */
+  followsSource: boolean;
+  /** The source agent's version this copy was made (or last reset) from. */
+  sourceVersion: number | null;
   createdAt: string;
   updatedAt: string;
 

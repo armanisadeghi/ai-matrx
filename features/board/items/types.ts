@@ -57,6 +57,41 @@ export interface PickerProps {
 
 export type BoardItemGroup = "work" | "content" | "media" | "features";
 
+/** A type's colour on the board (its card at far zoom, its kind label). Tokens
+ * `--board-accent-<name>` in `components/board-accents.css`, light and dark. */
+export const BOARD_ACCENTS = [
+  "blue",
+  "amber",
+  "slate",
+  "indigo",
+  "emerald",
+  "teal",
+  "rose",
+  "cyan",
+  "violet",
+  "orange",
+  "pink",
+  "lime",
+] as const;
+export type BoardAccent = (typeof BOARD_ACCENTS)[number];
+
+/** How a status reads: a tone (semantic colour) and one or two words. */
+export type ItemStatusTone = "neutral" | "active" | "attention" | "success" | "danger";
+export interface ItemStatus {
+  tone: ItemStatusTone;
+  /** One or two words: "In progress", "Replying", "Live". */
+  label: string;
+}
+
+/**
+ * The item's real state on its tile (header chip; the card at far zoom).
+ * `useStatus` is a HOOK, called in one leaf per tile: it reads only what the app
+ * already holds (Redux, kept answers) — never a network read per tile. Return
+ * null when the item is at rest and there is nothing to say (a saved note, an
+ * idle chat). A type with no state of its own says why in `none`.
+ */
+export type ItemStatusDoor = { useStatus: (source: NodeSource) => ItemStatus | null } | { none: string };
+
 /**
  * The feature's OWN agent surface for the record in a tile — the same values,
  * write targets and client tools its page has, so an agent can do on the board
@@ -116,6 +151,10 @@ export interface BoardItemType {
   label: string;
   icon: LucideIcon;
   group: BoardItemGroup;
+  /** The type's colour on the board (see `BoardAccent`). */
+  accent: BoardAccent;
+  /** The item's live state on its tile (see `ItemStatusDoor`). */
+  status: ItemStatusDoor;
   defaultSize: { w: number; h: number };
   /** Does this type render that saved source? */
   matches: (source: NodeSource) => boolean;

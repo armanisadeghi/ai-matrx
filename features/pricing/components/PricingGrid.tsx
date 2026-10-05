@@ -22,11 +22,14 @@ import {
   pricingGroups,
   type PricingGroupId,
 } from "@/features/entitlements/catalog/format";
-import type { BillingCycle, CatalogPlan } from "@/features/entitlements/catalog/types";
+import type {
+  BillingCycle,
+  CatalogPlan,
+} from "@/features/entitlements/catalog/types";
 import { Spinner } from "@/components/ui/spinner";
-
-/** Cards per row on the pricing page; a group with more plans ladders its last card. */
-const VISIBLE_SLOTS = 4;
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { CheckoutFeedback } from "./CheckoutFeedback";
+import { planSlots, pricingSelectionFromSearch } from "./pricingSelection";
 
 interface PricingGridProps {
   /** A server read of the catalog — renders with no client fetch. */
@@ -48,18 +51,19 @@ export function PricingGrid({
   className,
 }: PricingGridProps) {
   const catalog = usePlanCatalog(initialPlans);
-  const { signedIn, choose, isPending } = useChoosePlan();
   const searchParams = useSearchParams();
-  const [cycle, setCycle] = useState<BillingCycle>(searchParams.get("cycle") === "annual" ? "annual" : initialCycle);
-  const [groupId, setGroupId] = useState<PricingGroupId>(initialGroup);
-  /** Per laddered slot (keyed by its first plan): the plan the switch is on. */
-  const [ladderPick, setLadderPick] = useState<Record<string, string>>({});
 
   if (catalog.status === "error") {
     return (
-      <div className={cn("flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground", className)}>
+      <div
+        className={cn(
+          "flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground",
+          className,
+        )}
+      >
         <AlertTriangle className="h-4 w-4 text-destructive" />
         Plans could not be loaded. Refresh to try again.
+        <ErrorAlchemyMenu />
       </div>
     );
   }
@@ -71,14 +75,56 @@ export function PricingGrid({
     );
   }
 
-  const groups = pricingGroups(catalog.plans);
+  const selection = pricingSelectionFromSearch(catalog.plans, searchParams, {
+    cycle: initialCycle,
+    groupId: initialGroup,
+  });
+  return (
+    <PricingGridReady
+      key={searchParams.toString()}
+      plans={catalog.plans}
+      selection={selection}
+      onSelect={onSelect}
+      showHeader={showHeader}
+      className={className}
+    />
+  );
+}
+
+interface PricingGridReadyProps {
+  plans: CatalogPlan[];
+  selection: ReturnType<typeof pricingSelectionFromSearch>;
+  onSelect?: (plan: CatalogPlan) => void;
+  showHeader: boolean;
+  className?: string;
+}
+
+function PricingGridReady({
+  plans,
+  selection,
+  onSelect,
+  showHeader,
+  className,
+}: PricingGridReadyProps) {
+  const { signedIn, choose, isPending } = useChoosePlan();
+  const [cycle, setCycle] = useState<BillingCycle>(selection.cycle);
+  const [groupId, setGroupId] = useState<PricingGroupId>(selection.groupId);
+  /** Per laddered slot (keyed by its first plan): the plan the switch is on. */
+  const [ladderPick, setLadderPick] = useState<Record<string, string>>(
+    selection.ladderPick,
+  );
+
+  const groups = pricingGroups(plans);
   const group = groups.find((g) => g.id === groupId) ?? groups[0];
-  const savings = maxAnnualSavingsPercent(catalog.plans.filter((p) => p.listedOnPricing));
+  const savings = maxAnnualSavingsPercent(
+    plans.filter((p) => p.listedOnPricing),
+  );
   const handleSelect = onSelect ?? choose;
   const slots = planSlots(group?.plans ?? []);
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
+      <CheckoutFeedback />
       {showHeader && (
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
           {groups.length > 1 ? (
@@ -91,7 +137,11 @@ export function PricingGrid({
           ) : (
             <span />
           )}
-          <BillingToggle value={cycle} onChange={setCycle} savingsPercent={savings} />
+          <BillingToggle
+            value={cycle}
+            onChange={setCycle}
+            savingsPercent={savings}
+          />
         </div>
       )}
 
@@ -100,7 +150,8 @@ export function PricingGrid({
           "grid gap-4",
           slots.length === 1 && "mx-auto w-full max-w-md",
           slots.length === 2 && "mx-auto w-full max-w-3xl sm:grid-cols-2",
-          slots.length === 3 && "mx-auto w-full max-w-5xl sm:grid-cols-2 lg:grid-cols-3",
+          slots.length === 3 &&
+            "mx-auto w-full max-w-5xl sm:grid-cols-2 lg:grid-cols-3",
           slots.length >= 4 && "sm:grid-cols-2 lg:grid-cols-4",
         )}
       >
@@ -119,8 +170,16 @@ export function PricingGrid({
                 slot.length > 1 ? (
                   <PillSwitch
                     value={plan.planKey}
-                    onChange={(key) => setLadderPick((prev) => ({ ...prev, [slot[0].planKey]: key }))}
-                    options={slot.map((p) => ({ value: p.planKey, label: p.name }))}
+                    onChange={(key) =>
+                      setLadderPick((prev) => ({
+                        ...prev,
+                        [slot[0].planKey]: key,
+                      }))
+                    }
+                    options={slot.map((p) => ({
+                      value: p.planKey,
+                      label: p.name,
+                    }))}
                     aria-label={`${slot[0].name} level`}
                     size="sm"
                     equal={false}
@@ -134,14 +193,4 @@ export function PricingGrid({
       </div>
     </div>
   );
-}
-
-/**
- * A group shows at most VISIBLE_SLOTS cards. When it has more plans, the last
- * slot becomes a ladder: its first plan by default, with a switch on the card
- * to step up to every plan above it.
- */
-function planSlots(plans: CatalogPlan[]): CatalogPlan[][] {
-  if (plans.length <= VISIBLE_SLOTS) return plans.map((p) => [p]);
-  return [...plans.slice(0, VISIBLE_SLOTS - 1).map((p) => [p]), plans.slice(VISIBLE_SLOTS - 1)];
 }

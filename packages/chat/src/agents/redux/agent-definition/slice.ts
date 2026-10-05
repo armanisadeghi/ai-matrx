@@ -76,6 +76,10 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
 
     sourceAgentId: null,
     sourceSnapshotAt: null,
+
+    followsSource: false,
+
+    sourceVersion: null,
     createdAt: "",
     updatedAt: "",
 
@@ -485,6 +489,8 @@ export const agentDefinitionSlice = createSlice({
         taskId: data.taskId ?? null,
         sourceAgentId: null,
         sourceSnapshotAt: null,
+        followsSource: false,
+        sourceVersion: null,
         createdAt: now,
         updatedAt: now,
         isOwner: true,

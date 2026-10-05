@@ -1,4 +1,3 @@
--- draft: FTS-4 manager design, not yet rehearsed
 -- lane: FINISH-THE-SWITCH
 -- lock: platform
 --

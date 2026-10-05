@@ -57,14 +57,14 @@ describe("names", () => {
 describe("resolveTagRefs", () => {
   const q: KnowledgeQuery = { mode: "find", within: [{ type: "tag", name: "grant" }, { type: "project", id: "p1" }] };
 
-  it("tags first: every tag scope with the slug, one per organization", async () => {
+  it("tags first: every tag with the slug, one per organization", async () => {
     const findScope = jest.fn();
     const out = await resolveTagRefs(q, async () => [{ id: "t-org1" }, { id: "t-org2" }], findScope);
     expect(out.unresolved).toEqual([]);
     expect(out.query.within).toEqual([
       { type: "project", id: "p1" },
-      { type: "scope", id: "t-org1" },
-      { type: "scope", id: "t-org2" },
+      { type: "tag", id: "t-org1" },
+      { type: "tag", id: "t-org2" },
     ]);
     expect(findScope).not.toHaveBeenCalled();
   });
@@ -84,13 +84,13 @@ describe("resolveTagRefs", () => {
 });
 
 describe("withMentionResolution (hub and ⌘K)", () => {
-  it("a #tag reaches the runner as the tag scope(s), in the wire's shape", async () => {
+  it("a #tag reaches the runner as the tag(s), in the wire's shape", async () => {
     const runner = jest.fn().mockResolvedValue([]);
     const wrapped = withMentionResolution(runner, undefined, async () => [{ id: "t1" }]);
     await wrapped({ mode: "find", within: [{ type: "tag", name: "grant" }, { type: "project", id: "p1", name: "X" }] });
     expect(runner.mock.calls[0][0].within).toEqual([
       { type: "project", id: "p1" },
-      { type: "scope", id: "t1" },
+      { type: "tag", id: "t1" },
     ]);
   });
 

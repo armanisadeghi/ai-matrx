@@ -25,11 +25,10 @@
 // caller that passes no `onCreated` gets the copy archived here instead, and is told so.
 //
 // TAGS: `agx_duplicate_agent` copies the source's tags, and `agent.definition`'s AFTER
-// INSERT/UPDATE trigger `_tags_column_to_filing` files every tag as a scope in the copy's
-// organization (`platform.tag_scope_id` → a "tag" scope type + scopes, which write
-// through to the record store as a Tag table that refuses to archive). A template copy
-// carries no tags: they are cleared in the naming write, which soft-deletes the copy's tag
-// associations. The scopes the INSERT already filed stay — clearing tags host-side cannot
+// INSERT/UPDATE trigger `_tags_column_to_filing` files every tag under the organization's
+// platform tag (`platform.tag_scope_id` finds or creates the `platform.tag` row). A template
+// copy carries no tags: they are cleared in the naming write, which soft-deletes the copy's tag
+// associations. The tag rows the INSERT already made stay — clearing tags host-side cannot
 // prevent them; only a fork that does not carry tags can (a store-side change).
 
 // This file holds no app imports (types only), so a node script can run the same

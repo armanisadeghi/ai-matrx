@@ -70,6 +70,10 @@ import { type PlacementRun, placeTiles } from "./place-run";
 import { planPlacement } from "../board/plan-placement";
 import { AddMenu, StartPanel } from "./AddMenu";
 import { UnavailableItemBody } from "./UnavailableItemBody";
+import { StatusChip } from "../components/TileFace";
+import { runArrange } from "../board/arrange-board";
+import type { ArrangeCommand } from "../engine/arrange";
+import type { ItemStatus, ItemStatusDoor } from "../items/types";
 
 export interface UserBoardTile {
   id: string;
@@ -495,11 +499,22 @@ export function UserBoard({
     else if (board.frames.some((f) => f.id === id)) board.removeFrame(id);
     else if (tileOf(id)) takeOff(id);
   };
+  // Arrange (Board menu → Arrange, and its keys): frames move with their tiles, one undo step.
+  const arrangeBoard = (command: ArrangeCommand) => {
+    const moved = runArrange(board, command, {
+      groupOf: (t) => itemTypeFor(t.source)?.key ?? "unavailable",
+      order: BOARD_ITEM_TYPES.map((t) => t.key),
+      frameTitle: (group) => typeFrameTitle(BOARD_ITEM_TYPES.find((t) => t.key === group)?.label),
+      root: rootRef.current,
+    });
+    if (moved === 0) toast("Already arranged that way");
+  };
   useBoardKeys({
     undo: board.undo,
     redo: board.redo,
     deleteSelected,
     enabled: () => !store?.getEditing(),
+    arrange: arrangeBoard,
   });
 
   // ── agents: the board_* tools act through the same paths ─────────────────
@@ -548,6 +563,7 @@ export function UserBoard({
         onUnpark={unpark}
         wheelMode={wheelMode}
         onWheelMode={setWheelMode}
+        onArrange={arrangeBoard}
       >
         <div
           ref={rootRef}
@@ -687,6 +703,35 @@ export function UserBoard({
   );
 }
 
+/** A type frame's title: the type, plural ("Notes", "War Rooms"). */
+function typeFrameTitle(label: string | undefined): string {
+  if (!label) return "Other";
+  return /(s|Research|notes)$/.test(label) ? label : `${label}s`;
+}
+
+/** The tile's status chip: the type's `status.useStatus` hook, in its own leaf (a tick never re-renders the body). */
+function statusRenderer(key: string, door: ItemStatusDoor, source: NodeSource) {
+  if (!("useStatus" in door)) return undefined;
+  return (variant: "header" | "face", animate: boolean) => (
+    <ItemStatusLeaf key={key} useStatus={door.useStatus} source={source} variant={variant} animate={animate} />
+  );
+}
+
+function ItemStatusLeaf({
+  useStatus,
+  source,
+  variant,
+  animate,
+}: {
+  useStatus: (source: NodeSource) => ItemStatus | null;
+  source: NodeSource;
+  variant: "header" | "face";
+  animate: boolean;
+}) {
+  const status = useStatus(source);
+  return status ? <StatusChip status={status} variant={variant} animate={animate} /> : null;
+}
+
 /** "New meeting", "Chat with an agent": an entry already led by a verb keeps its own words. */
 function newLabel(type: BoardItemType, entry: StartNewEntry): string {
   if (/^(new|start|run|chat with)\b/i.test(entry.label)) return entry.label;
@@ -768,6 +813,9 @@ function BoardItemTile({
         title={title}
         subtitle={type?.label ?? "Unavailable"}
         icon={type?.icon}
+        accent={type?.accent}
+        typeLabel={type?.label ?? "Unavailable"}
+        renderStatus={type ? statusRenderer(type.key, type.status, source) : undefined}
         onMove={board.moveTile}
         onResize={board.resizeTile}
         onThrow={onThrow}
