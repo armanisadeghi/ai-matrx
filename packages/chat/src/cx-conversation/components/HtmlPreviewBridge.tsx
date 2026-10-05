@@ -180,7 +180,7 @@ export function HtmlPreviewBridge({
           externalUrl: savedResult.url,
           title: savedResult.metaTitle,
         }),
-      ).catch((err) => {
+      ).catch((err: unknown) => {
         // Same class as the registration catch above: the page was
         // re-published, the record of it was not. Never silent.
         if (

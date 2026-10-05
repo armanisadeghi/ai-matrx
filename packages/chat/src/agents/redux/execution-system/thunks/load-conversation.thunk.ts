@@ -529,7 +529,7 @@ export const loadConversation = createAsyncThunk<
             conversationId,
             content: r.content,
           })),
-      ).catch((err) => {
+      ).catch((err: unknown) => {
         console.error("[loadConversation] artifact reconcile failed:", err);
       });
     }

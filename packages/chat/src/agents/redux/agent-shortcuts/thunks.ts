@@ -1596,7 +1596,7 @@ import {
   SHORTCUT_RPCS,
   mandateIdOfShortcutRow,
   mandateKeyOfShortcutRow,
-} from "@host/lib/supabase/shortcutStorage";
+} from "@ai-matrx/chat/ui/mandates-storage/shortcutStorage";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
 import { selectUserId } from "../../../host/identity";
 import { ensureOrgId } from "../../../host/org";

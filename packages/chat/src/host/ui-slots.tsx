@@ -25,6 +25,26 @@ import type { EditableContextMenuProps, NonEditableContextMenuProps } from "../c
 /** The host context menu's props (its registration is typed against them). */
 export type { EditableContextMenuProps, NonEditableContextMenuProps };
 
+import type { SkillRow } from "../ui/skills-types";
+import type { CxContentBlock } from "../public-chat/types/cx-tables";
+
+/** The fields of a canvas item row chat reads (the host's canvas store owns the row). */
+interface CanvasItemRow {
+  id: string;
+  title: string | null;
+  content: unknown;
+  version: number;
+}
+
+/** One selectable row of a bound picklist (the host's list door answers these). */
+interface PicklistItem {
+  id: string;
+  label: string;
+  help_text: string | null;
+  group_name: string | null;
+  icon_name: string | null;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyComponent = ComponentType<any>;
 type AnyFn = (...args: any[]) => any;
@@ -162,6 +182,7 @@ export interface ChatUiSlots {
   resolvePdfSurfaceIds: AnyFn;
   /** The host's list RPC reader (`{ data, error }`). */
   readListRpc: AnyFn;
+  toastDoor: AnyFn;
   currentPointsRate: AnyFn;
   useCostDisplay: AnyFn;
   ReadFailure: AnyComponent;
@@ -189,10 +210,10 @@ export interface ChatUiSlots {
   humanLines: AnyFn;
   useCanvasOpenGuard: AnyFn;
   useRegisterChatAttachTarget: AnyFn;
-  useSkills: AnyFn;
+  useSkills: () => { skills: SkillRow[]; grouped: Record<string, SkillRow[]>; count: number; loading: boolean; error: string | null; reload: () => Promise<void> };
   useAutoLabel: AnyFn;
   generateLabelFromContent: AnyFn;
-  useStructuredListForSelection: AnyFn;
+  useStructuredListForSelection: (listId: string | null | undefined, groupName?: string) => { items: PicklistItem[]; groups: unknown[]; loading: boolean; unavailable: boolean; error: unknown; retry: () => void };
   useGitHubConnection: AnyFn;
   useOutputFeedback: AnyFn;
   saveOutputFeedback: AnyFn;
@@ -207,7 +228,7 @@ export interface ChatUiSlots {
   loadCodeEditHistoryThunk: AnyFn;
   applySkillStreamEvent: AnyFn;
   isSkillStreamEvent: AnyFn;
-  materializeMessageArtifacts: AnyFn;
+  materializeMessageArtifacts: (args: { messageId: string; conversationId: string; content: CxContentBlock[]; getState: () => any }) => Promise<{ materializedCount: number; rewrittenContent: CxContentBlock[] | null; unpersistedRewrite?: CxContentBlock[]; errors: string[] }>;
   reconcileMessagesArtifacts: AnyFn;
   noteBrowserActivity: AnyFn;
   selectCloudBrowserRunLive: AnyFn;
@@ -218,15 +239,15 @@ export interface ChatUiSlots {
   stripTurnTrust: AnyFn;
   voiceDisplayName: AnyFn;
   recognizeOurFileUrl: AnyFn;
-  canvasGetVersionHistory: AnyFn;
-  canvasGetById: AnyFn;
+  canvasGetVersionHistory: (canvasId: string) => Promise<CanvasItemRow[]>;
+  canvasGetById: (canvasId: string) => Promise<CanvasItemRow | null>;
   createSandboxFilesystemAdapter: AnyFn;
   notesGetById: AnyFn;
   isLiveConversationVoice: AnyFn;
   ourFileUrlMarkers: AnyFn;
   createHtmlPage: AnyFn;
   convertMarkdownToHtml: AnyFn;
-  sklActions: AnyFn;
+  sklActions: Record<string, AnyFn>;
   selectAllContentBlocksArray: AnyFn;
   selectContentBlocksByScope: AnyFn;
   selectContentBlocksByScopeRef: AnyFn;
@@ -713,7 +734,6 @@ export const requireAuthenticatedSupabaseSession = slotFn("requireAuthenticatedS
 
 export const notifyPrintOutcome = slotFn("notifyPrintOutcome");
 
-export const promptForValues = slotFn("promptForValues");
 
 export const awaitEffectiveOrganizationId = slotFn("awaitEffectiveOrganizationId");
 
@@ -775,7 +795,6 @@ export const answerPreviewText = slotFn("answerPreviewText");
 
 export const beginPlaybackSession = slotFn("beginPlaybackSession");
 
-export const promptForValues = slotFn("promptForValues");
 
 export const currentCostUnit = slotFn("currentCostUnit", () => "points");
 
@@ -788,3 +807,5 @@ export const useCostDisplay = slotFn("useCostDisplay", () => ({
   format: (usd: number | null | undefined, options?: object) => formatCost(usd, { ...options, unit: "points", rate: null }),
   toPoints: (usd: number | null | undefined) => usdToPoints(usd, { rate: null }),
 }));
+/** A host with no entity doors puts no action on the notice (reported once). */
+export const toastDoor = slotFn("toastDoor", () => undefined);

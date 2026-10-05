@@ -16,7 +16,7 @@
  */
 
 import type { ReactNode } from "react";
-import { WAR_ROOM_CONTEXT_KEY } from "@host/features/war-room/service/warRoomContextXml";
+import { WAR_ROOM_CONTEXT_KEY } from "./war-room-context-key";
 import { cn } from "@ai-matrx/design-system";
 import { unwrapRichContextValue } from "./contextValueUtils";
 

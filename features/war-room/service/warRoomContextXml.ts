@@ -25,7 +25,8 @@
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
 import { accessLegendEntries } from "@/features/scopes/registry/entityContentAdapters";
 
-export const WAR_ROOM_CONTEXT_KEY = "war_room";
+import { WAR_ROOM_CONTEXT_KEY } from "@ai-matrx/chat/agents/components/context-policies-display/war-room-context-key";
+export { WAR_ROOM_CONTEXT_KEY };
 /** Generous ceiling — far below the backend HARD_INLINE_CAP (50 000) — so the
  *  overview renders inline even for a busy room/master roster. */
 const INLINE_CEIL = 24_000;

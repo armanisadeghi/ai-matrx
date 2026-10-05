@@ -742,10 +742,6 @@ registerChatUi({
   notifyPrintOutcome: Host_notifyPrintOutcome,
 });
 
-import { promptForValues as Host_promptForValues } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
-registerChatUi({
-  promptForValues: Host_promptForValues,
-});
 
 import { awaitEffectiveOrganizationId as Host_awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 registerChatUi({
@@ -890,10 +886,6 @@ registerChatUi({
   beginPlaybackSession: Host_beginPlaybackSession,
 });
 
-import { promptForValues as Host_promptForValues } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
-registerChatUi({
-  promptForValues: Host_promptForValues,
-});
 
 import { currentCostUnit as Host_currentCostUnit } from "@/components/cost/costUnit";
 registerChatUi({
@@ -911,3 +903,6 @@ registerChatUi({
   currentPointsRate: Host_currentPointsRate,
   useCostDisplay: Host_useCostDisplay,
 });
+
+import { toastDoor as Host_toastDoor } from "@/components/official/entity-ref/toastDoor";
+registerChatUi({ toastDoor: Host_toastDoor });

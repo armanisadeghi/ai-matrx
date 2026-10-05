@@ -3889,7 +3889,7 @@ export async function processStream({
                 );
               }
             })
-            .catch((err) => {
+            .catch((err: unknown) => {
               console.error(
                 `[stream:${requestId.slice(0, 8)}] artifact materialization threw for ${target.messageId}:`,
                 err,
