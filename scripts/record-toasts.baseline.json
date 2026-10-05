@@ -1,7 +1,7 @@
 {
   "note": "Record-naming toasts not yet routed through recordToast (lib/toast.ts). This list may only SHRINK — see scripts/check-record-toasts.ts.",
   "updated": "2026-09-12",
-  "count": 260,
+  "count": 261,
   "ids": [
     "app/(admin)/administration/agents/system-agents/apps/page.tsx::`${label} updated.`",
     "app/(admin)/administration/automation/scheduling/system-jobs/page.tsx::`${t.title} queued to run now`",
@@ -249,6 +249,7 @@
     "features/war-room/components/resources/WarRoomResourcesList.tsx::`${info.label} deleted`",
     "features/whatsapp-clone/chat-view/MessageInputAttachMenu.tsx::`${item.label} — coming soon`",
     "features/window-panels/diagnostics/overlayRenderWatchdog.ts::`\"${label}\" didn't appear`",
+    "features/window-panels/windows/FeedbackWindow.tsx::`Couldn't read the clipboard — copy an image first, then click Paste or press ${modifierKeyLabel()}+V`",
     "features/window-panels/windows/FeedbackWindow.tsx::`Use ${modifierKeyLabel()}+V to paste an image`",
     "features/window-panels/windows/agents/AgentTestCasesWindow.tsx::`Loaded “${sample.label}”`",
     "features/window-panels/windows/context-scopes/ContextItemsWindow.tsx::`Deleted \"${row.display_name}\"`",
@@ -267,6 +268,11 @@
   "reasons": {
     "features/window-panels/windows/FeedbackWindow.tsx::`Use ${modifierKeyLabel()}+V to paste an image`": {
       "reason": "Clipboard keyboard guidance names no persisted record; there is no record ID or destination to attach.",
+      "accepted_by": "Armani Sadeghi",
+      "date": "2026-10-05"
+    },
+    "features/window-panels/windows/FeedbackWindow.tsx::`Couldn't read the clipboard — copy an image first, then click Paste or press ${modifierKeyLabel()}+V`": {
+      "reason": "A clipboard read failure is device guidance, not a persisted record notification; attaching a fabricated record would be misleading.",
       "accepted_by": "Armani Sadeghi",
       "date": "2026-10-05"
     }
