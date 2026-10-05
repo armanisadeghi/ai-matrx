@@ -95,6 +95,12 @@ const EXPECTED_CHECKS = [
   // to mean. A seventh FK, or a row flipped from cascade to keep, lands here as a
   // mismatch instead of as silence.
   "mandate_edges_declared",
+  // A table retired into the record store (platform.retired_into_record_store: context.scopes,
+  // scope_types, context_items) carries no soft-delete trigger; its rows are archived and restored
+  // through their store doors. Its doors must exist, public.entity_soft_delete / entity_undelete must
+  // route the token to them, and no removal job may still wait on the old table (SCOPES-ARCHIVE,
+  // 2026-10-05: entity_soft_delete('scope', id) answered false for every scope made after the cutover).
+  "retired_tables_archive_through_record_store",
 ] as const;
 
 const C = {

@@ -222,6 +222,28 @@ const LADDER_RUNGS = [
   "custom\\.anon_token_verify",
 ];
 
+/**
+ * PROVEN WRAPPERS (lane SCOPES-ARCHIVE, 2026-10-05). The scope doors decide through
+ * `custom.assert_scope_door(organization, door)`, which calls `custom.assert_client_may_reach` and only
+ * rewrites its refusal into words a member can act on (lane 9, 2026-10-03). Censuses 1 and 5 read a
+ * body for a rung by name, so every scope door read as "decides nothing". A wrapper counts as a rung
+ * ONLY when this run reads the wrapper's own body (comments stripped) and finds a primary rung in it;
+ * a wrapper that stops calling the ladder is its own FAIL and is not counted. Adding a name here
+ * without that proof changes nothing.
+ */
+const PROVEN_WRAPPERS = ["assert_scope_door"];
+
+const WRAPPER_CENSUS = `
+  select w.name as function_name, coalesce(pg_get_function_identity_arguments(p.oid), '') as identity_args,
+         case when p.oid is null then 'named as a ladder wrapper, but no such function exists in schema custom'
+              else 'named as a ladder wrapper, but its own body never reaches the one ladder' end as why
+    from unnest(array[${PROVEN_WRAPPERS.map((w) => `'${w}'`).join(", ")}]::text[]) w(name)
+    left join pg_proc p on p.pronamespace = 'custom'::regnamespace and p.proname = w.name
+   where p.oid is null
+      or regexp_replace(pg_get_functiondef(p.oid), '--[^' || chr(10) || ']*', '', 'g')
+         !~* '(custom\\.assert_client_may_reach|custom\\.assert_client_may_change|custom\\.has_visibility)'
+   order by 1`;
+
 const DECLARED_DOOR_BODY = `
     from pg_proc p
     join platform.client_callable_door d
@@ -1495,10 +1517,21 @@ async function main(): Promise<void> {
     const rowsOf = (sql: string) => async () => (await client.query<Row>(sql)).rows;
 
     const refusalOnlyHere = await refusalOnlyIsInstalled(client);
+    const brokenWrappers = await measure(
+      "census 1w - proven wrappers",
+      "ladder wrappers whose own body no longer reaches the one ladder",
+      rowsOf(WRAPPER_CENSUS),
+    );
+    const proven =
+      brokenWrappers === null
+        ? []
+        : PROVEN_WRAPPERS.filter((w) => !brokenWrappers.some((r) => r.function_name === w));
+    const deciders = [...DECIDERS, ...proven];
+    const rungs = [...LADDER_RUNGS, ...proven.map((w) => `custom\\.${w}`)];
     await measure(
       "census 1 - callers",
       "client doors taking an organization id that never decide the caller",
-      rowsOf(CALLER_CENSUS(DECIDERS, refusalOnlyHere)),
+      rowsOf(CALLER_CENSUS(deciders, refusalOnlyHere)),
     );
     await measure(
       "census 2 - record writers",
@@ -1518,7 +1551,7 @@ async function main(): Promise<void> {
     await measure(
       "census 5 - declared ladder",
       "declared client doors whose body never goes through the one ladder",
-      rowsOf(DECLARED_LADDER_CENSUS(LADDER_RUNGS, refusalOnlyHere)),
+      rowsOf(DECLARED_LADDER_CENSUS(rungs, refusalOnlyHere)),
     );
     if (refusalOnlyHere) {
       await measure(
