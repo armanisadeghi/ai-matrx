@@ -262,18 +262,11 @@ export function ResourceAttachmentTile({
                 }} />
             ) : null}
             {onRemove ? (
-              <button
-                type="button"
-                onClick={(e) => {
+              <Tile variant="quiet" danger icon={<X />} title="Remove" onClick={(e) => {
                   stop(e);
                   setMenuOpen(false);
                   onRemove();
-                }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10 max-lg:min-h-11 pointer-coarse:min-h-11"
-              >
-                <X className="h-4 w-4 shrink-0" />
-                <span>Remove</span>
-              </button>
+                }} />
             ) : null}
           </PopoverContent>
         ) : null}
@@ -422,18 +415,11 @@ export function ResourceAttachmentTile({
               }} />
           ) : null}
           {onRemove ? (
-            <button
-              type="button"
-              onClick={(e) => {
+            <Tile variant="quiet" danger icon={<X />} title="Remove" onClick={(e) => {
                 stop(e);
                 setMenuOpen(false);
                 onRemove();
-              }}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10 max-lg:min-h-11 pointer-coarse:min-h-11"
-            >
-              <X className="h-4 w-4 shrink-0" />
-              <span>Remove</span>
-            </button>
+              }} />
           ) : null}
         </PopoverContent>
       ) : null}
