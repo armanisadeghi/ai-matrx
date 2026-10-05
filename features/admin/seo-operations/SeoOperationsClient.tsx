@@ -28,7 +28,6 @@ import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import MarkdownStream from "@/components/MarkdownStream";
 import {
   Select,
   SelectContent,
@@ -678,9 +677,9 @@ export function WorkbenchPanel() {
           <div className="grid gap-4 rounded-md border border-border p-4">
             <section className="grid gap-1">
               <h2 className="text-sm font-semibold text-foreground">Answer</h2>
-              <MarkdownStream imagePolicy="ai"
-                content={command.result.answer}
-                isStreamActive={false}
+              <RichContent level="full" imagePolicy="ai"
+                source={command.result.answer}
+                isStreaming={false}
                 hideCopyButton
               />
             </section>
