@@ -42,7 +42,7 @@ import {
 } from "@/components/rich-content/prose/prose-block-elements";
 import { withImagePolicy, type ImagePolicyDeclaration } from "@/components/rich-content/prose/remote-image-policy";
 import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";
-import { detectionOnlyKindsAsWritten, spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 
 interface BasicMarkdownContentProps {
   content: string;
@@ -104,9 +104,10 @@ const BasicMarkdownContentBody: React.FC<BasicMarkdownContentProps> = ({
   // eating a section. See lib/markdown/delimiter-guard.ts.
   const { text: processedContent, violations: delimiterViolations } =
     // The one prose leaf live and reloaded text both pass through: a real JSON
-    // kind that broke in prose reads as its one-line label; every non-JSON
-    // spelling draws exactly as written (round 10 — detection only).
-    guardMarkdownDelimiters(preprocessProse(detectionOnlyKindsAsWritten(spelledKindsAsOneLine(content))));
+    // kind that broke in prose reads as its one-line label. Non-JSON spellings
+    // get NO transform at all (round 10 — detection only; a markdown-escaping
+    // pass here hung the renderer on nested escapes).
+    guardMarkdownDelimiters(preprocessProse(spelledKindsAsOneLine(content)));
 
   // Loud recovery — report once the stream settles, so a half-typed `$$`
   // mid-stream isn't reported as a defect.

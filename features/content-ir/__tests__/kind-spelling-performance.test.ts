@@ -9,13 +9,13 @@
  * numbers (see the checklist, R9-3).
  */
 import { normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
-import { detectionOnlyKindsAsWritten, spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
+import { spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { markdownCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 
 /** The prose leaf's whole per-frame work (round 10): the render decision + the leaf's two passes. */
 const proseLeaf = (text: string) => {
   markdownCarriesKind(text);
-  return detectionOnlyKindsAsWritten(spelledKindsAsOneLine(text));
+  return spelledKindsAsOneLine(text);
 };
 
 /** Best of `runs` fresh-string calls (no memo hit: every run gets a new string). */
