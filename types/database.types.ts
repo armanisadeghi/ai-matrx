@@ -128905,6 +128905,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_account_points_month: {
+        Args: never
+        Returns: {
+          points_month: number
+          user_id: string
+        }[]
+      }
       credential_item_holdings: {
         Args: { p_item_ids: string[] }
         Returns: {
