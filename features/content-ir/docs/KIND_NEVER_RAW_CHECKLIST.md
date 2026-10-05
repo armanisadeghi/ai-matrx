@@ -626,5 +626,5 @@ all a kind.
       (d) `TextSectionsWindow` Raw view marked `data-kind-source`; `StructuredAgentAnswerBlock` "Details" is not a
       labelled source, so a payload carrying a kind goes through `AnswerValueView`. Guard
       `kind-leak-sentinel-guard-gaps.test.ts` (13 of 21 red before).
-- [ ] R8-open. `StructuredAgentAnswerBlock` small-object table cells print `JSON.stringify(cell)` (a cell holding a kind
+- [x] R8-open. DONE 2026-10-05 (cells AND chips → `cellText`: kind object → `kindOneLine`, kind text in any spelling → `kindTextLabel`; guard `StructuredAgentAnswerBlock.kind-cells.test.tsx`, red then green). `StructuredAgentAnswerBlock` small-object table cells print `JSON.stringify(cell)` (a cell holding a kind
       object prints it raw) — not in this round's brief.

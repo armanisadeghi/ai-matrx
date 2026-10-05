@@ -12,6 +12,8 @@ import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
+import { kindOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 
 type StructuredValue = Record<string, unknown>;
@@ -223,6 +225,20 @@ export function isRenderableStructuredAgentAnswer(
   return hasMeaningfulContent(value);
 }
 
+/**
+ * A cell or chip value as a person reads it: a kind (object, or JSON text in
+ * any spelling) is its one-line label, never its JSON; everything else is
+ * shown as before.
+ */
+function cellText(cell: unknown): string {
+  if (valueCarriesKind(cell)) {
+    return typeof cell === "string"
+      ? kindTextLabel(cell)
+      : kindOneLine(cell, { plain: true });
+  }
+  return typeof cell === "string" ? cell : JSON.stringify(cell ?? "");
+}
+
 export function StructuredAgentAnswerBlock({
   value,
   rawContent,
@@ -271,7 +287,7 @@ export function StructuredAgentAnswerBlock({
                     key={entry}
                     className="rounded-full bg-muted px-2 py-0.5 text-xs"
                   >
-                    {entry}
+                    {cellText(entry)}
                   </span>
                 ))}
               </div>
@@ -302,9 +318,7 @@ export function StructuredAgentAnswerBlock({
                     <tr key={rowIndex}>
                       {columns.map((column) => (
                         <td key={column} className="border-b p-2 align-top">
-                          {typeof row[column] === "string"
-                            ? row[column]
-                            : JSON.stringify(row[column] ?? "")}
+                          {cellText(row[column])}
                         </td>
                       ))}
                     </tr>
