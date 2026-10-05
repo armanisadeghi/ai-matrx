@@ -168,6 +168,9 @@ describe("durability port (unsent chips live server-side, never in the browser)"
         if (row) row.retired = true;
       },
       restore: () => {},
+      // This fake server answers every write synchronously: nothing is ever pending.
+      hasPending: () => false,
+      flush: async () => {},
     });
     return { rows, release };
   }
