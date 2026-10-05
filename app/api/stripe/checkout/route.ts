@@ -6,6 +6,7 @@
 // Local/preview use test prices; confirmed production uses live prices.
 
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import {
@@ -15,7 +16,8 @@ import {
 } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
 import { syncPlanPrices } from "@/features/entitlements/stripe/planCatalog";
-import { openSubscriptionPortal } from "@/features/entitlements/stripe/portal";
+import { openSubscriptionPortal, subscriptionPortalConfiguration } from "@/features/entitlements/stripe/portal";
+import { openImmediateUpgradeConfirmation } from "@/features/entitlements/stripe/planChange";
 import {
   CheckoutBusyError,
   withCheckoutLease,
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
       .schema("billing")
       .from("plan")
       .select(
-        "plan_key,organization_id,audience,monthly_cents,annual_cents,per_seat,min_seats",
+        "plan_key,organization_id,audience,monthly_cents,annual_cents,per_seat,min_seats,rank",
       )
       .eq("plan_key", planKey!)
       .eq("active", true)
@@ -219,12 +221,10 @@ export async function POST(request: NextRequest) {
     return await withCheckoutLease(customerId, livemode, async (assertHeld) => {
       // Each external operation is bounded well inside the renewed lease.
       const requestOptions = { timeout: 10_000, maxNetworkRetries: 0 };
-      const subscriptions = await stripe.subscriptions.list(
-        { customer: customerId, status: "all", limit: 100 },
-        requestOptions,
-      );
+      const subscriptions: Stripe.Subscription[] = [];
+      for await (const subscription of stripe.subscriptions.list({ customer: customerId, status: "all", limit: 100 }, requestOptions)) subscriptions.push(subscription);
       if (
-        subscriptions.data.some((s) =>
+        subscriptions.some((s) =>
           [
             "active",
             "trialing",
@@ -235,6 +235,19 @@ export async function POST(request: NextRequest) {
           ].includes(s.status),
         )
       ) {
+        const candidate = subscriptions.find((s) => ["active", "trialing"].includes(s.status) && s.items.data.length === 1 && !s.cancel_at && !s.cancel_at_period_end && s.schedule === null);
+        if (candidate && Number.isFinite(plan.rank) && Number.isInteger(candidate.items.data[0].quantity ?? 1) && (candidate.items.data[0].quantity ?? 1) > 0) {
+          const currentPrice = await stripe.prices.retrieve(candidate.items.data[0].price.id);
+          const currentPlanKey = currentPrice.metadata.plan_key;
+          if (typeof currentPlanKey === "string") {
+            const { data: currentPlan } = await admin.schema("billing").from("plan").select("rank").eq("plan_key", currentPlanKey).eq("active", true).is("deleted_at", null).maybeSingle();
+            const configuration = await subscriptionPortalConfiguration(personal);
+            if (configuration && currentPlan && Number.isFinite(currentPlan.rank) && plan.rank > currentPlan.rank) {
+              const confirmation = await openImmediateUpgradeConfirmation({ subscription: candidate, currentPlanRank: currentPlan.rank, targetPlanRank: plan.rank, targetPriceId: actualPrice.id, targetQuantity: candidate.items.data[0].quantity ?? 1, customerId, configurationId: configuration.id, returnUrl: `${origin}/pricing`, stripe });
+              if (confirmation?.url) return NextResponse.json({ url: confirmation.url });
+            }
+          }
+        }
         const portal = await openSubscriptionPortal(
           customerId,
           personal,
