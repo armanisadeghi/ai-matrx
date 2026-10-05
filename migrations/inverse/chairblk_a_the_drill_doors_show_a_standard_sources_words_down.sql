@@ -1,5 +1,8 @@
 -- Inverse of migrations/campaign/chairblk_a_the_drill_doors_show_a_standard_sources_words.sql (CHAIR-ENTITY-BLOCKS).
 -- The three door bodies exactly as they were before it (captured live 2026-10-05), then the helpers dropped.
+-- based-on: platform.drill_describe(uuid, jsonb) 1289ae3352498a7f2b16ea35b673ac29ed5ebf45a71a95e103e2f9b2ee16b56c
+-- based-on: platform.drill_rows(uuid, jsonb, jsonb) ae64ff6e4a2782c26ac64e1705b1c883e947a5ce2e63b3ce95b68a33ebdc890f
+-- based-on: custom.entity_row_write(uuid, text, uuid, jsonb, jsonb, integer, boolean) 8c54c40b074f2972da8e64171934e510ecedc6674ba9185eea792f5495b4df53
 
 CREATE OR REPLACE FUNCTION platform.drill_describe(p_organization_id uuid, p_source jsonb)
  RETURNS jsonb

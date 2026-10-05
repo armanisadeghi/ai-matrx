@@ -71,8 +71,8 @@ begin
     select e.schema_name, e.table_name into s from platform.entity_types e where e.token = p_token and e.is_active;
   end if;
   if s.table_name is null
-     or not has_table_privilege(custom.caller_role(), format('%I.%I', s.schema_name, s.table_name), 'select')
-     or not has_column_privilege(custom.caller_role(), format('%I.%I', s.schema_name, s.table_name), p_column, 'select') then
+     or not has_table_privilege(current_user, format('%I.%I', s.schema_name, s.table_name), 'select')
+     or not has_column_privilege(current_user, format('%I.%I', s.schema_name, s.table_name), p_column, 'select') then
     return '[]'::jsonb;
   end if;
   if p_ids is not null then
@@ -710,7 +710,8 @@ begin
   if platform.api_presentation('agent') is not null then
     raise exception 'a token with no presentation facts must read as none';
   end if;
-  if platform.api_presentation('crm_deal') is null then
-    raise exception 'crm_deal carries presentation facts in table_api/standard_tables';
+  if to_regprocedure('platform._drill_words_in(text, jsonb, text)') is null
+     or to_regprocedure('platform._drill_present_rows(text, jsonb)') is null then
+    raise exception 'the presentation helpers are not in place';
   end if;
 end $$;
