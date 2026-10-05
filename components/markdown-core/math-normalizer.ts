@@ -227,31 +227,116 @@ function convertBracketDisplay(text: string): string {
 }
 
 function convertBracketDisplayInProse(text: string): string {
-  return text.replace(
-    /\[[\s\n]*([\s\S]*?)[\s\n]*\](?![(\[:])/g,
-    (match: string, content: string) => {
-      const trimmed = content.trim();
-      // Already math (a converted \\(…\\)) or a Windows path — leave it.
-      if (content.includes("$") || /[A-Za-z]:\\/.test(content)) return match;
-      if (/\\[A-Za-z]/.test(content) && (content.includes("\n") || content.length >= 3)) {
+  return replaceBracketSpans(text, (match: string, content: string) => {
+    const trimmed = content.trim();
+    // Already math (a converted \\(…\\)) or a Windows path — leave it.
+    if (content.includes("$") || /[A-Za-z]:\\/.test(content)) return match;
+    if (/\\[A-Za-z]/.test(content) && (content.includes("\n") || content.length >= 3)) {
+      return `\n\n$$\n${trimmed}\n$$\n\n`;
+    }
+    const multiline = match.startsWith("[\n") || match.startsWith("[ \n");
+    if (multiline && trimmed.length >= 3) {
+      const hasMathOperators = /[+\-=×÷*/]/.test(trimmed);
+      const hasProseWords =
+        /\b(note|step|example|optional|the|is|are|was|were|for|with|this|that)\b/i.test(
+          trimmed,
+        );
+      const mathLikeRatio =
+        (trimmed.match(/[0-9+\-=×÷*/()xy\s]/g) || []).length / trimmed.length;
+      if (hasMathOperators && !hasProseWords && mathLikeRatio > 0.6) {
         return `\n\n$$\n${trimmed}\n$$\n\n`;
       }
-      const multiline = match.startsWith("[\n") || match.startsWith("[ \n");
-      if (multiline && trimmed.length >= 3) {
-        const hasMathOperators = /[+\-=×÷*/]/.test(trimmed);
-        const hasProseWords =
-          /\b(note|step|example|optional|the|is|are|was|were|for|with|this|that)\b/i.test(
-            trimmed,
-          );
-        const mathLikeRatio =
-          (trimmed.match(/[0-9+\-=×÷*/()xy\s]/g) || []).length / trimmed.length;
-        if (hasMathOperators && !hasProseWords && mathLikeRatio > 0.6) {
-          return `\n\n$$\n${trimmed}\n$$\n\n`;
-        }
-      }
-      return match;
-    },
-  );
+    }
+    return match;
+  });
+}
+
+/**
+ * The first index at or after `from` holding `needle`, memoized for callers
+ * whose `from` only grows: amortized linear over a whole scan (round 11, F1 —
+ * a per-opener `indexOf` to the end of the text is quadratic on many openers).
+ */
+function forwardFinder(find: (from: number) => number): (from: number) => number {
+  let askedFrom = -1;
+  let answer = -1;
+  return (from: number) => {
+    if (askedFrom >= 0 && from >= askedFrom && (answer === -1 || answer >= from)) return answer;
+    askedFrom = from;
+    answer = find(from);
+    return answer;
+  };
+}
+
+const isRegexWhitespace = (ch: string) => /\s/.test(ch);
+
+/**
+ * Exactly `text.replace(/\[[\s\n]*([\s\S]*?)[\s\n]*\](?![(\[:])/g, fn)` in
+ * linear time (that regex was cubic: `[` + 6 000 spaces took 62 s, round 11
+ * F1). Each `[` closes at the first later `]` not followed by `(`, `[` or `:`;
+ * the content is the span between them with surrounding whitespace removed;
+ * an opener with no such `]` is left as written and the scan moves on.
+ */
+function replaceBracketSpans(text: string, fn: (match: string, content: string) => string): string {
+  if (!text.includes("[")) return text;
+  const nextClose = forwardFinder((from) => {
+    for (let at = text.indexOf("]", from); at !== -1; at = text.indexOf("]", at + 1)) {
+      const after = text[at + 1];
+      if (after !== "(" && after !== "[" && after !== ":") return at;
+    }
+    return -1;
+  });
+  let out = "";
+  let copied = 0;
+  for (let open = text.indexOf("["); open !== -1; ) {
+    const close = nextClose(open + 1);
+    if (close === -1) break;
+    let a = open + 1;
+    while (a < close && isRegexWhitespace(text[a]!)) a++;
+    let b = close;
+    while (b > a && isRegexWhitespace(text[b - 1]!)) b--;
+    out += text.slice(copied, open) + fn(text.slice(open, close + 1), text.slice(a, b));
+    copied = close + 1;
+    open = text.indexOf("[", copied);
+  }
+  return copied === 0 ? text : out + text.slice(copied);
+}
+
+/**
+ * Exactly `text.replace(/OPEN((?:(?!\n[ \t]*\n)[\s\S])*?)CLOSE/g, fn)` for a
+ * two-character `open`/`close` (`\[`/`\]`, `\(`/`\)`), in linear time — the
+ * regex re-scanned to the next blank line from every unclosed opener (round
+ * 11, F1). A span never crosses a blank line (a line of only spaces/tabs).
+ */
+export function replaceDelimitedWithinParagraph(
+  text: string,
+  open: string,
+  close: string,
+  fn: (match: string, inner: string, offset: number) => string,
+): string {
+  if (!text.includes(open)) return text;
+  const nextClose = forwardFinder((from) => text.indexOf(close, from));
+  const blank = /\n[ \t]*\n/g;
+  const nextBlank = forwardFinder((from) => {
+    blank.lastIndex = from;
+    const m = blank.exec(text);
+    return m ? m.index : -1;
+  });
+  let out = "";
+  let copied = 0;
+  for (let at = text.indexOf(open); at !== -1; ) {
+    const start = at + open.length;
+    const end = nextClose(start);
+    if (end === -1) break;
+    const gap = nextBlank(start);
+    if (gap !== -1 && gap < end) {
+      at = text.indexOf(open, at + 1);
+      continue;
+    }
+    out += text.slice(copied, at) + fn(text.slice(at, end + close.length), text.slice(start, end), at);
+    copied = end + close.length;
+    at = text.indexOf(open, copied);
+  }
+  return copied === 0 ? text : out + text.slice(copied);
 }
 
 /** TeX that no prose carries: a command, a superscript, a brace, a relation or `+`, a subscript on a letter. */
@@ -278,15 +363,14 @@ function normalizeText(text: string): string {
   // \[…\] → display block. Blank lines around it so remark-math sees a flow
   // fence; the TeX goes on its own lines (`$$x$$` alone on a line is INLINE).
   // Escaped brackets that are not TeX stay literal (isEscapedBracketMath).
-  t = t.replace(
-    /\\\[((?:(?!\n[ \t]*\n)[\s\S])*?)\\\]/g,
-    (match: string, tex: string, offset: number, whole: string) =>
-      isEscapedBracketMath(tex, offset > 0 ? whole[offset - 1] : undefined) ? `\n\n$$\n${tex.trim()}\n$$\n\n` : match,
+  const whole = t;
+  t = replaceDelimitedWithinParagraph(t, "\\[", "\\]", (match, tex, offset) =>
+    isEscapedBracketMath(tex, offset > 0 ? whole[offset - 1] : undefined) ? `\n\n$$\n${tex.trim()}\n$$\n\n` : match,
   );
   // \(…\) → inline. With single-dollar math off, remark-math's inline form is
   // `$$…$$` inside running text — NO paragraph breaks, so a formula inside a
   // list item or sentence never splits it into a centered block.
-  t = t.replace(/\\\(((?:(?!\n[ \t]*\n)[\s\S])*?)\\\)/g, (_m, tex: string) => `$$${tex.trim()}$$`);
+  t = replaceDelimitedWithinParagraph(t, "\\(", "\\)", (_m, tex) => `$$${tex.trim()}$$`);
   // Single-dollar math first, so the bracket heuristic below sees every
   // inline formula as a protected `$$…$$` span.
   t = convertSingleDollar(t);

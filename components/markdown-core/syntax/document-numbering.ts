@@ -82,10 +82,40 @@ function idFromAttrs(attrs: string | undefined): string | null {
 
 /** Display-math bodies outside fences: `$$ … $$` and `\[ … \]`, in order. */
 function displayMath(text: string): string[] {
+  // Exactly `/\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]/g` in linear time: that regex
+  // re-scanned to the end from every unclosed opener (round 11, F1 —
+  // `\[ x ` × 4 000 took 1.8 s). Each finder only moves forward.
   const out: string[] = [];
-  const re = /\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) out.push(m[1] ?? m[2] ?? "");
+  const finder = (needle: string) => {
+    let askedFrom = -1;
+    let answer = -1;
+    return (from: number) => {
+      if (askedFrom < 0 || from < askedFrom || (answer !== -1 && answer < from)) {
+        askedFrom = from;
+        answer = text.indexOf(needle, from);
+      }
+      return answer;
+    };
+  };
+  const openDollar = finder("$$");
+  const closeDollar = finder("$$");
+  const openBracket = finder("\\[");
+  const closeBracket = finder("\\]");
+  let pos = 0;
+  while (pos < text.length) {
+    const d = openDollar(pos);
+    const b = openBracket(pos);
+    if (d === -1 && b === -1) break;
+    const at = d !== -1 && (b === -1 || d < b) ? d : b;
+    const dollar = at === d;
+    const end = dollar ? closeDollar(at + 2) : closeBracket(at + 2);
+    if (end === -1) {
+      pos = at + 1;
+      continue;
+    }
+    out.push(text.slice(at + 2, end));
+    pos = end + 2;
+  }
   return out;
 }
 
