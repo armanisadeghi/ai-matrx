@@ -18,6 +18,52 @@ import type { SurfaceClientTool } from "@ai-matrx/chat/surfaces/types";
 export const BOARD_TILE_KINDS = ["note", "markdown", "text", "html", "image"] as const;
 export type BoardTileKindInput = (typeof BOARD_TILE_KINDS)[number];
 
+/**
+ * Every item type an agent can put on a board with `board_add_items` — a catalog key
+ * (`items/catalog.ts` `BOARD_ITEM_TYPES`) whose type has a record door or a "new" entry.
+ * A literal so the manifest never imports the catalog's tile bodies; the guard
+ * `__tests__/board-add-items.test.ts` fails when it and the catalog disagree.
+ */
+export const BOARD_ADDABLE_ITEM_KEYS = [
+  "chat",
+  "note",
+  "file",
+  "udt_document",
+  "data-table",
+  "list",
+  "task",
+  "war-room",
+  "meeting",
+  "workflow-run",
+  "research",
+  "project",
+  "fc_set",
+  "study-kit",
+  "scope",
+  "label",
+] as const;
+
+/** Item types `board_find_records` searches (each has a search token or a finder). */
+export const BOARD_FINDABLE_ITEM_KEYS = [
+  "chat",
+  "note",
+  "file",
+  "udt_document",
+  "data-table",
+  "list",
+  "task",
+  "war-room",
+  "research",
+  "project",
+  "fc_set",
+  "scope",
+] as const;
+
+/** Most entries one `board_add_items` call places. */
+export const BOARD_ADD_ITEMS_MAX = 40;
+/** Most candidates one `board_find_records` call returns. */
+export const BOARD_FIND_RECORDS_MAX = 50;
+
 const idsProp = {
   type: "array" as const,
   items: { type: "string" as const },
@@ -61,6 +107,56 @@ export const BOARD_CLIENT_TOOLS: SurfaceClientTool[] = [
       required: ["kind"],
     },
     mode: "draft",
+  },
+  {
+    name: "board_add_items",
+    label: "Add items",
+    description:
+      "Puts the person's REAL records on the board as live tiles, several at once, as one undoable step: an existing record by `id` (a note, file, chat, document, table, picklist, task, War Room, meeting, workflow run, research topic, project, flashcard deck, scope… — ids from board_find_records or knowledge_search), or a NEW one with `new: true` (a blank note, task, table, document… the person fills in). Each tile is the feature itself, exactly as when the person brings it in from the Add menu. A record already on this board is not added twice: its entry answers `already_on_board` with that tile's id. A type whose new one needs the person's choice first (a meeting, a workflow run, a chat with an agent) answers `needs_person`. Placement: per entry `near_tile_id` or `x`/`y`, else the items fill free space in reading order near what the person is looking at. Returns one result per entry, in order, with each new tile's id. To gather a topic: board_find_records → board_add_items → board_group (a frame named for the topic, tidy: true).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        items: {
+          type: "array",
+          maxItems: BOARD_ADD_ITEMS_MAX,
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string", enum: [...BOARD_ADDABLE_ITEM_KEYS], description: "The item type (as board_find_records returns it)." },
+              id: { type: "string", description: "The existing record's id. Omit with new: true." },
+              new: { type: "boolean", description: "Start a new, blank one of this type instead." },
+              title: { type: "string", description: "Tile title (default: the record's name)." },
+              near_tile_id: { type: "string", description: "Place beside this tile." },
+              x: { type: "number", description: "Left edge in board pixels (with y)." },
+              y: { type: "number", description: "Top edge in board pixels." },
+            },
+            required: ["type"],
+          },
+        },
+      },
+      required: ["items"],
+    },
+    mode: "draft",
+  },
+  {
+    name: "board_find_records",
+    label: "Find records",
+    description:
+      "Finds the person's own records by name across every organization they belong to — notes, files, chats, documents, tables, picklists, tasks, War Rooms, research topics, projects, flashcard decks, scopes — so you can put them on the board. Returns candidates `{type, id, title, updated_at, snippet?}`; pass `type` and `id` straight to board_add_items. Trashed and archived records are left out. Matches names (titles), not body text: search the topic's distinctive words (\"Harborview\", not \"move\"), and try a second wording if the first finds little. knowledge_search finds by content too; its note, file, task, project and conversation ids work in board_add_items as well (a conversation is type `chat`). For a topic: find, add the relevant ones (leave out what is not about the topic), then board_group them in a frame named for the topic.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Words in the records' names." },
+        types: {
+          type: "array",
+          items: { type: "string", enum: [...BOARD_FINDABLE_ITEM_KEYS] },
+          description: "Only these item types (default: all).",
+        },
+        limit: { type: "number", description: `Most candidates to return (default 25, at most ${BOARD_FIND_RECORDS_MAX}).` },
+      },
+      required: ["query"],
+    },
+    mode: "ui",
   },
   {
     name: "board_update_tile",

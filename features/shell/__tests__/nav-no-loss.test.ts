@@ -33,7 +33,7 @@ const HREFS_BEFORE_DOMAIN_TREE: readonly string[] = [
   "/agents/templates",
   "/artifacts",
   "/board",
-  "/board/all",
+  // "/board/all" became a redirect to "/board" (Arman, 2026-10-04: boards are a list like every saved record).
   "/chat/new",
   "/cms",
   "/code",
@@ -516,7 +516,7 @@ const GUEST_VISIBLE_BEFORE_DOMAIN_TREE: readonly string[] = [
 /** Every row hidden from guests before. None may become visible to a guest. */
 const MEMBERS_ONLY_BEFORE_DOMAIN_TREE: readonly string[] = [
   "/board",
-  "/board/all",
+  // "/board/all" became a redirect to "/board" (Arman, 2026-10-04: boards are a list like every saved record).
   "/crm",
   "/crm/deals",
   "/crm/outreach-lists",

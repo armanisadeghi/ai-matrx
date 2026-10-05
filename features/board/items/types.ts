@@ -139,6 +139,12 @@ export interface BoardItemType {
   startNew?: StartNewEntry | readonly StartNewEntry[];
   /** "Bring in what you have": a picker over the person's existing records. */
   bringIn?: { label: string; Picker: ComponentType<PickerProps> };
+  /**
+   * The AGENT'S door to this type's existing records (`board_add_items`, `board_find_records`).
+   * `place` is the ONE builder the bring-in picker also calls, so an agent's tile and a person's
+   * pick are the same source. Omit for a type whose record cannot be named by one id.
+   */
+  record?: RecordDoor;
   /** Where the tile's "Open" goes (no dead ends). Null when it has no page. */
   href?: (source: NodeSource) => string | null;
   /** A word for agents' `board_read` ("chat", "note", "file"…). Defaults to `key`. */
@@ -162,6 +168,32 @@ export interface BoardItemType {
   /** Works for a meeting guest with no account (board-only content, the meeting's own parts).
    * A guest's board offers only these to add. */
   guestSafe?: boolean;
+}
+
+/** One of the person's records an agent found, ready for `board_add_items`. */
+export interface FoundRecord {
+  /** The catalog key (`BoardItemType.key`). */
+  type: string;
+  id: string;
+  title: string;
+  updated_at: string | null;
+  snippet?: string;
+}
+
+export interface RecordDoor {
+  /** An existing record by id, placed exactly as this type's bring-in picker places it. */
+  place: (id: string, title?: string) => PlacedItem;
+  /**
+   * The search projection's entity token for this type (`platform.search_items`, the index
+   * `knowledge_search` reads). Set when the projection holds the type.
+   */
+  searchToken?: string;
+  /**
+   * For a type the projection does not hold: the person's records through the bring-in picker's
+   * OWN list service (every organization, never the active one), matched on the name. Trashed and
+   * archived records are left out.
+   */
+  find?: (query: string, limit: number) => Promise<FoundRecord[]>;
 }
 
 /** Every way to start a new item of this type, in menu order (none → []). */

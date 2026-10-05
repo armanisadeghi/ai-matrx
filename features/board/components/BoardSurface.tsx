@@ -40,13 +40,12 @@ export function BoardSurface<T extends BoardTileBase & { title: string }>({
         const removedTiles = now.removed ?? [];
         const removed = new Set(removedTiles.map((t) => t.id));
         const all = [...now.tiles, ...now.parked, ...removedTiles];
-        // The LIVE tiles — selected, worked in or focused — are the ones
-        // whose feature surface is registered for the agent right now.
-        const live = new Set(
-          [host.store?.getSelected(), host.store?.getEditing(), host.store?.getFocused()].filter(
-            (id): id is string => typeof id === "string",
-          ),
-        );
+        // THE live tile — focused, else worked in, else selected (`useIsLiveTile`) — is the one
+        // whose feature surface is registered for the agent right now. The selected tile may be a
+        // different one (the person works in another): it is marked `selected` and carries its
+        // full values in `board_items`.
+        const selectedId = host.store?.getSelected() ?? null;
+        const liveId = host.store?.getFocused() ?? host.store?.getEditing() ?? selectedId;
         const rows = all.map((t) => {
           const described = host.describe(t);
           return {
@@ -54,12 +53,12 @@ export function BoardSurface<T extends BoardTileBase & { title: string }>({
             title: t.title,
             kind: described.kind,
             surface: described.surface ?? null,
-            live: live.has(t.id),
+            live: t.id === liveId,
+            ...(t.id === selectedId ? { selected: true } : {}),
             ...(parked.has(t.id) ? { parked: true } : {}),
             ...(removed.has(t.id) ? { removed: true } : {}),
           };
         });
-        const selectedId = host.store?.getSelected() ?? null;
         const selected = rows.find((row) => row.id === selectedId);
         return {
           board_title: host.boardTitle,

@@ -60,9 +60,7 @@ export function BoardPage({
         ? "Saving…"
         : ready.lastSavedAt
           ? "Saved"
-          : ready.board.isHome
-            ? "Your board"
-            : undefined;
+          : undefined;
 
   return (
     <>
@@ -87,9 +85,9 @@ export function BoardPage({
               New board
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/board/all">
+              <Link href="/board">
                 <LayoutGrid className="mr-2 h-4 w-4" />
-                All boards
+                Boards
               </Link>
             </DropdownMenuItem>
           </>

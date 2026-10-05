@@ -106,12 +106,6 @@ export function AgentBuilderRightPanel({
             />
           }
           smartInputProps={{
-            showSubmitOnEnterToggle: true,
-            // Match the live run/chat surfaces (AgentRunnerPage, ChatRoomClient,
-            // scribe, etc.) which all use the blue send button. Without this the
-            // builder test panel fell back to the legacy "default" black
-            // bg-foreground button, which looked broken/disabled.
-            sendButtonVariant: "blue",
             // The compact composer (composer/FEATURE.md) — this is a side
             // panel. The agent is FIXED to the one being built, so no agent
             // switch is offered (the pill is a plain label).

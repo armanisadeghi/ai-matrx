@@ -98,6 +98,7 @@ export const DOCUMENT_ITEMS: readonly BoardItemType[] = [
     Body: DocumentBody,
     startNew: { label: "New document", create: newDocumentItem },
     bringIn: { label: "Document", Picker: DocumentPicker },
+    record: { place: (id, title) => pickedDocumentItem({ id, document_name: title ?? null }), searchToken: DOCUMENT_ITEM_KEY },
     href: (s) => documentHref(s, documentDoor),
     // Checked 2026-10-03 (remount harness udt_document + :quiet green; the
     // board in the browser): the typed text is kept across sleep / wake and a

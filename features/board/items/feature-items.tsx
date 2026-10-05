@@ -97,6 +97,7 @@ import {
   meetingPhase,
   orderMeetingsForPicker,
   titleToAdopt,
+  type FeatureEntityKey,
 } from "./feature-items.logic";
 
 // ─── Shared pieces ───────────────────────────────────────────────────────────
@@ -981,6 +982,12 @@ function ProjectBody(props: ItemBodyProps) {
 
 // ─── The catalog entries ─────────────────────────────────────────────────────
 
+/** An existing feature record by id — the source every picker here builds (`entitySource`). */
+const existing = (entity: FeatureEntityKey, fallback: string) => (id: string, title?: string): PlacedItem => ({
+  title: title?.trim() || fallback,
+  source: entitySource(entity, id),
+});
+
 const newDraft = (
   entity: typeof FEATURE_ENTITY.task | typeof FEATURE_ENTITY.warRoom | typeof FEATURE_ENTITY.research | typeof FEATURE_ENTITY.project,
   title: string,
@@ -1005,6 +1012,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
       create: () => newDraft(FEATURE_ENTITY.task, "New task"),
     },
     bringIn: { label: "Tasks", Picker: TaskPicker },
+    record: { place: existing(FEATURE_ENTITY.task, "Task"), searchToken: "task" },
     href: hrefFor(FEATURE_ENTITY.task, registryHref("task")),
     kindLabel: "task",
     // Checked 2026-10-02: draft and edits kept, one insert on create, an unsaved description still saves.
@@ -1026,6 +1034,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
       create: () => newDraft(FEATURE_ENTITY.warRoom, "New War Room"),
     },
     bringIn: { label: "War Room", Picker: WarRoomPicker },
+    record: { place: existing(FEATURE_ENTITY.warRoom, "War Room"), searchToken: "war_room" },
     href: hrefFor(FEATURE_ENTITY.warRoom, registryHref("war_room")),
     kindLabel: "war room",
     // Checked 2026-10-02: hide/show, remove+undo and a second tile of the room re-read nothing,
@@ -1045,6 +1054,8 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     Keep: MeetingKeep,
     startNew: { label: "New meeting", Dialog: MeetingCreateDialog },
     bringIn: { label: "Meeting", Picker: MeetingPicker },
+    // Not in the search projection and no finder yet: an agent places one by id.
+    record: { place: existing(FEATURE_ENTITY.meeting, "Meeting") },
     // The meeting's home (before, during, after); "Join" in the tile enters the room.
     href: hrefFor(FEATURE_ENTITY.meeting, (id) => `/meetings/${encodeURIComponent(id)}`),
     kindLabel: "meeting",
@@ -1065,6 +1076,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     Keep: WorkflowRunKeep,
     startNew: { label: "Run a workflow", Picker: WorkflowRunStartPicker },
     bringIn: { label: "Workflow run", Picker: WorkflowRunPicker },
+    record: { place: existing(FEATURE_ENTITY.workflowRun, "Workflow run") },
     href: hrefFor(FEATURE_ENTITY.workflowRun, runHref),
     kindLabel: "workflow run",
     // Checked 2026-10-02: hide/show and remove+undo reattach the same adoption, never re-read the
@@ -1083,6 +1095,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     Body: ResearchBody,
     startNew: { label: "New research topic", create: () => newDraft(FEATURE_ENTITY.research, "New research topic") },
     bringIn: { label: "Research topic", Picker: ResearchPicker },
+    record: { place: existing(FEATURE_ENTITY.research, "Research topic"), searchToken: "research_topic" },
     href: hrefFor(FEATURE_ENTITY.research, registryHref("research_topic")),
     kindLabel: "research report",
     // Checked 2026-10-02: report and scroll kept; nothing re-run or written.
@@ -1100,6 +1113,7 @@ export const FEATURE_ITEMS: BoardItemType[] = [
     Body: ProjectBody,
     startNew: { label: "New project", create: () => newDraft(FEATURE_ENTITY.project, "New project") },
     bringIn: { label: "Project", Picker: ProjectPickerPanel },
+    record: { place: existing(FEATURE_ENTITY.project, "Project"), searchToken: "project" },
     href: hrefFor(FEATURE_ENTITY.project, registryHref("project")),
     kindLabel: "project",
     // Checked 2026-10-02: create form and task list kept (no re-read), scroll kept, renames still save.

@@ -2,7 +2,7 @@
 
 // features/board/persistence/useSavedBoard.ts
 //
-// Open a saved board (the person's home board, or one by id) and keep it
+// Open a saved board (one by id, or a meeting's) and keep it
 // saved. The board page renders from `board.doc` and reports every change to
 // `save(build)` — a function that builds the document, called only when a
 // write actually goes out (a drag reports every pointer frame; building the
@@ -35,7 +35,6 @@ import { createAutosaver, type Autosaver } from "./autosave";
 import {
   BoardError,
   getBoard,
-  getHomeBoard,
   getMeetingBoard,
   getPendingCreate,
   settlePendingCreate,
@@ -50,13 +49,11 @@ import { readViewerCamera, writeViewerCamera } from "./viewerCamera";
 export const AUTOSAVE_DELAY_MS = 800;
 
 export type SavedBoardTarget =
-  | { home: true }
   | { boardId: string }
   /** The person's board for one meeting, created with `seed` the first time. */
   | { meeting: { id: string; title: string; seed: () => BoardDocument } };
 
 function targetKeyOf(target: SavedBoardTarget): string {
-  if ("home" in target) return "home";
   if ("boardId" in target) return `board:${target.boardId}`;
   return `meeting:${target.meeting.id}`;
 }
@@ -70,7 +67,6 @@ export type SavedBoardState =
         id: string;
         title: string;
         organizationId: string;
-        isHome: boolean;
         doc: BoardDocument;
         problems: string[];
         /** Where this person last looked at this board, or null (open to fit everything). */
@@ -88,19 +84,18 @@ export type SavedBoardState =
     };
 
 /** Words for a failure, for a person. Exported for tests. */
-export function describeLoadFailure(error: unknown, target: SavedBoardTarget): string {
+export function describeLoadFailure(error: unknown): string {
   if (isOrganizationSelectionCancelled(error)) {
     return "Your board lives in a workspace. Choose one to open it.";
   }
   if (isBoardError(error)) return error.message;
   if (error instanceof Error && error.message) {
-    return `${"home" in target ? "Your board" : "This board"} could not be opened: ${error.message}`;
+    return `This board could not be opened: ${error.message}`;
   }
-  return `${"home" in target ? "Your board" : "This board"} could not be opened.`;
+  return `This board could not be opened.`;
 }
 
 async function loadTarget(target: SavedBoardTarget, organizationId: string | null): Promise<LoadedBoard> {
-  if ("home" in target) return getHomeBoard(organizationId);
   if ("meeting" in target) {
     return getMeetingBoard({
       meetingId: target.meeting.id,
@@ -133,7 +128,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   useEffect(() => {
     accessTokenRef.current = accessToken;
   }, [accessToken]);
-  // org-filter: default-for-new the organization a NEW home board is filed in; never picks which board opens
+  // org-filter: default-for-new the organization a NEW meeting board is filed in; never picks which board opens
   const selectedOrgId = useAppSelector(selectOrganizationId);
   const [attempt, setAttempt] = useState(0);
   const [phase, setPhase] = useState<Phase | null>(null);
@@ -141,7 +136,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // The home (and a meeting's) board is the person's own, in any organization: switching the
+  // A board is the person's own, in any organization: switching the
   // active organization never swaps it (the active org only says where a NEW one is filed).
   const targetKey = targetKeyOf(target);
   const key = `${userId ?? ""}|${targetKey}|${attempt}`;
@@ -213,7 +208,7 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
         alive = false;
       };
     }
-    loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW home board; it never picks which board opens
+    loadTarget(loadTargetValue, selectedOrgId).then( // org-filter: default-for-new the active organization only files a NEW meeting board; it never picks which board opens
       (board) => {
         if (!alive) return;
         guard.current = { id: board.id, version: board.version, fingerprint: board.fingerprint, base: board.doc };
@@ -227,13 +222,13 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
         if (!isOrganizationSelectionCancelled(error)) {
           console.error("[board] opening a saved board failed:", error);
         }
-        setPhase({ key, status: "failed", reason: describeLoadFailure(error, loadTargetValue) });
+        setPhase({ key, status: "failed", reason: describeLoadFailure(error) });
       },
     );
     return () => {
       alive = false;
     };
-  }, [key, userId]); // selectedOrgId: read at load only, as the write target for a new home board
+  }, [key, userId]); // selectedOrgId: read at load only, as the write target for a new meeting board
 
   const readyBoardId = phase?.key === key && phase.status === "ready" ? phase.board.id : null;
 
@@ -393,7 +388,6 @@ export function useSavedBoard(target: SavedBoardTarget): SavedBoardState {
       id: board.id,
       title,
       organizationId: board.organizationId,
-      isHome: board.isHome,
       doc: board.doc,
       problems: board.problems,
       viewerCamera,

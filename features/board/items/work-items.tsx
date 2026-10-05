@@ -52,7 +52,9 @@ import {
   chatSourceToSave,
   entityId,
   fileIdOf,
+  chatItem,
   fileItem,
+  noteItem,
   isEntity,
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
@@ -153,12 +155,7 @@ function ChatPicker({ onPick, onCancel }: PickerProps) {
           agentIds={ALL_AGENTS}
           surfaceId="conversation-picker"
           onOpenConversation={(conv) =>
-            onPick([
-              {
-                title: conv.title?.trim() || "Chat",
-                source: chatSource(conv.conversationId, conv.agentId ?? null),
-              },
-            ])
+            onPick([chatItem(conv.conversationId, conv.title, conv.agentId ?? null)])
           }
           openInPlace
           historyLabel="Conversations"
@@ -204,7 +201,7 @@ function NotePicker({ onPick, onCancel }: PickerProps) {
       <div className="overflow-hidden rounded-lg border border-border">
         <NotePickerInline
           onSelectNote={(noteId, note) =>
-            onPick([{ title: note?.label?.trim() || "Note", source: { kind: "entity", entity: "note", id: noteId } }])
+            onPick([noteItem(noteId, note?.label)])
           }
         />
       </div>
@@ -361,6 +358,7 @@ export const WORK_ITEMS: BoardItemType[] = [
       { label: "Chat with an agent", icon: AGENT_ICON, Picker: AgentChatPicker },
     ],
     bringIn: { label: "Conversation", Picker: ChatPicker },
+    record: { place: (id, title) => chatItem(id, title), searchToken: "conversation" },
     href: (s) => {
       const id = entityId(s);
       return id ? `/chat/${id}` : null;
@@ -385,6 +383,7 @@ export const WORK_ITEMS: BoardItemType[] = [
       create: (): PlacedItem => ({ title: "Note", source: { kind: "entity", entity: "note", id: null } }),
     },
     bringIn: { label: "Note from Notes", Picker: NotePicker },
+    record: { place: noteItem, searchToken: "note" },
     href: (s) => {
       const id = entityId(s);
       return id ? `/notes/${id}` : null;
@@ -407,6 +406,7 @@ export const WORK_ITEMS: BoardItemType[] = [
     matches: (s: NodeSource) => fileIdOf(s) !== null || isEntity(s, "file"),
     Body: FileBody,
     bringIn: { label: "File", Picker: FilePicker },
+    record: { place: fileItem, searchToken: "file" },
     href: (s) => {
       const id = fileIdOf(s);
       return id ? `/files/f/${id}` : null;

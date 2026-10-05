@@ -1,4 +1,4 @@
-// Deleted boards: the /board/all Archived filter, Restore through Trash's one door, and ONE home
+// Deleted boards: the /board Archived filter, Restore through Trash's one door, 
 // board per person after a restore. Each case fails when the behaviour it names breaks.
 
 type Call = [method: string, ...args: unknown[]];
@@ -43,7 +43,7 @@ jest.mock("@/features/trash/service", () => ({
   restoreFromTrash: (token: string, id: string) => restoreFromTrash(token, id),
 }));
 
-import { BOARD_TOKEN, boardRowHref, pickHomeId, restoreBoard } from "../persistence/boardsService";
+import { BOARD_TOKEN, boardRowHref, pickLastOpenedId, restoreBoard } from "../persistence/boardsService";
 import { createBoardListService } from "../boards/listService";
 import { deleteConsequence } from "../boards/useBoardRowActions";
 import { boardListConfig } from "../boards/listConfig";
@@ -57,21 +57,31 @@ beforeEach(() => {
   restoreFromTrash.mockClear();
 });
 
-describe("pickHomeId — one home board per person", () => {
-  const r = (id: string, created: string, home: boolean, deleted: string | null = null) => ({
+describe("pickLastOpenedId — the board \"add to my board\" opens", () => {
+  const r = (id: string, opened: string | null, updated: string, deleted: string | null = null, settings: object = {}) => ({
     id,
-    created_at: created,
+    updated_at: updated,
+    last_opened_at: opened,
     deleted_at: deleted,
-    settings: home ? { home: true } : {},
+    settings,
   });
 
-  it("is the oldest LIVE flagged row, the same row getHomeBoard opens", () => {
-    expect(pickHomeId([r("new", "2026-09-02", true), r("old", "2026-09-01", true), r("x", "2026-08-01", false)])).toBe("old");
+  it("is the most recently OPENED live board, whatever was edited last", () => {
+    expect(pickLastOpenedId([r("a", "2026-09-01", "2026-09-30"), r("b", "2026-09-10", "2026-09-02"), r("c", null, "2026-08-01")])).toBe("b");
   });
 
-  it("never names a deleted row, and is null when no live row is flagged", () => {
-    expect(pickHomeId([r("gone", "2026-08-01", true, "2026-09-01"), r("live", "2026-09-01", true)])).toBe("live");
-    expect(pickHomeId([r("gone", "2026-08-01", true, "2026-09-01")])).toBeNull();
+  it("a board never opened counts by its last edit", () => {
+    expect(pickLastOpenedId([r("a", "2026-09-01", "2026-09-01"), r("n", null, "2026-09-20")])).toBe("n");
+  });
+
+  it("skips deleted boards and a meeting's own board, and is null when none is left", () => {
+    expect(pickLastOpenedId([r("gone", "2026-09-20", "2026-09-20", "2026-09-21"), r("m", "2026-09-19", "2026-09-19", null, { meeting_id: "m1" }), r("ok", "2026-09-01", "2026-09-01")])).toBe("ok");
+    expect(pickLastOpenedId([r("gone", "2026-09-20", "2026-09-20", "2026-09-21")])).toBeNull();
+    expect(pickLastOpenedId([])).toBeNull();
+  });
+
+  it("a board an older build flagged home is an ordinary board", () => {
+    expect(pickLastOpenedId([r("h", "2026-09-20", "2026-09-20", null, { home: true }), r("o", "2026-09-01", "2026-09-01")])).toBe("h");
   });
 });
 
@@ -81,40 +91,19 @@ describe("restoreBoard", () => {
       has(calls, "eq", "id", "b1") && has(calls, "maybeSingle")
         ? { data: { id: "b1", settings: {}, deleted_at: "2026-09-01" }, error: null }
         : { data: [], error: null };
-    await expect(restoreBoard("b1")).resolves.toEqual({ id: "b1", is_home: false });
+    await expect(restoreBoard("b1")).resolves.toEqual({ id: "b1" });
     expect(restoreFromTrash).toHaveBeenCalledWith(BOARD_TOKEN, "b1");
     expect(BOARD_TOKEN).toBe("board");
   });
 
-  it("a deleted HOME board restored while another home is live loses its flag BEFORE it comes back", async () => {
-    const order: string[] = [];
-    respond = (calls) => {
-      if (has(calls, "maybeSingle")) {
-        return { data: { id: "h1", settings: { home: true, theme: "dark" }, deleted_at: "2026-09-01" }, error: null };
-      }
-      if (has(calls, "neq", "id", "h1")) return { data: [{ id: "h2" }], error: null };
-      if (calls.some(([m]) => m === "update")) {
-        order.push("unflag");
-        return { data: [{ id: "h1" }], error: null };
-      }
-      return { data: [], error: null };
-    };
-    restoreFromTrash.mockImplementationOnce(async () => {
-      order.push("restore");
-    });
-    await expect(restoreBoard("h1")).resolves.toEqual({ id: "h1", is_home: false });
-    const update = queries.find((q) => q.some(([m]) => m === "update"));
-    expect(update?.find(([m]) => m === "update")?.[1]).toEqual({ settings: { theme: "dark" } });
-    expect(order).toEqual(["unflag", "restore"]);
-  });
-
-  it("a deleted home board with no other live home comes back as the home", async () => {
+  it("a deleted board an older build flagged home comes back as an ordinary board, its settings untouched", async () => {
     respond = (calls) =>
       has(calls, "maybeSingle")
         ? { data: { id: "h1", settings: { home: true }, deleted_at: "2026-09-01" }, error: null }
         : { data: [], error: null };
-    await expect(restoreBoard("h1")).resolves.toEqual({ id: "h1", is_home: true });
+    await expect(restoreBoard("h1")).resolves.toEqual({ id: "h1" });
     expect(queries.some((q) => q.some(([m]) => m === "update"))).toBe(false);
+    expect(restoreFromTrash).toHaveBeenCalledWith(BOARD_TOKEN, "h1");
   });
 
   it("says the door's sentence when the restore is refused", async () => {
@@ -129,12 +118,11 @@ describe("restoreBoard", () => {
   });
 });
 
-describe("/board/all Archived filter", () => {
+describe("/board Archived filter", () => {
   const row = (id: string, archived: boolean): BoardListRow => ({
     id,
     title: id,
     organization_id: "o1",
-    is_home: false,
     archived,
     tile_count: 0,
     created_at: "2026-09-01",
@@ -163,7 +151,7 @@ describe("/board/all Archived filter", () => {
     expect(boardListConfig.supportsArchived).not.toBe(false);
     expect(boardListConfig.door?.hrefFor?.(row("gone", true))).toBeUndefined();
     expect(boardListConfig.door?.hrefFor?.(row("live", false))).toBe("/board/live");
-    expect(boardRowHref({ id: "h", is_home: true, archived: false })).toBe("/board");
+    expect(boardRowHref({ id: "h", archived: false })).toBe("/board/h");
     await expect(boardListConfig.edit!.save(row("gone", true), { title: "x" })).rejects.toThrow("This board is deleted.");
   });
 

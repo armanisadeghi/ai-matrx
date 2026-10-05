@@ -335,7 +335,7 @@ export function ExperimentalAgentScreen({
           constrainWidth
           edgeToEdgeScroll
           hideInput={!inputOpen && !revealInput}
-          smartInputProps={{ sendButtonVariant: "blue", composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
+          smartInputProps={{ composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
         />
       </div>
 

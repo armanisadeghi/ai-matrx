@@ -35,6 +35,7 @@ import {
   SURFACE_BRIEF_MAX_VALUES,
   SURFACE_BRIEF_TEXT_CHARS,
   surfaceBrief,
+  type SurfaceBrief,
 } from "@ai-matrx/chat/surfaces/runtime/surface-brief";
 import {
   executeSurfaceClientTool,
@@ -54,10 +55,21 @@ import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
  */
 export const SURFACE_NOT_LOADED_KEY = "not_loaded_yet";
 
-/** Items listed in `board_items`; the rest are counted in `omitted_count`. */
-export const BOARD_ITEMS_MAX = 60;
-/** All item briefs together stay under this many characters (JSON). */
-export const BOARD_ITEMS_BRIEF_BUDGET_CHARS = 6000;
+/** Items listed in full (id, title, kind, surface, basics) in `board_items`; the rest are a compact id + title tail. */
+export const BOARD_ITEMS_MAX = 80;
+/** The compact tail (id + title only) lists at most this many more items; the rest are counted in `omitted_count`. */
+export const BOARD_ITEMS_TAIL_MAX = 300;
+/** All item basics together stay under this many characters (JSON). Every item gets a fair share of it. */
+export const BOARD_ITEMS_BRIEF_BUDGET_CHARS = 8000;
+/**
+ * One item's share is `budget / items-with-basics`, between these two. The floor holds for every listed
+ * item (`BOARD_ITEMS_MAX × floor` stays under the budget): its name plus one more fact, always.
+ * The ceiling is what a nearly empty board shows per item.
+ */
+export const ITEM_BASICS_FLOOR_CHARS = 70;
+export const ITEM_BASICS_CEILING_CHARS = 1200;
+/** The selected tile, when it is not the live one, carries its full values up to this many characters. */
+export const SELECTED_FULL_MAX_CHARS = 12_000;
 /** An item whose scope cannot be read in this long is listed without basics. */
 export const ITEM_SCOPE_READ_TIMEOUT_MS = 1500;
 /** How long `board_open_item` waits for a tile brought back onto the board to mount its surface. */
@@ -144,7 +156,10 @@ export interface BoardItemRow {
   kind: string;
   /** The item's feature surface, or null for board-only content. */
   surface: string | null;
+  /** The ONE tile whose surface is registered globally (focused, else worked in, else selected). */
   live: boolean;
+  /** The tile the person has selected (may differ from the live one while they work in another). */
+  selected?: boolean;
   parked?: boolean;
   removed?: boolean;
 }
@@ -152,43 +167,111 @@ export interface BoardItemRow {
 export interface BoardItemsOverview {
   live_item_ids: string[];
   item_count: number;
+  /** Items beyond the compact tail: not listed at all. */
   omitted_count: number;
+  /** One line that holds for every item below. */
+  read_in_full: string;
   items: Array<{
     id: string;
     title: string;
     kind: string;
     surface: string | null;
     live: boolean;
+    selected?: true;
     parked?: true;
     removed?: true;
     basics?: Record<string, unknown>;
+    /** The selected tile's declared values in full, when its surface is not the live one. */
+    full_values?: Record<string, unknown>;
     /** Why this item carries no basics. */
     basics_note?: string;
   }>;
+  /** Items past `max_items`: id and title only, so nothing on the board is invisible. */
+  more_items?: Array<{ id: string; title: string }>;
   limits: {
     max_items: number;
+    tail_max: number;
+    /** Each item's share of the basics budget, in characters. */
+    basics_chars_per_item: number;
+    basics_floor_chars: number;
     basics_values_per_item: number;
     basics_text_chars: number;
     basics_total_chars: number;
   };
 }
 
-/** `board_items` — every item, with the basics of every dormant one. */
+/** Values and text length one item's share allows: fewer and shorter as the board grows. */
+export function basicsShape(allowance: number): { maxValues: number; textChars: number } {
+  if (allowance >= 600) return { maxValues: SURFACE_BRIEF_MAX_VALUES, textChars: SURFACE_BRIEF_TEXT_CHARS };
+  if (allowance >= 300) return { maxValues: 3, textChars: 100 };
+  if (allowance >= 150) return { maxValues: 2, textChars: 60 };
+  return { maxValues: 2, textChars: 30 };
+}
+
+/** One item's basics, fitted to its allowance: drop trailing values (never below two), then shorten text. */
+export function fitBasics(
+  manifest: Parameters<typeof surfaceBrief>[0],
+  scope: SurfaceScopePayload,
+  allowance: number,
+): SurfaceBrief["values"] {
+  const shape = basicsShape(allowance);
+  let { maxValues, textChars } = shape;
+  let values = surfaceBrief(manifest, scope, { maxValues, textChars }).values;
+  const size = () => JSON.stringify(values).length;
+  while (size() > allowance) {
+    if (Object.keys(values).length > 2) maxValues = Object.keys(values).length - 1;
+    else if (textChars > 8) textChars = Math.max(8, Math.floor(textChars / 2));
+    else break;
+    values = surfaceBrief(manifest, scope, { maxValues, textChars }).values;
+  }
+  return values;
+}
+
+function declaredValues(
+  manifest: ReturnType<typeof getManifest>,
+  scope: SurfaceScopePayload,
+  maxChars: number,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  let remaining = maxChars;
+  for (const declared of manifest?.values ?? []) {
+    const value = scope[declared.name];
+    if (isEmpty(value) || declared.autoContext === false) continue;
+    const capped = capValue(value, remaining);
+    remaining -= capped.chars;
+    out[declared.name] = capped.value;
+    if (remaining <= 0) break;
+  }
+  return out;
+}
+
+/**
+ * `board_items` — every item, each with a fair share of the basics budget:
+ * allowance = budget / (items carrying basics), between a floor and a ceiling.
+ * The selected tile carries its full values (when it is not the live one, whose
+ * full surface already travels as a surface-chain level).
+ */
 export async function boardItemsOverview(
   rows: readonly BoardItemRow[],
   index: ItemSurfaceIndex | null,
 ): Promise<BoardItemsOverview> {
   const listed = rows.slice(0, BOARD_ITEMS_MAX);
-  const briefs = await Promise.all(
+  const tail = rows.slice(BOARD_ITEMS_MAX, BOARD_ITEMS_MAX + BOARD_ITEMS_TAIL_MAX);
+  const reads = await Promise.all(
     listed.map(async (row) => {
       if (row.live || row.parked || row.removed || !row.surface) return null;
       const runtime = index?.get(row.id)?.primary() ?? null;
       if (!runtime) return null;
       const scope = await readScope(runtime, ITEM_SCOPE_READ_TIMEOUT_MS);
-      return scope ? surfaceBrief(getManifest(runtime.surfaceName), scope).values : null;
+      return scope ? { manifest: getManifest(runtime.surfaceName), scope } : null;
     }),
   );
-  let budget = BOARD_ITEMS_BRIEF_BUDGET_CHARS;
+  // Selected but not live: its FULL values travel here (its surface is dormant, so nothing else carries them).
+  const sharing = listed.filter((row, i) => reads[i] && !row.selected).length;
+  const allowance = Math.max(
+    ITEM_BASICS_FLOOR_CHARS,
+    Math.min(ITEM_BASICS_CEILING_CHARS, Math.floor(BOARD_ITEMS_BRIEF_BUDGET_CHARS / Math.max(1, sharing))),
+  );
   const items = listed.map((row, i) => {
     const base = {
       id: row.id,
@@ -196,6 +279,7 @@ export async function boardItemsOverview(
       kind: row.kind,
       surface: row.surface,
       live: row.live,
+      ...(row.selected ? { selected: true as const } : {}),
       ...(row.parked ? { parked: true as const } : {}),
       ...(row.removed ? { removed: true as const } : {}),
     };
@@ -207,27 +291,36 @@ export async function boardItemsOverview(
     if (row.parked || row.removed) {
       return { ...base, basics_note: "Off the board: board_open_item brings it back and opens it." };
     }
-    const brief = briefs[i];
-    if (!brief || Object.keys(brief).length === 0) {
+    const read = reads[i];
+    if (!read) return { ...base, basics_note: "Not loaded yet: board_open_item reads it." };
+    if (row.selected) {
+      const full = declaredValues(read.manifest, read.scope, SELECTED_FULL_MAX_CHARS);
+      if (Object.keys(full).length === 0) {
+        return { ...base, basics_note: "Not loaded yet: board_open_item reads it." };
+      }
+      return { ...base, full_values: full };
+    }
+    const basics = fitBasics(read.manifest, read.scope, allowance);
+    if (Object.keys(basics).length === 0) {
       return { ...base, basics_note: "Not loaded yet: board_open_item reads it." };
     }
-    const size = JSON.stringify(brief).length;
-    if (size > budget) {
-      budget = 0;
-      return { ...base, basics_note: "Basics left out (the list's size cap): board_open_item reads it." };
-    }
-    budget -= size;
-    return { ...base, basics: brief };
+    return { ...base, basics };
   });
+  const shape = basicsShape(allowance);
   return {
     live_item_ids: rows.filter((row) => row.live).map((row) => row.id),
     item_count: rows.length,
-    omitted_count: Math.max(0, rows.length - listed.length),
+    omitted_count: Math.max(0, rows.length - listed.length - tail.length),
+    read_in_full: "board_open_item(id) reads any item in full: every value, its write targets and tools.",
     items,
+    ...(tail.length > 0 ? { more_items: tail.map((row) => ({ id: row.id, title: row.title })) } : {}),
     limits: {
       max_items: BOARD_ITEMS_MAX,
-      basics_values_per_item: SURFACE_BRIEF_MAX_VALUES,
-      basics_text_chars: SURFACE_BRIEF_TEXT_CHARS,
+      tail_max: BOARD_ITEMS_TAIL_MAX,
+      basics_chars_per_item: allowance,
+      basics_floor_chars: ITEM_BASICS_FLOOR_CHARS,
+      basics_values_per_item: shape.maxValues,
+      basics_text_chars: shape.textChars,
       basics_total_chars: BOARD_ITEMS_BRIEF_BUDGET_CHARS,
     },
   };

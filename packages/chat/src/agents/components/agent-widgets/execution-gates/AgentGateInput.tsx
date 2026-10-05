@@ -178,12 +178,10 @@ export function AgentGateBody({
         >
           <SmartAgentInput
             conversationId={conversationId}
-            singleRowTextarea={false}
             compact={true}
             composer={{ size: "compact", mode: composerMode }}
             showSendButton={false}
             showVariableIcon={false}
-            showSubmitOnEnterToggle={false}
             disableSend
           />
         </div>

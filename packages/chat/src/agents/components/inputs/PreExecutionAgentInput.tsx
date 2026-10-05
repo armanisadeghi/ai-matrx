@@ -92,7 +92,6 @@ export function PreExecutionAgentInput({
           conversationId={conversationId}
           compact
           composer={{ size: "compact", mode: composerMode }}
-          showSubmitOnEnterToggle={false}
           disableSend
         />
       </div>

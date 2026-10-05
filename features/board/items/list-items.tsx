@@ -29,6 +29,7 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/organizatio
 import { createList } from "@/features/user-lists/service";
 import { listAddress } from "@/features/user-lists/where-lists-live";
 import { readPickListIndex, type PickListEntry } from "@/features/user-lists/pick-list-index";
+import { findPickLists } from "./record-finders";
 import { DATA_TABLES_SURFACE } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import type { NodeSource } from "../board/document";
 import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
@@ -195,6 +196,11 @@ export const LIST_ITEMS: readonly BoardItemType[] = [
     Body: ListBody,
     startNew: { label: NEW_LIST_TITLE, create: () => ({ title: NEW_LIST_TITLE, source: listSource(null) }) },
     bringIn: { label: "Picklist", Picker: ListPicker },
+    // Picklists are not in the search projection: the picklist picker's own index, matched on the name.
+    record: {
+      place: (id, title) => ({ title: title?.trim() || "Picklist", source: listSource(id) }),
+      find: (query, limit) => findPickLists(LIST_ITEM_KEY, query, limit, () => readPickListIndex(supabase, { everywhere: true })),
+    },
     href: (s) => {
       const id = listIdOf(s);
       return id ? listAddress(id) : null;

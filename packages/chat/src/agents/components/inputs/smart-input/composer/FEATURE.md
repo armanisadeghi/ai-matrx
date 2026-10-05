@@ -1,8 +1,8 @@
-# FEATURE.md — `composer` (the three-mode, three-size chat composer)
+# FEATURE.md — `composer` (the Smart Agent Input)
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-09-30`
+**Last updated:** `2026-10-04`
 
 > Build map (design control → the existing piece it facelifts):
 > `/Users/armanisadeghi/code/common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md`.
@@ -13,19 +13,19 @@
 
 ## Purpose
 
-The chat composer from Arman's design — **Chat · Work · Advanced** (each mode shows more) in three
-sizes, **splash · page · compact** — as an OPTIONAL `composer` prop on `SmartAgentInput`. It is the same
-engine as the classic composer (send, queue/steer/stop, drafts, drop, paste, variables, resources,
-context rail); only the chrome is arranged differently.
+**The Smart Agent Input** — the one chat input of the app. Its styles are **Full** (sizes **splash** ·
+**page**), **Compact** and **Launcher**; its modes are **Chat · Work · Advanced** (each mode shows more).
+Presentation comes from the REQUIRED `composer` prop on `SmartAgentInput`. One engine: send,
+queue/steer/stop, drafts, drop, paste, variables, resources, context rail.
 
 ---
 
 ## Entry points
 
-**The prop** — `SmartAgentInput` / `AgentConversationColumn.smartInputProps` → `composer?: ComposerPresentation`
+**The prop** — `SmartAgentInput` / `AgentConversationColumn.smartInputProps` → `composer: ComposerPresentation` (required)
 (`composer-types.ts`): `size`, `mode`, `agent.onSelectAgent(agentId, via?)`, `placeholder`, `maxInputHeightPx`,
 `textMenu` (the host's right-click agent menu over the draft — v3 `EditableContextMenu` props + a click-time
-`getApplicationScope(textarea)`). **Absent = the classic composer, byte-for-byte.** Every host that does not pass it is untouched.
+`getApplicationScope(textarea)`). `composer` is required: there is no other layout.
 
 **Hosts today:** every `/chat` route (`ChatRoomClient` — `/chat/new` splash, conversations at page size; its
 `textMenu` is `chat/agent-context/chatComposerTextMenu.ts`), the canvas workspace's docked/floating chat
@@ -37,8 +37,8 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
 (`RecordScopedChat`, compact, fixed — a switch would leave the record binding); the AI tutor (page on
 `/education/tutor/*`, compact in AskTutor, fixed agent). Compact hosts cap the input with `useCompactInputMaxHeight`.
 
-**Where it threads** (each an additive optional prop, nothing else changed):
-- `SmartAgentInput` → `SmartAgentInputStacked` (composer branch; never the single-row/ambient path).
+**Where it threads** ():
+- `SmartAgentInput` → `SmartAgentInputStacked` (the one layout, plus the variables-only Run mode).
 - `InputActionButtons.composer` — the same send/stop/mic/+ elements, arranged per size.
 - `RunControlsMenu.composer` — desktop `+` opens `ComposerPlusMenu`; phones keep the bottom sheet, tabs filtered by mode.
 - `AgentTextarea.placeholder` / `.maxHeightPx` / `.textMenu` — literal placeholder; unexpanded cap (default 200);
@@ -54,7 +54,7 @@ Utilities Hub "AI Results" tab (`ChatHistoryWorkspace enableInput`, compact, fix
   the agent picker (`AgentListDropdown` with the pill as its trigger) — one click, no half-way panel. A fixed
   agent (no `onSelectAgent`) is a plain label.
 - `ComposerPlusMenu` — the 300px cascading + menu, IDENTICAL in every mode: attach rows, Search your knowledge
-  (the classic ⌘K list), Tools, Skills, Connections, Environment, Preview context, templates, Memory, Enter sends,
+  (the ⌘K list), Tools, Skills, Connections, Environment, Preview context, templates, Memory, Enter sends,
   Working doc, Scratchpad, Auto-clear, **Model and overrides** (model picker + the per-run overrides — the model
   is secondary to the agent, so it lives here in every mode), and **All options** (always present — opens the Chat Options window until
   every setting has a home in the new UI).
@@ -127,9 +127,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 ## Invariants & gotchas
 
 - **Never fork the composer.** A new arrangement is a branch on the `composer` prop, composed from the
-  SAME engine pieces. Classic-path source strings are pinned by `__tests__/textarea-auto-resize`,
-  `responsive-run-controls` (exactly 3 send/stop class strings in `InputActionButtons.tsx` — the composer
-  reuses the same JSX elements, never new copies) and `composer-controls-are-named`.
+  SAME engine pieces. Source strings are pinned by `__tests__/textarea-auto-resize`,
+  `responsive-run-controls` and `composer-controls-are-named` (send, queue and stop each carry an accessible name).
 - **One drop target per composer**, wrapping the variables AND the textarea (`AgentVariablesInline`
   finds `[data-agent-main-input]` through `[data-agent-input-shell]`); the shell stays `relative` + rounded.
 - **The + trigger must stay mounted in every mode** — it owns `useConversationDocumentsBridge`.
@@ -158,7 +157,7 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
   gate client or server), per-chat Vault, team sandbox, Files/Media/Artifacts/The Matrx output families,
   Meta Ads accounts, a server token count on Preview context.
 - **Every mode's + menu says what Enter does** (`plus.enterSends`: the per-conversation `submitOnEnter` switch with
-  the rule in force as its description) — the composer hides the classic toolbar toggle, never the rule.
+  the rule in force as its description) — the toolbar has no Enter toggle, the + menu names the rule.
 - **`useComposerMode(initialMode, { enabled })`** — a host that renders no composer this time (a `ChatRoomClient`
   shared with voice, staff, interview rooms) passes `enabled: false`: no knob read, no seeding, no cookie write.
 - **Memory is a per-conversation one-shot signal** (`requestMemoryToggle({conversationId, enabled})` rides
@@ -169,6 +168,8 @@ in a nested Popover (a child Radix layer — clicks inside never dismiss the par
 ---
 
 ## Change Log
+
+- **2026-10-04** — The classic stacked layout, the single-row layout (`SmartAgentInputSingleRow`, `SingleRowActionButtons`) and the ambient layout were deleted; `composer` is now required on `SmartAgentInput`, `SmartAgentInputStacked` and `InputActionButtons`. The inert `singleRowTextarea`, `sendButtonVariant` and `showSubmitOnEnterToggle` props went with them, and the classic-only Auto-clear and Enter-toggle toolbar buttons. Named: the Smart Agent Input, styles Full · Compact · Launcher.
 
 - **2026-10-03** — Arman's layout pass: meta row = Scope · surface values (eye + count, no text) | Agent · Output · Effort, nothing bordered, no chevrons on Output/Effort; in the card the mic and its device chevron are one group, live audio stands alone, and send is a bare return glyph whose tooltip lists the keys; while a run streams the same spot shows a spinner that stops it. Compact: send sits in the card, + · voice · Scope · surface values | Agent · Effort ride the row under it. "Values to send" is now "Surface values".
 

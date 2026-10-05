@@ -10,7 +10,9 @@ describe("the shell chat's routes", () => {
 
   it("stands aside where the page hosts its own chat, and on the full chat", () => {
     expect(shellChatHostedElsewhere("/chat/abc", true)).toBe(true);
-    expect(shellChatHostedElsewhere("/board", true)).toBe(true);
+    expect(shellChatHostedElsewhere("/board/b1", true)).toBe(true);
+    // /board is the boards list, an ordinary page: the shell's chat dock stays.
+    expect(shellChatHostedElsewhere("/board", true)).toBe(false);
     expect(shellChatHostedElsewhere("/education", true)).toBe(true);
     expect(shellChatHostedElsewhere("/code", true)).toBe(true);
     expect(shellChatHostedElsewhere("/marketing", true)).toBe(false);

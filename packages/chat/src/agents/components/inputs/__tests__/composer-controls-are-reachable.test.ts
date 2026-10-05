@@ -17,8 +17,7 @@
  * and is not flagged.
  *
  * Proven failing before passing: with the pre-fix sources this lists
- * InputActionButtons.tsx (Stop, Send), SingleRowActionButtons.tsx (Stop, Send,
- * Live audio), ContextDocsMenu.tsx, SmartAgentResourcePickerButton.tsx (x2),
+ * InputActionButtons.tsx (Stop, Send, Live audio), ContextDocsMenu.tsx, SmartAgentResourcePickerButton.tsx (x2),
  * AgentVariablesInline.tsx and RowChoicesButton.tsx → RED.
  */
 
@@ -86,7 +85,6 @@ describe("the composer's controls are reachable by keyboard", () => {
     expect(names).toEqual(
       expect.arrayContaining([
         "InputActionButtons.tsx",
-        "SingleRowActionButtons.tsx",
         "ContextDocsMenu.tsx",
         "SmartAgentResourcePickerButton.tsx",
       ]),

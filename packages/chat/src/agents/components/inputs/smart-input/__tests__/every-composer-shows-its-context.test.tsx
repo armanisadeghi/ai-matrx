@@ -23,7 +23,6 @@ jest.mock("../ConversationContextRail", () => ({
   },
 }));
 jest.mock("../AgentTextarea", () => ({ AgentTextarea: () => null }));
-jest.mock("../SingleRowActionButtons", () => ({ SingleRowActionButtons: () => null }));
 jest.mock("../InputActionButtons", () => ({ InputActionButtons: () => null }));
 jest.mock("../SmartInputFileDropTarget", () => ({
   SmartInputFileDropTarget: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -45,7 +44,7 @@ import { SmartAgentInputStacked } from "../SmartAgentInputStacked";
 
 it.each([
   ["launcher", "e89d9466-page-assistant"],
-  ["classic", "3712f46e-cost-sheet-chat"],
+  ["compact", "3712f46e-cost-sheet-chat"],
 ] as const)("the %s composer renders the context rail for its conversation", (style, id) => {
   railFor.length = 0;
   const root = createRoot(document.createElement("div"));
@@ -53,7 +52,7 @@ it.each([
     root.render(
       <SmartAgentInputStacked
         conversationId={id}
-        composer={style === "launcher" ? { size: "launcher", mode: "chat" } : undefined}
+        composer={{ size: style, mode: "chat", meta: "none" }}
       />,
     ),
   );

@@ -14,11 +14,8 @@
 
 import React, { useCallback, useState } from "react";
 import {
-  ArrowUp,
   CornerDownLeft,
-  RefreshCcw,
   Braces,
-  CircleStop,
   AudioLines,
   Loader2,
   Square,
@@ -39,16 +36,13 @@ import {
   selectShowVariablePanel,
   selectShowAttachments,
   selectShowMicrophone,
-  selectAutoClearConversation,
 } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
-  setSubmitOnEnter,
   toggleVariablePanel,
 } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectComposerHasSomethingToSend,
   selectShouldShowVariables,
-  selectShouldShowAutoClearToggle,
 } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { useSurfaceExecution } from "../../../hooks/useSurfaceExecution";
 import { DesktopPresenceIndicator } from "./DesktopPresenceIndicator";
@@ -56,7 +50,6 @@ import {
   smartExecute,
   cancelExecution,
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
-import { setAutoClearMode } from "../../../redux/execution-system/thunks/create-instance.thunk";
 import { MicDeviceMenu } from "@host/components/audio/MicDeviceMenu";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 
@@ -109,9 +102,7 @@ interface InputActionButtonsProps {
   uploadRoot?: string;
   uploadPath?: string;
   showSendButton?: boolean;
-  showSubmitOnEnterToggle?: boolean;
   showVariableIcon?: boolean;
-  sendButtonVariant?: "default" | "blue";
   surfaceKey?: string;
   disableSend?: boolean;
   /** Fired when mic recording or final transcription is in flight. */
@@ -125,10 +116,9 @@ interface InputActionButtonsProps {
    *   splash · page — `+` left; dictate · voice ▾ · send right (in the card);
    *   compact       — `+` · dictate · voice ▾ left; `trailing` (agent pill ·
    *                   Auto) · send right (the row under the card).
-   * Send appears when there is something to send (brief §2). Absent = the
-   * classic toolbar, unchanged.
+   * Send appears when there is something to send (brief §2).
    */
-  composer?: {
+  composer: {
     size: ComposerSize;
     mode: ComposerMode;
     /**
@@ -154,9 +144,7 @@ interface InputActionButtonsProps {
 export function InputActionButtons({
   conversationId,
   showSendButton = true,
-  showSubmitOnEnterToggle = true,
   showVariableIcon = true,
-  sendButtonVariant = "default",
   surfaceKey,
   disableSend = false,
   onVoiceBusyChange,
@@ -181,10 +169,6 @@ export function InputActionButtons({
   );
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
-  );
-  const autoClear = useAppSelector(selectAutoClearConversation(conversationId));
-  const shouldShowAutoClearToggle = useAppSelector(
-    selectShouldShowAutoClearToggle(conversationId),
   );
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
@@ -214,65 +198,6 @@ export function InputActionButtons({
     dispatch(cancelExecution(executingConversationId ?? conversationId));
   }, [executingConversationId, conversationId, dispatch]);
 
-  const sendBtnClass =
-    sendButtonVariant === "blue"
-      ? "h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-30 disabled:shadow-none text-white shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]"
-      : "h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-25 disabled:shadow-none shadow-[0_1px_0_0_rgba(255,255,255,0.25)_inset,0_1px_2px_0_rgba(0,0,0,0.25)]";
-
-  const micButton = showMicrophone ? (
-    <AgentMicrophoneButton
-      conversationId={conversationId}
-      size="md"
-      label="Record audio"
-      className={INPUT_BUTTON_IDLE_TINT}
-      iconClassName=""
-      onRecordingStateChange={handleVoiceBusyChange}
-    />
-  ) : null;
-
-  const stopButton =
-    showSendButton && isExecuting ? (
-      <Button
-        onClick={handleStop}
-        className="h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
-        title="Stop the run (everything streamed so far is kept)"
-        aria-label="Stop the run"
-      >
-        <CircleStop className="w-4 h-4" />
-      </Button>
-    ) : null;
-
-  const sendButton = showSendButton ? (
-    <Button
-      onClick={handleSend}
-      disabled={isSendDisabled}
-      className={sendBtnClass}
-      title={
-        isExecuting
-          ? "Queue message — sends when the agent finishes (⌘Enter steers in now, ⌘⇧Enter interrupts)"
-          : voiceBusy
-            ? "Finish recording to send"
-            : "Send Message"
-      }
-      // An icon-only control needs a NAME, not just a hover tooltip: a
-      // screen reader reads "button" and nothing else, and a title=
-      // attribute is not an accessible name here. Live review, 2026-09-15:
-      // the loaded-chat composer's send control had title="Send Message"
-      // and no aria-label at all while the new-chat composer did — the
-      // same button, two different stories. Guard:
-      // __tests__/composer-controls-are-named.test.tsx.
-      aria-label={
-        isExecuting
-          ? "Queue message"
-          : voiceBusy
-            ? "Finish recording to send"
-            : "Send message"
-      }
-    >
-      <ArrowUp className="w-5 h-5" />
-    </Button>
-  ) : null;
-
   const liveAudioButton = showSendButton ? (
     <InputButton
       icon={AudioLines}
@@ -295,213 +220,127 @@ export function InputActionButtons({
       />
     ) : null;
 
-  if (composer) {
-    const plusMenu = (
-      <RunControlsMenu
+  const plusMenu = (
+    <RunControlsMenu
+      conversationId={conversationId}
+      variant="plus"
+      includeAttach={showAttachments}
+      side={composer.size === "splash" ? "bottom" : "top"}
+      onRequestInputExpand={onRequestInputExpand}
+      composer={{
+        mode: composer.mode,
+        size: composer.size,
+        surfaceKey,
+        folded: composer.folded,
+        // Compact's live audio leaves the row when narrow and rides +.
+        foldLiveAudio: composer.folded && composer.part === "controls",
+      }}
+    />
+  );
+  // The mic and its device chevron are ONE control group (Arman, 2026-10-03):
+  // both clickable, side by side. Live audio stands alone, no chevron.
+  // ONE split button: a single pill whose hover lights the whole thing; the
+  // mic half records, the chevron half picks the device. The halves carry
+  // no background of their own, so it never reads as two buttons.
+  const micGroup = showMicrophone ? (
+    <span className="inline-flex h-8 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
+      <AgentMicrophoneButton
         conversationId={conversationId}
-        variant="plus"
-        includeAttach={showAttachments}
-        side={composer.size === "splash" ? "bottom" : "top"}
-        onRequestInputExpand={onRequestInputExpand}
-        composer={{
-          mode: composer.mode,
-          size: composer.size,
-          surfaceKey,
-          folded: composer.folded,
-          // Compact's live audio leaves the row when narrow and rides +.
-          foldLiveAudio: composer.folded && composer.part === "controls",
-        }}
+        size="md"
+        label="Record audio"
+        className="w-7 justify-end rounded-l-full rounded-r-none pr-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground"
+        iconClassName=""
+        onRecordingStateChange={handleVoiceBusyChange}
       />
-    );
-    // The mic and its device chevron are ONE control group (Arman, 2026-10-03):
-    // both clickable, side by side. Live audio stands alone, no chevron.
-    // ONE split button: a single pill whose hover lights the whole thing; the
-    // mic half records, the chevron half picks the device. The halves carry
-    // no background of their own, so it never reads as two buttons.
-    const micGroup = showMicrophone ? (
-      <span className="inline-flex h-8 shrink-0 items-center rounded-full text-muted-foreground/60 transition-colors hover:bg-muted/60">
-        <AgentMicrophoneButton
-          conversationId={conversationId}
-          size="md"
-          label="Record audio"
-          className="w-7 justify-end rounded-l-full rounded-r-none pr-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground"
-          iconClassName=""
-          onRecordingStateChange={handleVoiceBusyChange}
-        />
-        <MicDeviceMenu className="h-8 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
-      </span>
-    ) : null;
-    const sendControls = showSendButton ? (
-      <ComposerSendSlot conversationId={conversationId}>
-        {(hasSomethingToSend) => (
-          <>
-            {/* The run in flight: the indicator in send's own place, a press stops it. */}
-            {isExecuting ? (
-              <button
-                type="button"
-                onClick={handleStop}
-                title="Stop the run (everything streamed so far is kept)"
-                aria-label="Stop the run"
-                className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-              >
-                <Loader2 className="h-4 w-4 animate-spin group-hover:hidden" />
-                <Square className="hidden h-3 w-3 fill-current group-hover:block" />
-              </button>
-            ) : null}
-            {/* Send: always present while idle (dim with nothing to send); while
-                a run streams it appears only to queue what was typed. */}
-            {!isExecuting || hasSomethingToSend || shouldShowVariables ? (
-              <ComposerSendButton
-                submitOnEnter={submitOnEnter}
-                isExecuting={isExecuting}
-                voiceBusy={voiceBusy}
-                disabled={isSendDisabled || !(hasSomethingToSend || shouldShowVariables)}
-                onSend={handleSend}
-              />
-            ) : null}
-          </>
-        )}
-      </ComposerSendSlot>
-    ) : null;
+      <MicDeviceMenu className="h-8 w-5 justify-start rounded-l-none rounded-r-full pl-0.5 text-muted-foreground/60 hover:bg-transparent hover:text-foreground" />
+    </span>
+  ) : null;
+  const sendControls = showSendButton ? (
+    <ComposerSendSlot conversationId={conversationId}>
+      {(hasSomethingToSend) => (
+        <>
+          {/* The run in flight: the indicator in send's own place, a press stops it. */}
+          {isExecuting ? (
+            <button
+              type="button"
+              onClick={handleStop}
+              title="Stop the run (everything streamed so far is kept)"
+              aria-label="Stop the run"
+              className="group relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <Loader2 className="h-4 w-4 animate-spin group-hover:hidden" />
+              <Square className="hidden h-3 w-3 fill-current group-hover:block" />
+            </button>
+          ) : null}
+          {/* Send: always present while idle (dim with nothing to send); while
+              a run streams it appears only to queue what was typed. */}
+          {!isExecuting || hasSomethingToSend || shouldShowVariables ? (
+            <ComposerSendButton
+              submitOnEnter={submitOnEnter}
+              isExecuting={isExecuting}
+              voiceBusy={voiceBusy}
+              disabled={isSendDisabled || !(hasSomethingToSend || shouldShowVariables)}
+              onSend={handleSend}
+            />
+          ) : null}
+        </>
+      )}
+    </ComposerSendSlot>
+  ) : null;
 
-    if (composer.part === "send") return sendControls;
-    // Launcher: mic (with its device chevron) and send — nothing else.
-    if (composer.part === "launcher") {
-      return (
-        <span className="flex shrink-0 items-center gap-1.5">
-          {micGroup}
-          {sendControls}
-        </span>
-      );
-    }
-    // Compact (Arman, 2026-10-04): the card holds the text and ↵ only; this
-    // row under it carries + · mic (protected) · live audio · scope · the
-    // values count, and agent · output · effort at the right end.
-    if (composer.part === "controls") {
-      return (
-        <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0">
-          <div className="flex min-w-0 shrink-0 items-center gap-1.5">
-            {plusMenu}
-            <DesktopPresenceIndicator conversationId={conversationId} />
-            {variablesToggle}
-            {micGroup}
-            {composer.folded ? null : liveAudioButton}
-            {composer.leading}
-          </div>
-          <div className="flex min-w-0 items-center gap-1.5">
-            {extraRightControls}
-            {composer.trailing}
-          </div>
-        </div>
-      );
-    }
+  if (composer.part === "send") return sendControls;
+  // Launcher: mic (with its device chevron) and send — nothing else.
+  if (composer.part === "launcher") {
     return (
-      // Full's button row: one 32px composer row, the same height as each text line.
-      <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0 lg:h-8">
-        <div className="flex min-w-0 items-center gap-1.5">
+      <span className="flex shrink-0 items-center gap-1.5">
+        {micGroup}
+        {sendControls}
+      </span>
+    );
+  }
+  // Compact (Arman, 2026-10-04): the card holds the text and ↵ only; this
+  // row under it carries + · mic (protected) · live audio · scope · the
+  // values count, and agent · output · effort at the right end.
+  if (composer.part === "controls") {
+    return (
+      <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
           {variablesToggle}
+          {micGroup}
+          {composer.folded ? null : liveAudioButton}
+          {composer.leading}
         </div>
         <div className="flex min-w-0 items-center gap-1.5">
           {extraRightControls}
-          {micGroup}
-          {liveAudioButton}
-          {sendControls}
+          {composer.trailing}
         </div>
       </div>
     );
   }
-
   return (
-    <div className="flex items-center justify-between px-1 shrink-0">
-      {/* Left: consolidated run controls / debug / creator / variable toggle */}
-      <div className="flex items-center gap-0.5">
-        {/* Single shared popover — Attach, Model (per-conversation model
-            override), Tools (add tools to this run), Sandbox binding, and run
-            Settings (disable injection, Surface Simulator, …) — identical to
-            the `/chat/new` hero input's `+`. Attach is gated on the surface's
-            attachment capability. */}
-        <RunControlsMenu
-          conversationId={conversationId}
-          variant="plus"
-          includeAttach={showAttachments}
-          onRequestInputExpand={onRequestInputExpand}
-        />
-
-        {/* Bound sandbox / local PC only — connect via `+` → ComputeLensBar. */}
+    // Full's button row: one 32px composer row, the same height as each text line.
+    <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0 lg:h-8">
+      <div className="flex min-w-0 items-center gap-1.5">
+        {plusMenu}
         <DesktopPresenceIndicator conversationId={conversationId} />
-
-        {shouldShowVariables && showVariableIcon && (
-          <InputButton
-            icon={Braces}
-            tooltip={
-              showVariablePanel ? "Hide Form Inputs" : "Show Form Inputs"
-            }
-            onClick={() => dispatch(toggleVariablePanel(conversationId))}
-            active={showVariablePanel}
-          />
-        )}
+        {variablesToggle}
       </div>
-
-      {/* Right: toggles + mic + send */}
-      <div className="flex items-center gap-0.5">
+      <div className="flex min-w-0 items-center gap-1.5">
         {extraRightControls}
-
-        {shouldShowAutoClearToggle && (
-          <InputButton
-            icon={RefreshCcw}
-            tooltip={
-              autoClear
-                ? "Auto-clear ON — each send starts fresh (click to disable)"
-                : "Auto-clear OFF — conversation continues (click to enable)"
-            }
-            onClick={() =>
-              dispatch(
-                setAutoClearMode({
-                  conversationId,
-                  value: !autoClear,
-                  surfaceKey,
-                }),
-              )
-            }
-            active={autoClear}
-          />
-        )}
-
-        {showSubmitOnEnterToggle && (
-          <InputButton
-            icon={CornerDownLeft}
-            tooltip={
-              submitOnEnter
-                ? "Enter submits (click to disable)"
-                : "Enter adds newline (click to enable)"
-            }
-            onClick={() =>
-              dispatch(
-                setSubmitOnEnter({ conversationId, value: !submitOnEnter }),
-              )
-            }
-            active={submitOnEnter}
-          />
-        )}
-
-        {micButton}
-
-        {stopButton}
-
-        {sendButton}
-
+        {micGroup}
         {liveAudioButton}
+        {sendControls}
       </div>
     </div>
   );
 }
 
 /**
- * The composer's view of the draft — its own component so ONLY the composer
- * arrangement subscribes to the draft; the classic toolbar must not re-render
- * on every keystroke.
+ * The composer's view of the draft — its own component so only the send slot
+ * subscribes to the draft and the rest of the toolbar does not re-render on
+ * every keystroke.
  */
 function ComposerSendSlot({
   conversationId,

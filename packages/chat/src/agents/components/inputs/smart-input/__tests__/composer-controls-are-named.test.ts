@@ -15,7 +15,7 @@
  * button whose only children are icons, and requires a name on each. A new
  * icon-only control added here fails this test on the day it is written.
  *
- * Proven failing before passing: removing the `aria-label` added to the send
+ * Proven failing before passing: removing the `aria-label` from the send
  * control in `InputActionButtons.tsx` (the exact live defect) → RED, naming
  * the file, the line and the icon.
  */
@@ -126,22 +126,20 @@ describe("the chat composer's icon-only controls are named", () => {
     const files = sourceFilesToCheck();
     expect(files.length).toBeGreaterThan(5);
     expect(files.map((f) => path.basename(f))).toEqual(
-      expect.arrayContaining([
-        "InputActionButtons.tsx",
-        "SingleRowActionButtons.tsx",
-      ]),
+      expect.arrayContaining(["InputActionButtons.tsx", "UninitializedShell.tsx"]),
     );
   });
 
-  it("names the send control in BOTH composers", () => {
-    for (const file of ["InputActionButtons.tsx", "SingleRowActionButtons.tsx"]) {
-      const src = fs.readFileSync(path.join(COMPOSER_DIR, file), "utf8");
-      // The send control is the one whose title ends in "Send Message"; it must
-      // now carry an aria-label in the same element.
-      expect(src).toContain('"Send Message"');
-      expect(src).toContain('"Send message"');
-      expect(src).toMatch(/aria-label=\{\s*\n?\s*isExecuting/);
-    }
+  it("names the send, queue and stop controls of the Smart Agent Input", () => {
+    const src = fs.readFileSync(path.join(COMPOSER_DIR, "InputActionButtons.tsx"), "utf8");
+    // Send is the one control whose name changes with state; each state is a
+    // name, not just a tooltip.
+    expect(src).toMatch(/aria-label=\{name\}/);
+    expect(src).toContain('"Queue message"');
+    expect(src).toContain('"Send message"');
+    expect(src).toContain('"Finish recording to send"');
+    // Stop carries its own name.
+    expect(src).toContain('aria-label="Stop the run"');
   });
 
   it("leaves no icon-only button in this directory without an accessible name", () => {

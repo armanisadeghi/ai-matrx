@@ -456,7 +456,6 @@ export function MultiFileSmartCodeEditorWindow({
         <div className="px-2 py-2 bg-background">
           <SmartAgentInput
             conversationId={conversationId}
-            sendButtonVariant="default"
             uploadRoot="userContent"
             uploadPath="code-editor-attachments"
             enablePasteImages={true}

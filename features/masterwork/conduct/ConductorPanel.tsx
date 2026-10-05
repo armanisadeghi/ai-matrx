@@ -374,7 +374,6 @@ function ConductorColumn({
         constrainWidth
         edgeToEdgeScroll
         smartInputProps={{
-          showSubmitOnEnterToggle: false,
           // Attachments are wired by this panel — there is nothing here for
           // the Expert to fill in.
           variablesPanelStyle: "hidden",

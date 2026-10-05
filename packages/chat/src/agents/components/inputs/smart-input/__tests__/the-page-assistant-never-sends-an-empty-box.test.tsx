@@ -17,12 +17,6 @@ import React, { act } from "react";
 import { createRoot } from "react-dom/client";
 
 const given: Array<{ layout: string; disableSend: boolean | undefined }> = [];
-jest.mock("../SmartAgentInputSingleRow", () => ({
-  SmartAgentInputSingleRow: ({ disableSend }: { disableSend?: boolean }) => {
-    given.push({ layout: "single-row", disableSend });
-    return null;
-  },
-}));
 jest.mock("../SmartAgentInputStacked", () => ({
   SmartAgentInputStacked: ({ disableSend }: { disableSend?: boolean }) => {
     given.push({ layout: "stacked", disableSend });

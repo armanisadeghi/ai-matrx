@@ -55,9 +55,7 @@ export function SharedBattleInput({
         conversationId={conversationId}
         surfaceKey={surfaceKey}
         draftAlias={draftAlias}
-        sendButtonVariant="blue"
         showSendButton={false}
-        showSubmitOnEnterToggle={false}
         disableSend
         variablesPanelStyle="inline"
         surfaceValueAnchors={surfaceValueAnchors}

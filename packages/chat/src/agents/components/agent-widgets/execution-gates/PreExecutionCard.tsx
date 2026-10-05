@@ -95,7 +95,6 @@ export function PreExecutionCard({
             conversationId={conversationId}
             compact
             composer={{ size: "compact", mode: composerMode }}
-            showSubmitOnEnterToggle={false}
             disableSend
           />
         </div>

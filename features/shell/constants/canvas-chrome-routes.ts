@@ -22,8 +22,8 @@ export const SHELL_CHROME_ATTRIBUTE = "data-shell-chrome";
 export const CANVAS_CHROME_ROUTES: readonly RegExp[] = [
   /^\/demos\/canvas-workspace(?:\/|$)/,
   /^\/demos\/board(?:\/|$)/,
-  // The Board: /board and /board/<id> — never /board/all (a list page).
-  /^\/board(?:\/(?!all(?:\/|$))[^/]+)?\/?$/,
+  // One board: /board/<id>. /board itself is the boards list (and /board/all its old address).
+  /^\/board\/(?!all(?:\/|$))[^/]+\/?$/,
   // A route is listed only once its page RENDERS ChatCanvasWorkspace: listing
   // a page that does not hides the shell's nav with nothing to replace it.
 ];

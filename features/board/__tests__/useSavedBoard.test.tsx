@@ -30,14 +30,13 @@ jest.mock("@/lib/toast", () => ({
 }));
 
 const saveBoardDocument = jest.fn();
-const getHomeBoard = jest.fn();
+const getBoard = jest.fn();
 const touchOpened = jest.fn();
 jest.mock("../persistence/boardsService", () => {
   const actual = jest.requireActual("../persistence/boardsService");
   return {
     ...actual,
-    getHomeBoard: (...a: unknown[]) => getHomeBoard(...a),
-    getBoard: jest.fn(),
+    getBoard: (...a: unknown[]) => getBoard(...a),
     renameBoard: jest.fn(),
     touchOpened: (...a: unknown[]) => touchOpened(...a),
     saveBoardDocument: (...a: unknown[]) => saveBoardDocument(...a),
@@ -61,7 +60,6 @@ const loaded: LoadedBoard = {
   id: "board-1",
   title: "My board",
   organizationId: "org-1",
-  isHome: true,
   version: 1,
   doc: emptyDoc,
   problems: [],
@@ -73,7 +71,7 @@ const loaded: LoadedBoard = {
 function mount() {
   const result: { current: SavedBoardState } = { current: { state: "loading" } };
   function Probe() {
-    result.current = useSavedBoard({ home: true });
+    result.current = useSavedBoard({ boardId: "board-1" });
     return null;
   }
   let root: Root;
@@ -102,7 +100,7 @@ function ready(state: SavedBoardState) {
 beforeEach(() => {
   jest.useFakeTimers();
   saveBoardDocument.mockReset().mockResolvedValue({ version: 2, fingerprint: "fp-2" });
-  getHomeBoard.mockReset().mockResolvedValue(loaded);
+  getBoard.mockReset().mockResolvedValue(loaded);
   touchOpened.mockReset().mockResolvedValue({ version: 2 });
   toastError.mockReset().mockReturnValue("toast-1");
   toastDismiss.mockReset();
@@ -110,23 +108,23 @@ beforeEach(() => {
 });
 afterEach(() => jest.useRealTimers());
 
-it("loads the home board in the selected organization and stamps it opened once", async () => {
+it("loads the board by id and stamps it opened once", async () => {
   const { result } = mount();
   await settle();
-  expect(getHomeBoard).toHaveBeenCalledWith("org-1");
-  expect(ready(result.current).board).toMatchObject({ id: "board-1", isHome: true, title: "My board" });
+  expect(getBoard).toHaveBeenCalledWith("board-1");
+  expect(ready(result.current).board).toMatchObject({ id: "board-1", title: "My board" });
   expect(touchOpened).toHaveBeenCalledTimes(1);
 });
 
-it("switching the active organization never swaps the home board (it only says where a new one is filed)", async () => {
+it("switching the active organization never swaps the open board (it only says where a new one is filed)", async () => {
   activeOrg.id = "org-1";
   const { result, unmount, rerender } = mount();
   await settle();
-  expect(getHomeBoard).toHaveBeenCalledTimes(1);
+  expect(getBoard).toHaveBeenCalledTimes(1);
   activeOrg.id = "org-2";
   rerender();
   await settle();
-  expect(getHomeBoard).toHaveBeenCalledTimes(1);
+  expect(getBoard).toHaveBeenCalledTimes(1);
   expect(ready(result.current).board.id).toBe("board-1");
   unmount();
   activeOrg.id = "org-1";
@@ -254,7 +252,7 @@ it("Reload board after a conflict reopens the newer board and saving resumes", a
   act(() => ready(result.current).save(docWith("mine")));
   act(() => jest.advanceTimersByTime(AUTOSAVE_DELAY_MS));
   await settle();
-  getHomeBoard.mockResolvedValue({ ...loaded, version: 5, fingerprint: "fp-5", doc: docWith("theirs") });
+  getBoard.mockResolvedValue({ ...loaded, version: 5, fingerprint: "fp-5", doc: docWith("theirs") });
   touchOpened.mockResolvedValue({ version: 6 });
   act(() => toastError.mock.calls[0][1].action.onClick());
   await settle();
@@ -270,7 +268,7 @@ it("Reload board after a conflict reopens the newer board and saving resumes", a
 });
 
 it("a refused organization choice is a failed state whose retry asks again", async () => {
-  getHomeBoard.mockReset().mockRejectedValueOnce({ name: "OrganizationSelectionCancelled" }).mockResolvedValue(loaded);
+  getBoard.mockReset().mockRejectedValueOnce({ name: "OrganizationSelectionCancelled" }).mockResolvedValue(loaded);
   const { result } = mount();
   await settle();
   const failed = result.current;
@@ -278,6 +276,6 @@ it("a refused organization choice is a failed state whose retry asks again", asy
   expect(failed.reason).toMatch(/Choose one/);
   act(() => failed.retry());
   await settle();
-  expect(getHomeBoard).toHaveBeenCalledTimes(2);
+  expect(getBoard).toHaveBeenCalledTimes(2);
   expect(result.current.state).toBe("ready");
 });

@@ -1,6 +1,6 @@
 "use client";
 
-// features/board/boards/listConfig.tsx — /board/all on the canonical
+// features/board/boards/listConfig.tsx — /board on the canonical
 // entity-list shell.
 
 import type { EntityListConfig } from "@/lib/entity-list/config";
@@ -20,8 +20,8 @@ export const boardListConfig: EntityListConfig<BoardListRow> = {
   scopes: [...BOARD_LIST_SCOPES],
   service: createBoardListService(),
   columns: BOARD_COLUMNS,
-  prefsVersion: 1,
-  prefsDefaults: { sort: "updated_at", direction: "desc" },
+  prefsVersion: 2,
+  prefsDefaults: { sort: "last_opened_at", direction: "desc" },
   getRowId: (row) => row.id,
   getRowName: (row) => row.title,
   getRowEntity: (row) => ({ type: "board", id: row.id, title: row.title }),
@@ -44,11 +44,11 @@ export const boardListConfig: EntityListConfig<BoardListRow> = {
   copy: {
     label: "Board",
     listLabel: "Boards",
-    location: "/board/all",
+    location: "/board",
     rowKind: "board",
     listKind: "board-list",
     humanRow: (row) =>
-      `${row.title}${row.is_home ? " (home)" : ""}${row.archived ? " (deleted)" : ""} — ${row.tile_count} tiles, edited ${formatRelativeTime(row.updated_at)}`,
+      `${row.title}${row.archived ? " (deleted)" : ""} — ${row.tile_count} tiles, edited ${formatRelativeTime(row.updated_at)}`,
     showRow: false,
     showToolbar: false,
   },

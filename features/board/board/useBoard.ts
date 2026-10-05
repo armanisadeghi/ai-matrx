@@ -93,6 +93,8 @@ export interface Board<T extends BoardTileBase> {
   read: () => BoardView<T>;
   /** Run changes as an actor (an agent's tool call runs as "agent"). */
   runAs: <R>(actor: BoardActor, fn: () => R) => R;
+  /** Run several changes as ONE undoable step (an agent's batch of adds). */
+  batch: <R>(fn: () => R) => R;
   /** Take back only `actor`'s own latest change (never the person's). */
   undoActor: (actor: BoardActor) => ActorUndoResult;
   canUndoActor: (actor: BoardActor) => boolean;
@@ -161,6 +163,7 @@ export function useBoard<T extends BoardTileBase>(
     removeShape: store.removeShape,
     read: store.read,
     runAs: store.runAs,
+    batch: store.batch,
     undoActor: store.undoActor,
     canUndoActor: store.canUndoActor,
   };

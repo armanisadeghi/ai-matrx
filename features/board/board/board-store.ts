@@ -513,6 +513,41 @@ export class BoardStore<T extends BoardTileBase> {
     this.commit({ now: st.future[0], past: [...st.past, st.now], future: st.future.slice(1), moving: null });
   };
 
+  // ── batches ──────────────────────────────────────────────────────────────
+
+  private batchDepth = 0;
+
+  /**
+   * Run `fn` as ONE undoable step: every change it makes (several adds, a move)
+   * is one entry on the shared stack and, for the agent, one change to take
+   * back. Nested batches fold into the outermost.
+   */
+  batch = <R>(fn: () => R): R => {
+    if (this.batchDepth > 0) return fn();
+    const start = this.h;
+    const agentBefore = this.agentSteps.length;
+    this.batchDepth += 1;
+    try {
+      return fn();
+    } finally {
+      this.batchDepth -= 1;
+      const end = this.h;
+      if (end.now !== start.now) {
+        this.h = { ...end, past: [...start.past, start.now].slice(-HISTORY_LIMIT), future: [], moving: null };
+        if (this.agentSteps.length - agentBefore > 1) {
+          const mine = this.agentSteps.slice(agentBefore);
+          this.agentSteps = [
+            ...this.agentSteps.slice(0, agentBefore),
+            { before: mine[0].before, after: mine[mine.length - 1].after },
+          ];
+        }
+        const layout = this.layoutCache;
+        if (!layout || this.getLayout() !== layout) for (const l of [...this.layoutListeners]) l();
+        for (const l of [...this.listeners]) l();
+      }
+    }
+  };
+
   // ── actors ───────────────────────────────────────────────────────────────
 
   /** Run `fn` with every change it makes tagged as `actor`'s. */

@@ -356,8 +356,6 @@ export function AgentRunnerPage({
           edgeToEdgeScroll
           deferColdMarkdown={!!conversationIdFromUrl}
           smartInputProps={{
-            sendButtonVariant: "blue",
-            showSubmitOnEnterToggle: true,
             // The page-size composer (composer/FEATURE.md). The agent is the
             // route's — this page runs ONE agent — so no agent switch is
             // offered (the pill is a plain label).

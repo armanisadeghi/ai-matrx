@@ -193,6 +193,7 @@ export const SCOPE_ITEMS: readonly BoardItemType[] = [
     Body: ScopeBody,
     startNew: { label: NEW_SCOPE_TITLE, create: () => ({ title: NEW_SCOPE_TITLE, source: scopeSource(null) }) },
     bringIn: { label: "Scope", Picker: ScopePicker },
+    record: { place: (id, title) => ({ title: title?.trim() || "Scope", source: scopeSource(id) }), searchToken: "scope" },
     href: (s) => {
       const id = scopeIdOf(s);
       return id ? (tryGetEntityInfo(SCOPE_ITEM_KEY)?.hrefFor?.(id) ?? null) : null;

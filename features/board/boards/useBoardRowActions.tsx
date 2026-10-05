@@ -139,8 +139,6 @@ export function useBoardRowActions(list: EntityListController<BoardListRow>): En
               label: "Delete",
               icon: Trash2,
               tone: "destructive",
-              disabled: row.is_home,
-              disabledReason: row.is_home ? "Your home board opens at /board, so it cannot be deleted" : undefined,
               onSelect: () => {
                 void remove(row);
               },

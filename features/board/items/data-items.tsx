@@ -47,6 +47,7 @@ import type { BoardItemType, ItemBodyProps, PickerProps } from "./types";
 import { titleToAdopt } from "./feature-items.logic";
 import { RecordList } from "./feature-items";
 import { tablesToPick } from "@/features/unified-data/hub/tablePicking";
+import { dataHomeTables, findTables } from "./record-finders";
 
 const TABLE_ENTITY = "data-table";
 
@@ -288,6 +289,12 @@ export const DATA_ITEMS: readonly BoardItemType[] = [
     sleeps: true,
     startNew: { label: "New table", create: () => ({ title: "New table", source: tableSource(null) }) },
     bringIn: { label: "Table", Picker: TablePicker },
+    // Tables are not in the search projection: the table picker's own list, matched on the name.
+    record: {
+      place: (id, title) => ({ title: title?.trim() || "Table", source: tableSource(id) }),
+      find: (query, limit) =>
+        findTables(TABLE_ENTITY, query, limit, () => dataHomeTables(recordsDataSource(createClient()), null)),
+    },
     href: (s) => {
       const id = tableIdOf(s);
       return id ? `/data/${id}` : null;

@@ -617,8 +617,6 @@ function AgentRunBody({
             constrainWidth
             edgeToEdgeScroll
             smartInputProps={{
-              sendButtonVariant: "blue",
-              showSubmitOnEnterToggle: true,
               composer: {
                 size: "compact",
                 mode: composerMode,

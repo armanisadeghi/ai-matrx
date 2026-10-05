@@ -251,8 +251,6 @@ function ChatHistoryInputColumn({ conversationId }: { conversationId: string }) 
         constrainWidth
         edgeToEdgeScroll
         smartInputProps={{
-          sendButtonVariant: "blue",
-          showSubmitOnEnterToggle: false,
           composer: { size: "compact", mode, placeholder: "Reply", maxInputHeightPx },
         }}
       />

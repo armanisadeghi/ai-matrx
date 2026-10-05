@@ -1,26 +1,18 @@
-// /board — the person's own board (their home board in the active
-// organization): the platform's main way in. Mechanics: features/board/FEATURE.md.
+// /board — the boards list: every board the person made, recents first, "New board" to start
+// one. A board opens at /board/<id>. `/board?add=<item key>` (the menu's "Add to your board"
+// rows) opens the board they last opened and starts that item there. Mechanics:
+// features/board/FEATURE.md.
 
-import { readCanvasWorkspaceLayout } from "@ai-matrx/chat/next/server/workspace-cookies.server";
-import { readComposerModeCookie } from "@ai-matrx/chat/next/server/composer-mode.server";
-import { BoardPage } from "@/features/board/home/BoardPage";
+import { BoardsListPage } from "@/features/board/boards/BoardsListPage";
+import { createRouteMetadata } from "@/utils/route-metadata";
 
-/** The workspace id of the home board (its chat surface key and cookies). */
-const WORKSPACE_ID = "board-home";
+export const metadata = createRouteMetadata("/board", {
+  title: "Boards",
+  description: "Every board you made: open, rename, copy or delete them, or start a new one.",
+  letter: "Bd",
+  canonicalPath: "/board",
+});
 
-export default async function HomeBoardPage() {
-  const [initialLayout, initialMode] = await Promise.all([
-    readCanvasWorkspaceLayout(WORKSPACE_ID),
-    readComposerModeCookie(),
-  ]);
-  return (
-    <div className="h-full min-h-0">
-      <BoardPage
-        target={{ home: true }}
-        workspaceId={WORKSPACE_ID}
-        initialLayout={initialLayout}
-        initialMode={initialMode}
-      />
-    </div>
-  );
+export default function BoardsPage() {
+  return <BoardsListPage />;
 }

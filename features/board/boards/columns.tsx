@@ -1,6 +1,6 @@
 "use client";
 
-// features/board/boards/columns.tsx — the /board/all column registry.
+// features/board/boards/columns.tsx — the /board column registry.
 // Plain words: "Tiles", never "nodes".
 
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +24,6 @@ export const BOARD_COLUMNS: EntityColumnSpec<BoardListRow>[] = [
       cell: (row) => (
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.title}</span>
-          {row.is_home && (
-            <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
-              Home
-            </Badge>
-          )}
           {row.archived && (
             <Badge variant="outline" className="shrink-0 py-0 text-[10px] text-muted-foreground">
               Archived

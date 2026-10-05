@@ -210,6 +210,7 @@ export const EDUCATION_ITEMS: readonly BoardItemType[] = [
     Body: DeckBody,
     startNew: { label: "New flashcard deck", create: () => ({ title: "New flashcard deck", source: deckSource(null) }) },
     bringIn: { label: "Flashcard deck", Picker: DeckPicker },
+    record: { place: (id, title) => ({ title: title?.trim() || "Flashcard deck", source: deckSource(id) }), searchToken: "fc_set" },
     href: (s) => {
       const id = deckIdOf(s);
       return id ? `/education/flashcards/${id}` : null;

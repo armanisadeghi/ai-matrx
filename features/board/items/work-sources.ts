@@ -160,6 +160,16 @@ export function fileIdOf(source: NodeSource): string | null {
   return null;
 }
 
+/** A conversation, placed under its title — the chat picker and the agent's door. */
+export function chatItem(conversationId: string, title?: string | null, agentId: string | null = null): PlacedItem {
+  return { title: title?.trim() || "Chat", source: chatSource(conversationId, agentId) };
+}
+
+/** A note from Notes, placed under its label — the note picker and the agent's door. */
+export function noteItem(noteId: string, title?: string | null): PlacedItem {
+  return { title: title?.trim() || "Note", source: { kind: "entity", entity: "note", id: noteId } };
+}
+
 export function fileItem(fileId: string, name?: string | null): PlacedItem {
   return { title: name?.trim() || "File", source: { kind: "entity", entity: "file", id: fileId } };
 }

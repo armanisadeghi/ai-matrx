@@ -70,7 +70,7 @@ describe("board document columns", () => {
     expect(countTiles(null)).toBe(0);
   });
 
-  it("toLoadedBoard carries parse problems and the home flag instead of dropping them", () => {
+  it("toLoadedBoard carries parse problems instead of dropping them", () => {
     const board = toLoadedBoard({
       id: "b1",
       organization_id: "o1",
@@ -86,7 +86,6 @@ describe("board document columns", () => {
       updated_at: "2026-09-27T00:00:00Z",
       last_opened_at: null,
     });
-    expect(board.isHome).toBe(true);
     expect(board.version).toBe(3);
     expect(board.problems).toEqual([
       "camera was not {x,y,z}; reset to the default view",
@@ -96,16 +95,15 @@ describe("board document columns", () => {
 });
 
 describe("board copies and names", () => {
-  it("a copy never inherits the home flag but keeps other settings", () => {
+  it("a copy never inherits the retired home flag but keeps other settings", () => {
     expect(settingsForCopy({ home: true, wheel: "zoom" })).toEqual({ wheel: "zoom" });
     expect(settingsForCopy(null)).toEqual({});
     expect(copyTitle("Plans")).toBe("Plans (copy)");
   });
 
-  it("the home board opens at /board, every other board at /board/<id>", () => {
-    expect(boardHref({ id: "b1", is_home: true })).toBe("/board");
-    expect(boardHref({ id: "b2", is_home: false })).toBe("/board/b2");
-    expect(boardHref({ id: "b3", isHome: true })).toBe("/board");
+  it("every board opens at /board/<id> — /board is the list, there is no special board", () => {
+    expect(boardHref({ id: "b1" })).toBe("/board/b1");
+    expect(boardHref({ id: "b2" })).toBe("/board/b2");
   });
 
   it("a blank name is refused with a remedy; names are trimmed", () => {
@@ -238,7 +236,6 @@ describe("board list service", () => {
     id,
     title,
     organization_id: "o1",
-    is_home: false,
     archived: false,
     tile_count: tiles,
     created_at: updated,

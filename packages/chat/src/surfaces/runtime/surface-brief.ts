@@ -39,21 +39,21 @@ function isEmpty(value: unknown): boolean {
   return false;
 }
 
-function cut(text: string): string {
-  return text.length > SURFACE_BRIEF_TEXT_CHARS
-    ? `${text.slice(0, SURFACE_BRIEF_TEXT_CHARS)}…`
-    : text;
+function cut(text: string, max: number = SURFACE_BRIEF_TEXT_CHARS): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 const TITLE_KEYS = ["title", "name", "label"] as const;
 
 /** One value, projected small enough for a list of many items. */
-export function briefValue(value: unknown): unknown {
+export function briefValue(value: unknown, textChars: number = SURFACE_BRIEF_TEXT_CHARS): unknown {
   if (typeof value === "string") {
     const text = value.trim();
-    if (!text.includes("\n") && text.length <= SURFACE_BRIEF_TEXT_CHARS) return text;
+    if (!text.includes("\n") && text.length <= textChars) return text;
+    // A single line is cut in place; a multi-line text becomes its first line and a word count.
+    if (!text.includes("\n")) return cut(text, textChars);
     const firstLine = text.split("\n").find((line) => line.trim())?.trim() ?? "";
-    return { first_line: cut(firstLine), words: text.split(/\s+/).filter(Boolean).length };
+    return { first_line: cut(firstLine, textChars), words: text.split(/\s+/).filter(Boolean).length };
   }
   if (typeof value === "number" || typeof value === "boolean") return value;
   if (Array.isArray(value)) return { count: value.length };
@@ -61,7 +61,7 @@ export function briefValue(value: unknown): unknown {
     const record = value as Record<string, unknown>;
     const titleKey = TITLE_KEYS.find((key) => typeof record[key] === "string");
     return {
-      ...(titleKey ? { [titleKey]: cut(String(record[titleKey])) } : {}),
+      ...(titleKey ? { [titleKey]: cut(String(record[titleKey]), textChars) } : {}),
       fields: Object.keys(record).length,
     };
   }
@@ -79,7 +79,11 @@ export interface SurfaceBrief {
 export function surfaceBrief(
   manifest: Pick<SurfaceManifest, "briefValues" | "values"> | null | undefined,
   scope: SurfaceScopePayload,
+  /** A host listing many items passes a smaller share per item; defaults are the caps above. */
+  limits: { maxValues?: number; textChars?: number } = {},
 ): SurfaceBrief {
+  const maxValues = limits.maxValues ?? SURFACE_BRIEF_MAX_VALUES;
+  const textChars = limits.textChars ?? SURFACE_BRIEF_TEXT_CHARS;
   const declared = manifest?.briefValues;
   const names = declared?.length
     ? declared
@@ -88,10 +92,10 @@ export function surfaceBrief(
         .filter((name) => !PLATFORM_NAMES.has(name));
   const values: Record<string, unknown> = {};
   for (const name of names) {
-    if (Object.keys(values).length >= SURFACE_BRIEF_MAX_VALUES) break;
+    if (Object.keys(values).length >= maxValues) break;
     const value = scope[name];
     if (isEmpty(value)) continue;
-    values[name] = briefValue(value);
+    values[name] = briefValue(value, textChars);
   }
   return { values, declared: Boolean(declared?.length) };
 }

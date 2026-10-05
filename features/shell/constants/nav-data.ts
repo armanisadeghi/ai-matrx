@@ -805,30 +805,29 @@ export const primaryNavItems: ShellNavItem[] = [
         openInNewTab: true,
       },
       {
-        // THE BOARD — "the user's master one" with every supported item as a
-        // suboption. Every item a board supports is one click away:
-        // `/board?add=<item key>` starts it on the person's board (UserBoard).
+        // THE BOARD — boards work like every saved record: `/board` is the LIST (recents
+        // first), one opens at `/board/<id>`. Every item a board supports is one click away:
+        // `/board?add=<item key>` starts it on the board the person opened last (or a new one).
         // Keys = BOARD_ITEM_TYPES; features/board/__tests__/board-menu-items.test.ts holds them.
         // A sub-area because the add rows alone are twenty.
-        label: "Boards",
+        label: "Board",
         href: "/board",
         iconName: "LayoutGrid",
-        description: "Your canvas — every feature side by side",
+        description: "Your boards — every feature side by side",
         color: "teal",
         guestHidden: true,
         children: [
           {
-            label: "My board",
+            label: "Boards",
             href: "/board",
             iconName: "LayoutGrid",
             exact: true,
-            description: "Your own canvas — chats, notes, files, tasks and every feature, side by side",
+            description: "Every board you made: open one, or start a new one",
             color: "teal",
             profileMenu: true,
             dashboard: true,
             guestHidden: true,
           },
-          { label: "All boards", href: "/board/all", iconName: "Layers", guestHidden: true },
           { label: "Chat", href: "/board?add=chat", iconName: "MessagesSquare", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Note", href: "/board?add=note", iconName: "StickyNote", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "File", href: "/board?add=file", iconName: "File", group: "Add to your board", actionItem: true, guestHidden: true },

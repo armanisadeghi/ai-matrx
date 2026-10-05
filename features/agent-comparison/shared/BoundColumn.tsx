@@ -66,8 +66,6 @@ export function BoundColumn({
         // A column's conversation id is its own stable key; never share its
         // unsent draft with other columns or other battles on this surface.
         draftAlias: `${surfaceKey}:${conversationId}`,
-        sendButtonVariant: "blue",
-        showSubmitOnEnterToggle: true,
       }}
     />
   );

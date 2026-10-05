@@ -1,31 +1,21 @@
 "use client";
 
 /**
- * SmartAgentInput
+ * SmartAgentInput — the Smart Agent Input.
  *
- * Thin dispatcher that picks between the two standalone layout components
- * based on the `singleRowTextarea` prop. Each sub-component is fully
- * self-contained (including its own uninitialized-shell fallback) and can
- * be used directly with identical UI/behavior.
- *
- * Layout modes:
- *   default           — SmartAgentInputStacked: variables → chips → textarea → toolbar
- *   singleRowTextarea — SmartAgentInputSingleRow: horizontal row, textarea left, buttons right
- *   ambient           — either quiet single-line or multiline launcher chrome
- *
- * Required prop: conversationId.
+ * Styles (composer.size): Full (splash · page), Compact, Launcher. Modes:
+ * Chat · Work · Advanced. Self-contained, including its uninitialized-shell
+ * fallback. Required props: conversationId, composer.
  */
 
 import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { setVariablesPanelStyle } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
-import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
 import type { VariablesPanelStyle } from "../../../types/instance.types";
 import type { AttachedContextRailItem } from "./ConversationContextRail";
 import type { ComposerPresentation } from "./composer/composer-types";
-import { useTouchOnlyDevice } from "@host/components/official/composer/useTouchOnlyDevice";
 import { selectViewerCanReply } from "../../../redux/execution-system/conversations/conversations.selectors";
 import { ViewOnlyComposerBar } from "./ViewOnlyComposerBar";
 import { selectHasUserInput } from "../../../redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -38,9 +28,6 @@ export interface SmartAgentInputSurfaceValueAnchors {
 
 interface SmartAgentInputProps {
   conversationId: string | null | undefined;
-  singleRowTextarea?: boolean;
-  sendButtonVariant?: "default" | "blue";
-  showSubmitOnEnterToggle?: boolean;
   uploadRoot?: string;
   uploadPath?: string;
   enablePasteImages?: boolean;
@@ -64,19 +51,14 @@ interface SmartAgentInputProps {
   /** Optional Locate anchors supplied by an owning surface. */
   surfaceValueAnchors?: SmartAgentInputSurfaceValueAnchors;
   /**
-   * The three-mode, three-size composer (Chat · Work · Advanced; splash · page
-   * · compact) — common-docs/systems/chat/conversations/projects/ai-matrx-composer/MAP.md. ABSENT = this
-   * component renders exactly as it always has; every existing host is
-   * untouched. Present = the same engine in the composer's arrangement.
+   * The Smart Agent Input's presentation: style (Full · Compact · Launcher)
+   * and mode (Chat · Work · Advanced). Required.
    */
   composer: ComposerPresentation;
 }
 
 export function SmartAgentInput({
   conversationId,
-  singleRowTextarea = false,
-  sendButtonVariant = "default",
-  showSubmitOnEnterToggle = true,
   uploadRoot = "userContent",
   uploadPath = "agent-attachments",
   enablePasteImages = true,
@@ -94,8 +76,7 @@ export function SmartAgentInput({
   composer,
 }: SmartAgentInputProps) {
   // The page launcher (composer size `launcher`): the quiet box at a page's foot.
-  const isLauncher = composer?.size === "launcher";
-  const touchOnly = useTouchOnlyDevice();
+  const isLauncher = composer.size === "launcher";
   const dispatch = useAppDispatch();
   // A host's style is the instance's style: written to the slice so every
   // reader (the empty state's "Fill in the fields below", the form gate
@@ -148,41 +129,11 @@ export function SmartAgentInput({
     return <ViewOnlyComposerBar />;
   }
 
-  if (
-    !composer &&
-    singleRowTextarea
-  ) {
-    return (
-      <>
-        {queueStrip}
-        <SmartAgentInputSingleRow
-          conversationId={conversationId}
-          sendButtonVariant={sendButtonVariant}
-          uploadRoot={uploadRoot}
-          uploadPath={uploadPath}
-          enablePasteImages={enablePasteImages}
-          showSendButton={showSendButton}
-          showVariableIcon={variableIconShown}
-          surfaceKey={surfaceKey}
-          draftAlias={draftAlias}
-          disableSend={sendDisabled}
-          variablesPanelStyle={variablesPanelStyle}
-          contextRailPresentation={contextRailPresentation}
-          contextRailAttachedItems={contextRailAttachedItems}
-          extraRightControls={extraRightControls}
-          surfaceValueAnchors={surfaceValueAnchors}
-        />
-      </>
-    );
-  }
-
   return (
     <>
       {queueStrip}
       <SmartAgentInputStacked
         conversationId={conversationId}
-        sendButtonVariant={sendButtonVariant}
-        showSubmitOnEnterToggle={showSubmitOnEnterToggle && !touchOnly}
         uploadRoot={uploadRoot}
         uploadPath={uploadPath}
         enablePasteImages={enablePasteImages}
@@ -190,7 +141,7 @@ export function SmartAgentInput({
         showSendButton={showSendButton}
         showVariableIcon={variableIconShown}
         surfaceKey={surfaceKey}
-          draftAlias={draftAlias}
+        draftAlias={draftAlias}
         disableSend={sendDisabled}
         variablesPanelStyle={variablesPanelStyle}
         contextRailPresentation={contextRailPresentation}

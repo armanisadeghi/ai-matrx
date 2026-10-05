@@ -55,7 +55,7 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
           surfaceKey={`studio-assistant:${sessionId}`}
           constrainWidth
           edgeToEdgeScroll
-          smartInputProps={{ sendButtonVariant: "blue", composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
+          smartInputProps={{ composer: { size: "compact", mode: composerMode, maxInputHeightPx }, }}
         />
       </div>
     </div>

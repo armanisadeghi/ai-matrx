@@ -462,8 +462,6 @@ function QuickChatSheetBody({
                 constrainWidth
                 edgeToEdgeScroll
                 smartInputProps={{
-                  sendButtonVariant: "blue",
-                  showSubmitOnEnterToggle: false,
                   composer: {
                     size: "compact",
                     mode: composerMode,

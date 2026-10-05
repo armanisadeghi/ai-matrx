@@ -65,8 +65,6 @@ export function NewChatGreeting({
           <SmartAgentInput
             conversationId={sourceConversationId}
             surfaceKey={surfaceKey}
-            sendButtonVariant="blue"
-            showSubmitOnEnterToggle={false}
             composer={{ ...composer, size: "splash", placeholder: "How can I help you today?" }}
           />
         ) : (

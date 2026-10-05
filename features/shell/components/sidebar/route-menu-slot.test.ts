@@ -50,11 +50,12 @@ describe("route menu registry", () => {
   it("puts the Chats menu behind the switch on canvas-workspace pages, main menu in front", () => {
     const entry = (pathname: string) =>
       routeMenuRegistry.find((e) => e.pathPattern.test(pathname)) ?? null;
-    for (const pathname of ["/board", "/board/b1", "/education", "/education/progress"]) {
+    for (const pathname of ["/board/b1", "/education", "/education/progress"]) {
       expect(entry(pathname)?.label).toBe("Chats");
       expect(routeMenuDefaultView(entry(pathname))).toBe("main");
     }
-    // The boards LIST is an ordinary page.
+    // The boards LIST (/board, and its old address /board/all) is an ordinary page.
+    expect(entry("/board")).toBeNull();
     expect(entry("/board/all")).toBeNull();
     // /chat keeps opening on its own menu.
     expect(routeMenuDefaultView(entry("/chat/abc"))).toBe("route");

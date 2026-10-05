@@ -53,7 +53,7 @@ export function AgentBuilderRightPanel({
       conversationId={conversationId}
       surfaceKey={surfaceKey}
       smartInputProps={{
-        showSubmitOnEnterToggle: true,
+        composer: { size: "compact", mode: "chat" },
       }}
     />
   );

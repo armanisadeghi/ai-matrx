@@ -817,9 +817,6 @@ export function ChatRoomClient({
               edgeToEdgeScroll
               deferColdMarkdown={!!conversationIdProp}
               smartInputProps={{
-                sendButtonVariant: "blue",
-                // Lives in the Chat Options (+) → Preferences tab now.
-                showSubmitOnEnterToggle: false,
                 variablesPanelStyle,
                 composer: composerPresentation,
               }}
