@@ -34,8 +34,9 @@ Templates: [implementer-brief.md](implementer-brief.md) · [verifier-brief.md](v
   Opus for a large build handed over whole, design judgment, or a bug with no known cause. At
   most 2 Opus workers running at once. Workers cannot dispatch; a whole program handed down goes
   to the `coordinator` lane with a dispatch budget.
-- **Test, then fix.** For a surface whose defects are unknown, dispatch a Sonnet tester that
-  returns a defect list (repro · expected · actual) and fixes nothing. Confirm the list, then
+- **Test, then fix.** For a surface whose defects are unknown, dispatch `browser-tester` (or
+  `coach` running it, while the tester is new to that surface) for a defect list (repro ·
+  expected · actual); it fixes nothing. Confirm the list, then
   send each defect or one batch to a fixer with a short exact brief. One long run that explores
   and fixes at once is the expensive shape.
 - **Browser runs:** one agent per tab; the brief names the tab id or tells the agent to open its
