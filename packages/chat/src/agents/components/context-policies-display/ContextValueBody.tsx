@@ -21,7 +21,7 @@ import { cn } from "@ai-matrx/design-system";
 // boundary — wrapping MarkdownStream (itself already a dynamic front door) and
 // JsonInspector in MORE dynamics was stacked-boundary fragmentation. Static
 // imports of the front doors keep exactly one boundary per heavy graph.
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { JsonInspector } from "@host/components/official-candidate/json-inspector/JsonInspector";
 
 interface ContextValueBodyProps {
@@ -87,7 +87,7 @@ export function ContextValueBody({
   if (classified.kind === "markdown-text" && classified.text) {
     return (
       <div className="select-text text-xs">
-        <MarkdownStream imagePolicy="other" content={classified.text} hideCopyButton />
+        <RichContent level="full" imagePolicy="other" source={classified.text} hideCopyButton />
       </div>
     );
   }

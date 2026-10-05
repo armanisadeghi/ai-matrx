@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { Button } from "@ai-matrx/design-system";
 import {
   Select,
@@ -131,8 +131,8 @@ export default function AgentAssistantMarkdownDebugWindow({
             </div>
             <div className="flex-1 min-h-0 overflow-auto p-2">
               {baseMarkdown ? (
-                <MarkdownStream imagePolicy="ai"
-                  content={baseMarkdown}
+                <RichContent level="full" imagePolicy="ai"
+                  source={baseMarkdown}
                   hideCopyButton
                   allowFullScreenEditor={false}
                   className="text-xs bg-textured"
@@ -148,8 +148,8 @@ export default function AgentAssistantMarkdownDebugWindow({
             </div>
             <div className="flex-1 min-h-0 overflow-auto p-2">
               {draftMarkdown ? (
-                <MarkdownStream imagePolicy="ai"
-                  content={draftMarkdown}
+                <RichContent level="full" imagePolicy="ai"
+                  source={draftMarkdown}
                   hideCopyButton
                   allowFullScreenEditor={false}
                   className="text-xs bg-textured"

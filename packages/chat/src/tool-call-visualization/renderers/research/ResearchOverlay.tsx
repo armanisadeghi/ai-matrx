@@ -27,7 +27,7 @@ import {
     Link2,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { copyRichContent } from "@host/components/matrx/buttons/markdown-copy-utils";
 import { RichDocument } from "@host/features/rich-document/RichDocument";
 import type { ContentSource } from "@host/features/rich-document/types";
@@ -315,7 +315,7 @@ export const ResearchFullTextTab: React.FC<ToolRendererProps> = ({ entry }) => {
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
             <div className="p-5">
-                <MarkdownStream imagePolicy="ai" content={fullText} hideCopyButton className="text-sm" />
+                <RichContent level="full" imagePolicy="ai" source={fullText} hideCopyButton className="text-sm" />
             </div>
         </div>
     );

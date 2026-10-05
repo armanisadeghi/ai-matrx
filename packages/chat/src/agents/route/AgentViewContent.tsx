@@ -74,7 +74,7 @@ import {
   AiToolRef,
 } from "@host/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { AccessSummaryPanel } from "@host/features/sharing/components/AccessSummaryPanel";
 import { CopyButtons } from "@host/components/agent-copy/CopyButtons";
 import { agentDefinitionSummary } from "../format";
@@ -658,8 +658,8 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                 </button>
               </div>
               {agent.description && (
-                <MarkdownStream imagePolicy="other"
-                  content={agent.description}
+                <RichContent level="full" imagePolicy="other"
+                  source={agent.description}
                   hideCopyButton
                   className="text-sm text-muted-foreground leading-relaxed"
                 />

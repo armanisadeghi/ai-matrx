@@ -37,7 +37,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { RichDocument } from "@host/features/rich-document/RichDocument";
 import type { ContentSource } from "@host/features/rich-document/types";
 import { useAutoScrollOnStream } from "../useAutoScrollOnStream";
@@ -146,9 +146,9 @@ export const SubagentReportBlock: React.FC<SubagentReportBlockProps> = ({
                             style={{ maxHeight: PARTIAL_MAX_PX }}
                         >
                             {hasReport ? (
-                                <MarkdownStream imagePolicy="ai"
-                                    content={report}
-                                    isStreamActive
+                                <RichContent level="full" imagePolicy="ai"
+                                    source={report}
+                                    isStreaming
                                     hideCopyButton
                                     className="text-sm"
                                 />

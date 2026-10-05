@@ -11,7 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 import { toast } from "../../../host/notify";
 
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { NOTE_ACCENT, type NoteToolMode } from "./useNoteToolData";
 
@@ -212,9 +212,9 @@ export function NotePreview({
         {/* MarkdownStream is the canonical renderer — it processes render
             blocks (mermaid, tables, flashcards, …), unlike the thin
             BasicMarkdownContent wrapper. */}
-        <MarkdownStream imagePolicy="ai"
-          content={content as string}
-          isStreamActive={false}
+        <RichContent level="full" imagePolicy="ai"
+          source={content as string}
+          isStreaming={false}
           hideCopyButton
           allowFullScreenEditor={false}
         />

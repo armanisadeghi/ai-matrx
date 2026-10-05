@@ -35,7 +35,7 @@ import {
   TextDiff,
   type TextDiffView,
 } from "@ai-matrx/diff/react";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useSessionKnob } from "../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";
@@ -131,10 +131,10 @@ export function SurfaceWriteDiff({
             {slot}
           </div>
           <div className="max-h-96 overflow-auto px-4 py-3">
-            <MarkdownStream
+            <RichContent level="full"
               imagePolicy="ai"
-              content={receipt.after}
-              isStreamActive={false}
+              source={receipt.after}
+              isStreaming={false}
               hideCopyButton
               allowFullScreenEditor={false}
             />

@@ -7,7 +7,7 @@ import type { ChatRootState } from "../../../../store/root-state";
 // The MarkdownStream FRONT DOOR (already a dynamic ssr:false shell) — never
 // re-wrap or bypass it with a second boundary on MarkdownStreamImpl; that
 // duplicated the whole rich-document engine into a second chunk group.
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { selectVisibleInputDefinitions } from "../../../redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { selectIsVariableFormShown } from "../../../redux/execution-system/selectors/aggregate.selectors";
 import { emptyStateInstruction } from "./empty-state-instruction";
@@ -71,7 +71,7 @@ export function AgentEmptyMessageDisplay({
   if (isLongDescription && displayDescription) {
     return (
       <div className="flex flex-col h-full justify-start text-left px-6 py-8 max-w-3xl mx-auto w-full">
-        <MarkdownStream imagePolicy="other" content={displayDescription} hideCopyButton={true} />
+        <RichContent level="full" imagePolicy="other" source={displayDescription} hideCopyButton={true} />
         {instruction && (
           <p className="text-sm text-muted-foreground mt-3">{instruction}</p>
         )}
@@ -99,7 +99,7 @@ export function AgentEmptyMessageDisplay({
       <div className="space-y-3 mx-auto">
         <p className="text-lg font-medium">{displayName ?? "Ready to run"}</p>
         {displayDescription && (
-          <MarkdownStream imagePolicy="other" content={displayDescription} hideCopyButton={true} />
+          <RichContent level="full" imagePolicy="other" source={displayDescription} hideCopyButton={true} />
         )}
         {instruction && (
           <p className="text-sm text-muted-foreground mt-1">{instruction}</p>

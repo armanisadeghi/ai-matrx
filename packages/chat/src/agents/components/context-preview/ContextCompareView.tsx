@@ -45,7 +45,7 @@ import { Button } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
-import MarkdownStream from "@host/components/MarkdownStream";
+import { RichContent } from "@host/components/rich-content/RichContent";
 import { SystemItemsLine } from "./SystemItemsLine";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { selectAllAgents } from "../../redux/agent-definition/selectors";
@@ -814,7 +814,7 @@ function AnswerBoth({
                     // The platform's markdown renderer — the one a chat answer goes through — so an
                     // answer reads as it would in chat, never as raw text with asterisks.
                     <div className="mt-1 min-w-0 break-words text-sm text-foreground" data-answer-markdown>
-                      <MarkdownStream imagePolicy="ai" content={a?.answer ?? ""} hideCopyButton />
+                      <RichContent level="full" imagePolicy="ai" source={a?.answer ?? ""} hideCopyButton />
                     </div>
                   )}
                   {typeof a?.system_byte_length === "number" && (
