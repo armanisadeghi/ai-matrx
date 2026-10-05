@@ -28869,16 +28869,6 @@ export type ChatDatabase = {
             Args: { p_id: string; p_type: string; p_user_id: string }
             Returns: boolean
           }
-      _edu_class: {
-        Args: { p_class: string }
-        Returns: Database["context"]["Tables"]["scopes"]["Row"]
-        SetofOptions: {
-          from: "*"
-          to: "scopes"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       _edu_class_find: {
         Args: { p_class: string }
         Returns: unknown[]
@@ -29077,14 +29067,6 @@ export type ChatDatabase = {
         Returns: string
       }
       _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
-      accept_context_item_suggestion: {
-        Args: { p_suggestion_id: string }
-        Returns: Json
-      }
-      accept_scope_suggestion: {
-        Args: { p_organization_id?: string; p_suggestion_id: string }
-        Returns: Json
-      }
       access_denied_context: {
         Args: { p_id: string; p_type: string }
         Returns: Json
@@ -33664,10 +33646,6 @@ export type ChatDatabase = {
           user_id: string
         }[]
       }
-      get_entity_scopes: {
-        Args: { p_entity_id: string; p_entity_type: string }
-        Returns: Json
-      }
       get_enum_by_name: {
         Args: { p_name: string; p_schema: string }
         Returns: {
@@ -33810,7 +33788,6 @@ export type ChatDatabase = {
           requires_approval: boolean
         }[]
       }
-      get_org_structure: { Args: { p_org_id: string }; Returns: Json }
       get_organization_members: {
         Args: { org_id: string }
         Returns: {
@@ -34111,7 +34088,6 @@ export type ChatDatabase = {
           isSetofReturn: true
         }
       }
-      get_user_scopes: { Args: { p_user_id?: string }; Returns: Json }
       get_user_session_data: {
         Args: { p_user_id: string }
         Returns: {
@@ -34119,14 +34095,6 @@ export type ChatDatabase = {
           preferences: Json
           preferences_exists: boolean
         }[]
-      }
-      get_value_history: {
-        Args: {
-          p_context_item_id: string
-          p_limit?: number
-          p_scope_id: string
-        }
-        Returns: Json
       }
       get_version_diff: {
         Args: {
