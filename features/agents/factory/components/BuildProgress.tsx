@@ -18,12 +18,13 @@
  * Admins get a link to the full build page (the way into the admin section).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Repeat } from "lucide-react";
 import { Badge, Button, RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdminPerson } from "@/lib/redux/selectors/userSelectors";
 import { outcomeChip } from "@/components/mardown-display/blocks/agent-factory-kinds/AgentFactoryKindBlocks";
@@ -167,14 +168,16 @@ function OutcomePanel({
 }
 
 export function BuildProgress({ buildId, onFinished, onRebuilt, className }: BuildProgressProps) {
-  const [currentId, setCurrentId] = useState(buildId);
-  const [detail, setDetail] = useState<FactoryBuildDetail | null | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
+  // A "Build unproven" follow-up replaces the build this view tracks.
+  const [rebuiltId, setRebuiltId] = useState<string | null>(null);
+  const currentId = rebuiltId ?? buildId;
+  // The latest read, tagged with the build it belongs to (a new id reads as loading).
+  const [snap, setSnap] = useState<{ id: string; detail: FactoryBuildDetail | null; error: string | null } | null>(null);
+  const detail = snap?.id === currentId ? snap.detail : undefined;
+  const error = snap?.id === currentId ? snap.error : null;
   const [busy, setBusy] = useState(false);
   const [keptAgent, setKeptAgent] = useState<string | null>(null);
   const isAdmin = useAppSelector(selectIsAdminPerson);
-
-  useEffect(() => setCurrentId(buildId), [buildId]);
 
   // One effect per build id: load now, poll every 3s, stop once the spine row is over.
   useEffect(() => {
@@ -184,14 +187,12 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
       try {
         const next = await getFactoryBuild(currentId);
         if (!live) return;
-        setDetail(next);
-        setError(null);
+        setSnap({ id: currentId, detail: next, error: null });
         if ((!next || spineIsOver(next.spineStatus)) && timer) clearInterval(timer);
       } catch (e) {
-        if (live) setError(e instanceof Error ? e.message : "Could not load the build");
+        if (live) setSnap({ id: currentId, detail: null, error: e instanceof Error ? e.message : "Could not load the build" });
       }
     };
-    setDetail(undefined);
     timer = setInterval(() => void tick(), POLL_MS);
     void tick();
     return () => {
@@ -202,13 +203,13 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
 
   const over = detail ? spineIsOver(detail.spineStatus) : false;
 
-  const [reported, setReported] = useState<string | null>(null);
+  const reported = useRef<string | null>(null);
   useEffect(() => {
-    if (over && detail?.state && reported !== currentId) {
-      setReported(currentId);
+    if (over && detail?.state && reported.current !== currentId) {
+      reported.current = currentId;
       onFinished?.(detail.state);
     }
-  }, [over, detail, currentId, reported, onFinished]);
+  }, [over, detail, currentId, onFinished]);
 
   const cells = detail ? stepCells(detail) : [];
 
@@ -229,7 +230,7 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
     setBusy(true);
     try {
       const next = await startAgentBuild({ spec: req.spec, mandateKey: req.mandate_key ?? null, unproven: true });
-      setCurrentId(next);
+      setRebuiltId(next);
       onRebuilt?.(next);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start the build");
@@ -242,10 +243,10 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
     return <RegionSkeleton shape="rows" count={3} aria-label="Loading build" className={className} />;
   }
   if (error || !detail) {
-    return (
-      <div className={cn("rounded-md border border-border p-3 text-sm text-muted-foreground", className)}>
-        {error ?? "No build has this id."}
-      </div>
+    return error ? (
+      <ErrorNotice title="Build not loaded" message={error} operation="load the agent build" size="compact" className={className} />
+    ) : (
+      <div className={cn("rounded-md border border-border p-3 text-sm text-muted-foreground", className)}>No build has this id.</div>
     );
   }
 

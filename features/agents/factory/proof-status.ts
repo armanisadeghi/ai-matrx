@@ -67,19 +67,18 @@ function load(id: string, cb: (s: AgentProofStatus) => void): void {
 
 /** The agent's proof status; null while loading or for an agent with nothing to badge. */
 export function useAgentProofStatus(agentId: string | null | undefined): AgentProofStatus {
-  const [status, setStatus] = useState<AgentProofStatus>(agentId ? (cache.get(agentId) ?? null) : null);
+  const [loaded, setLoaded] = useState<{ id: string; status: AgentProofStatus } | null>(null);
   useEffect(() => {
-    if (!agentId || cache.has(agentId)) {
-      setStatus(agentId ? (cache.get(agentId) ?? null) : null);
-      return undefined;
-    }
+    if (!agentId || cache.has(agentId)) return undefined;
     let live = true;
     load(agentId, (s) => {
-      if (live) setStatus(s);
+      if (live) setLoaded({ id: agentId, status: s });
     });
     return () => {
       live = false;
     };
   }, [agentId]);
-  return status;
+  if (!agentId) return null;
+  if (cache.has(agentId)) return cache.get(agentId) ?? null;
+  return loaded?.id === agentId ? loaded.status : null;
 }
