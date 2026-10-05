@@ -1,4 +1,8 @@
-"use client";
+// No "use client": this door only re-exports, and each package entry carries
+// its own directive. A "use client" door re-exporting the package ROOT beside
+// `/controls` crashes a production Turbopack build whose client graph uses only
+// the `/controls` export ("ModuleId not found ... dist/index.js <locals>").
+// Guard: `pnpm check:client-door-reexports`.
 
 /**
  * HOST DOOR ONLY — the Select implementation lives in

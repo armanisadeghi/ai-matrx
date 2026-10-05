@@ -24,7 +24,7 @@
  * site, v0.4.2866-2880): "ModuleId not found for ident ... dist/index.js
  * <locals>" in EcmascriptModuleContent::new_merged — the unused root re-export
  * is tree-shaken out of the merged client chunk while the merged module still
- * names it. Guarded by `pnpm check:button-door`.
+ * names it. Guard: `pnpm check:client-door-reexports`.
  *
  * Written as a re-export so `Button` stays registered in
  * `scripts/package-twins.json`. Need a new tone or behaviour? Add it to the

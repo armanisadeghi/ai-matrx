@@ -523,6 +523,7 @@ if $STRICT; then
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "The proxy or an app/api route makes an auth-server round trip per request, or reads a timeout as a logout|pnpm check:proxy-auth-hot-path --strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
+        "A use-client door re-exports a package root beside its subpath (crashes a Turbopack build)|pnpm check:client-door-reexports"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
         # A self-test that plants its RED fixture in lib/, features/, migrations/… is seen by every
         # check this runner runs beside it (fake findings, ENOENT mid-scan) and can be committed
@@ -1228,6 +1229,7 @@ else
         "Auth doors blind to a split cookie jar|pnpm check:split-jar-doors:strict"
         "The proxy or an app/api route makes an auth-server round trip per request, or reads a timeout as a logout|pnpm check:proxy-auth-hot-path --strict"
         "Package logic re-grown outside its package|pnpm check:package-twins:strict"
+        "A use-client door re-exports a package root beside its subpath (crashes a Turbopack build)|pnpm check:client-door-reexports"
         "A doc or skill teaches a hand-rolled recipe the package owns|pnpm check:docs-twins"
         # A self-test that plants its RED fixture in lib/, features/, migrations/… is seen by every
         # check this runner runs beside it (fake findings, ENOENT mid-scan) and can be committed

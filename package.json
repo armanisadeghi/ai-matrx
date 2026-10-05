@@ -634,6 +634,8 @@
     "check:matrx-lockfile": "node scripts/check-matrx-lockfile.mjs",
     "check:matrx-lockfile:self-test": "node scripts/check-matrx-lockfile.mjs --self-test",
     "check:package-twins": "node scripts/check-package-twins.mjs",
+    "check:client-door-reexports": "node scripts/client-door-reexports/check.mjs",
+    "check:client-door-reexports:self-test": "node scripts/client-door-reexports/check.mjs --self-test",
     "check:package-twins:strict": "node scripts/check-package-twins.mjs --strict",
     "check:package-twins:self-test": "node scripts/check-package-twins.mjs --self-test",
     "check:docs-twins": "node scripts/check-docs-twins.mjs",
