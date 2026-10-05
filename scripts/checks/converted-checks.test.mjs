@@ -263,6 +263,20 @@ export const CONVERTED = [
     keyShape: /^(raw-page-header|sentence-under-title)\|[^|]+\.tsx$/,
   },
   {
+    id: "every-ai-matrx-import-exists-in-the-installed-package",
+    cmd: "pnpm check:matrx-imports",
+    allowKeys: () => [],
+    keyShape: /^(export|runtime|subpath|not-installed)\|[^|]+\|@ai-matrx\/[^|]+\|[^|]+$/,
+    mayBeClean: true,
+  },
+  {
+    id: "every-ai-matrx-version-in-the-lockfile-is-served-by-npm",
+    cmd: "pnpm check:matrx-lockfile",
+    allowKeys: () => [],
+    keyShape: /^@ai-matrx\/[a-z0-9._-]+@\d\S*$/,
+    mayBeClean: true,
+  },
+  {
     id: "route-metadata-and-favicons",
     cmd: "pnpm check:route-metadata",
     allowKeys: () => [],

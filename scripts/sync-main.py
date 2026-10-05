@@ -1461,6 +1461,26 @@ def update_matrx_packages():
                 % (d, "\n".join("  " + l for l in out.splitlines()[-15:])))
     _, st, _ = git("status", "--porcelain", "--untracked-files=no")
     changed = [l[3:].strip() for l in st.splitlines() if os.path.basename(l[3:].strip()) in PACKAGE_FILES]
+    # 2026-10-05: a lockfile naming a version whose tarball npm still 404s breaks every frozen
+    # install (CI, Vercel, the next agent) and left node_modules half-uninstalled. A FAILED update
+    # never commits a lockfile that names an unserved version: those files go back to HEAD.
+    for d in failed:
+        guard = os.path.join(d, "scripts", "check-matrx-lockfile.mjs")
+        if not os.path.isfile(guard):
+            continue
+        try:
+            g = subprocess.run(["node", guard], cwd=d, capture_output=True, text=True, timeout=120)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if g.returncode != 1:
+            continue
+        mine = [p for p in changed if (os.path.dirname(p) or ".") == d]
+        if mine:
+            git("checkout", "HEAD", "--", *mine)
+            changed = [p for p in changed if p not in mine]
+            say("LOCKFILE NOT COMMITTED in %s/ — it named an @ai-matrx version npm does not serve yet; "
+                "restored %s from HEAD. Run `pnpm install` there if node_modules is incomplete:\n%s"
+                % (d, ", ".join(mine), "\n".join("  " + l for l in (g.stdout + g.stderr).strip().splitlines()[-8:])))
     if changed:
         git("add", "--", *changed)
         git("commit", "--no-verify", "-q", "-m", "chore(deps): every @ai-matrx package to npm latest (sync-main)",

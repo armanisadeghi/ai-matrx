@@ -191,6 +191,20 @@ export const FINDINGS_CHECKS = [
     ...fromRules("page-top"),
   },
   {
+    // 2026-10-05: components/ui imported design-system 0.66 controls while the lockfile installed
+    // 0.64.0. Narrows to the given files (a changed manifest or lockfile scans everything).
+    id: "every-ai-matrx-import-exists-in-the-installed-package",
+    watch: /(\.(ts|tsx|mts|cts|js|jsx|mjs)$)|^(package\.json|pnpm-lock\.yaml)$/,
+    fix: "The app uses a package API the installed version does not ship. Wait for the package's tarball, `pnpm sync:matrx-packages`, commit the lockfile — never pin, never delete the import to go green.",
+    ...fromRules("every-ai-matrx-import-exists-in-the-installed-package"),
+  },
+  {
+    id: "every-ai-matrx-version-in-the-lockfile-is-served-by-npm",
+    watch: /^(package\.json|pnpm-lock\.yaml)$/,
+    fix: "The lockfile names a version npm does not serve yet. Wait for its tarball to answer 200, then `pnpm sync:matrx-packages` (it waits for you).",
+    ...fromRules("every-ai-matrx-version-in-the-lockfile-is-served-by-npm"),
+  },
+  {
     id: "route-metadata-and-favicons",
     watch: /^app\/.*(page|layout)\.tsx$/,
     fix: "Export route metadata via createRouteMetadata / createDynamicRouteMetadata with a favicon — invoke the `route-metadata-favicons` skill.",

@@ -66,6 +66,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { emitItem, endItems } from "./checks/items.mjs";
+
 const require = createRequire(import.meta.url);
 const ts = require("typescript");
 
@@ -77,7 +79,8 @@ const SKIP_DIRS = new Set(["node_modules", ".next", ".git", "dist", ".wt", "tmp"
 
 function listFiles(root) {
   try {
-    const out = execFileSync("git", ["ls-files", "-z"], {
+    // Tracked AND untracked-not-ignored: a new file is checked before it is ever committed.
+    const out = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
       cwd: root,
       encoding: "utf8",
       maxBuffer: 256 * 1024 * 1024,
@@ -467,19 +470,46 @@ export function audit(root, { only = null } = {}) {
   return { files: files.length, imports: imports.length, runtimeChecked, findings, skipped, narrowed: Boolean(only) };
 }
 
+export function findingKey(f) {
+  const target = f.sub === "." ? f.pkg : `${f.pkg}/${f.sub.slice(2)}`;
+  return `${f.why}|${f.file}|${target}|${f.name}`;
+}
+
+function describe(f) {
+  const target = f.sub === "." ? f.pkg : `${f.pkg}/${f.sub.slice(2)}`;
+  if (f.why === "subpath") return `subpath "${f.sub}" is not in the package's exports map`;
+  if (f.why === "not-installed") return `"${f.name}" from "${target}": ${f.pkg} is NOT INSTALLED (node_modules has no copy)`;
+  if (f.why === "runtime")
+    return `export "${f.name}" is declared in "${target}"'s types but MISSING from its runtime JavaScript`;
+  return `export "${f.name}" is missing from "${target}"`;
+}
+
 function report(result) {
   const { findings } = result;
-  const { unresolved, notInstalled, workspace } = result.skipped;
-  if (unresolved.length || notInstalled.size || workspace) {
+  const { unresolved, workspace, runtimeOpen } = result.skipped;
+  if (unresolved.length || workspace || runtimeOpen?.size) {
     console.log(
       `[matrx-imports] NOT CHECKED — ${workspace} workspace-source import(s)` +
-        (notInstalled.size ? `; not installed: ${[...notInstalled].join(", ")}` : "") +
+        (runtimeOpen?.size ? `; runtime not statically readable: ${[...runtimeOpen].join(", ")}` : "") +
         (unresolved.length ? `; unresolvable entries:\n    ${unresolved.join("\n    ")}` : ""),
     );
   }
+  for (const f of findings) {
+    emitItem({
+      key: findingKey(f),
+      title: `${f.pkg}@${f.version}: ${describe(f)}`.slice(0, 200),
+      file: f.file,
+      line: f.line,
+      unit: f.pkg,
+      rule: f.why,
+    });
+  }
+  if (!result.narrowed) endItems();
+  const scope = result.narrowed ? ` (narrowed to ${result.files} file(s))` : "";
   if (findings.length === 0) {
     console.log(
-      `[matrx-imports] OK — ${result.imports} @ai-matrx import name(s) all exist in the installed packages.`,
+      `[matrx-imports] OK — ${result.imports} @ai-matrx import name(s) exist in the installed packages` +
+        ` (${result.runtimeChecked} value import(s) also found in the runtime JavaScript)${scope}.`,
     );
     return 0;
   }
@@ -490,22 +520,18 @@ function report(result) {
     byPkg.get(key).push(f);
   }
   console.error(
-    `[matrx-imports] FAIL — ${findings.length} import(s) name something the INSTALLED @ai-matrx package does not ship:`,
+    `[FAIL] [matrx-imports] ${findings.length} import(s) name something the INSTALLED @ai-matrx package does not ship${scope}:`,
   );
   for (const [key, list] of byPkg) {
     console.error(`\n  ${key}`);
-    for (const f of list) {
-      const target = f.sub === "." ? f.pkg : `${f.pkg}/${f.sub.slice(2)}`;
-      const what =
-        f.why === "subpath"
-          ? `subpath "${f.sub}" is not in the package's exports map`
-          : `export "${f.name}" is missing from "${target}"`;
-      console.error(`    ${f.file}:${f.line}  ${what}`);
-    }
+    for (const f of list) console.error(`    ${f.file}:${f.line}  ${describe(f)}`);
   }
   console.error(
-    `\n  The consumer shipped before the package. Publish the package (aidream npm train), then\n` +
-      `  \`pnpm update "<pkg>" --latest\` and commit the lockfile. Never pin; never delete the import to go green.`,
+    `\n  The consumer shipped before the package (or the install is broken). Never commit app code that\n` +
+      `  uses a new package API until the tarball is served, the install succeeds and the app compiles:\n` +
+      `    pnpm check:matrx-lockfile     # every @ai-matrx version in pnpm-lock.yaml answers 200\n` +
+      `    pnpm sync:matrx-packages      # waits for the tarballs, then updates the lockfile\n` +
+      `  Never pin; never delete the import to go green.`,
   );
   return 1;
 }
@@ -541,6 +567,34 @@ function writePkg(root, version, withValidator) {
   writeFileSync(join(dir, "dist", "registry.d.ts"), `export * from "./kinds.js";\nexport declare function listKinds(): string[];\n`);
 }
 
+function writeDesignSystem(root, version, { types, runtime }) {
+  const dir = join(root, "node_modules", "@ai-matrx", "design-system");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(join(dir, "dist"), { recursive: true });
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({
+      name: "@ai-matrx/design-system",
+      version,
+      type: "module",
+      exports: { "./controls": { import: { types: "./dist/controls.d.ts", default: "./dist/controls.js" } } },
+    }),
+  );
+  writeFileSync(
+    join(dir, "dist", "controls.d.ts"),
+    `export type ControlSize = "sm" | "md";\nexport declare function Button(): unknown;\n` +
+      (types ? `export declare function Input(): unknown;\nexport declare const SelectTrigger: unknown;\n` : ""),
+  );
+  writeFileSync(
+    join(dir, "dist", "chunk-A1.js"),
+    `function Input() {}\nconst SelectTrigger = {};\nexport { Input, SelectTrigger };\n`,
+  );
+  writeFileSync(
+    join(dir, "dist", "controls.js"),
+    `export function Button() {}\n` + (runtime ? `export * from "./chunk-A1.js";\n` : `export { SelectTrigger } from "./chunk-A1.js";\n`),
+  );
+}
+
 function selfTest() {
   const tmp = mkdtempSync(join(tmpdir(), "matrx-imports-"));
   const failures = [];
@@ -571,6 +625,52 @@ function selfTest() {
     r = audit(tmp);
     if (r.findings.length) failures.push(`GREEN: expected no findings, got ${JSON.stringify(r.findings)}`);
     if (r.imports !== 5) failures.push(`GREEN: expected 5 checked names, got ${r.imports}`);
+
+    // ── THE 2026-10-05 CASE: components/ui/input.tsx imports `Input` from
+    // @ai-matrx/design-system/controls while the lockfile installed 0.64.0, which lacks it.
+    mkdirSync(join(tmp, "components", "ui"), { recursive: true });
+    writeFileSync(
+      join(tmp, "components", "ui", "input.tsx"),
+      `import { Input as PackageInput, SelectTrigger, type ControlSize } from "@ai-matrx/design-system/controls";\nexport { PackageInput, SelectTrigger };\n`,
+    );
+    writeDesignSystem(tmp, "0.64.0", { types: false, runtime: false });
+    pkgDirCache.clear();
+    runtimeCache.clear();
+    r = audit(tmp);
+    const input = r.findings.find((f) => f.name === "Input");
+    if (!input || input.version !== "0.64.0" || input.why !== "export" || input.line !== 1)
+      failures.push(`RED 2026-10-05: Input missing from design-system 0.64.0 not reported with file:line+version: ${JSON.stringify(input)}`);
+    if (r.findings.some((f) => f.name === "ControlSize")) failures.push("RED 2026-10-05: an existing type was reported");
+
+    // RUNTIME: the types promise Input, the shipped JavaScript does not carry it.
+    writeDesignSystem(tmp, "0.66.0", { types: true, runtime: false });
+    pkgDirCache.clear();
+    runtimeCache.clear();
+    r = audit(tmp);
+    if (!r.findings.some((f) => f.name === "Input" && f.why === "runtime"))
+      failures.push(`RED runtime: Input in types but not in controls.js was not reported: ${JSON.stringify(r.findings)}`);
+    if (r.findings.some((f) => f.name === "ControlSize"))
+      failures.push("RED runtime: a type-only import was checked against the runtime");
+
+    // GREEN: 0.66.1 ships Input + SelectTrigger in types AND runtime (through a chunk `export *`).
+    writeDesignSystem(tmp, "0.66.1", { types: true, runtime: true });
+    pkgDirCache.clear();
+    runtimeCache.clear();
+    r = audit(tmp);
+    if (r.findings.length) failures.push(`GREEN 0.66.1: expected no findings, got ${JSON.stringify(r.findings)}`);
+    if (r.runtimeChecked < 2) failures.push(`GREEN 0.66.1: expected the 2 value imports runtime-checked, got ${r.runtimeChecked}`);
+
+    // RED: the half-uninstalled node_modules (frozen install died on a 404 tarball).
+    rmSync(join(tmp, "node_modules", "@ai-matrx", "design-system"), { recursive: true, force: true });
+    pkgDirCache.clear();
+    r = audit(tmp);
+    if (!r.findings.some((f) => f.why === "not-installed" && f.pkg === "@ai-matrx/design-system"))
+      failures.push("RED not-installed: an import of a package missing from node_modules was not reported");
+
+    // NARROWED: a changed-files run sees only the named paths.
+    r = audit(tmp, { only: ["features"] });
+    if (!r.narrowed || r.findings.some((f) => f.file.startsWith("components")))
+      failures.push("NARROWED: a run narrowed to features/ reported a components/ file");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
@@ -579,7 +679,7 @@ function selfTest() {
     for (const f of failures) console.error(`  - ${f}`);
     return 1;
   }
-  console.log("check-matrx-imports --self-test OK — RED on the missing export and subpath, GREEN once shipped.");
+  console.log("check-matrx-imports --self-test OK — RED on a missing export, subpath, runtime-only gap and uninstalled package; GREEN once shipped.");
   return 0;
 }
 
@@ -588,9 +688,16 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try {
     if (process.argv.includes("--self-test")) code = selfTest();
     else {
-      const i = process.argv.indexOf("--root");
-      const root = i !== -1 ? process.argv[i + 1] : join(dirname(fileURLToPath(import.meta.url)), "..");
-      code = report(audit(root));
+      const argv = process.argv.slice(2);
+      const i = argv.indexOf("--root");
+      const root = i !== -1 ? argv[i + 1] : join(dirname(fileURLToPath(import.meta.url)), "..");
+      // Narrowing: positional paths, else `pnpm findings <paths>` (MATRX_FINDINGS_PATHS).
+      let only = argv.filter((a, j) => !a.startsWith("--") && argv[j - 1] !== "--root");
+      if (!only.length && process.env.MATRX_FINDINGS_PATHS) only = JSON.parse(process.env.MATRX_FINDINGS_PATHS);
+      only = only.map((o) => relative(resolve(root), resolve(o)).split(sep).join("/").replace(/\/+$/, ""));
+      // A changed manifest or lockfile changes what EVERY import resolves to: scan everything.
+      if (only.some((o) => /(^|\/)(package\.json|pnpm-lock\.yaml)$/.test(o))) only = [];
+      code = report(audit(root, { only: only.length ? only : null }));
     }
   } catch (err) {
     console.error(`[matrx-imports] could not run: ${err?.stack ?? err}`);

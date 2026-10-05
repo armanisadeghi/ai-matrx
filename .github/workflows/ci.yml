@@ -169,12 +169,27 @@ jobs:
         with:
           node-version-file: package.json
           cache: pnpm
+      # 2026-10-05: the lockfile named @ai-matrx/agents 0.45.1 while npm still
+      # answered 404 for its tarball, so a frozen install died half-way and left
+      # node_modules without design-system and agents. Runs BEFORE the install
+      # (node only, no dependencies) so a red job names the unserved version
+      # instead of a pnpm fetch error. `:self-test` plants a 404 fixture.
+      - name: Every @ai-matrx version in the lockfile is served by npm
+        run: node scripts/check-matrx-lockfile.mjs
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: The guard goes RED on an overwritten dist
         run: pnpm check:matrx-dist-integrity:self-test
       - name: Every resolved @ai-matrx dist matches its npm tarball
         run: pnpm check:matrx-dist-integrity:resolved
+      # 2026-10-05: components/ui imported Input/SelectTrigger/TabsList/TabsTrigger
+      # from @ai-matrx/design-system/controls 0.66 while the lockfile installed
+      # 0.64.0. Every named @ai-matrx import is looked up in the INSTALLED package's
+      # types and, for values, its runtime JavaScript (~30s, offline).
+      - name: The import guard goes RED on a missing export (planted in a temp tree)
+        run: pnpm check:matrx-imports:self-test
+      - name: Every @ai-matrx import exists in the installed package
+        run: pnpm check:matrx-imports
 
   # ---------------------------------------------------------------------------
   # marker-law — the cheapest and most load-bearing gate in the repo. `__kind`

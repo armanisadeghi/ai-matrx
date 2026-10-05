@@ -86,6 +86,13 @@ if $STRICT; then
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # EVERY @ai-matrx VERSION THE LOCKFILE NAMES IS SERVED BY NPM. On
+        # 2026-10-05 the lockfile named @ai-matrx/agents 0.45.1 while its
+        # tarball still 404'd: `pnpm install --frozen-lockfile` died half-way
+        # and left node_modules without design-system and agents. One HEAD per
+        # locked version, ~1s. `pnpm check:matrx-lockfile:self-test` plants a
+        # 404 fixture and proves it can still fail.
+        "Every @ai-matrx package version in the lockfile is served by npm|pnpm check:matrx-lockfile"
         # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
         # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
         # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
@@ -1042,6 +1049,13 @@ else
         # were all green. ~30s, offline, zero findings at introduction.
         # `pnpm check:matrx-imports:self-test` proves it can still fail.
         "Every @ai-matrx import exists in the installed package|pnpm check:matrx-imports"
+        # EVERY @ai-matrx VERSION THE LOCKFILE NAMES IS SERVED BY NPM. On
+        # 2026-10-05 the lockfile named @ai-matrx/agents 0.45.1 while its
+        # tarball still 404'd: `pnpm install --frozen-lockfile` died half-way
+        # and left node_modules without design-system and agents. One HEAD per
+        # locked version, ~1s. `pnpm check:matrx-lockfile:self-test` plants a
+        # 404 fixture and proves it can still fail.
+        "Every @ai-matrx package version in the lockfile is served by npm|pnpm check:matrx-lockfile"
         # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
         # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
         # organization name: a sweep had placed `// CONVERGE:` lines in JSX child

@@ -92,6 +92,12 @@
     },
     "one-control": {
       "no_accept": "scripts/one-control/check-one-control.mjs has no baseline: the controls shipped with zero sites, so every item is new — render the package control."
+    },
+    "every-ai-matrx-import-exists-in-the-installed-package": {
+      "no_accept": "There is nothing to accept: an import the installed package does not ship breaks the build. Publish the package, wait for its tarball, `pnpm sync:matrx-packages`, commit the lockfile."
+    },
+    "every-ai-matrx-version-in-the-lockfile-is-served-by-npm": {
+      "no_accept": "There is nothing to accept: a locked version npm does not serve breaks every frozen install. Wait for the tarball to answer 200, then `pnpm sync:matrx-packages`."
     }
   }
 }
