@@ -297,7 +297,7 @@ export function ConversationContextChip({
   return (
     <ContextRulesChip
       label=""
-      className="border-transparent bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
+      variant="quiet"
       rows={rows}
       cap={cap}
       on={surfaceName ? !off : undefined}
