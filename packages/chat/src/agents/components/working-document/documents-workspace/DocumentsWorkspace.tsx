@@ -31,7 +31,7 @@ import {
   CONTEXT_MENU_ENTITY_KEY,
   type ContextMenuExtraSection,
   type ResolvedContextMenuContext,
-} from "@host/features/context-menu-v3/types";
+} from "../../../../context-menu/types";
 import { SurfaceRuntimeProvider } from "../../../../surfaces/runtime/SurfaceRuntimeContext";
 import {
   DOCUMENTS_WORKSPACE_SURFACE_NAME,

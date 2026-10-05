@@ -19,7 +19,7 @@ import { announceOnce } from "./errors";
 import { reportUnregisteredHostSlot as reportUnregistered } from "./diagnostics";
 import { DefaultWebpageSnapshotView } from "./defaults/webpage-snapshot-view";
 import { DefaultFullScreenOverlay, DefaultWindowPanel } from "./defaults/window-panel";
-import type { EditableContextMenuProps, NonEditableContextMenuProps } from "@host/features/context-menu-v3/types";
+import type { EditableContextMenuProps, NonEditableContextMenuProps } from "../context-menu/types";
 
 /** The host context menu's props (its registration is typed against them). */
 export type { EditableContextMenuProps, NonEditableContextMenuProps };

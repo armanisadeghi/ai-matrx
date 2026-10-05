@@ -18,10 +18,10 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { AgentUserMessage } from "../user/AgentUserMessage";
-import { TranscriptAudienceProvider } from "../../shared/transcript-audience";
-import { resolveMarkdownContext } from "@host/features/context-menu-v3/utils/resolveMarkdownContext";
-import { chatMessageSubject, menuHeader } from "@host/features/context-menu-v3/alchemy-provider";
+import { AgentUserMessage } from "@ai-matrx/chat/agents/components/messages-display/user/AgentUserMessage";
+import { TranscriptAudienceProvider } from "@ai-matrx/chat/agents/components/shared/transcript-audience";
+import { resolveMarkdownContext } from "@ai-matrx/chat/context-menu/utils/resolveMarkdownContext";
+import { chatMessageSubject, menuHeader } from "@/features/context-menu-v3/alchemy-provider";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -33,23 +33,23 @@ const SENT_AT = "2026-09-27T18:50:00Z";
 
 let mockState: Record<string, unknown> = {};
 
-jest.mock("../../../../store/hooks", () => ({
+jest.mock("@ai-matrx/chat/store/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector(mockState),
   useAppDispatch: () => jest.fn(),
   useAppStore: () => ({ getState: () => mockState }),
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
-jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
-jest.mock("@host/components/MarkdownStream", () => ({
+jest.mock("@/lib/redux/hooks", () => jest.requireMock("@ai-matrx/chat/store/hooks"));
+jest.mock("@/components/MarkdownStream", () => ({
   __esModule: true,
   default: ({ content }: { content: string }) => <p>{content}</p>,
 }));
-jest.mock("../user/UserActionBar", () => ({ UserActionBar: () => null }));
-jest.mock("../MessageAttachmentStrip", () => ({ MessageAttachmentStrip: () => null }));
-jest.mock("../../context-policies-display/ContextPolicyChipStrip", () => ({
+jest.mock("@ai-matrx/chat/agents/components/messages-display/user/UserActionBar", () => ({ UserActionBar: () => null }));
+jest.mock("@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip", () => ({ MessageAttachmentStrip: () => null }));
+jest.mock("@ai-matrx/chat/agents/components/context-policies-display/ContextPolicyChipStrip", () => ({
   ContextPolicyChipStrip: () => null,
 }));
-jest.mock("@host/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
+jest.mock("@/components/official/entity-ref/EntityRef", () => ({ EntityRef: () => null }));
 
 function buildState(): Record<string, unknown> {
   return {

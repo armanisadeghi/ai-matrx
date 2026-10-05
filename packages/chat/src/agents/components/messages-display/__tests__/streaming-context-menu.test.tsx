@@ -84,7 +84,7 @@ const TranscriptMenu = ({
     </div>
   );
 
-jest.mock("@host/features/context-menu-v3/utils/resolveMarkdownContext", () => ({
+jest.mock("../../../../context-menu/utils/resolveMarkdownContext", () => ({
   resolveMarkdownContext: jest.fn(),
 }));
 

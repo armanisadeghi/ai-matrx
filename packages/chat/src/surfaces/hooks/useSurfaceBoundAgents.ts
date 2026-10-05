@@ -7,7 +7,7 @@ import {
   peekSurfaceMenuAgentsGrouped,
   type SurfaceBoundAgentSection,
 } from "../services/surface-bound-agents.service";
-import { withMenuDeadline } from "@host/features/context-menu-v3/utils/menu-deadline";
+import { withMenuDeadline } from "../../context-menu/utils/menu-deadline";
 import { selectUserId } from "../../host/identity";
 
 export interface UseSurfaceBoundAgentsOptions {

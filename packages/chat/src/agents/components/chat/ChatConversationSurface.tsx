@@ -26,7 +26,7 @@ import {
   CHAT_CONTEXT_MENU_PROPS,
 } from "./agent-context/buildChatContextData";
 import { buildChatRunConfiguration } from "./agent-context/buildChatRunConfiguration";
-import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "../../../context-menu/utils/build-application-scope";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,

@@ -16,7 +16,7 @@ import { AgentMemorySidebar } from "../../../agents/components/memory/components
 import { AgentMemoryBody } from "../../../agents/components/memory/components/AgentMemoryBody";
 import { AgentMemoryFooter } from "../../../agents/components/memory/components/AgentMemoryFooter";
 import { NonEditableContextMenu } from "../../../host/ui-slots";
-import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuExtraSection } from "@host/features/context-menu-v3/types";
+import { CONTEXT_MENU_ENTITY_KEY, type ContextMenuExtraSection } from "../../../context-menu/types";
 import { toast } from "../../../host/notify";
 import { displayTitleForMemory } from "../../../agents/components/memory/types";
 import { CHAT_WINDOWS } from "../../../host/windows";

@@ -9,7 +9,7 @@
  */
 
 import type { ChatAppStore } from "../../../../store/root-state";
-import { buildApplicationScopeFromMenuContext } from "@host/features/context-menu-v3/utils/build-application-scope";
+import { buildApplicationScopeFromMenuContext } from "../../../../context-menu/utils/build-application-scope";
 import type { ComposerTextMenu } from "../../inputs/smart-input/composer/composer-types";
 import { buildChatContextData, CHAT_CONTEXT_MENU_PROPS } from "./buildChatContextData";
 import { buildChatRunConfiguration } from "./buildChatRunConfiguration";

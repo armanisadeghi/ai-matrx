@@ -31,11 +31,11 @@ import { toast } from "../../host/notify";
 import type {
   ContextMenuEntityRef,
   ContextMenuExtraSection,
-} from "@host/features/context-menu-v3/types";
+} from "../../context-menu/types";
 import {
   withAvailability,
   type AvailabilityMap,
-} from "@host/features/context-menu-v3/utils/availability";
+} from "../../context-menu/utils/availability";
 
 /** The `[CONTEXT_MENU_ENTITY_KEY]` value every agent-scoped window should pass. */
 export function agentEntityRef(

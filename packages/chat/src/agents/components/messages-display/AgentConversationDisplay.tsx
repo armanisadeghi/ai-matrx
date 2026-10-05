@@ -41,7 +41,7 @@ import { CollabNoteMessage } from "./user/CollabNoteMessage";
 // per-block context from cheap DOM tags (`data-message-id`, `data-mtx-ctx`) on
 // right-click, so blocks stay free (just tags) instead of mounting a menu each.
 import { NonEditableContextMenu } from "../../../host/ui-slots";
-import { resolveMarkdownContext } from "@host/features/context-menu-v3/utils/resolveMarkdownContext";
+import { resolveMarkdownContext } from "../../../context-menu/utils/resolveMarkdownContext";
 import {
   applyAnchoredDisplayGroupWindow,
   type DisplayGroupWindowAnchor,
